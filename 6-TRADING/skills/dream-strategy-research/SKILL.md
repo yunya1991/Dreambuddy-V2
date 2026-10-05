@@ -661,6 +661,9 @@ advisor_review_summary:
 | **数据源←** | ← | `tavily` | 宏观/情绪数据（主力） |
 | **数据源←** | ← | `odaily` | 链上/ETF数据（补充） |
 | **数据源←** | ← | `dream-archive-center` | 历史案例 |
+| **科研←** | ← | `dream-science-literature-review` | 策略选题前调用，做文献综述和研究空白识别 |
+| **科研←** | ← | `dream-science-cross-disciplinary` | 跨学科调研，识别复杂系统/统计物理映射 |
+| **编排←** | ← | `dream-science-orchestrator` | 科研任务统一入口，5维质量门控 |
 
 ---
 

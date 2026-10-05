@@ -243,6 +243,8 @@ dEdge/dt = (Edge_current - Edge_previous) / time_delta_hours
 - 下游：`dream-risk-position-sizing`、`dream-pretrade-gatekeeper`、`learning-episode-writer`、`dream-posttrade-mrm-audit`
 - 约定：方向与评分必须可复现，不允许将"叙事解释"混入可用于门禁的字段；`odaily`（含链上/ETF/预测市场扩展）默认仅 informational
 - ⭐ 战略注入规则：`strategy_match` 维度必须从 `dream-strategy-parser` 输出中读取，不可硬编码；无战略解析器输出时默认5分 + `ASSUMPTION_STRATEGY_PROXY` 标记
+- 科研协同：`dream-science-hypothesis-verification` — 信号假设验证，可证伪性检验和统计显著性分析
+- 科研协同：`dream-science-orchestrator` — 科研任务统一入口
 
 ## Fail-Closed
 - 数据缺失、字段口径不一致、团队评审冲突不可化解时：直接 `gates.pass=false`

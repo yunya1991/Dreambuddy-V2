@@ -1,6 +1,6 @@
 # 文档索引
 
-> **更新日期**：2026-10-04（新增 SPEC-ds4架构借鉴与系统增强.md 登记）
+> **更新日期**：2026-10-05（新增 NeuralSDE 设计文档 + CHANGELOG v1.9）
 > **模块定位**：四层闭环自进化交易架构 — 观察→推断→实验→反思→回馈自进化策略引擎
 
 ## 标准五件套（SSoT，对齐 DOC_STANDARD L3）
@@ -11,12 +11,13 @@
 | [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 模块工程索引（文件级，15+ 引擎/21 核心/20+ 适配器） |
 | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 模块技术设计（三层准入架构） |
 | [API_SPEC.md](./API_SPEC.md) | 模块接口规格 |
-| [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录（v1.8 Phase 3 断裂修复） |
+| [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录（v1.9 NeuralSDE v2 上线 + 第 3 轮 PoC 反模式） |
 
 ## 专题文档
 
 | 文档 | 说明 |
 |------|------|
+| [neural_sde_design.md](./neural_sde_design.md) | NeuralSDE 路径依赖 SDE 设计（v1.0, 生产最优 MAE=269.51, 优于 GARCH 3.3x） |
 | [entry_bcrm_soft_weight_design.md](./entry_bcrm_soft_weight_design.md) | BCRM 软权重入场设计 |
 | [三维度矛盾论理论框架.md](./三维度矛盾论理论框架.md) | 矛盾论 v3.0 理论升级指南（被 6 个 core/*.py 引用） |
 

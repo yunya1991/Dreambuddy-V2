@@ -34,7 +34,9 @@ PHASE_E_GENE_IDS = [
 # 配置
 LOOKBACK = 20          # 指标计算回看bar数
 HOLD_BARS = 12         # 模拟持有bar数 (4h*12=48h)
-SHADOW_MIN_SAMPLES = 10
+# P0-2 硬约束: 准入门槛从 10 提升至 30（统计检验要求 N≥30）
+# 详见 core.gene_promotion_stats.MIN_PROMOTION_SAMPLES
+SHADOW_MIN_SAMPLES = 30  # 向后兼容引用，实际逻辑见 check_promotion_with_stats
 SHADOW_PROMOTE_WIN_RATE = 0.50
 SHADOW_MIN_WIN_RATE = 0.30
 SHADOW_MAX_CONSEC_LOSS = 5
@@ -665,51 +667,24 @@ def _inject_rl_main():
 
 
 def check_promotion(samples):
-    """检查影子基因准入/淘汰"""
-    n = len(samples)
-    if n < SHADOW_MIN_SAMPLES:
-        return {"promote": False, "reason": f"N={n} < {SHADOW_MIN_SAMPLES}"}
+    """检查影子基因准入/淘汰（P0 改进：附统计检验）.
 
-    wins = sum(1 for s in samples if s["pnl_pct"] > 0)
-    win_rate = wins / n
-    avg_pnl = sum(s["pnl_pct"] for s in samples) / n
+    P0-1: 所有 promote 决策附 p 值（二项检验 H0: 胜率≤0.5）+ 效应量(Cohen's d) + 95% CI
+    P0-2: 准入门槛 N≥30（替代旧 N=10）
+    P0-3: 审计标准由 core.audit_standards.classify_shadow_health 统一管理
 
-    # 连续亏损（只计独立交易信号，非K线相邻触发）
-    # 过滤：两次触发间隔>HOLD_BARS才算独立信号
-    independent_samples = []
-    last_entry_idx = -HOLD_BARS - 1
-    for idx, s in enumerate(samples):
-        # 用entry_time的索引位置判断独立性
-        # 简化：如果前一笔还在持有期内，跳过
-        if idx > 0:
-            prev = samples[idx - 1]
-            # 比较时间差（简化：直接用index差）
-            # 如果间隔不够，合并为同一信号
-            pass
-        independent_samples.append(s)
+    委托给 core.gene_promotion_stats.check_promotion_with_stats 实现。
+    保留本函数签名以维持向后兼容（已生成的 shadow_validation/*.json 不受影响）。
+    """
+    # 延迟导入避免循环依赖
+    import sys as _sys
+    from pathlib import Path as _Path
+    _REPO = _Path(__file__).resolve().parents[2]
+    if str(_REPO) not in _sys.path:
+        _sys.path.insert(0, str(_REPO))
+    from dreambuddy_evolution.core.gene_promotion_stats import check_promotion_with_stats
 
-    # 直接用全部样本计算连续亏损（已足够保守）
-    max_consec_loss = 0
-    current_loss = 0
-    for s in samples:
-        if s["pnl_pct"] <= 0:
-            current_loss += 1
-            max_consec_loss = max(max_consec_loss, current_loss)
-        else:
-            current_loss = 0
-
-    # 放宽连续亏损：要求连续亏损占总样本比例>50%才淘汰
-    loss_ratio = max_consec_loss / n if n > 0 else 0
-
-    # 淘汰：连续亏损占比>50% 且 胜率<50%
-    if max_consec_loss >= SHADOW_MAX_CONSEC_LOSS and loss_ratio > 0.5 and win_rate < 0.50:
-        return {"promote": False, "retire": True, "reason": f"consecutive_losses={max_consec_loss} ({loss_ratio:.0%} of N), win_rate={win_rate:.0%}", "win_rate": win_rate, "avg_pnl": avg_pnl}
-
-    # 准入
-    if win_rate >= SHADOW_PROMOTE_WIN_RATE and avg_pnl > 0:
-        return {"promote": True, "win_rate": win_rate, "avg_pnl": avg_pnl}
-
-    return {"promote": False, "reason": f"win_rate={win_rate:.0%} < {SHADOW_PROMOTE_WIN_RATE:.0%}", "win_rate": win_rate, "avg_pnl": avg_pnl}
+    return check_promotion_with_stats(samples)
 
 
 def main():

@@ -253,6 +253,7 @@ class ShadowRLTrainer:
         samples: list[dict[str, Any]],
         epochs: int | None = None,
         gene_id: str = "default",
+        policy_backend: str = "simple",
     ) -> dict[str, Any]:
         """基于样本训练 RL 策略.
 
@@ -263,6 +264,7 @@ class ShadowRLTrainer:
             samples: [{symbol, state, action, reward, next_state}, ...]
             epochs: 训练轮数（默认 DEFAULT_EPOCHS=50）
             gene_id: 基因ID，用于缓存策略和更新Beta参数
+            policy_backend: "simple" (SimplePolicy numpy) | "deep" (MLPPolicy+A2C PyTorch)
 
         Returns: {status, trained_policy, policy_loss, episode_reward,
                   loss_history, samples_seen}
@@ -278,19 +280,73 @@ class ShadowRLTrainer:
                 "samples_seen": 0,
             }
 
+        # 深度策略网络分支（Phase 2 三范式跃迁）
+        if policy_backend == "deep":
+            return self._train_deep_policy(samples, epochs, gene_id)
+
+        # 默认 simple 路径（向后兼容）
+        return self._train_simple_policy(samples, epochs, gene_id)
+
+    def _train_deep_policy(
+        self,
+        samples: list[dict[str, Any]],
+        epochs: int,
+        gene_id: str,
+    ) -> dict[str, Any]:
+        """深度策略网络训练（MLPPolicy + A2C，FAIL-OPEN 降级到 SimplePolicy）.
+
+        Phase 2 三范式跃迁之"学习范式跃迁"：
+        - SimplePolicy (numpy 单层) → MLPPolicy (PyTorch 多层+A2C+GAE)
+        - FAIL-OPEN: torch 不可用时降级到 SimplePolicy
+        """
         try:
-            # 内置 SimplePolicy 训练（REINFORCE + baseline）
+            from dreambuddy_evolution.core.deep_policy_network import A2CTrainer
+            trainer = A2CTrainer(
+                n_features=self.DEFAULT_N_FEATURES,
+                n_actions=3,
+                hidden_dims=[128, 64],
+            )
+            result = trainer.train(samples, epochs=epochs)
+
+            # 更新 Beta 参数
+            for s in samples:
+                reward = float(s.get("reward", 0.0))
+                self.update_beta(gene_id, success=reward > 0)
+
+            return {
+                "status": "trained",
+                "trained_policy": trainer.policy,
+                "policy_loss": result["policy_loss"],
+                "value_loss": result.get("value_loss", 0.0),
+                "episode_reward": result["episode_reward"],
+                "loss_history": result.get("loss_history", []),
+                "samples_seen": len(samples),
+                "gene_id": gene_id,
+                "policy_backend": "deep",
+                "degradation_level": trainer.get_degradation_level(),
+                "finrl_used": False,
+            }
+        except Exception as e:
+            # FAIL-OPEN: 深度策略训练异常→降级到 SimplePolicy
+            logger.warning(f"[FO-EVO-DEEP] 深度策略训练失败，降级到 SimplePolicy: {e}")
+            return self._train_simple_policy(samples, epochs, gene_id)
+
+    def _train_simple_policy(
+        self,
+        samples: list[dict[str, Any]],
+        epochs: int,
+        gene_id: str,
+    ) -> dict[str, Any]:
+        """SimplePolicy 训练（原 train_policy 的 simple 路径，保留作降级）."""
+        try:
             policy = SimplePolicy(
                 n_features=self.DEFAULT_N_FEATURES,
-                n_actions=3,  # 初始默认，fit 时自动调整
+                n_actions=3,
                 lr=self.DEFAULT_LR,
             )
             train_result = policy.fit(samples, epochs=epochs)
-
-            # 缓存训练后的策略
             self._trained_policies[gene_id] = policy
 
-            # 更新 Beta 参数：reward > 0 → success, reward <= 0 → failure
             for s in samples:
                 reward = float(s.get("reward", 0.0))
                 self.update_beta(gene_id, success=reward > 0)
@@ -303,16 +359,17 @@ class ShadowRLTrainer:
                 "loss_history": train_result["loss_history"],
                 "samples_seen": len(samples),
                 "gene_id": gene_id,
-                "finrl_used": False,  # 内置训练，未用 finrl
+                "policy_backend": "simple",
+                "finrl_used": False,
             }
         except Exception as e:
-            # FAIL-OPEN: 训练异常→降级返回
-            logger.warning(f"[FO-AGI-01] train_policy 异常: {e}")
             return {
                 "status": "degraded",
                 "reason": f"training error: {e}",
                 "samples_seen": len(samples),
+                "gene_id": gene_id,
             }
+
 
     def get_trained_policy(self, gene_id: str = "default") -> SimplePolicy | None:
         """获取已训练的策略（未训练返回 None）."""

@@ -61,6 +61,8 @@ class DeepReasoningEngine:
     def __init__(self, signature_depth: int = 3) -> None:
         self._signature_engine = SignatureEngine(depth=signature_depth)
         self._path_integral = PathIntegralEngine(n_paths=1000)
+        # Phase 2: 签名特征提取器（懒加载，前置签名特征接入）
+        self._signature_feature_extractor = None  # SignatureFeatureExtractor 懒加载
         self._timesfm_available = _TIMESFM_AVAILABLE
         self._signatory_available = _SIGNATORY_AVAILABLE
         self._torch_available = _TORCH_AVAILABLE
@@ -78,6 +80,19 @@ class DeepReasoningEngine:
         self._sde_model_path = str(
             Path(__file__).resolve().parents[1] / "data" / "neural_sde_v1.pt"
         )
+
+    def _get_signature_feature_extractor(self):
+        """懒加载 SignatureFeatureExtractor（Phase 2 签名特征接入）."""
+        if self._signature_feature_extractor is None:
+            try:
+                from dreambuddy_evolution.core.signature_feature_extractor import (
+                    SignatureFeatureExtractor,
+                )
+                self._signature_feature_extractor = SignatureFeatureExtractor()
+            except Exception as e:  # noqa: BLE001
+                logger.debug("[FO-AGI-03] SignatureFeatureExtractor 不可用: %s", e)
+                self._signature_feature_extractor = None
+        return self._signature_feature_extractor
 
     # ------------------------------------------------------------------
     # 后端状态
@@ -375,6 +390,25 @@ class DeepReasoningEngine:
             logger.warning("[FO-AGI-03] 签名计算失败: %s", e)
             signature = np.array([])
 
+        # 1.5 Phase 2 前置签名特征提取（17 维：5 状态 + 12 签名）
+        signature_features: list[float] = []
+        try:
+            sig_ext = self._get_signature_feature_extractor()
+            if sig_ext is not None:
+                # 从价格路径提取状态特征（简化：用收益率统计量）
+                returns = np.diff(price_path) / np.maximum(np.abs(price_path[:-1]), 1e-12) if len(price_path) > 1 else [0.0]
+                state_features = [
+                    float(np.mean(returns[-20:])) if len(returns) >= 20 else float(np.mean(returns)) if len(returns) > 0 else 0.0,
+                    float(np.std(returns[-20:])) if len(returns) >= 20 else float(np.std(returns)) if len(returns) > 0 else 0.01,
+                    float(price_path[-1]) if len(price_path) > 0 else 0.0,
+                    float(np.max(returns[-20:])) if len(returns) >= 20 else 0.0,
+                    float(np.min(returns[-20:])) if len(returns) >= 20 else 0.0,
+                ]
+                signature_features = sig_ext.extract(state_features, price_path)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("[FO-AGI-03] 签名特征提取失败: %s", e)
+            signature_features = []
+
         # 2. 时序预测
         try:
             forecast = self.timesfm_predict(price_path, horizon=horizon)
@@ -421,6 +455,7 @@ class DeepReasoningEngine:
 
         return {
             "signature": signature,
+            "signature_features": signature_features,
             "forecast": forecast,
             "min_resistance_path": min_resistance_path,
             "min_resistance": float(min_resistance),

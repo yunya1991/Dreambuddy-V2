@@ -10259,6 +10259,91 @@ class PollingTrader:
             self._log(f"[P2-S4b] DataPipelineAdapter init crash (FAIL-OPEN): {_e}", "WARN")
             self._data_pipeline = None
 
+    def _p2_s4b_compute_sltp(self, tier, action, entry_px, source_tag, _last_kd):
+        """P2-S4b SL/TP 计算（缺陷C P0）.
+
+        从 _evolution_build_position 内联逻辑抽取，统一 SL/TP 门禁：
+          1. evolution 路径 SL 下限 8%（MIN_SL_PCT_TRIAL），probe 不再有 4% 特殊下限
+          2. event_arbitrage 路径 SL 下限 5%（ABS_HARD_SL_PCT）
+          3. 接入 _enforce_sl_price_floor / _enforce_tp_price_floor 双约束钳制
+          4. tier 分层 ATR 倍数 + regime 调整
+
+        Args:
+            tier: probe / standard / trend
+            action: long / short
+            entry_px: 入场价
+            source_tag: evolution / event_arbitrage 等
+            _last_kd: K线特征字典（atr_pct, regime）
+
+        Returns:
+            (sl_px, tp_px, sl_pct, tp_pct)
+        """
+        # tier 分层 ATR 倍数（Chandelier 风格）
+        _atr_mult = {"probe": 4.0, "standard": 4.5, "trend": 5.0}.get(str(tier), 4.5)
+        _atr_pct = float((_last_kd or {}).get("atr_pct", 0.0) or 0.0)
+        if _atr_pct <= 0:
+            _atr_pct = 0.01  # ATR 缺失兜底 1%
+
+        # SL 下限按 source_tag 区分
+        if str(source_tag) == "event_arbitrage":
+            _sl_floor = self.ABS_HARD_SL_PCT  # 5%
+        else:
+            _sl_floor = self.MIN_SL_PCT_TRIAL  # 8%（含 evolution）
+
+        _sl_pct = max(_atr_mult * _atr_pct, _sl_floor)
+        _sl_pct = min(_sl_pct, 0.15)  # SL 上限 15%
+        _tp_pct = min(_sl_pct * 3.0, 0.30)  # TP=3×SL，上限 30%
+
+        # regime 调整：震荡态放宽 SL（避免噪音扫损），趋势态 TP 放宽
+        _regime = str((_last_kd or {}).get("regime", "")).lower()
+        if "ranging" in _regime or "consolidation" in _regime or "mean_revert" in _regime:
+            _sl_pct = min(_sl_pct * 1.3, 0.15)
+            _tp_pct = min(_tp_pct * 0.8, 0.30)
+        elif "trend" in _regime and "down" not in _regime:
+            _tp_pct = min(_tp_pct * 1.2, 0.30)
+
+        # 价格换算
+        if action == "long":
+            _sl_px = entry_px * (1 - _sl_pct)
+            _tp_px = entry_px * (1 + _tp_pct)
+        else:
+            _sl_px = entry_px * (1 + _sl_pct)
+            _tp_px = entry_px * (1 - _tp_pct)
+
+        # 杠杆
+        try:
+            _lev = self._get_leverage()
+        except Exception:
+            _lev = 5
+
+        # 双门禁钳制（FAIL-OPEN：异常不阻断）
+        _is_trial = str(source_tag) != "event_arbitrage"
+        try:
+            _new_sl, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
+                _sl_px, entry_px, action, leverage=_lev,
+                is_trial=_is_trial, allow_tighten=False,
+            )
+            if _new_sl and _new_sl > 0:
+                _sl_px = _new_sl
+        except Exception:
+            pass
+        try:
+            _new_tp, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
+                _tp_px, entry_px, action, leverage=_lev,
+                is_trial=_is_trial, allow_lower=False,
+            )
+            if _new_tp and _new_tp > 0:
+                _tp_px = _new_tp
+        except Exception:
+            pass
+
+        # 最终 pct 回算
+        if entry_px and entry_px > 0:
+            _sl_pct = abs(entry_px - _sl_px) / entry_px
+            _tp_pct = abs(entry_px - _tp_px) / entry_px
+
+        return round(_sl_px, 6), round(_tp_px, 6), _sl_pct, _tp_pct
+
     def _evolution_build_position(self, symbol, action, u_open, d_star, confidence, tier="standard"):
         """P2-S4b: 紧耦合流自动建仓回调（三层仓位分级）
 
@@ -10275,11 +10360,58 @@ class PollingTrader:
         FAIL-OPEN: 任何异常不阻断主循环
         """
         try:
+            # 0. ★ 统一黑名单闸门（P0 硬约束）：拦截 evolution 紧耦合流开仓
+            #   _evolution_build_position 直接走 TEE 执行引擎下单，不经过 _open_position，
+            #   必须在此独立拦截，防止黑名单币种（如 RIVER）绕过
+            try:
+                _sym_bl = str(symbol).upper()
+                if _sym_bl:
+                    _bl_blocked, _bl_reason = self._check_dynamic_blacklist(_sym_bl)
+                    if _bl_blocked:
+                        self._log(
+                            f"[P2-S4b] [黑名单拦截-BLOCKED] {symbol} {action} conf={confidence:.3f} | {_bl_reason}",
+                            "WARN",
+                        )
+                        return
+            except Exception as _ble:
+                self._log(
+                    f"[P2-S4b] {symbol} 黑名单判定异常（fail-open放行）：{type(_ble).__name__}",
+                    "WARN",
+                )
+
             # 1. 组合熔断检查
             _fuse = getattr(self, "_current_fuse_action", None)
             if _fuse is not None and getattr(_fuse, "block_new_open", False):
                 self._log(f"[P2-S4b] {symbol} 组合熔断拦截新仓: {_fuse}", "WARN")
                 return
+
+            # 1.2 ★ BCRM2.0 样本不足耦合拦截（缺陷D P1）
+            #   BCRM2.0 训练失败/样本不足时，bcrm2_failed_coins 记录失败时间戳，
+            #   24h(bcrm2_retry_interval_sec) 内拦截 evolution 开仓，
+            #   防止无 BCRM2.0 背书的 evolution 信号绕过建仓。
+            #   FAIL-OPEN：检查异常不阻断，放行后续流程。
+            try:
+                _bcrm2_fail_ts = self.bcrm2_failed_coins.get(symbol)
+                if (
+                    _bcrm2_fail_ts is not None
+                    and (time.time() - _bcrm2_fail_ts) < self.bcrm2_retry_interval_sec
+                ):
+                    _remain_min = (
+                        self.bcrm2_retry_interval_sec - (time.time() - _bcrm2_fail_ts)
+                    ) / 60
+                    self._log(
+                        f"[P2-S4b] [BCRM2.0 拦截] {symbol} evolution 开仓被拦截："
+                        f"BCRM2.0 样本不足/失败冷却中(剩余{_remain_min:.0f}min)，"
+                        f"{self.bcrm2_retry_interval_sec // 3600}h内禁止 evolution 开仓",
+                        "WARN",
+                    )
+                    return
+            except Exception as _bcrm2_e:
+                self._log(
+                    f"[P2-S4b] {symbol} BCRM2.0 耦合检查异常(fail-open放行): "
+                    f"{type(_bcrm2_e).__name__}",
+                    "WARN",
+                )
 
             # 1.5 防重复建仓：同一币种已有 evolution 持仓时跳过
             _inst_id = f"{symbol}-USDT-SWAP"
@@ -14964,6 +15096,27 @@ class PollingTrader:
                 "WARN",
             )
             return
+        # ★ 统一黑名单闸门（P0 硬约束）：拦截所有开仓路径
+        #   BDSM独立开仓 / 策略独立开仓 / 反手开仓 / BCRM / MODE3 均经过此处
+        #   防止部分路径绕过 _check_dynamic_blacklist 导致黑名单失效
+        try:
+            _coin_bl = str(inference.get("coin", "")).upper()
+            if _coin_bl:
+                _bl_blocked, _bl_reason = self._check_dynamic_blacklist(_coin_bl)
+                if _bl_blocked:
+                    _inst_id_bl = inference.get("inst_id", "UNKNOWN")
+                    _dir_bl = inference.get("direction", "UNKNOWN")
+                    _conf_bl = inference.get("confidence", 0.0)
+                    self._log(
+                        f"[黑名单拦截-BLOCKED] {_inst_id_bl} {_dir_bl} conf={_conf_bl:.3f} | {_bl_reason}",
+                        "WARN",
+                    )
+                    return
+        except Exception as _ble:
+            self._log(
+                f"[黑名单] 判定异常（fail-open放行）：{type(_ble).__name__}",
+                "WARN",
+            )
         # ═══ 方案 C v3.0：组合级熔断闸门（SW-C8）═══
         #   - 优先级：G-04 emergency_shutdown > G-02 block_new_open > 正常放行
         #   - fail-open：_current_fuse_action 缺失/None → 视为无熔断，直接通过

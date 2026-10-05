@@ -51,6 +51,10 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_contradiction_identifier": True,  # 主要矛盾识别器 (Phase 3.1)
     "enable_trend_continuation": True,        # 趋势延续性评分 (Phase 3.2)
     "enable_contradiction_feedback": True,     # 验证回流闭环 (Phase 3.5)
+    # Phase 2 三范式跃迁（shadow 验证通过，2026-10-05 上线）
+    "enable_deep_policy": True,               # 深度策略网络 (MLPPolicy+A2C，替代 SimplePolicy)
+    "enable_evolution_engine": True,          # 真正进化引擎 (种群+结构变异+ensemble，替代 gmax)
+    "enable_signature_features": True,        # 签名特征提取 (路径签名→17维输入)
     # --- 阻力场升级开关 (SPEC-矛盾论实现断裂修复) ---
     "enable_microstructure_resistance": False,  # 6 组件微观阻力向量
     "enable_rv_contradiction_modulation": False,  # RV 层矛盾调制

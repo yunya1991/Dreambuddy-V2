@@ -1018,6 +1018,8 @@ historical_cases:
 | **输出→** | → | `dream-signal-scoring-spec` | 评分系统第7维度 |
 | **输出→** | → | `dream-pretrade-gatekeeper` | 门禁校验 |
 | **记忆→** | → | `strategy_library.yaml` | 战略记忆库 |
+| **科研←** | ← | `dream-science-framework-research` | 策略框架设计时调用，多Agent框架对比 |
+| **科研←** | ← | `dream-science-orchestrator` | 科研任务统一入口 |
 
 ---
 

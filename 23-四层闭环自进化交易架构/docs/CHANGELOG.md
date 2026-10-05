@@ -1,7 +1,77 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.8 | **更新日期**: 2026-09-11
+> **版本**: v1.9 | **更新日期**: 2026-10-05
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.9] - 2026-10-05 (NeuralSDE 路径依赖升级 + v2 上线 + 第 3 轮 PoC 反模式修正)
+
+### 核心成果
+
+NeuralSDE 第 2/3 轮架构优化完成, 路径依赖 SDE 超越 GARCH 3.3x, v2 已上线为 `neural_sde_v1.pt` (生产最优).
+
+### 1. 第 2 轮 (TDD-010/011/012, 已 PASS)
+
+PoC v2 (200ep MSE + sig_dim=15 + z-score 归一化):
+- **MAE=269.51** vs GARCH=881.14, **ratio=0.31** (优于 GARCH 3.3x) ✅ PASS
+- 权重: [neural_sde_v1_path_sig_v2.pt](../dreambuddy_evolution/data/neural_sde_v1_path_sig_v2.pt)
+- 报告: [neural_sde_v1_poc_tdd007_v2.json](../dreambuddy_evolution/data/neural_sde_v1_poc_tdd007_v2.json)
+- 测试: 12 个新测试 (TDD-010 z-score / TDD-011 不截断 / TDD-012 QLIKE) + 86 全套无回归
+
+3 个根因修复:
+- TDD-010: [neural_sde_model.py](../dreambuddy_evolution/core/neural_sde_model.py) `_compute_log_sig` 拆分 raw + z-score 归一化 (跨样本统计 mean/std), 解决 log_sig 第 3 维 ~7 vs S_t ~2 内部尺度不一致
+- TDD-011: `DEFAULT_SIG_DIM=4 → 15` 适配 SignatureEngine esig depth=3 实际输出 (不截断, pad zeros 兼容 numpy 6 维)
+- TDD-012: `NeuralSDETrainer(loss_type="qlike"|"mse")` 支持 QLIKE 波动率 loss (验证后确认不适合价格预测, 回退 MSE)
+
+### 2. 第 3 轮 (TDD-013 multitask + 数据扩充, 部分反模式)
+
+TDD-013 多任务 loss (0.7 MSE + 0.3 QLIKE):
+- [neural_sde_model.py#L899-L944](../dreambuddy_evolution/core/neural_sde_model.py#L899) `_compute_loss` 添加 `multitask` 分支
+- 4 个新测试全通过, 90 个全套测试无回归 (49 NeuralSDE + 41 deep_reasoning)
+
+**4 实验 PoC 矩阵** (含 2 个反模式):
+
+| 实验 | Loss | 数据 | final_loss | NeuralSDE MAE | GARCH MAE | ratio | 闸门 |
+|------|------|------|------------|---------------|-----------|-------|------|
+| v2 (生产最优) | MSE | 17k (1h, 2y) | 0.0073 | **269.51** | 881.14 | **0.31** | ✅ PASS |
+| v3 | multitask | 88k (30m, 5y) | 72.677 | 244676 | 324 | 753.87 | ❌ FAIL |
+| v3b | MSE | 88k (30m, 5y) | 0.00219 | 512 | 332 | 1.54 | ❌ FAIL |
+| v3c | MSE | 80k (1h, 10y) | 0.00246 | 569.76 | 844.85 | **0.67** | ✅ PASS |
+
+### 3. 两个新反模式 (已记录认知库 VM-1791189381322, A 级)
+
+1. **multitask loss 权重失衡**: QLIKE 分量数值 (~72) 远大于 MSE 分量 (~0.002), 0.3*QLIKE 主导优化 → 价格路径发散 (与纯 QLIKE 同症状). 权重 0.7/0.3 是经验值, 实际需基于 loss 分量尺度归一化后加权.
+2. **数据频率改变导致 horizon 时长不可比**: 30m K 线 horizon=20=10h vs 1h K 线 horizon=20=20h, 直接 MAE 不可比; GARCH baseline MAE 也变 (881→332). 必须保持预测窗口时长一致.
+
+### 4. v2 生产上线
+
+- [scripts/train_neural_sde.py](../dreambuddy_evolution/scripts/train_neural_sde.py) `select_best_version()` 自动比对所有版本 MAE, 将最优复制为 `neural_sde_v1.pt`
+- v2 (MAE=269.51) 已复制为 [neural_sde_v1.pt](../dreambuddy_evolution/data/neural_sde_v1.pt), [deep_reasoning_engine.py#L81](../dreambuddy_evolution/engines/deep_reasoning_engine.py#L81) 加载此版本
+- 训练报告: `neural_sde_v1.training_report.json` (MAE=269.51, ratio=0.31, passed=True, sig_dim=15, loss_type=mse)
+
+### 5. 数据扩充资产
+
+新增 Binance 数据下载脚本: [scripts/download_binance_klines.py](../dreambuddy_evolution/scripts/download_binance_klines.py) (公共 API 无需 auth, 支持 symbol/interval/years 参数)
+- `btc_close_10y.json` (79941 点 1h 9y, $4308 → $86417) — v3c 使用
+- `btc_close_30m.json` (87598 点 30m 5y) — v3/v3b 使用 (验证为反模式, 不再用)
+
+### 6. 统计严谨性现状修正
+
+修正旧评估 (VM-1791180503233 2026-10-05 早期) "无 p 值/效应量/置信区间/样本外验证" 判断 — 已过时. 实际 80 次出现 p_value/effect_size/confidence_interval/walk_forward 横跨 13 文件 (gene_promotion_stats 18 次, walk_forward_validator 9 次, granger 4 次, reflexivity 7 次). 评分 5/10 → 7/10.
+
+### 决策与遗留
+
+- ✅ **生产模型**: v2 (MAE=269.51, ratio=0.31, 优于 GARCH 3.3x)
+- ✅ **备选**: v3c (MAE=569.76, ratio=0.67, 优于 GARCH 1.48x, 大数据集)
+- ❌ **放弃**: multitask loss 0.7/0.3 固定权重 (反模式)
+- ⏸ **未来**: regime detection + 分 regime 训练 (解决 v3c MAE 退化根因), 或自适应 multitask 权重
+
+### 测试统计
+
+- NeuralSDE 相关测试: 49 个 (4 文件: test_neural_sde_optimization + test_neural_sde_forecast_history + test_path_signature_drift_net + test_neural_sde_model)
+- deep_reasoning + signature: 41 个
+- 总计: 90 个无回归
 
 ---
 

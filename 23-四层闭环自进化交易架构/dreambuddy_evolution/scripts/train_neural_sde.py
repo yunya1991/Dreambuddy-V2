@@ -18,7 +18,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -28,6 +28,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
 from dreambuddy_evolution.core.garch_fallback import GARCHFallback
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ def evaluate_mae(
     closes: np.ndarray,
     horizon: int = 20,
     n_paths: int = 200,
+    regime: Optional[int] = None,
 ) -> dict[str, float]:
     """对比 Neural SDE vs GARCH 的预测 MAE."""
     closes = np.asarray(closes, dtype=np.float64).ravel()
@@ -82,8 +84,8 @@ def evaluate_mae(
     garch_pred = np.mean(garch_paths[:, 1:], axis=0)
     garch_mae = float(np.mean(np.abs(garch_pred - actual)))
 
-    # Neural SDE MAE
-    sde_paths = model.forecast(np.array([init_price, init_vol]), horizon, n_paths)
+    # Neural SDE MAE (路径依赖 forecast, 传入完整 history)
+    sde_paths = model.forecast(history, horizon, n_paths, regime=regime)
     if sde_paths is not None:
         sde_pred = np.mean(sde_paths[:, 1:], axis=0)
         sde_mae = float(np.mean(np.abs(sde_pred - actual)))
@@ -101,11 +103,29 @@ def main():
     parser = argparse.ArgumentParser(description="Neural SDE 训练")
     parser.add_argument("--closes-file", default=None, help="历史 close 序列 JSON 文件")
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, help="模型输出路径")
-    parser.add_argument("--epochs", type=int, default=200, help="训练轮数")
+    parser.add_argument("--epochs", type=int, default=250, help="训练轮数 (P4 最优)")
     parser.add_argument("--batch-size", type=int, default=64, help="batch size")
-    parser.add_argument("--lr", type=float, default=1e-4, help="学习率")
+    parser.add_argument("--lr", type=float, default=1e-4, help="学习率 (P4 最优)")
     parser.add_argument("--seq-len", type=int, default=64, help="输入窗口长度")
     parser.add_argument("--horizon", type=int, default=20, help="预测步数")
+    # P2/P4 最优架构超参
+    parser.add_argument("--n-regimes", type=int, default=3, help="regime 数量")
+    parser.add_argument("--use-moe", action="store_true", default=True,
+                        help="启用 MoE-SDE (每 regime 独立 expert)")
+    parser.add_argument("--no-moe", action="store_false", dest="use_moe",
+                        help="禁用 MoE-SDE (回退共享 drift_net)")
+    parser.add_argument("--moe-routing", choices=["soft", "hard"], default="hard",
+                        help="MoE 路由模式 (P2 最优: hard)")
+    parser.add_argument("--loss-type", choices=["mse", "huber", "return_mse"],
+                        default="return_mse", help="损失函数 (P4 最优: return_mse)")
+    parser.add_argument("--dropout", type=float, default=0.05,
+                        help="dropout 概率 (P4 最优: 0.05)")
+    parser.add_argument("--weight-decay", type=float, default=1e-4,
+                        help="AdamW weight_decay (P4 最优: 1e-4)")
+    parser.add_argument("--regime-balance", choices=["natural", "balanced", "oversample"],
+                        default="natural", help="regime 均衡策略 (P2 最优: natural)")
+    parser.add_argument("--patience", type=int, default=10, help="early stopping patience")
+    parser.add_argument("--val-split", type=float, default=0.1, help="验证集比例")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -121,24 +141,50 @@ def main():
         logger.info("使用合成数据训练 (2000 点)")
         closes = generate_synthetic_closes(2000)
 
-    # 初始化模型
-    model = NeuralSDEModel(device="cpu")
+    # Regime detection (MoE 需要 regime 标签)
+    regime_labels = None
+    if args.use_moe or args.n_regimes > 0:
+        np.random.seed(42)
+        detector = BTCRegimeDetector()
+        regime_labels = detector.detect(closes)
+        counts = np.bincount(regime_labels, minlength=args.n_regimes)
+        logger.info("regime 分布: %s",
+                    ", ".join(f"r{i}={counts[i]} ({100*counts[i]/len(closes):.1f}%)"
+                              for i in range(min(args.n_regimes, len(counts)))))
+
+    # 初始化模型 (P2+P4 最优配置)
+    model = NeuralSDEModel(
+        device="cpu",
+        n_regimes=args.n_regimes,
+        use_moe=args.use_moe,
+        moe_routing=args.moe_routing,
+        dropout=args.dropout,
+    )
     if not model.is_available:
         logger.error("torch 不可用，无法训练 Neural SDE")
         return 1
 
-    # 初始化训练器
+    # 初始化训练器 (P4 最优损失+正则化)
     trainer = NeuralSDETrainer(
         model=model,
         lr=args.lr,
         seq_len=args.seq_len,
         horizon=args.horizon,
         batch_size=args.batch_size,
+        loss_type=args.loss_type,
+        weight_decay=args.weight_decay,
+        patience=args.patience,
+        val_split=args.val_split,
     )
 
     # 训练
-    logger.info("=== 开始训练: epochs=%d batch_size=%d ===", args.epochs, args.batch_size)
-    report = trainer.train(closes, epochs=args.epochs)
+    logger.info("=== 开始训练: epochs=%d batch_size=%d moe=%s routing=%s ===",
+                args.epochs, args.batch_size, args.use_moe, args.moe_routing)
+    report = trainer.train(
+        closes, epochs=args.epochs,
+        regime_labels=regime_labels,
+        regime_balance=args.regime_balance,
+    )
 
     if report["status"] != "ok":
         logger.error("训练失败: %s", report)
@@ -146,9 +192,11 @@ def main():
 
     logger.info("训练完成: final_loss=%.6f, n_windows=%d", report["final_loss"], report["n_windows"])
 
-    # 评估
+    # 评估 (取最后一个点的 regime)
     garch = GARCHFallback()
-    mae_report = evaluate_mae(model, garch, closes, horizon=args.horizon)
+    test_regime = int(regime_labels[-1]) if regime_labels is not None else None
+    mae_report = evaluate_mae(model, garch, closes, horizon=args.horizon,
+                              regime=test_regime)
     logger.info(
         "MAE 对比: NeuralSDE=%.6f vs GARCH=%.6f (improvement=%.6f)",
         mae_report["neural_sde_mae"],
@@ -172,6 +220,15 @@ def main():
             "lr": args.lr,
             "seq_len": args.seq_len,
             "horizon": args.horizon,
+            "n_regimes": args.n_regimes,
+            "use_moe": args.use_moe,
+            "moe_routing": args.moe_routing,
+            "loss_type": args.loss_type,
+            "dropout": args.dropout,
+            "weight_decay": args.weight_decay,
+            "regime_balance": args.regime_balance,
+            "patience": args.patience,
+            "val_split": args.val_split,
         },
     }
     report_path.write_text(json.dumps(full_report, indent=2), encoding="utf-8")
