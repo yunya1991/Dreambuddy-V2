@@ -28,18 +28,34 @@ from dreambuddy_evolution.core.path_integral import PathIntegralEngine
 logger = logging.getLogger(__name__)
 
 # 尝试导入深度学习依赖（FAIL-OPEN）
+# TimesFM v3+ 使用 TimesFM3Forecaster；旧版用 TimesFm。兼容两种 API。
+_TIMESFM_CLS = None
+_TIMESFM_API = "none"
 try:
-    from timesfm import TimesFm  # type: ignore
+    from timesfm import TimesFM3Forecaster  # type: ignore  # v3.0+
+    _TIMESFM_CLS = TimesFM3Forecaster
+    _TIMESFM_API = "v3"
     _TIMESFM_AVAILABLE = True
 except Exception:  # noqa: BLE001
-    _TIMESFM_AVAILABLE = False
-    logger.debug("[FO-AGI-03] timesfm 不可用，降级为统计预测")
+    try:
+        from timesfm import TimesFm  # type: ignore  # v1/v2 旧版
+        _TIMESFM_CLS = TimesFm
+        _TIMESFM_API = "legacy"
+        _TIMESFM_AVAILABLE = True
+    except Exception:  # noqa: BLE001
+        _TIMESFM_AVAILABLE = False
+        logger.debug("[FO-AGI-03] timesfm 不可用，降级为统计预测")
 
 try:
     import signatory  # type: ignore
     _SIGNATORY_AVAILABLE = True
 except Exception:  # noqa: BLE001
-    _SIGNATORY_AVAILABLE = False
+    # signatory 与新版 torch(>2.0) 不兼容时，检查 esig 降级是否可用
+    try:
+        import esig  # type: ignore  # noqa: F401
+        _SIGNATORY_AVAILABLE = True  # esig 可用，签名计算不降级
+    except Exception:  # noqa: BLE001
+        _SIGNATORY_AVAILABLE = False
 
 try:
     # Stable-Neural-SDEs 或 torch 可用
@@ -64,6 +80,7 @@ class DeepReasoningEngine:
         # Phase 2: 签名特征提取器（懒加载，前置签名特征接入）
         self._signature_feature_extractor = None  # SignatureFeatureExtractor 懒加载
         self._timesfm_available = _TIMESFM_AVAILABLE
+        self._timesfm_api = _TIMESFM_API
         self._signatory_available = _SIGNATORY_AVAILABLE
         self._torch_available = _TORCH_AVAILABLE
         # TimesFM 模型实例（懒加载）
@@ -101,6 +118,7 @@ class DeepReasoningEngine:
         """报告各深度学习后端的可用状态."""
         return {
             "timesfm": self._timesfm_available,
+            "timesfm_api": self._timesfm_api,
             "signatory": self._signatory_available,
             "neural_sde": self._torch_available,
             "neural_sde_trained": self._neural_sde_loaded,
@@ -260,18 +278,30 @@ class DeepReasoningEngine:
         return self._statistical_forecast(history, horizon)
 
     def _timesfm_predict_real(self, history: np.ndarray, horizon: int) -> np.ndarray:
-        """使用真实 TimesFM 模型预测."""
+        """使用真实 TimesFM 模型预测（兼容 v3 和 legacy API）."""
         try:
             if self._timesfm_model is None:
-                self._timesfm_model = TimesFm(
-                    context_len=min(len(history), 512),
-                    horizon_len=horizon,
-                    input_patch_len=32,
-                    output_patch_len=128,
-                    num_layers=20,
-                    model_dims=1280,
-                )
-            # TimesFM 输入: shape (batch, seq_len)
+                if _TIMESFM_API == "v3":
+                    # TimesFM v3: 从预训练权重加载
+                    self._timesfm_model = _TIMESFM_CLS.from_pretrained()
+                else:
+                    # TimesFM legacy (v1/v2): 直接构造
+                    self._timesfm_model = _TIMESFM_CLS(
+                        context_len=min(len(history), 512),
+                        horizon_len=horizon,
+                        input_patch_len=32,
+                        output_patch_len=128,
+                        num_layers=20,
+                        model_dims=1280,
+                    )
+            if _TIMESFM_API == "v3":
+                # v3 API: predict(context, horizon) -> ForecastOutput
+                forecast_out = self._timesfm_model.predict(history, horizon)
+                forecast = forecast_out.forecast if hasattr(forecast_out, "forecast") else forecast_out
+                arr = np.asarray(forecast, dtype=np.float64)
+                # 兼容 (batch, horizon) 或 (horizon,) 输出
+                return arr[0] if arr.ndim == 2 else arr
+            # legacy API: forecast(batch)
             batch = history[np.newaxis, :]
             forecast = self._timesfm_model.forecast(batch)
             return np.asarray(forecast[0], dtype=np.float64)
