@@ -349,7 +349,7 @@ class FedEventCollector(BaseCollector):
         """按 params["type"] 采集不同数据。
 
         Args:
-            params: {"type": "fedwatch" | "fomc_decision"}
+            params: {"type": "fedwatch" | "fomc_decision" | "fomc_calendar"}
 
         Returns:
             DataRecord 列表，失败时返回空列表（FAIL-OPEN）。
@@ -360,6 +360,8 @@ class FedEventCollector(BaseCollector):
             return self._fetch_fedwatch()
         elif event_type == "fomc_decision":
             return self._fetch_fomc_decision_record()
+        elif event_type == "fomc_calendar":
+            return self._fetch_fomc_calendar_records()
         else:
             return []
 
@@ -428,3 +430,117 @@ class FedEventCollector(BaseCollector):
         )
         validate_record(rec)
         return [rec]
+
+    def _fetch_fomc_calendar_records(self) -> list[DataRecord]:
+        """采集 FOMC 会议日历（未来+历史决议日期）.
+
+        从美联储官网 fomccalendars.htm 解析 2021-2027 年所有 FOMC 会议决议日.
+        每个会议日期作为一条 DataRecord 写入 19-DAL mm_metrics.
+
+        数据契约:
+          source=cme, sub_category=fomc_calendar, metric_name=meeting_date
+          value=timestamp（float, 决议日 19:00 UTC 的 Unix 时间戳）
+          metrics.meeting_date = 'YYYY-MM-DD' 字符串
+
+        FAIL-OPEN: 爬取失败返回空列表.
+        """
+        try:
+            meetings = _fetch_fomc_calendar()
+        except Exception as e:
+            logger.warning("FOMC 日历采集失败，FAIL-OPEN: %s", e)
+            return []
+        if not meetings:
+            return []
+
+        records = []
+        for dt in meetings:
+            ts = dt.timestamp()
+            date_str = dt.strftime("%Y-%m-%d")
+            # DataRecord.timestamp 设为决议日（不是采集时间），
+            # 这样 20-dal_sink 的 upsert_metric 会用决议日作为 ts 主键，
+            # 每个会议日期独立存储，不会互相覆盖。
+            rec = DataRecord(
+                source="cme",
+                category="macro",
+                sub_category="fomc_calendar",
+                timestamp=dt.astimezone().isoformat(),
+                metrics={
+                    "timestamp": ts,
+                },
+                events=[],
+                timeseries=[],
+                raw={"meeting_date": date_str, "timestamp": ts},
+            )
+            validate_record(rec)
+            records.append(rec)
+        return records
+
+
+# ----------------------------------------------------------------------
+# FOMC 会议日历解析（美联储官网 fomccalendars.htm）
+# ----------------------------------------------------------------------
+
+_MONTH_MAP = {
+    "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
+    "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12,
+}
+
+
+def _fetch_fomc_calendar() -> list[datetime]:
+    """从美联储官网解析 FOMC 会议决议日期列表.
+
+    页面结构:
+      <h4>{year} FOMC Meetings</h4>
+      <div class="fomc-meeting">
+        <div class="fomc-meeting__month"><strong>January</strong></div>
+        <div class="fomc-meeting__date">27-28</div>
+        ...
+      </div>
+
+    决议日 = 会议第二天（结束日），通常 19:00 UTC 发布声明.
+
+    Returns:
+        决议日期列表 (datetime, tzinfo=UTC)，按时间排序
+    """
+    html = _engine.fetch_html(_FOMC_PAST_MEETINGS_URL, mode="http", timeout=30)
+    if not html:
+        logger.warning("[FOMC Calendar] 日历页返回空")
+        return []
+
+    try:
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html, "html.parser")
+        meetings: list[datetime] = []
+
+        for h4 in soup.find_all("h4"):
+            txt = h4.get_text(strip=True)
+            m = re.search(r"(\d{4})\s+FOMC", txt)
+            if not m:
+                continue
+            year = int(m.group(1))
+
+            for div in h4.find_all_next("div", class_=re.compile(r"fomc-meeting")):
+                prev_h4 = div.find_previous("h4")
+                if prev_h4 != h4:
+                    break
+                month_el = div.find(class_=re.compile(r"fomc-meeting__month"))
+                date_el = div.find(class_=re.compile(r"fomc-meeting__date"))
+                if not month_el or not date_el:
+                    continue
+                month_name = month_el.get_text(strip=True)
+                date_txt = date_el.get_text(strip=True)
+                dm = re.search(r"(\d{1,2})[-–](\d{1,2})", date_txt)
+                if not dm:
+                    continue
+                day2 = int(dm.group(2))
+                month_num = _MONTH_MAP.get(month_name)
+                if month_num:
+                    dt = datetime(year, month_num, day2, 19, 0, tzinfo=timezone.utc)
+                    meetings.append(dt)
+
+        meetings.sort()
+        return meetings
+    except Exception as e:
+        logger.warning("[FOMC Calendar] HTML 解析失败: %s", e)
+        return []

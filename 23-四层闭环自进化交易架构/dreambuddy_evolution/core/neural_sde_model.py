@@ -141,6 +141,7 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         exogenous_factor_dim: int = 0,
         cross_attn_dim: int = 32,
         cross_attn_heads: int = 4,
+        factor_head_mask: Optional["torch.Tensor"] = None,
     ):
         if not _TORCH_AVAILABLE:
             return
@@ -168,7 +169,9 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
             )
             self.factor_encoder = FactorEncoder(factor_dim=1, d_model=self.cross_attn_dim)
             self.cross_attn = MultiHeadCrossAttention(
-                d_model=self.cross_attn_dim, n_heads=self.cross_attn_heads
+                d_model=self.cross_attn_dim,
+                n_heads=self.cross_attn_heads,
+                factor_head_mask=factor_head_mask,
             )
             self.q_proj = nn.Linear(self.sig_dim, self.cross_attn_dim)
             # drift_net 输入: 3 (S_t + time) + cross_attn_dim + n_regimes + n_transition
@@ -201,6 +204,7 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         transition: Optional["torch.Tensor"] = None,
         exogenous: Optional["torch.Tensor"] = None,
         exogenous_factors: Optional["torch.Tensor"] = None,
+        head_multipliers: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
         """计算 drift.
 
@@ -308,7 +312,9 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 if ef.dim() == 2:
                     ef = ef.unsqueeze(-1)  # (B, N, 1)
                 kv = self.factor_encoder(ef)  # (B, N, cross_attn_dim)
-                ctx = self.cross_attn(q, kv, kv)  # (B, cross_attn_dim)
+                # Phase 5: per-head impact multiplier 耦合
+                # head_multipliers 来自 ImpactMultiplier.get_multiplier(cycle_phase, dim)
+                ctx = self.cross_attn(q, kv, kv, head_multipliers=head_multipliers)  # (B, cross_attn_dim)
             else:
                 # FAIL-OPEN: factors=None → zero context
                 ctx = torch.zeros(B, self.cross_attn_dim, device=y.device)
@@ -357,6 +363,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         exogenous_factor_dim: int = 0,
         cross_attn_dim: int = 32,
         cross_attn_heads: int = 4,
+        factor_head_mask: Optional["torch.Tensor"] = None,
     ):
         if not _TORCH_AVAILABLE:
             return
@@ -380,6 +387,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 exogenous_factor_dim=self.exogenous_factor_dim,
                 cross_attn_dim=cross_attn_dim,
                 cross_attn_heads=cross_attn_heads,
+                factor_head_mask=factor_head_mask,
             )
             for _ in range(self.n_experts)
         ])
@@ -468,6 +476,7 @@ class _MoEDriftNet(nn.Module if _TORCH_AVAILABLE else object):
         transition: Optional["torch.Tensor"] = None,
         exogenous: Optional["torch.Tensor"] = None,
         exogenous_factors: Optional["torch.Tensor"] = None,
+        head_multipliers: Optional["torch.Tensor"] = None,
     ) -> "torch.Tensor":
         """计算 MoE drift.
 
@@ -559,6 +568,7 @@ class NeuralSDEModel:
         exogenous_factor_dim: int = 0,
         cross_attn_dim: int = 32,
         cross_attn_heads: int = 4,
+        factor_head_mask: Optional["torch.Tensor"] = None,
         device: str = "cpu",
     ):
         self._available = _TORCH_AVAILABLE
@@ -593,6 +603,8 @@ class NeuralSDEModel:
         self.exogenous_factor_dim = int(exogenous_factor_dim) if self.use_cross_attention else 0
         self.cross_attn_dim = int(cross_attn_dim)
         self.cross_attn_heads = int(cross_attn_heads)
+        # Phase 3+4: 维度对齐 mask, None = 无屏蔽 (向后兼容)
+        self.factor_head_mask = factor_head_mask
 
         # 归一化参数
         self._price_mean = 0.0
@@ -627,6 +639,8 @@ class NeuralSDEModel:
         self._current_exogenous: Optional["torch.Tensor"] = None
         # P1+: 当前 exogenous_factors 上下文 (B, N, factor_dim), None → FAIL-OPEN
         self._current_exogenous_factors: Optional["torch.Tensor"] = None
+        # Phase 5: 当前 head_multipliers (n_heads,), None → 不衰减
+        self._current_head_multipliers: Optional["torch.Tensor"] = None
 
         if self._available:
             self._torch = torch
@@ -643,6 +657,7 @@ class NeuralSDEModel:
                     exogenous_factor_dim=self.exogenous_factor_dim,
                     cross_attn_dim=self.cross_attn_dim,
                     cross_attn_heads=self.cross_attn_heads,
+                    factor_head_mask=self.factor_head_mask,
                 ).to(device)
             else:
                 # 路径依赖 + regime one-hot T2 + transition P0.2 + exogenous P1
@@ -655,6 +670,7 @@ class NeuralSDEModel:
                     exogenous_factor_dim=self.exogenous_factor_dim,
                     cross_attn_dim=self.cross_attn_dim,
                     cross_attn_heads=self.cross_attn_heads,
+                    factor_head_mask=self.factor_head_mask,
                 ).to(device)
             self.diffusion_net = _DiffusionNet(diffusion_hidden, diffusion_floor).to(device)
         else:
@@ -820,13 +836,15 @@ class NeuralSDEModel:
         """Drift 函数 fθ(S_t, t, log_sig, regime, transition, exogenous, exogenous_factors).
 
         通过 self._current_log_sig / _current_regime / _current_transition /
-        _current_exogenous / _current_exogenous_factors 传递上下文 (单线程安全).
+        _current_exogenous / _current_exogenous_factors / _current_head_multipliers
+        传递上下文 (单线程安全).
         兼容 torchsde.sdeint 的 f(t, y) 签名.
         """
         return self.drift_net(
             t, y, self._current_log_sig, self._current_regime,
             self._current_transition, self._current_exogenous,
             self._current_exogenous_factors,
+            self._current_head_multipliers,
         )
 
     def g(self, t: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":
@@ -846,6 +864,7 @@ class NeuralSDEModel:
         transition: Optional[np.ndarray] = None,
         exogenous_snapshot: Optional[np.ndarray] = None,
         exogenous_factors: Optional[np.ndarray] = None,
+        head_multipliers: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Level 1: 使用 torchsde.sdeint() 生成路径 (路径依赖 + regime-conditional SDE).
 
@@ -856,6 +875,7 @@ class NeuralSDEModel:
             transition: (n_regimes,) transition vector Q[current_regime], None 则 pad zeros
             exogenous_snapshot: (exogenous_dim,) P1 外生力量快照, None 则 pad zeros
             exogenous_factors: (N, factor_dim) P1+ 外生因子张量, None 则 FAIL-OPEN (zero context)
+            head_multipliers: (n_heads,) Phase 5 每 head 衰减系数, None 则不衰减
 
         Returns:
             shape (n_paths, horizon+1) numpy 数组
@@ -893,12 +913,22 @@ class NeuralSDEModel:
             # P1+: 设置 exogenous_factors 上下文 (broadcast 到 n_paths)
             exogenous_factors_t = self._build_exogenous_factors(exogenous_factors, n_paths)
 
+            # Phase 5: 设置 head_multipliers 上下文
+            if head_multipliers is not None:
+                head_mult_t = self._torch.tensor(
+                    np.asarray(head_multipliers, dtype=np.float32).ravel(),
+                    device=self.device,
+                )
+            else:
+                head_mult_t = None
+
             # 设置上下文供 f(t,y) 读取
             self._current_log_sig = log_sig_t
             self._current_regime = regime_t
             self._current_transition = transition_t
             self._current_exogenous = exogenous_t
             self._current_exogenous_factors = exogenous_factors_t
+            self._current_head_multipliers = head_mult_t
 
             # torchsde 积分
             z_t = torchsde.sdeint(
@@ -914,6 +944,7 @@ class NeuralSDEModel:
             self._current_transition = None
             self._current_exogenous = None
             self._current_exogenous_factors = None
+            self._current_head_multipliers = None
 
             # z_t: (horizon+1, n_paths, 1) → (n_paths, horizon+1)
             z_t = z_t.squeeze(-1).transpose(0, 1).cpu().numpy()
@@ -1237,6 +1268,7 @@ class NeuralSDEModel:
             "cross_attn_dim": self.cross_attn_dim,  # P1+: cross-attention dim
             "cross_attn_heads": self.cross_attn_heads,  # P1+: cross-attention heads
             "exogenous_factor_dim": self.exogenous_factor_dim,  # P1+: 外生因子维度
+            "factor_head_mask": self.factor_head_mask,  # Phase 3+4: 维度对齐 mask
             "sample_count": self._sample_count,
             "activated": self._activated,
         }, str(path))
@@ -1273,6 +1305,17 @@ class NeuralSDEModel:
             ckpt_cross_attn_dim = int(ckpt.get("cross_attn_dim", 0))
             ckpt_cross_attn_heads = int(ckpt.get("cross_attn_heads", 0))
             ckpt_exog_factor_dim = int(ckpt.get("exogenous_factor_dim", 0))
+            # Phase 3+4: 读取 factor_head_mask (旧 ckpt 默认 None)
+            ckpt_factor_head_mask = ckpt.get("factor_head_mask", None)
+            # mask 形状比较 (None vs None 不触发重建)
+            mask_changed = not (
+                (ckpt_factor_head_mask is None and self.factor_head_mask is None)
+                or (
+                    ckpt_factor_head_mask is not None
+                    and self.factor_head_mask is not None
+                    and ckpt_factor_head_mask.shape == self.factor_head_mask.shape
+                )
+            )
             need_rebuild = (
                 ckpt_n_regimes != self.n_regimes
                 or ckpt_use_transition != self.use_transition
@@ -1285,6 +1328,7 @@ class NeuralSDEModel:
                 or ckpt_cross_attn_dim != self.cross_attn_dim
                 or ckpt_cross_attn_heads != self.cross_attn_heads
                 or ckpt_exog_factor_dim != self.exogenous_factor_dim
+                or mask_changed
             )
             if need_rebuild:
                 logger.debug(
@@ -1306,6 +1350,7 @@ class NeuralSDEModel:
                 self.cross_attn_dim = ckpt_cross_attn_dim if self.use_cross_attention else 0
                 self.cross_attn_heads = ckpt_cross_attn_heads if self.use_cross_attention else 0
                 self.exogenous_factor_dim = ckpt_exog_factor_dim if self.use_cross_attention else 0
+                self.factor_head_mask = ckpt_factor_head_mask
                 if self._available:
                     base_kwargs = dict(
                         hidden_dim=self.hidden_dim, sig_dim=self.sig_dim,
@@ -1318,6 +1363,7 @@ class NeuralSDEModel:
                             cross_attn_dim=self.cross_attn_dim,
                             cross_attn_heads=self.cross_attn_heads,
                             exogenous_factor_dim=self.exogenous_factor_dim,
+                            factor_head_mask=self.factor_head_mask,
                         )
                     if self.use_moe and self.n_regimes > 0:
                         self.drift_net = _MoEDriftNet(

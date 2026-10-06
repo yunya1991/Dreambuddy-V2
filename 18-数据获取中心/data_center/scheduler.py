@@ -511,4 +511,21 @@ class CollectionScheduler:
             params={},
             interval_sec=1800,  # 30 分钟
         ))
+        # ── macro/cme fomc_calendar（24h，美联储 FOMC 会议日历）
+        #    从美联储官网 fomccalendars.htm 采集 2021-2027 年所有 FOMC 决议日，
+        #    写入 19-DAL mm_metrics (sub_category=fomc_calendar, metric_name=timestamp)。
+        #    FOMC 日程每年初公布，24h 轮询足够；供 EventWindowTracker 判定 next_fomc。
+        tasks.append(CollectionTask(
+            name="fomc_calendar",
+            category="macro", source="cme",
+            params={"type": "fomc_calendar"},
+            interval_sec=86400,  # 24 小时
+        ))
+        # ── macro/cme fedwatch（1h，FedWatch 加息/降息概率）
+        tasks.append(CollectionTask(
+            name="fedwatch_prob",
+            category="macro", source="cme",
+            params={"type": "fedwatch"},
+            interval_sec=3600,  # 1 小时
+        ))
         return tasks

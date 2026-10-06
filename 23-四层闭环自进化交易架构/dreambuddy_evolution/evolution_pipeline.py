@@ -138,18 +138,33 @@ class EvolutionPipeline:
     def _get_latest_exogenous_factors(self) -> Any:
         """P1+: 获取最新外生因子向量 (Cross-Attention, FAIL-OPEN).
 
-        从 19-DAL 加载最新可用因子值, 返回 (n_factors, 1) 数组.
+        从 19-DAL 加载最新可用因子值, 返回 (n_factors,) 数组.
         DAL 不可用或因子缺失时返回 None (drift_net zero context).
+
+        Phase 2: 应用 impact_multiplier 时间衰减 — 根据 FOMC 周期阶段调整因子影响力.
+        使用 CROSS_ATTENTION_FACTOR_METRICS 全部 36 个因子 (与 NeuralSDE exogenous_factor_dim=36 对齐).
         """
         try:
             from datetime import datetime, timezone
             from dreambuddy_evolution.core.exogenous_data_bridge import (
                 build_exogenous_factors_for_cross_attention,
+                ImpactMultiplier,
+                CROSS_ATTENTION_FACTOR_METRICS,
             )
             now = datetime.now(timezone.utc)
-            factors, names = build_exogenous_factors_for_cross_attention(
+
+            # Phase 2: 获取 event_context 并计算衰减系数
+            cycle_phase, repricing_sub_phase = self._get_event_context()
+            factor_names = [m[2] for m in CROSS_ATTENTION_FACTOR_METRICS]
+            im = ImpactMultiplier()
+            multipliers = im.get_multipliers(
+                cycle_phase, factor_names, repricing_sub_phase
+            )
+
+            factors, _names = build_exogenous_factors_for_cross_attention(
                 timestamps=[now],
-                factor_names=["cpi_actual", "funding_rate", "etf_net_flow", "dxy", "stablecoin_tvl"],
+                factor_names=factor_names,
+                impact_multipliers=multipliers,
             )
             if factors.size > 0 and np.any(factors[-1] != 0):
                 # 返回最后一个时间点的因子向量 (n_factors,)
@@ -158,6 +173,104 @@ class EvolutionPipeline:
         except Exception as e:
             logger.debug("[FO-AGI] exogenous_factors 加载失败: %s", e)
             return None
+
+    def _get_event_context(self) -> tuple[str, str]:
+        """Phase 2: 获取 FOMC 事件窗口阶段 (FAIL-OPEN).
+
+        从 19-DAL 获取 hike_prob + FOMC 会议日历(next_fomc/last_fomc),
+        调用 EventWindowTracker 判定当前周期阶段.
+
+        FOMC 日历数据来源: 18-数据获取中心 FedEventCollector(type=fomc_calendar)
+                           → 20-dal_sink → 19-DAL mm_metrics (sub_category=fomc_calendar)
+
+        Returns:
+            (cycle_phase, repricing_sub_phase)
+            失败时返回 ("neutral", "none") — 衰减不生效 (FAIL-OPEN)
+        """
+        try:
+            from dreambuddy_evolution.core.event_window_tracker import EventWindowTracker
+            from dreambuddy_evolution.core.exogenous_data_bridge import (
+                ExogenousDataBridge,
+            )
+
+            bridge = ExogenousDataBridge()
+            hike_prob = bridge._latest("fedwatch", "hike_prob")
+
+            # 从 19-DAL FOMC 日历获取 next_fomc / last_fomc
+            next_fomc = bridge.get_next_fomc()
+            last_fomc = bridge.get_last_fomc()
+
+            tracker = EventWindowTracker()
+            ctx = tracker.get_context(
+                next_fomc=next_fomc,
+                last_fomc=last_fomc,
+                hike_prob=hike_prob,
+            )
+            return (
+                ctx.get("cycle_phase", "neutral"),
+                ctx.get("repricing_sub_phase", "none"),
+            )
+        except Exception as e:
+            logger.debug("[FO-AGI] event_context 获取失败, neutral: %s", e)
+            return "neutral", "none"
+
+    def calibrate_impact_multipliers(
+        self,
+        factor_matrix: np.ndarray,
+        factor_names: list[str],
+        returns: np.ndarray,
+        phases: list[str],
+    ) -> dict:
+        """Phase 6: 用历史数据 ATE 校准 ImpactMultiplier 衰减表.
+
+        调用 CausalEngine.calibrate_multipliers 按 cycle_phase 分桶估计每个
+        维度的 ATE，再用 ImpactMultiplier.update_from_ate 更新衰减系数表。
+
+        Args:
+            factor_matrix: (n_samples, n_factors) 历史因子矩阵
+            factor_names: 因子名列表
+            returns: (n_samples,) 未来收益率
+            phases: (n_samples,) 每个样本的 cycle_phase
+
+        Returns:
+            {"ate_results": ..., "calibration": {"updated": int, "version": int}}
+            失败时返回空 dict (FAIL-OPEN)
+        """
+        try:
+            from dreambuddy_evolution.core.causal_engine import CausalEngine
+            from dreambuddy_evolution.core.exogenous_data_bridge import (
+                ImpactMultiplier, CROSS_ATTENTION_FACTOR_METRICS,
+            )
+
+            name_to_dim = {entry[2]: entry[3] for entry in CROSS_ATTENTION_FACTOR_METRICS}
+
+            engine = CausalEngine()
+            ate_results = engine.calibrate_multipliers(
+                factor_matrix, factor_names, returns, phases, name_to_dim,
+            )
+
+            im = self._get_impact_multiplier()
+            calibration = im.update_from_ate(ate_results)
+
+            logger.info(
+                "[Phase6] 校准完成: phases=%d, calibration=%s",
+                len(ate_results), calibration,
+            )
+            return {"ate_results": ate_results, "calibration": calibration}
+        except Exception as e:
+            logger.debug("[FO-AGI] calibrate_impact_multipliers failed: %s", e)
+            return {}
+
+    def _get_impact_multiplier(self) -> Any:
+        """懒初始化 ImpactMultiplier (Phase 2 + Phase 6 校准)."""
+        if not hasattr(self, "_impact_multiplier") or self._impact_multiplier is None:
+            try:
+                from dreambuddy_evolution.core.exogenous_data_bridge import ImpactMultiplier
+                self._impact_multiplier = ImpactMultiplier()
+            except Exception as e:
+                logger.debug("[FO-AGI] ImpactMultiplier init fail: %s", e)
+                self._impact_multiplier = None
+        return self._impact_multiplier
 
     def _get_strategy_synth(self) -> Any:
         """懒初始化 StrategySynthesizer"""

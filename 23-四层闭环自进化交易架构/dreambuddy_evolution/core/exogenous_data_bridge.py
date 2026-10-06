@@ -30,6 +30,7 @@ import logging
 from typing import Any, Optional
 
 import numpy as np
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +175,67 @@ class ExogenousDataBridge:
                 logger.warning("[ExogenousBridge] 无法获取 DAL repo: %s", exc)
                 self._repo = None
         return self._repo
+
+    def get_fomc_calendar(self) -> list[datetime]:
+        """从 19-DAL 查询 FOMC 会议日历（所有决议日）.
+
+        数据来源: 18-数据获取中心 FedEventCollector(type=fomc_calendar)
+                  → 20-dal_sink → 19-DAL mm_metrics
+                  sub_category=fomc_calendar, metric_name=timestamp,
+                  metric_value=决议日 19:00 UTC 的 Unix 时间戳
+
+        Returns:
+            FOMC 决议日列表 (datetime, UTC)，按时间排序.
+            DAL 不可用或无数据时返回空列表 (FAIL-OPEN).
+        """
+        from datetime import datetime, timedelta, timezone
+        repo = self.get_repo()
+        if repo is None:
+            return []
+        try:
+            # 查询 2020-2030 全部 FOMC 日历
+            start = datetime(2020, 1, 1, tzinfo=timezone.utc)
+            end = datetime(2030, 12, 31, tzinfo=timezone.utc)
+            rows = repo.query_metric_by_time("fomc_calendar", "timestamp", start, end)
+            meetings: list[datetime] = []
+            for r in rows:
+                # query_metric_by_time 返回 (sub_category, metric_name, value, ts)
+                # value = metric_value (决议日 timestamp float), ts = 记录时间戳
+                val = r[2] if len(r) > 2 else None
+                if val is None:
+                    continue
+                try:
+                    dt = datetime.fromtimestamp(float(val), tz=timezone.utc)
+                    meetings.append(dt)
+                except (ValueError, OSError):
+                    continue
+            meetings.sort()
+            return meetings
+        except Exception as e:
+            logger.debug("[ExogenousBridge] FOMC 日历查询失败: %s", e)
+            return []
+
+    def get_next_fomc(self, now: Optional[datetime] = None) -> Optional[datetime]:
+        """获取下一次 FOMC 决议时间 (从 19-DAL)."""
+        from datetime import timezone
+        if now is None:
+            from datetime import datetime as _dt
+            now = _dt.now(timezone.utc)
+        elif now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        future = [d for d in self.get_fomc_calendar() if d > now]
+        return min(future) if future else None
+
+    def get_last_fomc(self, now: Optional[datetime] = None) -> Optional[datetime]:
+        """获取最近一次已发生的 FOMC 决议时间 (从 19-DAL)."""
+        from datetime import timezone
+        if now is None:
+            from datetime import datetime as _dt
+            now = _dt.now(timezone.utc)
+        elif now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        past = [d for d in self.get_fomc_calendar() if d <= now]
+        return max(past) if past else None
 
     def _latest(self, sub_category: str, metric_name: str) -> Optional[float]:
         repo = self.get_repo()
@@ -430,73 +492,131 @@ class ExogenousDataBridge:
 # P1+ Cross-Attention 因子桥接
 # ----------------------------------------------------------------------
 
-# 候选因子清单 (sub_category, metric_name, factor_name)
+# 候选因子清单 (sub_category, metric_name, factor_name, dimension)
 # 来自 19-DAL mm_metrics 中 ≥50 数据点的宏观/链上/衍生品指标
 # 按 C1-C8 矛盾维度分组，覆盖全部 10 个基本面模块
-# 共 36 个因子
-CROSS_ATTENTION_FACTOR_METRICS: list[tuple[str, str, str]] = [
+# 共 36 个因子；dimension 字段用于 build_factor_head_mask 构建维度对齐 mask
+CROSS_ATTENTION_FACTOR_METRICS: list[tuple[str, str, str, str]] = [
     # --- C1 资金面 / flow 模块 (7) ---
-    ("etf_flow", "total_flow", "etf_total_flow"),
-    ("funding_rate", "funding_rate_pct", "funding_rate"),
-    ("long_short_ratio", "long_short_ratio", "long_short_ratio"),
-    ("derivatives_spot", "fut_open_interest_usd", "open_interest"),
-    ("exchanges_whales", "ex_summary_inflowUsd24h", "exchange_inflow_24h"),
-    ("derivatives_spot", "fut_liq_long_24h_usd", "liq_long_24h"),
-    ("derivatives_spot", "fut_liq_short_24h_usd", "liq_short_24h"),
+    ("etf_flow", "total_flow", "etf_total_flow", "C1"),
+    ("funding_rate", "funding_rate_pct", "funding_rate", "C1"),
+    ("long_short_ratio", "long_short_ratio", "long_short_ratio", "C1"),
+    ("derivatives_spot", "fut_open_interest_usd", "open_interest", "C1"),
+    ("exchanges_whales", "ex_summary_inflowUsd24h", "exchange_inflow_24h", "C1"),
+    ("derivatives_spot", "fut_liq_long_24h_usd", "liq_long_24h", "C1"),
+    ("derivatives_spot", "fut_liq_short_24h_usd", "liq_short_24h", "C1"),
     # --- C2 情绪面 / sentiment+narrative 模块 (5) ---
-    ("crypto_fear_greed", "value", "fear_greed"),
-    ("fear_greed_enhanced", "momentum", "fg_momentum"),
-    ("fear_greed_enhanced", "volatility", "fg_volatility"),
-    ("fear_greed_enhanced", "capital_flow", "fg_capital_flow"),
-    ("fear_greed_enhanced", "funding", "fg_funding"),
+    ("crypto_fear_greed", "value", "fear_greed", "C2"),
+    ("fear_greed_enhanced", "momentum", "fg_momentum", "C2"),
+    ("fear_greed_enhanced", "volatility", "fg_volatility", "C2"),
+    ("fear_greed_enhanced", "capital_flow", "fg_capital_flow", "C2"),
+    ("fear_greed_enhanced", "funding", "fg_funding", "C2"),
     # --- C3 技术面 / onchain 模块 (6) ---
-    ("btc_basics", "active_addresses", "active_addresses"),
-    ("btc_basics", "tx_count_24h", "tx_count_24h"),
-    ("exchanges_whales", "ex_bal_BTC_chg30d_pct", "exchange_balance_chg"),
-    ("utxo_age_distribution", "profit_supply_pct", "profit_supply_pct"),
-    ("btc_basics", "hashrate", "hashrate"),
-    ("utxo_age_distribution", "short_term_holder_supply_pct", "sth_supply_pct"),
+    ("btc_basics", "active_addresses", "active_addresses", "C3"),
+    ("btc_basics", "tx_count_24h", "tx_count_24h", "C3"),
+    ("exchanges_whales", "ex_bal_BTC_chg30d_pct", "exchange_balance_chg", "C3"),
+    ("utxo_age_distribution", "profit_supply_pct", "profit_supply_pct", "C3"),
+    ("btc_basics", "hashrate", "hashrate", "C3"),
+    ("utxo_age_distribution", "short_term_holder_supply_pct", "sth_supply_pct", "C3"),
     # --- C4 宏观面 / macro+calendar 模块 (6) ---
-    ("cpi", "surprise", "cpi_surprise"),
-    ("ppi", "surprise", "ppi_surprise"),
-    ("nfp", "surprise", "nfp_surprise"),
-    ("fedwatch", "cut_prob", "cut_prob"),
-    ("FEDFUNDS", "value", "fed_funds"),
-    ("fomc_decision", "rate_change", "fomc_rate_change"),
+    ("cpi", "surprise", "cpi_surprise", "C4"),
+    ("ppi", "surprise", "ppi_surprise", "C4"),
+    ("nfp", "surprise", "nfp_surprise", "C4"),
+    ("fedwatch", "cut_prob", "cut_prob", "C4"),
+    ("FEDFUNDS", "value", "fed_funds", "C4"),
+    ("fomc_decision", "rate_change", "fomc_rate_change", "C4"),
     # --- C6 估值 / valuation 模块 (4) ---
-    ("cycle_signals", "bottom_mvrv_value", "mvrv"),
-    ("cycle_signals", "bottom_nupl_value", "nupl"),
-    ("cycle_signals", "bottom_puell-multiple_value", "puell_multiple"),
-    ("cycle_signals", "bottom_reserve-risk_value", "reserve_risk"),
+    ("cycle_signals", "bottom_mvrv_value", "mvrv", "C6"),
+    ("cycle_signals", "bottom_nupl_value", "nupl", "C6"),
+    ("cycle_signals", "bottom_puell-multiple_value", "puell_multiple", "C6"),
+    ("cycle_signals", "bottom_reserve-risk_value", "reserve_risk", "C6"),
     # --- C7 广度 / breadth 模块 (3) ---
-    ("overview_market", "btc_dominance_pct", "btc_dominance"),
-    ("stablecoins_top_10", "total_circulating_usd_bln", "stablecoin_total"),
-    ("overview_market", "global_change24_pct", "global_change_24h"),
+    ("overview_market", "btc_dominance_pct", "btc_dominance", "C7"),
+    ("stablecoins_top_10", "total_circulating_usd_bln", "stablecoin_total", "C7"),
+    ("overview_market", "global_change24_pct", "global_change_24h", "C7"),
     # --- C8 跨市场 / intermarket 模块 (3) ---
-    ("DX-Y.NYB", "close", "dxy"),
-    ("^VIX", "value", "vix"),
-    ("SPY", "value", "spx"),
+    ("DX-Y.NYB", "close", "dxy", "C8"),
+    ("^VIX", "value", "vix", "C8"),
+    ("SPY", "value", "spx", "C8"),
     # --- news 模块 (2) ---
-    ("social_volume", "news_count_24h", "news_count_24h"),
-    ("social_volume", "total_news_records", "total_news_records"),
+    ("social_volume", "news_count_24h", "news_count_24h", "news"),
+    ("social_volume", "total_news_records", "total_news_records", "news"),
 ]
+
+
+def build_factor_head_mask(
+    metrics: Optional[list[tuple]] = None,
+    mask_value: float = float("-inf"),
+) -> torch.Tensor:
+    """根据 CROSS_ATTENTION_FACTOR_METRICS 的维度元数据构建 factor_head_mask.
+
+    每个矛盾维度对应一个 attention head，该 head 只关注所属维度的因子，
+    其余因子被 mask 屏蔽。维度顺序按因子列表中首次出现的顺序排列。
+
+    Args:
+        metrics: 因子列表，每项为 (sub_category, metric_name, factor_name, dimension)，
+                 None 则使用 CROSS_ATTENTION_FACTOR_METRICS
+        mask_value: 屏蔽值，默认 -inf（硬 mask）；传入大负值如 -1e9 则为软 mask
+
+    Returns:
+        mask: torch.Tensor shape (n_dimensions, n_factors)
+              0.0 = 允许该 head 关注该因子
+              mask_value = 屏蔽该因子
+    """
+    if metrics is None:
+        metrics = CROSS_ATTENTION_FACTOR_METRICS
+
+    n_factors = len(metrics)
+    # 按首次出现顺序收集唯一维度
+    dims: list[str] = []
+    for entry in metrics:
+        d = entry[3] if len(entry) > 3 else None
+        if d and d not in dims:
+            dims.append(d)
+    n_dims = len(dims)
+
+    mask = torch.full((n_dims, n_factors), mask_value, dtype=torch.float32)
+    for f_idx, entry in enumerate(metrics):
+        d = entry[3] if len(entry) > 3 else None
+        if d is None:
+            continue
+        head_idx = dims.index(d)
+        mask[head_idx, f_idx] = 0.0
+
+    return mask
+
+
+def get_factor_dimensions() -> list[str]:
+    """返回 CROSS_ATTENTION_FACTOR_METRICS 中按首次出现顺序的唯一维度列表。"""
+    dims: list[str] = []
+    for entry in CROSS_ATTENTION_FACTOR_METRICS:
+        d = entry[3] if len(entry) > 3 else None
+        if d and d not in dims:
+            dims.append(d)
+    return dims
 
 
 def build_exogenous_factors_for_cross_attention(
     timestamps: list,
     bridge: Optional["ExogenousDataBridge"] = None,
     factor_names: Optional[list[str]] = None,
+    impact_multipliers: Optional[np.ndarray] = None,
 ) -> tuple[np.ndarray, list[str]]:
     """构建 Cross-Attention 外生因子时序矩阵.
 
     从 19-DAL 加载候选因子的历史时序, 按给定时间戳前向填充对齐,
     返回 (N, F) 因子矩阵 + 因子名列表. 缺失因子用 0.0 填充 (FAIL-OPEN).
 
+    Phase 2: 若提供 impact_multipliers (shape (F,)), 在返回前应用时间衰减:
+        factor_effective = factor_raw × impact_multiplier(cycle_phase, dimension)
+        (ImpactMultiplier.get_multipliers() 计算衰减向量)
+
     Args:
         timestamps: list[datetime], 价格序列时间戳 (对齐目标)
         bridge: 可选 ExogenousDataBridge, None 则尝试自建
         factor_names: 可选指定因子子集 (来自 CROSS_ATTENTION_FACTOR_METRICS 的 factor_name),
                       None 则使用全部候选因子
+        impact_multipliers: 可选 (F,) 衰减系数向量, None 则不衰减 (FAIL-OPEN)
 
     Returns:
         (factors: np.ndarray shape (N, F), names: list[str] length F)
@@ -512,7 +632,7 @@ def build_exogenous_factors_for_cross_attention(
     # 确定要加载的因子
     metric_list = [
         (sub, metric, name)
-        for sub, metric, name in CROSS_ATTENTION_FACTOR_METRICS
+        for sub, metric, name, _ in CROSS_ATTENTION_FACTOR_METRICS
         if factor_names is None or name in factor_names
     ]
     if not metric_list:
@@ -567,7 +687,12 @@ def build_exogenous_factors_for_cross_attention(
     factors = np.column_stack([factor_data[name] for name in factor_names_result])
     # NaN/Inf → 0
     factors = np.where(np.isfinite(factors), factors, 0.0)
-    return factors.astype(np.float64), factor_names_result
+    factors = factors.astype(np.float64)
+
+    # Phase 2: 应用时间衰减系数 (若提供)
+    factors = apply_impact_multiplier(factors, impact_multipliers)
+
+    return factors, factor_names_result
 
 
 def build_cross_attention_factors_from_closes(
@@ -575,6 +700,7 @@ def build_cross_attention_factors_from_closes(
     timestamps: Optional[list] = None,
     bridge: Optional["ExogenousDataBridge"] = None,
     factor_names: Optional[list[str]] = None,
+    impact_multipliers: Optional[np.ndarray] = None,
 ) -> tuple[np.ndarray, list[str]]:
     """便捷接口: 从 closes 价格序列构建 Cross-Attention 因子矩阵.
 
@@ -586,6 +712,7 @@ def build_cross_attention_factors_from_closes(
         timestamps: 可选 list[datetime], 与 closes 对齐; None 则生成近似时间戳
         bridge: 可选 ExogenousDataBridge
         factor_names: 可选指定因子子集
+        impact_multipliers: 可选 (F,) 衰减系数向量 (Phase 2), None 则不衰减
 
     Returns:
         (factors: (N, F), names: list[str])
@@ -604,4 +731,273 @@ def build_cross_attention_factors_from_closes(
         timestamps=timestamps,
         bridge=bridge,
         factor_names=factor_names,
+        impact_multipliers=impact_multipliers,
     )
+
+
+# ----------------------------------------------------------------------
+# Phase 2: 因子影响力时间衰减 impact_multiplier(t) — SPEC §8
+# ----------------------------------------------------------------------
+
+class ImpactMultiplier:
+    """因子影响力时间衰减器 (Phase 2, SPEC §8).
+
+    factor_effective = factor_raw × impact_multiplier(cycle_phase, dimension)
+
+    cycle_phase 来自 EventWindowTracker.get_context()["cycle_phase"]
+    dimension 来自 CROSS_ATTENTION_FACTOR_METRICS 的第 4 元素 (C1/C2/.../news)
+
+    Phase 2: 维度级 decay (硬编码先验表, 基于 §8.2 加息周期扩展到 8 维度)
+    Phase 6: 数据驱动校准 (CausalEngine.estimate_ate 分桶替换硬编码)
+
+    衰减逻辑:
+      - neutral: 所有维度 = 1.0 (无衰减)
+      - 预期构建期 (build→jump): 宏观面敏感度从 0.3 → 1.5 (逐步增强)
+      - event: 资金面/情绪面/新闻主导 (1.5/1.4/1.5), 宏观面 1.2
+      - repricing: 宏观面快速衰减 (0.3→0.2→0.1), 资金面/情绪面接管
+
+    FAIL-OPEN:
+      - cycle_phase=None/unknown → 1.0
+      - dimension 未知 → 1.0
+      - repricing 子阶段缺失 → 默认 relief
+    """
+
+    # 8 维度 × 7 阶段(含 3 repricing 子阶段) 衰减系数表
+    # 基于 §8.2 加息敏感度+降息预期敏感度, 扩展到 8 维度
+    # C1 资金面 / C2 情绪面 / C3 技术面 / C4 宏观面 /
+    # C6 估值 / C7 广度 / C8 跨市场 / news 信息面
+    MULTIPLIER_TABLE: dict[str, dict[str, float]] = {
+        "neutral": {
+            "C1": 1.0, "C2": 1.0, "C3": 1.0, "C4": 1.0,
+            "C6": 1.0, "C7": 1.0, "C8": 1.0, "news": 1.0,
+        },
+        # 预期构建初期: 宏观面敏感度低 (远期事件 priced-in 慢)
+        "expectation_build": {
+            "C1": 0.6, "C2": 0.5, "C3": 0.8, "C4": 0.3,
+            "C6": 0.7, "C7": 0.6, "C8": 0.4, "news": 0.3,
+        },
+        # 预期上升期: 各维度敏感度增强
+        "expectation_rise": {
+            "C1": 0.9, "C2": 0.8, "C3": 0.9, "C4": 0.8,
+            "C6": 0.8, "C7": 0.7, "C8": 0.7, "news": 0.6,
+        },
+        # 预期跳跃期: 宏观面主导 (概率 >70%), 新闻敏感度激增
+        "expectation_jump": {
+            "C1": 1.3, "C2": 1.2, "C3": 1.1, "C4": 1.5,
+            "C6": 1.0, "C7": 1.1, "C8": 1.2, "news": 1.3,
+        },
+        # 消化期: 概率稳定, 资金面/新闻仍敏感, 宏观面衰减
+        "expectation_digest": {
+            "C1": 1.1, "C2": 1.0, "C3": 1.0, "C4": 0.6,
+            "C6": 0.9, "C7": 1.0, "C8": 1.0, "news": 1.2,
+        },
+        # 事件当天: 资金面/情绪面/新闻主导, 宏观面次之
+        "event": {
+            "C1": 1.5, "C2": 1.4, "C3": 1.0, "C4": 1.2,
+            "C6": 0.9, "C7": 1.0, "C8": 1.1, "news": 1.5,
+        },
+        # repricing Phase A (relief, 0-5 天): 不确定性消除, 降息预期主导
+        "repricing_relief": {
+            "C1": 1.2, "C2": 1.3, "C3": 1.0, "C4": 0.3,
+            "C6": 1.0, "C7": 1.1, "C8": 0.9, "news": 1.4,
+        },
+        # repricing Phase B (verification, 5-15 天): 基本面验证
+        "repricing_verification": {
+            "C1": 1.0, "C2": 1.1, "C3": 1.0, "C4": 0.2,
+            "C6": 1.1, "C7": 1.0, "C8": 0.8, "news": 1.2,
+        },
+        # repricing Phase C (trend, 15+ 天): 债务周期位置主导
+        "repricing_trend": {
+            "C1": 0.9, "C2": 1.0, "C3": 1.0, "C4": 0.1,
+            "C6": 1.0, "C7": 0.9, "C8": 0.7, "news": 1.0,
+        },
+    }
+
+    # 维度集合 (与 factor_head_mask 的 head 顺序一致)
+    DIMENSIONS = ["C1", "C2", "C3", "C4", "C6", "C7", "C8", "news"]
+
+    def __init__(self) -> None:
+        # 预构建 dimension → index 映射, 加速查找
+        self._dim_index: dict[str, int] = {d: i for i, d in enumerate(self.DIMENSIONS)}
+        # Phase 6: ATE 校准后的表 (初始为硬编码表的副本)
+        self._calibrated_table: dict[str, dict[str, float]] = {
+            phase: dict(dims) for phase, dims in self.MULTIPLIER_TABLE.items()
+        }
+        # 校准版本号，每次 update_from_ate 递增
+        self._calibration_version: int = 0
+        # 校准时间戳
+        self._last_calibration: Optional[str] = None
+
+    def update_from_ate(
+        self,
+        ate_results: dict[str, dict[str, dict[str, float]]],
+        *,
+        significant_shrink: float = 0.0,
+        nonsignificant_shrink: float = 0.5,
+    ) -> dict[str, int]:
+        """Phase 6: 用 CausalEngine ATE 结果动态校准 MULTIPLIER_TABLE.
+
+        映射规则 (ATE → multiplier 调整):
+          - ATE 显著 (significant=True):
+              multiplier = base * (1 + significant_shrink * sign(ATE))
+              → 有因果效应，保留或按 ATE 方向微调
+          - ATE 不显著 (significant=False):
+              multiplier = base * nonsignificant_shrink
+              → 无因果效应，衰减该维度影响力
+
+        Args:
+            ate_results: CausalEngine.calibrate_multipliers() 的输出
+                {phase: {dimension: {"ate": float, "significant": bool, ...}}}
+            significant_shrink: 显著时的微调系数 (0=保留原值, >0 按 ATE 方向微调)
+            nonsignificant_shrink: 不显著时的衰减系数 (0.5=衰减一半)
+
+        Returns:
+            {"updated": 已校准的 (phase, dim) 数, "version": 新版本号}
+        """
+        if not ate_results:
+            return {"updated": 0, "version": self._calibration_version}
+
+        updated = 0
+        for phase, dim_ates in ate_results.items():
+            if phase not in self._calibrated_table:
+                # 新 phase (如 repricing_relief 等)，初始化为 neutral 表
+                self._calibrated_table[phase] = dict(self.MULTIPLIER_TABLE.get("neutral", {}))
+            for dim, ate_info in dim_ates.items():
+                if dim not in self._dim_index:
+                    continue
+                base = self._calibrated_table[phase].get(dim, 1.0)
+                ate_val = float(ate_info.get("ate", 0.0))
+                significant = bool(ate_info.get("significant", False))
+                if significant:
+                    # 显著：保留原值，按 ATE 方向微调
+                    sign = 1.0 if ate_val >= 0 else -1.0
+                    new_val = base * (1.0 + significant_shrink * sign)
+                else:
+                    # 不显著：衰减
+                    new_val = base * nonsignificant_shrink
+                # clamp 到合理范围 [0.05, 3.0]
+                new_val = float(max(0.05, min(3.0, new_val)))
+                self._calibrated_table[phase][dim] = new_val
+                updated += 1
+
+        self._calibration_version += 1
+        from datetime import datetime, timezone
+        self._last_calibration = datetime.now(timezone.utc).isoformat()
+        logger.info(
+            "[Phase6] ImpactMultiplier ATE 校准完成: updated=%d, version=%d",
+            updated, self._calibration_version,
+        )
+        return {"updated": updated, "version": self._calibration_version}
+
+    def get_multiplier(
+        self,
+        cycle_phase: str | None,
+        dimension: str,
+        repricing_sub_phase: str = "none",
+    ) -> float:
+        """查询单个 (cycle_phase, dimension) 的衰减系数.
+
+        Args:
+            cycle_phase: EventWindowTracker 输出, 见 event_window_tracker.py
+                         (neutral/expectation_build/expectation_rise/
+                          expectation_jump/expectation_digest/event/repricing)
+            dimension: 矛盾维度 (C1/C2/C3/C4/C6/C7/C8/news)
+            repricing_sub_phase: relief/verification/trend/none
+                                仅当 cycle_phase="repricing" 时生效
+
+        Returns:
+            衰减系数 (1.0 = 无衰减, <1.0 = 衰减, >1.0 = 放大)
+        """
+        # FAIL-OPEN: 无阶段信息
+        if not cycle_phase or cycle_phase == "neutral":
+            return 1.0
+
+        # FAIL-OPEN: 未知维度
+        if dimension not in self._dim_index:
+            return 1.0
+
+        # repricing 阶段: 合并 cycle_phase + sub_phase 为查表 key
+        if cycle_phase == "repricing":
+            sub = repricing_sub_phase or "relief"
+            if sub not in ("relief", "verification", "trend"):
+                sub = "relief"
+            table_key = f"repricing_{sub}"
+        else:
+            table_key = cycle_phase
+
+        phase_table = self._calibrated_table.get(table_key) or self.MULTIPLIER_TABLE.get(table_key)
+        if phase_table is None:
+            # 未知阶段 (如 expectation_build 等已知但拼写不同) → FAIL-OPEN
+            return 1.0
+
+        return float(phase_table.get(dimension, 1.0))
+
+    def get_multipliers(
+        self,
+        cycle_phase: str | None,
+        factor_names: list[str],
+        repricing_sub_phase: str = "none",
+        metrics: Optional[list[tuple]] = None,
+    ) -> np.ndarray:
+        """构建与因子列表对齐的衰减系数向量.
+
+        Args:
+            cycle_phase: 周期阶段
+            factor_names: 因子名列表 (与 CROSS_ATTENTION_FACTOR_METRICS 的 factor_name 对应)
+            repricing_sub_phase: repricing 子阶段
+            metrics: 可选因子元数据列表, None 则用 CROSS_ATTENTION_FACTOR_METRICS
+                     用于查找每个 factor_name 所属的 dimension
+
+        Returns:
+            multipliers: np.ndarray shape (len(factor_names),)
+        """
+        if metrics is None:
+            metrics = CROSS_ATTENTION_FACTOR_METRICS
+
+        # 构建 factor_name → dimension 映射
+        name_to_dim: dict[str, str] = {}
+        for entry in metrics:
+            if len(entry) >= 4:
+                name_to_dim[entry[2]] = entry[3]
+
+        multipliers = np.ones(len(factor_names), dtype=np.float64)
+        for i, fname in enumerate(factor_names):
+            dim = name_to_dim.get(fname)
+            if dim is None:
+                # 因子不在元数据中 → 不衰减 (FAIL-OPEN)
+                continue
+            multipliers[i] = self.get_multiplier(
+                cycle_phase, dim, repricing_sub_phase
+            )
+        return multipliers
+
+
+def apply_impact_multiplier(
+    factors: np.ndarray,
+    multipliers: Optional[np.ndarray],
+) -> np.ndarray:
+    """对因子矩阵应用时间衰减系数.
+
+    factor_effective = factor_raw × impact_multiplier(cycle_phase, dimension)
+
+    Args:
+        factors: (N, F) 因子矩阵
+        multipliers: (F,) 衰减系数向量, None → 原样返回 (FAIL-OPEN)
+
+    Returns:
+        (N, F) 衰减后的因子矩阵 (新数组, 不修改输入)
+    """
+    if multipliers is None:
+        return factors
+    factors = np.asarray(factors, dtype=np.float64)
+    multipliers = np.asarray(multipliers, dtype=np.float64).ravel()
+    if factors.size == 0 or multipliers.size == 0:
+        return factors
+    # 广播: (N, F) × (F,) → (N, F)
+    if multipliers.shape[0] != factors.shape[1]:
+        logger.warning(
+            "[apply_impact_multiplier] 维度不匹配: factors=%s multipliers=%s, 跳过衰减",
+            factors.shape, multipliers.shape,
+        )
+        return factors
+    return factors * multipliers[None, :]

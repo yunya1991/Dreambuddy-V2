@@ -53,10 +53,11 @@ class LongShortRatioCollector(BaseCollector):
         """
         symbol = params.get("symbol", "BTCUSDT")
         period = params.get("period", "5m")
+        limit = params.get("limit", 500)
         try:
             resp = requests.get(
                 f"{_API_BASE}/globalLongShortAccountRatio",
-                params={"symbol": symbol, "period": period, "limit": 1},
+                params={"symbol": symbol, "period": period, "limit": limit},
                 timeout=15,
             )
             resp.raise_for_status()
@@ -71,9 +72,9 @@ class LongShortRatioCollector(BaseCollector):
 
         Binance 响应格式: [{"timestamp": ..., "longShortRatio": ..., "longAccount": ..., "shortAccount": ...}]
         或 {"code": 200, "data": [...]} 格式。
+        每条记录的 timestamp 取 Binance 返回的 timestamp (ms)，确保历史数据不互相覆盖。
         """
         recs: list[DataRecord] = []
-        # 兼容两种响应格式
         if isinstance(data, dict) and "data" in data:
             items = data.get("data", [])
         elif isinstance(data, list):
@@ -84,27 +85,33 @@ class LongShortRatioCollector(BaseCollector):
         if not isinstance(items, list) or not items:
             return recs
 
-        item = items[-1]  # 最新一条
-        try:
-            lsr = float(item.get("longShortRatio", 0.0))
-            rec = DataRecord(
-                source=self.source,
-                category=self.category,
-                sub_category="long_short_ratio",
-                timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
-                metrics={
-                    "long_short_ratio": lsr,
-                    "long_ratio": float(item.get("longAccount", 0.0)),
-                    "short_ratio": float(item.get("shortAccount", 0.0)),
-                    "long_account_pct": float(item.get("longAccount", 0.0)) * 100,
-                    "short_account_pct": float(item.get("shortAccount", 0.0)) * 100,
-                },
-                events=[],
-                timeseries=[],
-                raw={"symbol": symbol, "api_data": data},
-            )
-            validate_record(rec)
-            recs.append(rec)
-        except Exception as e:
-            logger.debug("LongShortRatioCollector _build_records FAIL-OPEN: %s", e)
+        for item in items:
+            try:
+                lsr = float(item.get("longShortRatio", 0.0))
+                ts_ms = int(item.get("timestamp", 0))
+                if ts_ms > 0:
+                    dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                    ts_iso = dt.isoformat()
+                else:
+                    ts_iso = datetime.now(timezone.utc).astimezone().isoformat()
+                rec = DataRecord(
+                    source=self.source,
+                    category=self.category,
+                    sub_category="long_short_ratio",
+                    timestamp=ts_iso,
+                    metrics={
+                        "long_short_ratio": lsr,
+                        "long_ratio": float(item.get("longAccount", 0.0)),
+                        "short_ratio": float(item.get("shortAccount", 0.0)),
+                        "long_account_pct": float(item.get("longAccount", 0.0)) * 100,
+                        "short_account_pct": float(item.get("shortAccount", 0.0)) * 100,
+                    },
+                    events=[],
+                    timeseries=[],
+                    raw={"symbol": symbol, "api_data": item},
+                )
+                validate_record(rec)
+                recs.append(rec)
+            except Exception as e:
+                logger.debug("LongShortRatioCollector _build_records FAIL-OPEN: %s", e)
         return recs

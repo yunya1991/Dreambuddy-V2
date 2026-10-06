@@ -62,9 +62,17 @@ class MultiHeadCrossAttention(nn.Module):
         d_model: 模型维度
         n_heads: 注意力头数（d_model 必须能被 n_heads 整除）
         dropout: dropout 概率
+        factor_head_mask: 可选维度对齐 mask，shape (n_heads, n_factors)，
+                         0=允许注意力，-inf=屏蔽；也可在 forward 时传入覆盖
     """
 
-    def __init__(self, d_model: int = 32, n_heads: int = 4, dropout: float = 0.1):
+    def __init__(
+        self,
+        d_model: int = 32,
+        n_heads: int = 4,
+        dropout: float = 0.1,
+        factor_head_mask: Optional[torch.Tensor] = None,
+    ):
         super().__init__()
         assert d_model % n_heads == 0, f"d_model={d_model} 必须能被 n_heads={n_heads} 整除"
         self.d_model = int(d_model)
@@ -77,11 +85,23 @@ class MultiHeadCrossAttention(nn.Module):
         self.out_proj = nn.Linear(self.d_model, self.d_model)
         self.dropout = nn.Dropout(dropout)
 
+        # 维度对齐 mask: (n_heads, n_factors), 0=允许, -inf=屏蔽
+        # 注册为 buffer 以便随模型保存/加载
+        if factor_head_mask is not None:
+            self.register_buffer("factor_head_mask", factor_head_mask)
+        else:
+            self.factor_head_mask = None
+
+        # 暴露最近一次 attention weights 用于可解释性分析
+        self.last_attn_weights: Optional[torch.Tensor] = None
+
     def forward(
         self,
         query: torch.Tensor,
         key: Optional[torch.Tensor],
         value: Optional[torch.Tensor],
+        factor_head_mask: Optional[torch.Tensor] = None,
+        head_multipliers: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """计算交叉注意力。
 
@@ -89,6 +109,11 @@ class MultiHeadCrossAttention(nn.Module):
             query: (B, 1, d_model) 价格 signature 作为 query
             key: (B, N, d_model) 因子作为 key，None → 零输出
             value: (B, N, d_model) 因子作为 value，None → 零输出
+            factor_head_mask: 可选覆盖构造时的 mask，shape (n_heads, N)
+            head_multipliers: Phase 5 每 head 衰减系数，shape (n_heads,)
+                              来自 ImpactMultiplier.get_multiplier(cycle_phase, dim)
+                              每个 head 对应一个矛盾维度 (C1→head0, ..., news→head7)
+                              None → 不衰减 (FAIL-OPEN)
 
         Returns:
             (B, d_model) context vector（squeeze 掉 query 的 seq 维）
@@ -97,6 +122,7 @@ class MultiHeadCrossAttention(nn.Module):
 
         # FAIL-OPEN: key/value 为 None → 返回零向量
         if key is None or value is None:
+            self.last_attn_weights = None
             return torch.zeros(B, self.d_model, device=query.device)
 
         # 处理单因子情况（N=1）
@@ -119,7 +145,31 @@ class MultiHeadCrossAttention(nn.Module):
 
         # 注意力分数: (B, n_heads, 1, N)
         scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+
+        # 维度对齐 mask: (n_heads, N) → broadcast 到 (B, n_heads, 1, N)
+        mask = factor_head_mask if factor_head_mask is not None else self.factor_head_mask
+        if mask is not None:
+            scores = scores + mask.unsqueeze(0).unsqueeze(2)
+
         weights = F.softmax(scores, dim=-1)
+
+        # Phase 5: per-head impact multiplier 耦合
+        # 每个 head 的 attention weights 乘以该维度的衰减系数
+        # head_multipliers shape: (n_heads,) → broadcast 到 (B, n_heads, 1, N)
+        if head_multipliers is not None:
+            # 验证长度匹配
+            if head_multipliers.numel() == self.n_heads:
+                mult = head_multipliers.view(1, self.n_heads, 1, 1).to(
+                    device=weights.device, dtype=weights.dtype
+                )
+                weights = weights * mult
+            else:
+                # FAIL-OPEN: 长度不匹配则不衰减
+                pass
+
+        # 保存 attention weights（dropout 前的纯 softmax 概率，用于可解释性）
+        self.last_attn_weights = weights.detach()
+
         weights = self.dropout(weights)
 
         # 加权求和: (B, n_heads, 1, head_dim)

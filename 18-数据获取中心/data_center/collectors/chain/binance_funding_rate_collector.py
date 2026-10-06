@@ -59,31 +59,46 @@ class BinanceFundingRateCollector(BaseCollector):
             return []
 
     def _build_records(self, data, symbol: str) -> list[DataRecord]:
+        """将 Binance API 返回的每条 funding rate 记录转为 DataRecord。
+
+        Binance /fundingRate API 返回最多 100 条历史 funding rate 事件，
+        每条含 fundingTime (ms) 和 fundingRate。现在全部转为 DataRecord，
+        timestamp 取 fundingTime 转换的 UTC 时间（而非采集时间），
+        确保历史数据点不会互相覆盖。
+        """
         recs: list[DataRecord] = []
         if not isinstance(data, list) or not data:
             return recs
 
-        latest = data[-1]
-        try:
-            rate = float(latest.get("fundingRate", 0.0))
-            # 年化 = rate * 3 * 365 * 100 (Binance 每 8h 结算一次)
-            annualized = rate * 3 * 365 * 100
-            rec = DataRecord(
-                source=self.source,
-                category=self.category,
-                sub_category="funding_rate",
-                timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
-                metrics={
-                    "funding_rate_pct": round(rate * 100, 6),
-                    "funding_rate_annualized_pct": round(annualized, 4),
-                    "funding_time": int(latest.get("fundingTime", 0)),
-                },
-                events=[],
-                timeseries=[],
-                raw={"symbol": symbol, "api_data": data},
-            )
-            validate_record(rec)
-            recs.append(rec)
-        except Exception as e:
-            logger.debug("BinanceFundingRateCollector _build_records FAIL-OPEN: %s", e)
+        for item in data:
+            try:
+                rate = float(item.get("fundingRate", 0.0))
+                # 年化 = rate * 3 * 365 * 100 (Binance 每 8h 结算一次)
+                annualized = rate * 3 * 365 * 100
+                ft_ms = int(item.get("fundingTime", 0))
+                # fundingTime 是毫秒时间戳，转为 UTC datetime ISO
+                if ft_ms > 0:
+                    ft_dt = datetime.fromtimestamp(ft_ms / 1000, tz=timezone.utc)
+                    ts_iso = ft_dt.isoformat()
+                else:
+                    ts_iso = datetime.now(timezone.utc).astimezone().isoformat()
+
+                rec = DataRecord(
+                    source=self.source,
+                    category=self.category,
+                    sub_category="funding_rate",
+                    timestamp=ts_iso,
+                    metrics={
+                        "funding_rate_pct": round(rate * 100, 6),
+                        "funding_rate_annualized_pct": round(annualized, 4),
+                        "funding_time": ft_ms,
+                    },
+                    events=[],
+                    timeseries=[],
+                    raw={"symbol": symbol, "api_data": item},
+                )
+                validate_record(rec)
+                recs.append(rec)
+            except Exception as e:
+                logger.debug("BinanceFundingRateCollector _build_records FAIL-OPEN: %s", e)
         return recs

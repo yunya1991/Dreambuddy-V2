@@ -50,19 +50,26 @@
 FactorEncoder(factor_dim=1, d_model=32)
   → Linear(1, 32) + LayerNorm
 
-MultiHeadCrossAttention(d_model=32, n_heads=4, dropout=0.1)
+MultiHeadCrossAttention(d_model=32, n_heads=8, dropout=0.1, factor_head_mask=None)
   → q_proj, k_proj, v_proj, out_proj (all Linear)
   → scores = Q·Kᵀ / √head_dim
-  → weights = softmax(scores)
+  → scores += factor_head_mask  # 维度对齐: 每个 head 只看对应矛盾维度的因子
+  → weights = softmax(scores)   # → 该维度下的因子排名
   → context = Σ weights · V
+  → self.last_attn_weights = weights  # 暴露 attention weights (Phase 3)
 ```
+
+**维度对齐 mask（Phase 4）**：
+- `factor_head_mask`: shape `(n_heads, n_factors)`，值为 `0`（允许）或 `-inf`（屏蔽）
+- 每个 head 只对其所属矛盾维度的因子做 attention，其余因子被屏蔽
+- 支持硬 mask（`-inf`，完全屏蔽）和软 mask（大负值如 `-1e9`，允许少量跨维度梯度泄漏）
 
 #### 3.2 QKV 角色映射
 
 | Transformer | 矛盾 Transformer | 含义 |
 |---|---|---|
 | Q (Query) | `log_sig_t`（价格路径签名） | 当前价格状态在"问"：什么外生力量能解释现在？ |
-| K (Key) | 外生因子编码（CPI/DXY/funding/ETF/TVL） | 各矛盾维度的证据地址 |
+| K (Key) | 外生因子编码（etf_flow/funding/cpi_surprise/dxy/vix... 共 36 个） | 各矛盾维度的证据地址 |
 | V (Value) | 同上（K=V 自编码） | 各矛盾维度的力量值 |
 | attention weights | softmax(QKᵀ/√d) | **因子影响排名**（随价格状态动态变化） |
 | context vector | 加权求和 | **主要矛盾的综合力量** |
@@ -80,9 +87,12 @@ drift = net([S_t, time, ctx, regime, transition])  # ctx 注入漂移项
 
 **当前配置**（已训练模型）：
 - `use_cross_attention = True`
-- `cross_attn_dim = 16`
-- `cross_attn_heads = 2`
-- `exogenous_factor_dim = 5`（CPI, DXY, funding_rate, ETF_flow, stablecoin_TVL）
+- `cross_attn_dim = 32`（从 16 提升，支持 n_heads=8 时 head_dim=4）
+- `cross_attn_heads = 8`（从 2 提升，对齐 C1/C2/C3/C4/C6/C7/C8/news 共 8 组）
+- `exogenous_factor_dim = 36`（覆盖全部 10 模块）
+- `factor_head_mask`: 8×36 维度对齐矩阵，每个 head 只看所属维度因子
+
+> **消融建议（2026-10-06）**：消融实验显示 `cross_attn_dim=64` (head_dim=8) 比 `cross_attn_dim=32` (head_dim=4) MAE 改善 69.8%。新训练模型建议使用 `cross_attn_dim=64`。详见 §12 Phase 3+4 消融验证。
 
 ### 4. 矛盾识别引擎
 
@@ -201,7 +211,7 @@ HJBPathSolver (PDE 逆向动态规划)
 | narrative 叙事 | C7 隐性 | — | 4 | 今日 |
 | intermarket 跨市场 | C8 宏观交叉 | dxy | 7 | 周/日 |
 
-**当前状态**：候选因子 12 个，实盘仅用 5 个。数据库有 50+ sub_category，可提取 **40+ 有真实数据的因子**。
+**当前状态**：Phase 1 已完成，实盘使用 36 个因子（覆盖 10 模块）。数据库有 50+ sub_category，仍可扩展至 40+ 因子。
 
 #### 7.2 扩展因子清单（按矛盾维度分组，40+ 候选）
 
@@ -354,22 +364,34 @@ impact_multiplier(phase, factor) = ATE(factor → return | phase=phase) / ATE(fa
 
 #### 9.1 问题
 
-- 当前 `cross_attn_heads = 2`，但矛盾维度有 C1-C8 共 8 个
-- 外生因子仅 5 个，不足以覆盖 8 个维度
-- attention weights 未暴露，无法作为"因子影响排名"
+- `cross_attn_heads = 2`，但矛盾维度有 C1/C2/C3/C4/C6/C7/C8/news 共 8 组，head 数不足以一一对应
+- 外生因子已扩展到 36 个（Phase 1 完成），但 2 个 head 无法按维度分组关注
+- attention weights 未暴露，无法作为"因子影响排名"输出
 
-#### 9.2 设计：每个 head = 一个矛盾维度的注意力透镜
+#### 9.2 设计：每个 head = 一个矛盾维度的注意力透镜（masked attention）
+
+通过 `factor_head_mask`（shape `n_heads × n_factors`）实现维度对齐：
 
 ```
-Head 0 (C1 资金面):  Q=价格签名 → 关注 funding_rate, OI_change, liquidation
-Head 1 (C2 情绪面):  Q=价格签名 → 关注 ETF_flow, stablecoin_TVL, sentiment
-Head 2 (C3 技术面):  Q=价格签名 → 关注 RI_signal, UTXO_turnover, trend_slope
-Head 3 (C4 宏观面):  Q=价格签名 → 关注 CPI_surprise, DXY, rate_expectation
-Head 4 (C6 时序):    Q=价格签名 → 关注 momentum, volatility_regime
-Head 5 (C7 隐性):    Q=价格签名 → 关注 synthesized_strategy_signals
-Head 6 (C8 宏观交叉): Q=价格签名 → 关注 cross_asset_correlation, l2_gene
-Head 7 (自由探索):    Q=价格签名 → 学习未定义的矛盾模式
+factor_head_mask[h, f] = 0       若因子 f 属于 head h 的矛盾维度
+                      = -inf    否则（硬 mask）或 -1e9（软 mask）
+
+scores[h, :, f] = Q[h]·K[f]ᵀ / √head_dim + factor_head_mask[h, f]
+weights[h, :, f] = softmax(scores[h, :, f])  # 仅在该维度因子上归一化
 ```
+
+8 个 head 与矛盾维度一一对应：
+
+| Head | 矛盾维度 | 因子数 | 因子索引范围 |
+|---|---|---|---|
+| 0 | C1 资金面 | 7 | 0–6 |
+| 1 | C2 情绪面 | 5 | 7–11 |
+| 2 | C3 技术面 | 6 | 12–17 |
+| 3 | C4 宏观面 | 6 | 18–23 |
+| 4 | C6 估值 | 4 | 24–27 |
+| 5 | C7 广度 | 3 | 28–30 |
+| 6 | C8 跨市场 | 3 | 31–33 |
+| 7 | news 信息 | 2 | 34–35 |
 
 每个 head 的 `softmax(QKᵀ/√d)` = **该矛盾维度下的因子排名**；
 所有 head concat = **多维度矛盾并行评估**；
@@ -380,10 +402,23 @@ Head 7 (自由探索):    Q=价格签名 → 学习未定义的矛盾模式
 | 方案 | 做法 | 优点 | 缺点 |
 |---|---|---|---|
 | A. 自由学习 | n_heads=8，无约束 | 灵活，可发现未知模式 | 不可解释，head 可能塌缩 |
-| B. 硬约束分组 | 每个 head 只看对应维度因子（mask） | 强可解释 | 抑制跨维度学习 |
-| C. 软先验引导 | 初始化偏向某维度，允许偏离 | 兼顾可解释与灵活 | 初始化设计复杂 |
+| B. 硬约束分组 | 每个 head 只看对应维度因子（mask=-inf） | 强可解释，attention 直接=维度内排名 | 抑制跨维度学习，少因子维度（news=2）softmax 噪声大 |
+| C. 软先验引导 | 初始化偏向某维度，允许偏离（mask 为大负值） | 兼顾可解释与跨维度学习 | 初始化设计复杂 |
 
-**建议**：方案 C（软先验）。参考 AlphaFold MSATransformer 按序列间距分 head、TFT 的 Variable Selection Network 显式变量选择。
+**已选方案：B（硬 mask）为默认，C（软 mask）可配置**。
+- 通过 `factor_head_mask` 的值控制：`-inf` = 硬 mask，`-1e9` = 软 mask
+- 默认硬 mask 保证 attention weights 严格等于"该维度因子排名"，满足可解释性目标
+- 后续若发现跨维度信号重要，可切换软 mask 保留少量梯度泄漏
+
+**待消融验证（Minor）**：
+- m1. `head_dim = cross_attn_dim / n_heads = 32/8 = 4` 偏小，建议评估 `cross_attn_dim=64`（head_dim=8）做消融对比
+- m2. 硬 mask 默认可能损失跨维度信号（如 funding_rate 同时影响 C1/C2），训练时应同时跑硬 mask vs 软 mask（-1e9）对比 MAE
+- m3. 缺少可解释性验证指标，建议增加 attention 熵、维度间 JS 散度，验证"维度内排名"的合理性
+- m4. 少因子维度边界：news（2 因子）、C7（3 因子）的 attention 仅作为二元/三元权重参考，排名信息量有限
+
+**mask 构建绑定机制（M3）**：
+- `build_factor_head_mask()` 从 `CROSS_ATTENTION_FACTOR_METRICS` 每个 tuple 的第 4 个元素 `dimension` 读取维度分组，**不硬编码索引范围**
+- 若因子列表顺序或维度变化，mask 自动重建，不会错位
 
 ### 10. 缺口三：时序衰减与多头注意力的耦合
 
@@ -416,9 +451,10 @@ Head 7 (自由探索):    Q=价格签名 → 学习未定义的矛盾模式
                            │
 ┌──────────────────────────▼──────────────────────────────────────┐
 │  L2: 矛盾 Transformer 层  ⬅ 缺口二(P1)                           │
-│  MultiHeadCrossAttention (n_heads=8 = C1-C8 维度)                │
+│  MultiHeadCrossAttention (n_heads=8, masked attention)           │
 │  Q = 价格签名(log_sig)                                           │
 │  K,V = 衰减后的因子向量                                           │
+│  factor_head_mask: 每个 head 只看所属维度因子                      │
 │  → 每个 head 的 attention weights = 该维度因子排名                 │
 │  → context = 主要矛盾综合力量                                      │
 │  → 注入 NeuralSDE drift                                          │
@@ -460,17 +496,77 @@ Head 7 (自由探索):    Q=价格签名 → 学习未定义的矛盾模式
 
 **依赖**：DAL `mm_metrics` 表已有全部数据，无外部依赖。
 
-#### Phase 2：因子影响力时间衰减 impact_multiplier(t) — P0
+#### Phase 2：因子影响力时间衰减 impact_multiplier(t) — P0 ✅ 已完成
 
-将 `event_context`（EventWindowTracker 6 阶段）接入 `exogenous_strength_evaluator`，对每个因子乘以周期位置相关的衰减系数。详见 §8。
+将 `event_context`（EventWindowTracker 6 阶段）接入 Cross-Attention 因子构建管线，对每个因子按其所属矛盾维度乘以周期位置相关的衰减系数。详见 §8。
 
-#### Phase 3：暴露 attention weights 为因子排名 — P1
+**实现**（`exogenous_data_bridge.py`）：
+1. `ImpactMultiplier` 类：维护 8 维度 × 7 阶段（含 3 repricing 子阶段）的衰减系数表
+2. `get_multipliers(cycle_phase, factor_names, repricing_sub_phase)` → shape (F,) 衰减向量
+3. `apply_impact_multiplier(factors, multipliers)` → 衰减后的因子矩阵
+4. `build_exogenous_factors_for_cross_attention` 增加可选 `impact_multipliers` 参数，应用衰减
+5. `evolution_pipeline._get_latest_exogenous_factors` 获取 event_context 并注入
 
-改造 `cross_attention.py` 返回 per-head attention weights，作为"因子影响排名"输出。
+**设计决策**：
+- 维度级 decay（非因子级）：与 Phase 4 的 `factor_head_mask` 维度分组一致，更干净
+- 硬编码先验表（基于 §8.2 加息周期）：Phase 6 用 `CausalEngine.estimate_ate` 数据驱动校准替换
+- FAIL-OPEN：`cycle_phase=None/neutral` 或 `impact_multipliers=None` → 不衰减（原样返回）
+- 不影响已训练 NeuralSDE：衰减在因子输入层应用，模型本身不变
 
-#### Phase 4：n_heads 2→8，软先验对齐矛盾维度 — P1
+> **顺序说明**：Phase 3+4（维度对齐）在 Phase 2 之前落地，因为 Phase 5 的 head 级别 impact_multiplier 依赖 Phase 4 的维度绑定。Phase 2 以维度级 decay 形式实现，更干净。
 
-每个 head 软约束关注对应矛盾维度的因子子集，让 attention weights 直接可解释为"该维度的因子排名"。详见 §9。
+#### Phase 3+4：暴露 attention weights + n_heads 对齐矛盾维度（masked attention）— ✅ 已完成
+
+合并 Phase 3（暴露 weights）和 Phase 4（维度对齐 mask）：
+
+**目标**：
+1. `MultiHeadCrossAttention` 暴露 `last_attn_weights`（shape `B × n_heads × 1 × N`），作为因子影响排名
+2. 引入 `factor_head_mask`（`n_heads × n_factors`），每个 head 只看所属矛盾维度的因子
+3. n_heads 2→8，cross_attn_dim 16→32（head_dim=4），对齐 C1/C2/C3/C4/C6/C7/C8/news 共 8 组
+
+**改动点**：
+1. `cross_attention.py`: `MultiHeadCrossAttention` 新增 `factor_head_mask` 参数（构造时注册为 buffer，forward 时 `scores += mask`），保存 `self.last_attn_weights`（dropout 前的纯 softmax 概率）
+2. `exogenous_data_bridge.py`: `CROSS_ATTENTION_FACTOR_METRICS` 每个 tuple 增加第 4 元素 `dimension`；新增 `build_factor_head_mask()` 从 dimension 元数据构建 mask（M3 修复：不硬编码索引）
+3. `neural_sde_model.py`:
+   - `_PathSignatureDriftNet`/`_MoEDriftNet` 接收并向每个 expert 传递 `factor_head_mask`（M2 修复：MoE 透传）
+   - `NeuralSDEModel.save()/load()` 保存/加载 `factor_head_mask`（M1 修复：checkpoint 序列化）
+   - `cross_attn_dim` 默认 32
+4. 重训 NeuralSDE 模型（n_heads=8, cross_attn_dim=32, masked attention）
+
+**Major 修复验证**：
+- M1 checkpoint: `save()` 将 `factor_head_mask` 写入 checkpoint dict，`load()` 读取并传给 drift_net；旧 checkpoint 无 mask 时 FAIL-OPEN（mask=None，无屏蔽）
+- M2 MoE: `_MoEDriftNet.__init__` 接收 `factor_head_mask`，创建每个 expert 时传入；MoE 推理时 masked attention 生效
+- M3 绑定: `build_factor_head_mask()` 从 tuple[3] 的 dimension 字段构建，因子顺序变化时 mask 自动适配
+
+**mask 构建规则**（基于 `CROSS_ATTENTION_FACTOR_METRICS` 的分组顺序）：
+- Head 0 (C1): 因子 0–6
+- Head 1 (C2): 因子 7–11
+- Head 2 (C3): 因子 12–17
+- Head 3 (C4): 因子 18–23
+- Head 4 (C6): 因子 24–27
+- Head 5 (C7): 因子 28–30
+- Head 6 (C8): 因子 31–33
+- Head 7 (news): 因子 34–35
+
+**消融验证已完成**（2026-10-06, 报告: `dreambuddy_evolution/data/ablation_mask_head_dim.json`, 脚本: `dreambuddy_evolution/tests/ablation_mask_head_dim.py`）：
+
+| 实验 | mask | head_dim | cross_attn_dim | MAE | entropy | leakage |
+|---|---|---|---|---|---|---|
+| A-hard-hd4 | hard | 4 | 32 | 33718.23 | 1.20 | 0.0 |
+| B-soft-hd4 | soft | 4 | 32 | 33718.23 | 1.20 | 0.0 |
+| C-none-hd4 | none | 4 | 32 | 31432.90 | 3.55 | — |
+| D-hard-hd8 | hard | 8 | 64 | 10185.36 | 1.11 | 0.0 |
+| E-soft-hd8 | soft | 8 | 64 | 10185.36 | 1.11 | 0.0 |
+
+**关键结论**：
+- **P1-a (hard vs soft)**: 完全等价（float32 下 exp(-1e9)=exp(-inf)=0，MAE/entropy/leakage 三项指标完全相同）。默认硬 mask（-inf），软 mask（-1e9）作为可配置项保留但无实际差异。
+- **P1-b (head_dim 4 vs 8)**: head_dim=8 (cross_attn_dim=64) MAE 改善 **69.8%**（10185 vs 33718）。**新训练模型应使用 cross_attn_dim=64**。
+- **P2 (可解释性)**: mask 模式 entropy≈1.1-1.2（高度聚焦），无 mask entropy=3.55（分散 3x）；mask 牺牲少量精度（MAE +6.8%）换取可解释性，值得。
+- **mask leakage = 0.0**：维度隔离完美，硬 mask 实现正确。
+
+**配置建议**：
+- 新训练：`cross_attn_dim=64, cross_attn_heads=8, head_dim=8, factor_head_mask=hard`
+- 已训练模型（cross_attn_dim=32）：保持不变，避免重训；如需升级，重训后替换 checkpoint
 
 #### Phase 5：head 级别 impact_multiplier 耦合 — P2
 

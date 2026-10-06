@@ -165,3 +165,89 @@ class TestCrossAttentionIntegration:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestFactorHeadMask:
+    """测试维度对齐 mask：每个 head 只看所属维度因子。"""
+
+    def test_masked_factors_get_zero_attention(self):
+        """被 mask 屏蔽的因子，其 attention weight 应为 0。"""
+        from dreambuddy_evolution.core.cross_attention import MultiHeadCrossAttention
+
+        B, N, d_model, n_heads = 2, 6, 32, 2
+        attn = MultiHeadCrossAttention(d_model=d_model, n_heads=n_heads)
+
+        # mask: head 0 只看因子 0-2, head 1 只看因子 3-5
+        mask = torch.full((n_heads, N), float("-inf"))
+        mask[0, :3] = 0.0
+        mask[1, 3:] = 0.0
+
+        query = torch.randn(B, 1, d_model)
+        key = torch.randn(B, N, d_model)
+        value = torch.randn(B, N, d_model)
+
+        out = attn(query, key, value, factor_head_mask=mask)
+        assert out.shape == (B, d_model)
+
+        # 检查 attention weights: 被屏蔽的因子权重应为 0
+        weights = attn.last_attn_weights  # (B, n_heads, 1, N)
+        assert weights is not None
+        # head 0: 因子 3-5 权重应为 0
+        assert torch.allclose(weights[:, 0, 0, 3:], torch.zeros_like(weights[:, 0, 0, 3:]), atol=1e-6)
+        # head 1: 因子 0-2 权重应为 0
+        assert torch.allclose(weights[:, 1, 0, :3], torch.zeros_like(weights[:, 1, 0, :3]), atol=1e-6)
+        # 未屏蔽因子权重和应为 1
+        assert torch.allclose(weights[:, 0, 0, :3].sum(dim=-1), torch.ones(B), atol=1e-5)
+        assert torch.allclose(weights[:, 1, 0, 3:].sum(dim=-1), torch.ones(B), atol=1e-5)
+
+    def test_mask_none_is_noop(self):
+        """mask=None 时不做任何屏蔽，等价于无 mask。"""
+        from dreambuddy_evolution.core.cross_attention import MultiHeadCrossAttention
+
+        B, N, d_model, n_heads = 2, 6, 32, 2
+        attn = MultiHeadCrossAttention(d_model=d_model, n_heads=n_heads)
+        query = torch.randn(B, 1, d_model)
+        key = torch.randn(B, N, d_model)
+        value = torch.randn(B, N, d_model)
+
+        out = attn(query, key, value, factor_head_mask=None)
+        assert out.shape == (B, d_model)
+        # 所有权重和应为 1（无屏蔽）
+        weights = attn.last_attn_weights
+        assert torch.allclose(weights.sum(dim=-1), torch.ones(B, n_heads, 1), atol=1e-5)
+
+    def test_last_attn_weights_shape(self):
+        """last_attn_weights 形状应为 (B, n_heads, 1, N)。"""
+        from dreambuddy_evolution.core.cross_attention import MultiHeadCrossAttention
+
+        B, N, d_model, n_heads = 3, 8, 32, 4
+        attn = MultiHeadCrossAttention(d_model=d_model, n_heads=n_heads)
+        query = torch.randn(B, 1, d_model)
+        key = torch.randn(B, N, d_model)
+        value = torch.randn(B, N, d_model)
+
+        attn(query, key, value)
+        weights = attn.last_attn_weights
+        assert weights.shape == (B, n_heads, 1, N)
+
+    def test_soft_mask_allows_leakage(self):
+        """软 mask（大负值而非 -inf）允许少量跨维度权重。"""
+        from dreambuddy_evolution.core.cross_attention import MultiHeadCrossAttention
+
+        B, N, d_model, n_heads = 2, 6, 32, 2
+        attn = MultiHeadCrossAttention(d_model=d_model, n_heads=n_heads)
+
+        # 软 mask: 用 -1e9 而非 -inf
+        mask = torch.full((n_heads, N), -1e9)
+        mask[0, :3] = 0.0
+        mask[1, 3:] = 0.0
+
+        query = torch.randn(B, 1, d_model)
+        key = torch.randn(B, N, d_model)
+        value = torch.randn(B, N, d_model)
+
+        attn(query, key, value, factor_head_mask=mask)
+        weights = attn.last_attn_weights
+        # 软 mask 下被屏蔽因子权重应接近 0 但可能非严格 0
+        assert (weights[:, 0, 0, 3:] < 1e-3).all()
+        assert (weights[:, 1, 0, :3] < 1e-3).all()

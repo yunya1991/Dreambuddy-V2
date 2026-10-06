@@ -26,6 +26,7 @@ class FredCollector(BaseCollector):
     SERIES = (
         "FEDFUNDS", "RRPONTSYD", "DFII10", "T10YIE",           # 原有
         "M2NS", "M2SL", "WALCL", "CPIAUCSL", "PPIACO", "INDPRO", # 五维需求新增
+        "PAYEMS",                                                  # NFP 非农就业
     )
 
     def __init__(self, config: dict | None = None):
@@ -38,9 +39,16 @@ class FredCollector(BaseCollector):
         return bool(self._api_key)
 
     def fetch(self, params: dict) -> list[DataRecord]:
+        """采集 FRED 序列。
+
+        Args:
+            params: {"series": "CPIAUCSL", "historical": false}
+                    historical=True 时返回全量历史数据点（每月一条 DataRecord），
+                    否则只返回最新值（默认行为，向后兼容）。
+        """
         series_id = params["series"]
+        historical = params.get("historical", False)
         if not self.is_available():
-            # 无 Key 降级：返回空，不抛异常
             return []
 
         fred = Fred(api_key=self._api_key)
@@ -56,7 +64,35 @@ class FredCollector(BaseCollector):
         if series.empty:
             return []
 
-        # 取最新值（修正原 flow_collector 取 observations[0] 实为最旧值的隐患）
+        if historical:
+            # 全量历史模式：每月一条 DataRecord，timestamp 为数据日期
+            records = []
+            for ts, val in series.items():
+                date_str = str(ts.date() if hasattr(ts, "date") else ts)
+                try:
+                    dt = ts.to_pydatetime() if hasattr(ts, "to_pydatetime") else None
+                    if dt is None:
+                        from dateutil import parser as _parser
+                        dt = _parser.parse(date_str)
+                    ts_iso = dt.replace(tzinfo=timezone.utc).isoformat()
+                except Exception:
+                    ts_iso = datetime.now(timezone.utc).astimezone().isoformat()
+
+                rec = DataRecord(
+                    source="fred",
+                    category="macro",
+                    sub_category=series_id,
+                    timestamp=ts_iso,
+                    metrics={"value": float(val)},
+                    events=[],
+                    timeseries=[],
+                    raw={"series_id": series_id, "date": date_str, "value": float(val)},
+                )
+                validate_record(rec)
+                records.append(rec)
+            return records
+
+        # 默认模式：只取最新值（向后兼容）
         latest_ts = series.index[-1]
         latest_date = str(latest_ts.date() if hasattr(latest_ts, "date") else latest_ts)
         latest_val = float(series.iloc[-1])

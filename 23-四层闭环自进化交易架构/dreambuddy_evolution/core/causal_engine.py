@@ -497,6 +497,122 @@ class CausalEngine:
             return {"influence_scores": {}, "ranked_features": []}
 
     # ------------------------------------------------------------------
+    # 6. Phase 6: ATE 分桶动态校准 (替换 ImpactMultiplier 硬编码表)
+    # ------------------------------------------------------------------
+    def calibrate_multipliers(
+        self,
+        factor_matrix: np.ndarray,
+        factor_names: list[str],
+        returns: np.ndarray,
+        phases: list[str],
+        name_to_dim: dict[str, str],
+    ) -> dict[str, dict[str, dict[str, float]]]:
+        """按 cycle_phase 分桶，用 ATE 估计每个维度的因果影响力.
+
+        Phase 6 (SPEC §8): 数据驱动校准替换 ImpactMultiplier.MULTIPLIER_TABLE 硬编码.
+
+        对每个 (phase, dimension)：
+          1. 选取该 dimension 下所有因子，取均值作为该维度的聚合因子
+          2. treatment = 聚合因子 > 中位数 (1) 或 <= 中位数 (0)
+          3. y = 未来收益率
+          4. estimate_ate → 该维度因子"高"时对收益率的平均处理效应
+          5. ATE 显著 → 该维度在该阶段有因果效应，保留/放大 multiplier
+             ATE 不显著 → 该维度在该阶段无因果效应，衰减 multiplier
+
+        Args:
+            factor_matrix: (n_samples, n_factors) 因子矩阵
+            factor_names: 因子名列表 (与 factor_matrix 列对齐)
+            returns: (n_samples,) 未来收益率 (对齐每个样本)
+            phases: (n_samples,) 每个样本的 cycle_phase 标签
+            name_to_dim: {factor_name: dimension} 映射 (C1/C2/.../news)
+
+        Returns:
+            ate_results: {
+                phase: {
+                    dimension: {
+                        "ate": float,
+                        "significant": bool,
+                        "lower_bound": float,
+                        "upper_bound": float,
+                        "n_samples": int,
+                    }
+                }
+            }
+            缺失/不足时该 (phase, dimension) 不在结果中。
+        """
+        try:
+            factor_matrix = np.asarray(factor_matrix, dtype=np.float64)
+            returns = np.asarray(returns, dtype=np.float64)
+            phases = list(phases)
+            n = len(returns)
+
+            if n == 0 or factor_matrix.shape[0] != n:
+                return {}
+
+            # 构建 dimension → factor_indices 映射
+            dim_to_cols: dict[str, list[int]] = {}
+            for i, fname in enumerate(factor_names):
+                dim = name_to_dim.get(fname)
+                if dim is not None:
+                    dim_to_cols.setdefault(dim, []).append(i)
+
+            ate_results: dict[str, dict[str, dict[str, float]]] = {}
+
+            for phase in set(phases):
+                if not phase or phase == "neutral":
+                    continue
+
+                phase_mask = np.array([p == phase for p in phases])
+                phase_n = int(np.sum(phase_mask))
+                if phase_n < self.min_samples:
+                    # 该阶段样本不足，跳过 ATE 估计
+                    continue
+
+                phase_results: dict[str, dict[str, float]] = {}
+                # 该阶段的因子子集
+                phase_factors = factor_matrix[phase_mask]  # (phase_n, n_factors)
+                for dim, cols in dim_to_cols.items():
+                    # 该维度聚合因子 = 列均值
+                    dim_factor = np.nanmean(phase_factors[:, cols], axis=1)
+                    y_phase = returns[phase_mask]
+
+                    # 去除 NaN
+                    valid = ~np.isnan(dim_factor) & ~np.isnan(y_phase)
+                    if np.sum(valid) < self.min_samples:
+                        continue
+
+                    dim_f = dim_factor[valid]
+                    y_v = y_phase[valid]
+
+                    # treatment = 聚合因子 > 中位数
+                    median_val = np.median(dim_f)
+                    treatment = (dim_f > median_val).astype(np.int32)
+
+                    # 协变量 = 该维度外的所有其他维度聚合因子
+                    other_cols = [c for d, cs in dim_to_cols.items() if d != dim for c in cs]
+                    if other_cols:
+                        X = np.nanmean(phase_factors[valid][:, other_cols], axis=1, keepdims=True)
+                    else:
+                        X = np.zeros((int(np.sum(valid)), 1))
+
+                    ate_res = self.estimate_ate(X, treatment, y_v, method="dml")
+                    phase_results[dim] = {
+                        "ate": float(ate_res["ate"]),
+                        "significant": bool(ate_res["significant"]),
+                        "lower_bound": float(ate_res["lower_bound"]),
+                        "upper_bound": float(ate_res["upper_bound"]),
+                        "n_samples": int(np.sum(valid)),
+                    }
+
+                if phase_results:
+                    ate_results[phase] = phase_results
+
+            return ate_results
+        except Exception as e:  # noqa: BLE001
+            logger.warning("[FO-AGI-02] calibrate_multipliers failed: %s", e)
+            return {}
+
+    # ------------------------------------------------------------------
     # 状态查询
     # ------------------------------------------------------------------
     def backend_status(self) -> dict:

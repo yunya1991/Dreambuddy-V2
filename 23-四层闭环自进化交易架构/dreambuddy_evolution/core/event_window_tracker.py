@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,10 @@ class EventWindowTracker:
                 ctx.expected_surprise = round(float(forecast) - float(previous), 6)
             except (TypeError, ValueError):
                 ctx.expected_surprise = None
-        now = now or datetime.now()
+        if now is None:
+            now = datetime.now(timezone.utc)
+        elif now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
 
         # 概率趋势
         if prob_change_7d is not None:

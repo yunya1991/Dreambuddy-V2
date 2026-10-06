@@ -52,6 +52,7 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.finance.yfinance_collector import YFinanceCollector
     from data_center.collectors.finance.etf_flow_collector import EtfFlowCollector
     from data_center.collectors.macro.fred_collector import FredCollector
+    from data_center.collectors.macro.fed_event_collector import FedEventCollector
     from data_center.collectors.news.feedparser_collector import FeedparserCollector
     from data_center.collectors.news.gdelt_collector import GdeltCollector
     from data_center.collectors.news.odaily_newsflash import OdailyNewsflashCollector
@@ -75,6 +76,7 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.chain.social_volume_collector import SocialVolumeCollector
 
     reg.register("macro", "fred", FredCollector)
+    reg.register("macro", "cme", FedEventCollector)
     reg.register("finance", "yfinance", YFinanceCollector)
     reg.register("chain", "ccxt", CcxtCollector)
     reg.register("chain", "etherscan", EtherscanCollector)
