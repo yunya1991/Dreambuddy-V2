@@ -157,6 +157,17 @@ class ExogenousDataBridge:
     def get_repo(self) -> Optional[Any]:
         if self._repo is None:
             try:
+                import os
+                # 确保 DAL_DB_PATH 指向 19-数据访问层 的统一数据库
+                if "DAL_DB_PATH" not in os.environ:
+                    # exogenous_data_bridge.py 位于 <repo>/23-四层闭环自进化交易架构/dreambuddy_evolution/core/
+                    # repo root = 向上 3 级
+                    _repo_root = os.path.abspath(
+                        os.path.join(os.path.dirname(__file__), "..", "..", "..")
+                    )
+                    _db_path = os.path.join(_repo_root, "19-数据访问层", "data", "dreambuddy_core.db")
+                    if os.path.exists(_db_path):
+                        os.environ["DAL_DB_PATH"] = _db_path
                 from dreambuddy_dal import get_market_macro_repo
                 self._repo = get_market_macro_repo(backend="sqlite_unified")
             except Exception as exc:
@@ -421,22 +432,53 @@ class ExogenousDataBridge:
 
 # 候选因子清单 (sub_category, metric_name, factor_name)
 # 来自 19-DAL mm_metrics 中 ≥50 数据点的宏观/链上/衍生品指标
+# 按 C1-C8 矛盾维度分组，覆盖全部 10 个基本面模块
+# 共 36 个因子
 CROSS_ATTENTION_FACTOR_METRICS: list[tuple[str, str, str]] = [
-    # --- 宏观 (Macro) ---
-    ("cpi", "actual", "cpi_actual"),
-    ("cpi", "forecast", "cpi_forecast"),
-    ("fedwatch", "hike_prob", "rate_hike_prob"),
-    ("fomc_decision", "rate_change", "fomc_rate_change"),
-    ("DX-Y.NYB", "close", "dxy"),
-    # --- 链上 (On-chain) ---
-    ("btc_basics", "market_cap_usd", "btc_market_cap"),
-    ("btc_basics", "tx_count_24h", "btc_tx_count"),
-    ("btc_onchain", "active_addresses", "active_addresses"),
+    # --- C1 资金面 / flow 模块 (7) ---
+    ("etf_flow", "total_flow", "etf_total_flow"),
+    ("funding_rate", "funding_rate_pct", "funding_rate"),
+    ("long_short_ratio", "long_short_ratio", "long_short_ratio"),
+    ("derivatives_spot", "fut_open_interest_usd", "open_interest"),
+    ("exchanges_whales", "ex_summary_inflowUsd24h", "exchange_inflow_24h"),
+    ("derivatives_spot", "fut_liq_long_24h_usd", "liq_long_24h"),
+    ("derivatives_spot", "fut_liq_short_24h_usd", "liq_short_24h"),
+    # --- C2 情绪面 / sentiment+narrative 模块 (5) ---
+    ("crypto_fear_greed", "value", "fear_greed"),
+    ("fear_greed_enhanced", "momentum", "fg_momentum"),
+    ("fear_greed_enhanced", "volatility", "fg_volatility"),
+    ("fear_greed_enhanced", "capital_flow", "fg_capital_flow"),
+    ("fear_greed_enhanced", "funding", "fg_funding"),
+    # --- C3 技术面 / onchain 模块 (6) ---
+    ("btc_basics", "active_addresses", "active_addresses"),
+    ("btc_basics", "tx_count_24h", "tx_count_24h"),
     ("exchanges_whales", "ex_bal_BTC_chg30d_pct", "exchange_balance_chg"),
-    # --- 衍生品/资金流 (Derivatives/Flows) ---
-    ("funding_rate", "funding_rate", "funding_rate"),
-    ("etf_flow", "total_flow", "etf_net_flow"),
-    ("stablecoin_tvl", "total_tvl_usd", "stablecoin_tvl"),
+    ("utxo_age_distribution", "profit_supply_pct", "profit_supply_pct"),
+    ("btc_basics", "hashrate", "hashrate"),
+    ("utxo_age_distribution", "short_term_holder_supply_pct", "sth_supply_pct"),
+    # --- C4 宏观面 / macro+calendar 模块 (6) ---
+    ("cpi", "surprise", "cpi_surprise"),
+    ("ppi", "surprise", "ppi_surprise"),
+    ("nfp", "surprise", "nfp_surprise"),
+    ("fedwatch", "cut_prob", "cut_prob"),
+    ("FEDFUNDS", "value", "fed_funds"),
+    ("fomc_decision", "rate_change", "fomc_rate_change"),
+    # --- C6 估值 / valuation 模块 (4) ---
+    ("cycle_signals", "bottom_mvrv_value", "mvrv"),
+    ("cycle_signals", "bottom_nupl_value", "nupl"),
+    ("cycle_signals", "bottom_puell-multiple_value", "puell_multiple"),
+    ("cycle_signals", "bottom_reserve-risk_value", "reserve_risk"),
+    # --- C7 广度 / breadth 模块 (3) ---
+    ("overview_market", "btc_dominance_pct", "btc_dominance"),
+    ("stablecoins_top_10", "total_circulating_usd_bln", "stablecoin_total"),
+    ("overview_market", "global_change24_pct", "global_change_24h"),
+    # --- C8 跨市场 / intermarket 模块 (3) ---
+    ("DX-Y.NYB", "close", "dxy"),
+    ("^VIX", "value", "vix"),
+    ("SPY", "value", "spx"),
+    # --- news 模块 (2) ---
+    ("social_volume", "news_count_24h", "news_count_24h"),
+    ("social_volume", "total_news_records", "total_news_records"),
 ]
 
 
@@ -486,9 +528,11 @@ def build_exogenous_factors_for_cross_attention(
         names = [name for _, _, name in metric_list]
         return np.zeros((n, len(names)), dtype=np.float64), names
 
-    from datetime import timedelta as _td
+    from datetime import timedelta as _td, datetime as _dt, timezone as _tz
 
-    t_min = min(timestamps) - _td(days=180)
+    # 使用较早起始时间，确保能捕获所有历史数据用于 forward-fill
+    # 部分因子（如 DX-Y.NYB）数据可能停更于较早时间，需要从更早起点查询
+    t_min = _dt(2010, 1, 1, tzinfo=_tz.utc)
     t_max = max(timestamps)
 
     for sub, metric, name in metric_list:

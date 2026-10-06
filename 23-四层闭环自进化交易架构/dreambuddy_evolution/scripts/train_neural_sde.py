@@ -174,7 +174,7 @@ def main():
             use_cross_attention=True,
             cross_attn_dim=args.cross_attn_dim,
             cross_attn_heads=args.cross_attn_heads,
-            exogenous_factor_dim=5,  # 默认 5 因子
+            exogenous_factor_dim=36,  # C1-C8 矛盾维度 36 个因子，覆盖全部 10 模块
         )
         logger.info("启用 Cross-Attention: dim=%d heads=%d",
                     args.cross_attn_dim, args.cross_attn_heads)
