@@ -333,6 +333,11 @@ function BdsmView({ data }: { data?: Record<string, any> }) {
           const wl = c.sector_waterline as Record<string, any> | undefined;
           const wlSector = wl?.sector as string | undefined;
           const wlPct = Number(wl?.median_percentile || 0);
+          // §6.1 multi_dim_valuation 多维估值分
+          const md = c.multi_dim_valuation as Record<string, any> | undefined;
+          const mdScore = Number(md?.multi_dim_score || 0);
+          const mdLow = mdScore > 0.3;     // 多维低估（>0.3）
+          const mdHigh = mdScore < -0.3;    // 多维高估（<-0.3）
           return (
             <div key={i} className={`flex items-center justify-between text-[10px] px-1 rounded ${isOverheat ? "bg-red-500/10 border border-red-800/50" : ""}`}>
               <div className="flex items-center gap-1.5">
@@ -343,6 +348,12 @@ function BdsmView({ data }: { data?: Record<string, any> }) {
                   </span>
                 )}
                 {isOverheat && <span className="text-red-400 text-[9px]">过热</span>}
+                {/* §6.1 multi_dim_valuation 多维估值分标签 */}
+                {mdScore !== 0 && (
+                  <span className={`px-1 rounded font-mono text-[9px] ${mdLow ? "bg-emerald-500/15 text-emerald-300" : mdHigh ? "bg-red-500/15 text-red-300" : "bg-slate-700/40 text-slate-400"}`}>
+                    多维 {mdScore.toFixed(2)}
+                  </span>
+                )}
               </div>
               <div className="flex gap-2">
                 <span className="text-slate-400">{c.rank}</span>
@@ -353,6 +364,43 @@ function BdsmView({ data }: { data?: Record<string, any> }) {
           );
         })}
       </div>
+
+      {/* §6.1 undervalued_peers 低估伙伴候选（合并去重，Top5） */}
+      {(() => {
+        const allPeers: Array<{ coin: string; opportunity_score: number; from: string }> = [];
+        const seen = new Set<string>();
+        for (const c of top5) {
+          const peers = (c.undervalued_peers as Array<Record<string, any>>) || [];
+          for (const p of peers) {
+            const coin = (p.coin as string) || "";
+            if (!coin || seen.has(coin)) continue;
+            seen.add(coin);
+            allPeers.push({
+              coin,
+              opportunity_score: Number(p.opportunity_score || 0),
+              from: c.symbol as string,
+            });
+          }
+        }
+        if (allPeers.length === 0) return null;
+        allPeers.sort((a, b) => b.opportunity_score - a.opportunity_score);
+        return (
+          <div className="border-t border-slate-800 pt-2 space-y-1">
+            <div className="text-[10px] font-semibold text-slate-400">低估伙伴候选</div>
+            <div className="space-y-0.5">
+              {allPeers.slice(0, 5).map((p) => (
+                <div key={p.coin} className="flex items-center justify-between text-[10px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-300 font-mono">{p.coin}</span>
+                    <span className="text-slate-500 text-[9px]">← {p.from}</span>
+                  </div>
+                  <span className="text-slate-300 font-mono">{p.opportunity_score.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

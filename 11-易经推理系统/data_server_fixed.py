@@ -3531,6 +3531,50 @@ def get_dual_baseline_report(days: int = 7) -> dict:
     }
 
 
+def get_bdsm_snapshot() -> dict:
+    """返回最新 bdsm_snapshot JSON（前端 /api/bdsm/snapshot 调用）。
+
+    查找 11-易经推理系统/.workbuddy/bdsm/bdsm_snapshot_YYYYMMDD.json：
+      1. 优先今日快照
+      2. 否则取目录下日期最新的快照
+      3. 都没有时返回中性快照（FAIL-OPEN）
+
+    返回值包含完整 snapshot 结构（含 §6 sector_valuation 字段）。
+    """
+    import glob
+    snapshot_dir = os.path.normpath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        ".workbuddy", "bdsm",
+    ))
+    today_str = datetime.date.today().strftime("%Y%m%d")
+    today_file = os.path.join(snapshot_dir, f"bdsm_snapshot_{today_str}.json")
+    if os.path.exists(today_file):
+        target = today_file
+    else:
+        # 取目录下日期最新的快照文件
+        candidates = sorted(
+            glob.glob(os.path.join(snapshot_dir, "bdsm_snapshot_*.json")),
+            reverse=True,
+        )
+        target = candidates[0] if candidates else None
+    if not target or not os.path.exists(target):
+        # FAIL-OPEN：返回中性快照结构
+        try:
+            from scripts.memory_l4.force_vector.bdsm_snapshot_writer import neutral_snapshot
+            return neutral_snapshot("no_bdsm_snapshot_available")
+        except Exception:
+            return {"status": "error", "note": "bdsm snapshot 未生成"}
+    try:
+        with open(target, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        # 补充 status 字段，便于前端 BdsmView 直接消费
+        if isinstance(data, dict) and "status" not in data:
+            data["status"] = "ok"
+        return data
+    except Exception as e:
+        return {"status": "error", "note": f"读取快照失败: {e}"}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -3995,6 +4039,22 @@ class Handler(BaseHTTPRequestHandler):
                 # 无缓存时返回降级数据，避免同步遍历 16 万案例文件阻塞请求
                 # 后台线程 _bg_refresh_l4_status 会异步刷新缓存
                 self._json({"loading": True, "message": "L4 状态加载中，请稍后刷新"})
+
+        # ── API: BDSM 每日快照（前端 /dashboard/bdsm 调用） ───────────────
+        # 返回最新 bdsm_snapshot_YYYYMMDD.json，含 §6 sector_valuation 字段
+        elif path == "/api/bdsm/snapshot":
+            try:
+                # 30s 缓存避免高频请求重复读文件
+                cache_key = "bdsm_snapshot"
+                cached = _cache_get(cache_key)
+                if cached and (time.time() - cached["ts"] < 30):
+                    self._json(cached["data"])
+                else:
+                    data = get_bdsm_snapshot()
+                    _cache_set(cache_key, data)
+                    self._json(data)
+            except Exception as e:
+                self._json({"status": "error", "note": f"bdsm snapshot api fail: {e}"})
 
         # ── API: DreamOS V2 六层闭环 ─────────────────────────────────────
         elif path == "/api/dreamos-v2/cycle":

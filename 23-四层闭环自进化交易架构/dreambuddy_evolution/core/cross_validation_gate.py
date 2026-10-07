@@ -54,7 +54,15 @@ class CrossValidationGate:
         dimensions: Optional[list[str]] = None,
     ) -> None:
         if dimensions is None:
-            dimensions = get_factor_dimensions()
+            # enable_attention_aggregator 开关控制：关闭时降级为固定3维度映射
+            try:
+                from dreambuddy_evolution.agi_config import get_switch as _gs_aa
+                if _gs_aa("enable_attention_aggregator", True):
+                    dimensions = get_factor_dimensions()
+                else:
+                    dimensions = ["C1", "C2", "C4"]  # 降级：固定3维度
+            except Exception:
+                dimensions = get_factor_dimensions()  # FAIL-OPEN
         self._dimensions = dimensions
 
         # 五步算法参数

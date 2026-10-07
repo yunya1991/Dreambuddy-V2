@@ -188,10 +188,25 @@ class ShadowRLTrainer:
     # gmax 变异 (Schluter 风格)
     # ------------------------------------------------------------------
     def mutate_gmax(self, current_gmax: float) -> float:
-        """策略基因权重±0.01~0.05随机扰动，结果clamp到[0,1].
+        """策略基因权重变异，结果clamp到[0,1].
 
-        变异幅度 = uniform(0.01, 0.05)，方向 = random sign.
+        enable_evolution_engine=True → 使用 EvolutionEngine（种群+结构变异+ensemble）
+        enable_evolution_engine=False → Schluter 风格随机扰动（±0.01~0.05）
         """
+        try:
+            from dreambuddy_evolution.agi_config import get_switch as _gs_ee
+            if _gs_ee("enable_evolution_engine", False):
+                from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+                _ee = EvolutionEngine(population_size=10)
+                _samples = [{"weights": np.array([current_gmax]), "arch": {"gmax": current_gmax}}]
+                if _ee.admit_to_population(_samples):
+                    _ee.evolve(generations=1)
+                    _elites = _ee.get_elites()
+                    if _elites:
+                        return max(0.0, min(1.0, float(_elites[0].weights[0])))
+        except Exception:
+            pass  # FAIL-OPEN: 降级到随机扰动
+
         magnitude = float(np.random.uniform(self.GMAX_MUTATION_LOW, self.GMAX_MUTATION_HIGH))
         direction = 1.0 if np.random.rand() >= 0.5 else -1.0
         mutated = float(current_gmax) + direction * magnitude

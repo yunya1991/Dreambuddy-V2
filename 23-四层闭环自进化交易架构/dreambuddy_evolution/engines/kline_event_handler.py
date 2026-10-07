@@ -269,11 +269,37 @@ class KlineEventHandler:
             except (TypeError, ValueError):
                 close_price = None
 
+            # enable_event_dominance 开关：事件主导控制（P1-2 双层门控第二层）
+            event_dominance: dict = {}
+            try:
+                from dreambuddy_evolution.agi_config import get_switch as _gs_ed
+                if _gs_ed("enable_event_dominance", False):
+                    from event_driven.event_dominance_controller import EventDominanceController
+                    _edc = EventDominanceController()
+                    # 从 signal_dict 提取 conviction 和 macro_direction
+                    _conviction = float(signal_dict.get("conviction", 0.5))
+                    _macro_dir = str(signal_dict.get("macro_direction", "neutral"))
+                    _data_quality = float(signal_dict.get("data_quality", 1.0))
+                    _in_fomc = bool(signal_dict.get("in_fomc_cycle", True))
+                    _dd = _edc.decide(
+                        conviction=_conviction,
+                        macro_direction=_macro_dir,
+                        data_quality=_data_quality,
+                        in_fomc_cycle=_in_fomc,
+                    )
+                    event_dominance = _dd.to_dict() if hasattr(_dd, "to_dict") else {
+                        "filter_level": getattr(_dd, "filter_level", "none"),
+                        "active": getattr(_dd, "active", False),
+                    }
+            except Exception as _e:
+                logger.debug("[EventDominance] FAIL-OPEN: %s", _e)
+
             state = {
                 "updated_at": datetime.now().isoformat(),
                 "symbol": str(kline_data.get("symbol", "UNKNOWN")),
                 "mode": "shadow",  # 影子模式标识
                 "signal": signal_dict,
+                "event_dominance": event_dominance,
                 "main_chain": {
                     "d_star": result.get("d_star"),
                     "action": result.get("action"),
