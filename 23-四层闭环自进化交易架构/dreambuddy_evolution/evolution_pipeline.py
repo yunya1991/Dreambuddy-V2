@@ -815,6 +815,7 @@ class EvolutionPipeline:
                         horizon=20,
                         n_paths=500,
                         exogenous_factors=exogenous_factors,
+                        head_multipliers=getattr(self, "_last_head_multipliers", None),
                     )
                     if dr_result is not None:
                         forecast = dr_result.get("forecast", [])
@@ -1048,18 +1049,32 @@ class EvolutionPipeline:
                 _a_dim = primary_contradiction.get("dimension") or primary_contradiction.get("primary_dimension")
                 _a_strength = float(primary_contradiction.get("strength", 0.0))
 
-                # G_dim (过去主矛盾): 优先 Granger 因果, 降级用历史矛盾记录
+                # G_dim (过去主矛盾): Granger 因果检验, 从价格序列派生 3 维度因子
                 _g_dim = None
                 _g_conf = 0.0
                 try:
                     if _gs_cv("enable_granger_pipeline", False):
                         from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
                         _gpa = GrangerPipelineAdapter()
-                        # 尝试从 market_data 获取因子和收益
-                        _factors = market_data.get("factors") if market_data else None
-                        _returns = r_out.get("returns") if r_out else None
-                        if _factors is not None and _returns is not None:
-                            _gr = _gpa.evaluate(_factors, _returns)
+                        # 从价格序列派生因子 + 计算对数收益率
+                        _closes = market_data.get("close") if market_data else None
+                        if _closes is not None and isinstance(_closes, (list, np.ndarray)) and len(_closes) >= 30:
+                            import numpy as _np_cv
+                            _price = _np_cv.asarray(_closes, dtype=float)
+                            _log_ret = _np_cv.diff(_np_cv.log(_price)) if len(_price) > 1 else _np_cv.array([])
+                            _ret = _np_cv.diff(_price) / _np_cv.maximum(_np_cv.abs(_price[:-1]), 1e-12)
+                            # 3 维度因子: 技术(动量) / 基本面(均值回归偏离) / 宏观(波动率)
+                            _ma20 = _np_cv.convolve(_price, _np_cv.ones(20) / 20, mode="same")
+                            _vol20 = _np_cv.array([
+                                _np_cv.std(_ret[max(0, i - 20):i + 1]) if i >= 5 else 0.02
+                                for i in range(len(_ret))
+                            ])
+                            _factors_by_dim = {
+                                "technical": _ret,
+                                "fundamental": (_price - _ma20)[:-1] if len(_price) > 1 else _np_cv.array([]),
+                                "macro": _vol20,
+                            }
+                            _gr = _gpa.evaluate(_factors_by_dim, _log_ret)
                             _g_dim = _gr.get("G_dim")
                             _g_conf = _gr.get("G_confidence", 0.0)
                 except Exception:
@@ -1089,6 +1104,15 @@ class EvolutionPipeline:
                         CognitiveBridge().record_quality_change(cv_result["quality_change"])
                     except Exception:
                         pass
+
+                # 保存 head_multipliers 供下一轮路径发现传入 NeuralSDE (跨轮传递)
+                try:
+                    if _gs_cv("enable_head_multipliers_adjustment", False):
+                        self._last_head_multipliers = _gate.head_adjustment_to_array(
+                            cv_result.get("head_adjustment", {})
+                        )
+                except Exception:
+                    self._last_head_multipliers = None
         except Exception as _e:  # noqa: BLE001
             logger.debug("[FO-Phase2.5][CrossValidation] fail: %s", _e)
             cv_result = {"confidence_mult": 1.0, "shift_signal": False,

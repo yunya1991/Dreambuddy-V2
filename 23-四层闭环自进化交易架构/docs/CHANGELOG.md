@@ -1,7 +1,46 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.11 | **更新日期**: 2026-10-07
+> **版本**: v1.12 | **更新日期**: 2026-10-07
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.12] - 2026-10-07 (Granger 双链路 + head_multipliers 完整接入)
+
+### 核心成果
+
+交叉验证层 4 个开关全部开启，实现完整双链路（Granger 过去 + Attention 现在）+ head_multipliers 跨轮传递到 NeuralSDE。
+
+### 1. Granger 因果链接入
+
+- **数据源**：从 `market_data["close"]` 价格序列派生 3 维度因子
+  - technical: 收益率序列（动量）
+  - fundamental: 价格偏离 MA20（均值回归）
+  - macro: 20 期滚动波动率（波动率制度）
+- **收益率**：对数收益率 `diff(log(price))`
+- **触发条件**：价格序列长度 ≥ 30
+- **输出**：G_dim + G_confidence，无显著因果时 G_dim=None（降级）
+
+### 2. head_multipliers 完整接入
+
+- `deep_reasoning_engine.reason()` 新增 `head_multipliers: Optional[np.ndarray]` 参数
+- 传递链：`reason → neural_sde_forecast → NeuralSDE.forecast(head_multipliers=)`
+- **跨轮传递**：`_select_optimal_path` 中保存 `self._last_head_multipliers`，下一轮路径发现时传入 `reason()`
+- 转换：`CrossValidationGate.head_adjustment_to_array(dict) → (n_heads,) ndarray`
+
+### 3. 开关状态（全部开启）
+
+| 开关 | 状态 |
+|------|------|
+| enable_cross_validation_gate | True |
+| enable_granger_pipeline | True |
+| enable_attention_aggregator | True |
+| enable_head_multipliers_adjustment | True |
+
+### 4. 测试
+
+- 新增 `test_cv_full_integration.py`（5 测试）
+- 57 个相关测试零回归
 
 ---
 

@@ -420,10 +420,14 @@ class DeepReasoningEngine:
         horizon: int = 20,
         n_paths: int = 1000,
         exogenous_factors: Optional[np.ndarray] = None,
+        head_multipliers: Optional[np.ndarray] = None,
     ) -> dict[str, Any]:
         """完整推理流程：签名→SDE→预测→采样→最优路径.
 
         FAIL-OPEN: 任一环节异常返回降级结果，不crash.
+
+        Args:
+            head_multipliers: (n_heads,) Phase 5 每 head 衰减系数, 来自 CrossValidationGate.
         """
         price_path = np.asarray(price_path, dtype=np.float64).ravel()
 
@@ -470,6 +474,7 @@ class DeepReasoningEngine:
                 horizon=horizon,
                 n_paths=n_paths,
                 exogenous_factors=exogenous_factors,
+                head_multipliers=head_multipliers,
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] SDE 路径生成失败: %s", e)
