@@ -1,0 +1,46 @@
+{
+  "gene_id": "CD-BOLL-WIDTH-NARROW",
+  "category": "range",
+  "condition_type": "indicator",
+  "expression": "boll_width < atr * 2.0",
+  "parameters": {
+    "boll_window": {
+      "value": 20,
+      "range": {
+        "low": 10,
+        "high": 50
+      }
+    },
+    "boll_std_mult": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 3.0
+      }
+    },
+    "narrow_mult": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/grid_trading/grid_trading_engine.py",
+    "lines": {
+      "low": 41,
+      "high": 74
+    }
+  },
+  "tags": [
+    "range",
+    "indicator",
+    "boll-narrow",
+    "grid-entry"
+  ],
+  "version": "1.0",
+  "notes": "布林带收窄 = 震荡市网格入场信号。Phase E 新增。"
+}

@@ -1,0 +1,49 @@
+{
+  "gene_id": "AC-LONG-PROBE-2SL-4TP",
+  "category": "entry_long",
+  "action_kind": "open",
+  "direction": "long",
+  "sl_template": 0.02,
+  "tp_template": 0.04,
+  "size_pct": 0.1,
+  "rr_ratio_floor": 2.0,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 1.0,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "tier": {
+      "value": "probe",
+      "range": {
+        "low": "probe",
+        "high": "standard"
+      }
+    }
+  },
+  "code_ref": {
+    "file": "dreambuddy_evolution/engines/event_driven_strategy.py",
+    "lines": {
+      "low": 59,
+      "high": 180
+    }
+  },
+  "tags": [
+    "entry_long",
+    "long",
+    "open",
+    "probe",
+    "event_arbitrage"
+  ],
+  "version": "1.0",
+  "notes": "SPEC §4.8 event_arbitrage: 利空出尽底部模式 probe 轻仓做多（仓位 10%，SL 2% / TP 4%）。"
+}

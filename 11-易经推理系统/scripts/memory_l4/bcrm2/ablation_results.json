@@ -1,0 +1,536 @@
+{
+  "configs": {
+    "full_3d": {
+      "BTC": {
+        "trades": 244,
+        "win_rate": 0.4672,
+        "total_return": 0.1244,
+        "max_drawdown": -0.1337,
+        "calmar": 0.9306,
+        "sharpe": 1.3973
+      },
+      "ETH": {
+        "trades": 244,
+        "win_rate": 0.4385,
+        "total_return": 0.0976,
+        "max_drawdown": -0.1362,
+        "calmar": 0.7163,
+        "sharpe": 0.9974
+      },
+      "SOL": {
+        "trades": 244,
+        "win_rate": 0.4221,
+        "total_return": 0.0289,
+        "max_drawdown": -0.2249,
+        "calmar": 0.1286,
+        "sharpe": 0.3076
+      },
+      "BNB": {
+        "trades": 248,
+        "win_rate": 0.4677,
+        "total_return": 0.0481,
+        "max_drawdown": -0.1918,
+        "calmar": 0.2508,
+        "sharpe": 0.5891
+      },
+      "XRP": {
+        "trades": 15,
+        "win_rate": 0.2667,
+        "total_return": -0.0282,
+        "max_drawdown": -0.0288,
+        "calmar": -0.977,
+        "sharpe": -12.7778
+      },
+      "LINK": {
+        "trades": 78,
+        "win_rate": 0.5641,
+        "total_return": 0.107,
+        "max_drawdown": -0.0661,
+        "calmar": 1.6193,
+        "sharpe": 3.2136
+      },
+      "DOGE": {
+        "trades": 15,
+        "win_rate": 0.2,
+        "total_return": -0.0239,
+        "max_drawdown": -0.0239,
+        "calmar": -1.0,
+        "sharpe": -10.6417
+      },
+      "PEPE": {
+        "trades": 78,
+        "win_rate": 0.6026,
+        "total_return": 0.1337,
+        "max_drawdown": -0.1061,
+        "calmar": 1.2594,
+        "sharpe": 2.8647
+      },
+      "UNI": {
+        "trades": 244,
+        "win_rate": 0.4385,
+        "total_return": 0.0403,
+        "max_drawdown": -0.2513,
+        "calmar": 0.1602,
+        "sharpe": 0.3443
+      },
+      "AAVE": {
+        "trades": 78,
+        "win_rate": 0.4615,
+        "total_return": 0.0641,
+        "max_drawdown": -0.118,
+        "calmar": 0.5432,
+        "sharpe": 1.4275
+      },
+      "NVDA": {
+        "trades": 78,
+        "win_rate": 0.2821,
+        "total_return": -0.1179,
+        "max_drawdown": -0.1466,
+        "calmar": -0.8042,
+        "sharpe": -6.4937
+      },
+      "AMZN": {
+        "trades": 78,
+        "win_rate": 0.3974,
+        "total_return": -0.0751,
+        "max_drawdown": -0.0955,
+        "calmar": -0.786,
+        "sharpe": -4.1565
+      }
+    },
+    "no_regime": {
+      "BTC": {
+        "trades": 244,
+        "win_rate": 0.459,
+        "total_return": 0.1038,
+        "max_drawdown": -0.1254,
+        "calmar": 0.828,
+        "sharpe": 1.257
+      },
+      "ETH": {
+        "trades": 244,
+        "win_rate": 0.4098,
+        "total_return": 0.047,
+        "max_drawdown": -0.1434,
+        "calmar": 0.3275,
+        "sharpe": 0.5342
+      },
+      "SOL": {
+        "trades": 244,
+        "win_rate": 0.4057,
+        "total_return": -0.032,
+        "max_drawdown": -0.2395,
+        "calmar": -0.1335,
+        "sharpe": -0.2355
+      },
+      "BNB": {
+        "trades": 248,
+        "win_rate": 0.4597,
+        "total_return": 0.046,
+        "max_drawdown": -0.1772,
+        "calmar": 0.2596,
+        "sharpe": 0.572
+      },
+      "XRP": {
+        "trades": 15,
+        "win_rate": 0.2667,
+        "total_return": -0.0348,
+        "max_drawdown": -0.0354,
+        "calmar": -0.9814,
+        "sharpe": -14.2137
+      },
+      "LINK": {
+        "trades": 78,
+        "win_rate": 0.5641,
+        "total_return": 0.0923,
+        "max_drawdown": -0.0641,
+        "calmar": 1.4403,
+        "sharpe": 2.9368
+      },
+      "DOGE": {
+        "trades": 15,
+        "win_rate": 0.2,
+        "total_return": -0.0239,
+        "max_drawdown": -0.0239,
+        "calmar": -1.0,
+        "sharpe": -10.6417
+      },
+      "PEPE": {
+        "trades": 78,
+        "win_rate": 0.5897,
+        "total_return": 0.1457,
+        "max_drawdown": -0.093,
+        "calmar": 1.5657,
+        "sharpe": 3.1713
+      },
+      "UNI": {
+        "trades": 244,
+        "win_rate": 0.4344,
+        "total_return": 0.0404,
+        "max_drawdown": -0.2537,
+        "calmar": 0.1591,
+        "sharpe": 0.3487
+      },
+      "AAVE": {
+        "trades": 78,
+        "win_rate": 0.4615,
+        "total_return": 0.0589,
+        "max_drawdown": -0.1143,
+        "calmar": 0.5157,
+        "sharpe": 1.3622
+      },
+      "NVDA": {
+        "trades": 78,
+        "win_rate": 0.2821,
+        "total_return": -0.1097,
+        "max_drawdown": -0.1387,
+        "calmar": -0.7912,
+        "sharpe": -6.178
+      },
+      "AMZN": {
+        "trades": 78,
+        "win_rate": 0.3846,
+        "total_return": -0.0757,
+        "max_drawdown": -0.0917,
+        "calmar": -0.8254,
+        "sharpe": -4.3046
+      }
+    },
+    "no_mcap": {
+      "BTC": {
+        "trades": 244,
+        "win_rate": 0.459,
+        "total_return": 0.1038,
+        "max_drawdown": -0.1254,
+        "calmar": 0.828,
+        "sharpe": 1.257
+      },
+      "ETH": {
+        "trades": 244,
+        "win_rate": 0.4098,
+        "total_return": 0.047,
+        "max_drawdown": -0.1434,
+        "calmar": 0.3275,
+        "sharpe": 0.5342
+      },
+      "SOL": {
+        "trades": 244,
+        "win_rate": 0.4057,
+        "total_return": -0.032,
+        "max_drawdown": -0.2395,
+        "calmar": -0.1335,
+        "sharpe": -0.2355
+      },
+      "BNB": {
+        "trades": 248,
+        "win_rate": 0.4597,
+        "total_return": 0.046,
+        "max_drawdown": -0.1772,
+        "calmar": 0.2596,
+        "sharpe": 0.572
+      },
+      "XRP": {
+        "trades": 15,
+        "win_rate": 0.2667,
+        "total_return": -0.0348,
+        "max_drawdown": -0.0354,
+        "calmar": -0.9814,
+        "sharpe": -14.2137
+      },
+      "LINK": {
+        "trades": 78,
+        "win_rate": 0.5641,
+        "total_return": 0.0923,
+        "max_drawdown": -0.0641,
+        "calmar": 1.4403,
+        "sharpe": 2.9368
+      },
+      "DOGE": {
+        "trades": 15,
+        "win_rate": 0.2,
+        "total_return": -0.0358,
+        "max_drawdown": -0.0358,
+        "calmar": -1.0,
+        "sharpe": -14.1343
+      },
+      "PEPE": {
+        "trades": 78,
+        "win_rate": 0.5385,
+        "total_return": 0.1551,
+        "max_drawdown": -0.0707,
+        "calmar": 2.1937,
+        "sharpe": 3.8617
+      },
+      "UNI": {
+        "trades": 244,
+        "win_rate": 0.3811,
+        "total_return": -0.0351,
+        "max_drawdown": -0.2573,
+        "calmar": -0.1366,
+        "sharpe": -0.2047
+      },
+      "AAVE": {
+        "trades": 78,
+        "win_rate": 0.4615,
+        "total_return": 0.0755,
+        "max_drawdown": -0.0943,
+        "calmar": 0.8011,
+        "sharpe": 1.8005
+      },
+      "NVDA": {
+        "trades": 78,
+        "win_rate": 0.2821,
+        "total_return": -0.1113,
+        "max_drawdown": -0.1402,
+        "calmar": -0.7938,
+        "sharpe": -6.2281
+      },
+      "AMZN": {
+        "trades": 78,
+        "win_rate": 0.3846,
+        "total_return": -0.0755,
+        "max_drawdown": -0.092,
+        "calmar": -0.8206,
+        "sharpe": -4.2591
+      }
+    },
+    "no_asset": {
+      "BTC": {
+        "trades": 244,
+        "win_rate": 0.4754,
+        "total_return": 0.0966,
+        "max_drawdown": -0.1316,
+        "calmar": 0.7343,
+        "sharpe": 1.0931
+      },
+      "ETH": {
+        "trades": 244,
+        "win_rate": 0.4508,
+        "total_return": 0.0664,
+        "max_drawdown": -0.1386,
+        "calmar": 0.4788,
+        "sharpe": 0.6846
+      },
+      "SOL": {
+        "trades": 244,
+        "win_rate": 0.4057,
+        "total_return": -0.032,
+        "max_drawdown": -0.2395,
+        "calmar": -0.1335,
+        "sharpe": -0.2355
+      },
+      "BNB": {
+        "trades": 248,
+        "win_rate": 0.4597,
+        "total_return": 0.046,
+        "max_drawdown": -0.1772,
+        "calmar": 0.2596,
+        "sharpe": 0.572
+      },
+      "XRP": {
+        "trades": 15,
+        "win_rate": 0.2667,
+        "total_return": -0.0348,
+        "max_drawdown": -0.0354,
+        "calmar": -0.9814,
+        "sharpe": -14.2137
+      },
+      "LINK": {
+        "trades": 78,
+        "win_rate": 0.5641,
+        "total_return": 0.0923,
+        "max_drawdown": -0.0641,
+        "calmar": 1.4403,
+        "sharpe": 2.9368
+      },
+      "DOGE": {
+        "trades": 15,
+        "win_rate": 0.2,
+        "total_return": -0.0358,
+        "max_drawdown": -0.0358,
+        "calmar": -1.0,
+        "sharpe": -14.1343
+      },
+      "PEPE": {
+        "trades": 78,
+        "win_rate": 0.5385,
+        "total_return": 0.1551,
+        "max_drawdown": -0.0707,
+        "calmar": 2.1937,
+        "sharpe": 3.8617
+      },
+      "UNI": {
+        "trades": 244,
+        "win_rate": 0.3811,
+        "total_return": -0.0351,
+        "max_drawdown": -0.2573,
+        "calmar": -0.1366,
+        "sharpe": -0.2047
+      },
+      "AAVE": {
+        "trades": 78,
+        "win_rate": 0.4615,
+        "total_return": 0.0755,
+        "max_drawdown": -0.0943,
+        "calmar": 0.8011,
+        "sharpe": 1.8005
+      },
+      "NVDA": {
+        "trades": 78,
+        "win_rate": 0.2821,
+        "total_return": -0.1113,
+        "max_drawdown": -0.1402,
+        "calmar": -0.7938,
+        "sharpe": -6.2281
+      },
+      "AMZN": {
+        "trades": 78,
+        "win_rate": 0.3846,
+        "total_return": -0.0755,
+        "max_drawdown": -0.092,
+        "calmar": -0.8206,
+        "sharpe": -4.2591
+      }
+    },
+    "baseline": {
+      "BTC": {
+        "trades": 244,
+        "win_rate": 0.5041,
+        "total_return": 0.0462,
+        "max_drawdown": -0.1528,
+        "calmar": 0.3023,
+        "sharpe": 0.5089
+      },
+      "ETH": {
+        "trades": 244,
+        "win_rate": 0.4959,
+        "total_return": 0.07,
+        "max_drawdown": -0.1617,
+        "calmar": 0.4331,
+        "sharpe": 0.621
+      },
+      "SOL": {
+        "trades": 244,
+        "win_rate": 0.4426,
+        "total_return": -0.0586,
+        "max_drawdown": -0.2664,
+        "calmar": -0.2199,
+        "sharpe": -0.3871
+      },
+      "BNB": {
+        "trades": 248,
+        "win_rate": 0.4839,
+        "total_return": 0.0895,
+        "max_drawdown": -0.1565,
+        "calmar": 0.5717,
+        "sharpe": 0.9654
+      },
+      "XRP": {
+        "trades": 15,
+        "win_rate": 0.2667,
+        "total_return": -0.0253,
+        "max_drawdown": -0.026,
+        "calmar": -0.9744,
+        "sharpe": -12.2655
+      },
+      "LINK": {
+        "trades": 78,
+        "win_rate": 0.6026,
+        "total_return": 0.0923,
+        "max_drawdown": -0.0777,
+        "calmar": 1.1875,
+        "sharpe": 2.6307
+      },
+      "DOGE": {
+        "trades": 15,
+        "win_rate": 0.2,
+        "total_return": -0.0239,
+        "max_drawdown": -0.0239,
+        "calmar": -1.0,
+        "sharpe": -10.6417
+      },
+      "PEPE": {
+        "trades": 78,
+        "win_rate": 0.5769,
+        "total_return": 0.1712,
+        "max_drawdown": -0.0946,
+        "calmar": 1.811,
+        "sharpe": 3.6373
+      },
+      "UNI": {
+        "trades": 244,
+        "win_rate": 0.4713,
+        "total_return": 0.0409,
+        "max_drawdown": -0.2648,
+        "calmar": 0.1544,
+        "sharpe": 0.3446
+      },
+      "AAVE": {
+        "trades": 78,
+        "win_rate": 0.4872,
+        "total_return": 0.115,
+        "max_drawdown": -0.1212,
+        "calmar": 0.9491,
+        "sharpe": 2.1599
+      },
+      "NVDA": {
+        "trades": 78,
+        "win_rate": 0.359,
+        "total_return": -0.1346,
+        "max_drawdown": -0.1629,
+        "calmar": -0.8261,
+        "sharpe": -5.8301
+      },
+      "AMZN": {
+        "trades": 78,
+        "win_rate": 0.3974,
+        "total_return": -0.1201,
+        "max_drawdown": -0.1331,
+        "calmar": -0.9023,
+        "sharpe": -5.497
+      }
+    }
+  },
+  "summary": {
+    "full_3d": {
+      "avg_win_rate": 0.4174,
+      "avg_total_return": 0.0333,
+      "avg_max_drawdown": -0.1269,
+      "avg_calmar": 0.1701,
+      "avg_sharpe": -1.9107,
+      "n_symbols": 12
+    },
+    "no_regime": {
+      "avg_win_rate": 0.4098,
+      "avg_total_return": 0.0215,
+      "avg_max_drawdown": -0.125,
+      "avg_calmar": 0.1137,
+      "avg_sharpe": -2.1159,
+      "n_symbols": 12
+    },
+    "no_mcap": {
+      "avg_win_rate": 0.4011,
+      "avg_total_return": 0.0163,
+      "avg_max_drawdown": -0.1229,
+      "avg_calmar": 0.1654,
+      "avg_sharpe": -2.3594,
+      "n_symbols": 12
+    },
+    "no_asset": {
+      "avg_win_rate": 0.4058,
+      "avg_total_return": 0.0173,
+      "avg_max_drawdown": -0.1231,
+      "avg_calmar": 0.1702,
+      "avg_sharpe": -2.3606,
+      "n_symbols": 12
+    },
+    "baseline": {
+      "avg_win_rate": 0.4406,
+      "avg_total_return": 0.0219,
+      "avg_max_drawdown": -0.1368,
+      "avg_calmar": 0.1239,
+      "avg_sharpe": -1.9795,
+      "n_symbols": 12
+    }
+  }
+}

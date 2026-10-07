@@ -39,10 +39,11 @@ from typing import Any, Dict, Iterable, List, Optional
 _TRAIL_DIR = Path(__file__).resolve().parent          # trailing_stop
 _16_CORE_DIR = _TRAIL_DIR.parent                      # 16-调控系统/core
 _PROJECT_DIR = _16_CORE_DIR.parents[1]                # dreambuddy-v2
+_16_SCRIPTS_DIR = _16_CORE_DIR.parent / "scripts"     # 16-调控系统/scripts
 _ARTIFACTS_DIR = _16_CORE_DIR.parent / "artifacts" / "trailing-stop"
 _STATE_FILE = _ARTIFACTS_DIR / "state.json"
 
-for _p in (_16_CORE_DIR,):
+for _p in (_16_CORE_DIR, _16_SCRIPTS_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
@@ -325,6 +326,32 @@ class TrailingStopComponent:
             pass
         return fallback_pct
 
+    @staticmethod
+    def _resolve_atr_multiplier(
+        symbol: str,
+        default_mult: float,
+    ) -> tuple[float, str]:
+        """从参数中心查询 atr_mult_range，取中位数作为标量倍数。
+
+        FAIL-OPEN：
+          - param_center 不可用 → 回退 default_mult
+          - atr_mult_range 异常 → 回退 default_mult
+
+        Returns:
+            (atr_multiplier, param_source)
+            param_source ∈ {"param_center", "config_fallback"}
+        """
+        try:
+            from param_center.api import get_sltp_params  # type: ignore
+            params = get_sltp_params(symbol)
+            lo, hi = params.atr_mult_range
+            if lo <= 0 or hi <= 0 or hi < lo:
+                return default_mult, "config_fallback"
+            median = (lo + hi) / 2.0
+            return median, "param_center"
+        except Exception:
+            return default_mult, "config_fallback"
+
     def _do_evaluate(self, systems: Optional[List[str]] = None) -> TrailingSnapshot:
         target_systems = set(self._enabled_systems(systems))
         positions_result = self._lazy_fetch_positions()
@@ -332,7 +359,7 @@ class TrailingStopComponent:
         algo_cfg: Dict[str, Any] = self._config.get("algorithm", {})
         arm_threshold_pct = float(algo_cfg.get("arm_threshold_pct", 0.20))
         atr_period = int(algo_cfg.get("atr_period", 14))
-        atr_multiplier = float(algo_cfg.get("atr_multiplier", 2.5))
+        atr_multiplier_default = float(algo_cfg.get("atr_multiplier", 2.5))
         min_trail_pct = float(algo_cfg.get("min_trail_pct", 0.03))
         atr_fallback_pct = float(algo_cfg.get("atr_fallback_pct", 0.02))
         trigger_cooldown_sec = int(self._config.get("trigger_cooldown_sec", 300))
@@ -340,10 +367,12 @@ class TrailingStopComponent:
 
         results: Dict[str, TrailingResult] = {}
         seen_keys: set = set()
+        # 参数中心接入状态：{symbol: (atr_mult, param_source)}
+        param_center_log: Dict[str, Dict[str, Any]] = {}
 
         # 遍历所有系统的 positions
-        # fetch_all_positions() 返回的各系统数据在 "systems" 键下
-        by_sys_raw: Dict[str, Any] = positions_result.get("systems") or {}
+        # fetch_all_positions() 返回的各系统数据在 "by_system" 键下
+        by_sys_raw: Dict[str, Any] = positions_result.get("by_system") or positions_result.get("systems") or {}
         for system_name, sys_data in by_sys_raw.items():
             if system_name not in target_systems:
                 continue
@@ -364,6 +393,16 @@ class TrailingStopComponent:
                 if entry_price <= 0 or size <= 0:
                     # 无有效持仓，跳过
                     continue
+
+                # 从参数中心查询 atr_mult_range（按 symbol 路由，FAIL-OPEN 回退到配置默认值）
+                atr_mult_dyn, param_source = self._resolve_atr_multiplier(
+                    coin, atr_multiplier_default,
+                )
+                if coin not in param_center_log:
+                    param_center_log[coin] = {
+                        "atr_mult": atr_mult_dyn,
+                        "source": param_source,
+                    }
 
                 upl_ratio = float(pos.get("upl_ratio") or 0.0)
                 unrealized_pnl = float(pos.get("unrealized_pnl") or 0.0)
@@ -412,7 +451,7 @@ class TrailingStopComponent:
                         peak_price=current_price if is_long else current_price,
                         peak_ts=now_iso(),
                         atr_period=atr_period,
-                        atr_multiplier=atr_multiplier,
+                        atr_multiplier=atr_mult_dyn,
                         min_trail_pct=min_trail_pct,
                         arm_threshold_pct=arm_threshold_pct,
                         current_atr=atr_value,
@@ -428,6 +467,7 @@ class TrailingStopComponent:
                 state.position_size = size
                 state.current_price = current_price
                 state.current_atr = atr_value
+                state.atr_multiplier = atr_mult_dyn
                 state.updated_ts = now_iso()
 
                 # 处理已触发后冷却 / 自动关闭
@@ -467,7 +507,7 @@ class TrailingStopComponent:
                         state.armed_ts = now_iso()
                         state.arm_pnl_eff_pct = pnl_eff
                         trail_price = calc_atr_trailing_price(
-                            is_long, state.peak_price, atr_value, atr_multiplier, min_trail_pct,
+                            is_long, state.peak_price, atr_value, atr_mult_dyn, min_trail_pct,
                         )
                         state.trailing_stop_price = trail_price
                         action = TrailingAction.ARM
@@ -484,7 +524,7 @@ class TrailingStopComponent:
                 # 状态机：ARMED → 更新追踪价 & 检查触发
                 if state.status == TrailingStatus.ARMED and not just_armed:
                     trail_price = calc_atr_trailing_price(
-                        is_long, state.peak_price, atr_value, atr_multiplier, min_trail_pct,
+                        is_long, state.peak_price, atr_value, atr_mult_dyn, min_trail_pct,
                     )
                     # 追踪止损价只向有利方向调整（做多时只上移，不下降）
                     if is_long:
@@ -588,7 +628,8 @@ class TrailingStopComponent:
                     reason=reason,
                     details={
                         "arm_threshold_pct": arm_threshold_pct,
-                        "atr_multiplier": atr_multiplier,
+                        "atr_multiplier": atr_mult_dyn,
+                        "param_source": param_source,
                         "min_trail_pct": min_trail_pct,
                         "is_long": is_long,
                         "size": size,
@@ -637,6 +678,13 @@ class TrailingStopComponent:
                 "fetch_error": positions_result.get("_fetch_error", ""),
                 "algorithm": "atr_adaptive",
                 "algorithm_params": dict(algo_cfg),
+                "param_center_status": (
+                    "ok" if any(
+                        v["source"] == "param_center"
+                        for v in param_center_log.values()
+                    ) else "fallback"
+                ),
+                "param_center_symbols": dict(param_center_log),
             },
         )
 

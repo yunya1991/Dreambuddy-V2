@@ -1,0 +1,32 @@
+{
+  "gene_id": "CD-EVENT-WINDOW-POST",
+  "category": "macroeconomics",
+  "condition_type": "event_driven",
+  "expression": "event_context.event_window == 'post_event'",
+  "parameters": {
+    "window_phase": {
+      "value": "post_event",
+      "range": {
+        "low": "pre_event",
+        "high": "post_event"
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "dreambuddy_evolution/core/event_window_tracker.py",
+    "lines": {
+      "low": 55,
+      "high": 199
+    }
+  },
+  "tags": [
+    "macroeconomics",
+    "event_driven",
+    "fomc",
+    "post_event"
+  ],
+  "version": "1.0",
+  "notes": "SPEC §4.8 event_arbitrage: FOMC 事件落地后窗口（post_event），利空出尽底部识别前置条件。"
+}

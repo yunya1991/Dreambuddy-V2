@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-FEAR-GREED-25",
+  "category": "sentiment",
+  "condition_type": "fundamental_sentiment",
+  "expression": "fear_greed_index < 25_oversold_zone",
+  "parameters": {
+    "sent_smooth_window": {
+      "value": 12,
+      "range": {
+        "low": 3,
+        "high": 96
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "13-通用风控模块/rules/gate_rules.py",
+    "lines": {
+      "low": 292,
+      "high": 310
+    }
+  },
+  "tags": [
+    "sentiment",
+    "fundamental_sentiment",
+    "FEAR-GREED<25"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #22 MVP seed (auto-gen reproducible)."
+}

@@ -10,9 +10,14 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[2]  # tests/ → dreambuddy_evolution/ → dreambuddy-v2/
+REPO = Path(__file__).resolve().parents[2]  # tests/ → dreambuddy_evolution/ → 23-四层闭环自进化交易架构/
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
+# 跨模块依赖：event_driven 包位于仓库根的 29-事件驱动策略系统/
+_REPO_ROOT = Path(__file__).resolve().parents[3]  # → dreambuddy-v2/
+_EVENT_DRIVEN_DIR = _REPO_ROOT / "29-事件驱动策略系统"
+if _EVENT_DRIVEN_DIR.exists() and str(_EVENT_DRIVEN_DIR) not in sys.path:
+    sys.path.insert(0, str(_EVENT_DRIVEN_DIR))
 
 
 # --------------------------------------------------------------------------------
@@ -161,3 +166,23 @@ def fake_sentiment_0(monkeypatch):
             return 0.5
 
     return _FakeEngine()
+
+
+# --------------------------------------------------------------------------------
+# 4. agi_switch_reset: autouse fixture，防止测试污染全局 AGI 开关
+# --------------------------------------------------------------------------------
+@pytest.fixture(autouse=True)
+def _reset_agi_switches():
+    """每个测试前后保存并恢复所有 AGI 开关状态，防止 set_switch 污染后续测试."""
+    try:
+        from dreambuddy_evolution.agi_config import AGI_SWITCHES, set_switch
+        snapshot = dict(AGI_SWITCHES)
+    except Exception:
+        snapshot = None
+    yield
+    if snapshot is not None:
+        try:
+            for k, v in snapshot.items():
+                set_switch(k, v)
+        except Exception:
+            pass

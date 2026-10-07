@@ -816,7 +816,7 @@ class KlineEventHandler:
                     if pd_inst is not None:
                         klines_for_pattern = [{"close": float(c)} for c in closes_raw]
                         agi_pattern = self._agi_enhance(
-                            "enable_pattern_detector",
+                            "enable_pattern_detection",
                             fn=pd_inst.bcrm_technical_assessment,
                             fallback=None,
                             klines=klines_for_pattern,

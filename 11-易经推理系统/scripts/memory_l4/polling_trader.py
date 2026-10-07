@@ -4495,12 +4495,22 @@ class PollingTrader:
                 allow_lower=False, coin=coin)
 
             # ── 时间衰减 TP：持仓越久，TP 越靠近入场价（更容易止盈退出）──
-            # 公式: tp_pct(t) = max(TP_FLOOR, TP_BASE - (TP_BASE - TP_FLOOR) * max(0, t-12)/60)
-            # t<12h: TP=6%(不衰减), 12h~72h线性衰减, >72h: TP=1.5%(下限)
-            _TP_DECAY_BASE = 0.06   # 初始 TP 间距 6%
-            _TP_DECAY_FLOOR = 0.015  # 衰减下限 1.5%（接近保本）
+            # 公式: tp_pct(t) = max(tp_decay_floor, current_tp - (current_tp - tp_decay_floor) * progress)
+            # 硬约束: tp_decay_floor ≥ 12%（从三维参数表获取）
+            _TP_DECAY_FLOOR = 0.12   # 默认衰减下限 12%（硬约束）
             _TP_DECAY_GRACE_HOURS = 12  # 前 12h 不衰减
             _TP_DECAY_FULL_HOURS = 72  # 72h 后到底
+            # 从三维参数表获取 tp_decay_floor（按币种差异化）
+            try:
+                from scripts.memory_l4.bcrm2.asset_classifier import classify_asset
+                from scripts.memory_l4.bcrm2.sl_tp_config import get_sltp_params
+                _ac_tp, _mc_tp = classify_asset(coin)
+                _tp_params = get_sltp_params(_ac_tp, _mc_tp, "chop")
+                _TP_DECAY_FLOOR = max(_TP_DECAY_FLOOR, _tp_params.tp_decay_floor)
+                _TP_DECAY_GRACE_HOURS, _TP_DECAY_FULL_HOURS = _tp_params.tp_decay_hours
+            except Exception:
+                pass  # FAIL-OPEN 用默认值
+
             _tp_decayed = False
             try:
                 _rec_for_age = self.position_tracker.get_open_position(inst_id)
@@ -4519,9 +4529,11 @@ class PollingTrader:
                         import time as _time_mod
                         _age_hours = (_time_mod.time() - float(_open_ts)) / 3600.0
                         if _age_hours > _TP_DECAY_GRACE_HOURS:
-                            _decay_progress = min(1.0, (_age_hours - _TP_DECAY_GRACE_HOURS) / (_TP_DECAY_FULL_HOURS - _TP_DECAY_GRACE_HOURS))
-                            _decayed_tp_pct = _TP_DECAY_BASE - (_TP_DECAY_BASE - _TP_DECAY_FLOOR) * _decay_progress
+                            _decay_progress = min(1.0, (_age_hours - _TP_DECAY_GRACE_HOURS) / max(1, _TP_DECAY_FULL_HOURS - _TP_DECAY_GRACE_HOURS))
                             _current_tp_pct = abs(_new_tp - entry_px) / entry_px if entry_px > 0 else 0
+                            # 衰减基线 = 当前 TP 间距（不低于 floor）
+                            _decay_base = max(_current_tp_pct, _TP_DECAY_FLOOR)
+                            _decayed_tp_pct = _decay_base - (_decay_base - _TP_DECAY_FLOOR) * _decay_progress
                             if _current_tp_pct > _decayed_tp_pct:
                                 _tp_dir = 1 if pos_side == "long" else -1
                                 _new_tp = round(entry_px * (1 + _tp_dir * _decayed_tp_pct), 6)
@@ -4529,7 +4541,7 @@ class PollingTrader:
                                 self._log(
                                     f"[持仓同步·时间衰减TP] {coin} {pos_side} age={_age_hours:.1f}h "
                                     f"TP间距 {_current_tp_pct*100:.2f}%→{_decayed_tp_pct*100:.2f}% "
-                                    f"(衰减进度={_decay_progress*100:.0f}%)",
+                                    f"(floor={_TP_DECAY_FLOOR*100:.1f}% 进度={_decay_progress*100:.0f}%)",
                                     "INFO",
                                 )
             except Exception as _te:
@@ -10259,14 +10271,15 @@ class PollingTrader:
             self._log(f"[P2-S4b] DataPipelineAdapter init crash (FAIL-OPEN): {_e}", "WARN")
             self._data_pipeline = None
 
-    def _p2_s4b_compute_sltp(self, tier, action, entry_px, source_tag, _last_kd):
-        """P2-S4b SL/TP 计算（缺陷C P0）.
+    def _p2_s4b_compute_sltp(self, tier, action, entry_px, source_tag, _last_kd, symbol=None):
+        """P2-S4b SL/TP 计算（缺陷C P0）— 三维分类统一入口
 
         从 _evolution_build_position 内联逻辑抽取，统一 SL/TP 门禁：
-          1. evolution 路径 SL 下限 8%（MIN_SL_PCT_TRIAL），probe 不再有 4% 特殊下限
-          2. event_arbitrage 路径 SL 下限 5%（ABS_HARD_SL_PCT）
-          3. 接入 _enforce_sl_price_floor / _enforce_tp_price_floor 双约束钳制
-          4. tier 分层 ATR 倍数 + regime 调整
+          1. 三维分类：(asset_class, market_cap_tier, market_regime) → SL/TP 参数表
+          2. evolution 路径 SL 下限从参数表获取，probe 不再有 4% 特殊下限
+          3. event_arbitrage 路径 SL 下限 5%（ABS_HARD_SL_PCT）
+          4. 接入 _enforce_sl_price_floor / _enforce_tp_price_floor 双约束钳制
+          5. tier 分层 ATR 倍数 + regime 调整
 
         Args:
             tier: probe / standard / trend
@@ -10274,6 +10287,7 @@ class PollingTrader:
             entry_px: 入场价
             source_tag: evolution / event_arbitrage 等
             _last_kd: K线特征字典（atr_pct, regime）
+            symbol: 币种符号（用于三维分类查询，None 时回退旧逻辑）
 
         Returns:
             (sl_px, tp_px, sl_pct, tp_pct)
@@ -10284,15 +10298,71 @@ class PollingTrader:
         if _atr_pct <= 0:
             _atr_pct = 0.01  # ATR 缺失兜底 1%
 
-        # SL 下限按 source_tag 区分
+        # ★ 三维分类查询（symbol 传入时启用）
+        _sl_floor = self.MIN_SL_PCT_TRIAL  # 默认 8%
+        _tp_floor = self.MIN_TP_PCT_TRIAL  # 默认 6%
+        if symbol:
+            try:
+                from scripts.memory_l4.bcrm2.market_regime_gateway import REGIME_CHOP
+                _regime = str((_last_kd or {}).get("regime", "")).lower()
+                # 映射 regime 到 bull/chop/bear
+                if any(k in _regime for k in ("trend_up", "bull", "strong_up")):
+                    _mr = "bull"
+                elif any(k in _regime for k in ("trend_down", "bear", "drop", "volatile")):
+                    _mr = "bear"
+                else:
+                    _mr = REGIME_CHOP
+                # ★ P3: 优先查询参数中心（带影子记录），FAIL-OPEN 回退 sl_tp_config
+                try:
+                    import sys as _sys
+                    from pathlib import Path as _Path
+                    _proj_root = _Path(__file__).resolve().parents[4]
+                    _pc_dir = _proj_root / "16-调控系统" / "scripts"
+                    if str(_pc_dir) not in _sys.path:
+                        _sys.path.insert(0, str(_pc_dir))
+                    from param_center.api import get_sltp_params as _pc_get
+                    from param_center.shadow_integration import get_shadow_logger as _get_sl
+                    _params = _pc_get(symbol, market_regime=_mr)
+                    # 影子记录（参数中心推荐值 vs 实际使用值）
+                    _get_sl().record_deviation(
+                        symbol=symbol,
+                        recommended={"sl_floor": _params.sl_floor,
+                                     "tp_floor": _params.tp_floor,
+                                     "atr_mult": _atr_mult},
+                        actual_used={"sl_floor": _params.sl_floor,
+                                     "tp_floor": _params.tp_floor,
+                                     "atr_mult": _atr_mult},
+                        confidence=0.0,
+                        event_type="polling",
+                    )
+                except Exception:
+                    # FAIL-OPEN 回退到 sl_tp_config（保留原逻辑）
+                    from scripts.memory_l4.bcrm2.asset_classifier import classify_asset
+                    from scripts.memory_l4.bcrm2.sl_tp_config import get_sltp_params
+                    _ac, _mc = classify_asset(symbol)
+                    _params = get_sltp_params(_ac, _mc, _mr)
+                _sl_floor = _params.sl_floor
+                _tp_floor = _params.tp_floor
+                # ATR 倍数从参数表范围取（按 tier 选择 min/mid/max）
+                _atr_range = _params.atr_mult_range
+                if tier == "probe":
+                    _atr_mult = _atr_range[0]
+                elif tier == "trend":
+                    _atr_mult = _atr_range[1]
+                else:
+                    _atr_mult = (_atr_range[0] + _atr_range[1]) / 2
+            except Exception as _e:
+                # FAIL-OPEN：分类失败回退默认值
+                pass
+
+        # SL 下限按 source_tag 区分（event_arbitrage 用更紧的 ABS_HARD_SL_PCT）
         if str(source_tag) == "event_arbitrage":
             _sl_floor = self.ABS_HARD_SL_PCT  # 5%
-        else:
-            _sl_floor = self.MIN_SL_PCT_TRIAL  # 8%（含 evolution）
 
         _sl_pct = max(_atr_mult * _atr_pct, _sl_floor)
         _sl_pct = min(_sl_pct, 0.15)  # SL 上限 15%
-        _tp_pct = min(_sl_pct * 3.0, 0.30)  # TP=3×SL，上限 30%
+        _tp_pct = max(_sl_pct * 3.0, _tp_floor)  # TP=max(3×SL, tp_floor)
+        _tp_pct = min(_tp_pct, 0.30)  # TP 上限 30%
 
         # regime 调整：震荡态放宽 SL（避免噪音扫损），趋势态 TP 放宽
         _regime = str((_last_kd or {}).get("regime", "")).lower()
@@ -10301,6 +10371,12 @@ class PollingTrader:
             _tp_pct = min(_tp_pct * 0.8, 0.30)
         elif "trend" in _regime and "down" not in _regime:
             _tp_pct = min(_tp_pct * 1.2, 0.30)
+
+        # ★ RR 硬约束修复：regime 调整可能破坏 RR≥2:1 或 TP<tp_floor，强制修复
+        if _sl_pct > 0:
+            _min_tp = max(_sl_pct * 2.001, _tp_floor)  # RR≥2:1（留浮点余量）且 TP≥tp_floor
+            if _tp_pct < _min_tp:
+                _tp_pct = min(_min_tp, 0.30)
 
         # 价格换算
         if action == "long":

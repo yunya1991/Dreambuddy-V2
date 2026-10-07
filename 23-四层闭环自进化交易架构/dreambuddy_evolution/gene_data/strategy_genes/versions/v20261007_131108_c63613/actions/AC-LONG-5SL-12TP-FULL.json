@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-LONG-5SL-12TP-FULL",
+  "category": "entry_long",
+  "action_kind": "open",
+  "direction": "long",
+  "sl_template": 0.05,
+  "tp_template": 0.12,
+  "size_pct": 1.0,
+  "rr_ratio_floor": 2.4,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 2.5,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.4,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "9-基本面分析/engines/sentiment_engine.py",
+    "lines": {
+      "low": 398,
+      "high": 444
+    }
+  },
+  "tags": [
+    "entry_long",
+    "long",
+    "open"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #3 MVP seed."
+}

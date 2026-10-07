@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-PRICEGTEMA200",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "price > ema_200",
+  "parameters": {
+    "window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 200
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "15-监控告警系统/scheduler.py",
+    "lines": {
+      "low": 39,
+      "high": 52
+    }
+  },
+  "tags": [
+    "trend",
+    "indicator",
+    "PRICEGTEMA200"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #2 MVP seed (auto-gen reproducible)."
+}

@@ -1,0 +1,100 @@
+{
+  "BTC": {
+    "params": {
+      "sl_floor": 0.04,
+      "tp_floor": 0.1493,
+      "atr_mult": 4.5289
+    },
+    "metrics": {
+      "win_rate": 0.459,
+      "total_return": 0.1293,
+      "max_drawdown": -0.1268,
+      "calmar": 1.0191,
+      "trades": 244
+    }
+  },
+  "ETH": {
+    "params": {
+      "sl_floor": 0.0625,
+      "tp_floor": 0.2911,
+      "atr_mult": 5.196
+    },
+    "metrics": {
+      "win_rate": 0.4754,
+      "total_return": 0.0975,
+      "max_drawdown": -0.1581,
+      "calmar": 0.6164,
+      "trades": 244
+    }
+  },
+  "SOL": {
+    "params": {
+      "sl_floor": 0.04,
+      "tp_floor": 0.3,
+      "atr_mult": 3.0
+    },
+    "metrics": {
+      "win_rate": 0.3852,
+      "total_return": 0.1635,
+      "max_drawdown": -0.203,
+      "calmar": 0.8054,
+      "trades": 244
+    }
+  },
+  "DOGE": {
+    "params": {
+      "sl_floor": 0.0625,
+      "tp_floor": 0.2911,
+      "atr_mult": 5.196
+    },
+    "metrics": {
+      "win_rate": 0.2,
+      "total_return": -0.0298,
+      "max_drawdown": -0.0298,
+      "calmar": -1.0,
+      "trades": 15
+    }
+  },
+  "PEPE": {
+    "params": {
+      "sl_floor": 0.04,
+      "tp_floor": 0.12,
+      "atr_mult": 4.3603
+    },
+    "metrics": {
+      "win_rate": 0.5385,
+      "total_return": 0.1732,
+      "max_drawdown": -0.0559,
+      "calmar": 3.0976,
+      "trades": 78
+    }
+  },
+  "NVDA": {
+    "params": {
+      "sl_floor": 0.1,
+      "tp_floor": 0.3,
+      "atr_mult": 5.4903
+    },
+    "metrics": {
+      "win_rate": 0.359,
+      "total_return": -0.1272,
+      "max_drawdown": -0.1558,
+      "calmar": -0.8166,
+      "trades": 78
+    }
+  },
+  "UNI": {
+    "params": {
+      "sl_floor": 0.0904,
+      "tp_floor": 0.3,
+      "atr_mult": 5.3356
+    },
+    "metrics": {
+      "win_rate": 0.5205,
+      "total_return": 0.131,
+      "max_drawdown": -0.2126,
+      "calmar": 0.6163,
+      "trades": 244
+    }
+  }
+}

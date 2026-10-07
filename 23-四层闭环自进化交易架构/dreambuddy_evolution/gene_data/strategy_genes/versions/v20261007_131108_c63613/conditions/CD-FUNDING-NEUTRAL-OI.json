@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-FUNDING-NEUTRAL-OI",
+  "category": "liquidity",
+  "condition_type": "liquidity_window",
+  "expression": "funding_rate_neutral_5bp AND open_interest_rise",
+  "parameters": {
+    "strength_threshold": {
+      "value": 0.7,
+      "range": {
+        "low": 0.3,
+        "high": 0.98
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "18-数据获取中心/data_center/monitoring/quality.py",
+    "lines": {
+      "low": 74,
+      "high": 101
+    }
+  },
+  "tags": [
+    "liquidity",
+    "liquidity_window",
+    "FUNDING-NEUTRAL+"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #20 MVP seed (auto-gen reproducible)."
+}

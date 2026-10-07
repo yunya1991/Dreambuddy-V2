@@ -1,0 +1,32 @@
+{
+  "gene_id": "CD-PRICED-IN-SCORE-GTE-075",
+  "category": "macroeconomics",
+  "condition_type": "event_driven",
+  "expression": "event_driven_strategy.priced_in_score >= 0.75",
+  "parameters": {
+    "score_threshold": {
+      "value": 0.75,
+      "range": {
+        "low": 0.60,
+        "high": 0.95
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "dreambuddy_evolution/engines/event_driven_strategy.py",
+    "lines": {
+      "low": 186,
+      "high": 225
+    }
+  },
+  "tags": [
+    "macroeconomics",
+    "event_driven",
+    "priced_in_bottom",
+    "fomc"
+  ],
+  "version": "1.0",
+  "notes": "SPEC §4.8 event_arbitrage: 利空出尽底部模式评分 ≥ 0.75（4维打分：定价充分度+落地抗跌+下影线+跨资产）。"
+}

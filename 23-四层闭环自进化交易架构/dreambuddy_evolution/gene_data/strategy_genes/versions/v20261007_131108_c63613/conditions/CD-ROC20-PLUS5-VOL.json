@@ -1,0 +1,38 @@
+{
+  "gene_id": "CD-ROC20-PLUS5-VOL",
+  "category": "momentum",
+  "condition_type": "indicator",
+  "expression": "roc_20 > 5pct AND vol_increase",
+  "parameters": {
+    "window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 200
+      }
+    },
+    "vol_baseline_days": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 90
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "21-特征工程中心/feature_hub/resistance_features.py",
+    "lines": {
+      "low": 138,
+      "high": 189
+    }
+  },
+  "tags": [
+    "momentum",
+    "indicator",
+    "ROC20-PLUS5-VOL+"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #13 MVP seed (auto-gen reproducible)."
+}

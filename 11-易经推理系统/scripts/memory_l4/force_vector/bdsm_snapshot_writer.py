@@ -22,8 +22,9 @@ import json
 import logging
 import os
 import sys
+from dataclasses import asdict
 from datetime import date, datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 # 保证 force_vector 包可被正确 import（作为脚本直接运行时 sys.path 不含父目录）
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,8 +79,251 @@ ENABLE_E7_NEGATIVE_BIAS = os.environ.get("ENABLE_E7_NEGATIVE_BIAS", "").lower() 
 _BUFFETT_DISCOUNT_FACTOR = 0.7
 _E7_NEGATIVE_BIAS_MULTIPLIER = 1.3
 
+# ── §7.1 sector_valuation 开关（默认 True；环境变量置 0/false 关闭）─────────
+# SPEC 2026-10-07-sector-valuation-comparison-spec.md §7.1
+ENABLE_SECTOR_VALUATION = os.environ.get("ENABLE_SECTOR_VALUATION", "1").lower() in ("1", "true")
+ENABLE_SECTOR_WATERLINE = os.environ.get("ENABLE_SECTOR_WATERLINE", "1").lower() in ("1", "true")
+ENABLE_UNDERVALUED_SCAN = os.environ.get("ENABLE_UNDERVALUED_SCAN", "1").lower() in ("1", "true")
+ENABLE_MULTI_DIM_VALUATION = os.environ.get("ENABLE_MULTI_DIM_VALUATION", "1").lower() in ("1", "true")
+ENABLE_FOLLOW_UP_CATALYST = os.environ.get("ENABLE_FOLLOW_UP_CATALYST", "1").lower() in ("1", "true")
+ENABLE_OVERHEAT_SIGNAL = os.environ.get("ENABLE_OVERHEAT_SIGNAL", "1").lower() in ("1", "true")
+
+# ── §6 sector_valuation 中性默认常量 ────────────────────────────────────
+_NEUTRAL_SECTOR_WATERLINE: Dict[str, Any] = {
+    "sector": "",
+    "median_percentile": 50.0,
+    "overheated": False,
+    "undervalued": False,
+    "leader": "",
+    "leader_momentum_7d": 0.0,
+}
+_NEUTRAL_MULTI_DIM_VALUATION: Dict[str, Any] = {
+    "mc_fees_pct": 50.0,
+    "mc_tvl_pct": 50.0,
+    "peg_pct": 50.0,
+    "multi_dim_score": 0.0,
+}
+_NEUTRAL_OVERHEAT_SIGNAL: Dict[str, Any] = {
+    "triggered": False,
+    "waterline": 50.0,
+    "confidence": 0.0,
+}
+_NEUTRAL_SECTOR_VALUATION_SUMMARY: Dict[str, Any] = {
+    "generated_at": "",
+    "waterlines": [],
+    "top_opportunities": [],
+    "overheat_sectors": [],
+}
+
+# ── §6.2 sector_valuation 进程内缓存（单次 write_snapshot 复用）────────────
+# key=db_path, value=SectorValuationResult。write_snapshot 开始时 clear。
+_SECTOR_VALUATION_CACHE: Dict[str, Any] = {}
+
+# ── coin → sector 反查表（来自 SECTOR_MAP）──────────────────────────────
+_COIN_TO_SECTOR: Dict[str, str] = {}
+try:
+    from force_vector.coin_fundamental_crypto import SECTOR_MAP  # noqa: E402
+    for _sec, _coins in SECTOR_MAP.items():
+        for _c in _coins:
+            _COIN_TO_SECTOR[_c] = _sec
+except Exception:  # pragma: no cover
+    pass
+
+# 复用编排器（from import 形式，便于测试 mock force_vector.bdsm_snapshot_writer.SectorValuationOrchestrator）
+try:
+    from force_vector.sector_valuation_orchestrator import (  # noqa: E402
+        SectorValuationOrchestrator,
+        SectorValuationResult,
+        SectorOverheatSignal,
+    )
+except Exception:  # pragma: no cover - 编排器缺失时降级中性
+    SectorValuationOrchestrator = None  # type: ignore[assignment]
+    SectorValuationResult = None  # type: ignore[assignment]
+    SectorOverheatSignal = None  # type: ignore[assignment]
+
 logger = logging.getLogger("bdsm_snapshot")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
+
+
+def _get_sector_valuation_result(db_path: Optional[str] = None) -> Optional[Any]:
+    """获取赛道估值编排结果（带进程内缓存，单次 write_snapshot 复用）。
+
+    SPEC §7.2 FAIL-OPEN：异常返回 None，不阻塞快照生成。
+    """
+    if not ENABLE_SECTOR_VALUATION or SectorValuationOrchestrator is None:
+        return None
+    cache_key = db_path or "default"
+    if cache_key in _SECTOR_VALUATION_CACHE:
+        return _SECTOR_VALUATION_CACHE[cache_key]
+    try:
+        orch = SectorValuationOrchestrator()
+        result = orch.run(db_path)
+    except Exception as exc:
+        logger.warning("sector_valuation FAIL-OPEN: %s", exc)
+        result = None
+    _SECTOR_VALUATION_CACHE[cache_key] = result
+    return result
+
+
+def _extract_sector_waterline_for_coin(coin: str, orch_result: Any) -> Dict[str, Any]:
+    """从编排结果提取该币所在赛道的水位（SPEC §6.1 sector_waterline）。
+
+    找不到匹配赛道 → 返回中性默认。
+    """
+    if orch_result is None or not ENABLE_SECTOR_WATERLINE:
+        return dict(_NEUTRAL_SECTOR_WATERLINE)
+    coin_sector = _COIN_TO_SECTOR.get(coin, "")
+    if not coin_sector:
+        return dict(_NEUTRAL_SECTOR_WATERLINE)
+    try:
+        for wl in getattr(orch_result, "waterlines", []) or []:
+            if getattr(wl, "sector", "") == coin_sector:
+                return {
+                    "sector": str(getattr(wl, "sector", "")),
+                    "median_percentile": float(getattr(wl, "median_percentile", 50.0)),
+                    "overheated": bool(getattr(wl, "overheated", False)),
+                    "undervalued": bool(getattr(wl, "undervalued", False)),
+                    "leader": str(getattr(wl, "leader", "")),
+                    "leader_momentum_7d": float(getattr(wl, "leader_momentum_7d", 0.0)),
+                }
+    except Exception as exc:
+        logger.warning("sector_waterline extract FAIL-OPEN coin=%s: %s", coin, exc)
+    return dict(_NEUTRAL_SECTOR_WATERLINE)
+
+
+def _extract_multi_dim_valuation_for_coin(coin: str, db_path: Optional[str]) -> Dict[str, Any]:
+    """调用 multi_dim_valuation 获取该币的多维估值（SPEC §6.1 multi_dim_valuation）。
+
+    SPEC §7.2 FAIL-OPEN：异常返回中性默认。
+    """
+    if not ENABLE_MULTI_DIM_VALUATION:
+        return dict(_NEUTRAL_MULTI_DIM_VALUATION)
+    try:
+        from force_vector.multi_dim_valuation import compute_multi_dim_valuation
+        md = compute_multi_dim_valuation(coin, db_path)
+        return {
+            "mc_fees_pct": float(md.get("mc_fees_pct", 50.0)),
+            "mc_tvl_pct": float(md.get("mc_tvl_pct", 50.0)),
+            "peg_pct": float(md.get("peg_pct", 50.0)),
+            "multi_dim_score": float(md.get("multi_dim_score", 0.0)),
+        }
+    except Exception as exc:
+        logger.warning("multi_dim FAIL-OPEN coin=%s: %s", coin, exc)
+        return dict(_NEUTRAL_MULTI_DIM_VALUATION)
+
+
+def _extract_undervalued_peers_for_coin(coin: str, orch_result: Any) -> List[Dict[str, Any]]:
+    """从编排结果提取同赛道低估伙伴（SPEC §6.1 undervalued_peers）。
+
+    排除自己。找不到 scan 或赛道 → 返回空列表。
+    """
+    if orch_result is None or not ENABLE_UNDERVALUED_SCAN:
+        return []
+    scan = getattr(orch_result, "undervalued_scan", None)
+    if scan is None:
+        return []
+    coin_sector = _COIN_TO_SECTOR.get(coin, "")
+    if not coin_sector:
+        return []
+    try:
+        sectors = getattr(scan, "sectors", {}) or {}
+        peers = sectors.get(coin_sector, [])
+        return [
+            {"coin": str(getattr(p, "coin", "")),
+             "opportunity_score": float(getattr(p, "opportunity_score", 0.0))}
+            for p in peers if getattr(p, "coin", "") != coin
+        ]
+    except Exception as exc:
+        logger.warning("undervalued_peers FAIL-OPEN coin=%s: %s", coin, exc)
+        return []
+
+
+def _extract_overheat_signal_for_coin(coin: str, orch_result: Any) -> Dict[str, Any]:
+    """从编排结果提取该币所在赛道的过热信号（SPEC §6.1 overheat_signal）。
+
+    赛道未触发过热 → {triggered:False, waterline:50.0, confidence:0.0}。
+    """
+    if orch_result is None or not ENABLE_OVERHEAT_SIGNAL:
+        return dict(_NEUTRAL_OVERHEAT_SIGNAL)
+    coin_sector = _COIN_TO_SECTOR.get(coin, "")
+    if not coin_sector:
+        return dict(_NEUTRAL_OVERHEAT_SIGNAL)
+    try:
+        for oh in getattr(orch_result, "overheat_signals", []) or []:
+            if getattr(oh, "sector", "") == coin_sector:
+                return {
+                    "triggered": True,
+                    "waterline": float(getattr(oh, "waterline", 50.0)),
+                    "confidence": float(getattr(oh, "confidence", 0.0)),
+                }
+    except Exception as exc:
+        logger.warning("overheat_signal FAIL-OPEN coin=%s: %s", coin, exc)
+    return dict(_NEUTRAL_OVERHEAT_SIGNAL)
+
+
+def _waterline_to_dict(wl: Any) -> Dict[str, Any]:
+    """将 SectorWaterline（dataclass 或 SimpleNamespace）转 dict。
+
+    asdict() 仅对 dataclass 实例生效；SimpleNamespace 走 vars() 兜底。
+    """
+    try:
+        return asdict(wl)
+    except TypeError:
+        try:
+            return dict(vars(wl))
+        except Exception:
+            return {
+                "sector": str(getattr(wl, "sector", "")),
+                "median_percentile": float(getattr(wl, "median_percentile", 50.0)),
+                "member_count": int(getattr(wl, "member_count", 0)),
+                "overheated": bool(getattr(wl, "overheated", False)),
+                "undervalued": bool(getattr(wl, "undervalued", False)),
+                "leader": str(getattr(wl, "leader", "")),
+                "leader_momentum_7d": float(getattr(wl, "leader_momentum_7d", 0.0)),
+                "timestamp": str(getattr(wl, "timestamp", "")),
+            }
+
+
+def _build_sector_valuation_summary(orch_result: Any) -> Dict[str, Any]:
+    """构造顶层 sector_valuation_summary（SPEC §6.2）。
+
+    orch_result 为 None 或异常 → 中性默认。
+    """
+    if orch_result is None:
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "waterlines": [],
+            "top_opportunities": [],
+            "overheat_sectors": [],
+        }
+    try:
+        waterlines = [_waterline_to_dict(wl) for wl in getattr(orch_result, "waterlines", []) or []]
+        scan = getattr(orch_result, "undervalued_scan", None)
+        top_opps = []
+        if scan is not None:
+            for p in getattr(scan, "top_opportunities", []) or []:
+                top_opps.append({
+                    "coin": str(getattr(p, "coin", "")),
+                    "sector": str(getattr(p, "sector", "")),
+                    "opportunity_score": float(getattr(p, "opportunity_score", 0.0)),
+                    "rank": str(getattr(p, "rank", "C")),
+                })
+        overheat_sectors = [str(getattr(oh, "sector", ""))
+                            for oh in getattr(orch_result, "overheat_signals", []) or []]
+        return {
+            "generated_at": str(getattr(orch_result, "timestamp", "")) or datetime.now(timezone.utc).isoformat(),
+            "waterlines": waterlines,
+            "top_opportunities": top_opps,
+            "overheat_sectors": overheat_sectors,
+        }
+    except Exception as exc:
+        logger.warning("sector_valuation_summary FAIL-OPEN: %s", exc)
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "waterlines": [],
+            "top_opportunities": [],
+            "overheat_sectors": [],
+        }
 
 
 def _fetch_snapshot_klines(coin: str) -> list:
@@ -200,6 +444,11 @@ def _neutral_coin_entry(reason: str = "insufficient_data") -> Dict[str, Any]:
         "scaling_plan": scaling_plan,
         "trend_stop": trend_stop,
         "value_exit": value_exit,
+        # §6.1 sector_valuation 4 字段中性默认（SPEC 2026-10-07 §6.1 / §7.2 FAIL-OPEN）
+        "sector_waterline": dict(_NEUTRAL_SECTOR_WATERLINE),
+        "multi_dim_valuation": dict(_NEUTRAL_MULTI_DIM_VALUATION),
+        "undervalued_peers": [],
+        "overheat_signal": dict(_NEUTRAL_OVERHEAT_SIGNAL),
         "_unavailable_reason": reason,
     }
 
@@ -213,6 +462,11 @@ def neutral_snapshot(reason: str = "generic_fallback") -> Dict[str, Any]:
         "version": _SCHEMA_VERSION,
         "neutral_fallback_reason": reason,
         "coins": {coin: _neutral_coin_entry("global_neutral_fallback") for coin in BDSM_COINS},
+        # §6.2 顶层 sector_valuation_summary 中性默认（generated_at 用真实时间戳）
+        "sector_valuation_summary": {
+            **dict(_NEUTRAL_SECTOR_VALUATION_SUMMARY),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        },
     }
 
 
@@ -947,6 +1201,23 @@ def _build_coin_entry(coin: str, db_path: str | None = None) -> Dict[str, Any]:
     except Exception:
         entry["tactical_position_eligibility"] = False  # FAIL-OPEN
 
+    # ── §6.1 sector_valuation 4 字段注入（SPEC 2026-10-07 §6.1）───────────
+    # 调用 SectorValuationOrchestrator 获取赛道估值，按 coin 的 sector 提取对应字段。
+    # R4 FAIL-OPEN：任何异常 → 4 字段保持中性默认（已在 _neutral_coin_entry 兜底；
+    # 此处显式注入保证非 neutral 路径下也有字段）。
+    try:
+        _sv_result = _get_sector_valuation_result(db_path)
+        entry["sector_waterline"] = _extract_sector_waterline_for_coin(coin, _sv_result)
+        entry["multi_dim_valuation"] = _extract_multi_dim_valuation_for_coin(coin, db_path)
+        entry["undervalued_peers"] = _extract_undervalued_peers_for_coin(coin, _sv_result)
+        entry["overheat_signal"] = _extract_overheat_signal_for_coin(coin, _sv_result)
+    except Exception as _exc_sv:
+        logger.warning("BDSM sector_valuation 注入失败 coin=%s: %s", coin, _exc_sv)
+        entry.setdefault("sector_waterline", dict(_NEUTRAL_SECTOR_WATERLINE))
+        entry.setdefault("multi_dim_valuation", dict(_NEUTRAL_MULTI_DIM_VALUATION))
+        entry.setdefault("undervalued_peers", [])
+        entry.setdefault("overheat_signal", dict(_NEUTRAL_OVERHEAT_SIGNAL))
+
     return entry
 
 
@@ -977,6 +1248,9 @@ def write_snapshot(
     filename = f"bdsm_snapshot_{today_str.replace('-', '')}.json"
     output_path = os.path.abspath(os.path.join(actual_dir, filename))
 
+    # §6.2 清除 sector_valuation 缓存，确保新一次 write_snapshot 重新计算
+    _SECTOR_VALUATION_CACHE.clear()
+
     coins_data: Dict[str, Dict[str, Any]] = {}
     if dry_run_read_coin_data_from_db:
         for coin in BDSM_COINS:
@@ -995,12 +1269,18 @@ def write_snapshot(
         entry["exit_action"] = action
         entry["exit_triggers"] = triggers
 
+    # §6.2 顶层 sector_valuation_summary（SPEC 2026-10-07 §6.2）
+    # 复用 _build_coin_entry 已缓存的 orchestrator 结果（同 db_path）
+    _sv_result_for_summary = _get_sector_valuation_result(db_path)
+    sector_valuation_summary = _build_sector_valuation_summary(_sv_result_for_summary)
+
     snapshot: Dict[str, Any] = {
         "snapshot_date": today_str,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "version": _SCHEMA_VERSION,
         "neutral_fallback_reason": "",
         "coins": coins_data,
+        "sector_valuation_summary": sector_valuation_summary,
     }
 
     # 原子写入（先写 tmp 再 rename）

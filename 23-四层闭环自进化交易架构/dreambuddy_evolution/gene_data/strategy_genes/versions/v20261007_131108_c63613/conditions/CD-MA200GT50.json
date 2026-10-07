@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-MA200GT50",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "ma_200 > ma_50",
+  "parameters": {
+    "window": {
+      "value": 20,
+      "range": {
+        "low": 5,
+        "high": 200
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "9-基本面分析/engines/sentiment_engine.py",
+    "lines": {
+      "low": 138,
+      "high": 223
+    }
+  },
+  "tags": [
+    "trend",
+    "indicator",
+    "MA200GT50"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #1 MVP seed (auto-gen reproducible)."
+}

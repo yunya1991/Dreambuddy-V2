@@ -314,7 +314,7 @@ class TestAGIEnhancement:
         from dreambuddy_evolution.agi_config import set_switch
         # 关闭签名引擎开关
         set_switch("enable_signature_engine", False)
-        set_switch("enable_pattern_detector", False)
+        set_switch("enable_pattern_detection", False)
         set_switch("enable_btc_regime_classifier", False)
         try:
             handler = KlineEventHandler(mode="Phase2")
@@ -335,7 +335,7 @@ class TestAGIEnhancement:
         finally:
             # 恢复开关
             set_switch("enable_signature_engine", True)
-            set_switch("enable_pattern_detector", True)
+            set_switch("enable_pattern_detection", True)
             set_switch("enable_btc_regime_classifier", True)
 
     def test_signature_engine_produces_output(self):

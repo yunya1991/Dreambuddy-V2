@@ -1,0 +1,22 @@
+{
+  "gene_id": "CD-NECKLINE-BREAK",
+  "category": "reversal",
+  "condition_type": "indicator",
+  "expression": "neckline_broken AND close < neckline_level AND volume_expanding",
+  "parameters": {
+    "neckline_lookback": {"value": 30, "range": {"low": 15, "high": 60}},
+    "neckline_break_pct": {"value": 0.01, "range": {"low": 0.005, "high": 0.03}},
+    "volume_expand_ratio": {"value": 1.2, "range": {"low": 1.0, "high": 2.0}},
+    "confirm_bars": {"value": 2, "range": {"low": 1, "high": 5}}
+  },
+  "inverted": false,
+  "weight": 1.2,
+  "code_ref": {
+    "file": "2-KNOWLEDGE/5-CASE-STUDY/2026-07-15-顶部下跌交易案例-BTC-头肩顶.md",
+    "lines": {"low": 1, "high": 150}
+  },
+  "version": "1.0",
+  "description": "颈线跌破信号（头肩顶/双顶等顶部形态颈线有效跌破，放量确认 → 做空）",
+  "direction_mode": "fixed",
+  "direction": "short"
+}

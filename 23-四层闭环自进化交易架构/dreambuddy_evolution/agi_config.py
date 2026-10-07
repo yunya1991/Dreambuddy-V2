@@ -46,6 +46,7 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_pattern_detection": True,     # 头肩顶等形态检测
     "enable_btc_regime_classifier": True, # BTC-美股相关性 regime 分类
     "enable_three_factor_short": True,    # 三因子共振做空
+    "enable_three_factor_long": True,     # 三因子共振做多
     "enable_hjb_solver": True,           # HJB PDE 最优路径求解器
     "enable_variational_opt": True,      # 变分法路径优化器
     "enable_contradiction_identifier": True,  # 主要矛盾识别器 (Phase 3.1)

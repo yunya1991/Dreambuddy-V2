@@ -1,5 +1,33 @@
 [
   {
+    "combo_id": "CB-EVENT-PRICED-IN",
+    "condition_ids": [
+      "CD-MA200GT50"
+    ],
+    "action_ids": [
+      "AC-LONG-2SL-4TP-Q1"
+    ],
+    "condition_logic": "all",
+    "ess": 0.72,
+    "n_samples": 180,
+    "parameters": {
+      "risk_multiplier": 0.8,
+      "timeframe": "1d"
+    },
+    "meta": {
+      "strategy_type": "event_arbitrage",
+      "author": "event-driven-team",
+      "created_at": "2026-10-07T00:00:00Z",
+      "source_backtest_id": "BT-EVENT-PRICED-IN-001"
+    },
+    "tags": [
+      "event",
+      "arbitrage"
+    ],
+    "version": "1.0",
+    "notes": "事件驱动套利组合：事件定价偏差回归"
+  },
+  {
     "combo_id": "CB-GRID-001",
     "condition_ids": [
       "CD-MA200GT50"

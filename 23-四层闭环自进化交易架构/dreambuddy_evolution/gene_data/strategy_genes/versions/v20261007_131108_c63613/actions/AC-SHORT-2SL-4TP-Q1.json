@@ -1,0 +1,47 @@
+{
+  "gene_id": "AC-SHORT-2SL-4TP-Q1",
+  "category": "entry_short",
+  "action_kind": "open",
+  "direction": "short",
+  "sl_template": 0.02,
+  "tp_template": 0.04,
+  "size_pct": 0.25,
+  "rr_ratio_floor": 2.0,
+  "parameters": {
+    "sl_atr_mult": {
+      "value": 1.0,
+      "range": {
+        "low": 1.0,
+        "high": 4.0
+      }
+    },
+    "tp_rr_ratio": {
+      "value": 2.0,
+      "range": {
+        "low": 1.0,
+        "high": 5.0
+      }
+    },
+    "max_slippage_bps": {
+      "value": 5,
+      "range": {
+        "low": 1,
+        "high": 30
+      }
+    }
+  },
+  "code_ref": {
+    "file": "9-基本面分析/engines/sentiment_engine.py",
+    "lines": {
+      "low": 93,
+      "high": 123
+    }
+  },
+  "tags": [
+    "entry_short",
+    "short",
+    "open"
+  ],
+  "version": "1.0",
+  "notes": "Baseline action #5 MVP seed."
+}

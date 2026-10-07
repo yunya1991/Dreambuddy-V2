@@ -77,7 +77,10 @@ class ShadowRLTracker:
                 # C方案: 训练只传有效样本（reward≠0），防 baseline 被 0 污染
                 effective_samples = [s for s in self._samples if s["reward"] != 0.0]
                 try:
-                    self.trainer.train_policy(effective_samples)
+                    # enable_deep_policy 开关控制是否使用 MLPPolicy+A2C 深度策略
+                    from dreambuddy_evolution.agi_config import is_enabled
+                    _backend = "deep" if is_enabled("enable_deep_policy") else "simple"
+                    self.trainer.train_policy(effective_samples, policy_backend=_backend)
                 except Exception as e:
                     logger.warning("[FO] ShadowRL train_policy crash(FAIL-OPEN): %s", e)
 

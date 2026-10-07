@@ -441,7 +441,8 @@ class DeepReasoningEngine:
         # 1.5 Phase 2 前置签名特征提取（17 维：5 状态 + 12 签名）
         signature_features: list[float] = []
         try:
-            sig_ext = self._get_signature_feature_extractor()
+            from dreambuddy_evolution.agi_config import is_enabled
+            sig_ext = self._get_signature_feature_extractor() if is_enabled("enable_signature_features") else None
             if sig_ext is not None:
                 # 从价格路径提取状态特征（简化：用收益率统计量）
                 returns = np.diff(price_path) / np.maximum(np.abs(price_path[:-1]), 1e-12) if len(price_path) > 1 else [0.0]

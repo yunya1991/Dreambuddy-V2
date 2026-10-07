@@ -1,0 +1,38 @@
+{
+  "gene_id": "CD-VGX-ATR-HIGH",
+  "category": "volatility",
+  "condition_type": "indicator",
+  "expression": "vgx_atr_ratio_above_1p5",
+  "parameters": {
+    "atr_window": {
+      "value": 14,
+      "range": {
+        "low": 7,
+        "high": 50
+      }
+    },
+    "atr_mult": {
+      "value": 1.5,
+      "range": {
+        "low": 0.5,
+        "high": 4.0
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "18-数据获取中心/data_center/monitoring/quality.py",
+    "lines": {
+      "low": 105,
+      "high": 184
+    }
+  },
+  "tags": [
+    "volatility",
+    "indicator",
+    "VGX/ATR-HIGH"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #17 MVP seed (auto-gen reproducible)."
+}

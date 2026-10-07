@@ -230,6 +230,39 @@ def top_combinations_by_ess(library: dict[str, Any], min_sample: int = 30) -> li
 
 
 # ==================================================================================================
+# 3.5 find_combinations_by_strategy_type → 按 strategy_type 筛选组合
+# ==================================================================================================
+def find_combinations_by_strategy_type(library: dict[str, Any], strategy_type: str) -> list[dict]:
+    """
+    从 library 中查找 meta.strategy_type == strategy_type 的组合列表.
+
+    Args:
+        library: load_gene_library() 返回值
+        strategy_type: 策略类型（如 "event_arbitrage", "trend_follow"）
+    Returns:
+        list[dict]: 匹配的组合列表（含 combo_id, strategy_type 等字段）
+    FAIL-OPEN: 非法输入返回空列表。
+    """
+    if not isinstance(library, dict):
+        return []
+    out: list[dict] = []
+    for c in library.get("combinations", []) or []:
+        meta = c.get("meta") or {}
+        if not isinstance(meta, dict):
+            continue
+        if meta.get("strategy_type") == strategy_type:
+            out.append({
+                "combo_id": str(c.get("combo_id", "")),
+                "strategy_type": strategy_type,
+                "ess": c.get("ess"),
+                "n_samples": c.get("n_samples", 0),
+                "condition_ids": list(c.get("condition_ids", []) or []),
+                "action_ids": list(c.get("action_ids", []) or []),
+            })
+    return out
+
+
+# ==================================================================================================
 # 4. search_genes_by_category → 读 gene_index.json 倒排索引
 # ==================================================================================================
 def search_genes_by_category(root: str | Path, category: str) -> list[str]:

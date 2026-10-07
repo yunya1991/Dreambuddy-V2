@@ -1,0 +1,20 @@
+{
+  "gene_id": "CD-DONCHIAN-10-BREAK",
+  "category": "trend",
+  "condition_type": "indicator",
+  "expression": "close > donchian_10_high OR close < donchian_10_low",
+  "parameters": {
+    "donchian_period": {"value": 10, "range": {"low": 5, "high": 20}},
+    "breakout_threshold_pct": {"value": 0.001, "range": {"low": 0.0005, "high": 0.003}}
+  },
+  "inverted": false,
+  "weight": 0.9,
+  "code_ref": {
+    "file": "23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trend_following/trend_following_engine.py",
+    "lines": {"low": 42, "high": 77}
+  },
+  "version": "1.0",
+  "description": "10日唐奇安通道突破（短期敏感版，下突破能及时触发，弥补20日通道滞后问题）",
+  "direction_mode": "dynamic",
+  "direction_rule": "close > donchian_10_high → long; close < donchian_10_low → short"
+}

@@ -130,6 +130,14 @@ class TestTrailingStopComponent(unittest.TestCase):
             }),
             encoding="utf-8",
         )
+        # 旧测试套件预设：param_center 调用强制 FAIL-OPEN 回退到配置默认 atr_multiplier=2.5
+        # （参数中心接入测试见 test_param_center_integration.py）
+        self._pc_patcher = patch(
+            "param_center.api.get_sltp_params",
+            side_effect=RuntimeError("test_uses_config_default"),
+        )
+        self._pc_patcher.start()
+        self.addCleanup(self._pc_patcher.stop)
 
     def tearDown(self):
         import shutil

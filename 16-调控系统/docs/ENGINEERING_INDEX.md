@@ -1,7 +1,9 @@
 # 工程索引 — 16-调控系统
 
 > **定位：** 模块级工程索引（L2），对齐系统 `2-KNOWLEDGE/4-OPERATIONS/索引体系.md` 的 Z 轴三层规范
-> **版本：** v2.1 | **更新：** 2026-08-17 | **维护者：** DreamBuddy v2
+> **版本：** v2.2 | **更新：** 2026-10-07 | **维护者：** DreamBuddy v2
+>
+> **v2.2 变更：** 新增 §11 参数中心（Param Center）子模块（`scripts/param_center/`），含对外 API `get_sltp_params` + BMA/KL散度聚合 + Bayesian 四条件门禁 + Ray Tune 大规模并行优化 + 影子校准，45/45 测试 GREEN，trailing_stop 与 polling_trader 已接入。详见 [scripts/param_center/README.md](../scripts/param_center/README.md)。
 >
 > **v2.1 变更：** 新增 L1.5 资金调控层（`core/capital_control/`），含 1 个主组件 + 4 条资金规则 + 配置/示例/测试套件；`unified_position_query.py` 补齐 equity 字段与 `total_equity` 聚合；`auto_exit_system.py` 新增步骤 1.5 挂载 + `_write_capital_report` + `--dry-run`。详见 [CAPITAL_CONTROL_DESIGN.md](./CAPITAL_CONTROL_DESIGN.md)。
 
@@ -19,7 +21,8 @@
 - [8. 配置与产物](#8-配置与产物)
 - [9. 资金调控层（L1.5）](#9-资金调控层l15)
 - [10. 文档对齐说明（范围错位）](#10-文档对齐说明范围错位)
-- [11. 快速导航](#11-快速导航)
+- [11. 参数中心（Param Center）](#11-参数中心param-center)
+- [12. 快速导航](#12-快速导航)
 
 ---
 
@@ -436,7 +439,63 @@ enhanced_evolution（增强闭环）
 
 ---
 
-## 11. 快速导航
+## 11. 参数中心（Param Center）
+
+> **v2.2 新增**：参数中心子模块落地于 `scripts/param_center/`，是"参数中心化、执行去中心化"架构的 Layer 2。详见 [scripts/param_center/README.md](../scripts/param_center/README.md)。
+
+### 11.1 模块定位
+
+| 属性 | 值 |
+|------|-----|
+| 模块路径 | `scripts/param_center/`（位于 `scripts/` 而非 `core/`，因为它是参数基础设施而非离场决策组件） |
+| SPEC | `param-center-arch-20261007`（三层混合架构 Layer 2） |
+| 状态 | active（4 个任务全部落地，2026-10-07） |
+| 认知记忆 | VM-1791350368266 / VM-1791350666257 / VM-1791350788450 / VM-1791351023601 |
+| 验收 SKILL | `dream-module-post-dev-verify-workflow` v1.0.0（本模块为首个验证演练案例） |
+
+### 11.2 模块结构
+
+| 文件 | 角色 | 关键能力 |
+|------|------|----------|
+| `api.py` | 对外契约 | `get_sltp_params(symbol, market_regime, use_cache)` 唯一公开 API |
+| `repository.py` | 缓存层 | ParamRepository 3D 参数表 + 5min TTL + FAIL-OPEN |
+| `aggregator.py` | 聚合层 | StatAggregator BMA + KL散度加权 + `trigger_recompute()` |
+| `verifier.py` | 验证层 | BayesianVerifier 四条件门禁（年化收益/最大回撤/夏普/Calmar） |
+| `calibration.py` | 校准层 | CalibrationAnalyzer 影子偏差分析 → 校准建议 |
+| `ray_optimizer.py` | 优化层 | RayTuneOptimizer 大规模并行搜索（AsyncHyperBand + BayesOpt） |
+| `shadow_integration.py` | 影子层 | ParamCenterShadowLogger 推荐值 vs 实际值偏差 |
+| `adapters/` | 算法适配器 | 6 个：HMM/Bagua/Hurst/PMapper/Shadow/CUSUM（BaseAdapter FAIL-OPEN） |
+
+### 11.3 接入点（已落地）
+
+| 子系统 | 路径 | 状态 |
+|---|---|---|
+| trailing_stop | `core/trailing_stop/component.py:345` | ✅ 已接入 + FAIL-OPEN |
+| polling_trader | `11-易经推理系统/scripts/memory_l4/polling_trader.py:10323` | ✅ 已接入 + 影子模式 |
+| 集成测试 | `tests/trailing_stop/test_param_center_integration.py` | ✅ |
+
+### 11.4 测试与产物
+
+- 测试：`pytest param_center/tests/` → **45 passed, 0 failed, 0 errors**（5.28s）
+- 产物：`scripts/artifacts/param_center/ray_tune_results.json`（Ray Tune 50 trials，BTC best_calmar=1.5）
+- 校准触发阈值：`MIN_SAMPLE_COUNT=30, DEVIATION_AVG=0.15, DEVIATION_STD=0.10`
+- 硬约束兜底：`SL_FLOOR=0.04, TP_FLOOR=0.12, RR_FLOOR=2.0, ATR_MULT=[2.0, 6.0]`
+
+### 11.5 触发机制
+
+- **定时**：每日 00:00 UTC 全量归总（HMM/Hurst/Bagua 重新拟合）
+- **事件**：CUSUM 检测结构性突变 → 立即触发增量归总
+- **API**：`get_sltp_params(symbol, market_regime, use_cache)` 同步查询
+
+### 11.6 关联文档
+
+- 模块 README：[scripts/param_center/README.md](../scripts/param_center/README.md) v1.0
+- 三层架构 SSoT：[1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0
+- 验收 SKILL：`dream-module-post-dev-verify-workflow` v1.0.0
+
+---
+
+## 12. 快速导航
 
 | 目标 | 路径 |
 |------|------|

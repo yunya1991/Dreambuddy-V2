@@ -1,0 +1,31 @@
+{
+  "gene_id": "CD-ADI-UP-5BAR",
+  "category": "momentum",
+  "condition_type": "indicator",
+  "expression": "accumulation_distribution_up_5bar",
+  "parameters": {
+    "strength_threshold": {
+      "value": 0.7,
+      "range": {
+        "low": 0.3,
+        "high": 0.98
+      }
+    }
+  },
+  "inverted": false,
+  "weight": 1.0,
+  "code_ref": {
+    "file": "18-数据获取中心/data_center/monitoring/quality.py",
+    "lines": {
+      "low": 103,
+      "high": 191
+    }
+  },
+  "tags": [
+    "momentum",
+    "indicator",
+    "ADI-UP-5BAR"
+  ],
+  "version": "1.0",
+  "notes": "Baseline gene #15 MVP seed (auto-gen reproducible)."
+}
