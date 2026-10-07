@@ -17629,6 +17629,43 @@ def main():
     )
     args = parser.parse_args()
 
+    # ================================================================
+    # 单例硬锁：fcntl.flock + PID 文件，根治多进程并发启动
+    # 设计要点：
+    #   1. --once 模式跳过锁（一次性快照不阻塞主轮询进程）
+    #   2. flock LOCK_EX | LOCK_NB 非阻塞独占锁，进程退出/异常/kill -9 自动释放
+    #   3. 失败时打印已运行 PID 并 sys.exit(1)，硬约束（区别于 ProcessGuardian 软警告）
+    #   4. ProcessGuardian 被 --no-guardian 绕过且仅 print 警告不退出，本锁独立强制
+    # ================================================================
+    _PIDFILE_LOCK_FP = None  # 保持引用防止 GC 释放 flock
+    if not args.once:
+        import fcntl
+        import sys
+        _PIDFILE_PATH = "/tmp/polling_trader.pid"
+        try:
+            _PIDFILE_LOCK_FP = open(_PIDFILE_PATH, "w")
+            fcntl.flock(_PIDFILE_LOCK_FP, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            _PIDFILE_LOCK_FP.seek(0)
+            _PIDFILE_LOCK_FP.truncate()
+            _PIDFILE_LOCK_FP.write(str(os.getpid()))
+            _PIDFILE_LOCK_FP.flush()
+        except (IOError, OSError):
+            existing_pid = "(unknown)"
+            try:
+                with open(_PIDFILE_PATH) as f:
+                    existing_pid = f.read().strip() or "(unknown)"
+            except Exception:
+                pass
+            print(
+                f"[single-instance] polling_trader 已有进程运行 (PID={existing_pid})，本次启动退出。",
+                flush=True,
+            )
+            print(
+                f"[single-instance] 如需强制重启：kill -9 {existing_pid} && rm -f {_PIDFILE_PATH}",
+                flush=True,
+            )
+            sys.exit(1)
+
     coins = [c.strip().upper() for c in args.coins.split(",")]
     # P4 修复：币种规范化（XAUT → XAU，因为 OKX 实际存在的是 XAU-USDT-SWAP，XAUT 已下架）
     # 在 CLI 层做一次，配合 PollingTrader.__init__ 内的二次规范化形成双保险。
