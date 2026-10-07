@@ -124,7 +124,7 @@ class CoinGeckoCollector(BaseCollector):
         if not coin_id:
             return []
         days = max(1, min(days, 90))  # 限制 1-90 天
-        data = self._get(f"{_BASE}/coins/{coin_id}/market_chart?days={days}")
+        data = self._get(f"{_BASE}/coins/{coin_id}/market_chart?vs_currency=usd&days={days}")
         if not isinstance(data, dict):
             return []
 

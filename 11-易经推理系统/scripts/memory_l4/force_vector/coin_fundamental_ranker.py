@@ -84,6 +84,31 @@ CRYPTO_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "ZEC": {"coingecko_id": "zcash", "defillama_slug": None},
     # ARB: L2 Arbitrum 治理代币，DeFiLlama 有 protocol 费用数据
     "ARB": {"coingecko_id": "arbitrum", "defillama_slug": "arbitrum"},
+    # --- SECTOR_MAP 全量补全（供 query_valuation_percentile / sector_waterline 使用）---
+    # 与 coin_fundamental_crypto.py._SECTOR_COIN_META 保持 1:1 对齐
+    # DEX
+    "CRV": {"coingecko_id": "curve-dao-token", "defillama_slug": "curve"},
+    "1INCH": {"coingecko_id": "1inch", "defillama_slug": "1inch"},
+    "CAKE": {"coingecko_id": "pancakeswap-token", "defillama_slug": "pancakeswap"},
+    "SUSHI": {"coingecko_id": "sushi", "defillama_slug": "sushi"},
+    # Lending
+    "COMP": {"coingecko_id": "compound-governance-token", "defillama_slug": "compound"},
+    "MKR": {"coingecko_id": "maker", "defillama_slug": "makerdao"},
+    # L1
+    "BNB": {"coingecko_id": "binancecoin", "defillama_slug": None},
+    "ADA": {"coingecko_id": "cardano", "defillama_slug": None},
+    # L2
+    "OP": {"coingecko_id": "optimism", "defillama_slug": "optimism"},
+    "MATIC": {"coingecko_id": "matic-network", "defillama_slug": "polygon"},
+    "STX": {"coingecko_id": "blockstack", "defillama_slug": "stacks"},
+    # Meme
+    "DOGE": {"coingecko_id": "dogecoin", "defillama_slug": None},
+    "SHIB": {"coingecko_id": "shiba-inu", "defillama_slug": None},
+    "PEPE": {"coingecko_id": "pepe", "defillama_slug": None},
+    # Perp DEX
+    "GMX": {"coingecko_id": "gmx", "defillama_slug": "gmx"},
+    "GNS": {"coingecko_id": "gains-network", "defillama_slug": "gains-network"},
+    "DYDX": {"coingecko_id": "dydx", "defillama_slug": "dydx"},
 }
 
 # 美股映射：股票代码 → yfinance symbol（1:1，预留未来 ticker 别名）
