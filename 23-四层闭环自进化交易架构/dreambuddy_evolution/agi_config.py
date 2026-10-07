@@ -73,6 +73,11 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_contradiction_driven_layer": True,     # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)
     "enable_event_dominance": True,                # 事件主导控制开关 (P1-2 双层门控第二层)
     "enable_auto_weight_adjustment": True,          # 自进化权重自动调整 (基因创新闭环)
+    # --- 交叉验证层 (矛盾Transformer §5.1) ---
+    "enable_cross_validation_gate": False,           # 交叉验证层总开关 (默认关闭, 验证稳定后开启)
+    "enable_granger_pipeline": False,                # Granger 因果链 (过去主矛盾 G_dim)
+    "enable_attention_aggregator": False,            # Attention 聚合 (现在主矛盾 A_dim)
+    "enable_head_multipliers_adjustment": False,     # head_multipliers 调整 (质变后)
 }
 
 

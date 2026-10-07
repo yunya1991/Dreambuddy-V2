@@ -1035,6 +1035,66 @@ class EvolutionPipeline:
         except Exception as _e:  # noqa: BLE001
             logger.debug("[FO-Phase2][ShiftAcc] fail: %s", _e)
 
+        # === Phase 2.5: 交叉验证层 (矛盾Transformer §5.1) — FAIL-OPEN ===
+        cv_result = {"confidence_mult": 1.0, "shift_signal": False,
+                     "head_adjustment": {}, "quality_change": {},
+                     "granger_reestimate_trigger": False}
+        try:
+            from dreambuddy_evolution.agi_config import get_switch as _gs_cv
+            if _gs_cv("enable_cross_validation_gate", False) and primary_contradiction is not None:
+                from dreambuddy_evolution.core.cross_validation_gate import CrossValidationGate
+
+                # A_dim (现在主矛盾): 从 primary_contradiction 获取
+                _a_dim = primary_contradiction.get("dimension") or primary_contradiction.get("primary_dimension")
+                _a_strength = float(primary_contradiction.get("strength", 0.0))
+
+                # G_dim (过去主矛盾): 优先 Granger 因果, 降级用历史矛盾记录
+                _g_dim = None
+                _g_conf = 0.0
+                try:
+                    if _gs_cv("enable_granger_pipeline", False):
+                        from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
+                        _gpa = GrangerPipelineAdapter()
+                        # 尝试从 market_data 获取因子和收益
+                        _factors = market_data.get("factors") if market_data else None
+                        _returns = r_out.get("returns") if r_out else None
+                        if _factors is not None and _returns is not None:
+                            _gr = _gpa.evaluate(_factors, _returns)
+                            _g_dim = _gr.get("G_dim")
+                            _g_conf = _gr.get("G_confidence", 0.0)
+                except Exception:
+                    pass  # FAIL-OPEN: Granger 失败则降级
+
+                # structural_break: 复用 Phase 2 结果
+                _sb = getattr(self, "_last_structural_break", None)
+
+                _gate = CrossValidationGate(
+                    persistence_threshold=getattr(self, "_cv_persistence_threshold", 5),
+                    structural_break_threshold=getattr(self, "_cv_structural_break_threshold", 1.0),
+                    enable_head_multipliers_mean_reversion=True,
+                )
+                cv_result = _gate.compare(
+                    G_dim=_g_dim, G_conf=_g_conf,
+                    A_dim=_a_dim, A_strength=_a_strength,
+                    structural_break=_sb,
+                )
+
+                # 质变事件 → 认知记录 (FAIL-OPEN)
+                # quality_change 可能是 bool 或 dict，兼容两种格式
+                _qc = cv_result.get("quality_change", False)
+                _qc_detected = _qc if isinstance(_qc, bool) else _qc.get("detected", False)
+                if _qc_detected:
+                    try:
+                        from dreambuddy_evolution.adapters.cognitive_bridge import CognitiveBridge
+                        CognitiveBridge().record_quality_change(cv_result["quality_change"])
+                    except Exception:
+                        pass
+        except Exception as _e:  # noqa: BLE001
+            logger.debug("[FO-Phase2.5][CrossValidation] fail: %s", _e)
+            cv_result = {"confidence_mult": 1.0, "shift_signal": False,
+                         "head_adjustment": {}, "quality_change": {},
+                         "granger_reestimate_trigger": False}
+
         # === Phase 3: 弹性约束 → 仓位倍数调整 ===
         try:
             _elastic = self._get_elastic_resolver()
@@ -1176,6 +1236,11 @@ class EvolutionPipeline:
                 elif p.get("direction") != "neutral" and p.get("direction") != pc_dir:
                     score = score * (1.0 - 0.3 * pc_strength)  # 逆向减分
 
+            # 交叉验证层 confidence_mult: 双链路一致→加分, 分歧→减分 (§5.1)
+            _cv_mult = float(cv_result.get("confidence_mult", 1.0))
+            if _cv_mult != 1.0:
+                score = score * _cv_mult
+
             # 趋势延续性增强: 延续性高 → 加分
             cont = float(p.get("continuation_score", 0.5))  # HC-AGI-20: 缺失取 0.5
             score = score * (0.8 + 0.4 * cont)
@@ -1222,6 +1287,8 @@ class EvolutionPipeline:
             # §14+§19 新增：反身性燃料+认知函数
             "reflexivity_fuel": reflexivity_fuel,
             "cognition_result": cognition_result,
+            # §5.1 交叉验证层输出
+            "cross_validation": cv_result,
         }
 
     def _load_library(self):

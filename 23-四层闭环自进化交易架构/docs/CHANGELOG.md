@@ -1,7 +1,45 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.10 | **更新日期**: 2026-10-07
+> **版本**: v1.11 | **更新日期**: 2026-10-07
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.11] - 2026-10-07 (交叉验证层接入 evolution_pipeline 主流程)
+
+### 核心成果
+
+CrossValidationGate 正式接入 `_select_optimal_path()` 主流程，4 个 agi_config 开关配置完成（默认 False），confidence_mult 应用于路径评分，质变事件自动记录到认知系统。
+
+### 1. agi_config 开关（4 个，默认 False）
+
+| 开关 | 作用 |
+|------|------|
+| `enable_cross_validation_gate` | 交叉验证层总开关 |
+| `enable_granger_pipeline` | Granger 因果链（G_dim） |
+| `enable_attention_aggregator` | Attention 聚合（A_dim） |
+| `enable_head_multipliers_adjustment` | head_multipliers 调整 |
+
+### 2. evolution_pipeline 集成
+
+- **集成点**：Phase 2.5（结构断裂检测之后、弹性约束之前）
+- **A_dim**：从 `primary_contradiction.dimension` 获取（现在主矛盾）
+- **G_dim**：优先 GrangerPipelineAdapter，失败降级为 None（Q4 降级模式）
+- **structural_break**：复用 Phase 2 的 `self._last_structural_break`
+- **confidence_mult**：应用于路径评分（一致→1.15 加分，分歧→0.9 减分）
+- **质变事件**：`quality_change=True` 时调用 `CognitiveBridge.record_quality_change()`
+- **返回值**：新增 `cross_validation` 字段
+
+### 3. FAIL-OPEN 保证
+
+- 开关关闭 → `cv_result` 默认 `{confidence_mult:1.0, ...}`，不影响现有评分
+- 任何子组件异常 → 捕获并返回中性结果
+- `quality_change` 兼容 bool/dict 两种格式
+
+### 4. 测试
+
+- 新增 `test_cv_pipeline_integration.py`（4 测试）
+- 44 个相关测试零回归
 
 ---
 
