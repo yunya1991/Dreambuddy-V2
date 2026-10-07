@@ -77,10 +77,10 @@ _L1_HTTP_PROXY = os.environ.get("SNAPSHOT_PROXY") or os.environ.get("HTTP_PROXY"
 # CRCL 暂不归入（主网未上线，无费用数据）。
 SECTOR_MAP: Dict[str, list] = {
     "DEX": ["UNI", "CRV", "1INCH", "CAKE", "SUSHI"],
-    "Lending": ["AAVE", "COMP", "MKR"],
-    "L1": ["BTC", "ETH", "SOL", "BNB", "ADA", "ZEC"],
+    "Lending": ["AAVE", "COMP", "MKR", "LDO"],
+    "L1": ["BTC", "ETH", "SOL", "BNB", "ADA", "ZEC", "AVAX", "NEAR"],
     "L2": ["OP", "ARB", "MATIC", "STX"],
-    "Meme": ["PUMP", "DOGE", "SHIB", "PEPE"],
+    "Meme": ["PUMP", "DOGE", "SHIB", "PEPE", "WIF"],
     "Perp_DEX": ["HYPE", "GMX", "GNS", "DYDX"],
 }
 
@@ -97,6 +97,7 @@ _SECTOR_COIN_META: Dict[str, Dict[str, Optional[str]]] = {
     "AAVE": {"coingecko_id": "aave", "defillama_slug": "aave"},
     "COMP": {"coingecko_id": "compound-governance-token", "defillama_slug": "compound"},
     "MKR": {"coingecko_id": "maker", "defillama_slug": "makerdao"},
+    "LDO": {"coingecko_id": "lido-dao", "defillama_slug": "lido"},
     # L1（无 defillama_slug，用 NVT 替代 MC/Fees）
     "BTC": {"coingecko_id": "bitcoin", "defillama_slug": None},
     "ETH": {"coingecko_id": "ethereum", "defillama_slug": None},
@@ -104,6 +105,8 @@ _SECTOR_COIN_META: Dict[str, Dict[str, Optional[str]]] = {
     "BNB": {"coingecko_id": "binancecoin", "defillama_slug": None},
     "ADA": {"coingecko_id": "cardano", "defillama_slug": None},
     "ZEC": {"coingecko_id": "zcash", "defillama_slug": None},
+    "AVAX": {"coingecko_id": "avalanche-2", "defillama_slug": None},
+    "NEAR": {"coingecko_id": "near", "defillama_slug": None},
     # L2
     "OP": {"coingecko_id": "optimism", "defillama_slug": "optimism"},
     "ARB": {"coingecko_id": "arbitrum", "defillama_slug": "arbitrum"},
@@ -114,6 +117,7 @@ _SECTOR_COIN_META: Dict[str, Dict[str, Optional[str]]] = {
     "DOGE": {"coingecko_id": "dogecoin", "defillama_slug": None},
     "SHIB": {"coingecko_id": "shiba-inu", "defillama_slug": None},
     "PEPE": {"coingecko_id": "pepe", "defillama_slug": None},
+    "WIF": {"coingecko_id": "dogwifhat", "defillama_slug": None},
     # Perp DEX
     "HYPE": {"coingecko_id": "hyperliquid", "defillama_slug": "hyperliquid"},
     "GMX": {"coingecko_id": "gmx", "defillama_slug": "gmx"},

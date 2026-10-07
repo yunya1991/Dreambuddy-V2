@@ -94,9 +94,12 @@ CRYPTO_MAP: Dict[str, Dict[str, Optional[str]]] = {
     # Lending
     "COMP": {"coingecko_id": "compound-governance-token", "defillama_slug": "compound"},
     "MKR": {"coingecko_id": "maker", "defillama_slug": "makerdao"},
+    "LDO": {"coingecko_id": "lido-dao", "defillama_slug": "lido"},
     # L1
     "BNB": {"coingecko_id": "binancecoin", "defillama_slug": None},
     "ADA": {"coingecko_id": "cardano", "defillama_slug": None},
+    "AVAX": {"coingecko_id": "avalanche-2", "defillama_slug": None},
+    "NEAR": {"coingecko_id": "near", "defillama_slug": None},
     # L2
     "OP": {"coingecko_id": "optimism", "defillama_slug": "optimism"},
     "MATIC": {"coingecko_id": "matic-network", "defillama_slug": "polygon"},
@@ -105,6 +108,7 @@ CRYPTO_MAP: Dict[str, Dict[str, Optional[str]]] = {
     "DOGE": {"coingecko_id": "dogecoin", "defillama_slug": None},
     "SHIB": {"coingecko_id": "shiba-inu", "defillama_slug": None},
     "PEPE": {"coingecko_id": "pepe", "defillama_slug": None},
+    "WIF": {"coingecko_id": "dogwifhat", "defillama_slug": None},
     # Perp DEX
     "GMX": {"coingecko_id": "gmx", "defillama_slug": "gmx"},
     "GNS": {"coingecko_id": "gains-network", "defillama_slug": "gains-network"},
@@ -116,6 +120,9 @@ STOCK_MAP: Dict[str, str] = {
     "NVDA": "NVDA",
     "AAPL": "AAPL",
     "MSFT": "MSFT",
+    "TSLA": "TSLA",
+    "GOOGL": "GOOGL",
+    "META": "META",
 }
 
 # 贵金属映射：金属代码 → (yfinance ETF, FRED series)

@@ -1,16 +1,18 @@
-"""一次性 backfill 脚本：拉取 SECTOR_MAP 全部 25 币的 CoinGecko market_chart 数据，
+"""一次性 backfill 脚本：拉取 SECTOR_MAP 全部 30 币的 CoinGecko market_chart 数据，
 写入 data_center.db records 表（sub_category=chart_{coin_id}）。
 
 供 query_valuation_percentile / sector_waterline 使用。
 
 用法：
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心
-  python backfill_coingecko_chart.py
+  python backfill_coingecko_chart.py              # 回填全部 30 币
+  python backfill_coingecko_chart.py --only avalanche-2 near lido-dao dogwifhat  # 只回填指定币
 
 CoinGecko 公共 API 限流 ~10-30 req/min，串行 + 间隔 5s 避免触发 429。
 """
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import time
@@ -32,19 +34,26 @@ COIN_IDS = [
     # DEX
     "uniswap", "curve-dao-token", "1inch", "pancakeswap-token", "sushi",
     # Lending
-    "aave", "compound-governance-token", "maker",
+    "aave", "compound-governance-token", "maker", "lido-dao",
     # L1
     "bitcoin", "ethereum", "solana", "binancecoin", "cardano", "zcash",
+    "avalanche-2", "near",
     # L2
     "optimism", "arbitrum", "matic-network", "blockstack",
     # Meme
-    "pump-fun", "dogecoin", "shiba-inu", "pepe",
+    "pump-fun", "dogecoin", "shiba-inu", "pepe", "dogwifhat",
     # Perp DEX
     "hyperliquid", "gmx", "gains-network", "dydx",
 ]
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Backfill CoinGecko chart data for SECTOR_MAP coins")
+    parser.add_argument("--only", nargs="+", metavar="COIN_ID", help="只回填指定的 coin_id 列表")
+    args = parser.parse_args()
+
+    coin_ids = args.only if args.only else COIN_IDS
+
     sink = SqliteSink(DB_PATH)
     collector = CoinGeckoCollector()
 
@@ -56,10 +65,10 @@ def main() -> int:
     fail_count = 0
     skip_count = 0
 
-    print(f"[{datetime.now(timezone.utc).isoformat()}] 开始 backfill {len(COIN_IDS)} 个币的 chart 数据")
+    print(f"[{datetime.now(timezone.utc).isoformat()}] 开始 backfill {len(coin_ids)} 个币的 chart 数据")
     print(f"DB: {DB_PATH}")
 
-    for i, coin_id in enumerate(COIN_IDS, 1):
+    for i, coin_id in enumerate(coin_ids, 1):
         # 限流：每个请求间隔 5s
         if i > 1:
             time.sleep(5.0)
@@ -67,7 +76,7 @@ def main() -> int:
         try:
             recs = collector.fetch({"route": "coin_chart", "coin_id": coin_id, "days": 30})
             if not recs:
-                print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} SKIP（无数据返回）")
+                print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} SKIP（无数据返回）")
                 skip_count += 1
                 continue
 
@@ -75,12 +84,12 @@ def main() -> int:
             ts = recs[0].timeseries
             ts_len = len(ts) if ts else 0
             latest_mcap = ts[-1].get("market_cap", 0) if ts else 0
-            print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} OK  points={ts_len} latest_mcap={latest_mcap:.2e}")
+            print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} OK  points={ts_len} latest_mcap={latest_mcap:.2e}")
             ok_count += 1
 
         except RateLimitError as e:
             # 429 限流：等 60s 后重试一次
-            print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} 429 限流，等 60s 后重试一次...")
+            print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} 429 限流，等 60s 后重试一次...")
             time.sleep(60.0)
             try:
                 recs = collector.fetch({"route": "coin_chart", "coin_id": coin_id, "days": 30})
@@ -88,17 +97,17 @@ def main() -> int:
                     sink.write(recs)
                     ts = recs[0].timeseries
                     ts_len = len(ts) if ts else 0
-                    print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} OK（重试）  points={ts_len}")
+                    print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} OK（重试）  points={ts_len}")
                     ok_count += 1
                 else:
-                    print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} SKIP（重试后仍无数据）")
+                    print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} SKIP（重试后仍无数据）")
                     skip_count += 1
             except Exception as e2:
-                print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} FAIL（重试也失败）: {e2}")
+                print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} FAIL（重试也失败）: {e2}")
                 fail_count += 1
 
         except Exception as e:
-            print(f"[{i:02d}/{len(COIN_IDS)}] {coin_id:30s} FAIL: {e}")
+            print(f"[{i:02d}/{len(coin_ids)}] {coin_id:30s} FAIL: {e}")
             fail_count += 1
 
     print()

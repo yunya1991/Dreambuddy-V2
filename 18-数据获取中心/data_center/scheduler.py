@@ -339,20 +339,21 @@ class CollectionScheduler:
                 params={"route": "coin_info", "coin_id": coin_id},
                 interval_sec=21600,  # 6h
             ))
-        #    CoinGecko coin_chart：SECTOR_MAP 全部 25 币的 30 天 market_cap 时序
+        #    CoinGecko coin_chart：SECTOR_MAP 全部 30 币的 30 天 market_cap 时序
         #    （query_valuation_percentile 纵向百分位 / sector_waterline 水位线依赖）
         #    CoinGecko 公共 API 限流 ~15 req/min，12h 间隔避免触发 429
         for coin_id in (
             # DEX
             "uniswap", "curve-dao-token", "1inch", "pancakeswap-token", "sushi",
             # Lending
-            "aave", "compound-governance-token", "maker",
+            "aave", "compound-governance-token", "maker", "lido-dao",
             # L1
             "bitcoin", "ethereum", "solana", "binancecoin", "cardano", "zcash",
+            "avalanche-2", "near",
             # L2
             "optimism", "arbitrum", "matic-network", "blockstack",
             # Meme
-            "pump-fun", "dogecoin", "shiba-inu", "pepe",
+            "pump-fun", "dogecoin", "shiba-inu", "pepe", "dogwifhat",
             # Perp DEX
             "hyperliquid", "gmx", "gains-network", "dydx",
         ):
@@ -363,7 +364,7 @@ class CollectionScheduler:
                 interval_sec=43200,  # 12h（每日 2 次，刷新 30d K 线 latest point）
             ))
         #    yfinance stock_info：核心美股 PE / margins / ROE（Earnings Stability + PE Mean Reversion 信号）
-        for symbol in ("NVDA", "AAPL", "MSFT"):
+        for symbol in ("NVDA", "AAPL", "MSFT", "TSLA", "GOOGL", "META"):
             tasks.append(CollectionTask(
                 name=f"yfinance_stock_info_{symbol.lower()}",
                 category="finance", source="yfinance",
