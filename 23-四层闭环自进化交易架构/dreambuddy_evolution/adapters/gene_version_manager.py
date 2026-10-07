@@ -33,8 +33,11 @@ logger = logging.getLogger(__name__)
 class GeneVersionManager:
     """基因库版本管理器"""
 
-    def __init__(self, strategy_genes_dir: str | Path):
-        self._dir = Path(strategy_genes_dir)
+    def __init__(self, strategy_genes_dir: Optional[str | Path] = None):
+        if strategy_genes_dir is None:
+            self._dir = Path(__file__).resolve().parent.parent / "gene_data" / "strategy_genes"
+        else:
+            self._dir = Path(strategy_genes_dir)
         self._versions_dir = self._dir / "versions"
 
     def snapshot(self, trigger_source: str = "auto", note: str = "") -> Optional[str]:

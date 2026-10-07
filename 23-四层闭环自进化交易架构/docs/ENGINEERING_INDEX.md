@@ -1,6 +1,6 @@
 # 23-四层闭环自进化交易架构 — 工程索引
 
-> **版本**: v1.4 | **更新日期**: 2026-09-11
+> **版本**: v1.5 | **更新日期**: 2026-10-07
 > **定位**: 模块级工程索引（L2），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
 
 ---
@@ -81,7 +81,7 @@
 │   ├── gene_data/                      # 策略基因数据
 │   │   ├── candidates/                 # Layer 0 候选基因
 │   │   ├── shadow_validation/          # Layer 1 影子验证（3104 样本）
-│   │   ├── strategy_genes/             # Layer 2 实盘基因（条件+动作）
+│   │   ├── strategy_genes/             # Layer 2 实盘基因（条件+动作+versions版本快照+audit_log）
 │   │   ├── strategy_combinations/      # 组合库+ESS评分
 │   │   └── schemas/                    # JSON Schema
 │   ├── tests/                          # 测试套件（52 文件，692 测试）
@@ -162,6 +162,10 @@
 | `cognitive_bridge.py` | `CognitiveBridge` | 认知记忆系统桥接（Phase3） |
 | `capital_rotation.py` | `CapitalRotationAdapter` | 资金轮动检测 |
 | `traditional_finance.py` | `TraditionalFinanceBridge` | 传统金融信号（Regime/Kelly/Vol） |
+| `ftc_gene_innovation.py` | `GeneInnovationEngine` | L2 基因创新引擎（候选生成+回测验证+写入） |
+| `ftc_evolution_bridge.py` | `FTCEvolutionBridge` | 质变事件→基因创新桥接（run_gene_innovation） |
+| `gene_version_manager.py` | `GeneVersionManager` | 基因库版本控制（snapshot/rollback/list_versions） |
+| `gene_audit_gate.py` | `GeneAuditGate` | 三级审核门禁（Schema+统计+相对提升） |
 
 ---
 
@@ -272,6 +276,10 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 对齐决策 →
 | `test_p1_integration.py` | P1 PatternDetector+weight 接入 |
 | `test_p2_cbr_extension.py` | P2 CBR 扩展（pattern+case_type） |
 | `test_p3_agi_pipeline.py` | P3 AGI 模块懒初始化接入 |
+| `test_gene_governance.py` | 基因创新治理（版本快照/回滚+三级审核门禁） |
+| `test_cross_validation_gate.py` | 交叉验证门（质变检测+head调整） |
+| `test_cv_pipeline_integration.py` | 交叉验证门接入 pipeline |
+| `test_cv_full_integration.py` | 交叉验证全链路集成 |
 
 **运行命令**：
 ```bash
@@ -316,5 +324,5 @@ cd 23-四层闭环自进化交易架构 && python -m pytest dreambuddy_evolution
 
 ---
 
-**文档版本**: v1.4
-**最后更新**: 2026-09-11
+**文档版本**: v1.5
+**最后更新**: 2026-10-07

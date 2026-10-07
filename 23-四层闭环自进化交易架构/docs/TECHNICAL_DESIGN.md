@@ -86,27 +86,31 @@
 ### 2.2 模块关系
 
 ```
-2-KNOWLEDGE (策略知识)
-       │
-       ▼
-knowledge_to_gene_converter.py  ← 新增
-       │
-       ▼
-gene_data/candidates/           ← Layer 0
-       │
-       ▼
-shadow_validator.py             ← 新增
-       │                  ↕
-       │          BTC回测引擎 + polling_trader
-       │                  (样本来源)
-       ▼
-gene_data/shadow_validation/    ← Layer 1
-       │
-       ▼
+2-KNOWLEDGE (策略知识)              质变事件 (CrossValidationGate)
+       │                                    │
+       ▼                                    ▼
+knowledge_to_gene_converter.py      ftc_evolution_bridge.py
+       │                           (run_gene_innovation)
+       ▼                                    │
+gene_data/candidates/           ← Layer 0    ▼
+       │                           ftc_gene_innovation.py
+       ▼                           (GeneInnovationEngine)
+shadow_validator.py             ← 新增        │
+       │                  ↕                    ├─ GeneAuditGate (三级门禁)
+       │          BTC回测引擎 + polling_trader │   1. Schema 校验
+       │                  (样本来源)           │   2. 统计门槛 N≥100/ESS≥0.5
+       ▼                                      │   3. 相对提升 ESS>baseline×1.1
+gene_data/shadow_validation/    ← Layer 1     │
+       │                                      ├─ GeneVersionManager (版本控制)
+       ▼                                      │   snapshot / rollback / list_versions
 ftc_gene_innovation.py          ← 现有（write_gene_to_library）
        │
        ▼
 gene_data/strategy_genes/      ← Layer 2（现有，不变）
+       ├── conditions/
+       ├── actions/
+       ├── versions/            ← v1.13 新增（版本快照）
+       └── audit_log.jsonl      ← v1.13 新增（审核日志）
 ```
 
 ---
@@ -272,6 +276,13 @@ def backtest_gene_candidates(
 | `check_shadow_promotion` | `(gene_id: str, samples: list) → dict` | 检查影子基因准入/淘汰 |
 | `backtest_gene_candidates` | `(kline_data, candidates) → dict` | BTC回测驱动样本 |
 | `promote_to_active` | `(gene_id: str) → bool` | 影子验证通过→写正式基因库 |
+| `GeneVersionManager.snapshot` | `(trigger_source: str) → str \| None` | 快照当前基因库，返回 version_id |
+| `GeneVersionManager.rollback` | `(version_id: str) → bool` | 回滚到指定版本（回滚前自动快照） |
+| `GeneVersionManager.list_versions` | `() → list[dict]` | 列出所有版本元数据 |
+| `GeneAuditGate.audit` | `(gene_data, n_samples, ess, baseline_ess) → dict` | 三级门禁综合审核 |
+| `GeneAuditGate.validate_schema` | `(gene_data: dict) → dict` | 门禁1: Schema 校验 |
+| `GeneAuditGate.validate_statistical` | `(n_samples, ess, min_samples=100, min_ess=0.5) → dict` | 门禁2: 统计门槛 |
+| `GeneAuditGate.validate_relative_improvement` | `(ess: float, baseline_ess: float) → bool` | 门禁3: 相对提升 |
 
 ### 5.2 与现有系统的接口
 
@@ -282,6 +293,8 @@ def backtest_gene_candidates(
 | `reflection_engine.py` | **不改动** | CS 公式不增加知识维度 |
 | `weight_feedback.py` | 独立路径 | 策略知识权重反哺走 RAG 路径 |
 | `polling_trader.py` | 记录影子样本 | 模式触发时记录到 shadow_validation |
+| `evolution_pipeline.py` | `quality_change=True` → `run_gene_innovation()` | 质变事件触发基因创新（v1.13） |
+| `cross_validation_gate.py` | 输出 `quality_change` 信号 | 驱动 FTCEvolutionBridge 基因创新 |
 
 ---
 
@@ -322,7 +335,14 @@ gene_data/
 ├── strategy_genes/               ← Layer 2 (现有，不变)
 │   ├── conditions/
 │   ├── actions/
-│   └── gene_index.json
+│   ├── gene_index.json
+│   ├── versions/                 ← v1.13 新增（版本快照）
+│   │   └── v{timestamp}_{uuid}/
+│   │       ├── manifest.json
+│   │       ├── conditions/
+│   │       ├── actions/
+│   │       └── library.json
+│   └── audit_log.jsonl           ← v1.13 新增（审核日志）
 ├── strategy_combinations/
 │   └── library.json
 └── evolution_snapshots.json
@@ -342,6 +362,10 @@ gene_data/
 | `L2_MIN_ESS` | 0.5 | 实盘基因库准入ESS（现有不变） |
 | `BACKTEST_HOLD_BARS` | 12 | 回测模拟持有bar数（4h×12=48h） |
 | `BACKTEST_LOOKBACK` | 20 | 计算指标所需回看bar数 |
+| `enable_gene_innovation` | True | 质变事件触发基因创新（v1.13） |
+| `enable_gene_version_snapshot` | True | 新基因写入前自动快照（v1.13） |
+| `enable_gene_audit_gate` | True | 三级审核门禁（v1.13） |
+| `RELATIVE_IMPROVEMENT_FACTOR` | 1.1 | 相对提升系数：新ESS > 均值×此值（v1.13） |
 
 ---
 
@@ -552,6 +576,97 @@ L3 路径计算层
 
 ---
 
+## 13. 基因创新治理 — 版本控制与三级审核门禁（v1.13 新增）
+
+### 13.1 设计目标
+
+解决基因创新上线的风险问题：
+1. **可回退**：新基因写入前自动快照，表现变差可一键回滚
+2. **可审核**：三级门禁过滤噪声/不合格基因
+3. **可追溯**：审核日志记录所有通过/拒绝决策
+
+### 13.2 版本控制 (GeneVersionManager)
+
+**文件**: `adapters/gene_version_manager.py`
+
+**快照结构**:
+```
+strategy_genes/versions/
+└── v{timestamp}_{uuid}/
+    ├── manifest.json      # {version_id, timestamp, n_genes, trigger_source, note}
+    ├── conditions/        # 完整复制
+    ├── actions/           # 完整复制
+    └── library.json       # 完整复制
+```
+
+**核心方法**:
+
+| 方法 | 签名 | 说明 |
+|:---|:---|:---|
+| `snapshot` | `(trigger_source: str, note: str = "") → str \| None` | 快照当前基因库，返回 version_id |
+| `rollback` | `(version_id: str) → bool` | 回滚到指定版本。**回滚前自动快照当前状态**，防止误操作丢数据 |
+| `list_versions` | `() → list[dict]` | 按时间倒序返回所有版本元数据 |
+
+**触发时机**: `GeneInnovationEngine.write_gene_to_library()` 写入新基因**之前**自动调用 `snapshot()`。
+
+### 13.3 三级审核门禁 (GeneAuditGate)
+
+**文件**: `adapters/gene_audit_gate.py`
+
+| 门禁 | 校验内容 | 拒绝条件 | 目的 |
+|:---|:---|:---|:---|
+| 1. Schema | 符合 `schemas/condition.json`（`additionalProperties: false`） | 字段缺失/多余/类型错误 | 防止 bad_genes 类型错误（历史 38310 条） |
+| 2. 统计 | N ≥ 100 且 ESS ≥ 0.5 | 样本不足或效果差 | 防止小样本噪声基因 |
+| 3. 相对提升 | 新 ESS > 现有均值 × 1.1 | 新基因不比现有好 | 确保创新有价值而非退化 |
+
+**审核结果**:
+```python
+{
+    "passed": bool,
+    "gates": {
+        "schema": {"passed": bool, "reason": str},
+        "statistical": {"passed": bool, "reason": str},
+        "relative": bool,
+    },
+    "reason": str,  # 综合原因
+}
+```
+
+**审核日志**: `strategy_genes/audit_log.jsonl`，每条记录包含 timestamp/gene_id/passed/reason。
+
+### 13.4 写入流程
+
+```
+候选基因 → validate_candidate (门禁2: N/ESS)
+         → write_gene_to_library
+              ├─ audit() 门禁1(Schema) + 门禁3(相对提升)
+              │   └─ 未通过 → return False + 写 audit_log
+              ├─ snapshot() 版本快照
+              └─ 写入 conditions/{gene_id}.json
+```
+
+### 13.5 触发链路
+
+```
+CrossValidationGate.evaluate()
+    → quality_change = {"detected": True, ...}
+    → evolution_pipeline._select_optimal_path()
+         → FTCEvolutionBridge.run_gene_innovation()
+              → detect_anomalies → validate_candidate → write_gene_to_library
+```
+
+### 13.6 回滚操作示例
+
+```python
+from dreambuddy_evolution.adapters.gene_version_manager import GeneVersionManager
+
+mgr = GeneVersionManager()
+versions = mgr.list_versions()          # 查看所有版本
+mgr.rollback(versions[0]["version_id"]) # 回滚到上一版（自动先快照当前）
+```
+
+---
+
 ## 变更记录
 
 | 版本 | 日期 | 变更内容 |
@@ -561,3 +676,4 @@ L3 路径计算层
 | v1.2 | 2026-09-11 | 更新：1500 bar 扩展数据（8个月）、3104 样本 ShadowRL Phase3 激活、REINFORCE 训练闭环、5 基因 promote、趋势跟踪+网格+RegimeGate 落地、665 测试全绿 |
 | v1.3 | 2026-09-11 | 更新：P2 CBR 扩展（pattern+case_type）、P3 AGI 模块懒初始化接入 pipeline（CausalEngine/SignatureEngine/PathIntegralEngine/UncertaintyQuantifier/MetaCognitionGate）、692 测试全绿、技术债务全部清零 |
 | v1.5 | 2026-09-11 | 新增：§12 L3 路径计算层 HJB/变分法最优路径求解器、HC-AGI-15/16/17 硬约束、哲学差距分析、715 测试全绿 |
+| v1.13 | 2026-10-07 | 新增：§13 基因创新治理（GeneVersionManager 版本快照/回滚 + GeneAuditGate 三级审核门禁 + FTCEvolutionBridge 接入质变事件）、6 治理测试全绿 |

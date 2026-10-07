@@ -495,5 +495,118 @@ def run_symbol(symbol: str, market_data: dict, rv=None) -> dict[str, Any]
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2026-09-07
+## 12. GeneVersionManager
+
+**文件**: `adapters/gene_version_manager.py` | **版本**: v1.13
+
+基因库版本控制：快照、回滚、版本清单。
+
+### 12.1 构造函数
+
+```python
+GeneVersionManager(strategy_genes_dir: str | Path | None = None)
+```
+
+参数 `strategy_genes_dir` 默认指向 `gene_data/strategy_genes/`。
+
+### 12.2 snapshot
+
+```python
+def snapshot(trigger_source: str, note: str = "") -> str | None
+```
+
+快照当前 `conditions/`、`actions/`、`library.json` 到 `versions/v{timestamp}_{uuid}/`。
+
+**返回**: version_id（如 `"v20261007_120000_a1b2c3"`），失败返回 `None`。
+
+### 12.3 rollback
+
+```python
+def rollback(version_id: str) -> bool
+```
+
+回滚到指定版本。**回滚前自动快照当前状态**（`trigger_source="pre_rollback"`），防止误操作丢数据。
+
+**返回**: `True` 成功，`False` 失败。
+
+### 12.4 list_versions
+
+```python
+def list_versions() -> list[dict]
+```
+
+按时间倒序返回所有版本元数据：
+```python
+[{
+    "version_id": "v20261007_120000_a1b2c3",
+    "timestamp": "2026-10-07T12:00:00",
+    "n_genes": 42,
+    "trigger_source": "gene_innovation:CD-XXX",
+    "note": "",
+}]
+```
+
+---
+
+## 13. GeneAuditGate
+
+**文件**: `adapters/gene_audit_gate.py` | **版本**: v1.13
+
+基因审核门禁：三级校验（Schema + 统计 + 相对提升）。
+
+### 13.1 构造函数
+
+```python
+GeneAuditGate(gene_root: str | Path | None = None)
+```
+
+### 13.2 audit（综合审核）
+
+```python
+def audit(gene_data: dict, n_samples: int, ess: float, baseline_ess: float = 0.0) -> dict
+```
+
+依次执行三级门禁，返回综合结果：
+```python
+{
+    "passed": bool,
+    "gates": {
+        "schema": {"passed": bool, "reason": str},
+        "statistical": {"passed": bool, "reason": str},
+        "relative": bool,
+    },
+    "reason": str,
+}
+```
+
+同时写入 `strategy_genes/audit_log.jsonl`。
+
+### 13.3 validate_schema（门禁1）
+
+```python
+def validate_schema(gene_data: dict) -> dict[str, Any]
+```
+
+校验基因数据是否符合 `schemas/condition.json`（`additionalProperties: false`）。
+`jsonschema` 未安装时降级为通过。
+
+### 13.4 validate_statistical（门禁2）
+
+```python
+def validate_statistical(n_samples: int, ess: float, min_samples: int = 100, min_ess: float = 0.5) -> dict[str, Any]
+```
+
+统计门槛：`N ≥ min_samples` 且 `ESS ≥ min_ess`。
+
+### 13.5 validate_relative_improvement（门禁3）
+
+```python
+def validate_relative_improvement(ess: float, baseline_ess: float) -> bool
+```
+
+相对提升：`ess > baseline_ess × 1.1`。`baseline_ess ≤ 0` 时降级为 `ess ≥ 0.5`。
+
+---
+
+**文档版本**: v1.1
+**最后更新**: 2026-10-07
