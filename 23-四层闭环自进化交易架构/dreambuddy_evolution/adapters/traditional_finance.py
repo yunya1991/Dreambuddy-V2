@@ -245,8 +245,12 @@ class PerformanceTracker:
         import statistics
         mean_r = statistics.mean(self._returns)
         downside = [r for r in self._returns if r < 0]
-        if not downside:
-            return float("inf") if mean_r > 0 else 0.0
+        # statistics.stdev 要求 ≥2 个样本（样本标准差分母 n-1）
+        # 仅 1 个负收益时降级为绝对值，避免 stdev requires at least two data points
+        if len(downside) < 2:
+            if not downside:
+                return float("inf") if mean_r > 0 else 0.0
+            return (mean_r / abs(downside[0])) * math.sqrt(252)
         downside_std = statistics.stdev(downside)
         if downside_std == 0:
             return 0.0

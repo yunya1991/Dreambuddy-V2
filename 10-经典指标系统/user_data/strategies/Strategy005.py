@@ -26,7 +26,9 @@ class Strategy005(IStrategy):
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
-    can_short = True
+    # spot 市场禁用 short（freqtrade sanity 校验：spot 不允许 can_short=True）
+    # 所有 short 信号被忽略，仅保留 long 信号
+    can_short = False
     position_adjustment_enable = True
 
     minimal_roi = {
