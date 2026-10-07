@@ -389,13 +389,26 @@ class GeneInnovationEngine:
             return False
 
         # 门禁 1: Schema 校验 + 门禁 3: 相对提升（门禁 2 统计门槛在 validate_candidate 已过）
-        audit = self._audit_gate.audit(gene_data, n_samples, ess, baseline_ess)
-        if not audit["passed"]:
-            logger.info(f"[L2-Gene] {candidate.gene_id} 审核未通过: {audit['reason']}")
-            return False
+        # 受 enable_gene_audit_gate 开关控制
+        try:
+            from dreambuddy_evolution.agi_config import get_switch
+            _audit_enabled = get_switch("enable_gene_audit_gate", True)
+        except Exception:
+            _audit_enabled = True
+        if _audit_enabled:
+            audit = self._audit_gate.audit(gene_data, n_samples, ess, baseline_ess)
+            if not audit["passed"]:
+                logger.info(f"[L2-Gene] {candidate.gene_id} 审核未通过: {audit['reason']}")
+                return False
 
-        # 写入前自动快照（版本控制）
-        self._version_mgr.snapshot(trigger_source=f"gene_innovation:{candidate.gene_id}")
+        # 写入前自动快照（版本控制）— 受 enable_gene_version_snapshot 开关控制
+        try:
+            from dreambuddy_evolution.agi_config import get_switch
+            _snapshot_enabled = get_switch("enable_gene_version_snapshot", True)
+        except Exception:
+            _snapshot_enabled = True
+        if _snapshot_enabled:
+            self._version_mgr.snapshot(trigger_source=f"gene_innovation:{candidate.gene_id}")
 
         try:
             out_path.write_text(json.dumps(gene_data, ensure_ascii=False, indent=2), encoding="utf-8")

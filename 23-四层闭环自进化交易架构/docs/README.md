@@ -1,6 +1,6 @@
 # 文档索引
 
-> **更新日期**：2026-10-05（新增 NeuralSDE 设计文档 + CHANGELOG v1.9）
+> **更新日期**：2026-10-07（基因创新治理 v1.13：版本控制+三级审核门禁接入）
 > **模块定位**：四层闭环自进化交易架构 — 观察→推断→实验→反思→回馈自进化策略引擎
 
 ## 标准五件套（SSoT，对齐 DOC_STANDARD L3）
@@ -8,10 +8,10 @@
 | 文档 | 说明 |
 |------|------|
 | [README.md](./README.md) | 文档索引（本文件） |
-| [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 模块工程索引（文件级，15+ 引擎/21 核心/20+ 适配器） |
+| [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 模块工程索引（文件级，42 引擎/57 核心/25 适配器） |
 | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 模块技术设计（三层准入架构） |
 | [API_SPEC.md](./API_SPEC.md) | 模块接口规格 |
-| [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录（v1.9 NeuralSDE v2 上线 + 第 3 轮 PoC 反模式） |
+| [CHANGELOG.md](./CHANGELOG.md) | 模块变更记录（v1.13 基因创新治理：版本控制+三级审核门禁） |
 
 ## 专题文档
 
@@ -45,5 +45,5 @@
 
 ---
 
-**文档版本**：v1.1
-**最后更新**：2026-10-04
+**文档版本**：v1.2
+**最后更新**：2026-10-07

@@ -1,6 +1,6 @@
 # 策略知识→基因库三层准入技术设计
 
-> **版本**: v1.3 | **创建日期**: 2026-09-10 | **最后更新**: 2026-09-11
+> **版本**: v1.13 | **创建日期**: 2026-09-10 | **最后更新**: 2026-10-07
 > **定位**: L2 级子系统技术设计，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.2
 > **关联**: [KNOWLEDGE_STORAGE_BOUNDARY_MAP.md](../../0-系统文档管理/2-文档地图/KNOWLEDGE_STORAGE_BOUNDARY_MAP.md) · [EVOLUTION_BOUNDARY_MAP.md](../../0-系统文档管理/2-文档地图/EVOLUTION_BOUNDARY_MAP.md) · [SPEC-交易知识构建双通道方案.md](../../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md)
 > **硬约束**: 策略知识不进 CS 评分公式；不改变 BCRM2/力向量决策条件；FAIL-OPEN 铁律

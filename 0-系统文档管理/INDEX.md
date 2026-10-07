@@ -139,9 +139,9 @@
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| 技术设计 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) | v1.1 |
-| 接口规格 | [23-四层闭环自进化交易架构/docs/API_SPEC.md](../23-四层闭环自进化交易架构/docs/API_SPEC.md) | v1.0 |
-| 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.1 |
+| 技术设计 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) | v1.13 |
+| 接口规格 | [23-四层闭环自进化交易架构/docs/API_SPEC.md](../23-四层闭环自进化交易架构/docs/API_SPEC.md) | v1.1 |
+| 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.13 |
 | SPEC | [2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md](../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md) | v1.0（已完成） |
 
 ---
@@ -179,7 +179,7 @@
 | 人机协作 | [8-FEISHU/README.md](../8-FEISHU/README.md) · [6-TRADING/scripts/feishu_notify.py](../6-TRADING/scripts/feishu_notify.py) |
 | RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 · [.trae/documents/rag-hotpath-integration.md](../.trae/documents/rag-hotpath-integration.md) |
 | 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
-| 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.1 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.1 |
+| 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
 | 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 |
 
 ---
