@@ -183,8 +183,8 @@ class DedupAlignCleaner:
         return out, action
 
     def _detect_flat_heterogeneous(self, df: pd.DataFrame, category) -> bool:
-        # 1) 显式 category == "news" → 按异质
-        if isinstance(category, str) and category.lower() == "news":
+        # 1) 显式 category == "news" 或 "web" → 按异质（每条记录语义独立，不做 resample）
+        if isinstance(category, str) and category.lower() in ("news", "web"):
             return True
         # 2) 显式 dedup_subset 被用户给了 → 尊重用户配置，走 TS 模式（由 caller 控制）
         if self._dedup_subset:

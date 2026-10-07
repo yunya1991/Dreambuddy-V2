@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import numbers
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -47,12 +48,14 @@ def _validate_timestamp(ts: str) -> None:
 
 
 def _validate_metrics(metrics: dict) -> None:
+    # numbers.Number 覆盖 Python int/float、numpy int64/float32、pandas Int64 等
+    # bool 是 int 子类自动被允许；str 单独放行
     for k, v in metrics.items():
         if isinstance(v, (dict, list)):
             raise ContractError(
                 f"metrics[{k!r}] 禁止嵌套 {type(v).__name__}，仅允许 number/string"
             )
-        if not isinstance(v, (int, float, str, bool)):
+        if not isinstance(v, (numbers.Number, str)):
             raise ContractError(
                 f"metrics[{k!r}] 类型 {type(v).__name__} 非法，仅允许 number/string"
             )

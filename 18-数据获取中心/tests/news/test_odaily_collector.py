@@ -176,6 +176,12 @@ def test_tc1_normal_20_records_contract_and_metrics_ranges(mocker, fx_http_20):
     mock_req = mocker.patch(REQ_MOD)
     mock_req.get.return_value = fx_http_20
 
+    # mock sentiment 引擎，避免依赖 FinBERT2 模型（HF_TOKEN 未配置时 401 回退全 0.5）
+    # 返回非中性值（0.3~0.8），验证 sentiment 字段正常工作
+    def _fake_sentiment(title, desc):
+        return (0.3 + (abs(hash(title)) % 50) / 100.0, True)
+    mocker.patch(f"{COLLECTOR_MOD}._sentiment_lazy", side_effect=_fake_sentiment)
+
     cls = _get_collector_cls()
     c = cls()
     recs = c.fetch({"route": "latest"})

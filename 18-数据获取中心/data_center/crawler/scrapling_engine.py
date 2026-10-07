@@ -137,15 +137,21 @@ class ScraplingEngine:
         return str(body)
 
     def _fetch_dynamic(self, url: str, timeout: int, **kwargs) -> str:
-        """Scrapling DynamicFetcher（Playwright JS 渲染）。"""
+        """Scrapling DynamicFetcher（Playwright JS 渲染）。
+
+        注意：scrapling 的 timeout 参数单位为毫秒（ms），而本系统统一使用秒（s）。
+        此处做单位转换，避免把 30s 当成 30ms 导致 Page.goto 立即超时。
+        """
         DynamicFetcher = self._lazy_import("scrapling.fetchers", "DynamicFetcher")
         if DynamicFetcher is None:
             raise RuntimeError("scrapling not installed")
 
         headless = kwargs.pop("headless", True)
         network_idle = kwargs.pop("network_idle", True)
+        # 秒 → 毫秒（scrapling 内部 timeout 单位为 ms）
+        timeout_ms = int(timeout) * 1000
         page = DynamicFetcher.fetch(
-            url, headless=headless, network_idle=network_idle, timeout=timeout,
+            url, headless=headless, network_idle=network_idle, timeout=timeout_ms,
         )
         body = getattr(page, "body", None)
         if body is None:
@@ -155,15 +161,21 @@ class ScraplingEngine:
         return str(body)
 
     def _fetch_stealthy(self, url: str, timeout: int, **kwargs) -> str:
-        """Scrapling StealthyFetcher（Patchright + Cloudflare 绕过）。"""
+        """Scrapling StealthyFetcher（Patchright + Cloudflare 绕过）。
+
+        注意：scrapling 的 timeout 参数单位为毫秒（ms），而本系统统一使用秒（s）。
+        此处做单位转换，避免把 30s 当成 30ms 导致 Page.goto 立即超时。
+        """
         StealthyFetcher = self._lazy_import("scrapling.fetchers", "StealthyFetcher")
         if StealthyFetcher is None:
             raise RuntimeError("scrapling not installed")
 
         headless = kwargs.pop("headless", True)
         network_idle = kwargs.pop("network_idle", True)
+        # 秒 → 毫秒（scrapling 内部 timeout 单位为 ms）
+        timeout_ms = int(timeout) * 1000
         page = StealthyFetcher.fetch(
-            url, headless=headless, network_idle=network_idle,
+            url, headless=headless, network_idle=network_idle, timeout=timeout_ms,
         )
         body = getattr(page, "body", None)
         if body is None:

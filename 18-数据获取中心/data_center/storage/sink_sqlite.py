@@ -111,14 +111,20 @@ class SqliteSink:
     # records 表（DataRecord 原始采集结果）
     # ──────────────────────────────────────────────────────────────────────
     def write(self, records: list[DataRecord]) -> int:
-        """落库 DataRecord，返回实际写入行数（同 dedupe_key 覆盖旧值）。"""
+        """落库 DataRecord，返回实际新增行数（同 dedupe_key 覆盖旧值但不计为新增）。"""
         conn = sqlite3.connect(self.db_path)
         inserted = 0
         for r in records:
-            cur = conn.execute(
+            key = dedupe_key(r)
+            # INSERT OR REPLACE 的 rowcount 会把替换也算作受影响行，
+            # 因此先查询 dedupe_key 是否已存在，只统计真正新增的记录
+            exists = conn.execute(
+                "SELECT 1 FROM records WHERE dedupe_key = ? LIMIT 1", (key,)
+            ).fetchone()
+            conn.execute(
                 _INSERT_SQL,
                 (
-                    dedupe_key(r), r.source, r.category, r.sub_category, r.timestamp,
+                    key, r.source, r.category, r.sub_category, r.timestamp,
                     json.dumps(r.metrics, ensure_ascii=False),
                     json.dumps(r.events, ensure_ascii=False),
                     json.dumps(r.timeseries, ensure_ascii=False),
@@ -126,7 +132,8 @@ class SqliteSink:
                     r.schema_version,
                 ),
             )
-            inserted += cur.rowcount
+            if not exists:
+                inserted += 1
         conn.commit()
         conn.close()
         return inserted

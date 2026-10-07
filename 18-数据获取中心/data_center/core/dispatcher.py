@@ -9,6 +9,7 @@ M5 新增：通过 monitoring 参数注入 MonitoringBundle，实现调用统计
 from __future__ import annotations
 
 import os
+import sys
 import time
 from typing import TYPE_CHECKING, Optional
 
@@ -17,6 +18,14 @@ from dotenv import load_dotenv
 from data_center.core.contract import DataRecord
 from data_center.core.errors import SourceUnavailableError
 from data_center.core.registry import Registry, default_registry
+
+# 自动注入 20-数据清洗中心路径，使 data_cleaning 可被 import（Silver 清洗链依赖）
+# dispatcher.py 位于 18-数据获取中心/data_center/core/，向上 3 层到 dreambuddy-v2/，再加 20-数据清洗中心/
+_CLEANING_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "20-数据清洗中心")
+)
+if os.path.isdir(_CLEANING_ROOT) and _CLEANING_ROOT not in sys.path:
+    sys.path.insert(0, _CLEANING_ROOT)
 
 if TYPE_CHECKING:
     from data_center.monitoring import MonitoringBundle
@@ -261,11 +270,28 @@ class DataCenter:
                     # ★ 硬门禁拦截：QualityGate 未通过 → 丢弃原始 Bronze 数据，返回空列表
                     # 异常数据仅保留在 Bronze 层（sink_sqlite.records）用于审计，不进入交易热路径
                     import logging as _logging
+                    _silver_issues = _silver.quality_report or []
                     _logging.getLogger(__name__).warning(
                         "[Silver硬门禁] QualityGate未通过, 拦截Bronze数据: source=%s category=%s issues=%s",
                         source, category,
-                        [(i.code.value, str(i.message)[:80]) for i in (_silver.quality_report or [])][:3],
+                        [(i.code.value, str(i.message)[:80]) for i in _silver_issues][:3],
                     )
+                    # 把 Silver 检测到的 quality issues 转发给 monitoring bundle 发出告警
+                    # （否则拦截后 result=[]，后续 quality.check_all 只会发 EMPTY_RESULT，丢失 CONTRACT_INVALID 等告警）
+                    if self.monitoring is not None and _silver_issues:
+                        from data_center.monitoring.alerting import Alert, AlertLevel
+                        for _issue in _silver_issues:
+                            _issue_level = (
+                                AlertLevel.ERROR
+                                if _issue.code.value == "CONTRACT_INVALID"
+                                else AlertLevel.WARNING
+                            )
+                            self.monitoring.alerts.emit(Alert(
+                                level=_issue_level,
+                                title=f"质量告警: {_issue.code.value}",
+                                message=_issue.message,
+                                tags=["quality", _issue.code.value, source, category, "silver_gate_blocked"],
+                            ))
                     result = [] if not _allow_bronze_fallback else result
             except Exception:  # noqa: BLE001
                 if not _fail_open:

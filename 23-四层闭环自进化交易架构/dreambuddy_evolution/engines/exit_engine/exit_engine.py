@@ -79,6 +79,20 @@ class EvolutionExitEngine:
     # 规则 2b 冷却期：减仓后 4H 内不再触发（防连续扫射，SKHYNIX 47min×7 案例修复）
     BCRM_REDUCE_COOLDOWN_SEC = 4 * 3600  # 4 小时
 
+    # 规则 2d: evolution 反向信号减仓参数（PONS 案例 2026-09-28 SPEC 缺陷A）
+    # 触发条件：has_stronger_signal + stronger_signal_info.is_opposite + src=evolution + 亏损态
+    # 亏损分档（按 upl_ratio 绝对值）：
+    #   ≤ -8%     → force_close（全平）
+    #   -8% ~ -5% → partial_close 50%
+    #   -5% ~ -3% → partial_close 30%
+    #   > -3%     → 不触发（亏损不够深，落回后续规则）
+    EVOLUTION_REVERSE_LOSS_TIERS = [
+        (-0.08, "force_close", 1.00),  # ≤ -8% 全平
+        (-0.05, "partial_close", 0.50),  # -8% ~ -5% 减仓 50%
+        (-0.03, "partial_close", 0.30),  # -5% ~ -3% 减仓 30%
+    ]
+    EVOLUTION_REDUCE_COOLDOWN_SEC = 4 * 3600  # 与 BCRM 共 4H（按 symbol 独立）
+
     def __init__(
         self,
         okx_client: Any = None,
@@ -113,6 +127,9 @@ class EvolutionExitEngine:
         # 规则 2b 冷却期：记录每个 symbol 上次 BCRM2.0 反向减仓的时间戳
         #   减仓后 4H 内不再触发，避免震荡中连续扫射（SKHYNIX 47min×7 案例修复）
         self._last_bcrm_reduce_ts: Dict[str, float] = {}
+        # 规则 2d 冷却期：记录每个 symbol 上次 evolution 反向减仓的时间戳
+        #   与 _last_bcrm_reduce_ts 独立（互不干扰），冷却期 4H
+        self._last_evolution_reduce_ts: Dict[str, float] = {}
 
     def _log(self, msg: str, level: str = "INFO") -> None:
         try:
@@ -298,6 +315,11 @@ class EvolutionExitEngine:
         bcrm_reduce_decision = self._check_bcrm_reverse_signal(ctx)
         if bcrm_reduce_decision is not None:
             return bcrm_reduce_decision
+
+        # ── 规则 2d：evolution 反向信号 → partial_close/force_close 减仓（PONS 案例修复）
+        evolution_reduce_decision = self._check_evolution_reverse_signal(ctx)
+        if evolution_reduce_decision is not None:
+            return evolution_reduce_decision
 
         # ── 规则 3a：tier=trend 超时 24h 无进展（|upl_ratio| < 0.01）→ force_close
         if tier == "trend" and position_age_sec > self.TREND_TIMEOUT_SEC:
@@ -522,6 +544,103 @@ class EvolutionExitEngine:
         except Exception as e:
             self._log(
                 f"[EvolutionExitEngine] BCRM 反向信号检查异常(FAIL-OPEN): {e}",
+                "WARN",
+            )
+            return None
+
+    def _check_evolution_reverse_signal(self, ctx: Dict[str, Any]) -> Optional[ExitDecision]:
+        """规则 2d: evolution 反向信号 → partial_close/force_close 减仓（PONS 案例修复）
+
+        PONS 案例（2026-09-28 SPEC 缺陷A）：持仓 long + BTC short conf=1.0 src=evolution
+        + 亏损 -3%~-4.5% 徘徊 → 旧规则不触发（2b 只看 BCRM、3b 需 29h 超时）。
+        规则 2d 在亏损态 + evolution 反向信号时立即减仓，不等 29h 超时。
+
+        触发条件（全部满足）：
+        - has_stronger_signal = True
+        - stronger_signal_info 存在 + is_opposite = True
+        - stronger_signal_info.src == "evolution"（限定 evolution 源，避免与 BCRM 重复）
+        - upl_ratio < 0（亏损态）
+        - 不在 evolution 减仓冷却期（4H）
+
+        亏损分档：
+        - ≤ -8%     → force_close（全平）
+        - -8% ~ -5% → partial_close 50%
+        - -5% ~ -3% → partial_close 30%
+        - > -3%     → 不触发（落回后续规则）
+
+        冷却期：4H（与 BCRM 共长度，按 symbol 独立）。
+
+        FAIL-OPEN: 任何异常返回 None（落回后续规则）
+        """
+        try:
+            has_stronger_signal = bool(ctx.get("has_stronger_signal", False))
+            if not has_stronger_signal:
+                return None
+            stronger_signal_info = ctx.get("stronger_signal_info") or {}
+            if not isinstance(stronger_signal_info, dict):
+                return None
+            is_opposite = bool(stronger_signal_info.get("is_opposite", False))
+            if not is_opposite:
+                return None  # 同向信号不减仓
+            # 限定 evolution 源（与 BCRM 规则 2b 职责隔离）
+            src = str(stronger_signal_info.get("src", "") or "").lower()
+            if src and src != "evolution":
+                return None
+            symbol = str(ctx.get("symbol", "UNKNOWN"))
+            upl_ratio = float(ctx.get("upl_ratio", 0.0) or 0.0)
+            if upl_ratio >= 0:
+                return None  # 盈利态/持平不触发（走 trailing/保本位）
+            _sig_conf = float(stronger_signal_info.get("confidence", 0.0) or 0.0)
+            _sig_dir = str(stronger_signal_info.get("direction", "") or "").lower()
+
+            # ★ 冷却期检查：减仓后 4H 内不再触发（独立于 BCRM 冷却期）
+            import time as _time
+            _now = _time.time()
+            _last_reduce = self._last_evolution_reduce_ts.get(symbol, 0.0)
+            if _last_reduce > 0 and (_now - _last_reduce) < self.EVOLUTION_REDUCE_COOLDOWN_SEC:
+                _remain_min = (self.EVOLUTION_REDUCE_COOLDOWN_SEC - (_now - _last_reduce)) / 60
+                self._log(
+                    f"[EvolutionExitEngine] {symbol} evolution 反向信号减仓冷却期内 "
+                    f"(剩余 {_remain_min:.0f}min) → 跳过规则 2d，落回后续规则",
+                    "DEBUG",
+                )
+                return None
+
+            # 亏损分档匹配（绝对值越大越激进减仓）
+            for _loss_thresh, _action, _pct in self.EVOLUTION_REVERSE_LOSS_TIERS:
+                if upl_ratio <= _loss_thresh:
+                    self._last_evolution_reduce_ts[symbol] = _now
+                    if _action == "force_close":
+                        self._log(
+                            f"[EvolutionExitEngine] {symbol} evolution 反向信号 "
+                            f"dir={_sig_dir} conf={_sig_conf:.2f} loss={upl_ratio:.2%} "
+                            f"→ force_close（全平）",
+                            "WARN",
+                        )
+                        return ExitDecision(
+                            action="force_close",
+                            params={"partial_pct": 1.0, "source": "evolution_reverse_reduce"},
+                            reason=f"evolution_exit:force_close:evolution_reverse_reduce_conf{_sig_conf:.2f}_loss{upl_ratio:.2%}",
+                            confidence=_sig_conf,
+                        )
+                    else:
+                        self._log(
+                            f"[EvolutionExitEngine] {symbol} evolution 反向信号 "
+                            f"dir={_sig_dir} conf={_sig_conf:.2f} loss={upl_ratio:.2%} "
+                            f"→ partial_close {_pct*100:.0f}%",
+                            "INFO",
+                        )
+                        return ExitDecision(
+                            action="partial_close",
+                            params={"partial_pct": _pct, "source": "evolution_reverse_reduce"},
+                            reason=f"evolution_exit:partial_close:evolution_reverse_reduce_conf{_sig_conf:.2f}_loss{upl_ratio:.2%}",
+                            confidence=_sig_conf,
+                        )
+            # upl_ratio > -3% → 不触发
+            return None
+        except Exception as e:
+            self._log(
+                f"[EvolutionExitEngine] evolution 反向信号检查异常(FAIL-OPEN): {e}",
                 "WARN",
             )
             return None

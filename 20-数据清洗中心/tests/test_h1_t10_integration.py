@@ -163,8 +163,11 @@ class TestH1Integration:
                 self.quality = QualityChecker()
 
         old_env = os.environ.get("EN_SILVER")
+        old_bronze = os.environ.get("SILVER_ALLOW_BRONZE_FALLBACK")
         os.environ["EN_SILVER"] = "true"
         os.environ["SILVER_FAIL_OPEN"] = "true"
+        # Silver 异常时允许回退到 Bronze 原始数据（fail-open 的 bronze fallback 模式）
+        os.environ["SILVER_ALLOW_BRONZE_FALLBACK"] = "true"
         try:
             dc = DataCenter(registry=_reg, monitoring=NoopBundle())
             out = dc.fetch("finance", source="fakebtc", n=6)
@@ -179,3 +182,7 @@ class TestH1Integration:
                 os.environ.pop("SILVER_FAIL_OPEN", None)
             else:
                 os.environ["EN_SILVER"] = old_env
+            if old_bronze is None:
+                os.environ.pop("SILVER_ALLOW_BRONZE_FALLBACK", None)
+            else:
+                os.environ["SILVER_ALLOW_BRONZE_FALLBACK"] = old_bronze

@@ -276,6 +276,9 @@ class TradeSettlementBridge:
 
         # 3. evolution_exit 离场动作分类
         if "force_close" in reason_lower:
+            # evolution 反向减仓触发的 force_close → PARTIAL_REDUCE（优先于其他 force_close 分类）
+            if "evolution_reverse_reduce" in reason_lower:
+                return "PARTIAL_REDUCE"
             if "signal_reverse" in reason_lower:
                 return "FORCE_REVERSE"
             if "timeout" in reason_lower:
@@ -285,6 +288,8 @@ class TradeSettlementBridge:
                 return "TP_algo" if float(pnl) >= 0 else "SL_algo"
             return "FORCE_REVERSE"  # 默认归入信号反转
         if "external_signal_reduce" in reason_lower:
+            return "PARTIAL_REDUCE"
+        if "evolution_reverse_reduce" in reason_lower:
             return "PARTIAL_REDUCE"
         if "trailing" in reason_lower:
             return "TRAILING"

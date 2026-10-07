@@ -27,7 +27,20 @@ P1 集成 (PLAN-exogenous-integration.md §三):
 from __future__ import annotations
 
 import logging
+import os
+import sys
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
+
+# 自动注入 19-数据访问层路径，使 dreambuddy_dal 可被 import（避免 ModuleNotFoundError）
+# exogenous_data_bridge.py 位于 23-四层闭环自进化交易架构/dreambuddy_evolution/core/，
+# 向上 3 层到 dreambuddy-v2/，再加 19-数据访问层/
+_DAL_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层")
+)
+if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
+    sys.path.insert(0, _DAL_ROOT)
 
 import numpy as np
 import torch

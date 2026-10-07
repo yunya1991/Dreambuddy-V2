@@ -19,6 +19,7 @@ V15 经典马丁策略自动交易器
 """
 import json
 import math
+import os
 import signal as sig_module
 import subprocess
 import sys
@@ -32,6 +33,12 @@ from typing import Any, Dict, Optional
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
+
+# 注入 19-数据访问层路径，使 dreambuddy_dal 可被 import（避免 ModuleNotFoundError）
+_DAL_ROOT = str(BASE_DIR.parent / "19-数据访问层")
+if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
+    sys.path.insert(0, _DAL_ROOT)
+
 from token_pool_loader import load_coins_with_override, get_pool_symbols
 
 # L4 TradeEvent 注册（跨系统统一交易记录）

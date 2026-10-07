@@ -10420,7 +10420,7 @@ class PollingTrader:
 
         return round(_sl_px, 6), round(_tp_px, 6), _sl_pct, _tp_pct
 
-    def _evolution_build_position(self, symbol, action, u_open, d_star, confidence, tier="standard"):
+    def _evolution_build_position(self, symbol, action, u_open, d_star, confidence, tier="standard", source_tag=None):
         """P2-S4b: 紧耦合流自动建仓回调（三层仓位分级）
 
         被 KlineEventHandler 在 auto_execute=True 时调用：
@@ -10431,7 +10431,11 @@ class PollingTrader:
            - tier=standard: 0.7 × base（标准仓）
            - tier=trend:    1.0 × base（趋势加仓）
         4. OKX 市价建仓（5x isolated）
-        5. position_tracker 打标签 source_tag="evolution"
+        5. position_tracker 打标签 source_tag（默认 evolution，event_arbitrage 时用事件驱动标签）
+
+        Args:
+            source_tag: 建仓来源标签。None/空 → "evolution"；"event_arbitrage" → 用更紧的 SL/TP 下限（ABS_HARD_SL_PCT=5%）
+                并打标签 event_arbitrage，供后续离场巡检按 source_tag 隔离。
 
         FAIL-OPEN: 任何异常不阻断主循环
         """
@@ -10901,11 +10905,14 @@ class PollingTrader:
             #   standard: 4.5×ATR, TP=13.5% （标准仓）
             #   trend:    5.0×ATR, TP=15%    （趋势仓，让利润奔跑）
             # 硬下限：SL≥4% / TP≥12%，防低波扫损
+            # ★ 断点2: event_arbitrage 路径用更紧的 SL 下限 ABS_HARD_SL_PCT(5%)，小止小盈
+            _src_tag = str(source_tag or "")
+            _sl_floor_pct = self.ABS_HARD_SL_PCT if _src_tag == "event_arbitrage" else 0.04
             _atr_mult = {"probe": 4.0, "standard": 4.5, "trend": 5.0}.get(tier, 4.5)
             _atr_pct_here = float(_last_kd.get("atr_pct", 0.0) or 0.0) if _last_kd else 0.0
             if _atr_pct_here <= 0:
                 _atr_pct_here = 0.01  # ATR 缺失兜底 1%
-            _tier_sl_pct = max(_atr_mult * _atr_pct_here, 0.04)   # SL 下限 4%
+            _tier_sl_pct = max(_atr_mult * _atr_pct_here, _sl_floor_pct)   # SL 下限（event_arbitrage=5%/通用=4%）
             _tier_sl_pct = min(_tier_sl_pct, 0.15)                  # SL 上限 15%
             _tier_tp_pct = min(_tier_sl_pct * 3.0, 0.30)            # TP=3×SL，上限 30%
             # regime 调整：震荡态放宽 SL（避免噪音扫损），趋势态 TP 放宽
@@ -10958,7 +10965,7 @@ class PollingTrader:
                 confidence=float(confidence),
                 hexagram="evolution_auto",
                 strategy_source="evolution",
-                source_tag="evolution",
+                source_tag=_src_tag if _src_tag else "evolution",
                 market_snapshot={
                     "d_star": d_star, "u_open": u_open, "ri": confidence,
                     "ftc_id": _ftc_id, "ftc_track": _ftc_track,
@@ -11046,6 +11053,49 @@ class PollingTrader:
                     continue  # 单币失败不影响其他币
         except Exception:
             pass  # FAIL-OPEN
+
+    def _maybe_upgrade_probe_to_standard(self, symbol: str, tier: str, entry_price: float,
+                                          current_price: float, position_age_sec: float,
+                                          unrealized_pnl_pct: float) -> str:
+        """断点4: probe→standard tier 升级（FAIL-OPEN）
+
+        当 probe 持仓经过足够时长（≥ 4H）+ 盈利达到 +2%（unrealized_pnl_pct ≥ 0.02）时，
+        将 tier 升级到 standard（标准仓仓位），让趋势行情能加仓获利。
+        升级是单向的（probe→standard 不会回退；standard→trend 由 _evolution_check_exit 处理）。
+
+        Args:
+            symbol: 币种符号
+            tier: 当前 tier（probe / standard / trend）
+            entry_price: 入场价
+            current_price: 当前价
+            position_age_sec: 持仓时长（秒）
+            unrealized_pnl_pct: 未实现盈亏百分比（如 0.02 = +2%）
+
+        Returns:
+            升级后的 tier（"standard" 或原 tier）
+        """
+        try:
+            # 仅 probe tier 可升级（standard / trend 不变）
+            if str(tier).lower() != "probe":
+                return tier
+            # 持仓时长门禁：≥ 4H（避免开仓瞬间就升级）
+            if float(position_age_sec or 0.0) < 4 * 3600:
+                return tier
+            # 盈利门禁：unrealized_pnl ≥ +2%（确认趋势成立）
+            if float(unrealized_pnl_pct or 0.0) < 0.02:
+                return tier
+            # 入场价/当前价校验
+            if not entry_price or entry_price <= 0 or not current_price or current_price <= 0:
+                return tier
+            self._log(
+                f"[TierUpgrade] {symbol} probe→standard 升级 "
+                f"(age={float(position_age_sec)/3600:.1f}h pnl={float(unrealized_pnl_pct):.2%})",
+                "INFO",
+            )
+            return "standard"
+        except Exception as _e:
+            self._log(f"[TierUpgrade] {symbol} upgrade FAIL-OPEN: {_e}", "WARN")
+            return tier
 
     def _evolution_check_exit(self):
         """P2-S4b+: 自进化系统独立离场巡检（Phase 2 EvolutionExitEngine）
@@ -11276,6 +11326,31 @@ class PollingTrader:
                     # 从 market_snapshot 取 tier / r_vector / ess / 当前 SL/TP
                     snap = getattr(rec, "market_snapshot", {}) or {}
                     tier = str(snap.get("tier", "standard")).lower()
+
+                    # ★ 断点4: probe→standard tier 升级（FAIL-OPEN）
+                    #   持仓 ≥ 4H + 盈利 ≥ +2% 时，probe 升级为 standard（趋势加仓）
+                    try:
+                        _upgraded_tier = self._maybe_upgrade_probe_to_standard(
+                            symbol=coin_up,
+                            tier=tier,
+                            entry_price=entry_price,
+                            current_price=current_price,
+                            position_age_sec=position_age_sec,
+                            unrealized_pnl_pct=upl_ratio,
+                        )
+                        if _upgraded_tier != tier:
+                            tier = _upgraded_tier
+                            snap["tier"] = tier
+                            try:
+                                setattr(rec, "market_snapshot", snap)
+                            except Exception:
+                                pass
+                    except Exception as _upg_e:
+                        self._log(
+                            f"[EvolutionExitEngine] {coin_up} probe升级异常(FAIL-OPEN): {_upg_e}",
+                            "WARN",
+                        )
+
                     current_sl_px = float(snap.get("stop_loss_px", 0.0) or 0.0)
                     current_tp_px = float(snap.get("take_profit_px", 0.0) or 0.0)
                     r_vector = snap.get("r_vector") or {}

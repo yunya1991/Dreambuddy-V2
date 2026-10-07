@@ -204,6 +204,7 @@
   <div class="tab" onclick="switchTab('global', event)">🌐 全局统计</div>
   <div class="tab" onclick="switchTab('datacenter', event)">📊 数据中心</div>
   <div class="tab" onclick="switchTab('wujimiaosuan', event)">🏛️ 五计庙算</div>
+  <div class="tab" onclick="switchTab('bdsm', event)">🅱️ BDSM 快照</div>
 </div>
 
 <div class="main">
@@ -1645,6 +1646,211 @@
 
 </div>
 
+<!-- BDSM 快照 Tab-content — 含 §6 sector_valuation 5 字段 -->
+<div id="tab-bdsm" class="tab-content">
+  <div class="tab-grid">
+
+    <!-- 顶部状态栏 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot dot-green"></div>🅱️ BDSM 每日快照
+        <span id="bdsm-date" style="margin-left:12px;color:var(--muted);font-size:12px">--</span>
+        <button onclick="loadBdsmSnapshot()" style="margin-left:auto;background:var(--border);border:none;color:var(--text);padding:2px 10px;border-radius:4px;cursor:pointer;font-size:11px">刷新</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-label">币种总数</div><div class="stat-value" id="bdsm-total-coins">--</div><div class="stat-sub">BDSM 巡检</div></div>
+        <div class="stat"><div class="stat-label">出场信号</div><div class="stat-value" id="bdsm-exit-count" style="color:var(--red)">--</div><div class="stat-sub">exit_action≠NONE</div></div>
+        <div class="stat"><div class="stat-label">过热赛道</div><div class="stat-value" id="bdsm-overheat-count" style="color:var(--red)">--</div><div class="stat-sub">overheat_sectors</div></div>
+        <div class="stat"><div class="stat-label">Top 机会</div><div class="stat-value" id="bdsm-opps-count" style="color:var(--green)">--</div><div class="stat-sub">低估候选</div></div>
+      </div>
+    </div>
+
+    <!-- §6.2 赛道估值概览 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--purple)"></div>赛道估值概览（sector_valuation_summary）</div>
+      <div id="bdsm-summary" style="padding:0 12px">
+        <div style="color:var(--muted);font-size:12px;padding:12px 0">等待加载…</div>
+      </div>
+    </div>
+
+    <!-- 全币种巡检表 -->
+    <div class="card full-width">
+      <div class="card-title">
+        <div class="dot dot-blue"></div>全币种巡检（含 §6.1 sector_valuation 4 字段）
+      </div>
+      <div style="overflow-x:auto;padding:0 8px">
+        <table class="log-table" id="bdsm-coin-table">
+          <thead>
+            <tr>
+              <th>币种</th><th>Rank</th><th>Score</th><th>Phase</th><th>方向</th>
+              <th>出场</th><th>赛道水位</th><th>多维分</th><th>过热信号</th>
+            </tr>
+          </thead>
+          <tbody id="bdsm-coin-tbody">
+            <tr><td colspan="9" style="color:var(--muted);text-align:center;padding:12px">等待加载…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- §6.1 低估伙伴候选合并视图 -->
+    <div class="card full-width">
+      <div class="card-title"><div class="dot" style="background:var(--green)"></div>低估伙伴候选（undervalued_peers 跨币合并去重）</div>
+      <div id="bdsm-peers" style="padding:8px 12px">
+        <div style="color:var(--muted);font-size:12px">等待加载…</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── BDSM 快照 Tab 数据加载（调用 /api/bdsm/snapshot） ─────────────────────
+let bdsmDataLoaded = false;
+
+async function loadBdsmSnapshot() {
+  const summaryEl = document.getElementById('bdsm-summary');
+  const tbody = document.getElementById('bdsm-coin-tbody');
+  const peersEl = document.getElementById('bdsm-peers');
+  try {
+    const res = await fetch('/api/bdsm/snapshot');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    // 顶部状态
+    document.getElementById('bdsm-date').textContent = data.snapshot_date || '--';
+    const coins = data.coins || {};
+    const coinList = Object.entries(coins).map(([s, info]) => ({ symbol: s, ...info }));
+    coinList.sort((a, b) => (b.score || 0) - (a.score || 0));
+    const exitCount = coinList.filter(c => c.exit_action && c.exit_action !== 'NONE').length;
+    document.getElementById('bdsm-total-coins').textContent = coinList.length;
+    document.getElementById('bdsm-exit-count').textContent = exitCount;
+
+    // §6.2 sector_valuation_summary
+    const summary = data.sector_valuation_summary || {};
+    const overheatSectors = summary.overheat_sectors || [];
+    const waterlines = summary.waterlines || [];
+    const topOpps = summary.top_opportunities || [];
+    document.getElementById('bdsm-overheat-count').textContent = overheatSectors.length;
+    document.getElementById('bdsm-opps-count').textContent = topOpps.length;
+
+    let summaryHtml = '';
+    if (overheatSectors.length === 0 && waterlines.length === 0 && topOpps.length === 0) {
+      summaryHtml = '<div style="color:var(--muted);font-size:12px;padding:8px 0">赛道估值数据暂无（DB 数据源待填充）</div>';
+    } else {
+      // 过热赛道
+      if (overheatSectors.length > 0) {
+        summaryHtml += '<div style="margin:8px 0"><span style="color:var(--muted);font-size:11px">过热赛道:</span> '
+          + overheatSectors.map(s => `<span style="display:inline-block;margin:2px 4px;padding:2px 8px;background:rgba(248,81,73,0.2);color:var(--red);border:1px solid rgba(248,81,73,0.4);border-radius:3px;font-size:11px;font-family:monospace">${s}</span>`).join('')
+          + '</div>';
+      }
+      // 赛道水位
+      if (waterlines.length > 0) {
+        summaryHtml += '<div style="margin:8px 0"><div style="color:var(--muted);font-size:11px;margin-bottom:4px">赛道水位:</div>';
+        waterlines.forEach(w => {
+          const pct = Number(w.median_percentile || 0);
+          const hot = w.overheated === true;
+          const cheap = w.undervalued === true;
+          const barColor = hot ? 'var(--red)' : cheap ? 'var(--green)' : pct > 60 ? 'var(--yellow)' : 'var(--muted)';
+          const txtColor = hot ? 'var(--red)' : cheap ? 'var(--green)' : 'var(--text)';
+          summaryHtml += `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;font-size:11px">
+            <span style="font-family:monospace;width:80px;color:var(--text)">${w.sector || '--'}</span>
+            <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+              <div style="height:100%;background:${barColor};width:${Math.min(100, Math.max(0, pct))}%"></div>
+            </div>
+            <span style="font-family:monospace;width:32px;text-align:right;color:${txtColor}">${pct.toFixed(0)}</span>
+            <span style="font-family:monospace;width:80px;color:var(--muted);font-size:10px">${w.leader ? '→ ' + w.leader : ''}</span>
+            <span style="font-family:monospace;width:50px;color:${Number(w.leader_momentum_7d || 0) >= 0 ? 'var(--green)' : 'var(--red)'};font-size:10px">${Number(w.leader_momentum_7d || 0) >= 0 ? '+' : ''}${Number(w.leader_momentum_7d || 0).toFixed(2)}</span>
+          </div>`;
+        });
+        summaryHtml += '</div>';
+      }
+      // Top 机会币
+      if (topOpps.length > 0) {
+        summaryHtml += '<div style="margin:8px 0"><div style="color:var(--muted);font-size:11px;margin-bottom:4px">Top 机会币:</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px">';
+        topOpps.slice(0, 10).forEach(o => {
+          summaryHtml += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 8px;background:rgba(63,185,80,0.1);border:1px solid rgba(63,185,80,0.3);border-radius:3px;font-size:10px">
+            <span style="color:var(--green);font-family:monospace">${o.coin || '--'}${o.sector ? '<span style="color:var(--muted);margin-left:4px">' + o.sector + '</span>' : ''}</span>
+            <span style="color:var(--green);font-family:monospace">${Number(o.opportunity_score || 0).toFixed(2)}</span>
+          </div>`;
+        });
+        summaryHtml += '</div></div>';
+      }
+    }
+    summaryEl.innerHTML = summaryHtml;
+
+    // 全币种巡检表
+    if (coinList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:12px">无币种数据</td></tr>';
+    } else {
+      tbody.innerHTML = coinList.map(c => {
+        const wl = c.sector_waterline || {};
+        const md = c.multi_dim_valuation || {};
+        const oh = c.overheat_signal || {};
+        const mdScore = Number(md.multi_dim_score || 0);
+        const wlPct = Number(wl.median_percentile || 0);
+        const isOverheat = oh.triggered === true;
+        const rankColor = c.rank === 'S' ? 'var(--yellow)' : c.rank === 'A' ? 'var(--green)' : 'var(--muted)';
+        const dirColor = c.direction_constraint === 'LONG_ONLY' ? 'var(--green)' : c.direction_constraint === 'SHORT_ONLY' ? 'var(--red)' : 'var(--muted)';
+        const mdColor = mdScore > 0.3 ? 'var(--green)' : mdScore < -0.3 ? 'var(--red)' : 'var(--text)';
+        const wlColor = wlPct >= 80 ? 'var(--red)' : wlPct <= 20 ? 'var(--green)' : 'var(--muted)';
+        const exitColor = c.exit_action && c.exit_action !== 'NONE' ? 'var(--yellow)' : 'var(--muted)';
+        const rowBg = isOverheat ? 'background:rgba(248,81,73,0.08)' : '';
+        return `<tr style="${rowBg}">
+          <td style="font-family:monospace;color:var(--text)">${c.symbol || '--'}${c.available === false ? '<span style="color:var(--muted);font-size:9px;margin-left:4px">(' + (c._unavailable_reason || 'unavailable') + ')</span>' : ''}</td>
+          <td><span style="padding:1px 6px;background:rgba(125,133,144,0.15);color:${rankColor};border-radius:3px;font-size:10px;font-family:monospace">${c.rank || '--'}</span></td>
+          <td style="text-align:right;font-family:monospace;color:var(--text)">${Number(c.score || 0).toFixed(3)}</td>
+          <td style="color:var(--muted);font-size:10px">${String(c.phase || '').slice(0, 22)}</td>
+          <td><span style="font-family:monospace;font-size:10px;color:${dirColor}">${c.direction_constraint || '--'}</span></td>
+          <td><span style="font-family:monospace;font-size:10px;color:${exitColor}">${c.exit_action || '--'}</span>${c.exit_triggers && c.exit_triggers.length ? `<span style="color:var(--yellow);font-size:9px;margin-left:2px">[${c.exit_triggers.length}]</span>` : ''}</td>
+          <td>${wl.sector ? `<span style="font-family:monospace;font-size:10px;color:${wlColor}">${wl.sector} ${wlPct.toFixed(0)}</span>` : '<span style="color:var(--muted);font-size:10px">—</span>'}</td>
+          <td style="text-align:right">${mdScore !== 0 ? `<span style="font-family:monospace;font-size:10px;color:${mdColor}">${mdScore.toFixed(2)}</span>` : '<span style="color:var(--muted);font-size:10px">—</span>'}</td>
+          <td style="text-align:center">${isOverheat ? `<span style="padding:1px 6px;background:rgba(248,81,73,0.2);color:var(--red);border:1px solid rgba(248,81,73,0.4);border-radius:3px;font-size:9px;font-family:monospace">过热 ${Number(oh.waterline || 0).toFixed(0)}</span>` : '<span style="color:var(--muted);font-size:10px">—</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // 低估伙伴候选合并
+    const aggMap = new Map();
+    for (const [symbol, info] of Object.entries(coins)) {
+      const peers = info.undervalued_peers || [];
+      for (const p of peers) {
+        const coin = p.coin || '';
+        if (!coin) continue;
+        const score = Number(p.opportunity_score || 0);
+        const ex = aggMap.get(coin);
+        if (ex) {
+          ex.sources.push(symbol);
+          if (score > ex.opportunity_score) ex.opportunity_score = score;
+        } else {
+          aggMap.set(coin, { coin, opportunity_score: score, sources: [symbol] });
+        }
+      }
+    }
+    const agg = Array.from(aggMap.values()).sort((a, b) => b.opportunity_score - a.opportunity_score);
+    if (agg.length === 0) {
+      peersEl.innerHTML = '<div style="color:var(--muted);font-size:12px">暂无低估伙伴候选</div>';
+    } else {
+      peersEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">'
+        + agg.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.25);border-radius:4px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="color:var(--green);font-family:monospace;font-weight:600">${p.coin}</span>
+            <div style="display:flex;gap:2px">${p.sources.map(s => `<span style="padding:1px 4px;background:rgba(125,133,144,0.15);color:var(--muted);border-radius:2px;font-size:9px;font-family:monospace">← ${s}</span>`).join('')}</div>
+          </div>
+          <span style="color:var(--green);font-family:monospace">${p.opportunity_score.toFixed(2)}</span>
+        </div>`).join('')
+        + '</div>';
+    }
+
+    bdsmDataLoaded = true;
+  } catch (e) {
+    summaryEl.innerHTML = `<div style="color:var(--red);font-size:12px;padding:8px 0">加载失败: ${e.message}<br><span style="color:var(--muted);font-size:11px">请确认 8765 端口服务已启动</span></div>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);text-align:center;padding:12px">加载失败: ${e.message}</td></tr>`;
+    peersEl.innerHTML = `<div style="color:var(--red);font-size:12px">加载失败: ${e.message}</div>`;
+  }
+}
+</script>
+
 <script>
 // ── 代理绕过：如果通过 localhost 访问且被代理拦截，自动切换到 127.0.0.1 ──
 (function() {
@@ -2879,6 +3085,9 @@ function switchTab(tab, evt) {
   }
   if (tab === 'global') {
     loadGlobalTradeStats();
+  }
+  if (tab === 'bdsm' && !bdsmDataLoaded) {
+    loadBdsmSnapshot();
   }
 }
 

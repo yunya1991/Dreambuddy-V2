@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -58,7 +59,7 @@ def test_successful_fetch_records_ok_metric_and_no_quality_alerts():
             time.sleep(0.002)
             return [DataRecord(
                 source="ok_src", category="macro", sub_category="X",
-                timestamp="2026-08-24T00:00:00+00:00",
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 metrics={"value": 1.0, "date": "2026-08-24"},
                 events=[], timeseries=[], raw={},
             )]
@@ -148,7 +149,7 @@ def test_contract_bad_record_emits_warning_alert():
             # 返回一条 metrics 嵌套非法的 record
             rec = DataRecord(
                 source="badrec", category="news", sub_category="rss",
-                timestamp="2026-08-24T00:00:00+00:00",
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 metrics={"ok": 1},
                 events=[], timeseries=[], raw={},
             )
@@ -160,10 +161,10 @@ def test_contract_bad_record_emits_warning_alert():
 
     dc = DataCenter(registry=reg, monitoring=bundle)
     result = dc.fetch("news", source="badrec")
-    assert len(result) == 1  # 数据质量不阻断返回
+    # Silver 硬门禁拦截 CONTRACT_INVALID 脏数据（不进入交易热路径），返回空列表
+    assert len(result) == 0
 
-    # 有 CONTRACT_INVALID issue
-    # 直接通过 quality 检查也能看到（实际上 DataCenter 已经检查过了，我们用 assert 告警）
+    # 有 CONTRACT_INVALID issue 告警
     warns = [a for a in spy.received if "CONTRACT_INVALID" in a.title or
              any("CONTRACT_INVALID" in tag for tag in a.tags)]
     assert len(warns) >= 1, (
@@ -185,7 +186,7 @@ def test_monitoring_none_uses_default_bundle_records_metrics():
         def fetch(self, params):
             return [DataRecord(
                 source="tiny", category="macro", sub_category="foo",
-                timestamp="2026-08-24T00:00:00+00:00",
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 metrics={"value": 1, "date": "2026-08-24"},
                 events=[], timeseries=[], raw={},
             )]

@@ -89,9 +89,36 @@
       "trade_pnl": 0.082014,
       "confidence_at_entry": 0.5,
       "created_at": "2026-08-23T15:02:54.426653Z"
+    },
+    {
+      "lesson_id": "lesson-0011-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on HYPE resulted in loss (-38.16 USDT): raise minimum confidence threshold",
+      "symbol": "HYPE",
+      "trade_pnl": -38.164937,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-10-07T13:01:35.783107Z"
+    },
+    {
+      "lesson_id": "lesson-0012-lowconf",
+      "category": "direction",
+      "description": "Low confidence (0.50) trade on HEMI resulted in loss (-9.95 USDT): raise minimum confidence threshold",
+      "symbol": "HEMI",
+      "trade_pnl": -9.953206,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-10-07T13:01:35.978928Z"
+    },
+    {
+      "lesson_id": "lesson-0012-c5vol",
+      "category": "risk",
+      "description": "C5熔断触发: HEMI 单次亏损 -21.0% >= 15%: 立即平仓+反思闭环，禁止补仓摊平",
+      "symbol": "HEMI",
+      "trade_pnl": -9.953206,
+      "confidence_at_entry": 0.5,
+      "created_at": "2026-10-07T13:01:35.978928Z"
     }
   ],
-  "total_reviews": 10,
-  "total_pnl": -1.1399139999999996,
-  "persisted_at": "2026-08-23T15:02:54.426688Z"
+  "total_reviews": 12,
+  "total_pnl": -49.258057,
+  "persisted_at": "2026-10-07T13:01:35.978949Z"
 }

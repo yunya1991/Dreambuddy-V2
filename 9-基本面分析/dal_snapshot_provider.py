@@ -13,10 +13,20 @@ dal_snapshot_provider.py — 9-基本面分析 的 19-DAL 数据源。
 from __future__ import annotations
 
 import logging
+import os
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+# 自动注入 19-数据访问层路径，使 dreambuddy_dal 可被 import（避免 ModuleNotFoundError）
+# dal_snapshot_provider.py 位于 9-基本面分析/，向上 1 层到 dreambuddy-v2/，再加 19-数据访问层/
+_DAL_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "19-数据访问层")
+)
+if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
+    sys.path.insert(0, _DAL_ROOT)
 
 
 def _now_iso() -> str:

@@ -5,6 +5,7 @@ metrics 仅存扁平 string/number；summary/content 等长文本放 events；�
 """
 from __future__ import annotations
 
+import numbers
 from datetime import datetime, timezone
 
 from data_center.core.contract import DataRecord, validate_record
@@ -36,9 +37,10 @@ def adapt_item(fields: dict, site: dict) -> DataRecord:
         elif isinstance(v, (dict, list)):
             # 嵌套对象不进 metrics，保留在 raw
             continue
-        elif isinstance(v, (int, float, str, bool)):
+        elif isinstance(v, (numbers.Number, str)):
+            # numbers.Number 覆盖 Python int/float/bool 及 numpy.int64/float32 等
             metrics[k] = v
-        # None 静默跳过
+        # None / 其他类型静默跳过
 
     rec = DataRecord(
         source=source,

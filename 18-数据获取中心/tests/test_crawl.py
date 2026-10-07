@@ -4,6 +4,7 @@ _fetch_web 走 CrawlerRunner → DataRecord(category=web)；
 CLI crawl --config sites.yaml 端到端输出 JSON。
 """
 import json
+from datetime import datetime, timezone
 
 import pytest
 from typer.testing import CliRunner
@@ -40,7 +41,7 @@ def test_fetch_web_routes_to_crawler(mocker, tmp_path):
     mock_runner.run.return_value = [
         DataRecord(
             source="test", category="web", sub_category="page",
-            timestamp="2026-08-24T12:00:00+08:00",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             metrics={"title": "hello"}, events=[], timeseries=[], raw={},
         )
     ]
@@ -51,7 +52,8 @@ def test_fetch_web_routes_to_crawler(mocker, tmp_path):
     mock_runner.run.assert_called_once()
     assert len(recs) == 1
     assert recs[0].category == "web"
-    assert recs[0].source == "test"
+    # dispatcher 统一 web 类别 source=crawler（Silver 清洗后还原）
+    assert recs[0].source == "crawler"
 
 
 def test_fetch_web_with_site_name(mocker, tmp_path):
@@ -77,7 +79,7 @@ def test_cli_crawl_outputs_json(mocker, tmp_path):
     mock_runner.run.return_value = [
         DataRecord(
             source="test", category="web", sub_category="page",
-            timestamp="2026-08-24T12:00:00+08:00",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             metrics={"title": "hello"}, events=[], timeseries=[], raw={},
         )
     ]
@@ -86,7 +88,8 @@ def test_cli_crawl_outputs_json(mocker, tmp_path):
     assert result.exit_code == 0, result.stdout
     out = json.loads(result.stdout)
     assert len(out) == 1
-    assert out[0]["source"] == "test"
+    # dispatcher 统一 web 类别 source=crawler（Silver 清洗后还原）
+    assert out[0]["source"] == "crawler"
     assert out[0]["category"] == "web"
     assert out[0]["metrics"]["title"] == "hello"
 

@@ -18,6 +18,39 @@ from data_center.core.errors import ContractError
 from data_center.storage.cache import dedupe_key as _canonical_dedupe_key
 
 
+# ---------------------------------------------------------------------------
+# Washout 硬门禁（W3b-1 §9.3 测试 6-7）
+# ---------------------------------------------------------------------------
+# 洗盘判定输入数据的质量白名单：缺字段 / 非数值 / 越界 → 直接拦截
+_WASHOUT_REQUIRED_FIELDS = ("timestamp", "symbol", "cvd_value", "ofi_value")
+# CVD/OFI 合理量纲上限（绝对值超过此值视为异常注入）
+_WASHOUT_VALUE_BOUND = 1e9
+
+
+def validate_washout_data(data: dict) -> bool:
+    """校验洗盘输入数据，全部通过返回 True，否则 False。
+
+    校验项：
+      1. 必备字段 timestamp/symbol/cvd_value/ofi_value 必须存在且非 None
+      2. cvd_value / ofi_value 必须是数值且在 [-1e9, 1e9] 范围内
+    """
+    if not isinstance(data, dict):
+        return False
+    for field in _WASHOUT_REQUIRED_FIELDS:
+        if field not in data or data[field] is None:
+            return False
+    # 数值边界校验
+    for numeric_field in ("cvd_value", "ofi_value"):
+        val = data[numeric_field]
+        if not isinstance(val, (int, float)):
+            return False
+        if isinstance(val, bool):
+            return False
+        if abs(val) > _WASHOUT_VALUE_BOUND:
+            return False
+    return True
+
+
 class QualityIssueCode(str, Enum):
     EMPTY_RESULT = "EMPTY_RESULT"
     CONTRACT_INVALID = "CONTRACT_INVALID"

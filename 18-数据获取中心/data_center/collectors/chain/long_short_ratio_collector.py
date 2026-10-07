@@ -97,11 +97,11 @@ class LongShortRatioCollector(BaseCollector):
                 rec = DataRecord(
                     source=self.source,
                     category=self.category,
-                    sub_category="long_short_ratio",
+                    sub_category=symbol,
                     timestamp=ts_iso,
                     metrics={
                         "long_short_ratio": lsr,
-                        "long_ratio": float(item.get("longAccount", 0.0)),
+                        "long_ratio": lsr,
                         "short_ratio": float(item.get("shortAccount", 0.0)),
                         "long_account_pct": float(item.get("longAccount", 0.0)) * 100,
                         "short_account_pct": float(item.get("shortAccount", 0.0)) * 100,

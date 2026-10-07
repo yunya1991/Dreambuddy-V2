@@ -12,6 +12,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Optional
@@ -21,6 +23,14 @@ import pandas as pd
 from data_cleaning.contract import SilverRecord
 
 logger = logging.getLogger(__name__)
+
+# 自动注入 19-数据访问层路径，使 dreambuddy_dal 可被 import（避免 ModuleNotFoundError）
+# dal_sink.py 位于 20-数据清洗中心/data_cleaning/，向上 2 层到 dreambuddy-v2/，再加 19-数据访问层/
+_DAL_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, "19-数据访问层")
+)
+if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
+    sys.path.insert(0, _DAL_ROOT)
 
 # sub_category → (upsert 方法名, 所需列名列表)
 _ROUTE_MAP: dict[str, tuple[str, list[str]]] = {

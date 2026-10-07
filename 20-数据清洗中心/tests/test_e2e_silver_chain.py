@@ -249,6 +249,8 @@ def test_silver_fail_open_on_pipeline_error(sqlite_repo, monkeypatch):
     """DataCleaningPipeline.clean() 抛异常时 fail-open 返回原始 records。"""
     monkeypatch.setenv("EN_SILVER", "true")
     monkeypatch.setenv("SILVER_FAIL_OPEN", "true")
+    # Silver 异常时允许回退到 Bronze 原始数据（fail-open 的 bronze fallback 模式）
+    monkeypatch.setenv("SILVER_ALLOW_BRONZE_FALLBACK", "true")
 
     from data_center.core.dispatcher import DataCenter
     from data_center.core.registry import Registry

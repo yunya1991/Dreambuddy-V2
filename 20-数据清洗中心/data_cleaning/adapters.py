@@ -142,10 +142,13 @@ def cleaned_df_to_records(
         # 实际 sub_category（sub=None 时用上层参数；否则用 group 内值）
         grp_sub_category = sub if sub else sub_category
 
+        # title/importance 仅在 news 类别作为 event 字段排除；
+        # 其他类别（web/macro/finance/chain）应保留在 metrics 中
+        _event_excluded = {"title", "importance"} if category == "news" else set()
         metrics_cols = {
             c for c in grp_cols
             if c not in {"timestamp", "source", "sub_category", "fetched_at", asset_col}
-            and c not in {"title", "importance"}  # event 字段除外
+            and c not in _event_excluded
         }
         if category == "news":
             # events 流

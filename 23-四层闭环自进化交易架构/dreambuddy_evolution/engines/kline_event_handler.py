@@ -519,12 +519,18 @@ class KlineEventHandler:
         except Exception as e:
             logger.warning("[FO] store_pre_trade_snapshot crash: %s", e)
 
-    def _trigger_build_position(self, symbol: str, action: str, d_star: str, ri: float, position_mult: float = 1.0, tier: str = "standard") -> None:
-        """P2-S4b: 调用建仓回调（FAIL-OPEN）"""
+    def _trigger_build_position(self, symbol: str, action: str, d_star: str, ri: float, position_mult: float = 1.0, tier: str = "standard", source_tag: str | None = None) -> None:
+        """P2-S4b: 调用建仓回调（FAIL-OPEN）
+
+        Args:
+            source_tag: 建仓来源标签。None 时不传，"event_arbitrage" 标记事件驱动策略来源，
+                其他可能值：evolution / bcrm / bdsm / strategy（由 polling_trader 处理）。
+                下游 polling_trader._evolution_build_position 按 source_tag 区分 SL/TP（event_arbitrage 用更紧的 2%/4%）。
+        """
         if self._build_position_callback is None:
             return
         try:
-            self._build_position_callback(
+            cb_kwargs = dict(
                 symbol=symbol,
                 action=action,
                 u_open=position_mult,  # 仓位乘数，由 tier 决定
@@ -532,8 +538,100 @@ class KlineEventHandler:
                 confidence=ri,
                 tier=tier,  # 仓位层级：probe / standard / trend
             )
+            if source_tag is not None:
+                cb_kwargs["source_tag"] = source_tag
+            self._build_position_callback(**cb_kwargs)
         except Exception as e:
             logger.warning("[FO] build_position_callback crash: %s", e)
+
+    def _apply_macro_event_filter(
+        self,
+        kline_data: dict[str, Any],
+        d_star: str,
+        ri: float,
+    ) -> tuple[str | None, float, dict[str, Any]]:
+        """宏观事件过滤器（断点1b/3）— 事件驱动层 + conviction-based tier 双层门控
+
+        检查 event_context（FOMC 周期 / priced_in_score）+ 反向驱动层开关，返回三元组：
+        - direction: 宏观方向（long/short/None），用于覆盖 d_star
+        - conviction: 宏观置信度 [0,1]，用于 tier 重映射（替代纯 RI 判定）
+        - macro_info: 详细信息字典
+          * active: bool — 过滤器是否激活
+          * filter_level: "soft"（软过滤，允许覆盖）/ "hard"（硬过滤，强制覆盖）
+          * direction: 宏观方向
+          * conviction: 置信度
+          * position_params: 仓位参数覆盖（position_scale / tier 等）
+          * adjusted_params: 已调整的参数（用于回写）
+
+        触发条件（全部满足才激活）：
+        - enable_contradiction_driven_layer 开关启用
+        - event_context.in_fomc_cycle = True（FOMC 周期内）
+        - event_context.post_event = True（事件已发生）
+        - event_context.priced_in_score ≥ 0.75（事件已被充分定价）
+
+        FAIL-OPEN: 任何异常返回 inactive 中性结果（保持字节等价，不影响 d*）
+        """
+        inactive = ("", 0.0, {
+            "active": False, "filter_level": "soft",
+            "direction": "", "conviction": 0.0,
+            "position_params": None, "adjusted_params": None,
+        })
+        try:
+            from dreambuddy_evolution.agi_config import is_enabled
+            if not is_enabled("enable_contradiction_driven_layer"):
+                return inactive
+            ec = kline_data.get("event_context") or {}
+            if not isinstance(ec, dict):
+                return inactive
+            if not ec.get("in_fomc_cycle", False):
+                return inactive
+            if not ec.get("post_event", False):
+                return inactive
+            priced_in = float(ec.get("priced_in_score", 0.0) or 0.0)
+            if priced_in < 0.75:
+                return inactive
+            # 反向驱动层激活 → 读取宏观方向 + 置信度
+            macro_dir = str(ec.get("macro_direction", "") or "").lower()
+            if macro_dir not in ("long", "short"):
+                # event_context 没显式给 macro_direction，用 ess_top_direction 兜底
+                macro_dir = str(kline_data.get("ess_top_direction", "") or "").lower()
+            if macro_dir not in ("long", "short"):
+                return inactive
+            # 置信度：priced_in_score 加权（已被定价的信号置信度高）
+            conviction = max(0.5, min(1.0, priced_in))
+            # conviction-based tier 映射（与 _decide_impl 三层仓位分级对齐）
+            #   conviction >= 0.75 → trend_set tier
+            #   conviction >= 0.65 → standard tier
+            #   其他 → 保持 probe
+            if conviction >= 0.75:
+                macro_tier = "trend_set"
+                position_scale = 1.20
+            elif conviction >= 0.65:
+                macro_tier = "standard"
+                position_scale = 1.00
+            else:
+                macro_tier = "probe"
+                position_scale = 0.80
+            macro_info = {
+                "active": True,
+                "filter_level": "soft",
+                "direction": macro_dir,
+                "conviction": conviction,
+                "priced_in_score": priced_in,
+                "position_params": {
+                    "position_scale": position_scale,
+                    "tier": macro_tier,
+                },
+                "adjusted_params": None,
+            }
+            logger.debug(
+                "[MacroFilter] %s active dir=%s conf=%.2f priced_in=%.2f tier=%s",
+                kline_data.get("symbol", "?"), macro_dir, conviction, priced_in, macro_tier,
+            )
+            return macro_dir, conviction, macro_info
+        except Exception as e:
+            logger.warning("[FO] _apply_macro_event_filter crash: %s", e)
+            return inactive
 
     def on_kline_close(
         self,
@@ -886,6 +984,41 @@ class KlineEventHandler:
             action = "WAIT"
             auto_execute = False
 
+            # ============ 断点1b/3: 宏观事件过滤器（_apply_macro_event_filter） ============
+            # 双层门控：
+            #   1. enable_contradiction_driven_layer 开关 → 决定是否激活宏观事件过滤
+            #   2. enable_conviction_position_mapper 开关 → 决定是否用 conviction 重映射 tier
+            # FAIL-OPEN：异常时保持字节等价（不修改 tier/d_star）
+            _macro_source_tag: str | None = None
+            _macro_dir, _macro_conv, _macro_info = self._apply_macro_event_filter(
+                kline_data, d_star, ri
+            )
+            if _macro_info.get("active"):
+                # conviction-based tier 重映射（开关门控）
+                try:
+                    from dreambuddy_evolution.agi_config import is_enabled as _is_en
+                    if _is_en("enable_conviction_position_mapper"):
+                        _pp = _macro_info.get("position_params") or {}
+                        _macro_tier = str(_pp.get("tier", "") or "").lower()
+                        # 映射回 _trigger_build_position 接受的 tier
+                        #   trend_set / trend → trend
+                        #   standard → standard
+                        #   probe → probe（保持原 tier）
+                        if _macro_tier in ("trend_set", "trend"):
+                            tier = "trend"
+                            base_position_mult = 1.0
+                        elif _macro_tier == "standard":
+                            tier = "standard"
+                            base_position_mult = 0.7
+                        # probe 不覆盖（避免降级）
+                        position_mult = base_position_mult * _regime_position_mult
+                except Exception as _e:
+                    logger.debug("[FO-MacroFilter] conviction tier remap fail: %s", _e)
+                # event_arbitrage 注入：FOMC 活跃 + priced_in ≥ 0.75 + 方向与 d_star 一致
+                #   注：开关与 priced_in 检查已在 _apply_macro_event_filter 内完成
+                if _macro_info.get("direction") == d_star and d_star in ("long", "short"):
+                    _macro_source_tag = "event_arbitrage"
+
             if inference_formed and d_star in ("long", "short"):
                 aligned = (d_star == ess_dir) if ess_dir else True
                 if aligned:
@@ -894,7 +1027,10 @@ class KlineEventHandler:
                         auto_execute = True
                         # P2-S4b: 存储 pre_trade_snapshot + 触发真实建仓回调
                         self._store_pre_trade_snapshot(symbol, action, d_star, ess_dir, ri, position_mult)
-                        self._trigger_build_position(symbol, action, d_star, ri, position_mult, tier)
+                        self._trigger_build_position(
+                            symbol, action, d_star, ri, position_mult, tier,
+                            source_tag=_macro_source_tag,
+                        )
                     # MVP 模式: 不自动执行 (Lark 人工中转)
                     if self.mode == "MVP" and ri >= 0.75:
                         pass

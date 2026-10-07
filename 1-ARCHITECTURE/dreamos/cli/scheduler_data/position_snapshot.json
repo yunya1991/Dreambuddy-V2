@@ -1,14 +1,1 @@
-{
-  "HYPE": {
-    "entry_price": 73.168,
-    "size": 7.44,
-    "direction": "LONG",
-    "ts": 1786980601.863554
-  },
-  "HEMI": {
-    "entry_price": 0.012102,
-    "size": 3913.0,
-    "direction": "LONG",
-    "ts": 1787497374.467852
-  }
-}
+{}
