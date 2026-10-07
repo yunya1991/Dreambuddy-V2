@@ -211,7 +211,7 @@ class DailyBriefing:
             with open(latest, encoding="utf-8") as f:
                 data = json.load(f)
             coins = data.get("coins", {})
-            # 提取每个币种的关键指标
+            # 提取每个币种的关键指标（含 §6.1 sector_valuation 4 字段）
             coin_summaries = []
             for symbol, info in coins.items():
                 if not isinstance(info, dict):
@@ -225,6 +225,11 @@ class DailyBriefing:
                     "direction_constraint": info.get("direction_constraint"),
                     "exit_action": info.get("exit_action"),
                     "exit_triggers": info.get("exit_triggers", []),
+                    # §6.1 sector_valuation 4 字段透传（SPEC 2026-10-07）
+                    "sector_waterline": info.get("sector_waterline", {}),
+                    "multi_dim_valuation": info.get("multi_dim_valuation", {}),
+                    "undervalued_peers": info.get("undervalued_peers", []),
+                    "overheat_signal": info.get("overheat_signal", {}),
                 })
             # 按 score 降序
             coin_summaries.sort(key=lambda x: x.get("score") or 0, reverse=True)
@@ -235,6 +240,8 @@ class DailyBriefing:
                 "total_coins": len(coin_summaries),
                 "top5": coin_summaries[:5],
                 "exit_signals": [c for c in coin_summaries if c.get("exit_action") != "NONE"],
+                # §6.2 顶层 sector_valuation_summary 透传
+                "sector_valuation_summary": data.get("sector_valuation_summary", {}),
             }
         except Exception as e:
             logger.warning(f"采集 BDSM 状态失败: {e}")

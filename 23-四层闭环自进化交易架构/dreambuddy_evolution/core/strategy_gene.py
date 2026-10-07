@@ -263,6 +263,31 @@ def find_combinations_by_strategy_type(library: dict[str, Any], strategy_type: s
 
 
 # ==================================================================================================
+# 3.6 persist_library → 将 combinations 写入 strategy_combinations/library.json
+# ==================================================================================================
+def persist_library(library: dict[str, Any], root: str | Path | None = None) -> bool:
+    """
+    将 library["combinations"] 持久化到 {root}/strategy_combinations/library.json.
+
+    Args:
+        library: load_gene_library() 返回值（含 combinations 列表）
+        root: 基因库根目录；为 None 时使用 library.get("root")
+    Returns:
+        bool: 写入成功 True，失败 False（FAIL-OPEN）
+    """
+    try:
+        target_root = Path(root) if root else Path(library.get("root", "."))
+        comb_dir = target_root / "strategy_combinations"
+        comb_dir.mkdir(parents=True, exist_ok=True)
+        combos = library.get("combinations", []) or []
+        with open(comb_dir / "library.json", "w", encoding="utf-8") as f:
+            json.dump(combos, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False  # FAIL-OPEN
+
+
+# ==================================================================================================
 # 4. search_genes_by_category → 读 gene_index.json 倒排索引
 # ==================================================================================================
 def search_genes_by_category(root: str | Path, category: str) -> list[str]:

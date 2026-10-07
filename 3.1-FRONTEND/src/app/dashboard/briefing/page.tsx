@@ -267,27 +267,91 @@ function BdsmView({ data }: { data?: Record<string, any> }) {
   }
   const top5 = (data.top5 as Array<Record<string, any>>) || [];
   const exitSignals = (data.exit_signals as Array<Record<string, any>>) || [];
+  // §6.2 sector_valuation_summary（SPEC 2026-10-07）
+  const summary = (data.sector_valuation_summary as Record<string, any>) || {};
+  const overheatSectors = (summary.overheat_sectors as string[]) || [];
+  const topOpps = (summary.top_opportunities as Array<Record<string, any>>) || [];
+  const waterlines = (summary.waterlines as Array<Record<string, any>>) || [];
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
-      <div className="flex items-center justify-between mb-2">
+    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
         <span className="text-xs font-semibold text-slate-300">BDSM 出场巡检</span>
         <span className="text-[10px] text-slate-500">{data.snapshot_date as string}</span>
       </div>
-      <div className="flex gap-4 text-[10px] mb-2">
+      <div className="flex gap-4 text-[10px]">
         <span className="text-slate-400">币种: <span className="text-slate-200">{data.total_coins}</span></span>
         <span className="text-slate-400">出场信号: <span className={exitSignals.length > 0 ? "text-red-400" : "text-slate-200"}>{exitSignals.length}</span></span>
+        <span className="text-slate-400">过热赛道: <span className={overheatSectors.length > 0 ? "text-red-400" : "text-slate-200"}>{overheatSectors.length}</span></span>
       </div>
-      <div className="space-y-1">
-        {top5.map((c, i) => (
-          <div key={i} className="flex items-center justify-between text-[10px]">
-            <span className="text-slate-200 font-mono">{c.symbol}</span>
-            <div className="flex gap-2">
-              <span className="text-slate-400">{c.rank}</span>
-              <span className="text-slate-300">{Number(c.score).toFixed(3)}</span>
-              <span className={c.exit_action === "NONE" ? "text-slate-500" : "text-amber-400"}>{c.exit_action}</span>
+
+      {/* §6.2 赛道估值概览 — 仅当有 waterlines/overheat/opportunities 时展示 */}
+      {(overheatSectors.length > 0 || topOpps.length > 0 || waterlines.length > 0) && (
+        <div className="border-t border-slate-800 pt-2 space-y-1.5">
+          <div className="text-[10px] font-semibold text-slate-400">赛道估值概览</div>
+          {overheatSectors.length > 0 && (
+            <div className="flex items-center gap-1 text-[10px] flex-wrap">
+              <span className="text-slate-500">过热:</span>
+              {overheatSectors.map((s) => (
+                <span key={s} className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-800 font-mono">{s}</span>
+              ))}
             </div>
-          </div>
-        ))}
+          )}
+          {waterlines.length > 0 && (
+            <div className="flex items-center gap-2 text-[10px] flex-wrap">
+              <span className="text-slate-500">水位:</span>
+              {waterlines.slice(0, 6).map((w) => {
+                const pct = Number(w.median_percentile || 0);
+                const hot = w.overheated === true;
+                const cheap = w.undervalued === true;
+                const color = hot ? "text-red-300" : cheap ? "text-emerald-300" : "text-slate-300";
+                return (
+                  <span key={w.sector} className={`font-mono ${color}`}>
+                    {w.sector} {pct.toFixed(0)}{hot && "⚠"}{cheap && "↓"}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {topOpps.length > 0 && (
+            <div className="flex items-center gap-1 text-[10px] flex-wrap">
+              <span className="text-slate-500">机会:</span>
+              {topOpps.slice(0, 3).map((o) => (
+                <span key={o.coin as string} className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-800 font-mono">
+                  {o.coin} {(Number(o.opportunity_score || 0)).toFixed(2)}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="space-y-1 border-t border-slate-800 pt-2">
+        {top5.map((c, i) => {
+          // §6.1 高亮过热币（overheat_signal.triggered=true）
+          const oh = c.overheat_signal as Record<string, any> | undefined;
+          const isOverheat = oh?.triggered === true;
+          const wl = c.sector_waterline as Record<string, any> | undefined;
+          const wlSector = wl?.sector as string | undefined;
+          const wlPct = Number(wl?.median_percentile || 0);
+          return (
+            <div key={i} className={`flex items-center justify-between text-[10px] px-1 rounded ${isOverheat ? "bg-red-500/10 border border-red-800/50" : ""}`}>
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-200 font-mono">{c.symbol}</span>
+                {wlSector && (
+                  <span className={`font-mono text-[9px] ${wlPct >= 80 ? "text-red-400" : wlPct <= 20 ? "text-emerald-400" : "text-slate-500"}`}>
+                    {wlSector} {wlPct.toFixed(0)}
+                  </span>
+                )}
+                {isOverheat && <span className="text-red-400 text-[9px]">过热</span>}
+              </div>
+              <div className="flex gap-2">
+                <span className="text-slate-400">{c.rank}</span>
+                <span className="text-slate-300">{Number(c.score).toFixed(3)}</span>
+                <span className={c.exit_action === "NONE" ? "text-slate-500" : "text-amber-400"}>{c.exit_action}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

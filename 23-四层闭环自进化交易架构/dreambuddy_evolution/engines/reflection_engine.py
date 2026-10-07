@@ -17,9 +17,13 @@ class ReflectionEngine:
     # REDUCE_WEIGHT 冷启动阈值：样本 < 20 只收集不调整
     _REDUCE_WEIGHT_WARM_THRESHOLD = 20
 
-    def __init__(self) -> None:
+    def __init__(self, case_library: Any = None, gene_library: dict[str, Any] | None = None) -> None:
         # 入场侧 REDUCE_WEIGHT 样本计数器（cluster_id|ess_id → count）
         self._reduce_weight_counter: dict[str, int] = {}
+        # 事件案例库（可选，用于胜率驱动权重自适应）
+        self._case_library = case_library
+        # 基因库（可选，_maybe_auto_adjust_weight 调整并持久化）
+        self._gene_library = gene_library or {}
 
     def _get_reduce_weight_count(self, cluster_id: str, ess_id: str) -> int:
         """获取 REDUCE_WEIGHT 样本计数"""
@@ -163,3 +167,68 @@ class ReflectionEngine:
 
         # -0.2≤CS<0.7（中性/判断一般）
         return {"ess_delta": 0.0, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+
+    # --------------------------------------------------------------------------
+    # 权重自适应：基于案例库胜率调整组合权重并持久化
+    # --------------------------------------------------------------------------
+    def _maybe_auto_adjust_weight(self) -> dict[str, Any]:
+        """根据事件案例库胜率自动调整基因组合权重并持久化.
+
+        逻辑:
+          - 胜率 ≥ 0.6 → 升级权重 ×1.1
+          - 胜率 < 0.4 → 降级权重 ×0.9
+          - 否则不变
+        FAIL-OPEN: case_library/gene_library 缺失时返回空结果，不抛异常.
+        """
+        result: dict[str, Any] = {"adjusted": 0, "upgraded": 0, "downgraded": 0}
+        if self._case_library is None or not self._gene_library:
+            return result
+        try:
+            # 获取案例库胜率
+            win_rate = 0.5
+            try:
+                if hasattr(self._case_library, "get_pattern_winrate"):
+                    stats = self._case_library.get_pattern_winrate("event", "hike")
+                    win_rate = float(stats.get("win_rate", 0.5))
+                elif hasattr(self._case_library, "win_rate"):
+                    win_rate = float(self._case_library.win_rate)
+            except Exception:
+                pass
+
+            # 确定调整因子
+            if win_rate >= 0.6:
+                factor = 1.1
+            elif win_rate < 0.4:
+                factor = 0.9
+            else:
+                factor = 1.0
+
+            if factor == 1.0:
+                return result
+
+            # 调整所有组合权重
+            combos = self._gene_library.get("combinations", []) or []
+            for combo in combos:
+                meta = combo.get("meta") or {}
+                if not isinstance(meta, dict):
+                    continue
+                old_weight = float(meta.get("weight", 1.0))
+                new_weight = max(0.1, min(2.0, old_weight * factor))
+                meta["weight"] = new_weight
+                result["adjusted"] += 1
+                if factor > 1.0:
+                    result["upgraded"] += 1
+                else:
+                    result["downgraded"] += 1
+
+            # 持久化到 library.json
+            try:
+                from dreambuddy_evolution.core.strategy_gene import persist_library
+                persist_library(self._gene_library)
+            except Exception as e:
+                logger.debug("[FO] persist_library fail: %s", e)
+
+            return result
+        except Exception as e:
+            logger.debug("[FO] _maybe_auto_adjust_weight fail: %s", e)
+            return result
