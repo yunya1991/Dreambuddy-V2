@@ -21,7 +21,11 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 try:
-    from statsmodels.tsa.stattools import breaks_cusumolsresid
+    # breaks_cusumolsresid 自 statsmodels 0.13 起被移除。
+    # 相关性断裂的核心信号是滚动相关序列的**均值水平漂移**（如 +0.8 → -0.8），
+    # 而非方差变化。故采用 Welch's t-test 比较前/后子集均值。
+    # breakvar_heteroskedasticity_test 仅测方差变化，对均值漂移不敏感，作为辅助。
+    from scipy.stats import ttest_ind
     _HAS_CUSUM = True
 except ImportError:
     _HAS_CUSUM = False
@@ -99,7 +103,9 @@ class StructuralBreakDetector:
         try:
             # 拟合 2 状态 HMM: 低波 / 高波
             model = MarkovRegression(valid, k_regimes=2, trend="c")
-            result = model.fit(maxiter=100, disp=False)
+            # 旧迭代上限导致 100% ConvergenceWarning（全部 fallback），
+            # 提升到 500 以保证 HMM 收敛（TDD-PRE-002）
+            result = model.fit(maxiter=500, disp=False)
 
             # 转换矩阵
             trans_matrix = result.regime_transitions
@@ -175,14 +181,29 @@ class StructuralBreakDetector:
 
         if _HAS_CUSUM:
             try:
-                cusum_stat, p_value = breaks_cusumolsresid(rolling_corr)
-                detected = p_value < self._alpha
-                return {
-                    "detected": bool(detected),
-                    "p_value": float(p_value),
-                    "cusum_stat": float(cusum_stat),
-                    "method": "cusum_ols",
-                }
+                # Welch's t-test: 比较滚动相关序列前 1/3 与后 1/3 的均值
+                # 相关性断裂（+0.8 ↔ -0.8）表现为均值水平显著漂移
+                third = rolling_corr.size // 3
+                first_part = rolling_corr[:third]
+                last_part = rolling_corr[-third:]
+                if first_part.size >= 5 and last_part.size >= 5:
+                    t_stat, p_value = ttest_ind(
+                        first_part, last_part, equal_var=False
+                    )
+                    mean_diff = float(np.mean(first_part) - np.mean(last_part))
+                    # 统计显著 + 效应量显著（大样本下微小差异也会 p<0.05，
+                    # 需 abs(mean_diff) > 0.3 才认为是实质相关性断裂）
+                    detected = (
+                        float(p_value) < self._alpha
+                        and abs(mean_diff) > 0.3
+                    )
+                    return {
+                        "detected": bool(detected),
+                        "p_value": float(p_value),
+                        "t_statistic": float(t_stat),
+                        "mean_diff": mean_diff,
+                        "method": "welch_ttest",
+                    }
             except Exception:
                 pass
 

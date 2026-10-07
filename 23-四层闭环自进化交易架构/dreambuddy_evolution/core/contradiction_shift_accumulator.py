@@ -11,14 +11,21 @@ v3.0 修正: 比较 old_primary 的当前力量 vs new_primary 的当前力量
 """
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# 质变共识阈值（加权断裂分数 ≥ 此值才触发质变）
+# v1.2 评审: statsmodels fallback 状态下 Hurst(1.0)+CUSUM(0.0) 最高仅 1.0，
+# 原阈值 1.0 不可触发。临时降为 0.4（任一断裂即可触发），依赖修复后重测校准。
+STRUCTURAL_BREAK_THRESHOLD: float = 0.4
 
 
 @dataclass
@@ -49,15 +56,19 @@ class ContradictionShiftAccumulator:
     质变: 排序变化 + 结构性断裂 → 触发质变流程
     """
 
-    def __init__(self, persistence: int = 14, dominance_gap: float = 0.15):
+    def __init__(self, persistence: int = 14, dominance_gap: float = 0.15,
+                 quality_change_log_path: str | None = None):
         """
         Args:
             persistence: 连续 persistence 次评估中排序变化才考虑质变
             dominance_gap: 新矛盾当前力量 - 旧矛盾当前力量 > dominance_gap 才算超越
+            quality_change_log_path: 质变事件落盘路径（jsonl）。None 表示不落盘。
+                解决 _history 内存列表重启即丢失的问题（TDD-PRE-003）。
         """
         self._persistence = persistence
         self._dominance_gap = dominance_gap
         self._history: list[ContradictionSnapshot] = []
+        self._log_path = Path(quality_change_log_path) if quality_change_log_path else None
 
     def record(self, contradictions: list[dict]):
         """记录当前时刻的矛盾矩阵."""
@@ -161,7 +172,7 @@ class ContradictionShiftAccumulator:
             # 排序变化但无结构性断裂 = 量变，不是质变
             return None
 
-        return {
+        result = {
             "shifted_from": {
                 "dimension": init_dim,
                 "timeframe": init_tf,
@@ -176,7 +187,26 @@ class ContradictionShiftAccumulator:
             },
             "new_direction": best_new_primary.get("direction", "neutral"),
             "structural_break_type": break_type,
+            # 连续超越旧主矛盾的期数（CrossValidationGate 用作 divergence_count 校准数据）
+            "consecutive_count": consecutive_count,
         }
+
+        # 落盘质变事件（TDD-PRE-003: 解决内存列表重启丢失问题）
+        if self._log_path is not None:
+            try:
+                record = {
+                    "timestamp": time.time(),
+                    "consecutive_count": consecutive_count,
+                    "shifted_from": result["shifted_from"],
+                    "shifted_to": result["shifted_to"],
+                    "structural_break_type": break_type,
+                }
+                with self._log_path.open("a", encoding="utf-8") as f:
+                    f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            except Exception as e:
+                logger.debug("quality_change_log write failed: %s", e)
+
+        return result
 
     def get_accumulation_status(self) -> dict[str, Any]:
         """获取当前量变积累状态（不检测质变）."""

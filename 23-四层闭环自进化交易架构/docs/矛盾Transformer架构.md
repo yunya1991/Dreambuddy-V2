@@ -87,10 +87,11 @@ drift = net([S_t, time, ctx, regime, transition])  # ctx 注入漂移项
 
 **当前配置**（已训练模型）：
 - `use_cross_attention = True`
-- `cross_attn_dim = 32`（从 16 提升，支持 n_heads=8 时 head_dim=4）
-- `cross_attn_heads = 8`（从 2 提升，对齐 C1/C2/C3/C4/C6/C7/C8/news 共 8 组）
+- `cross_attn_dim = 64`（从 32 升级，head_dim=8，消融显示 MAE 改善 69.8%）
+- `cross_attn_heads = 8`（对齐 C1/C2/C3/C4/C6/C7/C8/news 共 8 组）
 - `exogenous_factor_dim = 36`（覆盖全部 10 模块）
 - `factor_head_mask`: 8×36 维度对齐矩阵，每个 head 只看所属维度因子
+- `head_multipliers`: Phase 5 每 head 衰减系数（来自 ImpactMultiplier）
 
 > **消融建议（2026-10-06）**：消融实验显示 `cross_attn_dim=64` (head_dim=8) 比 `cross_attn_dim=32` (head_dim=4) MAE 改善 69.8%。新训练模型建议使用 `cross_attn_dim=64`。详见 §12 Phase 3+4 消融验证。
 
@@ -175,7 +176,10 @@ HJBPathSolver (PDE 逆向动态规划)
     └─ Phase C trend        (15+ 天)
 ```
 
-**重要发现**：`event_context` 在实盘 `evolution_pipeline.py` 中**未被消费**，仅在回测脚本 `backtest_macro_event.py` 中使用。
+**重要发现**：~~`event_context` 在实盘 `evolution_pipeline.py` 中**未被消费**~~
+→ **已修复**（2026-10-06）：`evolution_pipeline._get_event_context()` 从 19-DAL 读取 FOMC 日历
+  （`ExogenousDataBridge.get_next_fomc()/get_last_fomc()`），实时判定 cycle_phase 并注入
+  ImpactMultiplier 衰减系数。
 
 #### 6.2 债务周期
 
@@ -568,13 +572,32 @@ weights[h, :, f] = softmax(scores[h, :, f])  # 仅在该维度因子上归一化
 - 新训练：`cross_attn_dim=64, cross_attn_heads=8, head_dim=8, factor_head_mask=hard`
 - 已训练模型（cross_attn_dim=32）：保持不变，避免重训；如需升级，重训后替换 checkpoint
 
-#### Phase 5：head 级别 impact_multiplier 耦合 — P2
+#### Phase 5：head 级别 impact_multiplier 耦合 — ✅ 已完成
 
 将时间衰减与多头注意力结合：每个 head（矛盾维度）的影响力随周期位置动态变化。详见 §10。
 
-#### Phase 6：CausalEngine ATE 分桶动态校准 — P2
+**实现**（`cross_attention.py` + `neural_sde_model.py`）：
+1. `MultiHeadCrossAttention.forward` 新增 `head_multipliers` 参数（shape `(n_heads,)`）
+2. softmax 后 `weights *= head_multipliers[h]`，每个 head 按其矛盾维度的衰减系数缩放
+3. `_PathSignatureDriftNet.forward` / `_MoEDriftNet.forward` 透传 `head_multipliers` 到 `cross_attn`
+4. `NeuralSDEModel.f()` → `forecast_torchsde()` 上下文传递链：`_current_head_multipliers`
+5. FAIL-OPEN：`head_multipliers=None` → 不衰减
+
+**验证**：head0×0.5 → weights sum 从 1.0 降到 0.5；head1×2.0 → sum 升到 2.0。14/14 测试通过。
+
+#### Phase 6：CausalEngine ATE 分桶动态校准 — ✅ 已完成
 
 用因果推断的平均处理效应（ATE）按周期阶段分桶，数据驱动校准衰减系数。
+
+**实现**（`causal_engine.py` + `exogenous_data_bridge.py` + `evolution_pipeline.py`）：
+1. `CausalEngine.calibrate_multipliers(factor_matrix, factor_names, returns, phases, name_to_dim)`
+   — 按 cycle_phase 分桶，对每个维度聚合因子用 `estimate_ate` 估计对收益率的因果效应
+2. `ImpactMultiplier.update_from_ate(ate_results, significant_shrink=0, nonsignificant_shrink=0.5)`
+   — ATE 显著 → 保留原 multiplier；不显著 → ×0.5 衰减
+3. `ImpactMultiplier._calibrated_table` 替代硬编码 `MULTIPLIER_TABLE`，`get_multiplier` 优先使用校准表
+4. `evolution_pipeline.calibrate_impact_multipliers()` 提供离线校准入口
+
+**验证**：模拟数据 C4 显著正效应 → 保留 multiplier=1.5；C1 不显著 → 衰减至 0.65。42/42 测试通过。
 
 ---
 

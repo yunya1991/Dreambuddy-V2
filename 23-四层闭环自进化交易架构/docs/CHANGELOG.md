@@ -1,7 +1,59 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.9 | **更新日期**: 2026-10-05
+> **版本**: v1.10 | **更新日期**: 2026-10-07
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.10] - 2026-10-07 (矛盾 Transformer 交叉验证层：v0.8 勘误落地 + 前置 P0 修复)
+
+### 核心成果
+
+矛盾论与 Transformer 融合方案 v0.8 发布，SPEC 评审 v1.2 的 8 项勘误全部应用；3 项前置 P0 修复（TDD-PRE-001/002/003）落地并通过 15 项现有测试零回归。
+
+### 1. 文档勘误（8 项，融合方案 v0.7 → v0.8）
+
+- §10.11.1 `divergence_count` 字段表述修正（"已有"→"实现后将包含"），补充 BTC persistence 推荐范围（30m=[5,7]/1h=[7,10]/1d=[10,14]/1w=[14,20]）
+- §10.11.2 `reversion_rate` 0.05→0.15（OU 离散过程 r=1-exp(-Δt/τ)，18 期回归 5% 容差；原 0.05 实际需 59 期），EM 算法→OU 离散过程
+- §10.11.3 FOMC 对齐逻辑修正（24h 非对齐 FOMC 6 周）
+- §10.11.5 Q5 权重表更新（CUSUM→Welch's t-test，HMM→Markov-Regression，threshold 临时 0.4）
+- 新增 §5.1.5a 替代框架对比（5 框架 walk-forward，v0.7 夏普 2.85 排 1）
+- 新增 §10.11.4a Q4 单链路 SPRT 在线监测（p0=0.75/p1=0.50，ASN≈73）
+
+### 2. 前置 P0 修复（TDD-PRE-001/002/003）
+
+- TDD-PRE-001: [structural_break_detector.py](../dreambuddy_evolution/core/structural_break_detector.py) `detect_correlation_break` 从 `breaks_cusumolsresid`（statsmodels 0.13+ 移除）改为 `scipy.stats.ttest_ind` Welch's t-test，叠加 `abs(mean_diff)>0.3` 效应量阈值
+- TDD-PRE-002: `MarkovRegression(maxiter=100)` → `maxiter=500`，修复 HMM 100% ConvergenceWarning
+- TDD-PRE-003: [contradiction_shift_accumulator.py](../dreambuddy_evolution/core/contradiction_shift_accumulator.py) 新增 `consecutive_count` 字段 + `quality_change_log.jsonl` 落盘机制，`STRUCTURAL_BREAK_THRESHOLD` 临时 1.0→0.4
+
+### 3. 测试
+
+- 新增 `test_structural_break_detector_fixes.py` / `test_contradiction_shift_accumulator_fixes.py`
+- 15 项 `test_phase2_causal.py` 零回归
+
+### 4. TDD-CV 核心实现（交叉验证层）
+
+- TDD-CV-001: [attention_aggregator.py](../dreambuddy_evolution/core/attention_aggregator.py) — head-weight 求和聚合输出 A_dim
+- TDD-CV-002: [cross_validation_gate.py](../dreambuddy_evolution/core/cross_validation_gate.py) — §5.1 五步算法 + Q1~Q5 优化（Bayesian 校准 / floor-ceiling-mean reversion / 冷却期 / 三级降级+SPRT / 加权共识）
+- TDD-CV-003: head_multipliers 收敛性验证（r=0.15，20 期回归 [0.95, 1.05]）
+- TDD-PRE-004: [sprt_monitor.py](../dreambuddy_evolution/core/sprt_monitor.py) — SPRT 序贯概率比检验（p0=0.75/p1=0.50, α=0.05, β=0.10），集成到 CrossValidationGate 降级模式
+
+### 5. TDD-CV-004: 5 框架 walk-forward 对比验证
+
+- [framework_comparison.py](../dreambuddy_evolution/core/framework_comparison.py) — 5 框架（交叉验证/Bayesian/互信息/Shapley/Granger）配对 walk-forward + DSR + PBO + Holm-Bonferroni 校正
+- BTC 30m 87598 期实测：F1 交叉验证 OOS 夏普 7.77, DSR=1.0，显著优于 F2/F4/F5（adj_p<0.001），与 F3 互信息相当
+- 结果: [framework_comparison_result.json](../dreambuddy_evolution/data/framework_comparison_result.json)
+
+### 6. TDD-CV-005: Step 2/4/5 落地 — GrangerPipelineAdapter + head_multipliers 接入 + 自进化闭环阶段1
+
+- TDD-CV-Step2: [granger_pipeline_adapter.py](../dreambuddy_evolution/core/granger_pipeline_adapter.py) — 包装 GrangerCausalityChecker，3 维度 Granger 检验 + Bonferroni 多重比较校正（α/ (3×max_lag)）
+  - 修复 [granger_causality_checker.py](../dreambuddy_evolution/core/granger_causality_checker.py) statsmodels 0.15 兼容：`grangercausalitytests(verbose=)` 移除 + `adfuller(result_object=)` 兼容回退
+- TDD-CV-Step4: `CrossValidationGate.head_adjustment_to_array()` — dict→(n_heads,) ndarray；`deep_reasoning_engine.neural_sde_forecast(head_multipliers=)` 接入 NeuralSDE.forecast
+- TDD-CV-Step5 阶段1: `CognitiveBridge.record_quality_change()` — 质变事件→认知记忆 record（B 级，tags=质变/交叉验证/自进化/矛盾论）；granger_reestimate_trigger 信号已在 CrossValidationGate 输出
+  - FTCEvolutionBridge 基因创新触发：待交叉验证层稳定运行后接入（渐进策略，见 §10.12 P1-B）
+- TDD-CV-006 消融实验: [poc_cv_ablation.py](../dreambuddy_evolution/core/poc_cv_ablation.py) — 5 组对比（全功能/无Q2/无Q5/无Q4/纯Attention）
+  - 结果: E0 全功能夏普 1.57，E2 无 Q5 降至 1.35（-0.22），E4 纯 Attention 归零。Q5 类型加权 + 双链路交叉验证是核心价值来源
+  - CrossValidationGate 新增 `enable_structural_break_weighting` 开关（Q5 可独立关闭）
 
 ---
 

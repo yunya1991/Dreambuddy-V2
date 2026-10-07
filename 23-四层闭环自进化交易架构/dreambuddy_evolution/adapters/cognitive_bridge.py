@@ -183,6 +183,52 @@ class CognitiveBridge:
             logger.debug("[FO] record_ripple crash: %s", e)
             return None
 
+    # ---------------------------------------------------------- 质变事件（交叉验证层）
+    def record_quality_change(self, detail: dict[str, Any]) -> str | None:
+        """
+        CrossValidationGate 质变事件 → 认知记忆记录.
+
+        Args:
+            detail: {
+                "old_dim": str, "new_dim": str,
+                "structural_break": dict,
+                "divergence_count": int,
+            }
+
+        Returns:
+            memory_id 或 None
+        """
+        if not self._enabled:
+            return None
+
+        try:
+            entry = self._get_entry()
+            if entry is None:
+                return None
+
+            old_dim = detail.get("old_dim", "?")
+            new_dim = detail.get("new_dim", "?")
+            div_count = detail.get("divergence_count", 0)
+            sb = detail.get("structural_break", {})
+            content = (
+                f"[质变事件] 主矛盾转移: {old_dim} → {new_dim}, "
+                f"divergence_count={div_count}, "
+                f"structural_break={sb}"
+            )
+            memory_id = entry.record(
+                content=content,
+                quality_level="B",
+                confidence=0.5,
+                tags=["质变", "交叉验证", "自进化", "矛盾论"],
+                source="cross-validation-gate",
+            )
+            logger.info("[COG] record_quality_change → %s", memory_id)
+            return memory_id
+
+        except Exception as e:
+            logger.debug("[FO] record_quality_change crash: %s", e)
+            return None
+
     # ---------------------------------------------------------- 内部
     def _get_entry(self) -> Any:
         """懒加载 CognitiveLoopEntry"""

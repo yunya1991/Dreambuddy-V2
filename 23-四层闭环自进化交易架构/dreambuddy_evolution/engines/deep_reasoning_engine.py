@@ -184,6 +184,7 @@ class DeepReasoningEngine:
         horizon: int,
         n_paths: int = 1000,
         exogenous_factors: Optional[np.ndarray] = None,
+        head_multipliers: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Neural SDE 模拟市场连续时间动态（4 级降级链）.
 
@@ -200,6 +201,9 @@ class DeepReasoningEngine:
             n_paths: 模拟路径数
             exogenous_factors: (N, factor_dim) 外生因子张量 (P1+ Cross-Attention),
                                None → zero context (FAIL-OPEN)
+            head_multipliers: (n_heads,) Phase 5 每 head 衰减系数,
+                              来自 CrossValidationGate.head_adjustment_to_array()
+                              None → 不衰减 (FAIL-OPEN)
 
         Returns:
             shape (n_paths, horizon+1) 的价格路径数组
@@ -221,6 +225,8 @@ class DeepReasoningEngine:
                     forecast_kwargs = {}
                     if exogenous_factors is not None and getattr(model, "use_cross_attention", False):
                         forecast_kwargs["exogenous_factors"] = exogenous_factors
+                    if head_multipliers is not None and getattr(model, "use_cross_attention", False):
+                        forecast_kwargs["head_multipliers"] = head_multipliers
                     paths = model.forecast(state, horizon, n_paths, **forecast_kwargs)
                     if paths is not None:
                         self._sde_backend_used = (

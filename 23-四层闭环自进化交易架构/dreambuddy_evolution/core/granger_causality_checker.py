@@ -80,7 +80,11 @@ class GrangerCausalityChecker:
 
         # ADF 平稳性检验（避免伪回归）
         try:
-            adf_result = adfuller(effect_arr, autolag="AIC")
+            # statsmodels 0.15+ 新增 result_object 参数；旧版兼容回退
+            try:
+                adf_result = adfuller(effect_arr, autolag="AIC", result_object=False)
+            except TypeError:
+                adf_result = adfuller(effect_arr, autolag="AIC")
             is_stationary = adf_result[1] < 0.05
         except Exception:
             is_stationary = False  # 无法检验时假设非平稳，但继续检验
@@ -96,7 +100,11 @@ class GrangerCausalityChecker:
         # grangercausalitytests 需要 2D array: [effect, cause]
         data = np.column_stack([effect_arr, cause_arr])
         try:
-            results = grangercausalitytests(data, maxlag=self._max_lag, verbose=False)
+            # statsmodels 0.15+ 移除了 verbose 参数
+            try:
+                results = grangercausalitytests(data, maxlag=self._max_lag, verbose=False)
+            except TypeError:
+                results = grangercausalitytests(data, maxlag=self._max_lag)
         except Exception as e:
             logger.debug("Granger test failed: %s", e)
             return None
