@@ -100,11 +100,11 @@ export function OverviewPanel() {
     { label: '估值区间', value: String(valCore.valuation_zone || '--'), signal: /偏高|过热/.test(String(valCore.valuation_zone)) ? 'bearish' : 'bullish', group: '估值' },
 
     { label: 'ETF 净流入', value: `${fmt(flowCore.etf_total_flow)}M`, signal: (Number(flowCore.etf_total_flow) ?? 0) >= 0 ? 'bullish' : 'bearish', group: '资金流' },
-    { label: '资金流评分', value: fmt(flowCore.fund_flow_score, 1), signal: (Number(flowCore.fund_flow_score) ?? 50) >= 50 ? 'bullish' : 'bearish', group: '资金流' },
+    { label: '资金流评分', value: fmt(flowCore.fund_flow_score, 1), signal: (Number(flowCore.fund_flow_score) ?? 0) >= 0 ? 'bullish' : 'bearish', group: '资金流' },
     { label: 'USDT 占比', value: `${fmt(flowCore.stablecoin_dominance_usdt, 1)}%`, signal: 'neutral', group: '资金流' },
     { label: '流向状态', value: String(flowCore.flow_regime || '--'), signal: /inflow|accumulation|流入/.test(String(flowCore.flow_regime)) ? 'bullish' : 'bearish', group: '资金流' },
 
-    { label: '情绪指数', value: fmt(senCore.sentiment_index, 0), signal: (Number(senCore.sentiment_index) ?? 50) >= 55 ? 'bullish' : 'bearish', group: '情绪' },
+    { label: '情绪指数', value: fmt(senCore.sentiment_index, 0), signal: (Number(senCore.sentiment_index) ?? 50) >= 55 ? 'bullish' : (Number(senCore.sentiment_index) ?? 50) <= 45 ? 'bearish' : 'neutral', group: '情绪' },
     { label: '情绪分类', value: String(senCore.sentiment_classification || '--'), signal: /贪婪|乐观/.test(String(senCore.sentiment_classification)) ? 'bullish' : /恐惧|悲观/.test(String(senCore.sentiment_classification)) ? 'bearish' : 'neutral', group: '情绪' },
     { label: '情绪周期', value: String(senCore.sentiment_regime || '--'), signal: 'neutral', group: '情绪' },
     { label: '社交声量', value: fmt(senCore.social_volume), signal: 'neutral', group: '情绪' },
@@ -114,7 +114,7 @@ export function OverviewPanel() {
     { label: '交易所净流', value: `${fmt(onchainCore.exchange_net_flow)} BTC`, signal: (Number(onchainCore.exchange_net_flow) ?? 0) < 0 ? 'bullish' : 'bearish', group: '链上' },
     { label: '网络健康', value: String(onchainCore.network_health || '--'), signal: /优秀|良好/.test(String(onchainCore.network_health)) ? 'bullish' : 'neutral', group: '链上' },
 
-    { label: '政策得分', value: fmt(macroCore.policy_score, 1), signal: (Number(macroCore.policy_score) ?? 50) >= 50 ? 'bullish' : 'bearish', group: '宏观' },
+    { label: '政策得分', value: fmt(macroCore.policy_score, 1), signal: (Number(macroCore.policy_score) ?? 0) >= 0 ? 'bullish' : 'bearish', group: '宏观' },
     { label: 'CPI 同比', value: `${fmt(macroCore.cpi_yoy, 2)}%`, signal: (Number(macroCore.cpi_yoy) ?? 3) < 3 ? 'bullish' : 'bearish', group: '宏观' },
     { label: '利率周期', value: String(macroCore.rate_cycle || '--'), signal: /cut|降息/.test(String(macroCore.rate_cycle)) ? 'bullish' : 'bearish', group: '宏观' },
     { label: '联邦基金利率', value: `${fmt(macroCore.fed_funds_rate, 2)}%`, signal: 'neutral', group: '宏观' },

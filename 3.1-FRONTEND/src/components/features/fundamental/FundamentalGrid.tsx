@@ -126,7 +126,7 @@ export function FundamentalGrid() {
     {
       name: '资金流评分',
       value: fmt(flow.fund_flow_score, 1),
-      signal: (Number(flow.fund_flow_score) ?? 50) >= 50 ? 'bullish' : 'bearish',
+      signal: (Number(flow.fund_flow_score) ?? 0) >= 0 ? 'bullish' : 'bearish',
       desc: '综合资金面评分',
     },
     {
@@ -144,13 +144,13 @@ export function FundamentalGrid() {
     {
       name: '政策得分',
       value: fmt(macro.policy_score, 1),
-      signal: (Number(macro.policy_score) ?? 50) >= 50 ? 'bullish' : 'bearish',
+      signal: (Number(macro.policy_score) ?? 0) >= 0 ? 'bullish' : 'bearish',
       desc: '宏观政策面',
     },
     {
       name: '利率周期',
       value: String(macro.rate_cycle || '--'),
-      signal: /cut|降息/.test(String(macro.rate_cycle)) ? 'bullish' : 'bearish',
+      signal: /cut|降息/.test(String(macro.rate_cycle)) ? 'bullish' : /hike|加息/.test(String(macro.rate_cycle)) ? 'bearish' : 'neutral',
       desc: '美联储政策方向',
     },
     {

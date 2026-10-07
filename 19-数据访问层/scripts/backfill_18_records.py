@@ -61,35 +61,56 @@ def _is_numeric(v: Any) -> bool:
 
 
 def _iter_metric_rows(src_db: str) -> Iterable[tuple]:
-    """从 18 records 产出 (source, sub_category, metric_name, metric_value, unix_ts)。"""
+    """从 18 records 产出 (source, sub_category, metric_name, metric_value, unix_ts)。
+
+    优先读 metrics 列；若 metrics 无数值，fallback 读 timeseries 列的 close 值
+    （yfinance 等采集器把价格存在 timeseries 而非 metrics）。
+    """
     conn = sqlite3.connect(src_db)
     cur = conn.cursor()
-    # 只取有 metrics 且非新闻类的记录
     cur.execute(
         """
-        SELECT source, sub_category, timestamp, metrics
+        SELECT source, sub_category, timestamp, metrics, timeseries
         FROM records
-        WHERE metrics IS NOT NULL AND metrics != ''
+        WHERE (metrics IS NOT NULL AND metrics != '')
+           OR (timeseries IS NOT NULL AND timeseries != '')
           AND sub_category NOT LIKE 'newsflash%'
         """
     )
-    for source, sub_category, ts_text, metrics_json in cur:
+    for source, sub_category, ts_text, metrics_json, ts_json in cur:
         if not sub_category:
             continue
         unix_ts = _to_unix_sec(ts_text)
         if unix_ts is None:
             continue
-        try:
-            metrics = json.loads(metrics_json)
-        except (json.JSONDecodeError, TypeError):
-            continue
-        if not isinstance(metrics, dict):
-            continue
-        for metric_name, value in metrics.items():
-            if metric_name == "asset":
-                continue
-            if _is_numeric(value):
-                yield (source, sub_category, metric_name, float(value), unix_ts)
+        found_numeric = False
+
+        # 1. 优先从 metrics 提取
+        if metrics_json:
+            try:
+                metrics = json.loads(metrics_json)
+            except (json.JSONDecodeError, TypeError):
+                metrics = None
+            if isinstance(metrics, dict):
+                for metric_name, value in metrics.items():
+                    if metric_name == "asset":
+                        continue
+                    if _is_numeric(value):
+                        yield (source, sub_category, metric_name, float(value), unix_ts)
+                        found_numeric = True
+
+        # 2. metrics 无数值时，从 timeseries 提取 close 作为 fallback
+        if not found_numeric and ts_json:
+            try:
+                ts_list = json.loads(ts_json)
+            except (json.JSONDecodeError, TypeError):
+                ts_list = None
+            if isinstance(ts_list, list) and ts_list:
+                # 取最新一条的 close 值
+                latest = ts_list[-1] if isinstance(ts_list[-1], dict) else {}
+                close_val = latest.get("close")
+                if _is_numeric(close_val):
+                    yield (source, sub_category, "value", float(close_val), unix_ts)
     conn.close()
 
 

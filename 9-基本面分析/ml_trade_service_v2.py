@@ -173,13 +173,13 @@ def compute_module_resistance(module: str, raw_data: Dict) -> Dict:
     """
     # 从原始数据提取评分（优先从 metrics.core 读取）
     score_key_map = {
-        "news": ("sentiment_sum", 0.5),
+        "news": ("avg_sentiment", 0.5),
         "flow": ("fund_flow_score", 0.0),
         "sentiment": ("sentiment_index", 50),
         "macro": ("policy_score", 0.0),
         "breadth": ("advance_decline_line", 0.0),
         "intermarket": ("dxy_correlation", 0.0),
-        "valuation": ("mvrv_ratio", 2.5),
+        "valuation": ("mvrv_ratio", 1.5),
         "onchain": ("exchange_net_flow", 0.0),
         "calendar": ("impact_score", 0.5),
         "narrative": ("market_consensus", 0.5),
@@ -197,14 +197,18 @@ def compute_module_resistance(module: str, raw_data: Dict) -> Dict:
         raw_score = raw_data.get(key, default)
 
     # 归一化到 -1 to 1
-    if key == "sentiment_index" or key == "sentiment_sum":
+    if key == "sentiment_index":
         normalized = (raw_score - 50) / 50  # 0-100 -> -1 to 1
+    elif key == "avg_sentiment":
+        normalized = (raw_score - 0.5) / 0.5  # 0-1 -> -1 to 1
+    elif key == "market_consensus":
+        normalized = (raw_score - 0.5) / 0.5  # 0-1 -> -1 to 1
     elif key == "mvrv_ratio":
-        normalized = (raw_score - 2.5) / 1.5  # 基于2.5中心
+        normalized = (raw_score - 1.5) / 1.0  # 1.5 为合理中心，±1.0 覆盖范围
     elif key == "exchange_net_flow":
         normalized = max(-1, min(1, raw_score / 500))  # 百万美元级别除以500
     elif key in ["fund_flow_score", "policy_score", "advance_decline_line",
-                 "dxy_correlation", "impact_score", "market_consensus"]:
+                 "dxy_correlation", "impact_score"]:
         normalized = max(-1, min(1, raw_score))
     elif isinstance(raw_score, (int, float)):
         normalized = max(-1, min(1, raw_score))
@@ -300,7 +304,7 @@ def build_module_snapshot(module: str) -> Dict:
         "events": events,
         "timeseries": ts_data,
         "meta": {
-            "source": ["19-DAL"] if module in DAL_COLLECTORS else (["Tavily"] if module in ["news", "narrative"] else ["Mock"]),
+            "source": ["19-DAL"] if module in DAL_COLLECTORS else ["legacy"],
             "last_update": ts,
             "data_quality": "high",
             "feature_count": len(features),

@@ -12,23 +12,24 @@ interface MacroModule {
   meta?: { last_update?: string; source?: string[]; data_quality?: string };
 }
 
-const MACRO_ITEMS: { key: string; label: string; digits?: number; suffix?: string; invert?: boolean }[] = [
+const MACRO_ITEMS: { key: string; label: string; digits?: number; suffix?: string; invert?: boolean; percent?: boolean; fixedSignal?: 'bullish' | 'bearish' | 'neutral' }[] = [
   { key: 'policy_score', label: '政策得分', digits: 1 },
   { key: 'cpi_yoy', label: 'CPI同比', digits: 2, suffix: '%' },
   { key: 'fed_funds_rate', label: '联邦基金利率', digits: 2, suffix: '%' },
   { key: 'rate_cycle', label: '利率周期' },
-  { key: 'cut_probability', label: '降息概率', digits: 1, suffix: '%' },
-  { key: 'hold_probability', label: '维持概率', digits: 1, suffix: '%' },
-  { key: 'hike_probability', label: '加息概率', digits: 1, suffix: '%' },
+  { key: 'cut_probability', label: '降息概率', digits: 1, suffix: '%', percent: true, fixedSignal: 'bullish' },
+  { key: 'hold_probability', label: '维持概率', digits: 1, suffix: '%', percent: true, fixedSignal: 'neutral' },
+  { key: 'hike_probability', label: '加息概率', digits: 1, suffix: '%', percent: true, fixedSignal: 'bearish' },
 ];
 
-function fmt(v: number | string, digits = 2): string {
+function fmt(v: number | string, digits = 2, percent = false): string {
   if (typeof v === 'string') return v;
   if (typeof v !== 'number' || !isFinite(v)) return '--';
-  return v.toFixed(digits);
+  return (percent ? v * 100 : v).toFixed(digits);
 }
 
-function signalOf(v: number | string, invert?: boolean): 'bullish' | 'bearish' | 'neutral' {
+function signalOf(v: number | string, invert?: boolean, fixedSignal?: 'bullish' | 'bearish' | 'neutral'): 'bullish' | 'bearish' | 'neutral' {
+  if (fixedSignal) return fixedSignal;
   if (typeof v === 'string') return 'neutral';
   const val = invert ? -v : v;
   if (val > 0.1) return 'bullish';
@@ -82,14 +83,14 @@ export function MacroPanel() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {MACRO_ITEMS.map(m => {
             const v = core[m.key];
-            const sig = signalOf(v as number | string, m.invert);
+            const sig = signalOf(v as number | string, m.invert, m.fixedSignal);
             return (
               <V3Card key={m.key} padding="sm" hover>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] text-slate-500">{m.label}</span>
                   <V3Badge variant={signalVariant[sig]} label={signalLabel[sig]} />
                 </div>
-                <p className="text-base font-semibold text-slate-200">{fmt(v as number | string, m.digits)}{m.suffix ?? ''}</p>
+                <p className="text-base font-semibold text-slate-200">{fmt(v as number | string, m.digits, m.percent)}{m.suffix ?? ''}</p>
               </V3Card>
             );
           })}

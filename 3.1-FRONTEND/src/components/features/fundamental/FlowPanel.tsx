@@ -161,7 +161,7 @@ export function FlowPanel() {
     { label: '资金流评分', value: `${(Number(core.fund_flow_score) || 0).toFixed(1)}`, signal: (Number(core.fund_flow_score) || 0) >= 0 ? 'bullish' : 'bearish' },
     { label: 'USDT 占比', value: `${(Number(core.stablecoin_dominance_usdt) || 0).toFixed(1)}%`, signal: 'neutral' },
     { label: 'USDC 占比', value: `${(Number(core.stablecoin_dominance_usdc) || 0).toFixed(1)}%`, signal: 'neutral' },
-    { label: '资金费率', value: core.funding_rate != null ? `${(Number(core.funding_rate)).toFixed(1)}` : '--', signal: Number(core.funding_rate) >= 50 ? 'bullish' : 'bearish' },
+    { label: '资金费率', value: core.funding_rate != null ? `${(Number(core.funding_rate) * 100).toFixed(4)}%` : '--', signal: Number(core.funding_rate) <= 0.01 && Number(core.funding_rate) >= -0.01 ? 'neutral' : Number(core.funding_rate) > 0 ? 'bearish' : 'bullish' },
     { label: '多空比', value: core.long_short_ratio != null ? Number(core.long_short_ratio).toFixed(2) : '--', signal: 'neutral' },
     { label: '鲸鱼活跃度', value: `${(Number(core.whale_activity) || 0).toFixed(1)}`, signal: 'neutral' },
     { label: '清算压力', value: `${(Number(core.liquidation_pressure) || 0).toFixed(1)}`, signal: Number(core.liquidation_pressure) > 50 ? 'bearish' : 'neutral' },

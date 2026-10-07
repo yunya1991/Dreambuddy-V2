@@ -342,7 +342,8 @@ class TrailingStopComponent:
         seen_keys: set = set()
 
         # 遍历所有系统的 positions
-        by_sys_raw: Dict[str, Any] = positions_result.get("by_system") or {}
+        # fetch_all_positions() 返回的各系统数据在 "systems" 键下
+        by_sys_raw: Dict[str, Any] = positions_result.get("systems") or {}
         for system_name, sys_data in by_sys_raw.items():
             if system_name not in target_systems:
                 continue

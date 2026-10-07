@@ -94,7 +94,7 @@ class DalSnapshotProvider:
                 etf_breakdown[col] = v[0]
         usdt_pct = self._metric("stablecoins_top_10", "USDT_pct", 0.0)
         usdc_pct = self._metric("stablecoins_top_10", "usdc_pct_of_total", 0.0)
-        fund_flow_score = _clamp(total_flow / 500.0, -1.0, 1.0)
+        fund_flow_score = _clamp(total_flow / 1000.0, -1.0, 1.0)
 
         # --- 新增：从 DAL 读取衍生品/稳定币/巨鲸真实数据 ---
         # 真实资金费率（Binance Futures，百分比），回退到 fear_greed_enhanced funding 情绪分
@@ -168,24 +168,32 @@ class DalSnapshotProvider:
     # 2. macro — 宏观
     # ------------------------------------------------------------------
     def collect_macro(self) -> Optional[Dict]:
-        cpi = self._metric("CPIAUCSL", "value", 0.0)
+        cpi_index = self._metric("CPIAUCSL", "value", 0.0)
+        cpi_yoy = self._metric("cpi", "actual", 0.0) or (cpi_index / 100.0 if cpi_index else 0.0)
         fed_funds = self._metric("FEDFUNDS", "value", 0.0)
         cut_prob = self._metric("fedwatch", "cut_prob", 0.0)
         hold_prob = self._metric("fedwatch", "hold_prob", 0.0)
         hike_prob = self._metric("fedwatch", "hike_prob", 0.0)
         rate_change = self._metric("fomc_decision", "rate_change", 0.0)
-        if cpi == 0.0 and fed_funds == 0.0 and cut_prob == 0.0:
+        if cpi_index == 0.0 and fed_funds == 0.0 and cut_prob == 0.0:
             return None
         # 政策评分：降息概率高 + 加息概率低 → 宽松（+）；反之紧缩（-）
         policy_score = _clamp((cut_prob - hike_prob) * 0.5 + (1.0 if rate_change < 0 else -1.0 if rate_change > 0 else 0.0) * 0.3, -1.0, 1.0)
+        # 利率周期：按当前市场概率判断，而非历史决议
+        if cut_prob > hold_prob and cut_prob > hike_prob:
+            rate_cycle = "降息"
+        elif hike_prob > hold_prob and hike_prob > cut_prob:
+            rate_cycle = "加息"
+        else:
+            rate_cycle = "持平"
         ts_data = self._history("FEDFUNDS", "value", days=90)
         return {
             "metrics": {
                 "core": {
                     "policy_score": round(policy_score, 4),
-                    "cpi_yoy": round(cpi, 3),
+                    "cpi_yoy": round(cpi_yoy, 3),
                     "fed_funds_rate": round(fed_funds, 3),
-                    "rate_cycle": "降息" if rate_change < 0 else "加息" if rate_change > 0 else "持平",
+                    "rate_cycle": rate_cycle,
                     "cut_probability": round(cut_prob, 4),
                     "hold_probability": round(hold_prob, 4),
                     "hike_probability": round(hike_prob, 4),
@@ -194,12 +202,12 @@ class DalSnapshotProvider:
                     "m2_supply": self._metric("M2SL", "value", 0.0),
                     "ppi": self._metric("PPIACO", "value", 0.0),
                     "industrial_production": self._metric("INDPRO", "value", 0.0),
-                    "dot_plot_median": self._metric("fomc_decision", "dot_plot_median", 0.0),
+                    "dot_plot_median": self._metric("fomc_decision", "dot_plot_median", 0.0) or self._metric("fomc_decision", "rate", 0.0),
                     "balance_sheet": self._metric("WALCL", "value", 0.0),
                 },
             },
             "events": [{
-                "title": f"联邦基金利率 {fed_funds:.2f}%，CPI {cpi:.2f}",
+                "title": f"联邦基金利率 {fed_funds:.2f}%，CPI {cpi_yoy:.2f}",
                 "content": f"降息概率 {cut_prob:.0%} / 持平 {hold_prob:.0%} / 加息 {hike_prob:.0%}",
                 "category": "宏观", "impact_score": 0.75,
                 "sentiment": round(policy_score, 3),
@@ -367,14 +375,14 @@ class DalSnapshotProvider:
     def collect_intermarket(self) -> Optional[Dict]:
         dxy = self._metric("DX-Y.NYB", "value", 0.0)
         spx = self._metric("SPY", "value", 0.0)
-        gold = self._metric("GC=F", "value", 0.0)
-        us10y = self._metric("^TNX", "value", 0.0)
+        gold = self._metric("GC=F", "value", 0.0) or self._metric("gold", "value", 0.0)
+        us10y = self._metric("^TNX", "value", 0.0) or self._metric("^TNX", "close", 0.0)
         vix = self._metric("^VIX", "value", 0.0)
         btc = self._metric("BTC-USD", "value", 0.0)
         if dxy == 0.0 and spx == 0.0 and gold == 0.0:
             return None
-        # 简化相关性：DXY 强 → 风险资产承压；用 DXY 与 BTC 的反向关系近似
-        dxy_correlation = -1.0 if dxy > 105 else 1.0 if dxy < 100 else 0.0
+        # DXY-BTC 相关性：线性插值（DXY>102 → 负相关，<102 → 正相关）
+        dxy_correlation = _clamp(-(dxy - 102.0) / 5.0, -1.0, 1.0)
         risk_on = (spx > 0 and gold > 0) and (vix < 20)
         return {
             "metrics": {
@@ -514,6 +522,154 @@ class DalSnapshotProvider:
                 "source": "19-DAL", "published_at": _now_iso(),
             }],
             "timeseries": self._history("overview_market", "btc_dominance_pct", days=30),
+            "timestamp": _now_iso(),
+        }
+
+    # ------------------------------------------------------------------
+    # 9. news — 新闻情绪（从 DAL newsflash 真实数据派生）
+    # ------------------------------------------------------------------
+    def collect_news(self) -> Optional[Dict]:
+        news_count = self._metric("social_volume", "news_count_24h", 0)
+        social_volume = self._metric("social_volume", "social_volume", 0)
+        total_records = self._metric("social_volume", "total_news_records", 0)
+        if news_count == 0 and social_volume == 0:
+            return None
+
+        # 从 newsflash_* 表统计情绪分布
+        repo = self.get_repo()
+        positive_count = 0
+        negative_count = 0
+        neutral_count = 0
+        sentiments: List[float] = []
+        if repo is not None:
+            try:
+                end_dt = datetime.now(timezone.utc)
+                start_dt = end_dt - timedelta(hours=48)  # 48h 窗口，确保捕获最近 newsflash
+                start_ts = int(start_dt.timestamp())
+                end_ts = int(end_dt.timestamp())
+                # newsflash 的 sub_category 形如 newsflash_513701，用 LIKE 匹配
+                import sqlite3 as _sql
+                import os as _os
+                db_path = _os.environ.get("DAL_DB_PATH", "")
+                if db_path:
+                    _conn = _sql.connect(db_path)
+                    _rows = _conn.execute(
+                        """SELECT metric_value FROM mm_metrics
+                           WHERE metric_name='od_policy_sentiment_0_1'
+                             AND sub_category LIKE 'newsflash_%'
+                             AND timestamp BETWEEN ? AND ?
+                           ORDER BY timestamp DESC LIMIT 200""", (start_ts, end_ts)
+                    ).fetchall()
+                    _conn.close()
+                    for _r in _rows:
+                        val = _r[0]
+                        if val is None or not isinstance(val, (int, float)):
+                            continue
+                        sentiments.append(float(val))
+                        if val > 0.55:
+                            positive_count += 1
+                        elif val < 0.45:
+                            negative_count += 1
+                        else:
+                            neutral_count += 1
+            except Exception:
+                pass
+
+        total = positive_count + negative_count + neutral_count
+        if total == 0:
+            total = 1  # 防除零
+        avg_sentiment = sum(sentiments) / len(sentiments) if sentiments else 0.5
+        sentiment_score = (positive_count - negative_count) / total
+
+        # 按影响分类（高影响 = 情绪极值）
+        high_impact = sum(1 for s in sentiments if abs(s - 0.5) > 0.3)
+
+        return {
+            "metrics": {
+                "core": {
+                    "total_articles": int(news_count),
+                    "positive_count": positive_count,
+                    "negative_count": negative_count,
+                    "neutral_count": neutral_count,
+                    "sentiment": round(avg_sentiment, 3),
+                    "avg_sentiment": round(avg_sentiment, 3),
+                    "avg_impact": round(high_impact / max(total, 1), 3),
+                    "high_impact_count": high_impact,
+                    "negative_ratio": round(negative_count / total, 3),
+                    "positive_ratio": round(positive_count / total, 3),
+                    "neutral_ratio": round(neutral_count / total, 3),
+                    "bearish_ratio": round(negative_count / total, 3),
+                    "sentiment_sum": round(sum(sentiments), 2),
+                    "category_count": min(total, 5),
+                    "top_category": "综合",
+                    "sentiment_score": round(sentiment_score, 3),
+                },
+                "breakdown": {
+                    "social_volume": int(social_volume),
+                    "total_news_records": int(total_records),
+                },
+            },
+            "events": [],
+            "timeseries": self._history("social_volume", "news_count_24h", days=30),
+            "timestamp": _now_iso(),
+        }
+
+    # ------------------------------------------------------------------
+    # 10. narrative — 市场叙事（从 DAL fear_greed_enhanced 派生）
+    # ------------------------------------------------------------------
+    def collect_narrative(self) -> Optional[Dict]:
+        fg_value = self._metric("crypto_fear_greed", "value", 0.0)
+        # 4 个子维度作为叙事来源
+        sub_metrics = {
+            "capital_flow": self._metric("fear_greed_enhanced", "capital_flow", 50.0),
+            "funding": self._metric("fear_greed_enhanced", "funding", 50.0),
+            "momentum": self._metric("fear_greed_enhanced", "momentum", 50.0),
+            "volatility": self._metric("fear_greed_enhanced", "volatility", 50.0),
+        }
+        if fg_value == 0.0 and all(v == 50.0 for v in sub_metrics.values()):
+            return None
+
+        bullish = sum(1 for v in sub_metrics.values() if v > 60)
+        bearish = sum(1 for v in sub_metrics.values() if v < 40)
+        neutral = len(sub_metrics) - bullish - bearish
+        total = len(sub_metrics)
+        avg_sentiment = sum(v / 100.0 for v in sub_metrics.values()) / total
+        consensus = (fg_value / 100.0 + avg_sentiment) / 2.0
+
+        # 叙事标签
+        narratives = []
+        for name, val in sub_metrics.items():
+            if val > 60:
+                narratives.append({"theme": name, "sentiment": "bullish", "score": val})
+            elif val < 40:
+                narratives.append({"theme": name, "sentiment": "bearish", "score": val})
+            else:
+                narratives.append({"theme": name, "sentiment": "neutral", "score": val})
+
+        return {
+            "metrics": {
+                "core": {
+                    "total_narratives": total,
+                    "bullish_narratives": bullish,
+                    "bearish_narratives": bearish,
+                    "neutral_narratives": neutral,
+                    "avg_sentiment": round(avg_sentiment, 3),
+                    "avg_momentum": round(sub_metrics["momentum"], 1),
+                    "consensus": round(consensus, 3),
+                    "market_consensus": round(consensus, 3),
+                },
+                "breakdown": {
+                    n["theme"]: n["score"] for n in narratives
+                },
+            },
+            "events": [{
+                "title": f"恐惧贪婪指数 {fg_value:.0f}，{bullish} 项看多 {bearish} 项看空",
+                "content": f"叙事分布：{bullish} 多 / {neutral} 中 / {bearish} 空",
+                "category": "叙事", "impact_score": 0.6,
+                "sentiment": round(_clamp(consensus * 2 - 1, -1, 1), 3),
+                "source": "19-DAL", "published_at": _now_iso(),
+            }],
+            "timeseries": self._history("crypto_fear_greed", "value", days=30),
             "timestamp": _now_iso(),
         }
 
@@ -692,5 +848,6 @@ DAL_COLLECTORS = {
     "intermarket": "collect_intermarket",
     "valuation": "collect_valuation",
     "breadth": "collect_breadth",
-    # news / narrative 保留 legacy（文本内容，mm_metrics 仅数值）
+    "news": "collect_news",
+    "narrative": "collect_narrative",
 }
