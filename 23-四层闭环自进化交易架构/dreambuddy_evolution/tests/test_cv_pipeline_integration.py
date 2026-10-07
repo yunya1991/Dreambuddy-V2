@@ -3,11 +3,11 @@ import pytest
 
 
 def test_cross_validation_gate_switch_exists():
-    """agi_config 中应有 enable_cross_validation_gate 开关."""
+    """agi_config 中应有 enable_cross_validation_gate 开关且已激活."""
     from dreambuddy_evolution.agi_config import AGI_SWITCHES, get_switch
     assert "enable_cross_validation_gate" in AGI_SWITCHES
-    # 默认 False，保证现状不变
-    assert get_switch("enable_cross_validation_gate", False) is False
+    # 2026-10-07 已激活 (5框架对比+消融实验验证通过)
+    assert get_switch("enable_cross_validation_gate", False) is True
 
 
 def test_cross_validation_gate_in_select_optimal_path():
