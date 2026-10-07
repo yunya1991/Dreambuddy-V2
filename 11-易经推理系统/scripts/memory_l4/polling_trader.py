@@ -17636,32 +17636,34 @@ def main():
     #   2. flock LOCK_EX | LOCK_NB 非阻塞独占锁，进程退出/异常/kill -9 自动释放
     #   3. 失败时打印已运行 PID 并 sys.exit(1)，硬约束（区别于 ProcessGuardian 软警告）
     #   4. ProcessGuardian 被 --no-guardian 绕过且仅 print 警告不退出，本锁独立强制
+    #   5. 用 "a+" 打开（不截断），持锁后才 truncate+write；先读现有 PID 供 except 报告
     # ================================================================
     _PIDFILE_LOCK_FP = None  # 保持引用防止 GC 释放 flock
     if not args.once:
         import fcntl
         import sys
         _PIDFILE_PATH = "/tmp/polling_trader.pid"
+        # 先读现有 PID（不截断），用于 except 时报告
+        _existing_pid_str = "(unknown)"
         try:
-            _PIDFILE_LOCK_FP = open(_PIDFILE_PATH, "w")
+            with open(_PIDFILE_PATH, "r") as _f:
+                _existing_pid_str = _f.read().strip() or "(unknown)"
+        except FileNotFoundError:
+            pass
+        try:
+            _PIDFILE_LOCK_FP = open(_PIDFILE_PATH, "a+")  # a+ 不截断
             fcntl.flock(_PIDFILE_LOCK_FP, fcntl.LOCK_EX | fcntl.LOCK_NB)
             _PIDFILE_LOCK_FP.seek(0)
-            _PIDFILE_LOCK_FP.truncate()
+            _PIDFILE_LOCK_FP.truncate()  # 持锁后才截断
             _PIDFILE_LOCK_FP.write(str(os.getpid()))
             _PIDFILE_LOCK_FP.flush()
         except (IOError, OSError):
-            existing_pid = "(unknown)"
-            try:
-                with open(_PIDFILE_PATH) as f:
-                    existing_pid = f.read().strip() or "(unknown)"
-            except Exception:
-                pass
             print(
-                f"[single-instance] polling_trader 已有进程运行 (PID={existing_pid})，本次启动退出。",
+                f"[single-instance] polling_trader 已有进程运行 (PID={_existing_pid_str})，本次启动退出。",
                 flush=True,
             )
             print(
-                f"[single-instance] 如需强制重启：kill -9 {existing_pid} && rm -f {_PIDFILE_PATH}",
+                f"[single-instance] 如需强制重启：kill -9 {_existing_pid_str} && rm -f {_PIDFILE_PATH}",
                 flush=True,
             )
             sys.exit(1)
