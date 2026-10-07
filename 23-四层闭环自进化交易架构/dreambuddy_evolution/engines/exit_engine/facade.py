@@ -95,6 +95,37 @@ class ExitModuleFacade:
         """获取当前离场参数基因"""
         return self._strategy_params
 
+    def post_close_evolution(
+        self,
+        symbol: str,
+        pnl_pct: float,
+        combo_id: str = "",
+        win: bool | None = None,
+        ripple_signals: list[dict] | None = None,
+        knowledge_alignments: list[dict] | None = None,
+    ) -> dict[str, Any]:
+        """平仓后触发基因创新闭环（透传到 EvolutionExitEngine）.
+
+        子系统在平仓后调用此方法，触发:
+        1. ESS 更新 (ess_provider)
+        2. 权重自动调整 (AutoWeightAdjuster)
+        3. 基因创新 (FTCEvolutionBridge) — 含知识合成桥接
+
+        FAIL-OPEN: 异常不阻塞交易.
+        """
+        try:
+            return self._engine.post_close_evolution(
+                symbol=symbol,
+                pnl_pct=pnl_pct,
+                combo_id=combo_id,
+                win=win,
+                ripple_signals=ripple_signals,
+                knowledge_alignments=knowledge_alignments,
+            )
+        except Exception as exc:
+            logger.warning("[ExitModuleFacade] post_close_evolution FAIL-OPEN: %s", exc)
+            return {"ess_updated": False, "weight_adjusted": False, "gene_innovated": False}
+
     def load_gene(self, gene_json_str: str) -> None:
         """从基因 JSON 字符串加载参数
 

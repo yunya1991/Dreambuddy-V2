@@ -135,20 +135,40 @@ class TestRVContradictionModulation:
     """测试矛盾调制扩展到 RV 层."""
 
     def test_modulation_disabled_by_default(self):
-        """默认关闭，无调制."""
+        """开关关闭时（patch=False），primary_contradiction 不影响 R 值."""
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        rv = ResistanceVector()
-        data = {
-            "okx_positions": {"long": 0.6, "short": 0.4},
-            "liquidation_buy": [100], "liquidation_sell": [50],
-            "close": [100.0] * 50,
-            "ma_200": 100.0,
-        }
-        pc = {"direction": "long", "strength": 0.8}
-        result_no_mod = rv.calculate("BTCUSDT", data)
-        result_with_pc = rv.calculate("BTCUSDT", data, primary_contradiction=pc)
-        # 开关关闭时，传不传 pc 都一样
-        assert result_no_mod["R_up"] == result_with_pc["R_up"]
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
+                    return_value=False):
+            rv = ResistanceVector()
+            data = {
+                "okx_positions": {"long": 0.6, "short": 0.4},
+                "liquidation_buy": [100], "liquidation_sell": [50],
+                "close": [100.0] * 50,
+                "ma_200": 100.0,
+            }
+            pc = {"direction": "long", "strength": 0.8}
+            result_no_mod = rv.calculate("BTCUSDT", data)
+            result_with_pc = rv.calculate("BTCUSDT", data, primary_contradiction=pc)
+            # 开关关闭时，传不传 pc 都一样
+            assert result_no_mod["R_up"] == result_with_pc["R_up"]
+
+    def test_modulation_enabled_by_default(self):
+        """W3: 开关启用后，primary_contradiction 影响 R 值."""
+        from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+        with patch("dreambuddy_evolution.core.resistance_vector.get_switch",
+                    return_value=True):
+            rv = ResistanceVector()
+            data = {
+                "okx_positions": {"long": 0.6, "short": 0.4},
+                "liquidation_buy": [100], "liquidation_sell": [50],
+                "close": [100.0] * 50,
+                "ma_200": 100.0,
+            }
+            result_no_mod = rv.calculate("BTCUSDT", data)
+            pc = {"direction": "long", "strength": 0.8}
+            result_with_pc = rv.calculate("BTCUSDT", data, primary_contradiction=pc)
+            # long 方向调制后 R_up 应降低
+            assert result_with_pc["R_up"] <= result_no_mod["R_up"]
 
     def test_modulation_long_direction(self):
         """矛盾方向 long → R_up↓, R_down↑."""
@@ -229,9 +249,9 @@ class TestHJBDominantMode:
     """测试 HJB 权重提升."""
 
     def test_default_30_weight(self):
-        """默认 30% 权重."""
+        """W2: HJB 主导模式已启用（0.70 权重）."""
         from dreambuddy_evolution.agi_config import get_switch
-        assert get_switch("enable_hjb_dominant", False) is False
+        assert get_switch("enable_hjb_dominant", False) is True
 
     def test_hjb_weight_formula(self):
         """验证权重公式: 默认 0.30, 增强模式 0.70."""

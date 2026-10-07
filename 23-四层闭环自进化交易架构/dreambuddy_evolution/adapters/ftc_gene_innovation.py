@@ -166,6 +166,111 @@ class GeneInnovationEngine:
         logger.info(f"[L2-Gene] 检测到 {len(unique)} 个新基因候选")
         return unique
 
+    def detect_from_knowledge_gaps(
+        self,
+        alignments: list[dict] | None = None,
+    ) -> list[GeneCandidate]:
+        """知识合成桥接: 从知识锚点 alignment 的 explore 轨道生成新基因候选.
+
+        当 FTC 与知识锚点的相似度处于 explore 轨道 (0.15-0.29) 时，
+        说明当前策略未能覆盖该理论领域。从锚点的 associated_genes 中
+        提取尚不存在的基因，用锚点的 causal_pattern 作为表达式构建候选。
+
+        Args:
+            alignments: align_to_anchors() 返回的 KnowledgeAlignment list (dict 格式)
+
+        Returns:
+            新基因候选列表
+        """
+        if not alignments:
+            return []
+        try:
+            from dreambuddy_evolution.adapters.knowledge_anchors import get_all_anchors
+            from dreambuddy_evolution.adapters.ftc_similarity import get_track_by_similarity
+        except ImportError:
+            return []
+
+        all_anchors = get_all_anchors()
+        anchor_map = {a.name: a for a in all_anchors}
+
+        # 加载现有基因 ID 集合
+        existing_genes = self._load_existing_gene_ids()
+
+        candidates: list[GeneCandidate] = []
+        for align in alignments:
+            try:
+                sim = float(align.get("similarity", 0.0))
+                track = get_track_by_similarity(sim)
+                # 只对 explore 轨道 (0.15-0.29) 做知识合成
+                if track != "explore":
+                    continue
+                theory = align.get("theory", "")
+                anchor = anchor_map.get(theory)
+                if not anchor:
+                    continue
+                # 检查锚点的 associated_genes 是否有缺失
+                for gene_id in anchor.associated_genes:
+                    if gene_id in existing_genes or gene_id in self._validated_genes:
+                        continue
+                    if gene_id in {c.gene_id for c in candidates}:
+                        continue
+                    # 用锚点的 causal_pattern 作为表达式构建候选
+                    cand = GeneCandidate(
+                        gene_id=gene_id,
+                        gene_type="condition",
+                        category=self._infer_category(gene_id, anchor),
+                        condition_type="indicator",
+                        description=f"知识合成: {anchor.name} — {anchor.causal_pattern}",
+                        expression=anchor.causal_pattern,
+                        parameters={},
+                        source="knowledge_synthesis",
+                        tags=anchor.keywords[:3] if anchor.keywords else [anchor.anchor_id],
+                    )
+                    candidates.append(cand)
+                    self._candidates[cand.gene_id] = cand
+            except Exception:
+                continue
+
+        logger.info(
+            f"[L2-Gene] 知识合成: 从 {len(alignments)} 个 alignment 中"
+            f"生成 {len(candidates)} 个新基因候选"
+        )
+        return candidates
+
+    def _load_existing_gene_ids(self) -> set[str]:
+        """加载现有基因库中所有 gene_id."""
+        ids: set[str] = set()
+        try:
+            conditions_dir = self._gene_root / "strategy_genes" / "conditions"
+            if conditions_dir.exists():
+                import json
+                for f in conditions_dir.glob("*.json"):
+                    try:
+                        data = json.loads(f.read_text(encoding="utf-8"))
+                        gid = data.get("gene_id", "")
+                        if gid:
+                            ids.add(gid)
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+        return ids
+
+    def _infer_category(self, gene_id: str, anchor) -> str:
+        """从基因 ID 前缀推断 category."""
+        gid = gene_id.upper()
+        if "VOL" in gid or "MOMENTUM" in gid:
+            return "momentum"
+        if "OI" in gid or "FUNDING" in gid:
+            return "derivative"
+        if "PRICE" in gid or "BREAKOUT" in gid:
+            return "trend"
+        if "ZSCORE" in gid or "REVERSION" in gid or "RANGING" in gid:
+            return "mean_reversion"
+        if "CAPITAL" in gid or "FLOW" in gid:
+            return "capital_flow"
+        return "custom"
+
     def _classify_ripple_anomaly(self, signal: dict) -> Optional[str]:
         """将涟漪信号分类为异常模式"""
         try:

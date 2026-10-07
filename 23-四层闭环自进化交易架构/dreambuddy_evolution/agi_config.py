@@ -56,9 +56,9 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_evolution_engine": True,          # 真正进化引擎 (种群+结构变异+ensemble，替代 gmax)
     "enable_signature_features": True,        # 签名特征提取 (路径签名→17维输入)
     # --- 阻力场升级开关 (SPEC-矛盾论实现断裂修复) ---
-    "enable_microstructure_resistance": False,  # 6 组件微观阻力向量
-    "enable_rv_contradiction_modulation": False,  # RV 层矛盾调制
-    "enable_hjb_dominant": False,               # HJB 权重 70% 增强模式
+    "enable_microstructure_resistance": True,   # 6 组件微观阻力向量 (W1 已启用)
+    "enable_rv_contradiction_modulation": True,   # RV 层矛盾调制 (W3 已启用)
+    "enable_hjb_dominant": True,                # HJB 权重 70% 增强模式 (W2 已启用)
     # --- Phase 1 外生力量度量 ---
     "enable_exogenous_strength": True,            # 外生力量度量器（19-DAL 真实数据已接入）
     # --- Phase 2 因果传导 + 质变检测 ---
@@ -72,6 +72,7 @@ AGI_SWITCHES: Dict[str, bool] = {
     # SPEC-事件驱动策略P0盲区修复-非农CPI加息预期.md 第 750/752 行明确标注"已有"
     "enable_contradiction_driven_layer": True,     # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)
     "enable_event_dominance": True,                # 事件主导控制开关 (P1-2 双层门控第二层)
+    "enable_auto_weight_adjustment": True,          # 自进化权重自动调整 (基因创新闭环)
 }
 
 

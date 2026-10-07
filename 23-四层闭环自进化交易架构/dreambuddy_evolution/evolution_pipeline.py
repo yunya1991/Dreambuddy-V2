@@ -958,6 +958,8 @@ class EvolutionPipeline:
                 primary_contradiction = identifier.identify(
                     paths, market_data or {}, r_out,
                     weight_factor=_wfs,
+                    causal_engine=self._get_causal_engine(),
+                    meta_cognition_gate=self._get_meta_cognition_gate(),
                 )
         except Exception as e:  # noqa: BLE001  HC-AGI-18
             logger.debug("[FO-AGI-Pipeline][Contradiction] fail: %s", e)
@@ -1249,6 +1251,47 @@ class EvolutionPipeline:
             logger.warning("[FO] action direction resolve fail: %s", e)
             return "neutral"
 
+    def _enrich_microstructure_data(self, symbol: str, market_data: dict) -> None:
+        """W1: 从 19-DAL 注入微观阻力数据到 market_data.
+
+        读取 funding_rate / open_interest 等数据，注入到 market_data dict，
+        供 ResistanceVector 微观阻力计算使用。FAIL-OPEN: 异常不阻塞。
+        """
+        try:
+            from dreambuddy_evolution.agi_config import get_switch
+            if not get_switch("enable_microstructure_resistance", False):
+                return
+            # 复用 exogenous_bridge 的 DAL 连接
+            _bridge = self._get_exogenous_bridge()
+            if _bridge is None:
+                return
+            _repo = _bridge.get_repo()
+            if _repo is None:
+                return
+            from datetime import datetime, timezone, timedelta
+            _now = datetime.now(timezone.utc)
+            # funding_rate
+            if "funding_rate" not in market_data:
+                _rows = _repo.query_metric_by_time(
+                    "funding_rate", "funding_rate_pct",
+                    _now - timedelta(hours=24), _now,
+                )
+                if _rows:
+                    market_data["funding_rate"] = _rows[-1][3]  # value
+            # open_interest (current + previous)
+            if "oi_current" not in market_data:
+                _rows = _repo.query_metric_by_time(
+                    "derivatives_spot", "fut_open_interest_usd",
+                    _now - timedelta(days=2), _now,
+                )
+                if len(_rows) >= 2:
+                    market_data["oi_current"] = float(_rows[-1][3])
+                    market_data["oi_prev"] = float(_rows[-2][3])
+                elif len(_rows) == 1:
+                    market_data["oi_current"] = float(_rows[0][3])
+        except Exception as e:
+            logger.debug("[W1] microstructure enrichment FAIL-OPEN: %s", e)
+
     def run_symbol(self, symbol: str, market_data: dict, rv=None) -> dict[str, Any]:
         """
         单 symbol 全 pipeline 运行.
@@ -1263,7 +1306,11 @@ class EvolutionPipeline:
         # ============ L1: 状态空间层 ============
         if rv is None:
             rv = ResistanceVector()
-        r_out = rv.calculate(symbol, market_data)
+        # W1: 从 DAL 注入微观阻力数据（funding_rate / OI）
+        self._enrich_microstructure_data(symbol, market_data)
+        # W3: 使用上一轮矛盾识别结果做 RV 调制（首次运行时 None=不调制）
+        _last_pc = getattr(self, "_last_primary_contradiction", None)
+        r_out = rv.calculate(symbol, market_data, primary_contradiction=_last_pc)
 
         # ============ 高阶基因因子阻力调制 ============
         r_out = self._apply_high_order_factors(r_out, symbol)

@@ -22,11 +22,160 @@ HC-AGI-23: 至少 2 路径才做矛盾分析，单路径返回 neutral
 """
 from __future__ import annotations
 
+import json
 import logging
 import math
+import os
+import time
 from typing import Any
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
+
+
+class ContradictionWeightLearner:
+    """W6: 深度学习驱动矛盾权重 — 自动样本累积 + 延迟标注 + 阈值触发.
+
+    工作流:
+    1. 每次 identify() 记录 4 维分数 + 方向 (未标注样本)
+    2. 下次调用时用实际收益标注上一个样本 (延迟标注)
+    3. 标注样本 ≥ MIN_SAMPLES → 自动触发最小二乘权重学习
+    4. 学到的权重替代硬编码 0.40/0.15/0.25/0.20
+
+    FAIL-OPEN: 学习失败或不满足条件 → 使用硬编码默认权重
+    """
+
+    MIN_SAMPLES = 500  # 最少标注样本数
+    DEFAULT_WEIGHTS = np.array([0.40, 0.15, 0.25, 0.20])  # power, time, consistency, market_weight
+    LEARNING_INTERVAL = 86400  # 每 24h 最多学一次
+
+    def __init__(self, storage_path: str | None = None):
+        self._storage_path = storage_path or os.path.join(
+            os.path.dirname(__file__), "..", "data", "contradiction_samples.json"
+        )
+        self._samples: list[dict] = []
+        self._learned_weights: np.ndarray | None = None
+        self._last_learn_ts: float = 0.0
+        self._load()
+
+    def _load(self) -> None:
+        """从磁盘加载历史样本和已学权重."""
+        try:
+            if os.path.exists(self._storage_path):
+                with open(self._storage_path, "r") as f:
+                    data = json.load(f)
+                self._samples = data.get("samples", [])
+                w = data.get("learned_weights")
+                if w and len(w) == 4:
+                    self._learned_weights = np.array(w)
+                self._last_learn_ts = float(data.get("last_learn_ts", 0.0))
+                logger.info(
+                    "[W6] loaded %d samples, weights=%s",
+                    len(self._samples),
+                    self._learned_weights,
+                )
+        except Exception as e:
+            logger.debug("[W6] load FAIL-OPEN: %s", e)
+
+    def _save(self) -> None:
+        """持久化样本和权重到磁盘."""
+        try:
+            os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
+            with open(self._storage_path, "w") as f:
+                json.dump({
+                    "samples": self._samples[-2000:],  # 只保留最近 2000 条
+                    "learned_weights": self._learned_weights.tolist() if self._learned_weights is not None else None,
+                    "last_learn_ts": self._last_learn_ts,
+                }, f)
+        except Exception as e:
+            logger.debug("[W6] save FAIL-OPEN: %s", e)
+
+    def record_prediction(
+        self,
+        scores: dict,
+        direction: str,
+        confidence: float,
+        timestamp: float | None = None,
+    ) -> None:
+        """记录一次矛盾识别的 4 维分数（未标注）."""
+        ts = timestamp or time.time()
+        self._samples.append({
+            "ts": ts,
+            "power": float(scores.get("power", 0.0)),
+            "time": float(scores.get("time", 0.0)),
+            "consistency": float(scores.get("consistency", 0.0)),
+            "market_weight": float(scores.get("market_weight", 0.0)),
+            "direction": direction,
+            "confidence": confidence,
+            "actual_return": None,  # 延迟标注
+        })
+        if len(self._samples) % 100 == 0:
+            self._save()
+
+    def label_previous(self, actual_return: float) -> None:
+        """用实际收益标注最近一个未标注样本."""
+        for s in reversed(self._samples):
+            if s.get("actual_return") is None:
+                s["actual_return"] = float(actual_return)
+                break
+        # 有新标注 → 尝试学习
+        self._try_learn()
+
+    def _try_learn(self) -> None:
+        """标注样本 ≥ MIN_SAMPLES 且距上次学习 > 24h → 自动学习."""
+        labeled = [s for s in self._samples if s.get("actual_return") is not None]
+        if len(labeled) < self.MIN_SAMPLES:
+            return
+        now = time.time()
+        if now - self._last_learn_ts < self.LEARNING_INTERVAL:
+            return
+        try:
+            # X: 4 维分数, y: actual_return
+            X = np.array([
+                [s["power"], s["time"], s["consistency"], s["market_weight"]]
+                for s in labeled
+            ])
+            y = np.array([s["actual_return"] for s in labeled])
+            # 最小二乘: w = (X^T X)^-1 X^T y
+            # 加 L2 正则防止过拟合
+            XtX = X.T @ X
+            ridge = 0.01 * np.eye(4)
+            w = np.linalg.solve(XtX + ridge, X.T @ y)
+            # 归一化到 [0, 1]，保证 sum=1
+            w_abs = np.abs(w)
+            w_sum = w_abs.sum()
+            if w_sum > 0:
+                w_norm = w_abs / w_sum
+            else:
+                w_norm = self.DEFAULT_WEIGHTS
+            # 平滑过渡：新权重 = 0.7 * 学习权重 + 0.3 * 默认权重
+            self._learned_weights = 0.7 * w_norm + 0.3 * self.DEFAULT_WEIGHTS
+            self._last_learn_ts = now
+            logger.info(
+                "[W6] auto-learned weights: %s (from %d samples)",
+                self._learned_weights,
+                len(labeled),
+            )
+            self._save()
+        except Exception as e:
+            logger.warning("[W6] weight learning failed, using defaults: %s", e)
+
+    def get_weights(self) -> np.ndarray:
+        """获取当前权重（学习到的或默认的）."""
+        if self._learned_weights is not None:
+            return self._learned_weights
+        return self.DEFAULT_WEIGHTS
+
+    @property
+    def is_active(self) -> bool:
+        """是否已自动激活（学习到权重）."""
+        return self._learned_weights is not None
+
+    @property
+    def labeled_count(self) -> int:
+        """已标注样本数."""
+        return sum(1 for s in self._samples if s.get("actual_return") is not None)
 
 
 class PrimaryContradictionIdentifier:
@@ -64,12 +213,18 @@ class PrimaryContradictionIdentifier:
         "synthesized": 0.10,
     }
 
+    def __init__(self, weight_learner: ContradictionWeightLearner | None = None):
+        """W6: 注入权重学习器（可选，None 时创建默认实例）."""
+        self._weight_learner = weight_learner or ContradictionWeightLearner()
+
     def identify(
         self,
         paths: list[dict] | Any,
         market_data: dict | None = None,
         r_out: dict | None = None,
         weight_factor: float | dict = 1.0,
+        causal_engine=None,
+        meta_cognition_gate=None,
     ) -> dict:
         """识别主要矛盾.
 
@@ -82,6 +237,8 @@ class PrimaryContradictionIdentifier:
             weight_factor: Phase 3.5 验证回流权重因子。
                            float: 全局标量 [0.3, 1.5]（向后兼容）
                            dict: 按维度独立的权重 {dimension: wf}（Fix 3）
+            causal_engine: W4 CausalEngine 实例，用于因果 ATE 增强"力量对比"维度
+            meta_cognition_gate: W5 MetaCognitionGate 实例，用于二阶校验 confidence
 
         HC-AGI-18: 异常 FAIL-OPEN
         HC-AGI-23: < 2 路径返回 neutral
@@ -89,6 +246,9 @@ class PrimaryContradictionIdentifier:
         try:
             if not isinstance(paths, (list, tuple)) or len(paths) < self.MIN_PATHS_FOR_ANALYSIS:
                 return self._neutral_default()
+
+            # W6: 延迟标注 — 用上次预测后的实际收益标注上一个样本
+            self._label_previous_from_market(market_data)
 
             # Step 1: 共振检测
             resonance = self._detect_resonance(paths)
@@ -110,11 +270,147 @@ class PrimaryContradictionIdentifier:
                 wf = max(0.3, min(1.5, float(weight_factor)))
             primary["strength"] = min(1.0, primary["strength"] * wf)
 
+            # W4: CausalEngine ATE 增强 — 因果显著性调整力量评分
+            primary = self._enhance_with_causal_ate(primary, paths, market_data, causal_engine)
+
+            # W5: MetaCognitionGate 二阶校验
+            primary = self._meta_cognition_verify(primary, meta_cognition_gate, market_data)
+
+            # W6: 记录本次预测的 4 维分数（待下次延迟标注）
+            self._record_from_primary(primary, dominance)
+
             return primary
 
         except Exception as e:  # noqa: BLE001  HC-AGI-18
             logger.warning("[FO-AGI][Contradiction] FAIL-OPEN: %s", e)
             return self._neutral_default()
+
+    def _label_previous_from_market(self, market_data: dict | None) -> None:
+        """W6: 从 market_data 提取实际收益标注上一个未标注样本."""
+        try:
+            if not market_data:
+                return
+            # 优先用 close 序列的最近变动作为 actual_return
+            closes = market_data.get("close") or market_data.get("closes")
+            if closes and isinstance(closes, (list, tuple)) and len(closes) >= 2:
+                prev_close = float(closes[-2])
+                curr_close = float(closes[-1])
+                if prev_close > 0:
+                    actual_return = (curr_close - prev_close) / prev_close
+                    self._weight_learner.label_previous(actual_return)
+                    return
+            # 备用: 直接用 change_pct 字段
+            chg = market_data.get("change_pct")
+            if chg is not None:
+                self._weight_learner.label_previous(float(chg) / 100.0)
+        except Exception as e:
+            logger.debug("[W6] label_previous FAIL-OPEN: %s", e)
+
+    def _record_from_primary(self, primary: dict, dominance: dict) -> None:
+        """W6: 从矛盾识别结果提取 4 维分数并记录."""
+        try:
+            direction = primary.get("direction", "neutral")
+            confidence = float(primary.get("confidence", 0.5))
+            # 从 dominance 提取 long_score/short_score（冲突裁决路径）
+            if "long_score" in dominance:
+                winner = dominance.get("long_score" if direction == "long" else "short_score", {})
+            else:
+                # 共振路径: 构造简化 scores
+                winner = {
+                    "power": float(primary.get("strength", 0.5)),
+                    "time": 1.0,
+                    "consistency": 1.0,
+                    "market_weight": 0.15,
+                }
+            self._weight_learner.record_prediction(winner, direction, confidence)
+        except Exception as e:
+            logger.debug("[W6] record_prediction FAIL-OPEN: %s", e)
+
+    def _enhance_with_causal_ate(
+        self,
+        primary: dict,
+        paths: list[dict],
+        market_data: dict | None,
+        causal_engine,
+    ) -> dict:
+        """W4: 用 CausalEngine ATE 因果效应增强矛盾力量评分.
+
+        当 ATE 显著且方向一致时提升 power，不显著时衰减。
+        FAIL-OPEN: causal_engine=None 或 ATE 估计失败 → 不调整。
+        """
+        try:
+            if causal_engine is None:
+                return primary
+            from dreambuddy_evolution.agi_config import get_switch
+            if not get_switch("enable_causal_engine", False):
+                return primary
+            import numpy as np
+            # 构造简化 ATE 输入：用路径 confidence 作为 treatment，expected_return 作为 y
+            confidences = np.array([float(p.get("confidence", 0.5)) for p in paths])
+            returns = np.array([float(p.get("expected_return", 0.0)) for p in paths])
+            # treatment: 高 confidence vs 低 confidence (中位数分割)
+            median_conf = np.median(confidences) if len(confidences) > 0 else 0.5
+            treatment = (confidences > median_conf).astype(np.int32)
+            X = confidences.reshape(-1, 1)
+            ate_result = causal_engine.estimate_ate(X, treatment, returns, method="dml")
+            primary["causal_ate"] = ate_result
+            # 调整 strength：ATE 显著且同方向 → 增强，不显著 → 轻微衰减
+            ate = float(ate_result.get("ate", 0.0))
+            significant = ate_result.get("significant", False)
+            base_strength = float(primary.get("strength", 0.5))
+            if significant and abs(ate) > 1e-6:
+                # ATE 同方向 → 增强
+                direction = primary.get("direction", "neutral")
+                if (direction == "long" and ate > 0) or (direction == "short" and ate < 0):
+                    primary["strength"] = min(1.0, base_strength * 1.15)
+                else:
+                    primary["strength"] = max(0.0, base_strength * 0.85)
+            elif not significant:
+                # ATE 不显著 → 轻微衰减
+                primary["strength"] = max(0.0, base_strength * 0.95)
+            return primary
+        except Exception as e:
+            logger.debug("[W4] causal ATE enhancement FAIL-OPEN: %s", e)
+            return primary
+
+    def _meta_cognition_verify(
+        self,
+        primary: dict,
+        meta_cognition_gate,
+        market_data: dict | None,
+    ) -> dict:
+        """W5: MetaCognitionGate 对矛盾识别结果做二阶校验.
+
+        当 uncertainty > 0.4 时降低 confidence（HC-AGI-06）。
+        FAIL-OPEN: gate=None 或 evaluate 失败 → 原始 confidence 不变。
+        """
+        try:
+            if meta_cognition_gate is None:
+                return primary
+            from dreambuddy_evolution.agi_config import get_switch
+            if not get_switch("enable_meta_cognition", False):
+                return primary
+            original_conf = float(primary.get("confidence", 0.5))
+            context = {
+                "direction": primary.get("direction", "neutral"),
+                "dimension": primary.get("dimension", "unknown"),
+                "market_data": market_data or {},
+            }
+            mc_result = meta_cognition_gate.evaluate(original_conf, context)
+            primary["meta_cognition"] = mc_result
+            adjusted_conf = float(mc_result.get("adjusted_confidence", original_conf))
+            uncertainty = float(mc_result.get("uncertainty", 0.0))
+            # HC-AGI-06: uncertainty > 0.4 → 强制降仓位
+            if uncertainty > 0.4:
+                primary["confidence"] = max(0.0, adjusted_conf * 0.5)
+                primary["position_multiplier"] = 0.5
+            else:
+                primary["confidence"] = adjusted_conf
+                primary["position_multiplier"] = 1.0
+            return primary
+        except Exception as e:
+            logger.debug("[W5] meta cognition verify FAIL-OPEN: %s", e)
+            return primary
 
     # ------------------------------------------------------------------
     # Step 1: 共振检测
@@ -236,11 +532,13 @@ class PrimaryContradictionIdentifier:
             for p in side_paths
         )
 
+        # W6: 使用学习到的权重（自动激活）或硬编码默认值
+        _w = self._weight_learner.get_weights()
         total = (
-            power * 0.40
-            + time_urgency * 0.15
-            + consistency * 0.25
-            + market_weight * 0.20
+            power * float(_w[0])
+            + time_urgency * float(_w[1])
+            + consistency * float(_w[2])
+            + market_weight * float(_w[3])
         )
 
         return {

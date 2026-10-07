@@ -274,12 +274,17 @@ class FTCEvolutionBridge:
         ripple_signals: list[dict] | None = None,
         reflection_insights: list[dict] | None = None,
         ftc_ess_convergence: bool = False,
+        knowledge_alignments: list[dict] | None = None,
     ) -> dict[str, Any]:
         """
         运行 L2 基因创新完整流程:
           1. 检测异常 → 生成候选
+          1b. 知识合成 → 从 alignment explore 轨道生成候选
           2. 探索轨道验证（回测）
           3. 通过门槛 → 写入基因组
+
+        Args:
+            knowledge_alignments: ftc_similarity.align_to_anchors() 结果 (知识合成桥接)
 
         Returns:
             {candidates: [...], validated: [...], written: [...]}
@@ -290,6 +295,18 @@ class FTCEvolutionBridge:
             reflection_insights=reflection_insights,
             ftc_ess_convergence=ftc_ess_convergence,
         )
+
+        # 1b. 知识合成: 从 alignment 的 explore 轨道生成候选
+        if knowledge_alignments:
+            synth_candidates = self._gene_innovation.detect_from_knowledge_gaps(
+                alignments=knowledge_alignments,
+            )
+            # 去重合并
+            existing_ids = {c.gene_id for c in candidates}
+            for c in synth_candidates:
+                if c.gene_id not in existing_ids:
+                    candidates.append(c)
+                    existing_ids.add(c.gene_id)
 
         validated = []
         written = []
