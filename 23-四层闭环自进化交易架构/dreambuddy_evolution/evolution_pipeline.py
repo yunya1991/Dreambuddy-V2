@@ -104,6 +104,7 @@ class EvolutionPipeline:
 
         # AGI 阶段4模块懒初始化标志（None=未初始化, False=不可用, 实例=可用）
         self._deep_reasoning: Any = None
+        self._ftc_evolution_bridge: Any = None
         self._strategy_synth: Any = None
         self._transfer_learner: Any = None
         self._counterfactual: Any = None
@@ -134,6 +135,19 @@ class EvolutionPipeline:
                 logger.debug("[FO-AGI] DeepReasoningEngine init fail: %s", e)
                 self._deep_reasoning = False
         return self._deep_reasoning or None
+
+    def _get_ftc_evolution_bridge(self) -> Any:
+        """懒初始化 FTCEvolutionBridge（基因创新）"""
+        if self._ftc_evolution_bridge is None:
+            try:
+                from dreambuddy_evolution.adapters.ftc_evolution_bridge import FTCEvolutionBridge
+                from dreambuddy_evolution.adapters.ftc_orchestrator import FTCOrchestrator
+                _orch = FTCOrchestrator()
+                self._ftc_evolution_bridge = FTCEvolutionBridge(orchestrator=_orch)
+            except Exception as e:
+                logger.debug("[FO-AGI] FTCEvolutionBridge init fail: %s", e)
+                self._ftc_evolution_bridge = False
+        return self._ftc_evolution_bridge or None
 
     def _get_latest_exogenous_factors(self) -> Any:
         """P1+: 获取最新外生因子向量 (Cross-Attention, FAIL-OPEN).
@@ -1113,6 +1127,23 @@ class EvolutionPipeline:
                         )
                 except Exception:
                     self._last_head_multipliers = None
+
+                # 质变事件 → 触发基因创新 (FTCEvolutionBridge.run_gene_innovation)
+                if _qc_detected and _gs_cv("enable_gene_innovation", False):
+                    try:
+                        from dreambuddy_evolution.adapters.ftc_evolution_bridge import FTCEvolutionBridge
+                        # 构建 FTCEvolutionBridge（复用现有 orchestrator/gene_root）
+                        _bridge = self._get_ftc_evolution_bridge()
+                        if _bridge is not None:
+                            _shift = getattr(self, "_last_shift_result", None)
+                            _bridge.run_gene_innovation(
+                                ripple_signals=None,
+                                reflection_insights=None,
+                                ftc_ess_convergence=bool(_shift and _shift.get("shift_detected", False)),
+                                knowledge_alignments=None,
+                            )
+                    except Exception as _e:
+                        logger.debug("[FO-Phase2.5][GeneInnovation] fail: %s", _e)
         except Exception as _e:  # noqa: BLE001
             logger.debug("[FO-Phase2.5][CrossValidation] fail: %s", _e)
             cv_result = {"confidence_mult": 1.0, "shift_signal": False,

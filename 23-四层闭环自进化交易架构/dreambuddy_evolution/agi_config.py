@@ -79,6 +79,10 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_granger_pipeline": True,                 # Granger 因果链 (从价格序列派生3维度因子)
     "enable_attention_aggregator": True,             # Attention 聚合 (A_dim从primary_contradiction获取)
     "enable_head_multipliers_adjustment": True,      # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)
+    # --- 基因创新治理 (版本控制+审核门禁) ---
+    "enable_gene_innovation": True,                  # 质变事件触发基因创新 (FTCEvolutionBridge)
+    "enable_gene_version_snapshot": True,            # 新基因写入前自动快照 (可回滚)
+    "enable_gene_audit_gate": True,                  # 三级审核门禁 (Schema+统计+相对提升)
 }
 
 

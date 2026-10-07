@@ -1,7 +1,52 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.12 | **更新日期**: 2026-10-07
+> **版本**: v1.13 | **更新日期**: 2026-10-07
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.13] - 2026-10-07 (基因创新治理：版本控制+三级审核门禁+FTCEvolutionBridge 接入)
+
+### 核心成果
+
+FTCEvolutionBridge.run_gene_innovation 正式接入交叉验证层质变事件，新增基因库版本控制（快照+回滚）和三级审核门禁（Schema+统计+相对提升）。
+
+### 1. 版本控制 (GeneVersionManager)
+
+- **自动快照**：新基因写入前自动备份整个 `strategy_genes/` 到 `versions/v{timestamp}_{uuid}/`
+- **一键回滚**：`rollback(version_id)` 先快照当前状态再恢复指定版本
+- **版本清单**：`list_versions()` 返回所有版本元数据（时间戳/基因数/触发源）
+- **唯一版本号**：timestamp + uuid 后缀，避免同秒覆盖
+
+### 2. 三级审核门禁 (GeneAuditGate)
+
+| 门禁 | 校验内容 | 来源 |
+|------|---------|------|
+| 1. Schema | 新基因必须符合 condition schema（防止 bad_genes 错误） | 新增 |
+| 2. 统计 | N ≥ 100 且 ESS ≥ 0.5 | 已有 |
+| 3. 相对提升 | 新基因 ESS > 现有均值 × 1.1 | 新增 |
+
+- 审核日志写入 `audit_log.jsonl`
+- 未通过任一门禁则拒绝写入
+
+### 3. FTCEvolutionBridge 接入
+
+- **触发点**：`_select_optimal_path` 中 `quality_change=True` 时调用 `run_gene_innovation`
+- `_get_ftc_evolution_bridge()` 懒初始化
+- `ftc_ess_convergence` 从 `_last_shift_result` 获取
+
+### 4. 开关状态
+
+| 开关 | 状态 |
+|------|------|
+| enable_gene_innovation | True |
+| enable_gene_version_snapshot | True |
+| enable_gene_audit_gate | True |
+
+### 5. 测试
+
+- 新增 `test_gene_governance.py`（6 测试）
+- 43 个相关测试零回归
 
 ---
 

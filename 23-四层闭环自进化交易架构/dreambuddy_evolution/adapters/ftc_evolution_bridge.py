@@ -322,8 +322,10 @@ class FTCEvolutionBridge:
                 passed = self._gene_innovation.validate_candidate(cand.gene_id, n_samples, ess)
                 if passed:
                     validated.append(cand.gene_id)
-                    # 3. 写入基因组
-                    if self._gene_innovation.write_gene_to_library(cand):
+                    # 3. 写入基因组（传入回测指标供审核门禁使用）
+                    if self._gene_innovation.write_gene_to_library(
+                        cand, n_samples=n_samples, ess=ess,
+                    ):
                         written.append(cand.gene_id)
 
         logger.info(

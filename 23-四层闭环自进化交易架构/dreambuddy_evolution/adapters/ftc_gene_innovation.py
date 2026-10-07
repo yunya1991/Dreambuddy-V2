@@ -107,6 +107,11 @@ class GeneInnovationEngine:
             self._gene_root = Path(gene_root)
         self._candidates: dict[str, GeneCandidate] = {}
         self._validated_genes: set[str] = set()
+        # 版本控制 + 审核门禁
+        from .gene_version_manager import GeneVersionManager
+        from .gene_audit_gate import GeneAuditGate
+        self._version_mgr = GeneVersionManager(self._gene_root / "strategy_genes")
+        self._audit_gate = GeneAuditGate(self._gene_root)
 
     def detect_anomalies(
         self,
@@ -340,12 +345,20 @@ class GeneInnovationEngine:
         """
         return n_samples >= L2_MIN_SAMPLES and ess >= L2_MIN_ESS
 
-    def write_gene_to_library(self, candidate: GeneCandidate) -> bool:
+    def write_gene_to_library(self, candidate: GeneCandidate,
+                              n_samples: int = 0, ess: float = 0.0,
+                              baseline_ess: float = 0.0) -> bool:
         """
         将验证通过的基因写入 gene_data/strategy_genes/conditions/
 
+        流程: 快照 → Schema 审核 → 相对提升审核 → 写入
         不修改冻结 API（load_gene_library 等），只写文件，
         下次 load_gene_library 会自动加载。
+
+        Args:
+            n_samples: 回测样本数（用于统计门槛）
+            ess: 回测 ESS（用于统计门槛+相对提升）
+            baseline_ess: 现有基因库平均 ESS（用于相对提升门禁）
         """
         if candidate.gene_id in self._validated_genes:
             return False  # 已写入
@@ -374,6 +387,15 @@ class GeneInnovationEngine:
         if out_path.exists():
             logger.info(f"[L2-Gene] {candidate.gene_id} 已存在，跳过")
             return False
+
+        # 门禁 1: Schema 校验 + 门禁 3: 相对提升（门禁 2 统计门槛在 validate_candidate 已过）
+        audit = self._audit_gate.audit(gene_data, n_samples, ess, baseline_ess)
+        if not audit["passed"]:
+            logger.info(f"[L2-Gene] {candidate.gene_id} 审核未通过: {audit['reason']}")
+            return False
+
+        # 写入前自动快照（版本控制）
+        self._version_mgr.snapshot(trigger_source=f"gene_innovation:{candidate.gene_id}")
 
         try:
             out_path.write_text(json.dumps(gene_data, ensure_ascii=False, indent=2), encoding="utf-8")
