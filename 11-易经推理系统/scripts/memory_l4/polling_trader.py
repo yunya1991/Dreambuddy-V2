@@ -4614,8 +4614,9 @@ class PollingTrader:
                 )
         except Exception as _top_e:
             # FAIL-OPEN铁律：异常不阻塞交易
+            import traceback as _tb
             self._log(
-                f"[持仓同步·SLTP修复] {coin} 顶层异常FAIL-OPEN，跳过本轮巡检: {_top_e}",
+                f"[持仓同步·SLTP修复] {coin} 顶层异常FAIL-OPEN，跳过本轮巡检: {_top_e}\n{_tb.format_exc()}",
                 "WARN",
             )
 
