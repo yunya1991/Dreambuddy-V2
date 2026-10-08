@@ -14,10 +14,10 @@
   - 大市值波动率低 → 紧 SL/TP；小市值波动率高 → 宽 SL/TP
   - 美股波动率接近美股 → 更紧的 SL/TP
   - 牛市 → 宽 TP 紧 SL（让利润奔跑）
-  - 熊市 → 紧 TP 宽 SL（快速止盈，放宽止损避免被扫）
+  - 熊市 → 收紧止损（sl_mult=0.85）+ 降仓（position_mult=0.5），RR不恶化
   - 震荡 → 均衡
 
-约束：sl_floor ≥ 0.04, tp_floor ≥ 0.12, tp_floor / sl_floor ≥ 2.0
+约束：sl_floor ≥ 0.03, tp_floor ≥ 0.12, tp_floor / sl_floor ≥ 2.0
 """
 from __future__ import annotations
 
@@ -41,10 +41,11 @@ class SLTPParams:
     rr_ratio_target: float = 3.0
     tp_decay_floor: float = 0.12
     tp_decay_hours: Tuple[int, int] = (12, 72)  # (grace_hours, full_hours)
+    position_mult: float = 1.0  # 市场形态仓位乘数（熊市=0.5）
 
     def validate(self) -> bool:
         """校验参数是否满足硬约束"""
-        if self.sl_floor < 0.04:
+        if self.sl_floor < 0.03:
             return False
         if self.tp_floor < 0.12:
             return False
@@ -59,20 +60,20 @@ class SLTPParams:
 # 基础参数表（按资产类别 × 市值等级，不含市场形态调整）
 # ============================================================================
 _BASE_PARAMS: Dict[Tuple[str, str], SLTPParams] = {
-    # 美股代币（波动率低，紧 SL/TP）
+    # 美股代币（ATR约0.8-1.2%，SL=3%对应2.5-3.75x ATR）
     (ASSET_US_STOCK, MCAP_TRADFI): SLTPParams(
-        sl_floor=0.04, tp_floor=0.12, atr_mult_range=(2.5, 4.0),
-        rr_ratio_target=3.0, tp_decay_floor=0.12, tp_decay_hours=(8, 48),
+        sl_floor=0.03, tp_floor=0.12, atr_mult_range=(2.5, 4.0),
+        rr_ratio_target=4.0, tp_decay_floor=0.12, tp_decay_hours=(8, 48),
     ),
-    # 贵金属
+    # 贵金属（ATR约0.8-1.2%，SL=3%对应2.5-3.75x ATR）
     (ASSET_PRECIOUS_METAL, MCAP_TRADFI): SLTPParams(
-        sl_floor=0.04, tp_floor=0.12, atr_mult_range=(2.5, 4.0),
-        rr_ratio_target=3.0, tp_decay_floor=0.12, tp_decay_hours=(12, 72),
+        sl_floor=0.03, tp_floor=0.12, atr_mult_range=(2.5, 4.0),
+        rr_ratio_target=4.0, tp_decay_floor=0.12, tp_decay_hours=(12, 72),
     ),
-    # BTC/ETH（大市值，趋势明确）
+    # BTC/ETH（大市值，趋势明确，ATR约2-3%，SL=5%对应2-2.5x ATR）
     (ASSET_CRYPTO_MAJOR, MCAP_LARGE): SLTPParams(
-        sl_floor=0.04, tp_floor=0.12, atr_mult_range=(3.5, 5.0),
-        rr_ratio_target=3.0, tp_decay_floor=0.12, tp_decay_hours=(12, 72),
+        sl_floor=0.05, tp_floor=0.12, atr_mult_range=(3.5, 5.0),
+        rr_ratio_target=2.4, tp_decay_floor=0.12, tp_decay_hours=(12, 72),
     ),
     # 大市值加密
     (ASSET_CRYPTO_LARGE, MCAP_LARGE): SLTPParams(
@@ -98,7 +99,7 @@ _BASE_PARAMS: Dict[Tuple[str, str], SLTPParams] = {
 
 # 兜底参数（未知资产类别/市值等级）
 _DEFAULT_PARAMS = SLTPParams(
-    sl_floor=0.04, tp_floor=0.12, atr_mult_range=(4.0, 6.0),
+    sl_floor=0.03, tp_floor=0.12, atr_mult_range=(4.0, 6.0),
     rr_ratio_target=3.0, tp_decay_floor=0.12, tp_decay_hours=(12, 72),
 )
 
@@ -109,7 +110,7 @@ _DEFAULT_PARAMS = SLTPParams(
 _REGIME_ADJUST = {
     REGIME_BULL: {"sl_mult": 0.8, "tp_mult": 1.2},   # 牛市：紧 SL 宽 TP
     REGIME_CHOP: {"sl_mult": 1.0, "tp_mult": 1.0},   # 震荡：不变
-    REGIME_BEAR: {"sl_mult": 1.2, "tp_mult": 0.8},   # 熊市：宽 SL 紧 TP
+    REGIME_BEAR: {"sl_mult": 0.85, "tp_mult": 1.0, "position_mult": 0.5},   # 熊市：收紧止损+降仓，RR不恶化
 }
 
 
@@ -132,7 +133,7 @@ def get_sltp_params(
 
     # 应用市场形态调整
     adjust = _REGIME_ADJUST.get(market_regime, _REGIME_ADJUST[REGIME_CHOP])
-    sl_floor = max(0.04, base.sl_floor * adjust["sl_mult"])
+    sl_floor = max(0.03, base.sl_floor * adjust["sl_mult"])
     tp_floor = max(0.12, base.tp_floor * adjust["tp_mult"])
 
     # 确保盈亏比 ≥ 2:1
@@ -146,6 +147,7 @@ def get_sltp_params(
         rr_ratio_target=base.rr_ratio_target,
         tp_decay_floor=round(max(tp_floor, base.tp_decay_floor * adjust["tp_mult"]), 4),
         tp_decay_hours=base.tp_decay_hours,
+        position_mult=adjust.get("position_mult", 1.0),
     )
 
 

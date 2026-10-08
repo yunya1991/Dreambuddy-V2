@@ -41,10 +41,10 @@ from memory_l4.bcrm2.sl_tp_config import SLTPParams  # noqa: E402
 # T4.1 BTC + 震荡形态
 # ============================================================================
 def test_get_sltp_params_btc_chop():
-    """BTC + chop → SL≥4%, TP≥12%, RR≥2:1"""
+    """BTC + chop → SL≥3%, TP≥12%, RR≥2:1"""
     params = get_sltp_params("BTC", market_regime="chop")
     assert isinstance(params, SLTPParams), f"返回类型错误: {type(params)}"
-    assert params.sl_floor >= 0.04, f"SL 下限违规: {params.sl_floor}"
+    assert params.sl_floor >= 0.03, f"SL 下限违规: {params.sl_floor}"
     assert params.tp_floor >= 0.12, f"TP 下限违规: {params.tp_floor}"
     assert params.tp_floor / params.sl_floor >= 2.0, (
         f"RR 比违规: TP={params.tp_floor}, SL={params.sl_floor}"
@@ -61,9 +61,9 @@ def test_get_sltp_params_pepe_bull():
     """PEPE + bull → Meme 币 SL≥10%, TP≥30%（牛市 TP 放大 1.2x，上限 30%）"""
     params = get_sltp_params("PEPE", market_regime="bull")
     assert isinstance(params, SLTPParams)
-    # Meme 币 base SL=0.10，牛市 sl_mult=0.8 → max(0.04, 0.10*0.8)=0.08
-    # 但 Meme 币 base 是 0.10，乘 0.8=0.08，仍 ≥4% 满足
-    assert params.sl_floor >= 0.04, f"SL 下限违规: {params.sl_floor}"
+    # Meme 币 base SL=0.10，牛市 sl_mult=0.8 → max(0.03, 0.10*0.8)=0.08
+    # 但 Meme 币 base 是 0.10，乘 0.8=0.08，仍 ≥3% 满足
+    assert params.sl_floor >= 0.03, f"SL 下限违规: {params.sl_floor}"
     # Meme 币 base TP=0.30，牛市 tp_mult=1.2 → 0.30*1.2=0.36，但 ≤0.30 上限
     assert params.tp_floor >= 0.12, f"TP 下限违规: {params.tp_floor}"
     assert params.tp_floor / params.sl_floor >= 2.0
@@ -112,8 +112,8 @@ def test_failopen_default():
         side_effect=RuntimeError("参数中心内部故障"),
     ):
         params = get_sltp_params("BTC", market_regime="chop", use_cache=False)
-    # 默认参数 SL=0.04, TP=0.12
-    assert params.sl_floor == 0.04, f"FAIL-OPEN SL 应为 4%，实际 {params.sl_floor}"
+    # 默认参数 SL=0.03, TP=0.12
+    assert params.sl_floor == 0.03, f"FAIL-OPEN SL 应为 3%，实际 {params.sl_floor}"
     assert params.tp_floor == 0.12, f"FAIL-OPEN TP 应为 12%，实际 {params.tp_floor}"
     assert params.tp_floor / params.sl_floor >= 2.0
 
@@ -122,7 +122,7 @@ def test_failopen_unknown_regime():
     """未知 regime 应按 chop 处理（FAIL-OPEN），不抛异常"""
     params = get_sltp_params("BTC", market_regime="unknown_regime", use_cache=False)
     assert isinstance(params, SLTPParams)
-    assert params.sl_floor >= 0.04
+    assert params.sl_floor >= 0.03
     assert params.tp_floor >= 0.12
 
 

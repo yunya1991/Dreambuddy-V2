@@ -74,6 +74,9 @@ class ParamRepository:
     def __init__(self, cache_ttl_seconds: int = _DEFAULT_TTL) -> None:
         self._cache_ttl = cache_ttl_seconds
         self._cache: Dict[Tuple[str, str], Tuple[SLTPParams, float]] = {}
+        # 聚合缓存：runner 写入的动态参数，优先级高于静态表
+        # value: (SLTPParams, timestamp, confidence)
+        self._aggregated_cache: Dict[Tuple[str, str], Tuple[SLTPParams, float, float]] = {}
 
     def get(
         self,
@@ -98,6 +101,14 @@ class ParamRepository:
         symbol_up = (symbol or "").upper().strip() or "BTC"
         regime = market_regime or _DEFAULT_REGIME
         cache_key = (symbol_up, regime)
+
+        # 0. 聚合缓存优先（runner 写入的动态参数，TTL 同静态缓存）
+        if use_cache:
+            agg = self._aggregated_cache.get(cache_key)
+            if agg is not None:
+                params, ts, _conf = agg
+                if (time.time() - ts) < self._cache_ttl:
+                    return params
 
         # 1. 缓存命中
         if use_cache:
@@ -124,6 +135,21 @@ class ParamRepository:
         # 3. 写入缓存
         self._cache[cache_key] = (params, time.time())
         return params
+
+    def set_aggregated(
+        self,
+        symbol: str,
+        regime: str,
+        params: SLTPParams,
+        confidence: float = 0.0,
+    ) -> None:
+        """写入聚合缓存（由 runner 调用）。
+
+        聚合缓存优先级高于静态表缓存，TTL 相同。
+        """
+        symbol_up = (symbol or "").upper().strip() or "BTC"
+        regime = regime or _DEFAULT_REGIME
+        self._aggregated_cache[(symbol_up, regime)] = (params, time.time(), confidence)
 
     def invalidate(self, symbol: str = None, regime: str = None) -> None:
         """主动失效缓存。

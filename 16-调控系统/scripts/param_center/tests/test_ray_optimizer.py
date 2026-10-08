@@ -72,7 +72,7 @@ class TestHardConstraints:
 
     def test_search_space_constants(self):
         """硬约束常量验证"""
-        assert SL_FLOOR == 0.04
+        assert SL_FLOOR == 0.03
         assert SL_CEIL == 0.15
         assert TP_FLOOR == 0.12
         assert TP_CEIL == 0.30

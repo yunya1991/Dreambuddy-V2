@@ -106,7 +106,7 @@ def test_verify_fail_when_dd_exceeds_60pct():
 # T12.4 硬约束违例 → 回滚
 # ============================================================================
 def test_verify_fail_when_hard_constraint_violated():
-    """新参数 SL=0.02 < 0.04 → 硬约束违例 → 回滚"""
+    """新参数 SL=0.02 < 0.03 → 硬约束违例 → 回滚"""
     verifier = BayesianVerifier()
     new_result = MagicMock(calmar=2.0, max_drawdown=0.3, win_rate=0.5)
     old_result = MagicMock(calmar=1.0, max_drawdown=0.4, win_rate=0.45)

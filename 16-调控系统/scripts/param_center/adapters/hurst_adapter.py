@@ -20,7 +20,7 @@ from .base import BaseAdapter
 # Hurst category (int) → 调整系数
 # 真实返回: 0=均值回归, 1=随机, 2=趋势
 _HURST_ADJUST = {
-    0: {"sl_mult": 1.2, "tp_mult": 0.9},   # 震荡 → 宽SL紧TP
+    0: {"sl_mult": 0.85, "tp_mult": 1.0},   # 震荡 → 收紧止损（趋势不明，快止损），止盈不变保持RR
     1: {"sl_mult": 1.0, "tp_mult": 1.0},   # 随机 → 不变
     2: {"sl_mult": 0.9, "tp_mult": 1.2},  # 趋势 → 紧SL宽TP
 }
@@ -55,7 +55,7 @@ class HurstAdapter(BaseAdapter):
         return AlgoObservation(
             algo_name=self.name,
             params={
-                "sl_floor": max(0.04, _BASE["sl_floor"] * adjust["sl_mult"]),
+                "sl_floor": max(0.03, _BASE["sl_floor"] * adjust["sl_mult"]),
                 "tp_floor": max(0.12, _BASE["tp_floor"] * adjust["tp_mult"]),
                 "atr_mult": _BASE["atr_mult"],
             },

@@ -78,7 +78,7 @@ class CusumAdapter(BaseAdapter):
         # market_form 影响 SL/TP
         if current_form == "trend":
             # 趋势态 → 紧SL宽TP
-            sl_floor = 0.04
+            sl_floor = 0.03
             tp_floor = 0.20
             confidence = 0.8
         elif current_form == "revert":

@@ -4,7 +4,7 @@ SPEC §2.3.1 核心算法：
   1. 每个算法独立产出参数建议 θ_i
   2. KL散度权重（与当前后验差异越大权重越高，纠正群体保守偏差）
   3. 贝叶斯模型平均：θ_post = Σ w_i * θ_i / Σ w_i
-  4. 硬约束兜底：SL≥4%, TP≥12%, RR≥2:1
+  4. 硬约束兜底：SL≥3%, TP≥12%, RR≥2:1
 
 设计要点：
   - KL散度近似：用参数向量的欧氏距离 ||θ_i - θ_prior|| 作为差异度量
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # 硬约束常量
 # ============================================================================
-SL_FLOOR = 0.04       # SL 下限 4%
+SL_FLOOR = 0.03       # SL 下限 3%（容纳美股/贵金属低波动资产）
 TP_FLOOR = 0.12       # TP 下限 12%
 RR_FLOOR = 2.0        # RR 比下限 2:1
 ATR_MULT_DEFAULT = 4.5  # ATR 倍数默认值
@@ -190,7 +190,7 @@ class StatAggregator:
 
     @staticmethod
     def _enforce_hard_constraints(params: Dict[str, float]) -> Dict[str, float]:
-        """硬约束兜底：SL≥4%, TP≥12%, RR≥2:1"""
+        """硬约束兜底：SL≥3%, TP≥12%, RR≥2:1"""
         result = dict(params)
 
         # SL 下限

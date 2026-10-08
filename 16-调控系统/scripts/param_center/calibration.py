@@ -178,10 +178,10 @@ class CalibrationAnalyzer:
         # 计算校准参数：用 avg_actual 作为基准（子系统实际值更接近实战）
         calibrated = dict(stats.avg_actual)
         # 兜底：硬约束检查
-        sl = calibrated.get("sl_floor", 0.04)
+        sl = calibrated.get("sl_floor", 0.03)
         tp = calibrated.get("tp_floor", 0.12)
         atr = calibrated.get("atr_mult", 4.5)
-        calibrated["sl_floor"] = max(0.04, min(0.15, sl))
+        calibrated["sl_floor"] = max(0.03, min(0.15, sl))
         calibrated["tp_floor"] = max(0.12, min(0.30, tp))
         calibrated["atr_mult"] = max(2.0, min(8.0, atr))
         # RR 比 ≥ 2:1

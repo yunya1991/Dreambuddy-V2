@@ -52,9 +52,9 @@ class BaguaAdapter(BaseAdapter):
         short_thr = float(getattr(rp, "short_conf_threshold", 0.40))
 
         # 转换到 AlgoObservation 参数空间
-        # sl_atr ∈ [1.2, 3.0] → sl_floor ∈ [0.04, 0.075]
+        # sl_atr ∈ [1.2, 3.0] → sl_floor ∈ [0.03, 0.075]
         # tp_atr ∈ [2.0, 5.0] → tp_floor ∈ [0.12, 0.20]
-        sl_floor = max(0.04, sl_atr * 0.025)
+        sl_floor = max(0.03, sl_atr * 0.025)
         tp_floor = max(0.12, tp_atr * 0.04)
 
         # 置信度：多空阈值的均值取反（阈值越低 → 越激进 → 置信度越高）

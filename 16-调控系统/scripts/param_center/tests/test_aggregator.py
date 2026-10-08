@@ -78,7 +78,7 @@ def test_aggregate_satisfies_hard_constraints():
     proposal = agg.aggregate(obs_list)
 
     params = proposal.params
-    assert params["sl_floor"] >= 0.04, f"SL 下限违规: {params['sl_floor']}"
+    assert params["sl_floor"] >= 0.03, f"SL 下限违规: {params['sl_floor']}"
     assert params["tp_floor"] >= 0.12, f"TP 下限违规: {params['tp_floor']}"
     assert params["tp_floor"] / params["sl_floor"] >= 2.0, "RR 比违规"
 
@@ -115,9 +115,9 @@ def test_aggregate_with_empty_observations():
     agg = StatAggregator()
     proposal = agg.aggregate([])
 
-    # 应回退到默认参数 SL=4%, TP=12%
-    assert proposal.params["sl_floor"] == 0.04, (
-        f"空输入应回退默认 SL=4%, 实际 {proposal.params['sl_floor']}"
+    # 应回退到默认参数 SL=3%, TP=12%
+    assert proposal.params["sl_floor"] == 0.03, (
+        f"空输入应回退默认 SL=3%, 实际 {proposal.params['sl_floor']}"
     )
     assert proposal.params["tp_floor"] == 0.12, (
         f"空输入应回退默认 TP=12%, 实际 {proposal.params['tp_floor']}"

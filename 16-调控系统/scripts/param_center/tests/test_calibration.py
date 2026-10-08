@@ -158,7 +158,7 @@ class TestCalibrationAnalyzer:
         proposal = analyzer.propose_calibration("BTC", days=30)
         assert proposal.should_calibrate
         # 硬约束兜底
-        assert 0.04 <= proposal.calibrated_params["sl_floor"] <= 0.15
+        assert 0.03 <= proposal.calibrated_params["sl_floor"] <= 0.15
         assert 0.12 <= proposal.calibrated_params["tp_floor"] <= 0.30
         assert 2.0 <= proposal.calibrated_params["atr_mult"] <= 8.0
         # RR ≥ 2:1

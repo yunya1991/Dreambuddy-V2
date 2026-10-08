@@ -14,6 +14,14 @@
     "healthy_used_pct_max": 50.0,
     "warning_used_pct_max": 80.0
   },
+  "dd_tiers": {
+    "tier1_dd": 0.20,
+    "tier1_position_mult": 0.5,
+    "tier2_dd": 0.30,
+    "tier2_position_mult": 0.0,
+    "tier3_dd": 0.40,
+    "tier3_action": "close_all"
+  },
   "fallback_static_budget": {
     "v15_martin": 260.0,
     "yijing_bcrm": 150.0,

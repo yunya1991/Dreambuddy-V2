@@ -63,9 +63,9 @@ class PmapperAdapter(BaseAdapter):
         short_thr = _mid("short_threshold_mult", 1.0)
         pos_mult = _mid("global_position_mult", 1.0)
 
-        # threshold_mult ∈ [0.70, 1.50] → sl_floor ∈ [0.04, 0.07]
-        # 公式: sl_floor = 0.04 + (long_thr - 0.70) * 0.0375
-        sl_floor = max(0.04, 0.04 + (long_thr - 0.70) * 0.0375)
+        # threshold_mult ∈ [0.70, 1.50] → sl_floor ∈ [0.03, 0.07]
+        # 公式: sl_floor = 0.03 + (long_thr - 0.70) * 0.05
+        sl_floor = max(0.03, 0.03 + (long_thr - 0.70) * 0.05)
         # threshold_mult ∈ [0.70, 1.50] → tp_floor ∈ [0.12, 0.18]
         tp_floor = max(0.12, 0.12 + (short_thr - 0.70) * 0.075)
         # position_mult ∈ [0.30, 1.60] → atr_mult ∈ [3.0, 5.0]

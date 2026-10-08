@@ -38,7 +38,7 @@ class ShadowAdapter(BaseAdapter):
             return AlgoObservation(
                 algo_name=self.name,
                 params={
-                    "sl_floor": max(0.04, sum(sls) / len(sls)),
+                    "sl_floor": max(0.03, sum(sls) / len(sls)),
                     "tp_floor": max(0.12, sum(tps) / len(tps)),
                     "atr_mult": 4.5,
                 },

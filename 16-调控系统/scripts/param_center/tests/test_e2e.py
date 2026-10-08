@@ -41,7 +41,7 @@ def test_e2e_open_position_flow(tmp_path):
     # 1. 子系统查询参数中心（模拟 BTC long chop）
     params = get_sltp_params("BTC", market_regime="chop", use_cache=False)
     assert isinstance(params, SLTPParams)
-    assert params.sl_floor >= 0.04
+    assert params.sl_floor >= 0.03
     assert params.tp_floor >= 0.12
 
     # 2. 影子记录（参数中心推荐值 = 子系统实际使用值）
@@ -125,8 +125,8 @@ def test_e2e_hard_constraints_all_symbols(tmp_path):
     ]
     for symbol, regime in test_cases:
         params = get_sltp_params(symbol, market_regime=regime, use_cache=False)
-        assert params.sl_floor >= 0.04, (
-            f"{symbol}/{regime} SL={params.sl_floor} < 4%"
+        assert params.sl_floor >= 0.03, (
+            f"{symbol}/{regime} SL={params.sl_floor} < 3%"
         )
         assert params.tp_floor >= 0.12, (
             f"{symbol}/{regime} TP={params.tp_floor} < 12%"

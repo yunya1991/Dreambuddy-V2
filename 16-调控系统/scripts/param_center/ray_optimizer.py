@@ -5,7 +5,7 @@
 
 设计：
   - 优化目标：最大化 Calmar Ratio（年化收益/最大回撤）
-  - 搜索空间：sl_floor ∈ [0.04, 0.15], tp_floor ∈ [0.12, 0.30], atr_mult ∈ [2.0, 6.0]
+  - 搜索空间：sl_floor ∈ [0.03, 0.15], tp_floor ∈ [0.12, 0.30], atr_mult ∈ [2.0, 6.0]
   - 调度器：AsyncHyperBandScheduler（早停差试验，资源高效）
   - 算法：BayesOptSearch (贝叶斯优化) 或 RandomSearch (兜底)
   - 并行度：num_samples × resources_per_trial
@@ -45,7 +45,7 @@ _ARTIFACTS_DIR = _SCRIPTS_16 / "artifacts" / "param_center"
 # ============================================================================
 # 硬约束常量（与 verifier.py 一致）
 # ============================================================================
-SL_FLOOR = 0.04
+SL_FLOOR = 0.03
 SL_CEIL = 0.15
 TP_FLOOR = 0.12
 TP_CEIL = 0.30
@@ -228,7 +228,7 @@ class RayTuneOptimizer:
     def _build_search_space() -> dict:
         """搜索空间：sl_floor/tp_floor/atr_mult 在硬约束内"""
         return {
-            "sl_floor": tune.uniform(SL_FLOOR, SL_CEIL),       # [0.04, 0.15]
+            "sl_floor": tune.uniform(SL_FLOOR, SL_CEIL),       # [0.03, 0.15]
             "tp_floor": tune.uniform(TP_FLOOR, TP_CEIL),        # [0.12, 0.30]
             "atr_mult": tune.uniform(ATR_MULT_MIN, ATR_MULT_MAX),  # [2.0, 6.0]
         }
