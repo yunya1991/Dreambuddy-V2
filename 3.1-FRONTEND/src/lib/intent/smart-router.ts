@@ -78,6 +78,13 @@ export const CHAIN_STEPS: Record<string, { label: string; icon: string; loop: Lo
 };
 
 // ============ 意图 → 路由映射表 ============
+// @deprecated (SPEC 阶段5): ROUTE_MAP 已被 SkillSelector 替代。
+// 当 USE_SKILL_ORCHESTRATION=true 时，路由由 skill-orchestration-executor.ts
+// 的 SkillSelector（规则匹配 + TF-IDF 向量兜底）接管，不走此映射表。
+// 此代码保留作为 USE_SKILL_ORCHESTRATION=false 时的回退路径，
+// 下一版本确认无回归后可彻底删除。
+// 迁移指南: 新增意图类型应在 registry.json 的 SKILL triggers 中定义，
+// 不应在此映射表中新增条目。
 
 interface RouteConfig {
   loop: LoopType;
@@ -294,6 +301,24 @@ export function routeIntent(
   const userRole = context?.user_role || 'FREE';
   const thinkingMode = context?.thinking_mode || 'quick';
   const tradingMode = context?.trading_mode || 'ai_skill';
+
+  // @deprecated (SPEC 阶段5): 当 USE_SKILL_ORCHESTRATION=true 时，
+  // 路由应由 SkillSelector 接管，不走 ROUTE_MAP。
+  // task-manager.ts 已有双轨开关，此处为安全兜底。
+  // 当开关启用但 routeIntent 仍被直接调用时，返回 skill_orchestration 占位决策。
+  if (process.env.USE_SKILL_ORCHESTRATION === 'true' && tradingMode === 'ai_skill') {
+    return {
+      loop_type: 'execution',
+      chain: [],
+      estimated_time_ms: 0,
+      credits_cost: 0,
+      requires_confirmation: false,
+      role_check: 'pass',
+      fallback_chain: [],
+      reasoning: '[SKILL_ORCHESTRATION] routeIntent bypassed — routing handled by SkillSelector',
+      mode: 'dynamic',
+    };
+  }
 
   // ==== Classic 经典交易模式：使用 C 系列思维链 ====
   if (tradingMode === 'classic') {

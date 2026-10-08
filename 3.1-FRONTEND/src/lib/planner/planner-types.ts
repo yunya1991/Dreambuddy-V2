@@ -105,6 +105,7 @@ export interface PlannerProgressEvent {
     | 'step_start'
     | 'step_end'
     | 'cross_validation'
+    | 'knowledge_ingested'
     | 'completed'
     | 'error';
   /** 关联步骤 ID（如 'S1', 'C2'） */

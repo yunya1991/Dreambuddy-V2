@@ -114,6 +114,13 @@ import {
   IntentSpecWriter,
 } from './planner/intent-spec-writer';
 
+// SKILL 编排执行器（M2 集成层，双轨开关 USE_SKILL_ORCHESTRATION）
+import {
+  executeSkillOrchestration,
+  isSkillOrchestrationEnabled,
+  type SkillOrchestrationResult,
+} from './skill-orchestration-executor';
+
 // 全局 Spec Writer 实例（懒加载）
 let _specWriter: IntentSpecWriter | null = null;
 function getSpecWriter(): IntentSpecWriter {
@@ -3111,6 +3118,39 @@ function executeDynamicChain(
 
 
 /**
+ * 将 SKILL 编排执行结果转为 ResultFile（M2 集成）
+ * 保持与 executeConversationTaskInline 返回值结构一致，便于前端无感消费
+ */
+function _buildOrchestrationResultFile(
+  task: TaskFile,
+  orch: SkillOrchestrationResult,
+): ResultFile {
+  const now = new Date().toISOString();
+  const resultFile: ResultFile = {
+    task_id: task.task_id,
+    session_id: task.session_id,
+    status: 'completed',
+    created_at: now,
+    execution_time_ms: orch.execution_time_ms,
+    content: orch.content,
+    content_type: orch.content_type,
+    intent: {
+      type: task.intent.type,
+      confidence: task.intent.confidence,
+      method: 'skill_orchestration',
+      entities: task.intent.entities || {},
+    },
+    artifacts_produced: orch.artifacts_produced,
+    execution_summary: orch.execution_summary,
+    metadata: orch.metadata,
+    persisted: false,
+  };
+  // 写入 result 文件（与 ExecutionPlanner 路径一致）
+  writeResultAndTask(task, resultFile, now);
+  return resultFile;
+}
+
+/**
  * 创建任务并立即执行（v2.0核心入口）
  * - 对话任务：内联执行，同步返回结果
  * - 交易任务：返回待确认状态
@@ -3162,6 +3202,32 @@ export async function createAndExecuteTask(params: {
   if (params.trading_mode === 'classic') {
     const result = await executeClassicChain(task, params.lang || 'zh');
     return { task, result, needAsync: false };
+  }
+
+  // ===== SKILL 编排双轨开关（SPEC §5.1, M2 集成）=====
+  // 当 USE_SKILL_ORCHESTRATION=true 时，对话类意图优先走 SKILL 编排链路:
+  //   CognitiveContext → SkillSelector → DSHExecutionEngine → C-Drive → SummaryAgent
+  // 编排失败时 FAIL-OPEN 降级到原路径（executeConversationTaskInline）
+  if (isSkillOrchestrationEnabled() && isConversationIntent(intentType)) {
+    const orchResult = await executeSkillOrchestration(
+      task,
+      params.message,
+      params.lang || 'zh',
+      params.onProgress,
+    );
+    if (orchResult) {
+      const result = _buildOrchestrationResultFile(task, orchResult);
+      addConversationTurn(
+        task.session_id,
+        params.message,
+        result.content || '',
+        intentType,
+        task.task_id,
+      );
+      return { task, result, needAsync: false };
+    }
+    // FAIL-OPEN: orchResult === null → 降级到原路径
+    console.log(`[TaskManager] SKILL 编排降级，回退到原路径: ${task.task_id}`);
   }
 
   // 2. 对话任务 → 内联执行，同步返回结果
