@@ -7458,7 +7458,7 @@ class PollingTrader:
                 if position_usdt <= 0:
                     continue
 
-                # 构建 inference（含 ATR 自适应 SL/TP）
+                # 构建 inference（含 ATR 自适应 SL/TP + 调控系统参数硬约束）
                 _volatility = 0.03
                 _atr_est = max(current_price * _volatility, current_price * 0.005)
                 _sl_mult, _tp_mult = 8.0, 6.0  # SL翻倍4→8, TP减半12→6
@@ -7468,6 +7468,48 @@ class PollingTrader:
                 else:
                     _sl_px = round(current_price + _atr_est * _sl_mult, 4)
                     _tp_px = round(current_price - _atr_est * _tp_mult, 4)
+                # ★ 接入调控系统参数中心：clamp SL/TP 到集中配置硬约束范围
+                #   优先 param_center → sl_tp_config → 本地兜底（与 BCRM 链路口径一致）
+                try:
+                    import sys as _sys_strat
+                    from pathlib import Path as _Path_strat
+                    _proj_root_strat = _Path_strat(__file__).resolve().parents[4]
+                    _pc_dir_strat = _proj_root_strat / "16-调控系统" / "scripts"
+                    if str(_pc_dir_strat) not in _sys_strat.path:
+                        _sys_strat.path.insert(0, str(_pc_dir_strat))
+                    from param_center.api import get_sltp_params as _pc_get_strat
+                    from param_center.aggregator import SL_FLOOR, TP_FLOOR
+                    from param_center.verifier import SL_CEIL, TP_CEIL
+                    _strat_sltp = _pc_get_strat(inst_id, market_regime="neutral")
+                    _strat_sl_floor = float(getattr(_strat_sltp, "sl_floor", SL_FLOOR))
+                    _strat_tp_floor = float(getattr(_strat_sltp, "tp_floor", TP_FLOOR))
+                    _strat_sl_ceil = float(SL_CEIL)
+                    _strat_tp_ceil = float(TP_CEIL)
+                except Exception:
+                    try:
+                        from scripts.memory_l4.bcrm2.sl_tp_config import SLTPParams
+                        _p = SLTPParams()
+                        _strat_sl_floor, _strat_tp_floor = _p.sl_floor, _p.tp_floor
+                        _strat_sl_ceil, _strat_tp_ceil = 0.15, 0.30
+                    except Exception:
+                        _strat_sl_floor, _strat_tp_floor = 0.04, 0.12
+                        _strat_sl_ceil, _strat_tp_ceil = 0.15, 0.30
+                _strat_sl_pct = abs(_sl_px - current_price) / current_price
+                _strat_tp_pct = abs(_tp_px - current_price) / current_price
+                # clamp SL 到 [sl_floor, sl_ceil]
+                if _strat_sl_pct < _strat_sl_floor:
+                    _sl_px = round(current_price * (1 - _strat_sl_floor) if direction == "UP"
+                                   else current_price * (1 + _strat_sl_floor), 4)
+                elif _strat_sl_pct > _strat_sl_ceil:
+                    _sl_px = round(current_price * (1 - _strat_sl_ceil) if direction == "UP"
+                                   else current_price * (1 + _strat_sl_ceil), 4)
+                # clamp TP 到 [tp_floor, tp_ceil]
+                if _strat_tp_pct < _strat_tp_floor:
+                    _tp_px = round(current_price * (1 + _strat_tp_floor) if direction == "UP"
+                                   else current_price * (1 - _strat_tp_floor), 4)
+                elif _strat_tp_pct > _strat_tp_ceil:
+                    _tp_px = round(current_price * (1 + _strat_tp_ceil) if direction == "UP"
+                                   else current_price * (1 - _strat_tp_ceil), 4)
                 inference = {
                     "coin": coin_up,
                     "inst_id": inst_id,
@@ -13215,6 +13257,21 @@ class PollingTrader:
         is_ranging = inference["is_ranging"]
         inference.get("volatility", 0.03)
 
+        # ── 冷却期双重检查（仅无持仓时）──
+        # 第三阶段已在候选筛选时检查过冷却，此处作为兜底防线，
+        # 防止候选筛选→执行之间的状态变化或并发写入导致冷却失效。
+        if not self.position_tracker.has_open_position(inst_id):
+            _side_map = {"UP": "long", "DOWN": "short"}
+            _want_side = _side_map.get(direction)
+            _in_cd, _cd_reason = self.position_tracker.is_in_cooldown(
+                inst_id, _want_side, self.COOLDOWN_SEC
+            )
+            if _in_cd:
+                self._log(
+                    f"[{coin}] _execute_trade 冷却期兜底拦截: {_cd_reason}", "WARN"
+                )
+                return
+
         # [PUMP修复 2026-08-23] 卦象→方向决策历史滑窗：本轮追加（用于后续开仓一致性校验）
         # 不论本轮后续是否开仓，都写入滑窗（保证全量推理可追溯）
         _hex_curr = inference.get("hexagram", "") or ""
@@ -15376,6 +15433,20 @@ class PollingTrader:
                 "INFO",
             )
 
+        # ★ BDSM 杠杆上限约束：BDSM 不设固定止盈止损（MA200/MA128趋势止损 + P/F估值止盈），
+        # 风险敞口更大，最大杠杆限制为 2 倍。仅当 source_tag=bdsm 且无显式 SL/TP 时生效。
+        _source_tag_here = inference.get("source_tag") or self._classify_source_tag(coin)
+        if _source_tag_here == "bdsm" and not inference.get("stop_loss_px"):
+            _bdsm_max_lev = 2.0
+            if leverage > _bdsm_max_lev:
+                self._log(
+                    f"[{coin}] BDSM杠杆上限约束 | leverage {leverage}→{_bdsm_max_lev}x"
+                    f"（BDSM无固定SL/TP，最大杠杆限制为{_bdsm_max_lev}x）",
+                    "INFO",
+                )
+                leverage = _bdsm_max_lev
+                effective_leverage = max(1, round(leverage * leverage_factor))
+
         balance = self.okx_client.get_balance()
 
         available_equity = self.perf_tracker.current_equity
@@ -15753,8 +15824,10 @@ class PollingTrader:
                 f"[{coin}] SHORT_BAN 临时解除 | direction_state=SHORT_ONLY 允许做空（高位滞涨形态）",
                 "INFO",
             )
-        sl_px = inference["stop_loss_px"]
-        tp_px = inference["take_profit_px"]
+        # BDSM 子系统不设固定 SL/TP（MA200/MA128趋势止损 + P/F估值止盈），
+        # inference 可能不含 stop_loss_px/take_profit_px，安全读取为 None。
+        sl_px = inference.get("stop_loss_px")
+        tp_px = inference.get("take_profit_px")
         price = inference["price"]
 
         # v4 风险评分风控：止损收紧

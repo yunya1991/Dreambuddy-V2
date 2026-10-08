@@ -1093,6 +1093,9 @@ class PositionTracker:
     def __init__(self):
         self.positions_dir = memory_l4_dir() / "open_positions"
         self.positions_dir.mkdir(parents=True, exist_ok=True)
+        # PID 隔离：多实例并发写入 last_close_info.json 会互相覆盖，
+        # 每个进程使用独立的 last_close_info_{pid}.json 避免竞态
+        self._pid = os.getpid()
         self.open_positions: Dict[str, TradeRecord] = {}
         # 统一冷静期：{inst_id: {pos_side, close_ts, exit_reason}}
         self.last_close_info: Dict[str, dict] = {}
@@ -1101,20 +1104,40 @@ class PositionTracker:
 
     # ── 统一冷静期：持久化 ────────────────────────────────────────────────
     def _last_close_file(self):
+        # PID 隔离文件名，避免多 polling_trader 实例互相覆盖冷却记录
+        return self.positions_dir / f"last_close_info_{self._pid}.json"
+
+    def _legacy_last_close_file(self):
+        # 旧版共享文件（兼容迁移）
         return self.positions_dir / "last_close_info.json"
 
     def _load_last_close_info(self):
-        """从磁盘加载最后平仓记录（用于跨重启保留冷却期）"""
+        """从磁盘加载最后平仓记录（用于跨重启保留冷却期）
+
+        优先加载 PID 隔离文件；若不存在，尝试从旧版共享文件迁移
+        （迁移后写入新文件，旧文件保留供其他实例使用）。
+        """
         f = self._last_close_file()
         if f.exists():
             try:
                 with open(f, "r", encoding="utf-8") as fp:
                     self.last_close_info = json.load(fp)
+                return
+            except Exception:
+                self.last_close_info = {}
+        # 迁移：从旧版共享文件加载（只读，不删除旧文件）
+        legacy = self._legacy_last_close_file()
+        if legacy.exists():
+            try:
+                with open(legacy, "r", encoding="utf-8") as fp:
+                    self.last_close_info = json.load(fp)
+                # 立即写入 PID 隔离文件，后续不再依赖共享文件
+                self._save_last_close_info()
             except Exception:
                 self.last_close_info = {}
 
     def _save_last_close_info(self):
-        """保存最后平仓记录到磁盘"""
+        """保存最后平仓记录到磁盘（PID 隔离文件）"""
         f = self._last_close_file()
         try:
             with open(f, "w", encoding="utf-8") as fp:
@@ -1139,13 +1162,22 @@ class PositionTracker:
         """
         info = self.last_close_info.get(inst_id)
         if not info:
+            # DEBUG: 无冷却记录 → 放行
+            print(f"[cooldown DEBUG pid={self._pid}] {inst_id} no_close_record → pass",
+                  file=sys.stderr)
             return False, ""
         elapsed = time.time() - info.get("close_ts", 0)
         if elapsed < cooldown_sec:
             remaining = cooldown_sec - elapsed
-            return True, (f"统一冷静期: 剩余{remaining/3600:.1f}h "
-                          f"(上次{info.get('pos_side')}平仓于{elapsed/60:.1f}分钟前, "
-                          f"reason={info.get('exit_reason')})")
+            reason = (f"统一冷静期: 剩余{remaining/3600:.1f}h "
+                      f"(上次{info.get('pos_side')}平仓于{elapsed/60:.1f}分钟前, "
+                      f"reason={info.get('exit_reason')})")
+            print(f"[cooldown DEBUG pid={self._pid}] {inst_id} BLOCK elapsed={elapsed/60:.1f}min "
+                  f"< cooldown={cooldown_sec/3600:.1f}h → {reason}", file=sys.stderr)
+            return True, reason
+        # 冷却已过期 → 放行
+        print(f"[cooldown DEBUG pid={self._pid}] {inst_id} expired elapsed={elapsed/60:.1f}min "
+              f">= cooldown={cooldown_sec/3600:.1f}h → pass", file=sys.stderr)
         return False, ""
 
     def _load_open_positions(self):
