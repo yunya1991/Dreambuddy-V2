@@ -230,9 +230,9 @@ class ResistanceVector:
 
         # ---- 微观结构升级：6 组件加权（开关控制）
         if get_switch("enable_microstructure_resistance", False):
-            funding_pressure = self._calc_funding_pressure(data, fallback_flags)
-            orderbook_imb = self._calc_orderbook_imbalance(data, fallback_flags)
-            oi_div = self._calc_oi_divergence(data, fallback_flags)
+            funding_pressure = self._calc_funding_pressure(data, flags)
+            orderbook_imb = self._calc_orderbook_imbalance(data, flags)
+            oi_div = self._calc_oi_divergence(data, flags)
 
             W_V2 = (0.20, 0.15, 0.15, 0.20, 0.15, 0.15)  # 筹码/清算/趋势/资金费率/订单簿/OI
             combined_up_v2 = (W_V2[0] * chip_bias

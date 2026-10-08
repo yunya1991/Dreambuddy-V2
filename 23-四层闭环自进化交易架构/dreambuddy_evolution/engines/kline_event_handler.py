@@ -909,7 +909,7 @@ class KlineEventHandler:
                 _regime_position_mult = 0.50
 
             # 三层仓位分级
-            PROBE_THRESHOLD = 0.55   # 轻仓试探门槛（2026-09-12 从0.50提高，过滤低确信度试探）
+            PROBE_THRESHOLD = 0.50   # 轻仓试探门槛（2026-10-09 从0.55降回，允许中性RI试探以积累样本）
             STANDARD_THRESHOLD = 0.60  # 标准仓门槛
             TREND_THRESHOLD = 0.70    # 趋势加仓门槛
 

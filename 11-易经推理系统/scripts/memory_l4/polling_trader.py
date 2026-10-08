@@ -898,7 +898,7 @@ class PollingTrader:
         # 用户决策 2026-09-11：分离上限 — Evolution probe 独立 4 单，BCRM is_trial 保持 2 单
         # 用户决策 2026-09-11：放大开仓容量 — evolution 5→10, probe 4→8（总名义 ~9200U < 可用 10305U）
         # 用户决策 2026-09-14：收敛自进化开仓容量 — evolution 10→3（控制总风险敞口）
-        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 3, "strategy": 3}
+        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 3, "strategy": 3, "event_arbitrage": 2}
         # 测试仓（试错仓）上限：BCRM 的 is_trial=True 最多 2 单
         self.MAX_TRIAL_POSITIONS: int = 2
         # Evolution probe tier 独立上限：2 单（跟随总上限收敛，probe 为 evolution 子集不得超过总上限）
@@ -1239,7 +1239,8 @@ class PollingTrader:
         # 确保离场确认常量在 ExitManager 创建前已初始化（v5.0 离场防频繁优化）
         if not hasattr(self, 'EXIT_CONFIRM_REQUIRED'):
             self.EXIT_CONFIRM_REQUIRED = 2
-            self.EXIT_CONFIRM_WINDOW_SEC = 300
+            # 确认窗口必须 > 实际轮询间隔(约7-9min)，否则2次确认会因窗口超时被重置
+            self.EXIT_CONFIRM_WINDOW_SEC = 1200  # 20分钟窗口
             self.PROTECTED_REVERSE_CONF_BOOST = 0.12
             self.PROTECTED_P3_MIN_LOSS_PCT = -0.08
             self.ENABLE_REGIME_AND_MACRO_S5 = True
@@ -4624,8 +4625,8 @@ class PollingTrader:
         # 离场动作2次确认状态机：避免单根K线假信号/瞬时波动直接平仓
         # key = f"{coin}:{action_type}"  value = {confirm_count: int, first_ts: float}
         self._exit_confirm_state: Dict[str, Dict[str, Any]] = {}
-        # 确认窗口：2次轮询(约2min)内连续触发才执行
-        self.EXIT_CONFIRM_WINDOW_SEC = 300  # 5分钟窗口
+        # 确认窗口：必须 > 实际轮询间隔(约7-9min)，否则2次确认会因窗口超时被重置
+        self.EXIT_CONFIRM_WINDOW_SEC = 1200  # 20分钟窗口
         self.EXIT_CONFIRM_REQUIRED = 2  # 需要2次连续触发
         # 离场动作类型
         self.EXIT_ACT_SIGNAL_REVERSE = "signal_reverse"
@@ -6181,12 +6182,17 @@ class PollingTrader:
                     total += 1
         return total
 
-    def _check_subpool_capacity(self, coin: str) -> Tuple[bool, str]:
+    def _check_subpool_capacity(self, coin: str, source_tag_override: str = "") -> Tuple[bool, str]:
         """开仓前判断该币种对应子池是否还有空闲仓位（R5 铁律）。
+
+        Args:
+            coin: 币种代码
+            source_tag_override: 事件驱动等独立策略可覆盖默认按币名分类的子池标签。
+                                 非空时直接用该标签查子池容量，不再按 BDSM_COINS 归类。
 
         Returns: (passed: bool, reason: str)
         """
-        tag = self._classify_source_tag(coin)
+        tag = source_tag_override or self._classify_source_tag(coin)
         max_pos = int(self.SUBPOOL_MAX_POSITIONS.get(tag, 0) or 0)
         if max_pos <= 0:
             return False, f"子池{tag}配置无效"
@@ -8431,7 +8437,7 @@ class PollingTrader:
           3. 回退：从 entry_price 和 当前 stop_loss_px 反算（注意：此基线会随 _adjust_sl_tp 漂移！仅首次 fallback 用）
         """
         rec = self.position_tracker.get_open_position(inst_id)
-        if rec and rec.base_sl_roi > 0:
+        if rec and rec.base_sl_roi is not None and rec.base_sl_roi > 0:
             return rec.base_sl_roi
         # 新增 B3：稳定缓存优先（TTL 99999，整个持仓生命周期都冻结）
         chit, cval = self._cache_get(("stable_base_sl_roi", inst_id), ttl_cycles=99999)
@@ -8449,7 +8455,7 @@ class PollingTrader:
     def _get_base_tp_roi(self, inst_id: str, entry_price: float = 0.0) -> float:
         """读取开仓时 ATR 基线止盈收益率。（同 _get_base_sl_roi，三重优先级）"""
         rec = self.position_tracker.get_open_position(inst_id)
-        if rec and rec.base_tp_roi > 0:
+        if rec and rec.base_tp_roi is not None and rec.base_tp_roi > 0:
             return rec.base_tp_roi
         chit, cval = self._cache_get(("stable_base_tp_roi", inst_id), ttl_cycles=99999)
         if chit and isinstance(cval, (int, float)) and cval > 0:
@@ -9858,17 +9864,22 @@ class PollingTrader:
         return (now - last_eval) >= self.TRIAL_REEVAL_INTERVAL_SEC
 
     # ── P2: 易经离场浮亏+风险联合强制平仓 ──
-    YIJING_JOINT_LOSS_PCT = -0.03   # 浮亏阈值：≤-3%（保证金收益率）
+    # ★ FIX: 阈值基于价格变动率而非保证金收益率，避免高杠杆持仓因轻微价格波动误触发
+    # 原 upl_ratio=-3%（保证金）对应 4x 杠杆仅价格跌 0.75%，过于激进
+    YIJING_JOINT_LOSS_PCT = -0.05   # 价格变动阈值：≤-5%（基于入场价→当前价，非杠杆收益率）
     YIJING_JOINT_RISK = 0.7         # 风险分阈值：>0.7（低于硬阈值 0.80）
 
-    def _should_joint_force_close(self, upl_ratio: float, risk_score: float) -> bool:
-        """浮亏≥3% 且 风险分>0.7 → 联合触发 FORCE_CLOSE。
+    def _should_joint_force_close(self, price_change_pct: float, risk_score: float) -> bool:
+        """价格跌幅≥5% 且 风险分>0.7 → 联合触发 FORCE_CLOSE。
 
         填补原硬阈值 risk≥0.80 过高导致的盲区：当卦象风险中等偏高(0.7~0.8)
-        且持仓已出现实际亏损(≥3%)时，主动离场而非放任漂移到 SL。
+        且持仓已出现实际价格亏损(≥5%)时，主动离场而非放任漂移到 SL。
         两个条件必须同时满足。
+
+        ★ 注意：price_change_pct 是价格变动率（不带杠杆），不是保证金收益率。
+        避免高杠杆持仓因轻微价格波动被误判为深度亏损。
         """
-        return upl_ratio <= self.YIJING_JOINT_LOSS_PCT and risk_score > self.YIJING_JOINT_RISK
+        return price_change_pct <= self.YIJING_JOINT_LOSS_PCT and risk_score > self.YIJING_JOINT_RISK
 
     def _trigger_bcrm2_retrain(self, coin: str) -> bool:
         """触发 BCRM 2.0 增量重训
@@ -10949,14 +10960,41 @@ class PollingTrader:
             # 硬下限：SL≥4% / TP≥12%，防低波扫损
             # ★ 断点2: event_arbitrage 路径用更紧的 SL 下限 ABS_HARD_SL_PCT(5%)，小止小盈
             _src_tag = str(source_tag or "")
-            _sl_floor_pct = self.ABS_HARD_SL_PCT if _src_tag == "event_arbitrage" else 0.04
+            # ── 参数中心：获取推荐 SL/TP 参数（影子模式） ──
+            # FAIL-OPEN：参数中心不可用时回退到原硬编码逻辑
+            _pc_params = None
+            _pc_recommended = {"sl_floor": 0.04, "tp_floor": 0.12, "atr_mult": 4.5}
+            try:
+                from param_center.api import get_sltp_params as _pc_get_evo
+                _regime_raw = str(_last_kd.get("regime", "chop")).lower() if _last_kd else "chop"
+                if "bull" in _regime_raw or "trend" in _regime_raw and "down" not in _regime_raw:
+                    _regime_for_pc = "bull"
+                elif "bear" in _regime_raw or "down" in _regime_raw:
+                    _regime_for_pc = "bear"
+                else:
+                    _regime_for_pc = "chop"
+                _pc_params = _pc_get_evo(symbol, market_regime=_regime_for_pc)
+                _pc_recommended = {
+                    "sl_floor": _pc_params.sl_floor,
+                    "tp_floor": _pc_params.tp_floor,
+                    "atr_mult": (_pc_params.atr_mult_range[0] + _pc_params.atr_mult_range[1]) / 2.0,
+                }
+            except Exception as _pc_e:
+                self._log(f"[P2-S4b] {symbol} 参数中心查询失败(fail-open): {_pc_e}", "DEBUG")
+
+            _sl_floor_pct = self.ABS_HARD_SL_PCT if _src_tag == "event_arbitrage" else (
+                _pc_params.sl_floor if _pc_params is not None else 0.04
+            )
+            _tp_floor_pct = _pc_params.tp_floor if _pc_params is not None else 0.12
+            _rr_ratio = _pc_params.rr_ratio_target if _pc_params is not None else 3.0
             _atr_mult = {"probe": 4.0, "standard": 4.5, "trend": 5.0}.get(tier, 4.5)
             _atr_pct_here = float(_last_kd.get("atr_pct", 0.0) or 0.0) if _last_kd else 0.0
             if _atr_pct_here <= 0:
                 _atr_pct_here = 0.01  # ATR 缺失兜底 1%
-            _tier_sl_pct = max(_atr_mult * _atr_pct_here, _sl_floor_pct)   # SL 下限（event_arbitrage=5%/通用=4%）
+            _tier_sl_pct = max(_atr_mult * _atr_pct_here, _sl_floor_pct)   # SL 下限（参数中心/硬编码）
             _tier_sl_pct = min(_tier_sl_pct, 0.15)                  # SL 上限 15%
-            _tier_tp_pct = min(_tier_sl_pct * 3.0, 0.30)            # TP=3×SL，上限 30%
+            _tier_tp_pct = max(_tier_sl_pct * _rr_ratio, _tp_floor_pct)  # TP=RR×SL，不低于 tp_floor
+            _tier_tp_pct = min(_tier_tp_pct, 0.30)            # TP 上限 30%
             # regime 调整：震荡态放宽 SL（避免噪音扫损），趋势态 TP 放宽
             _regime = str(_last_kd.get("regime", "")).lower() if _last_kd else ""
             if "ranging" in _regime or "consolidation" in _regime or "mean_revert" in _regime:
@@ -10979,7 +11017,8 @@ class PollingTrader:
                     if _sltp_r.get("ok"):
                         self._log(
                             f"[P2-S4b] {symbol} SL/TP 兜底已设置 | "
-                            f"SL={_sl_px:.6f}({ _tier_sl_pct*100:.1f}%) TP={_tp_px:.6f}({ _tier_tp_pct*100:.1f}%)",
+                            f"SL={_sl_px:.6f}({ _tier_sl_pct*100:.1f}%) TP={_tp_px:.6f}({ _tier_tp_pct*100:.1f}%)"
+                            f" | param_center sl={_pc_recommended['sl_floor']*100:.1f}% tp={_pc_recommended['tp_floor']*100:.1f}%",
                             "INFO",
                         )
                     else:
@@ -10989,6 +11028,20 @@ class PollingTrader:
                         )
             except Exception as _sltp_e:
                 self._log(f"[P2-S4b] {symbol} SL/TP 异常(FAIL-OPEN): {_sltp_e}", "WARN")
+
+            # ── 影子模式：记录参数中心推荐 vs 实际使用偏差 ──
+            try:
+                from param_center.shadow_integration import get_shadow_logger as _get_sl_evo
+                _shadow_logger = _get_sl_evo()
+                _shadow_logger.record_deviation(
+                    symbol=symbol,
+                    recommended=_pc_recommended,
+                    actual_used={"sl_floor": _tier_sl_pct, "tp_floor": _tier_tp_pct, "atr_mult": _atr_mult},
+                    confidence=0.0,
+                    event_type="open",
+                )
+            except Exception as _shadow_e:
+                self._log(f"[P2-S4b] {symbol} 影子偏差记录失败(fail-open): {_shadow_e}", "DEBUG")
 
             # P2-2: 开仓后立即校验 algo SL/TP 单是否真正生效，缺失则重试
             try:
@@ -11741,7 +11794,7 @@ class PollingTrader:
                 self._kline_handler = KlineEventHandler(
                     mode="Phase2",
                     build_position_callback=self._evolution_build_position,
-                    ripple_kwargs={"vol_ratio_threshold": 1.3},  # 训练期：1.3倍量即可触发
+                    ripple_kwargs={"vol_ratio_threshold": 1.1, "liq_change_threshold": 0.10},  # 训练期：1.1倍量+0.10清算变化即可触发
                     project_root=str(_PROJECT_ROOT),  # 反思学习起点：系统级交易索引库（含所有子系统）
                 )
                 # Phase 4.2: 注入 trader 引用，使 bridge 可写回 btc_regime 到战略层状态
@@ -14225,16 +14278,28 @@ class PollingTrader:
                     open_time_sec=float(open_time) if open_time else 0.0,  # v3.0：开仓时间戳
                 )
 
-            # P2: 浮亏≥3% 且 风险分>0.7 → 升级为 FORCE_CLOSE（填补 risk 0.7~0.8 盲区）
+            # P2: 价格跌幅≥5% 且 风险分>0.7 → 升级为 FORCE_CLOSE（填补 risk 0.7~0.8 盲区）
+            # ★ FIX: 用价格变动率（非杠杆保证金收益率）判断亏损，避免高杠杆轻微波动误触发
+            _entry_px = float(entry_price) if entry_price else 0.0
+            _cur_px = float(current_price) if current_price else 0.0
+            if _entry_px > 0 and _cur_px > 0:
+                if pos_side == "long":
+                    _price_change_pct = (_cur_px - _entry_px) / _entry_px
+                else:
+                    _price_change_pct = (_entry_px - _cur_px) / _entry_px
+            else:
+                _price_change_pct = float(upl_ratio)  # fallback to margin ratio if price unavailable
+
             if (yijing_decision
                     and yijing_decision.action != YijingExitAction.FORCE_CLOSE
                     and self._should_joint_force_close(
-                        float(upl_ratio),
+                        _price_change_pct,
                         float(getattr(yijing_decision, "yijing_risk_score", 0.0) or 0.0),
                     )):
                 yijing_decision.action = YijingExitAction.FORCE_CLOSE
                 yijing_decision.reason = (
-                    f"loss_risk_joint(pnl={float(upl_ratio):.2%},"
+                    f"loss_risk_joint(price_chg={_price_change_pct:.2%},"
+                    f"margin_pnl={float(upl_ratio):.2%},"
                     f"risk={float(getattr(yijing_decision, 'yijing_risk_score', 0.0) or 0.0):.2f}):"
                     f"{getattr(yijing_decision, 'reason', '')}"
                 )
@@ -15251,7 +15316,19 @@ class PollingTrader:
             self._log(f"[{coin}] 已达易经系统最大持仓数 {self.max_positions} 跳过")
             return
         # —— R5 铁律 · 子池隔离：BDSM(≤3) vs BCRM(≤5) 互不抢占 ——
-        sub_ok, sub_reason = self._check_subpool_capacity(coin)
+        # ★ FIX: 事件驱动策略（event_boost_applied>0）为独立策略，不归属 BDSM/BCRM 子池，
+        #   使用独立 event_arbitrage 子池，避免被 BDSM 方向约束和容量限制
+        _event_boost = float(inference.get("event_boost_applied", 0.0) or 0.0)
+        _is_event_driven = _event_boost > 0.001
+        if _is_event_driven:
+            inference["source_tag"] = "event_arbitrage"
+            self._log(
+                f"[{coin}] 事件驱动策略独立路径 | event_boost={_event_boost:.3f} "
+                f"→ source_tag=event_arbitrage（绕过 BDSM 约束，独立子池）",
+                "INFO",
+            )
+        _src_tag_override = inference.get("source_tag", "") if _is_event_driven else ""
+        sub_ok, sub_reason = self._check_subpool_capacity(coin, source_tag_override=_src_tag_override)
         if not sub_ok:
             self._log(f"[{coin}] 子池仓位已满 | {sub_reason}（R5 隔离跳过）", "WARN")
             return
@@ -15261,7 +15338,8 @@ class PollingTrader:
         #   LONG_ONLY ∩ BCRM 开 SHORT → DROP→HOLD；SHORT_ONLY 对称；NEUTRAL=放行；非BDSM=放行
         #   FAIL-OPEN：任何异常 → is_pass=True 放行（BCRM 技术方向不受 BDSM 干扰）
         #   开关 enable_bdsm_direction_overlay=False 时跳过叠加，BCRM2.0 技术方向独立决策（A/B 观察用）
-        if getattr(self, "enable_bdsm_direction_overlay", True):
+        #   ★ FIX: 事件驱动策略（event_arbitrage）为独立策略，不受 BDSM 方向约束
+        if getattr(self, "enable_bdsm_direction_overlay", True) and not _is_event_driven:
             _dir_ok, _dir_reason = self._apply_bdsm_direction_constraint(coin, direction)
             if not _dir_ok:
                 self._log(
