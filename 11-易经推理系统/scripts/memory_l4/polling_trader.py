@@ -6169,16 +6169,11 @@ class PollingTrader:
             if tag == "evolution":
                 _snap = getattr(p, "market_snapshot", None) or {}
                 if isinstance(_snap, dict) and str(_snap.get("tier", "")) == "probe":
-                    # ★ P1-1 修复：跳过 OKX 端已不存在的"幽灵持仓"
-                    _p_size = float(getattr(p, "contracts", 0) or getattr(p, "size", 0) or 0)
-                    if _p_size <= 0:
-                        continue
+                    # ★ FIX 2026-10-09: TradeRecord 无 contracts/size 字段，原检查恒 False。
+                    #   幽灵持仓由 sync_okx_positions 清理，此处直接计数。
                     total += 1
             else:
                 if getattr(p, "is_trial", False):
-                    _p_size = float(getattr(p, "contracts", 0) or getattr(p, "size", 0) or 0)
-                    if _p_size <= 0:
-                        continue
                     total += 1
         return total
 
@@ -7566,9 +7561,8 @@ class PollingTrader:
                 return
             for p in positions:
                 try:
-                    _p_size = float(getattr(p, "contracts", 0) or getattr(p, "size", 0) or 0)
-                    if _p_size <= 0:
-                        continue
+                    # ★ FIX 2026-10-09: TradeRecord 无 contracts/size 字段，原检查恒 True 导致所有持仓被跳过。
+                    #   position_tracker 只含开仓记录，直接处理即可。
                     _coin = str(getattr(p, "coin", "") or "")
                     _inst_id = f"{_coin}-USDT-SWAP"
                     _direction = str(getattr(p, "direction", "") or "").lower()
@@ -10614,11 +10608,12 @@ class PollingTrader:
                 )
 
             # 2. evolution 子池仓位计数
+            # ★ FIX 2026-10-09: TradeRecord 无 contracts/size 字段，原条件永远 False 导致计数恒为 0。
+            #   position_tracker.open_positions 只含开仓记录，直接按 source_tag 计数即可；
+            #   幽灵持仓（OKX 已强平）由 sync_okx_positions 定期清理，不在此过滤。
             _evo_count = sum(
                 1 for p in self.position_tracker.all_open_positions()
                 if getattr(p, "source_tag", "") == "evolution"
-                # ★ P1-1 修复：跳过幽灵持仓（合约数为 0 的已强平记录）
-                and float(getattr(p, "contracts", 0) or getattr(p, "size", 0) or 0) > 0
             )
             if _evo_count >= int(self.SUBPOOL_MAX_POSITIONS.get("evolution", 3)):
                 self._log(
@@ -10637,8 +10632,6 @@ class PollingTrader:
             _evo_positions = [
                 p for p in self.position_tracker.all_open_positions()
                 if getattr(p, "source_tag", "") == "evolution"
-                # ★ P1-1 修复：跳过幽灵持仓
-                and float(getattr(p, "contracts", 0) or getattr(p, "size", 0) or 0) > 0
             ]
             if len(_evo_positions) >= 3 and str(tier) != "trend":
                 _evo_long = sum(1 for p in _evo_positions if str(getattr(p, "direction", "")).lower() == "long")
