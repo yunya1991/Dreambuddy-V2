@@ -10965,6 +10965,12 @@ class PollingTrader:
             _pc_params = None
             _pc_recommended = {"sl_floor": 0.04, "tp_floor": 0.12, "atr_mult": 4.5}
             try:
+                import sys as _sys_evo
+                from pathlib import Path as _Path_evo
+                _proj_root_evo = _Path_evo(__file__).resolve().parents[4]
+                _pc_dir_evo = _proj_root_evo / "16-调控系统" / "scripts"
+                if str(_pc_dir_evo) not in _sys_evo.path:
+                    _sys_evo.path.insert(0, str(_pc_dir_evo))
                 from param_center.api import get_sltp_params as _pc_get_evo
                 _regime_raw = str(_last_kd.get("regime", "chop")).lower() if _last_kd else "chop"
                 if "bull" in _regime_raw or "trend" in _regime_raw and "down" not in _regime_raw:
