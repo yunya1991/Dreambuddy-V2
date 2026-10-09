@@ -1,0 +1,19 @@
+[Unit]
+Description=Dreambuddy Yijing Data Server (port 8765)
+After=network.target
+
+[Service]
+Type=simple
+User=luke
+WorkingDirectory=/home/luke/dreambuddy/11-易经推理系统
+Environment=PATH=/home/luke/venv-trading/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONPATH=/home/luke/dreambuddy/11-易经推理系统
+Environment=DATA_SERVER_PORT=8765
+ExecStart=/home/luke/venv-trading/bin/python3 data_server_fixed.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/luke/logs/yijing/data-server.log
+StandardError=append:/home/luke/logs/yijing/data-server-err.log
+
+[Install]
+WantedBy=multi-user.target
