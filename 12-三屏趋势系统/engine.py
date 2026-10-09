@@ -1558,10 +1558,15 @@ def compute_full_trading_signal(
         完整信号结构
     """
     try:
-        from .data.market_data import fetch_candles, resample_candles
+        from data_center.compat.market_compat import fetch_candles, resample_candles
+    except ImportError:
+        try:
+            from .data.market_data import fetch_candles, resample_candles
+        except ImportError:
+            from data.market_data import fetch_candles, resample_candles
+    try:
         from .data.fundamental_data import fetch_fundamental_data
     except ImportError:
-        from data.market_data import fetch_candles, resample_candles
         from data.fundamental_data import fetch_fundamental_data
     import pandas as pd
 
