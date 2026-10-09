@@ -8440,7 +8440,7 @@ class PollingTrader:
             return float(cval)
         # 回退：从 entry_price 和 stop_loss 反算（如果有的话）
         if rec and entry_price > 0 and rec.market_snapshot:
-            sl_px = rec.market_snapshot.get("stop_loss_px", 0)
+            sl_px = rec.market_snapshot.get("stop_loss_px", 0) or 0
             if sl_px > 0:
                 leverage = self._get_leverage()
                 price_pct = abs(sl_px - entry_price) / entry_price
@@ -8456,7 +8456,7 @@ class PollingTrader:
         if chit and isinstance(cval, (int, float)) and cval > 0:
             return float(cval)
         if rec and entry_price > 0 and rec.market_snapshot:
-            tp_px = rec.market_snapshot.get("take_profit_px", 0)
+            tp_px = rec.market_snapshot.get("take_profit_px", 0) or 0
             if tp_px > 0:
                 leverage = self._get_leverage()
                 price_pct = abs(tp_px - entry_price) / entry_price
