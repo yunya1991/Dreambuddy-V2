@@ -13,6 +13,8 @@
 | [认知系统架构.md](./认知系统架构.md) | 4-MEMORY系统结构说明 |
 | [记忆类型映射.md](./记忆类型映射.md) | S/A/B/C/D级记忆→知识库域的映射 |
 | [检索指南.md](./检索指南.md) | 如何通过recall检索认知记忆 |
+| [SKILL_IMITATION_EVOLUTION_SPEC.md](../../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) | **SIE-SPEC v0.3** — 路径B模仿+路径C联网兜底+ImitationCounter+token埋点（172/172 GREEN） |
+| [SPEC-20261009-SOLUTION-PATTERN-LEARNER.md](../../3.1-FRONTEND/docs/SPEC-20261009-SOLUTION-PATTERN-LEARNER.md) | **SPL v0.3** — SolutionPatternLearner 全链路训练蒸馏：TDR+VQ-VAE+5层训练循环+评估层+MCTS反思+漂移检测（271/271 GREEN） |
 
 ## 与4-MEMORY的关系
 
@@ -29,4 +31,4 @@
 
 ---
 
-_最后更新：2026-08-30 | 来源：知识库增量重构方案A_
+_最后更新：2026-10-09 | 来源：知识库增量重构方案A + dream-doc-sync-workflow (SIE-SPEC v0.3 + SPL v0.3 落地)_
