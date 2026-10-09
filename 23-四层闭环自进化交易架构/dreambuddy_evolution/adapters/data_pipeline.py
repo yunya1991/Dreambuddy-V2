@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 from .cognitive_bridge import CognitiveBridge
@@ -27,6 +28,7 @@ from .coin_scanner import CoinScanner
 from .ftc_orchestrator import FTCOrchestrator
 from .ftc_executor import evaluate_ftc
 from ..core.event_window_tracker import EventWindowTracker
+from ..core.general_event_window_tracker import GeneralEventWindowTracker
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +79,8 @@ class DataPipelineAdapter:
             self._ftc_orch = None
         # Phase 9: 事件驱动策略 — FOMC 周期 + 宏观事件注入
         self._event_tracker = EventWindowTracker()
+        # SPEC-Phase2 §8.3: 通用事件窗口追踪器（tech_upgrade/congressional_hearing 等轨道A事件）
+        self._general_event_tracker = GeneralEventWindowTracker()
 
     def assemble(self, symbol: str, inst_id: str) -> dict[str, Any]:
         """
@@ -571,7 +575,130 @@ class DataPipelineAdapter:
                 cesi = surprise / abs(forecast_val)
                 break
 
+        # 7. SPEC-Phase2 §8.3: 通用事件窗口路由（tech_upgrade 等轨道A事件）
+        #    优先级：event 阶段 > expectation 阶段；通用事件活跃则覆盖 FOMC context
+        event_ctx = self._route_general_events(event_ctx, now)
+
         return event_ctx, cesi
+
+    def _route_general_events(
+        self, event_ctx: dict[str, Any], now: datetime
+    ) -> dict[str, Any]:
+        """SPEC-Phase2 §8.3: 通用事件窗口路由。
+
+        查询 tech_upgrade（CoinMarketCal）/ congressional_hearing 等轨道A事件，
+        用 GeneralEventWindowTracker 计算窗口，按阶段优先级与 FOMC context 竞争：
+          - event 阶段优先级最高（4）
+          - expectation 阶段次之（digest=3, rise=2, build=1）
+          - post_event/repricing/pre_event=1
+          - neutral=0
+        若通用事件优先级 >= 当前 FOMC 阶段，则覆盖 event_ctx。
+
+        FAIL-OPEN: 查询/解析失败返回原 event_ctx。
+        """
+        if self._data_center is None:
+            return event_ctx
+
+        # 收集所有轨道A事件（tech_upgrade + congressional_hearing）
+        all_events: list[dict[str, Any]] = []
+        try:
+            all_events += [
+                {**e, "_event_type": "tech_upgrade"}
+                for e in self._data_center.query_coinmarketcal_events()
+            ]
+        except Exception as e:
+            logger.debug("[FO] query_coinmarketcal_events fail: %s", e)
+        try:
+            all_events += [
+                {**e, "_event_type": "congressional_hearing"}
+                for e in self._data_center.query_congressional_hearings()
+            ]
+        except Exception as e:
+            logger.debug("[FO] query_congressional_hearings fail: %s", e)
+
+        if not all_events:
+            return event_ctx
+
+        # 阶段优先级
+        phase_priority = {
+            "event": 4,
+            "expectation_digest": 3,
+            "expectation_rise": 2,
+            "expectation_build": 1,
+            "post_event": 1,
+            "repricing": 1,
+            "pre_event": 1,
+            "neutral": 0,
+        }
+
+        best_ctx: dict[str, Any] | None = None
+        best_event_type: str = ""
+        best_priority = phase_priority.get(event_ctx.get("cycle_phase", "neutral"), 0)
+
+        for ev in all_events:
+            event_date_str = ev.get("event_date", "")
+            if not event_date_str:
+                continue
+            event_dt = None
+            for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"):
+                try:
+                    if fmt == "%Y-%m-%d":
+                        event_dt = datetime.strptime(event_date_str, fmt).replace(
+                            tzinfo=timezone.utc
+                        )
+                    else:
+                        event_dt = datetime.fromisoformat(
+                            event_date_str.replace("Z", "+00:00")
+                        )
+                    break
+                except Exception:
+                    continue
+            if event_dt is None:
+                continue
+
+            direction = ev.get("direction", "neutral")
+            event_type = ev.get("_event_type", "tech_upgrade")
+            try:
+                gen_ctx = self._general_event_tracker.get_context(
+                    event_type=event_type,
+                    event_date=event_dt,
+                    event_direction=direction,
+                    now=now,
+                )
+            except Exception as e:
+                logger.debug("[FO] GeneralEventWindowTracker.get_context fail: %s", e)
+                continue
+
+            if not gen_ctx.get("in_event_cycle", False):
+                continue
+
+            cur_phase = gen_ctx.get("cycle_phase", "neutral")
+            cur_priority = phase_priority.get(cur_phase, 0)
+            if cur_priority >= best_priority:
+                best_priority = cur_priority
+                best_ctx = gen_ctx
+                best_event_type = event_type
+
+        if best_ctx is not None:
+            # 合并：保留 FOMC 的 raw/fedwatch 等字段，覆盖窗口关键字段
+            merged = dict(event_ctx)
+            for k in (
+                "cycle_phase",
+                "event_window",
+                "in_event_cycle",
+                "days_to_event",
+                "days_since_event",
+                "dominant_direction",
+                "half_life",
+            ):
+                if k in best_ctx:
+                    merged[k] = best_ctx[k]
+            # GeneralEventWindowTracker 不返回 event_type，显式标注
+            merged["event_type"] = best_event_type
+            merged["raw"] = best_ctx.get("raw", {})
+            return merged
+
+        return event_ctx
 
     # ---------------------------------------------------------- 认知系统
     def get_cognitive_bridge(self) -> CognitiveBridge:

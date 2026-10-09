@@ -1,14 +1,16 @@
 /**
  * CognitiveContextBuilder — 认知上下文构建层
  * ==========================================
- * 意图识别后，并行调用四大系统构建统一认知上下文：
+ * 意图识别后，并行调用六大系统构建统一认知上下文：
  *   1. 认知系统 recall（历史经验）
  *   2. 知识库 RAG（相关知识）
  *   3. 索引系统 IndexQueryService（文档/代码定位）
  *   4. SKILL 注册中心（候选 SKILL）
+ *   5. TDR 案例检索（SolutionPatternLearner v0.3 新增）
+ *   6. CVG 交叉验证（SolutionPatternLearner v0.4 新增）
  *
  * 设计原则（HC-7/9）：
- *   - 四系统并行调用，总延迟 ≤ 2s（P95）
+ *   - 六系统并行调用，总延迟 ≤ 2s（P95）
  *   - 任一系统超时/失败则跳过，不阻塞整体（FAIL-OPEN）
  *   - 只读，不修改任何源系统数据
  *   - 各 top_k=5，避免上下文膨胀
@@ -20,6 +22,17 @@ import { callCognitive } from './cognitive-client';
 import { retrieveRelevantChunks } from './knowledge-rag';
 import { getSkillSelector, type IntentResult } from './skill-selector';
 import * as Path from 'path';
+
+// SPL v0.3/v0.4 新增导入
+import { CaseRetriever, type RetrievalResult } from './case-retriever';
+import { getCaseBankClient, type SolutionCase } from './case-bank-client';
+import { getSolutionEncoder } from './solution-encoder';
+import {
+  CrossValidationGateSPL,
+  PatternAggregator,
+  SolutionPatternValidator,
+  type CrossValidationResult,
+} from './cross-validation-gate-spl';
 
 // ============================================================
 // 1. 类型定义（对齐 SPEC §3.0）
@@ -34,6 +47,10 @@ export interface CognitiveContext {
   intent_type: string;
   /** SIE-SPEC §5.1 P1: 模仿上下文（路径 B/C 文档检索/调研报告注入） */
   imitation_context?: ImitationContext;
+  /** SPL v0.3: TDR 案例检索结果（第5系统） */
+  solution_cases: SolutionCase[];
+  /** SPL v0.4: 交叉验证结果（第6系统，开关关闭或冷启动时为 null） */
+  cvg_result: CrossValidationResult | null;
 }
 
 /**
@@ -89,6 +106,12 @@ const CONTEXT_CONFIG = {
   total_timeout_ms: 2000,   // 总超时（HC-9）
   per_system_top_k: 5,      // 每个系统返回 top_k（避免膨胀）
   min_quality: 'C',         // 认知系统最低质量等级
+};
+
+// SPL v0.4 配置（4 开关默认全 false）
+const SPL_CONFIG = {
+  enable_cross_validation_gate: process.env.SPL_ENABLE_CVG === 'true',
+  cvg_cold_start_threshold: 200, // TDR < 200 禁用 CVG（§11.11 风险缓解）
 };
 
 // ============================================================
@@ -235,6 +258,66 @@ async function fetchSkillCandidates(
   }
 }
 
+/**
+ * SPL v0.3: TDR 案例检索（第5系统）
+ * 通过 CaseRetriever 调用 Soft Q-Learning 检索策略
+ * FAIL-OPEN: CaseBankClient/SolutionEncoder 不可用 → 空数组
+ */
+async function fetchSolutionCases(query: string): Promise<SolutionCase[]> {
+  try {
+    const client = getCaseBankClient();
+    const encoder = getSolutionEncoder();
+    const retriever = new CaseRetriever({ caseBankClient: client, solutionEncoder: encoder });
+    const result = await retriever.retrieve(query, CONTEXT_CONFIG.per_system_top_k);
+    return result.cases;
+  } catch {
+    return []; // FAIL-OPEN
+  }
+}
+
+/**
+ * SPL v0.4: CVG 交叉验证（第6系统）
+ * 输入：TDR 检索结果 + 当前 query 的 actions 近似
+ * 输出：confidence_mult + layer_weight_adjustment
+ * 开关关闭或冷启动期（TDR < 200）→ null
+ */
+async function fetchCVGResult(solutionCases: SolutionCase[]): Promise<CrossValidationResult | null> {
+  // 开关检查
+  if (!SPL_CONFIG.enable_cross_validation_gate) return null;
+  // 冷启动检查
+  if (solutionCases.length === 0) return null;
+
+  try {
+    const aggregator = new PatternAggregator();
+    const validator = new SolutionPatternValidator();
+    const gate = new CrossValidationGateSPL();
+
+    // A_dim: 从 solution_cases 的 actions 提取当前范式近似
+    const allActions = solutionCases.flatMap((c) => c.actions);
+    const aResult = aggregator.aggregate(allActions);
+
+    // G_dim: 从 solution_cases 提取过去范式
+    const gResult = validator.validate(
+      solutionCases.map((c) => ({
+        actions: c.actions,
+        outcome: c.outcome,
+        quality: c.quality,
+      })),
+    );
+
+    // drift = false（build 阶段无漂移数据）
+    return gate.compare(
+      gResult.dim,
+      gResult.confidence,
+      aResult.dim,
+      aResult.strength,
+      false,
+    );
+  } catch {
+    return null; // FAIL-OPEN
+  }
+}
+
 // ============================================================
 // 4. CognitiveContextBuilder 主类
 // ============================================================
@@ -254,8 +337,8 @@ export class CognitiveContextBuilder {
   ): Promise<CognitiveContext> {
     const query = intent_text || intent_type;
 
-    // 四系统并行调用，总超时 2s
-    const [experiences, knowledge, references, skill_candidates] = await Promise.all([
+    // 前五系统并行调用，总超时 2s
+    const [experiences, knowledge, references, skill_candidates, solution_cases] = await Promise.all([
       withTimeout(
         () => fetchExperiences(query, entities),
         CONTEXT_CONFIG.total_timeout_ms,
@@ -284,7 +367,17 @@ export class CognitiveContextBuilder {
         [] as SkillCapability[],
         'skill-registry',
       ),
+      // SPL v0.3: 第5系统 TDR 案例检索
+      withTimeout(
+        () => fetchSolutionCases(query),
+        CONTEXT_CONFIG.total_timeout_ms,
+        [] as SolutionCase[],
+        'solution-cases',
+      ),
     ]);
+
+    // SPL v0.4: 第6系统 CVG（依赖 solution_cases，非并行）
+    const cvg_result = await fetchCVGResult(solution_cases);
 
     return {
       experiences,
@@ -293,6 +386,8 @@ export class CognitiveContextBuilder {
       skill_candidates,
       built_at: Date.now(),
       intent_type,
+      solution_cases,
+      cvg_result,
     };
   }
 
@@ -302,7 +397,8 @@ export class CognitiveContextBuilder {
       ctx.experiences.length > 0 ||
       ctx.knowledge.length > 0 ||
       ctx.references.length > 0 ||
-      ctx.skill_candidates.length > 0
+      ctx.skill_candidates.length > 0 ||
+      ctx.solution_cases.length > 0
     );
   }
 }

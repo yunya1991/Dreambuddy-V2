@@ -18,6 +18,7 @@ import { ReportExport } from './ReportExport';
 import { EnhancementHints } from './EnhancementHints';
 import { InsightCard } from './InsightCard';
 import { RecommendationCard } from './RecommendationCard';
+import { SynthesisChart } from './SynthesisChart';
 
 /**
  * ChatPanel — 聊天主面板 (DREAM OS 核心交互入口)
@@ -34,11 +35,11 @@ export function ChatPanel() {
   const {
     activeSessionId, messages, isStreaming, streamingContent,
     sLayerIntent, sessions, lastIntent, lastReportId, lastTaskStatus,
-    pendingStepConfirmation, lastSynthesis,
+    pendingStepConfirmation, lastSynthesis, lastChartSpecs,
     createSession, setActiveSession, addMessage,
     setStreaming, setSLayerIntent,
     setCurrentTaskId, setLastIntent, setLastTaskStatus, setLastReportId,
-    setPendingStepConfirmation,
+    setPendingStepConfirmation, setLastChartSpecs,
   } = useSessionStore();
 
   const { resetChain } = useChainStore();
@@ -272,6 +273,13 @@ export function ChatPanel() {
                       >
                         📋 查看完整报告 →
                       </Link>
+                    </div>
+                  )}
+                  {lastChartSpecs && lastChartSpecs.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 p-3 bg-gray-800/40 rounded-lg border border-gray-700/30">
+                      {lastChartSpecs.map((chart, ci) => (
+                        <SynthesisChart key={ci} chart={chart} />
+                      ))}
                     </div>
                   )}
                   <InsightCard

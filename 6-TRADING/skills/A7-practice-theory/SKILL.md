@@ -1,3 +1,12 @@
+---
+name: A7-practice-theory
+description: "📘 A7 实践论SKILL v2.1 - 交易实践指导框架 (正式上线版)"
+version: 1.0.0
+status: active
+category: trading
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

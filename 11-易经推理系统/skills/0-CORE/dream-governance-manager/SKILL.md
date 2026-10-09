@@ -1,3 +1,12 @@
+---
+name: dream-governance-manager
+description: "Dream-MultiSkill 治理管理 SKILL v1.0"
+version: 1.0.0
+status: active
+category: core
+triggers: ["`运营健康检查`", "`治理检查`", "`合规检查`"]
+---
+
 ## Autonomy Boundary
 
 可自主执行：

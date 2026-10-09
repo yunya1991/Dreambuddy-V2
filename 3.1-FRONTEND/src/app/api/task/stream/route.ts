@@ -311,9 +311,9 @@ export async function POST(request: NextRequest) {
           execution_summary: result.execution_summary,
           metadata: result.metadata,
           chain_trace,
-          // 缺口4: 顶层暴露图架构上下文数据，便于前端 G 层消费
           graph_reflection: (result.execution_summary as any)?.graph_reflection || null,
           trade_requires_confirmation: result.status === 'completed' && task.intent.type === 'execute_trade',
+          chart_specs: result.chart_specs || [],
         });
       } else {
         sendEvent('done', {

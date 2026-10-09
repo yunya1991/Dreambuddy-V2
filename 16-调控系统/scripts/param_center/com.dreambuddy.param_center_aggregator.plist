@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dreambuddy.param_center_aggregator</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/anaconda3/bin/python3</string>
+        <string>param_center/runner.py</string>
+        <string>--symbol</string>
+        <string>BTC,ETH,SOL,BNB,OKB,UNI,HYPE,PUMP,ZEC,ARB,LINK,XAU,XAG,MU,GOOGL,NVDA,AMZN,SNDK,SPCX,MSTR,COIN,CRCL,BMNR</string>
+        <string>--regime</string>
+        <string>chop</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts</string>
+    <key>StartInterval</key>
+    <integer>3600</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/logs/param_center_aggregator.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/logs/param_center_aggregator.err.log</string>
+</dict>
+</plist>

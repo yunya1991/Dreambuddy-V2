@@ -18,6 +18,32 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from data_center.core.contract import DataRecord
+
+
+def _json_default(obj: Any) -> Any:
+    """JSON default 处理器：兼容 numpy/pandas 数值类型（int64/float64 等）。
+
+    根因 2026-10-09：odaily_newsflash 等采集器返回的 metrics/raw 中可能含 numpy int64，
+    json.dumps 报 TypeError: Object of type int64 is not JSON serializable，导致新闻数据无法入库，
+    事件驱动策略因无新闻事件而长期无持仓。
+    """
+    try:
+        import numpy as np
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+    except ImportError:
+        pass
+    try:
+        import pandas as pd
+        if isinstance(obj, (pd.Timestamp,)):
+            return obj.isoformat()
+    except ImportError:
+        pass
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 from data_center.monitoring.alerting import Alert
 from data_center.monitoring.metrics import InvocationMetric
 from data_center.monitoring.quality import QualityIssue
@@ -125,10 +151,10 @@ class SqliteSink:
                 _INSERT_SQL,
                 (
                     key, r.source, r.category, r.sub_category, r.timestamp,
-                    json.dumps(r.metrics, ensure_ascii=False),
-                    json.dumps(r.events, ensure_ascii=False),
-                    json.dumps(r.timeseries, ensure_ascii=False),
-                    json.dumps(r.raw, ensure_ascii=False),
+                    json.dumps(r.metrics, ensure_ascii=False, default=_json_default),
+                    json.dumps(r.events, ensure_ascii=False, default=_json_default),
+                    json.dumps(r.timeseries, ensure_ascii=False, default=_json_default),
+                    json.dumps(r.raw, ensure_ascii=False, default=_json_default),
                     r.schema_version,
                 ),
             )
@@ -327,7 +353,7 @@ class SqliteSink:
                     q.code.value if hasattr(q.code, "value") else str(q.code),
                     q.message,
                     metric.invocation_id,
-                    json.dumps(q.extra, ensure_ascii=False) if q.extra else None,
+                    json.dumps(q.extra, ensure_ascii=False, default=_json_default) if q.extra else None,
                 ),
             )
         conn.commit()
@@ -365,7 +391,7 @@ class SqliteSink:
                 alert.level.value if hasattr(alert.level, "value") else str(alert.level),
                 alert.title,
                 alert.message,
-                json.dumps(alert.tags, ensure_ascii=False),
+                json.dumps(alert.tags, ensure_ascii=False, default=_json_default),
             ),
         )
         conn.commit()

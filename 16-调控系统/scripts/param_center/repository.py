@@ -45,6 +45,12 @@ _DEFAULT_REGIME = "chop"
 # 默认缓存 TTL（5 分钟）
 _DEFAULT_TTL = 300
 
+# 聚合缓存 TTL（2 小时 > scheduler 1 小时间隔，确保聚合参数不会在两次调度间过期）
+_AGGREGATED_TTL = 7200
+
+# 聚合缓存持久化文件（跨进程共享：runner 写入 → polling_trader 读取）
+_AGGREGATED_CACHE_FILE = _THIS.parent / "data" / "aggregated_params.json"
+
 
 # ============================================================================
 # 模块级底层查询函数（便于测试 patch）
@@ -77,6 +83,69 @@ class ParamRepository:
         # 聚合缓存：runner 写入的动态参数，优先级高于静态表
         # value: (SLTPParams, timestamp, confidence)
         self._aggregated_cache: Dict[Tuple[str, str], Tuple[SLTPParams, float, float]] = {}
+        # 磁盘加载频率限制（避免每次 get 都读文件）
+        self._last_disk_load: float = 0.0
+        self._disk_load_interval: float = 60.0  # 最少 60 秒重新加载一次
+        # 从磁盘加载聚合缓存（跨进程共享）
+        self._load_aggregated_from_disk()
+
+    def _load_aggregated_from_disk(self) -> None:
+        """从 JSON 文件加载聚合缓存（跨进程共享）。"""
+        self._last_disk_load = time.time()
+        try:
+            if not _AGGREGATED_CACHE_FILE.exists():
+                return
+            import json
+            data = json.loads(_AGGREGATED_CACHE_FILE.read_text(encoding="utf-8"))
+            now = time.time()
+            loaded = 0
+            for key_str, entry in data.items():
+                # key_str 格式: "BTC|chop"
+                parts = key_str.split("|", 1)
+                if len(parts) != 2:
+                    continue
+                symbol_up, regime = parts[0], parts[1]
+                params_dict = entry.get("params", {})
+                ts = float(entry.get("ts", 0))
+                conf = float(entry.get("conf", 0.0))
+                # 跳过过期数据
+                if (now - ts) > self._cache_ttl * 6:  # 持久化容忍 6 倍 TTL
+                    continue
+                params = SLTPParams(
+                    sl_floor=float(params_dict.get("sl_floor", 0.04)),
+                    tp_floor=float(params_dict.get("tp_floor", 0.12)),
+                    rr_ratio_target=float(params_dict.get("rr_ratio_target", 2.4)),
+                    atr_mult_range=tuple(params_dict.get("atr_mult_range", (3.5, 5.0))),
+                )
+                self._aggregated_cache[(symbol_up, regime)] = (params, ts, conf)
+                loaded += 1
+            if loaded:
+                logger.info("ParamRepository: 从磁盘加载聚合缓存 %d 条", loaded)
+        except Exception as exc:
+            logger.warning("加载聚合缓存失败: %s", exc)
+
+    def _save_aggregated_to_disk(self) -> None:
+        """将聚合缓存持久化到 JSON 文件（供 polling_trader 进程读取）。"""
+        try:
+            import json
+            data = {}
+            for (symbol_up, regime), (params, ts, conf) in self._aggregated_cache.items():
+                data[f"{symbol_up}|{regime}"] = {
+                    "params": {
+                        "sl_floor": params.sl_floor,
+                        "tp_floor": params.tp_floor,
+                        "rr_ratio_target": params.rr_ratio_target,
+                        "atr_mult_range": list(params.atr_mult_range),
+                    },
+                    "ts": ts,
+                    "conf": conf,
+                }
+            _AGGREGATED_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            _AGGREGATED_CACHE_FILE.write_text(
+                json.dumps(data, indent=2), encoding="utf-8"
+            )
+        except Exception as exc:
+            logger.warning("保存聚合缓存失败: %s", exc)
 
     def get(
         self,
@@ -102,13 +171,22 @@ class ParamRepository:
         regime = market_regime or _DEFAULT_REGIME
         cache_key = (symbol_up, regime)
 
-        # 0. 聚合缓存优先（runner 写入的动态参数，TTL 同静态缓存）
+        # 0. 聚合缓存优先（runner 写入的动态参数）
+        # 聚合缓存 TTL 比静态缓存长（2 小时 > scheduler 1 小时间隔）
         if use_cache:
             agg = self._aggregated_cache.get(cache_key)
             if agg is not None:
                 params, ts, _conf = agg
-                if (time.time() - ts) < self._cache_ttl:
+                if (time.time() - ts) < _AGGREGATED_TTL:
                     return params
+            # 聚合缓存未命中或过期 → 从磁盘重新加载（scheduler 可能更新了）
+            if (time.time() - self._last_disk_load) > self._disk_load_interval:
+                self._load_aggregated_from_disk()
+                agg = self._aggregated_cache.get(cache_key)
+                if agg is not None:
+                    params, ts, _conf = agg
+                    if (time.time() - ts) < _AGGREGATED_TTL:
+                        return params
 
         # 1. 缓存命中
         if use_cache:
@@ -150,6 +228,8 @@ class ParamRepository:
         symbol_up = (symbol or "").upper().strip() or "BTC"
         regime = regime or _DEFAULT_REGIME
         self._aggregated_cache[(symbol_up, regime)] = (params, time.time(), confidence)
+        # 持久化到磁盘（供 polling_trader 进程读取）
+        self._save_aggregated_to_disk()
 
     def invalidate(self, symbol: str = None, regime: str = None) -> None:
         """主动失效缓存。

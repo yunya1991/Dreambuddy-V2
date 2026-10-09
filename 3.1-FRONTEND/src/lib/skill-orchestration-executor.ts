@@ -38,6 +38,25 @@ import { getKnowledgeIngester } from './knowledge-ingest';
 import { getEvolutionAgent } from './evolution-agent';
 import { getImitationCounter } from './imitation-counter';
 import type { PlannerProgressEvent } from './planner/planner-types';
+
+// ── Token 消耗估算（可观测性埋点，§3.5） ──
+// 估算规则: tokens ≈ chars / 4（标准 char-to-token 比率）
+function estimateTokens(text: string): number {
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
+}
+interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+function makeTokenUsage(inputTokens: number, outputTokens: number): TokenUsage {
+  return {
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    total_tokens: inputTokens + outputTokens,
+  };
+}
 import type { TaskFile } from './task-manager';
 
 // ============================================================
@@ -214,6 +233,90 @@ export async function executeSkillOrchestration(
       });
 
       try {
+        // SPL P1-3: 先检查 TDR 案例检索结果（CognitiveContextBuilder 第5系统已在 build() 中检索）
+        if (context.solution_cases && context.solution_cases.length > 0) {
+          const bestCase = context.solution_cases[0];
+          const docContext = `## 历史解题模式\n意图: ${bestCase.intent}\n动作: ${bestCase.actions.join(' → ')}\n结果: ${bestCase.outcome_text}\n经验: ${bestCase.learned.join('; ')}`;
+
+          onProgress?.({
+            type: 'step_start',
+            stepId: 'IMITATION',
+            message: isZh ? `路径 B (SPL): 案例注入执行 (source: ${bestCase.id})` : `Path B (SPL): Case-injected (source: ${bestCase.id})`,
+            timestamp: Date.now(),
+            data: { imitation_required: true, case_source: bestCase.id, case_quality: bestCase.quality },
+          });
+
+          const engine = getDSHExecutionEngine();
+          const knownComponents = engine.get_known_components();
+          const imitationPlan = {
+            ...plan,
+            skill_ids: plan.skill_ids || ['simple_qa'],
+            order: plan.order || ['simple_qa'],
+            params: { document_context: docContext, known_components: knownComponents, case_source: bestCase.id },
+          };
+          const skillResults: SkillResult[] = await engine.execute_plan(imitationPlan);
+
+          // ImitationCounter 计数（保留兜底）
+          const counter = getImitationCounter();
+          const incrementResult = counter.increment(message, [], JSON.stringify(imitationPlan.params));
+
+          const content = skillResults.map(r => typeof r.content === 'string' ? r.content : JSON.stringify(r.content)).join('\n\n');
+          const bTokenUsage = makeTokenUsage(estimateTokens(message) + estimateTokens(docContext), estimateTokens(content));
+
+          onProgress?.({
+            type: 'step_end',
+            stepId: 'IMITATION',
+            message: isZh ? `SPL 案例注入执行完成 (count ${incrementResult.current_count}/3)` : `SPL case-injected done (count ${incrementResult.current_count}/3)`,
+            timestamp: Date.now(),
+            data: { imitation_required: true, case_source: bestCase.id, count: incrementResult.current_count, token_usage: bTokenUsage },
+          });
+
+          // P1-4: 执行反馈回写 TDR（FAIL-OPEN）
+          try {
+            const { getCaseBankClient } = await import('./case-bank-client');
+            const bankClient = getCaseBankClient();
+            const outcomeText = skillResults.length > 0 && content ? '完成' : '失败';
+            await bankClient.store({
+              intent: message,
+              actions: bestCase.actions,
+              outcome_text: outcomeText,
+              learned: bestCase.learned.length > 0 ? bestCase.learned : ['SPL replay'],
+              message_id: `spl-replay-${Date.now()}`,
+              message_summary_time: new Date().toISOString().replace('T', ' ').slice(0, 19),
+              tags: ['spl-replay', `source:${bestCase.id}`],
+              source: 'spl-path-b',
+            });
+          } catch {
+            // FAIL-OPEN: 回写失败不影响主链路
+          }
+
+          return {
+            content: content || (isZh ? '案例注入执行完成' : 'Case-injected execution done'),
+            content_type: 'markdown' as const,
+            confidence: 0.6,
+            human_review_required: false,
+            execution_summary: {
+              chain_executed: ['IMITATION'],
+              total_steps: 1,
+              skipped_steps: [],
+              intent_recognized: intentResult.type,
+              total_time_ms: Date.now() - startTime,
+              orchestration_mode: 'skill_orchestration' as const,
+              source_stats: { node: 0, llm: skillResults.length, mixed: 0 },
+            },
+            metadata: {
+              executor: 'skill_orchestration' as const,
+              skill_ids: ['IMITATION'],
+              match_reasons: ['spl: case-injected execution'],
+              imitation_path: 'B-SPL' as const,
+              case_source: bestCase.id,
+              token_usage: bTokenUsage,
+            },
+            artifacts_produced: [],
+            execution_time_ms: Date.now() - startTime,
+          };
+        }
+
         // Step 2.3: 调 index_query_service 检索文档（通过 DSH IPC 调 Python 索引服务）
         // 尝试通过 DSH handler 调用文档检索
         const { callDshHandler } = await import('./dsh-execution-engine');
@@ -227,12 +330,14 @@ export async function executeSkillOrchestration(
           docResults = [];
         }
 
+        const docContentRaw = docResults.map((d: any) => d.content || d.text || JSON.stringify(d)).join('\n\n');
+
         onProgress?.({
           type: 'step_end',
           stepId: 'IMITATION',
           message: isZh ? `文档检索: ${docResults.length} 条命中` : `Doc retrieval: ${docResults.length} hits`,
           timestamp: Date.now(),
-          data: { doc_count: docResults.length, imitation_required: true },
+          data: { doc_count: docResults.length, imitation_required: true, token_usage: makeTokenUsage(estimateTokens(message), estimateTokens(docContentRaw)) },
         });
 
         if (docResults.length > 0) {
@@ -240,7 +345,7 @@ export async function executeSkillOrchestration(
           // 获取白名单约束（M-2 修复）
           const engine = getDSHExecutionEngine();
           const knownComponents = engine.get_known_components();
-          const docContext = docResults.map((d: any) => d.content || d.text || JSON.stringify(d)).join('\n\n');
+          const docContext = docContentRaw;
 
           // SIE-SPEC §5.1 P1: 将文档检索结果注入 imitation_context
           const docRefs: IndexReference[] = docResults.map((d: any) => ({
@@ -271,6 +376,10 @@ export async function executeSkillOrchestration(
             JSON.stringify(imitationPlan.params),
           );
 
+          // 构造返回结果（模仿执行成功）
+          const content = skillResults.map(r => typeof r.content === 'string' ? r.content : JSON.stringify(r.content)).join('\n\n');
+          const bTokenUsage = makeTokenUsage(estimateTokens(message) + estimateTokens(docContext), estimateTokens(content));
+
           onProgress?.({
             type: 'step_end',
             stepId: 'IMITATION',
@@ -278,11 +387,8 @@ export async function executeSkillOrchestration(
               ? `模仿执行完成，计数 ${incrementResult.current_count}/${counter.constructor.name === 'IMITATION_THRESHOLD' ? 3 : 3}`
               : `Imitation done, count ${incrementResult.current_count}/3`,
             timestamp: Date.now(),
-            data: { imitation_required: true, count: incrementResult.current_count, triggered: incrementResult.triggered },
+            data: { imitation_required: true, count: incrementResult.current_count, triggered: incrementResult.triggered, token_usage: bTokenUsage },
           });
-
-          // 构造返回结果（模仿执行成功）
-          const content = skillResults.map(r => typeof r.content === 'string' ? r.content : JSON.stringify(r.content)).join('\n\n');
           return {
             content: content || (isZh ? '模仿执行完成（基于文档）' : 'Imitation executed (based on docs)'),
             content_type: 'markdown' as const,
@@ -303,6 +409,7 @@ export async function executeSkillOrchestration(
               match_reasons: ['imitation: document-based execution'],
               imitation_path: 'B',
               imitation_context: enrichedContext.imitation_context,
+              token_usage: bTokenUsage,
             },
             artifacts_produced: [],
             execution_time_ms: Date.now() - startTime,
@@ -362,16 +469,18 @@ export async function executeSkillOrchestration(
               // knowledge-ingest 失败不阻塞
             }
 
+            // 构造返回结果（路径 C 成功）
+            const content = skillResults.map(r => typeof r.content === 'string' ? r.content : JSON.stringify(r.content)).join('\n\n');
+            const cTokenUsage = makeTokenUsage(estimateTokens(message) + estimateTokens(researchReport), estimateTokens(content));
+
             onProgress?.({
               type: 'step_end',
               stepId: 'RESEARCH',
               message: isZh ? `联网调研完成，报告 ${researchReport.length} 字` : `Research done, report ${researchReport.length} chars`,
               timestamp: Date.now(),
-              data: { research_triggered: true, report_size: researchReport.length, sedimentation: 'proposed' },
+              data: { research_triggered: true, report_size: researchReport.length, sedimentation: 'proposed', token_usage: cTokenUsage },
             });
 
-            // 构造返回结果（路径 C 成功）
-            const content = skillResults.map(r => typeof r.content === 'string' ? r.content : JSON.stringify(r.content)).join('\n\n');
             return {
               content: content || (isZh ? '基于联网调研结果执行' : 'Executed based on research'),
               content_type: 'markdown' as const,
@@ -393,6 +502,7 @@ export async function executeSkillOrchestration(
                 imitation_path: 'C',
                 sedimentation_status: 'proposed',
                 imitation_context: enrichedContext.imitation_context,
+                token_usage: cTokenUsage,
               },
               artifacts_produced: [],
               execution_time_ms: Date.now() - startTime,
@@ -400,12 +510,13 @@ export async function executeSkillOrchestration(
           }
 
           // research 也为空 → 路径 C 失败
+          const cFailTokenUsage = makeTokenUsage(estimateTokens(message), 0);
           onProgress?.({
             type: 'step_end',
             stepId: 'RESEARCH',
             message: isZh ? '联网调研无结果，标记人工审核' : 'Research yielded no results, human review required',
             timestamp: Date.now(),
-            data: { research_triggered: true, success: false },
+            data: { research_triggered: true, success: false, token_usage: cFailTokenUsage },
           });
 
           // Step 3.7: 返回 human_review_required=true
@@ -429,18 +540,20 @@ export async function executeSkillOrchestration(
               match_reasons: ['path C failed: research yielded no results'],
               imitation_path: 'C',
               human_review_required: true,
+              token_usage: cFailTokenUsage,
             },
             artifacts_produced: [],
             execution_time_ms: Date.now() - startTime,
           };
         } catch (researchError) {
           // 路径 C 失败 → human_review_required=true
+          const cErrTokenUsage = makeTokenUsage(estimateTokens(message), 0);
           onProgress?.({
             type: 'step_end',
             stepId: 'RESEARCH',
             message: isZh ? `联网调研失败: ${(researchError as Error).message}` : `Research failed: ${(researchError as Error).message}`,
             timestamp: Date.now(),
-            data: { research_triggered: true, error: (researchError as Error).message },
+            data: { research_triggered: true, error: (researchError as Error).message, token_usage: cErrTokenUsage },
           });
 
           return {
@@ -463,6 +576,7 @@ export async function executeSkillOrchestration(
               match_reasons: [`path C error: ${(researchError as Error).message}`],
               imitation_path: 'C',
               human_review_required: true,
+              token_usage: cErrTokenUsage,
             },
             artifacts_produced: [],
             execution_time_ms: Date.now() - startTime,

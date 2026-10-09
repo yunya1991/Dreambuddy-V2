@@ -36,8 +36,10 @@ _DEFAULT_PARAMS = {
     "atr_mult": ATR_MULT_DEFAULT,
 }
 
-# KL散度加权的温度参数（小 temperature → 差异大的权重更高）
-_DEFAULT_TEMPERATURE = 0.02
+# KL散度加权的温度参数
+# temperature 越大 → 权重越均匀；越小 → 差异大的算法权重越高
+# 设为 0.5 使参数距离 0.5-2.0 时 softmax 输出平滑，多算法参与 BMA
+_DEFAULT_TEMPERATURE = 0.5
 
 
 # ============================================================================
@@ -166,15 +168,24 @@ class StatAggregator:
         params_a: Dict[str, float],
         params_b: Dict[str, float],
     ) -> float:
-        """计算参数距离（KL散度近似：欧氏距离）。
+        """计算归一化参数距离（KL散度近似）。
 
-        KL散度大的算法权重越高，纠正群体保守偏差（PolySwarm 思路）。
+        各参数按典型范围归一化后计算欧氏距离，避免 atr_mult (2-6)
+        主导 sl_floor (0.03-0.08) 和 tp_floor (0.12-0.20) 的差异。
         """
+        # 各参数的典型范围，用于归一化
+        _RANGES = {
+            "sl_floor": 0.05,   # [0.03, 0.08]
+            "tp_floor": 0.08,   # [0.12, 0.20]
+            "atr_mult": 3.5,    # [2.0, 5.5]
+        }
         sq_sum = 0.0
         for key in _DEFAULT_PARAMS:
             a = params_a.get(key, _DEFAULT_PARAMS[key])
             b = params_b.get(key, _DEFAULT_PARAMS[key])
-            sq_sum += (a - b) ** 2
+            # 归一化：除以典型范围
+            scale = _RANGES.get(key, 1.0)
+            sq_sum += ((a - b) / scale) ** 2
         return math.sqrt(sq_sum)
 
     def _softmax_weighted(self, diffs: List[float]) -> List[float]:

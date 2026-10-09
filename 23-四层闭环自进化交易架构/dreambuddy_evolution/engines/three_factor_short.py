@@ -79,3 +79,48 @@ class ThreeFactorShortDetector:
         except Exception as e:
             logger.debug("[FO] ThreeFactorShortDetector detect crash: %s", e)
             return False
+
+    # ------------------------------------------------------------------
+    # 路径D: 因子池扩展（资金费率 / OI-Price背离 / 清算热力图）
+    # ------------------------------------------------------------------
+
+    def detect_expanded_factors(
+        self,
+        funding_rate: float | None,
+        oi_change_pct: float | None,
+        price_change_pct: float | None,
+    ):
+        """路径D: 扩展因子检测。
+
+        委托 FactorPoolExpansion 评估 3 个新做空因子。
+        每个因子独立开关（默认 False）。
+
+        Args:
+            funding_rate: 资金费率（正值=多头拥挤）
+            oi_change_pct: OI 变化百分比（正值=持仓增加）
+            price_change_pct: 价格变化百分比（负值=下跌）
+
+        Returns:
+            ExpandedFactorResult: 扩展因子评估结果
+        """
+        try:
+            from dreambuddy_evolution.engines.factor_pool_expansion import (
+                ExpandedFactorResult,
+                FactorPoolExpansion,
+            )
+            _fpe = FactorPoolExpansion()
+            return _fpe.evaluate(funding_rate, oi_change_pct, price_change_pct)
+        except Exception as e:
+            logger.debug("[FO] detect_expanded_factors fail: %s", e)
+            from dreambuddy_evolution.engines.factor_pool_expansion import (
+                ExpandedFactorResult,
+            )
+            return ExpandedFactorResult(
+                funding_rate_satisfied=False,
+                oi_price_divergence_satisfied=False,
+                liquidation_heatmap_satisfied=False,
+                new_factors_satisfied=0,
+                funding_rate_value=None,
+                oi_change_pct=None,
+                price_change_pct=None,
+            )

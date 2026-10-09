@@ -237,6 +237,53 @@ def _handle_recall(args: Dict[str, Any]) -> str:
     return json.dumps(response, ensure_ascii=False)
 
 
+# ============================================================
+# TAG_HOOKS — record tags → triggered_skills 自动映射
+# SPEC: 1-ARCHITECTURE/SPEC-20260930-COGNITIVE-TAG-HOOKS-AUTO-LOOP.md
+# 设计：tag 精确匹配，多 tag 叠加，去重，FAIL-OPEN
+# ============================================================
+
+TAG_HOOKS: Dict[str, List[str]] = {
+    # 文档同步闭环
+    "doc-sync": ["dream-doc-sync-workflow"],
+    # Wiki 编译闭环
+    "wiki-compile": ["wiki-ingest-trigger"],
+    # hermes 反思 → SKILL 创建闭环
+    "hermes反思": ["dream-self-iteration-workflow"],
+    "SKILL": ["skill-creator"],
+    # 硬约束记忆（CLAUDE.md §3）
+    "硬约束": ["dream-arch-collaboration-workflow"],
+    # 收尾闭环（dream-completion-evolution-workflow）
+    "wrapup": ["dream-completion-evolution-workflow"],
+    # 代码提交闭环
+    "code-commit": ["dream-code-commit-sync-workflow"],
+    # 孤儿扫描闭环
+    "orphan-scan": ["dream-code-sync-orphan-scan-workflow"],
+    # 知识入库闭环
+    "knowledge-ingest": ["knowledge-ingest"],
+    # 模块开发后验证闭环
+    "post-dev-verify": ["dream-module-post-dev-verify-workflow"],
+}
+
+
+def _resolve_triggered_skills(tags: List[str]) -> List[str]:
+    """根据 record tags 查询 TAG_HOOKS，返回去重后的 triggered_skills 列表。
+
+    FAIL-OPEN：任何异常返回空列表，不阻塞 record 主流程。
+    """
+    try:
+        triggered: List[str] = []
+        for tag in tags:
+            tag = tag.strip()
+            if tag in TAG_HOOKS:
+                for skill in TAG_HOOKS[tag]:
+                    if skill not in triggered:  # 去重
+                        triggered.append(skill)
+        return triggered
+    except Exception:
+        return []
+
+
 def _handle_record(args: Dict[str, Any]) -> str:
     content = args.get("content", "")
     quality_level = args.get("quality_level", "C")
@@ -253,9 +300,13 @@ def _handle_record(args: Dict[str, Any]) -> str:
         source=source,
     )
 
+    # TAG_HOOKS：查询 tags → triggered_skills（FAIL-OPEN）
+    triggered_skills = _resolve_triggered_skills(tags)
+
     return json.dumps({
         "memory_id": memory_id,
         "status": "recorded",
+        "triggered_skills": triggered_skills,
     }, ensure_ascii=False)
 
 

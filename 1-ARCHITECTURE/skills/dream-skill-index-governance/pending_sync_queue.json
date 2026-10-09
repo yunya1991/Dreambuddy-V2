@@ -1,0 +1,81 @@
+{
+  "pending": [
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-09T11:45:59.507276+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md",
+      "added_at": "2026-10-09T11:45:59.507346+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/docs/CHANGELOG.md",
+      "added_at": "2026-10-09T11:45:59.507354+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/param_center/README.md",
+      "added_at": "2026-10-09T11:45:59.507360+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-09T12:30:21.851649+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md",
+      "added_at": "2026-10-09T12:30:21.851767+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/docs/CHANGELOG.md",
+      "added_at": "2026-10-09T12:30:21.851778+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/param_center/README.md",
+      "added_at": "2026-10-09T12:30:21.851787+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/docs/SPEC-20261009-SOLUTION-PATTERN-LEARNER.md",
+      "added_at": "2026-10-09T12:30:21.851789+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-09T12:32:15.804416+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md",
+      "added_at": "2026-10-09T12:32:15.804469+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/docs/CHANGELOG.md",
+      "added_at": "2026-10-09T12:32:15.804486+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/param_center/README.md",
+      "added_at": "2026-10-09T12:32:15.804491+00:00",
+      "action": "sync_doc_index"
+    }
+  ],
+  "processed": [
+    {
+      "path": "0-系统文档管理/zzz_test_doc.md",
+      "added_at": "2026-10-09T00:47:09.484330+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261009_fix_event_driven_no_position/acceptance_report.md",
+      "added_at": "2026-10-09T00:47:09.484344+00:00",
+      "action": "sync_doc_index"
+    }
+  ]
+}

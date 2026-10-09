@@ -2021,8 +2021,8 @@
       "AC-EXIT-HALF-AT-1PCT"
     ],
     "condition_logic": "all",
-    "ess": 0.95,
-    "n_samples": 886,
+    "ess": 1.0,
+    "n_samples": 1185,
     "parameters": {
       "risk_multiplier": 1.3,
       "timeframe": "1h"
@@ -2040,7 +2040,7 @@
     ],
     "version": "1.0",
     "notes": "Auto-gen combo ess=0.875 N=547",
-    "last_updated": "2026-10-06T22:59:34",
+    "last_updated": "2026-10-09T19:48:29",
     "trade_history": [
       {
         "symbol": "SKHYNIX",
@@ -4075,6 +4075,1800 @@
         "ess_delta": -0.05,
         "ess_type": "entry",
         "ts": "2026-10-06T22:59:34"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:44:08"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:46:25"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-07T21:48:24"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:01:21"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T05:32:42"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T06:58:34"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:35:06"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:42:01"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T07:46:32"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:25:41"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T08:58:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T09:20:26"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "HYPE",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "BMNR",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "RIVER",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "ETH",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "BTC",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "SKHYNIX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "AMZN",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "GOOGL",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "OKB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
+      },
+      {
+        "symbol": "SPCX",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-10-09T19:48:29"
       }
     ]
   },

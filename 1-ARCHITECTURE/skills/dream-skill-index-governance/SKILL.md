@@ -7,9 +7,9 @@ updated: 2026-09-21
 license: Internal
 status: active
 category: orchestration
-triggers: [SKILL 索引, SKILL 治理, SKILL 生命周期, SKILL 冲突检测, SKILL 漂移, skill-indexer]
+triggers: [SKILL 索引, SKILL 治理, SKILL 生命周期, SKILL 冲突检测, SKILL 漂移, skill-indexer, SKILL 注册, 新SKILL归档, auto-register, SKILL自动注册]
 depends_on: [hermes-skill-governance, hermes-shadow-verification-gate, hermes-rollback-actuator]
-provides: [skill-index-governance, skill-lifecycle-management, skill-conflict-detection, skill-drift-monitoring]
+provides: [skill-index-governance, skill-lifecycle-management, skill-conflict-detection, skill-drift-monitoring, skill-auto-register]
 cognitive_links: [VM-1790002963075-0b027747, VM-1790001702811-24bffe86, VM-1790001192903-2224e07e]
 ---
 
@@ -56,7 +56,10 @@ cognitive_links: [VM-1790002963075-0b027747, VM-1790001702811-24bffe86, VM-17900
    - 触发词：「SKILL 漂移」「双位置漂移」「drift detection」
 5. **新增 SKILL 前门禁**：新增 SKILL 前调用本 SKILL 做 ALLOW/DENY 决策
    - 触发词：「SKILL 治理」「SKILL 门禁」「validate new SKILL」
-6. **hermes 反思批量评估**：扫描所有 SKILL 触发 hermes 反思决策树
+6. **新 SKILL 自动注册归档**：新 SKILL 创建完成后，必须调用本 SKILL 完成注册归档
+   - 触发词：「SKILL 注册」「新SKILL归档」「auto-register」「SKILL自动注册」「注册到治理系统」
+   - **硬约束**：任何新 SKILL 创建（含 skill-creator 产出）后，未完成注册不得宣称"创建完成"
+7. **hermes 反思批量评估**：扫描所有 SKILL 触发 hermes 反思决策树
    - 触发词：「hermes 反思批量」「skill-indexer hermes-eval」
 
 ---
@@ -363,7 +366,48 @@ skill-indexer lifecycle <skill_name> --transition active→deprecated --reason "
 skill-indexer lifecycle <skill_name> --transition deprecated→archived
 ```
 
-### 步骤 6：hermes 反思批量评估
+### 步骤 6：新 SKILL 自动注册归档（双保险·AI 层）
+
+> **硬约束**：新 SKILL 创建完成后必须执行本步骤，否则不得宣称"创建完成"。
+> 本步骤与 git post-commit hook（机器层）构成双保险，任一触发即完成注册。
+
+```bash
+# 方式 A：显式指定 SKILL 目录注册（推荐，AI 创建 SKILL 后立即调用）
+python3 1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register_skill.py \
+    --no-auto-detect \
+    .trae/skills/<new-skill-name>
+
+# 方式 B：自动检测工作区未提交的新增 SKILL.md
+python3 1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register_skill.py
+
+# 方式 C：仅 validate 不 build（快速校验格式）
+python3 1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register_skill.py \
+    --no-auto-detect --skip-build \
+    .trae/skills/<new-skill-name>
+
+# JSON 输出（供程序解析）
+python3 .../auto_register_skill.py --no-auto-detect --json .trae/skills/<name>
+```
+
+**注册流程内部**（auto_register_skill.py 自动执行）：
+1. `validate` 校验新 SKILL 格式（必填字段 / status 合法 / 双位置漂移）
+2. `build --all` 重建 registry.json + dep-graph + drift-report + conflict-report
+3. 检测新 SKILL 是否引入触发词冲突 / 位置漂移
+4. 输出注册报告（status / red_flags / registry 数量变化）
+
+**判定**：
+
+| 报告 status | 含义 | 处置 |
+|-------------|------|------|
+| `success` | 注册成功，无红旗 | ✅ 可宣称创建完成 |
+| `completed_with_red_flags` | 注册成功但有警告（如漂移/冲突） | ⚠️ 需处理红旗后再宣称完成 |
+| `validation_failed` | 格式校验失败 | 🚩 修复 SKILL.md 后重跑 |
+| `build_failed` | registry 重建失败 | 🚩 检查 skill_indexer，手动 build |
+| `no_new_skills` | 未检测到新增 SKILL | ℹ️ 正常（无新 SKILL 需注册） |
+
+**日志位置**：`1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register.log`（post-commit hook 自动追加）
+
+### 步骤 7：hermes 反思批量评估
 
 ```bash
 # 扫描所有 SKILL 触发 hermes 反思决策树

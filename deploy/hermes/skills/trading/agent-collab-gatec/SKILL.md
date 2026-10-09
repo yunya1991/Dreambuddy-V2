@@ -1,3 +1,12 @@
+---
+name: agent-collab-gatec
+description: "SKILL: agent-collab-gatec"
+version: 1.0.0
+status: active
+category: trading
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

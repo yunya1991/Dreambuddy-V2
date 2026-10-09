@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.2 | **更新日期**: 2026-09-10
+> **版本**: v2.3 | **更新日期**: 2026-10-09
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 为准。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -58,6 +58,8 @@
 | 业务管理 | [5-BUSINESS/BUSINESS_SYSTEM.md](../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营系统设计 | ⚠️ |
 | 交易中台 | [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) | A0-A9 交易流水线与 SKILL 引擎 | 🟡 |
 | 前端系统 | [3-FRONTEND/FRONTEND_SYSTEM.md](../3-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构设计 | ⚠️ 待更新 |
+| ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
+| ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 
 ---
 
@@ -143,6 +145,7 @@
 | 接口规格 | [23-四层闭环自进化交易架构/docs/API_SPEC.md](../23-四层闭环自进化交易架构/docs/API_SPEC.md) | v1.1 |
 | 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.13 |
 | SPEC | [2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md](../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md) | v1.0（已完成） |
+| SPEC（做空疏通） | [23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md](../23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md) | v0.2（执行层集成完成 2026-10-09） |
 
 ---
 

@@ -267,11 +267,20 @@ class GraphPlanner:
     def _infer_chain(self, intent_type: str) -> str:
         """根据意图类型推断链路
 
+        @deprecated (SPEC 阶段5): 此方法使用 INTENT_CHAIN_MAP 硬编码映射，
+        已被 SkillSelector 替代。当 USE_SKILL_ORCHESTRATION=true 时，
+        链路推断应由 SkillSelector 接管，不走此方法。
+
         使用 INTENT_CHAIN_MAP 映射:
             TREND_FOLLOWING / MEAN_REVERSION / UNCERTAIN → A 链 (执行环)
             FUNDAMENTAL_PLAY → F 链 (基本面)
             BREAKOUT / KNOWLEDGE_MATCH → C 链 (短线/突破)
         """
+        import os
+        if os.environ.get('USE_SKILL_ORCHESTRATION', '').lower() == 'true':
+            # SKILL 编排模式：链路由 SkillSelector 决定，此处返回默认 A 链
+            # 实际路由由上层 skill-orchestration-executor.ts 的 SkillSelector 接管
+            return "A"
         return INTENT_CHAIN_MAP.get(intent_type, "A")
 
     def _query_orchestration_memory(self, scenario_id: Optional[str]) -> List[str]:

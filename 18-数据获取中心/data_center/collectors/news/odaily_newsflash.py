@@ -475,10 +475,20 @@ class OdailyNewsflashCollector(BaseCollector):
             if not isinstance(item, dict):
                 continue
             od_id = item.get("id")
+            # ★ FIX 2026-10-09: numpy int64 兼容
+            try:
+                od_id = int(od_id) if od_id is not None else 0
+            except (TypeError, ValueError):
+                od_id = 0
             title = str(item.get("title", "") or "")
             desc = str(item.get("description", "") or "")
             is_important = bool(item.get("isImportant", False))
             publish_ms = item.get("publishTimestamp")
+            # ★ FIX 2026-10-09: API 可能返回 numpy int64，强制转 Python int 避免 json.dumps 失败
+            try:
+                publish_ms = int(publish_ms) if publish_ms is not None else 0
+            except (TypeError, ValueError):
+                publish_ms = 0
 
             # 1. lazy sentiment
             s_float, _ = _sentiment_lazy(title, desc)
@@ -506,7 +516,7 @@ class OdailyNewsflashCollector(BaseCollector):
                 sub_category=f"newsflash_{od_id}" if od_id is not None else "newsflash_0",
                 timestamp=ts,
                 metrics={
-                    "od_source_id": int(od_id) if isinstance(od_id, (int, float)) else 0,
+                    "od_source_id": int(od_id),
                     "od_policy_sentiment_0_1": float(s_float),
                     "od_event_type": str(et),
                     "od_attention_type": str(att),
@@ -518,7 +528,7 @@ class OdailyNewsflashCollector(BaseCollector):
                 events=[{
                     "event_type": et,
                     "importance": 2 if is_important else 1,
-                    "published_ms": int(publish_ms) if isinstance(publish_ms, (int, float)) else 0,
+                    "published_ms": int(publish_ms),
                 }],
                 timeseries=[],
                 raw={

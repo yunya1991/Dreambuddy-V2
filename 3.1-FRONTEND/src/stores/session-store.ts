@@ -87,6 +87,7 @@ interface SessionState {
   lastReportId: string | null;
   pendingStepConfirmation: StepConfirmation | null;
   lastSynthesis: FinalSynthesisData | null;
+  lastChartSpecs: any[] | null;
 
   createSession: (title?: string) => string;
   setActiveSession: (id: string) => void;
@@ -100,6 +101,7 @@ interface SessionState {
   setLastIntent: (intent: IntentInfo | null) => void;
   setLastTaskStatus: (status: string | null) => void;
   setLastReportId: (reportId: string | null) => void;
+  setLastChartSpecs: (specs: any[] | null) => void;
   setPendingStepConfirmation: (data: StepConfirmation | null) => void;
   setLastSynthesis: (data: FinalSynthesisData | null) => void;
 }
@@ -117,6 +119,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   lastReportId: null,
   pendingStepConfirmation: null,
   lastSynthesis: null,
+  lastChartSpecs: null,
 
   createSession: (title = '新会话') => {
     const id = `sess_${Date.now()}`;
@@ -154,6 +157,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setLastIntent: (intent) => set({ lastIntent: intent }),
   setLastTaskStatus: (status) => set({ lastTaskStatus: status }),
   setLastReportId: (reportId) => set({ lastReportId: reportId }),
+  setLastChartSpecs: (specs) => set({ lastChartSpecs: specs }),
   setPendingStepConfirmation: (data) => set({ pendingStepConfirmation: data }),
   setLastSynthesis: (data) => set({ lastSynthesis: data }),
 }));

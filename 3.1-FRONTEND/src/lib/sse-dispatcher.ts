@@ -187,6 +187,9 @@ export function createTaskStreamHandlers(options?: {
         session().setLastReportId(doneData.task_id);
       }
 
+      // 存储图表规格（供前端 SynthesisChart 渲染）
+      session().setLastChartSpecs(doneData.chart_specs || null);
+
       // 监控事件
       monitor().addEvent('G', {
         id: `evt_${Date.now()}`,
@@ -238,4 +241,5 @@ export interface TaskDoneData {
   chain_trace?: Record<string, unknown>;
   graph_reflection?: Record<string, unknown> | null;
   trade_requires_confirmation?: boolean;
+  chart_specs?: any[];
 }

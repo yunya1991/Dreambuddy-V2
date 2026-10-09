@@ -1,3 +1,12 @@
+---
+name: agent-collab-screen1
+description: "SKILL: agent-collab-screen1"
+version: 1.0.0
+status: active
+category: trading
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

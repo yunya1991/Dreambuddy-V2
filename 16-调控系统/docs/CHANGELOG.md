@@ -2,7 +2,53 @@
 
 > **定位**：记录每次变更的原因、内容、影响范围、验证方式与回滚策略
 > **格式**：[版本] - 日期 → 变更类型（新增/修改/修复/删除）
-> **版本：** v2.0 | **更新：** 2026-07-25
+> **版本：** v2.1 | **更新：** 2026-10-09
+
+---
+
+## [v2.1] - 2026-10-09
+
+### 新增 — 参数中心 6 适配器全部激活 + 定时调度 + 跨进程持久化
+
+- **变更内容**: 参数中心从仅 PMapper 工作扩展为 6 适配器全部激活；新增 scheduler.py 每小时定时调度；新增 JSON 持久化实现跨进程缓存共享；新增资产差异化混合机制
+- **影响范围**:
+  - `scripts/param_center/runner.py`（新增 `load_market_data()` + `build_market_data_map()`，从本地 K线 CSV 加载 closes + regime 判断；新增资产混合：聚合值与静态 3D 表按 40:60 混合）
+  - `scripts/param_center/aggregator.py`（温度 0.02→0.5 避免 softmax 退化 one-hot；`_param_distance` 归一化各参数尺度避免 atr_mult 主导距离）
+  - `scripts/param_center/repository.py`（新增 `_load_aggregated_from_disk()` / `_save_aggregated_to_disk()`；`get()` 聚合缓存过期时自动从磁盘重载；新增 `_AGGREGATED_TTL=7200s`）
+  - `scripts/param_center/scheduler.py`（新建：threading + subprocess 每小时调用 runner.py）
+  - `scripts/param_center/data/aggregated_params.json`（新建：跨进程共享的聚合缓存持久化文件）
+  - `scripts/param_center/README.md`（v2.0 重建：6 适配器表、聚合权重示例、资产混合表、定时调度链路图、跨进程缓存机制）
+- **验证方式**:
+  - 23/23 币种 K线数据加载成功，5/6 适配器参与聚合（Shadow 待 DB 积累）
+  - 权重分布均匀：HMM 17.8% / Bagua 25.9% / Hurst 14.5% / PMapper 14.5% / CUSUM 27.3%
+  - 资产差异化：BTC SL=5.2% / NVDA SL=3.5% / XAU SL=3.7%（美股低于 4%）
+  - 跨进程读取：新进程 `get('BTC')` 返回 SL=5.2%（聚合）> 5.0%（静态表）
+  - polling_trader stderr 中 0 个 param_center Traceback
+- **回滚策略**: 删除 scheduler.py + aggregated_params.json；repository.py 恢复无磁盘加载版本；aggregator.py 温度恢复 0.02
+
+---
+
+### 修复 — NVDA SLTP NoneType 异常
+
+- **变更内容**: 修复 `polling_trader.py` 中 `stop_loss_px`/`take_profit_px` 为 None 时 `_get_base_sl_roi`/`_get_base_tp_roi` 报 NoneType 错误
+- **影响范围**: `11-易经推理系统/scripts/memory_l4/polling_trader.py:8443,8459`
+- **根因**: `market_snapshot.get("stop_loss_px", 0)` 当 key 存在但值为 None 时返回 None，`None > 0` 报错
+- **修复**: 加 `or 0` 兜底
+- **验证方式**: 09:20 日志 `NVDA SL/TP已推送交易所 OK`，0 ERROR
+- **回滚策略**: 删除 `or 0` 兜底
+
+---
+
+### 修复 — 跨进程聚合缓存加载失败
+
+- **变更内容**: 修复 repository.py 中两个 bug 导致 polling_trader 进程无法读取 scheduler 写入的聚合缓存
+- **影响范围**: `scripts/param_center/repository.py`
+- **根因**:
+  1. `elif` 逻辑 bug：聚合缓存存在但过期时不触发磁盘重载（`elif` 仅在 agg=None 时触发）
+  2. TTL 不匹配：聚合缓存 TTL=300s < scheduler 间隔 3600s，导致 55 分钟/小时聚合缓存过期回退静态表
+- **修复**: `elif` 改为独立 `if`；新增 `_AGGREGATED_TTL=7200s`（2小时 > 1小时间隔）
+- **验证方式**: 新进程 `get('BTC')` 返回 SL=5.2%（聚合缓存）而非 5.0%（静态表）
+- **回滚策略**: 恢复 `elif` 和 `_DEFAULT_TTL`
 
 ---
 

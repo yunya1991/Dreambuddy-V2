@@ -21,6 +21,12 @@ agi_config — AGI 升级模块统一开关配置（HC-AGI-07）
   enable_pattern_detection     头肩顶等形态检测
   enable_btc_regime_classifier BTC-美股相关性 regime 分类
   enable_three_factor_short    三因子共振做空
+  enable_dynamic_short_blacklist 路径A: 动态做空黑名单（默认 False）
+  enable_layered_short_exemption 路径B: 三因子分层豁免（预留，默认 False）
+  enable_direction_state_short_expansion 路径C: direction_state 解锁扩展（预留，默认 False）
+  enable_funding_rate_factor       路径D-1: 资金费率因子（默认 False）
+  enable_oi_price_divergence_factor 路径D-2: OI-Price 背离因子（默认 False）
+  enable_liquidation_heatmap_factor 路径D-3: 清算热力图因子（需 POC，默认 False）
 """
 from __future__ import annotations
 
@@ -84,6 +90,15 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_gene_innovation": True,                  # 质变事件触发基因创新 (FTCEvolutionBridge)
     "enable_gene_version_snapshot": True,            # 新基因写入前自动快照 (可回滚)
     "enable_gene_audit_gate": True,                  # 三级审核门禁 (Schema+统计+相对提升)
+    # --- 做空能力疏通路径 (SPEC-自进化系统做空能力疏通探讨) ---
+    # 每条路径独立开关，默认 False（影子模式验证通过后才开启）
+    "enable_dynamic_short_blacklist": False,         # 路径A: 滚动胜率驱动动态做空黑名单
+    "enable_layered_short_exemption": False,         # 路径B: 三因子分层豁免 (预留)
+    "enable_direction_state_short_expansion": False, # 路径C: direction_state 解锁扩展 (预留)
+    # --- 路径D: 因子池扩展 (SPEC §4 路径D) ---
+    "enable_funding_rate_factor": False,             # 路径D-1: 资金费率因子
+    "enable_oi_price_divergence_factor": False,       # 路径D-2: OI-Price 背离因子
+    "enable_liquidation_heatmap_factor": False,       # 路径D-3: 清算热力图因子 (需 POC)
 }
 
 

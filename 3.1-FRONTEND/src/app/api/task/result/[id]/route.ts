@@ -6,6 +6,7 @@ import { existsSync } from 'fs';
 function resolveResultsDir(): string {
   const cwd = process.cwd();
   const candidates = [
+    join(cwd, '..', 'artifacts', 'results'),          // repo root (3.1-FRONTEND → ..)
     join(cwd, '..', 'dreambuddy', 'artifacts', 'results'),
     join(cwd, 'dreambuddy', 'artifacts', 'results'),
     join(cwd, 'artifacts', 'results'),
@@ -13,7 +14,7 @@ function resolveResultsDir(): string {
   for (const dir of candidates) {
     if (existsSync(dir)) return dir;
   }
-  return join(cwd, '..', 'dreambuddy', 'artifacts', 'results');
+  return join(cwd, '..', 'artifacts', 'results');
 }
 
 function resolveTasksDir(): string {

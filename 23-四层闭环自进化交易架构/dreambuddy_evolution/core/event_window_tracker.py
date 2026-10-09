@@ -112,6 +112,12 @@ class EventWindowTracker:
         elif now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
 
+        # Normalize next_fomc / last_fomc to offset-aware (UTC) if naive
+        if next_fomc is not None and next_fomc.tzinfo is None:
+            next_fomc = next_fomc.replace(tzinfo=timezone.utc)
+        if last_fomc is not None and last_fomc.tzinfo is None:
+            last_fomc = last_fomc.replace(tzinfo=timezone.utc)
+
         # 概率趋势
         if prob_change_7d is not None:
             if prob_change_7d > 0.05:

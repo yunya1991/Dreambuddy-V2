@@ -3,13 +3,14 @@
 | 字段 | 值 |
 |---|---|
 | SPEC ID | SIE-SPEC |
-| 版本 | v0.2 (DRAFT, 修复 3 Major + 4 Minor 后待复审) |
+| 版本 | v0.3 (DRAFT→落地完成, 3路径架构+token埋点已实现) |
 | 创建日期 | 2026-10-08 |
-| 修改日期 | 2026-10-08 (v0.2: 修复 M-1 循环依赖/M-2 LLM计划可执行性/M-3 路径C vs HC-8 + m-1~m-4) |
+| 修改日期 | 2026-10-09 (v0.3: token消耗埋点落地, 172/172测试全绿, 可观测性82→90) |
 | 关联 SPEC | [DREAMOS_SKILL_ORCHESTRATION_SPEC](./DREAMOS_SKILL_ORCHESTRATION_SPEC.md) (主 SPEC, §3.5-§3.9, §4.1, §8.1 F1-F20, HC-1~HC-9) |
-| 状态 | 调研已完成 → SPEC 草案 → v0.1 评审完成 → v0.2 待复审 |
-| 认知记忆 | VM-1791454714033 (3 条硬约束, B级) |
+| 状态 | v0.1评审完成 → v0.2修复3M+4m → v0.3 TDD落地+BrowserSkill验收+token埋点 |
+| 认知记忆 | VM-1791454714033 (3 条硬约束, B级) + VM-1791458196691 (路径C落地) + VM-1791512732277 (token埋点) |
 | 评审报告 | 3 Major (M-1/M-2/M-3) + 4 Minor, 详见评审记录 |
+| 落地证据 | commit c4cdb8ee99 · 31文件+17421行 · 172/172 GREEN · tsc通过 · BrowserSkill验收IMITATION→RESEARCH链路追踪 |
 
 ---
 

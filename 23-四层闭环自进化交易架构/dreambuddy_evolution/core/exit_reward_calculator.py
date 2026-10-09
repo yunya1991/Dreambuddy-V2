@@ -30,6 +30,21 @@ from typing import Any, Dict
 logger = logging.getLogger(__name__)
 
 
+def _get_sltp_floor_defaults() -> dict:
+    """从集中配置获取 SL/TP 下限作为奖励计算兜底目标（惰性导入）。
+
+    优先级：sl_tp_config.SLTPParams → 本地兜底（与硬约束一致）。
+    返回 sl_floor / tp_floor，盈亏比 = tp_floor / sl_floor ≥ 2.0。
+    """
+    try:
+        from memory_l4.bcrm2.sl_tp_config import SLTPParams
+        p = SLTPParams()
+        return {"sl_floor": p.sl_floor, "tp_floor": p.tp_floor}
+    except Exception:
+        pass
+    return {"sl_floor": 0.04, "tp_floor": 0.12}
+
+
 class ExitRewardCalculator:
     """L3 离场奖励组件化计算器
 
@@ -62,8 +77,8 @@ class ExitRewardCalculator:
               cs: float — CS 一致性得分 [-1.0, 1.0]
               sl_in_range: bool — 止损是否在预设区间
               pnl_pct: float — 实际盈亏比例（如 0.05 = +5%）
-              tp_pct_target: float — 目标止盈比例（如 0.06）
-              sl_pct_target: float — 目标止损比例（如 0.03，默认 0.03）
+              tp_pct_target: float — 目标止盈比例（默认引用集中配置 tp_floor）
+              sl_pct_target: float — 目标止损比例（默认引用集中配置 sl_floor）
 
         Returns:
             {R_total, R_trend, R_risk, R_pnl, w_trend, w_risk, w_pnl}
@@ -71,11 +86,12 @@ class ExitRewardCalculator:
         FAIL-OPEN: 任何异常 → 全 0 返回
         """
         try:
+            defaults = _get_sltp_floor_defaults()
             cs = float(context.get("cs", 0.0) or 0.0)
             sl_in_range = bool(context.get("sl_in_range", True))
             pnl_pct = float(context.get("pnl_pct", 0.0) or 0.0)
-            tp_pct_target = float(context.get("tp_pct_target", 0.06) or 0.06)
-            sl_pct_target = float(context.get("sl_pct_target", 0.03) or 0.03)
+            tp_pct_target = float(context.get("tp_pct_target", defaults["tp_floor"]) or defaults["tp_floor"])
+            sl_pct_target = float(context.get("sl_pct_target", defaults["sl_floor"]) or defaults["sl_floor"])
 
             # ── R_trend: 方向正确性 ──
             r_trend = self._calc_r_trend(cs)
@@ -128,10 +144,11 @@ class ExitRewardCalculator:
 
     def _calc_r_pnl(self, pnl_pct: float, tp_pct_target: float, sl_pct_target: float) -> float:
         """R_pnl: 盈亏（按比例缩放）"""
+        defaults = _get_sltp_floor_defaults()
         if tp_pct_target <= 0:
-            tp_pct_target = 0.06  # 兜底
+            tp_pct_target = defaults["tp_floor"]  # 兜底：集中配置 TP 下限
         if sl_pct_target <= 0:
-            sl_pct_target = 0.03  # 兜底
+            sl_pct_target = defaults["sl_floor"]  # 兜底：集中配置 SL 下限
 
         if pnl_pct >= tp_pct_target:
             return self.R_PNL_TP

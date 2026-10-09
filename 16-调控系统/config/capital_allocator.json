@@ -6,6 +6,7 @@
   "shrinkage_prior_strength": 30,
   "shrinkage_threshold": 30,
   "kelly_fraction": 0.5,
+  "risk_per_trade": 0.02,
   "min_position_pct": 0.03,
   "max_position_pct": 0.25,
   "default_pct": 0.10,

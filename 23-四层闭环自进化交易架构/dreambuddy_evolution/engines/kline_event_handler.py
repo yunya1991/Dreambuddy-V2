@@ -31,6 +31,13 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Phase 1: 事件驱动策略接入路径发现层（SPEC-事件驱动策略独立化 §四）
+# 模块级导入支持测试 monkeypatch（dreambuddy_evolution.engines.kline_event_handler.EventDrivenStrategy）
+try:
+    from event_driven import EventDrivenStrategy  # type: ignore[import]
+except ImportError:  # event_driven 包不在 sys.path 时（生产环境可能延迟加载）
+    EventDrivenStrategy = None  # type: ignore[assignment]
+
 
 class KlineEventHandler:
     """K线收盘事件处理器 — Phase 2 连续在线更新"""
@@ -400,6 +407,32 @@ class KlineEventHandler:
             if hasattr(pipeline, "_discover_paths"):
                 paths = pipeline._discover_paths(r_vector, market_data, symbol)
                 path_info["path_count"] = len(paths) if isinstance(paths, list) else 0
+                if not isinstance(paths, list):
+                    paths = []
+
+                # Phase 1: 事件驱动路径注入（SPEC-事件驱动策略独立化 §四）
+                # EventDrivenStrategy.evaluate() → event_signal → 作为 event_driven 路径参与竞争
+                # FAIL-OPEN: 异常/开关关闭/信号弱 → 跳过，不影响原有路径发现
+                try:
+                    from dreambuddy_evolution.agi_config import is_enabled
+                    if is_enabled("enable_event_driven_path") and EventDrivenStrategy is not None:
+                        eds = EventDrivenStrategy()
+                        event_signal = eds.evaluate(kline_data)
+                        if event_signal is not None and \
+                           getattr(event_signal, "signal", "neutral") != "neutral" and \
+                           float(getattr(event_signal, "strength", 0.0)) >= 0.60:
+                            paths.append({
+                                "source": "event_driven",
+                                "direction": event_signal.signal,
+                                "score": float(event_signal.strength),
+                                "validated": True,
+                                "low_conviction": float(event_signal.strength) < 0.50,
+                                "event_phase": getattr(event_signal, "event_phase", None),
+                                "reason": getattr(event_signal, "reason", ""),
+                            })
+                            path_info["path_count"] = len(paths)
+                except Exception as e:
+                    logger.debug("[PathLayer] event-driven path injection fail (FAIL-OPEN): %s", e)
 
                 if hasattr(pipeline, "_select_optimal_path"):
                     raw_optimal = pipeline._select_optimal_path(paths, r_vector)

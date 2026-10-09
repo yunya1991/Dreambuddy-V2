@@ -428,3 +428,32 @@ After testing the skill, users may request improvements. Often this happens righ
 2. Notice struggles or inefficiencies
 3. Identify how SKILL.md or bundled resources should be updated
 4. Implement changes and test again
+
+### Step 8: Register to Governance System (Mandatory · 双保险·AI层)
+
+> **硬约束（不可跳过）**：新 SKILL 创建完成后，必须注册到治理系统，否则不得宣称"创建完成"。
+> 本步骤与 git post-commit hook（机器层）构成双保险，任一触发即完成注册。
+
+**执行命令**（在项目根目录）：
+
+```bash
+# 显式注册新创建的 SKILL（推荐）
+python3 1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register_skill.py \
+    --no-auto-detect \
+    .trae/skills/<skill-name>
+
+# 若使用双位置存储，两个位置都会被自动扫描，只需指定其中一个即可
+```
+
+**注册成功标志**：
+- 报告 `status: success` 或 `completed_with_red_flags`
+- `registry.json` 中 `total_count` 增加
+- 新 SKILL 出现在 `registry.json` 中，`parse_error: null`
+
+**若注册失败**：
+1. 检查 SKILL.md frontmatter 格式（必填字段 name/description/version）
+2. 检查双位置存储是否一致（`.trae/skills/` 与 `1-ARCHITECTURE/skills/`）
+3. 修复后重新运行注册命令
+
+**日志**：`1-ARCHITECTURE/skills/dream-skill-index-governance/auto_register.log`
+

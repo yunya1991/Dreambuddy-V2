@@ -1,0 +1,178 @@
+diff --git a/18-数据获取中心/data_center/collectors/news/odaily_newsflash.py b/18-数据获取中心/data_center/collectors/news/odaily_newsflash.py
+index c99940c852..5415fefaba 100644
+--- a/18-数据获取中心/data_center/collectors/news/odaily_newsflash.py
++++ b/18-数据获取中心/data_center/collectors/news/odaily_newsflash.py
+@@ -475,10 +475,20 @@ class OdailyNewsflashCollector(BaseCollector):
+             if not isinstance(item, dict):
+                 continue
+             od_id = item.get("id")
++            # ★ FIX 2026-10-09: numpy int64 兼容
++            try:
++                od_id = int(od_id) if od_id is not None else 0
++            except (TypeError, ValueError):
++                od_id = 0
+             title = str(item.get("title", "") or "")
+             desc = str(item.get("description", "") or "")
+             is_important = bool(item.get("isImportant", False))
+             publish_ms = item.get("publishTimestamp")
++            # ★ FIX 2026-10-09: API 可能返回 numpy int64，强制转 Python int 避免 json.dumps 失败
++            try:
++                publish_ms = int(publish_ms) if publish_ms is not None else 0
++            except (TypeError, ValueError):
++                publish_ms = 0
+ 
+             # 1. lazy sentiment
+             s_float, _ = _sentiment_lazy(title, desc)
+@@ -506,7 +516,7 @@ class OdailyNewsflashCollector(BaseCollector):
+                 sub_category=f"newsflash_{od_id}" if od_id is not None else "newsflash_0",
+                 timestamp=ts,
+                 metrics={
+-                    "od_source_id": int(od_id) if isinstance(od_id, (int, float)) else 0,
++                    "od_source_id": int(od_id),
+                     "od_policy_sentiment_0_1": float(s_float),
+                     "od_event_type": str(et),
+                     "od_attention_type": str(att),
+@@ -518,7 +528,7 @@ class OdailyNewsflashCollector(BaseCollector):
+                 events=[{
+                     "event_type": et,
+                     "importance": 2 if is_important else 1,
+-                    "published_ms": int(publish_ms) if isinstance(publish_ms, (int, float)) else 0,
++                    "published_ms": int(publish_ms),
+                 }],
+                 timeseries=[],
+                 raw={
+diff --git a/18-数据获取中心/data_center/storage/sink_sqlite.py b/18-数据获取中心/data_center/storage/sink_sqlite.py
+index 0275d7f6d5..2a47c61913 100644
+--- a/18-数据获取中心/data_center/storage/sink_sqlite.py
++++ b/18-数据获取中心/data_center/storage/sink_sqlite.py
+@@ -18,6 +18,32 @@ from datetime import datetime, timezone
+ from typing import Any, Optional
+ 
+ from data_center.core.contract import DataRecord
++
++
++def _json_default(obj: Any) -> Any:
++    """JSON default 处理器：兼容 numpy/pandas 数值类型（int64/float64 等）。
++
++    根因 2026-10-09：odaily_newsflash 等采集器返回的 metrics/raw 中可能含 numpy int64，
++    json.dumps 报 TypeError: Object of type int64 is not JSON serializable，导致新闻数据无法入库，
++    事件驱动策略因无新闻事件而长期无持仓。
++    """
++    try:
++        import numpy as np
++        if isinstance(obj, np.integer):
++            return int(obj)
++        if isinstance(obj, np.floating):
++            return float(obj)
++        if isinstance(obj, np.ndarray):
++            return obj.tolist()
++    except ImportError:
++        pass
++    try:
++        import pandas as pd
++        if isinstance(obj, (pd.Timestamp,)):
++            return obj.isoformat()
++    except ImportError:
++        pass
++    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+ from data_center.monitoring.alerting import Alert
+ from data_center.monitoring.metrics import InvocationMetric
+ from data_center.monitoring.quality import QualityIssue
+@@ -125,10 +151,10 @@ class SqliteSink:
+                 _INSERT_SQL,
+                 (
+                     key, r.source, r.category, r.sub_category, r.timestamp,
+-                    json.dumps(r.metrics, ensure_ascii=False),
+-                    json.dumps(r.events, ensure_ascii=False),
+-                    json.dumps(r.timeseries, ensure_ascii=False),
+-                    json.dumps(r.raw, ensure_ascii=False),
++                    json.dumps(r.metrics, ensure_ascii=False, default=_json_default),
++                    json.dumps(r.events, ensure_ascii=False, default=_json_default),
++                    json.dumps(r.timeseries, ensure_ascii=False, default=_json_default),
++                    json.dumps(r.raw, ensure_ascii=False, default=_json_default),
+                     r.schema_version,
+                 ),
+             )
+@@ -327,7 +353,7 @@ class SqliteSink:
+                     q.code.value if hasattr(q.code, "value") else str(q.code),
+                     q.message,
+                     metric.invocation_id,
+-                    json.dumps(q.extra, ensure_ascii=False) if q.extra else None,
++                    json.dumps(q.extra, ensure_ascii=False, default=_json_default) if q.extra else None,
+                 ),
+             )
+         conn.commit()
+@@ -365,7 +391,7 @@ class SqliteSink:
+                 alert.level.value if hasattr(alert.level, "value") else str(alert.level),
+                 alert.title,
+                 alert.message,
+-                json.dumps(alert.tags, ensure_ascii=False),
++                json.dumps(alert.tags, ensure_ascii=False, default=_json_default),
+             ),
+         )
+         conn.commit()
+diff --git a/20-数据清洗中心/data_cleaning/adapters.py b/20-数据清洗中心/data_cleaning/adapters.py
+index 1cb7c2e1b6..9e4a6d5cd5 100644
+--- a/20-数据清洗中心/data_cleaning/adapters.py
++++ b/20-数据清洗中心/data_cleaning/adapters.py
+@@ -8,6 +8,7 @@
+ """
+ from __future__ import annotations
+ 
++import json
+ from datetime import datetime
+ from typing import Iterable, List
+ from uuid import uuid4
+@@ -47,6 +48,18 @@ def records_to_cleaned_df(records: Iterable[DataRecord]) -> CleanedDF:
+             frag = pd.DataFrame(rec.timeseries)
+         elif rec.category == "news" and rec.events:
+             frag = pd.DataFrame(rec.events)
++            # ★ FIX 2026-10-09: news 类需保留 metrics（od_policy_sentiment_0_1/od_event_type/
++            #   od_is_important/od_decay_hl_hrs/od_tickers_hit_csl）和 raw（tickers_hit/title/description），
++            #   否则 Silver 清洗后事件驱动 compute_coin_event_positive_strength 永远返回 0 → 无持仓。
++            if isinstance(rec.metrics, dict) and rec.metrics:
++                for _k, _v in rec.metrics.items():
++                    if _k not in frag.columns:
++                        frag[_k] = _v
++            if isinstance(rec.raw, dict) and rec.raw:
++                for _k, _v in rec.raw.items():
++                    if _k not in frag.columns:
++                        # list 类型转 JSON 字符串（tickers_hit 等），避免 pandas 列类型混乱
++                        frag[_k] = json.dumps(_v, ensure_ascii=False) if isinstance(_v, (list, dict)) else _v
+         else:
+             # macro 或 fallback：metrics 扁平 → 1行
+             row = dict(rec.metrics) if isinstance(rec.metrics, dict) else {}
+@@ -152,17 +165,30 @@ def cleaned_df_to_records(
+         }
+         if category == "news":
+             # events 流
+-            ev_cols = [c for c in ("timestamp", "title", "importance") if c in grp_cols]
+-            events = grp[ev_cols].to_dict(orient="records")
++            ev_cols = [c for c in ("timestamp", "title", "importance", "event_type", "published_ms") if c in grp_cols]
++            events = grp[ev_cols].to_dict(orient="records") if ev_cols else []
+             metrics = {asset_col: asset}
+             if metrics_cols:
+                 sample = grp.iloc[0]
+                 for c in metrics_cols & set(sample.index):
+                     metrics[c] = sample[c]
++            # ★ FIX 2026-10-09: 还原 raw（tickers_hit/title/description/...）供事件驱动策略使用
++            raw = {}
++            for _rk in ("tickers_hit", "title", "description", "tags", "newsUrl", "publishTimestamp"):
++                if _rk in grp_cols:
++                    _val = grp.iloc[0][_rk]
++                    if isinstance(_val, str) and _rk == "tickers_hit":
++                        # records_to_cleaned_df 中 list 被 json.dumps 为字符串，这里还原
++                        try:
++                            raw[_rk] = json.loads(_val)
++                        except (json.JSONDecodeError, TypeError):
++                            raw[_rk] = _val
++                    else:
++                        raw[_rk] = _val if not (isinstance(_val, float) and pd.isna(_val)) else ""
+             records.append(DataRecord(
+                 source=source, category=category, sub_category=grp_sub_category,
+                 timestamp=_first_iso(grp, timestamp_col),
+-                metrics=metrics, events=events, timeseries=[], raw={},
++                metrics=metrics, events=events, timeseries=[], raw=raw,
+             ))
+         elif category in ("finance", "chain") and {
+             "timestamp", "close", "volume", "open", "high", "low",

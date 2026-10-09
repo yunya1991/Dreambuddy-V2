@@ -1,3 +1,12 @@
+---
+name: artifact-alignment-manager
+description: "产物投递管理 SKILL v7.3"
+version: 1.0.0
+status: active
+category: core
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

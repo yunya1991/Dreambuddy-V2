@@ -364,6 +364,100 @@ class DataCenterAdapter:
             logger.debug("[FO] query_fomc_calendar fail: %s", e)
         return out
 
+    def query_coinmarketcal_events(self) -> list[dict[str, Any]]:
+        """查询 CoinMarketCal 加密事件记录（tech_upgrade 等，供 GeneralEventWindowTracker）。
+
+        SPEC-Phase2 §6.1: source=coinmarketcal, category=protocol, sub_category=tech_upgrade。
+        取 metrics.event_date + metrics.direction + metrics.title 用于窗口判定。
+
+        Returns list of {event_date(str), direction(str), title(str), timestamp(str)} 按事件日期升序。
+        FAIL-OPEN: 查询失败返回空列表。
+        """
+        out: list[dict[str, Any]] = []
+        try:
+            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM records "
+                "WHERE source = 'coinmarketcal' AND sub_category = 'tech_upgrade' "
+                "ORDER BY timestamp DESC LIMIT 20"
+            )
+            rows = cursor.fetchall()
+            conn.close()
+            for row in rows:
+                d = dict(row)
+                m = d.get("metrics", "{}")
+                if isinstance(m, str):
+                    try:
+                        m = json.loads(m)
+                    except Exception:
+                        m = {}
+                if not isinstance(m, dict):
+                    continue
+                event_date = m.get("date_event", "") or m.get("event_date", "")
+                if not event_date:
+                    continue
+                out.append(
+                    {
+                        "event_date": event_date,
+                        "direction": m.get("direction", "neutral"),
+                        "title": m.get("title", ""),
+                        "timestamp": d.get("timestamp", ""),
+                    }
+                )
+            out.sort(key=lambda x: x.get("event_date", ""))
+        except Exception as e:
+            logger.debug("[FO] query_coinmarketcal_events fail: %s", e)
+        return out
+
+    def query_congressional_hearings(self) -> list[dict[str, Any]]:
+        """查询国会听证会记录（congressional_hearing，供 GeneralEventWindowTracker）。
+
+        SPEC-Phase2 §6.4: source=congress, category=macro, sub_category=congressional_hearing。
+        取 metrics.date_event + metrics.direction + metrics.title 用于窗口判定。
+
+        Returns list of {event_date(str), direction(str), title(str), timestamp(str)} 按事件日期升序。
+        FAIL-OPEN: 查询失败返回空列表。
+        """
+        out: list[dict[str, Any]] = []
+        try:
+            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM records "
+                "WHERE source = 'congress' AND sub_category = 'congressional_hearing' "
+                "ORDER BY timestamp DESC LIMIT 20"
+            )
+            rows = cursor.fetchall()
+            conn.close()
+            for row in rows:
+                d = dict(row)
+                m = d.get("metrics", "{}")
+                if isinstance(m, str):
+                    try:
+                        m = json.loads(m)
+                    except Exception:
+                        m = {}
+                if not isinstance(m, dict):
+                    continue
+                event_date = m.get("date_event", "") or m.get("event_date", "")
+                if not event_date:
+                    continue
+                out.append(
+                    {
+                        "event_date": event_date,
+                        "direction": m.get("direction", "neutral"),
+                        "title": m.get("title", ""),
+                        "timestamp": d.get("timestamp", ""),
+                    }
+                )
+            out.sort(key=lambda x: x.get("event_date", ""))
+        except Exception as e:
+            logger.debug("[FO] query_congressional_hearings fail: %s", e)
+        return out
+
     def _query_latest_by_source(self, source: str, category: str) -> dict[str, float]:
         """通用：按 source 查最新 record，提取数值 metrics。"""
         rec = self._query_latest_record_by_source(source, category)

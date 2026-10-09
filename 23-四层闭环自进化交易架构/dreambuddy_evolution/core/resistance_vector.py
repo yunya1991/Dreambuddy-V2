@@ -235,12 +235,14 @@ class ResistanceVector:
             oi_div = self._calc_oi_divergence(data, flags)
 
             W_V2 = (0.20, 0.15, 0.15, 0.20, 0.15, 0.15)  # 筹码/清算/趋势/资金费率/订单簿/OI
+            # 资金费率>0=做多拥挤→做多阻力↑(R_up↑)→combined_up↓→用 -；OI增加=拥挤→阻力↑→用 -
+            # 订单簿买盘深→做多阻力↓(R_up↓)→combined_up↑→用 +（与源码注释一致）
             combined_up_v2 = (W_V2[0] * chip_bias
                             + W_V2[1] * liq_pressure
                             + W_V2[2] * trend_bias
-                            + W_V2[3] * funding_pressure
+                            - W_V2[3] * funding_pressure
                             + W_V2[4] * orderbook_imb
-                            + W_V2[5] * oi_div)
+                            - W_V2[5] * oi_div)
             combined_down_v2 = -combined_up_v2
             R_up = max(0.0, min(1.0, 0.5 - 0.38 * combined_up_v2))
             R_down = max(0.0, min(1.0, 0.5 - 0.38 * combined_down_v2))

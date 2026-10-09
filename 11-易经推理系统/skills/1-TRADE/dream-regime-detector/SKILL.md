@@ -1,3 +1,12 @@
+---
+name: dream-regime-detector
+description: "Dream-Regime-Detector"
+version: 1.0.0
+status: active
+category: trading
+triggers: ["regime检测", "市场状态", "Regime变化", "自动化蒸馏触发"]
+---
+
 ## Autonomy Boundary
 
 可自主执行：

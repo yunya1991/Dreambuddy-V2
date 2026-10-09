@@ -888,6 +888,15 @@ class PollingTrader:
         # SHORT_BAN：这些币种只允许做多，不允许做空（历史验证做空持续亏损，或 BDSM 协议模型为 LONG_ONLY）
         # ETH：历史做空样本亏损率高，且 BDSM 方向约束默认 LONG_ONLY；BTC：BCRM 做空信号已 100% 亏损
         self.SHORT_ONLY_BLACKLIST: set = {"ETH", "BTC"}
+        # 路径A: 动态做空黑名单（滚动胜率驱动，开关默认 False → 回退静态）
+        self._dynamic_short_blacklist = None
+        try:
+            from dreambuddy_evolution.engines.dynamic_short_blacklist import (
+                DynamicShortBlacklist,
+            )
+            self._dynamic_short_blacklist = DynamicShortBlacklist()
+        except Exception:
+            pass  # FAIL-OPEN: 模块缺失时回退静态黑名单
         # —— R5 铁律 · 仓位子池隔离（互不抢占）——
         #   BDSM 子池：币种 ∈ BDSM_COINS，标签 source_tag="bdsm"，最多 3 仓
         #   BCRM 子池：币种 ∉ BDSM_COINS，标签 source_tag="bcrm"，最多 5 仓
@@ -3658,6 +3667,39 @@ class PollingTrader:
                        not isinstance(getattr(_fds, "three_factor_short_signal", None), dict):
                         _fds.three_factor_short_signal = {}
                     _fds.three_factor_short_signal["crypto_usdt"] = _tfs_result
+
+                    # 路径B+D: 分层豁免 + 扩展因子协同（开关默认 False → 回退 AND 逻辑）
+                    #   开关关闭时: layered_result = AND 逻辑（仅 3 因子全满足才豁免）
+                    #   开关开启时: 分层豁免（2 因子试探）+ 扩展因子纳入分层计算
+                    _expanded_result = None
+                    try:
+                        _expanded_result = _tfs_detector.detect_expanded_factors(
+                            funding_rate=None,       # 路径D: 数据源待接入（Binance API）
+                            oi_change_pct=None,     # 路径D: 数据源待接入
+                            price_change_pct=None,  # 路径D: 数据源待接入
+                        )
+                    except Exception:
+                        pass  # FAIL-OPEN
+
+                    _layered_result = None
+                    try:
+                        from dreambuddy_evolution.engines.layered_short_exemption import (
+                            LayeredShortExemption,
+                        )
+                        _lse = LayeredShortExemption()
+                        _layered_result = _lse.evaluate_with_expansion(
+                            pattern_factor=_pf,
+                            btc_regime=_br_val,
+                            etf_flow_norm=_etf_val,
+                            expanded_result=_expanded_result,
+                        )
+                    except Exception:
+                        pass  # FAIL-OPEN
+
+                    if not hasattr(_fds, "layered_short_exemption_result") or \
+                       not isinstance(getattr(_fds, "layered_short_exemption_result", None), dict):
+                        _fds.layered_short_exemption_result = {}
+                    _fds.layered_short_exemption_result["crypto_usdt"] = _layered_result
                 except Exception as _tfs_e:
                     pass  # FAIL-OPEN: 不阻塞交易
                 _tfs = getattr(_fds, "three_factor_short_signal", None)
@@ -6070,6 +6112,23 @@ class PollingTrader:
             "mark_px": pos["mark_px"],
             "open_time": open_time_sec,
         }
+
+    def _is_short_blacklisted(self, symbol: str) -> bool:
+        """路径A: 检查币种是否禁止做空（动态黑名单 + 静态回退）.
+
+        开关关闭时回退到静态 SHORT_ONLY_BLACKLIST = {"ETH", "BTC"}.
+        开关开启时使用 DynamicShortBlacklist 贝叶斯动态判定.
+        FAIL-OPEN: 异常/模块缺失 → 回退静态.
+        """
+        sym = str(symbol or "").strip().upper()
+        if not sym:
+            return True  # FAIL-OPEN: 空 symbol
+        try:
+            if self._dynamic_short_blacklist is not None:
+                return self._dynamic_short_blacklist.is_blacklisted(sym)
+        except Exception:
+            pass  # FAIL-OPEN: 动态检查异常 → 回退静态
+        return sym in getattr(self, "SHORT_ONLY_BLACKLIST", set())
 
     def _count_total_positions(self) -> int:
         # 单次批量查询OKX全部持仓，避免逐个查询因限流/超时导致计数偏低、超额开仓
@@ -10802,27 +10861,63 @@ class PollingTrader:
             #   与 BCRM2.0 _open_position 的 SHORT_BAN 保持一致，避免自进化系统绕过全局禁空规则
             #   FAIL-OPEN：属性缺失时不拦截（放行自主决策）
             #   Phase 4.3 例外：三因子共振（ETF流出+头肩顶+BTC WEAK）时允许 BTC/ETH 做空
-            if action == "short" and symbol.upper() in getattr(self, "SHORT_ONLY_BLACKLIST", set()):
-                _three_factor_ok = False
+            # ★ SHORT_BAN 铁律 + 路径B 分层豁免（开关默认 False → 回退 AND 逻辑）
+            #   路径A: _is_short_blacklisted() 动态黑名单判定
+            #   路径B: layered_short_exemption_result 分层豁免（3因子全豁免/2因子试探）
+            #   路径D: 扩展因子纳入分层计算（开关开启时）
+            #   FAIL-OPEN: 分层结果不可用 → 回退三因子 bool 信号
+            _layered_pos_mult = 1.0  # 路径B 仓位倍数（默认 1.0 = 不压缩）
+            _layered_sl_mult = 1.0   # 路径B 止损倍数（默认 1.0 = 不调整）
+            if action == "short" and self._is_short_blacklisted(symbol):
+                _lr = None
                 try:
                     _fd_state = self._five_domain_state_cache
                     if _fd_state is not None:
-                        _three_factor_ok = bool(
-                            getattr(_fd_state, "three_factor_short_signal", {}).get("crypto_usdt", False)
-                        )
+                        _lr_dict = getattr(_fd_state, "layered_short_exemption_result", {})
+                        _lr = _lr_dict.get("crypto_usdt") if isinstance(_lr_dict, dict) else _lr_dict
                 except Exception:
-                    _three_factor_ok = False
-                if not _three_factor_ok:
+                    _lr = None
+
+                if _lr is not None and _lr.exempted:
+                    # 分层豁免允许做空，应用仓位和止损倍数
+                    _layered_pos_mult = float(_lr.position_multiplier)
+                    _layered_sl_mult = float(_lr.stop_loss_multiplier)
                     self._log(
-                        f"[P2-S4b] {symbol} SHORT_BAN 命中 | 跳过开空（SHORT_ONLY_BLACKLIST）",
+                        f"[P2-S4b] {symbol} SHORT_BAN 分层豁免 | "
+                        f"layer={_lr.layer} factors={_lr.factors_satisfied}/3 "
+                        f"pos_mult={_layered_pos_mult} sl_mult={_layered_sl_mult}",
+                        "INFO",
+                    )
+                elif _lr is not None and not _lr.exempted:
+                    # 分层结果明确不豁免
+                    self._log(
+                        f"[P2-S4b] {symbol} SHORT_BAN 命中 | "
+                        f"分层不豁免(layer={_lr.layer}, factors={_lr.factors_satisfied}/3)",
                         "WARN",
                     )
                     return
                 else:
-                    self._log(
-                        f"[P2-S4b] {symbol} SHORT_BAN 豁免 | 三因子共振(ETF流出+头肩顶+BTC WEAK)允许做空",
-                        "INFO",
-                    )
+                    # 分层结果不可用 → 回退三因子 bool 信号（开关关闭时的 AND 逻辑）
+                    _three_factor_ok = False
+                    try:
+                        _fd_state = self._five_domain_state_cache
+                        if _fd_state is not None:
+                            _three_factor_ok = bool(
+                                getattr(_fd_state, "three_factor_short_signal", {}).get("crypto_usdt", False)
+                            )
+                    except Exception:
+                        _three_factor_ok = False
+                    if not _three_factor_ok:
+                        self._log(
+                            f"[P2-S4b] {symbol} SHORT_BAN 命中 | 跳过开空（SHORT_ONLY_BLACKLIST）",
+                            "WARN",
+                        )
+                        return
+                    else:
+                        self._log(
+                            f"[P2-S4b] {symbol} SHORT_BAN 豁免 | 三因子共振(ETF流出+头肩顶+BTC WEAK)允许做空",
+                            "INFO",
+                        )
 
             # 3. 仓位计算（三层分级 × FTC 轨道乘数 × regime 乘数）
             # u_open 已是 KlineEventHandler 计算好的最终 position_mult = tier_mult × regime_mult
@@ -10854,6 +10949,8 @@ class PollingTrader:
             _position_usdt = _base_budget * _track_mult * float(u_open)
             # ★ 入场侧 BCRM2.0 软权重乘数（分层治理，对称离场侧规则 2b）
             _position_usdt = _position_usdt * _weight_factor
+            # ★ 路径B: 分层豁免仓位倍数（做空豁免时 0.7x/0.2x，默认 1.0 = 不压缩）
+            _position_usdt = _position_usdt * _layered_pos_mult
             # ★ FREEZE cap_mode 压缩（2026-09-12 修复）：
             #   战略层 FiveDomainState 计算 cap_mode（FREEZE=0.20, ALLOW=1.0 等），
             #   此前从未在 evolution 仓位计算中应用，导致 FREEZE 状态下仓位不压缩
@@ -15877,31 +15974,71 @@ class PollingTrader:
             )
             return None
 
-        # —— BDSM 协作 · SHORT_BAN 铁律：SHORT_ONLY_BLACKLIST 币种禁止做空
-        # （ETH/BTC 等，P0 历史验证做空样本亏损率极高；BDSM 模型本身默认 LONG_ONLY）
-        # 例外：战略层 direction_state=SHORT_ONLY 时，临时解除做空限制（高位滞涨筑顶形态）
-        # 做空 → 直接跳过该信号，等效于「BDSM 不存在」(FAIL-OPEN 中性)
+        # —— BDSM 协作 · SHORT_BAN 铁律 + 路径C direction_state 解锁扩展
+        # 路径C: 开关默认 False → 回退仅 SHORT_ONLY 解锁（现有行为）
+        #         开关开启时 → TREND_BEAR(btc_regime=WEAK) 部分解锁(0.5x)
+        # 集中度限制: 做空总仓位/总仓位 ≤ 30%（超限不解锁）
+        # FAIL-OPEN: 异常/缺失 → 不解锁（维持 SHORT_BAN）
         _short_ban_active = True
+        _short_pos_mult = 1.0  # 路径C 仓位倍数（SHORT_ONLY=1.0, TREND_BEAR=0.5）
         try:
             _fds_local = getattr(self, "_five_domain_state_cache", None)
             if _fds_local is not None:
                 _cls_local = self._coin_asset_class(coin)
                 _dstate_local = getattr(_fds_local, "direction_state", {}).get(_cls_local, "NEUTRAL")
-                if _dstate_local == "SHORT_ONLY":
-                    _short_ban_active = False
+
+                # 路径C: direction_state 解锁扩展
+                _ds_result = None
+                try:
+                    from dreambuddy_evolution.engines.direction_state_short_expansion import (
+                        DirectionStateShortExpansion,
+                    )
+                    _dse = DirectionStateShortExpansion()
+                    # 计算当前做空集中度
+                    _all_pos = getattr(self, "_positions", []) or []
+                    _total_cnt = len(_all_pos)
+                    _short_cnt = sum(
+                        1 for p in _all_pos
+                        if str(getattr(p, "direction", "")).lower() == "short"
+                    )
+                    _short_ratio_val = _short_cnt / max(_total_cnt, 1) if _total_cnt > 0 else 0.0
+                    # btc_regime 从 _fds 获取
+                    _btc_reg_local = getattr(_fds_local, "btc_regime", None)
+                    _btc_reg_val = ""
+                    if isinstance(_btc_reg_local, dict):
+                        _btc_reg_val = str(_btc_reg_local.get("crypto_usdt", "") or "")
+                    _ds_result = _dse.evaluate(
+                        direction_state=_dstate_local,
+                        btc_regime=_btc_reg_val,
+                        current_short_ratio=_short_ratio_val,
+                    )
+                except Exception:
+                    pass  # FAIL-OPEN
+
+                if _ds_result is not None:
+                    if _ds_result.unlocked:
+                        _short_ban_active = False
+                        _short_pos_mult = float(_ds_result.position_multiplier)
+                else:
+                    # 回退: 仅 SHORT_ONLY 解锁（现有行为，开关关闭时）
+                    if _dstate_local == "SHORT_ONLY":
+                        _short_ban_active = False
         except Exception:
             pass
-        if pos_side == "short" and coin.upper() in getattr(self, "SHORT_ONLY_BLACKLIST", set()) and _short_ban_active:
+        if pos_side == "short" and self._is_short_blacklisted(coin) and _short_ban_active:
             self._log(
                 f"[{coin}] SHORT_BAN 命中 | 方向={direction} 跳过开空（SHORT_ONLY_BLACKLIST）",
                 "WARN",
             )
             return None
-        if not _short_ban_active and pos_side == "short" and coin.upper() in getattr(self, "SHORT_ONLY_BLACKLIST", set()):
+        if not _short_ban_active and pos_side == "short" and self._is_short_blacklisted(coin):
             self._log(
-                f"[{coin}] SHORT_BAN 临时解除 | direction_state=SHORT_ONLY 允许做空（高位滞涨形态）",
+                f"[{coin}] SHORT_BAN 临时解除 | state={_ds_result.state if _ds_result else 'SHORT_ONLY'} "
+                f"pos_mult={_short_pos_mult} 允许做空",
                 "INFO",
             )
+            # 路径C: 应用 direction_state 解锁仓位倍数
+            position_usdt = position_usdt * _short_pos_mult
         # BDSM 子系统不设固定 SL/TP（MA200/MA128趋势止损 + P/F估值止盈），
         # inference 可能不含 stop_loss_px/take_profit_px，安全读取为 None。
         sl_px = inference.get("stop_loss_px")

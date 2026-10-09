@@ -1,5 +1,41 @@
 {
   "schema_version": "1.0",
-  "total_conflicts": 0,
-  "conflicts": []
+  "total_conflicts": 5,
+  "conflicts": [
+    {
+      "trigger": "事件订阅",
+      "skills": [
+        "feishu-gateway-setup",
+        "hermes-feishu-bot-debug"
+      ]
+    },
+    {
+      "trigger": "对照实验",
+      "skills": [
+        "dream-science-experiment-design",
+        "dream-science-hypothesis-verification"
+      ]
+    },
+    {
+      "trigger": "研究编排",
+      "skills": [
+        "dream-arch-research-orchestrator",
+        "dream-science-orchestrator"
+      ]
+    },
+    {
+      "trigger": "群聊不回复",
+      "skills": [
+        "feishu-gateway-setup",
+        "hermes-feishu-bot-debug"
+      ]
+    },
+    {
+      "trigger": "飞书通信",
+      "skills": [
+        "feishu-gateway-setup",
+        "hermes-feishu-bot-debug"
+      ]
+    }
+  ]
 }

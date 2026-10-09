@@ -511,6 +511,8 @@ export interface ResultFile {
   error?: string;
   persisted?: boolean;
   trade_requires_confirmation?: boolean;
+  // 前端图表规格（供 SynthesisChart 渲染）
+  chart_specs?: any[];
 }
 
 /**
@@ -1110,6 +1112,328 @@ export function buildLLMInputText(
 }
 
 /**
+ * 专业研报生成器：当 LLM 汇总失败/过短时，从执行数据+实时价格构建专业研报
+ * 输出格式对齐专业加密货币研报框架：核心观点→市场概况→技术面→矛盾风险→资金情报→回测→策略→操作建议
+ * 子系统钩子：每个 dream-* 子系统贡献其专长维度的分析数据
+ */
+function generateProfessionalReport(
+  validResults: any[],
+  execResult: any,
+  lang: 'zh' | 'en',
+  symbol: string,
+  marketData: MarketData | null,
+): string {
+  const isZh = lang === 'zh';
+  const overallConf = Math.round((execResult.overallConfidence || 70));
+  const conclusion = execResult.conclusion || {};
+  const direction = conclusion.direction || 'neutral';
+  const directionText = direction === 'long' ? (isZh ? '偏多' : 'Bullish') :
+                        direction === 'short' ? (isZh ? '偏空' : 'Bearish') :
+                        (isZh ? '中性' : 'Neutral');
+
+  // ===== 子系统钩子：收集所有技能数据 =====
+  const allSkills: any[] = [];
+  for (const step of validResults) {
+    if (step.skillsDetailed) {
+      for (const sk of step.skillsDetailed) allSkills.push(sk);
+    }
+  }
+  // 每个子系统贡献其专长维度
+  const hookRegime = allSkills.filter(s => s.skillId === 'dream-regime-detector').pop()?.outputs;
+  const hookContradiction = allSkills.filter(s => s.skillId === 'dream-contradiction-theory').pop()?.outputs;
+  const hookIntel = allSkills.filter(s => s.skillId === 'dream-intelligence-monitor').pop()?.outputs;
+  const hookBacktest = allSkills.filter(s => s.skillId === 'dream-backtest').pop()?.outputs;
+  const hookBayesian = allSkills.filter(s => s.skillId === 'dream-bayesian-opt').pop()?.outputs;
+  const hookStrategy = allSkills.filter(s => s.skillId === 'dream-strategy-research').pop()?.outputs;
+  const hookFirstPrinciples = allSkills.filter(s => s.skillId === 'dream-first-principles').pop()?.outputs;
+
+  const L: string[] = [];
+
+  // ===== 1. 报告头 =====
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  L.push(isZh ? `# ${symbol} 深度分析报告` : `# ${symbol} Deep Analysis Report`);
+  L.push(isZh ? `> 生成时间: ${ts} | 数据来源: ${marketData?.source === 'okx' ? 'OKX 实时' : '子系统'} | 综合置信度: ${overallConf}%`
+              : `> Generated: ${ts} | Source: ${marketData?.source === 'okx' ? 'OKX Real-time' : 'Subsystem'} | Confidence: ${overallConf}%`);
+  L.push('');
+
+  // ===== 2. 核心观点 =====
+  L.push(isZh ? `## 核心观点` : `## Core View`);
+  L.push(isZh ? `**${symbol}** 当前市场方向 **${directionText}**，综合置信度 **${overallConf}%**。`
+              : `**${symbol}** market direction is **${directionText}** with **${overallConf}%** overall confidence.`);
+  if (hookRegime) {
+    L.push(isZh ? `市场状态识别为 **${hookRegime.regime || '未知'}**，推荐策略：${(hookRegime.recommendedStrategies || []).join('、') || '待定'}。`
+                : `Market regime: **${hookRegime.regime || 'unknown'}**. Recommended: ${(hookRegime.recommendedStrategies || []).join(', ') || 'TBD'}.`);
+  }
+  if (marketData?.price) {
+    const chg = marketData.change24h !== null ? `${marketData.change24h >= 0 ? '+' : ''}${marketData.change24h.toFixed(2)}%` : 'N/A';
+    L.push(isZh ? `当前价格 **$${marketData.price.toLocaleString()}**（24h ${chg}）。`
+                : `Current price **$${marketData.price.toLocaleString()}** (24h ${chg}).`);
+  }
+  L.push('');
+
+  // ===== 3. 市场概况（实时数据表） =====
+  if (marketData?.price) {
+    L.push(isZh ? `## 市场概况` : `## Market Overview`);
+    L.push(isZh ? `| 指标 | 数值 |` : `| Metric | Value |`);
+    L.push(isZh ? `|------|------|` : `|--------|-------|`);
+    L.push(`| ${isZh ? '当前价格' : 'Price'} | $${marketData.price.toLocaleString()} |`);
+    if (marketData.change24h !== null) L.push(`| ${isZh ? '24h涨跌' : '24h Change'} | ${marketData.change24h >= 0 ? '+' : ''}${marketData.change24h.toFixed(2)}% |`);
+    if (marketData.high24h !== null) L.push(`| ${isZh ? '24h最高' : '24h High'} | $${marketData.high24h.toLocaleString()} |`);
+    if (marketData.low24h !== null) L.push(`| ${isZh ? '24h最低' : '24h Low'} | $${marketData.low24h.toLocaleString()} |`);
+    if (marketData.open24h !== null) L.push(`| ${isZh ? '24h开盘' : '24h Open'} | $${marketData.open24h.toLocaleString()} |`);
+    if (marketData.fundingRate) L.push(`| ${isZh ? '资金费率' : 'Funding Rate'} | ${(parseFloat(marketData.fundingRate) * 100).toFixed(4)}% |`);
+    L.push('');
+  }
+
+  // ===== 4. 技术面分析 =====
+  L.push(isZh ? `## 技术面分析` : `## Technical Analysis`);
+  if (hookRegime) {
+    L.push(isZh ? `**市场状态**: ${hookRegime.regime || '未知'}（置信度 ${hookRegime.confidence || 'N/A'}%）`
+                : `**Regime**: ${hookRegime.regime || 'unknown'} (${hookRegime.confidence || 'N/A'}% confidence)`);
+    L.push(isZh ? `**分析**: ${hookRegime.analysis || '暂无数据'}`
+                : `**Analysis**: ${hookRegime.analysis || 'No data'}`);
+    L.push('');
+  }
+  if (hookFirstPrinciples) {
+    const fp = hookFirstPrinciples;
+    L.push(isZh ? `**第一性原理**` : `**First Principles**`);
+    if (fp.resistanceAnalysis) L.push(isZh ? `- 阻力位: ${fp.resistanceAnalysis.level || '未知'}` : `- Resistance: ${fp.resistanceAnalysis.level || 'unknown'}`);
+    if (fp.supportAnalysis) L.push(isZh ? `- 支撑位: ${fp.supportAnalysis.level || '未知'}` : `- Support: ${fp.supportAnalysis.level || 'unknown'}`);
+    if (fp.trendAnalysis) {
+      L.push(isZh ? `- 趋势强度: ${fp.trendAnalysis.strength || '未知'}` : `- Trend strength: ${fp.trendAnalysis.strength || 'unknown'}`);
+      L.push(isZh ? `- 趋势延续性: ${fp.trendAnalysis.continuation ? '延续' : '可能反转'}` : `- Continuation: ${fp.trendAnalysis.continuation ? 'yes' : 'may reverse'}`);
+    }
+    L.push('');
+  }
+  // 结合实时价格给出关键技术位
+  if (marketData?.price && (marketData.high24h || marketData.low24h)) {
+    const p = marketData.price, h = marketData.high24h || p, l = marketData.low24h || p;
+    L.push(isZh ? `**关键技术位**` : `**Key Levels**`);
+    L.push(isZh ? `- 当前价格: $${p.toLocaleString()}` : `- Price: $${p.toLocaleString()}`);
+    L.push(isZh ? `- 24h区间: $${l.toLocaleString()} - $${h.toLocaleString()}` : `- 24h Range: $${l.toLocaleString()} - $${h.toLocaleString()}`);
+    L.push(isZh ? `- 距24h高: ${((h - p) / p * 100).toFixed(2)}%` : `- From 24h High: ${((h - p) / p * 100).toFixed(2)}%`);
+    L.push(isZh ? `- 距24h低: ${((p - l) / p * 100).toFixed(2)}%` : `- From 24h Low: ${((p - l) / p * 100).toFixed(2)}%`);
+    L.push('');
+  }
+
+  // ===== 5. 矛盾与风险分析 =====
+  if (hookContradiction?.primaryContradiction) {
+    L.push(isZh ? `## 矛盾与风险分析` : `## Contradiction & Risk Analysis`);
+    const pc = hookContradiction.primaryContradiction;
+    L.push(isZh ? `**主要矛盾**: ${pc.desc || '未知'}（强度: ${pc.intensity || '未知'}）`
+                : `**Primary**: ${pc.desc || 'unknown'} (intensity: ${pc.intensity || 'unknown'})`);
+    if (hookContradiction.allContradictions) {
+      for (const c of hookContradiction.allContradictions) {
+        if (c.type !== '主要矛盾' && c.type !== 'Primary') {
+          L.push(isZh ? `- ${c.type}: ${c.desc}（强度: ${c.intensity}）` : `- ${c.type}: ${c.desc} (intensity: ${c.intensity})`);
+        }
+      }
+    }
+    L.push('');
+  }
+
+  // ===== 6. 资金流向与链上情报 =====
+  if (hookIntel?.alerts && Array.isArray(hookIntel.alerts)) {
+    L.push(isZh ? `## 资金流向与链上情报` : `## Capital Flow & On-chain Intelligence`);
+    for (const alert of hookIntel.alerts) L.push(`- ${alert}`);
+    if (hookIntel.alertSeverity) L.push(isZh ? `- 预警等级: ${hookIntel.alertSeverity}` : `- Alert level: ${hookIntel.alertSeverity}`);
+    L.push('');
+  }
+  // 资金费率补充
+  if (marketData?.fundingRate) {
+    const fr = parseFloat(marketData.fundingRate);
+    const frText = isZh
+      ? (fr > 0.0001 ? '多头付费，市场偏多情绪' : fr < -0.0001 ? '空头付费，市场偏空情绪' : '资金费率中性')
+      : (fr > 0.0001 ? 'Longs paying, bullish' : fr < -0.0001 ? 'Shorts paying, bearish' : 'Neutral');
+    L.push(isZh ? `**资金费率**: ${(fr * 100).toFixed(4)}% — ${frText}` : `**Funding Rate**: ${(fr * 100).toFixed(4)}% — ${frText}`);
+    L.push('');
+  }
+
+  // ===== 7. 回测验证 =====
+  if (hookBacktest?.backtestResult) {
+    const bt = hookBacktest.backtestResult;
+    L.push(isZh ? `## 回测验证` : `## Backtest Validation`);
+    L.push(isZh ? `| 指标 | 数值 |` : `| Metric | Value |`);
+    L.push(isZh ? `|------|------|` : `|--------|-------|`);
+    L.push(`| ${isZh ? '胜率' : 'Win Rate'} | ${bt.winRate}% |`);
+    L.push(`| ${isZh ? '夏普比率' : 'Sharpe'} | ${bt.sharpeRatio} |`);
+    L.push(`| ${isZh ? '最大回撤' : 'Max Drawdown'} | ${bt.maxDrawdown}% |`);
+    L.push(`| ${isZh ? '回测周期' : 'Period'} | ${bt.samplePeriod || 'N/A'} |`);
+    L.push(`| ${isZh ? '交易次数' : 'Trades'} | ${bt.trades || 'N/A'} |`);
+    L.push(`| ${isZh ? '验证结果' : 'Result'} | ${hookBacktest.passed ? '✅ 通过' : '❌ 未通过'} |`);
+    L.push('');
+  }
+
+  // ===== 8. 策略建议与参数优化 =====
+  if (hookStrategy?.recommendedStrategies || hookBayesian?.optimizedParams) {
+    L.push(isZh ? `## 策略建议与参数优化` : `## Strategy & Parameter Optimization`);
+    if (hookStrategy?.recommendedStrategies) {
+      L.push(isZh ? `**推荐策略**: ${hookStrategy.recommendedStrategies.join('、')}` : `**Recommended**: ${hookStrategy.recommendedStrategies.join(', ')}`);
+      if (hookStrategy.researchNotes) for (const n of hookStrategy.researchNotes) L.push(`- ${n}`);
+    }
+    if (hookBayesian?.optimizedParams) {
+      const bp = hookBayesian.optimizedParams;
+      L.push(isZh ? `**优化参数**:` : `**Optimized Params**:`);
+      L.push(isZh ? `- 入场阈值: ${bp.entryThreshold} | 止损: ${bp.stopLossMultiplier}x | 止盈: ${bp.takeProfitMultiplier}x`
+                  : `- Entry: ${bp.entryThreshold} | SL: ${bp.stopLossMultiplier}x | TP: ${bp.takeProfitMultiplier}x`);
+      if (hookBayesian.improvementEstimate) L.push(isZh ? `- 预期改进: +${hookBayesian.improvementEstimate}%` : `- Expected improvement: +${hookBayesian.improvementEstimate}%`);
+    }
+    L.push('');
+  }
+
+  // ===== 9. 操作建议与风险提示 =====
+  L.push(isZh ? `## 操作建议与风险提示` : `## Action Plan & Risk Disclaimer`);
+  if (marketData?.price) {
+    const p = marketData.price, l = marketData.low24h || p * 0.95, h = marketData.high24h || p * 1.05;
+    if (direction === 'long') {
+      L.push(isZh ? `- 📈 方向偏多，关注顺势做多机会` : `- 📈 Bullish, watch for long entries`);
+      L.push(isZh ? `- 参考入场: $${p.toLocaleString()} 附近` : `- Entry: ~$${p.toLocaleString()}`);
+      L.push(isZh ? `- 参考止损: $${(l * 0.98).toFixed(2)} 以下` : `- Stop loss: below $${(l * 0.98).toFixed(2)}`);
+      L.push(isZh ? `- 参考止盈: $${(h * 1.02).toFixed(2)} 以上` : `- Take profit: above $${(h * 1.02).toFixed(2)}`);
+    } else if (direction === 'short') {
+      L.push(isZh ? `- 📉 方向偏空，关注顺势做空机会` : `- 📉 Bearish, watch for short entries`);
+      L.push(isZh ? `- 参考入场: $${p.toLocaleString()} 附近` : `- Entry: ~$${p.toLocaleString()}`);
+      L.push(isZh ? `- 参考止损: $${(h * 1.02).toFixed(2)} 以上` : `- Stop loss: above $${(h * 1.02).toFixed(2)}`);
+      L.push(isZh ? `- 参考止盈: $${(l * 0.98).toFixed(2)} 以下` : `- Take profit: below $${(l * 0.98).toFixed(2)}`);
+    } else {
+      L.push(isZh ? `- ⏸️ 方向不明确，建议观望等待信号` : `- ⏸️ Direction unclear, wait for confirmation`);
+      L.push(isZh ? `- 关键支撑: $${l.toLocaleString()}` : `- Support: $${l.toLocaleString()}`);
+      L.push(isZh ? `- 关键阻力: $${h.toLocaleString()}` : `- Resistance: $${h.toLocaleString()}`);
+      L.push(isZh ? `- 突破方向后跟进` : `- Enter after breakout direction confirmed`);
+    }
+  } else {
+    if (direction === 'long') L.push(isZh ? `- 📈 方向偏多，关注顺势做多机会` : `- 📈 Bullish, watch longs`);
+    else if (direction === 'short') L.push(isZh ? `- 📉 方向偏空，关注做空机会` : `- 📉 Bearish, watch shorts`);
+    else L.push(isZh ? `- ⏸️ 方向不明确，建议观望` : `- ⏸️ Direction unclear, hold`);
+  }
+  L.push(isZh ? `- ⚠️ 以上分析基于历史数据和子系统输出，不构成投资建议`
+              : `- ⚠️ Analysis based on historical data, not financial advice`);
+  L.push(isZh ? `- ⚠️ 加密货币市场波动剧烈，请做好风险管理`
+              : `- ⚠️ Crypto markets are volatile, manage risk accordingly`);
+
+  return L.join('\n');
+}
+
+/**
+ * 从执行数据生成图表规格（供前端 SynthesisChart 渲染）
+ */
+function generateChartSpecs(
+  validResults: any[],
+  execResult: any,
+  lang: 'zh' | 'en',
+  symbol: string,
+): any[] {
+  const isZh = lang === 'zh';
+  const charts: any[] = [];
+
+  // 收集所有技能数据
+  const allSkills: any[] = [];
+  for (const step of validResults) {
+    if (step.skillsDetailed) {
+      for (const sk of step.skillsDetailed) {
+        allSkills.push(sk);
+      }
+    }
+  }
+
+  // 1. 综合置信度仪表盘
+  const overallConf = Math.round(execResult.overallConfidence || 70);
+  charts.push({
+    type: 'gauge',
+    title: isZh ? '综合置信度' : 'Overall Confidence',
+    data: overallConf,
+  });
+
+  // 2. 各技能置信度对比柱状图
+  const skillNames = isZh ? {
+    'dream-regime-detector': '市场状态',
+    'dream-contradiction-theory': '矛盾分析',
+    'dream-intelligence-monitor': '情报监控',
+    'dream-backtest': '回测引擎',
+    'dream-bayesian-opt': '贝叶斯优化',
+    'dream-strategy-research': '策略研究',
+    'dream-first-principles': '第一性原理',
+  } : {
+    'dream-regime-detector': 'Regime',
+    'dream-contradiction-theory': 'Contradiction',
+    'dream-intelligence-monitor': 'Intel',
+    'dream-backtest': 'Backtest',
+    'dream-bayesian-opt': 'Bayesian',
+    'dream-strategy-research': 'Strategy',
+    'dream-first-principles': 'FirstPrinciples',
+  };
+
+  // 按技能类型分组，取最后一次结果的置信度
+  const skillConfMap = new Map<string, number>();
+  for (const sk of allSkills) {
+    const name = skillNames[sk.skillId as keyof typeof skillNames] || sk.skillId;
+    skillConfMap.set(name, sk.confidence || 0);
+  }
+
+  if (skillConfMap.size > 0) {
+    charts.push({
+      type: 'bar',
+      title: isZh ? '各维度置信度' : 'Skill Confidence',
+      data: Array.from(skillConfMap.entries()).map(([name, value]) => ({ name, value })),
+    });
+  }
+
+  // 3. 回测指标柱状图
+  const lastBacktest = allSkills
+    .filter(s => s.skillId === 'dream-backtest')
+    .pop()?.outputs;
+
+  if (lastBacktest?.backtestResult) {
+    const bt = lastBacktest.backtestResult;
+    charts.push({
+      type: 'bar',
+      title: isZh ? '回测关键指标' : 'Backtest Metrics',
+      data: [
+        { name: isZh ? '胜率%' : 'Win%', value: bt.winRate },
+        { name: isZh ? '夏普' : 'Sharpe', value: bt.sharpeRatio * 10 }, // 缩放便于展示
+        { name: isZh ? '回撤%' : 'MaxDD%', value: bt.maxDrawdown },
+      ],
+    });
+  }
+
+  // 4. 方向投票饼图
+  const directionCount = new Map<string, number>();
+  for (const sk of allSkills) {
+    const dir = sk.outputs?.direction || 'neutral';
+    directionCount.set(dir, (directionCount.get(dir) || 0) + 1);
+  }
+
+  if (directionCount.size > 0) {
+    const dirNames = isZh ? { long: '看多', short: '看空', neutral: '中性' } : { long: 'Long', short: 'Short', neutral: 'Neutral' };
+    charts.push({
+      type: 'pie',
+      title: isZh ? '方向投票分布' : 'Direction Votes',
+      data: Array.from(directionCount.entries()).map(([dir, count]) => ({
+        name: dirNames[dir as keyof typeof dirNames] || dir,
+        value: count,
+      })),
+    });
+  }
+
+  // 5. 各步骤置信度趋势线图
+  const stepConfidences = validResults.map((s, i) => ({
+    name: `S${i + 1}`,
+    value: s.confidence || 0,
+  }));
+
+  if (stepConfidences.length > 1) {
+    charts.push({
+      type: 'line',
+      title: isZh ? '链路置信度趋势' : 'Chain Confidence Trend',
+      data: stepConfidences,
+    });
+  }
+
+  return charts;
+}
+
+/**
  * 使用 ExecutionPlanner 动态编排执行
  * 失败时返回 null，调用方降级到 S 链
  */
@@ -1304,6 +1628,18 @@ Core requirements:
         // 降级：取第一个有效结果作为主要输出
         summaryReport = validResults[0]?.answer || '分析完成，但未能生成综合报告。';
       }
+      // LLM 返回空内容或过短时，从执行数据生成专业研报
+      if (!summaryReport || summaryReport.trim().length < 200) {
+        // 获取实时市场数据注入研报
+        let mdForReport: MarketData | null = null;
+        try {
+          mdForReport = await fetchMarketData(
+            rawSymbol, instId, category, displayName, undefined, lang,
+          );
+        } catch { /* 降级处理 */ }
+        summaryReport = generateProfessionalReport(validResults, execResult, lang, displayName || rawSymbol || '', mdForReport);
+        console.log(`[executeWithPlanner] LLM 返回过短(${summaryReport?.length || 0}字)，使用专业研报生成器`);
+      }
     } else if (isAnalysisIntent) {
       // 分析类意图但无编排结果：直接用 LLM 基于用户问题生成分析
       try {
@@ -1396,6 +1732,11 @@ Requirements:
     }
 
     // 10. 构建 ResultFile
+    // 生成图表规格（供前端 SynthesisChart 渲染）
+    const chartSpecs = isAnalysisIntent && validResults.length > 0
+      ? generateChartSpecs(validResults, execResult, lang, displayName || rawSymbol || '')
+      : [];
+
     const result: ResultFile = {
       task_id: task.task_id,
       session_id: task.session_id,
@@ -1405,6 +1746,7 @@ Requirements:
       content_type: 'markdown',
       execution_time_ms: Date.now() - startTime,
       artifacts_produced: [],
+      chart_specs: chartSpecs,
       execution_summary: {
         chain_executed: execResult.steps.map(s => s.stepId),
         total_steps: execResult.steps.length,

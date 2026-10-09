@@ -8,8 +8,8 @@ license: Internal
 status: active
 category: orchestration
 triggers: [提交代码, 代码同步, commit, 代码提交, 同步代码, code commit, 提交变更]
-depends_on: [git, tsc, dream-code-sync-orphan-scan-workflow]
-provides: [code-commit-sync, commit-orchestration, post-commit-scan]
+depends_on: [git, tsc, dream-code-sync-orphan-scan-workflow, auto_sync_dispatcher.py, dream-doc-sync-workflow, knowledge-ingest, dream-skill-index-governance]
+provides: [code-commit-sync, commit-orchestration, post-commit-scan, post-commit-sync-dispatch]
 cognitive_links: [VM-1791126204667-1d31ec21]
 ---
 
@@ -262,6 +262,56 @@ verify(memory_id="VM-xxx", success=true)
 
 ---
 
+### 步骤 8：提交后四系统同步分发（双保险·AI 层）
+
+> **硬约束（不可跳过）**：commit 完成后必须执行本步骤，根据本次提交的文件类型分发到对应系统同步。
+> 本步骤与 `post-commit` hook 中的 `auto_sync_dispatcher.py`（机器层）构成双保险。
+> 机器层已自动执行轻量级同步（SKILL 注册、知识向量化、文档队列登记），本步骤负责**确认 + 补充执行**需要 AI 判断的同步。
+
+**输入**：本次 commit 的文件清单 + `pending_sync_queue.json`
+
+**处理**：
+
+**8.1 消费机器层待同步队列**
+
+```bash
+python3 1-ARCHITECTURE/skills/dream-skill-index-governance/auto_sync_dispatcher.py --consume-queue
+```
+
+若返回 `has_pending: true`，说明有文档变更待同步，继续 8.2。
+
+**8.2 按文件类型分发同步**
+
+| 本次提交文件类型 | 目标系统 | 必须执行的同步 |
+|-----------------|---------|---------------|
+| `SKILL.md` 新增/修改 | SKILL 索引系统 | 确认 `auto_sync_dispatcher` 已注册；若未注册则手动调用 `auto_register_skill.py` |
+| `2-KNOWLEDGE/` 下文件 | 知识库系统 | 确认向量化已运行；若未运行则手动执行 `build_index.py` |
+| 其他 `.md` 文档 | 文档管理系统 | 调用 `dream-doc-sync-workflow` 更新 INDEX.md |
+| 代码文件 | 无 | 跳过（无索引同步需求） |
+
+**8.3 文档同步执行（若有文档变更）**
+
+```
+# 调用 dream-doc-sync-workflow 执行 7 步文档索引同步
+# 变更解析 → 0-系统文档管理/INDEX 更新 → 2-KNOWLEDGE 索引更新 → 校验 → 覆盖率 → 飞书同步 → 认知记录
+```
+
+**8.4 知识入库执行（若有知识变更且未被机器层覆盖）**
+
+```
+# 调用 knowledge-ingest 执行 5 步知识沉淀
+# 分类 → 原子存储 → 向量化 → 认知 record → 索引 reload
+```
+
+**输出**：四系统同步确认报告（各系统 status + 红旗）
+
+**红旗判定**：
+- 文档变更但未调用 `dream-doc-sync-workflow` → 🚩 必须执行
+- 知识变更但向量化未运行 → 🚩 必须执行
+- SKILL 变更但未在 registry 中 → 🚩 必须注册
+
+---
+
 ## 三、输入输出契约
 
 | 阶段 | 输入 | 输出 |
@@ -273,6 +323,7 @@ verify(memory_id="VM-xxx", success=true)
 | 步骤 5 | 暂存区 + message | commit hash |
 | 步骤 6 | commit hash | 孤儿扫描报告 |
 | 步骤 7 | 提交+扫描结果 | 认知记忆 ID |
+| 步骤 8 | commit 文件清单 + 待同步队列 | 四系统同步确认报告 |
 
 ---
 
@@ -280,9 +331,12 @@ verify(memory_id="VM-xxx", success=true)
 
 | 类型 | 名称 | 用途 |
 |------|------|------|
-| 同构 | `dream-doc-sync-workflow` | 文档自动同步（模式来源） |
+| 同构 | `dream-doc-sync-workflow` | 文档自动同步（步骤8调用） |
 | 下游 | `dream-code-sync-orphan-scan-workflow` | 提交后孤儿扫描 |
 | 同构 | `dream-scattered-file-cleanup` | 散落文件治理 |
+| 下游 | `knowledge-ingest` | 知识沉淀（步骤8调用） |
+| 下游 | `dream-skill-index-governance` | SKILL 索引治理（步骤8确认） |
+| 工具 | `auto_sync_dispatcher.py` | 四系统同步分发器（机器层） |
 | 工具 | `git` | 版本控制 |
 | 工具 | `tsc --noEmit` | TypeScript 编译检查 |
 | 工具 | `py_compile` | Python 语法检查 |

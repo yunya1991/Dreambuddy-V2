@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from typing import Any
 
 import numpy as np
@@ -20,6 +21,12 @@ class OKXMarketAdapter:
 
     def __init__(self, okx_client: Any) -> None:
         self._client = okx_client
+        # TTL 缓存：key -> (timestamp, data)，命中时跳过 API 调用
+        self._cache: dict[str, tuple[float, dict]] = {}
+        # stale 降级缓存：key -> (timestamp, data)，全失败时返回上次成功响应
+        self._last_good: dict[str, tuple[float, dict]] = {}
+        self._ttl: float = 60.0
+        self._max_retries: int = 3
 
     def fetch(self, symbol: str, inst_id: str, limit: int = 200) -> dict[str, Any]:
         """
@@ -52,26 +59,57 @@ class OKXMarketAdapter:
 
     # ------------------------------------------------------------------ K线
     def _fetch_kline(self, inst_id: str, limit: int = 200) -> dict[str, Any]:
-        """获取 K 线并计算 ma_200, fib, vol_5, vol_20"""
+        """获取 K 线并计算 ma_200, fib, vol_5, vol_20
+
+        韧性：TTL 缓存命中直接返回；否则最多重试 _max_retries 次；
+        4xx 错误立即返回不重试；全失败时回退到 _last_good stale 缓存。
+        """
+        cache_key = f"kline:{inst_id}"
+
+        # TTL 缓存命中 → 跳过 API 调用
+        if cache_key in self._cache:
+            ts, cached = self._cache[cache_key]
+            if time.time() - ts < self._ttl:
+                return cached
+
         out: dict[str, Any] = {}
-        try:
-            resp = self._client.get_kline(inst_id, bar="1H", limit=limit)
+
+        for _attempt in range(self._max_retries):
+            try:
+                resp = self._client.get_kline(inst_id, bar="1H", limit=limit)
+            except Exception as e:
+                logger.warning("[FO] kline fetch error (attempt %d/%d): %s",
+                               _attempt + 1, self._max_retries, e)
+                continue
+
             if not resp or not resp.get("ok"):
-                logger.warning("[FO] kline fetch fail: %s", resp.get("error", "") if resp else "no resp")
-                return out
+                # 4xx 错误立即返回，不重试
+                err_code = resp.get("error_code") if resp else None
+                if err_code is not None and 400 <= err_code < 500:
+                    logger.warning("[FO] kline 4xx (%s), no retry", err_code)
+                    return {}
+                logger.warning("[FO] kline fetch fail (attempt %d/%d): %s",
+                               _attempt + 1, self._max_retries,
+                               resp.get("error", "") if resp else "no resp")
+                continue
 
             candles = resp.get("candles", [])
             if not candles:
-                return out
+                continue
 
             # OKX candles 降序(新→旧)，反转为升序(旧→新)
             candles_asc = list(reversed(candles))
 
-            close_arr = np.array([float(c["c"]) for c in candles_asc], dtype=float)
-            open_arr = np.array([float(c["o"]) for c in candles_asc], dtype=float)
-            high_arr = np.array([float(c["h"]) for c in candles_asc], dtype=float)
-            low_arr = np.array([float(c["l"]) for c in candles_asc], dtype=float)
-            vol_arr = np.array([float(c["vol"]) for c in candles_asc], dtype=float)
+            try:
+                close_arr = np.array([float(c["c"]) for c in candles_asc], dtype=float)
+                open_arr = np.array([float(c["o"]) for c in candles_asc], dtype=float)
+                high_arr = np.array([float(c["h"]) for c in candles_asc], dtype=float)
+                low_arr = np.array([float(c["l"]) for c in candles_asc], dtype=float)
+                vol_arr = np.array([float(c["vol"]) for c in candles_asc], dtype=float)
+            except Exception as e:
+                logger.warning("[FO] kline parse error (attempt %d/%d): %s",
+                               _attempt + 1, self._max_retries, e)
+                continue
 
             out["close"] = close_arr
             out["open"] = open_arr
@@ -102,10 +140,21 @@ class OKXMarketAdapter:
             if vol_arr.size >= 20:
                 out["vol_20"] = float(np.mean(vol_arr[-20:]))
 
-        except Exception as e:
-            logger.warning("[FO] _fetch_kline crash: %s", e)
+            # 成功 → 更新 TTL 缓存 + last_good
+            now = time.time()
+            self._cache[cache_key] = (now, out)
+            self._last_good[cache_key] = (now, out)
+            return out
 
-        return out
+        # 全部重试失败 → stale 降级
+        if cache_key in self._last_good:
+            ts, stale = self._last_good[cache_key]
+            age = time.time() - ts
+            logger.warning("[FO-raw-stale] returning stale kline for %s, age=%.0fs",
+                           inst_id, age)
+            return stale
+
+        return {}
 
     # ------------------------------------------------------------------ Ticker
     def _fetch_ticker(self, inst_id: str) -> dict[str, Any]:

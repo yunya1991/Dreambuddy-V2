@@ -1,3 +1,12 @@
+---
+name: screen1-trigger
+description: "SKILL: screen1-trigger"
+version: 1.0.0
+status: active
+category: trading
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

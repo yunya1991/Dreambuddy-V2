@@ -614,7 +614,7 @@ export class ExecutionPlanner {
     let dynamicInsertions: StepExecutionResult['dynamicInsertions'];
     let insertionRationale: string | undefined;
     if (decision === 'insert' && currentGaps.length > 0) {
-      const remainingBudget = (context.budgetTokens || 8000) -
+      const remainingBudget = (context.budgetTokens || 0) -
         skillCallRecords.reduce((sum, r) => sum + (r.result.tokensUsed || 0), 0);
       const primaryGap = currentGaps[0];
       const insertionPlan = this.dynamicInsertionPlanner.planInsertions(

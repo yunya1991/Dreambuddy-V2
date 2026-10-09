@@ -287,4 +287,113 @@ describe('SIE-SPEC 路径 B/C 编排执行器', () => {
       delete process.env.USE_SKILL_ORCHESTRATION;
     });
   });
+
+  // ============================================================
+  // §3.5 Token 消耗埋点（可观测性提升项）
+  // ============================================================
+  describe('Token 消耗埋点 (§3.5)', () => {
+    it('路径 B 结果 metadata 应包含 token_usage 字段', async () => {
+      const { executeSkillOrchestration, isSkillOrchestrationEnabled } = await import('./skill-orchestration-executor');
+      if (!isSkillOrchestrationEnabled()) {
+        process.env.USE_SKILL_ORCHESTRATION = 'true';
+      }
+
+      const task = {
+        task_id: 'test-token-b',
+        message: 'how to configure xyz unknown tool',
+        intent: { type: 'simple_qa', entities: {}, confidence: 0.85, raw_text: 'how to configure xyz unknown tool' },
+        timestamp: Date.now(),
+        status: 'pending',
+      } as any;
+
+      let result: any = null;
+      try {
+        result = await executeSkillOrchestration(task, 'how to configure xyz unknown tool', 'en');
+      } catch {
+        // FAIL-OPEN
+      }
+
+      if (result && result.metadata && result.metadata.imitation_path === 'B') {
+        // 路径 B 结果应包含 token_usage
+        expect(result.metadata.token_usage).toBeDefined();
+        expect(typeof result.metadata.token_usage.total_tokens).toBe('number');
+        expect(result.metadata.token_usage.total_tokens).toBeGreaterThanOrEqual(0);
+        expect(typeof result.metadata.token_usage.input_tokens).toBe('number');
+        expect(typeof result.metadata.token_usage.output_tokens).toBe('number');
+      }
+
+      delete process.env.USE_SKILL_ORCHESTRATION;
+    });
+
+    it('路径 C 结果 metadata 应包含 token_usage 字段', async () => {
+      const { executeSkillOrchestration, isSkillOrchestrationEnabled } = await import('./skill-orchestration-executor');
+      if (!isSkillOrchestrationEnabled()) {
+        process.env.USE_SKILL_ORCHESTRATION = 'true';
+      }
+
+      const task = {
+        task_id: 'test-token-c',
+        message: 'completely unknown xyzqwerty 12345',
+        intent: { type: 'simple_qa', entities: {}, confidence: 0.85, raw_text: 'completely unknown xyzqwerty 12345' },
+        timestamp: Date.now(),
+        status: 'pending',
+      } as any;
+
+      let result: any = null;
+      try {
+        result = await executeSkillOrchestration(task, 'completely unknown xyzqwerty 12345', 'en');
+      } catch {
+        // FAIL-OPEN
+      }
+
+      if (result && result.metadata && result.metadata.imitation_path === 'C') {
+        expect(result.metadata.token_usage).toBeDefined();
+        expect(typeof result.metadata.token_usage.total_tokens).toBe('number');
+        expect(result.metadata.token_usage.total_tokens).toBeGreaterThanOrEqual(0);
+        expect(typeof result.metadata.token_usage.input_tokens).toBe('number');
+        expect(typeof result.metadata.token_usage.output_tokens).toBe('number');
+      }
+
+      delete process.env.USE_SKILL_ORCHESTRATION;
+    });
+
+    it('SSE step_end 事件应包含 token_usage 数据', async () => {
+      const { executeSkillOrchestration, isSkillOrchestrationEnabled } = await import('./skill-orchestration-executor');
+      if (!isSkillOrchestrationEnabled()) {
+        process.env.USE_SKILL_ORCHESTRATION = 'true';
+      }
+
+      const events: any[] = [];
+      const onProgress = (event: any) => events.push(event);
+
+      const task = {
+        task_id: 'test-token-sse',
+        message: 'how to configure xyz unknown tool',
+        intent: { type: 'simple_qa', entities: {}, confidence: 0.85, raw_text: 'how to configure xyz unknown tool' },
+        timestamp: Date.now(),
+        status: 'pending',
+      } as any;
+
+      try {
+        await executeSkillOrchestration(task, 'how to configure xyz unknown tool', 'en', onProgress);
+      } catch {
+        // FAIL-OPEN
+      }
+
+      // 查找 IMITATION 或 RESEARCH 的 step_end 事件
+      const endEvents = events.filter(e =>
+        (e.stepId === 'IMITATION' || e.stepId === 'RESEARCH') && e.type === 'step_end'
+      );
+
+      // 至少应有一个 step_end 事件包含 token_usage
+      if (endEvents.length > 0) {
+        const withToken = endEvents.filter(e =>
+          e.data && e.data.token_usage && typeof e.data.token_usage.total_tokens === 'number'
+        );
+        expect(withToken.length).toBeGreaterThan(0);
+      }
+
+      delete process.env.USE_SKILL_ORCHESTRATION;
+    });
+  });
 });

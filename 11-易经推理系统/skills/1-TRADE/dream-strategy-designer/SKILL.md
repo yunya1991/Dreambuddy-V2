@@ -1,3 +1,12 @@
+---
+name: dream-strategy-designer
+description: "🎯 Dream-Strategy-Designer: 战略制定部 (v2.6)"
+version: 1.0.0
+status: active
+category: trading
+triggers: ["\"战略制定\"", "\"战略指令\"", "\"战略合成\"", "\"制定策略\"", "\"交易工具调研\"", "\"币种调研\"", "\"多币种策略\"", "\"战略沙盘推演\"", "\"应急预案\""]
+---
+
 ## Autonomy Boundary
 
 可自主执行：

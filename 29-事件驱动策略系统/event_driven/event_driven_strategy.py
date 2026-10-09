@@ -33,21 +33,78 @@ from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
+
+def _get_sltp_constraints() -> dict:
+    """从集中配置获取 SL/TP 盈亏比约束（惰性导入，FAIL-OPEN 兜底）。
+
+    优先级：param_center（完整约束：SL/TP 上下限、RR 下限）
+            → sl_tp_config（rr_ratio_target、SL/TP 下限）
+            → 本地兜底常量
+
+    返回 dict: sl_floor, sl_ceil, tp_floor, tp_ceil, rr_ratio_target
+    """
+    # 优先：参数中心（含 SL_CEIL / TP_CEIL 完整硬约束）
+    try:
+        from param_center.aggregator import SL_FLOOR, TP_FLOOR, RR_FLOOR
+        from param_center.verifier import SL_CEIL, TP_CEIL
+        return {
+            "sl_floor": float(SL_FLOOR),
+            "sl_ceil": float(SL_CEIL),
+            "tp_floor": float(TP_FLOOR),
+            "tp_ceil": float(TP_CEIL),
+            "rr_ratio_target": float(RR_FLOOR),
+        }
+    except Exception:
+        pass
+    # 回退：BCRM2 sl_tp_config（仅 rr_ratio_target、SL/TP 下限）
+    try:
+        from memory_l4.bcrm2.sl_tp_config import SLTPParams
+        p = SLTPParams()
+        return {
+            "sl_floor": p.sl_floor,
+            "sl_ceil": 0.15,
+            "tp_floor": p.tp_floor,
+            "tp_ceil": 0.30,
+            "rr_ratio_target": p.rr_ratio_target,
+        }
+    except Exception:
+        pass
+    # 最终兜底：与集中配置硬约束一致的常量
+    return {
+        "sl_floor": 0.04,
+        "sl_ceil": 0.15,
+        "tp_floor": 0.12,
+        "tp_ceil": 0.30,
+        "rr_ratio_target": 3.0,
+    }
+
+
 # Phase 2: 弹性系数常量（SPEC-事件驱动策略独立化 §六）
 ELASTICITY_TREND_FOLLOW = 1.0   # 顺势共振（事件方向 = 趋势方向）
 ELASTICITY_MEAN_REVERT = -0.7   # 逆势均值回归（事件方向 ≠ 趋势方向）
 ELASTICITY_NONE = 0.0           # 无弹性约束（neutral 事件或无趋势）
 
 VALID_SIGNALS = ("long", "short", "neutral")
-VALID_EVENT_TYPES = ("fomc", "nfp", "cpi", "ppi", "none")
+# SPEC-Phase2 §5.1: 扩展至 9 种（8 event_type + none）
+VALID_EVENT_TYPES = (
+    "fomc", "nfp", "cpi", "ppi",                          # 现有
+    "tech_upgrade", "fed_speech",                          # Phase 2 新增
+    "sec_deadline", "congressional_hearing",               # Phase 2 新增
+    "none",
+)
 
 # Phase 3: 事件半衰期 τ（天）—— 单点脉冲算法
 # 数据来源: 事件研究法事件窗 [-10,+20] + Smales 黄金 VAR-GARCH
+# SPEC-Phase2 §5.2 (M4): 新增 4 个半衰期均为经验假设 v0，待 Phase 3 回测验证后校准
 EVENT_HALF_LIFE = {
     "fomc": 3.0,   # FOMC 影响最持久（含纪要重定价）
     "cpi": 2.0,    # CPI 影响中等
     "nfp": 1.5,    # 非农影响较短
     "ppi": 1.0,    # PPI 影响最短
+    "tech_upgrade": 1.0,          # 经验假设 v0
+    "fed_speech": 2.0,            # 经验假设 v0
+    "sec_deadline": 1.5,          # 经验假设 v0
+    "congressional_hearing": 2.5, # 经验假设 v0
     "none": 0.0,
 }
 
@@ -55,10 +112,12 @@ EVENT_HALF_LIFE = {
 PHASE_THRESHOLDS = {
     "pre_event":        {"long": 0.70, "short": 0.30},  # 保守：不确定性高
     "expectation_build": {"long": 0.70, "short": 0.30},
+    "expectation_rise": {"long": 0.68, "short": 0.32},   # Phase 2 新增
     "expectation_jump": {"long": 0.65, "short": 0.32},  # 跳变期略放宽
     "expectation_digest": {"long": 0.65, "short": 0.32},
     "event":            {"long": 0.55, "short": 0.40},  # 利空出尽，阈值放宽
     "repricing":        {"long": 0.60, "short": 0.35},  # 三阶段权衡
+    "post_event":       {"long": 0.62, "short": 0.38},   # Phase 2 新增（GeneralEventWindowTracker）
     "neutral":          {"long": 0.65, "short": 0.35},  # 兜底
 }
 
@@ -66,10 +125,12 @@ PHASE_THRESHOLDS = {
 PHASE_POSITION_MULT = {
     "pre_event": 0.8,
     "expectation_build": 0.8,
+    "expectation_rise": 1.0,    # Phase 2 新增
     "expectation_jump": 1.2,
     "expectation_digest": 1.0,
     "event": 1.5,       # 事件当天仓位最大
     "repricing": 1.0,
+    "post_event": 1.0,  # Phase 2 新增
     "neutral": 0.0,
 }
 
@@ -218,7 +279,14 @@ class EventDrivenStrategy:
     # T4 P0 盲区修复（SPEC §3.2.1）：
     # 非农/CPI/PPI 虽不在 FOMC 议息周期，但实质影响加息预期，CESI 触发激活
     CESI_TRIGGER_THRESHOLD = 1.5  # ±1.5σ 触发宏观事件窗口
-    MACRO_EVENT_TYPES = ("nfp", "cpi", "ppi")  # 强制激活的事件类型
+    # SPEC-Phase2 §5.3: fed_speech 实质影响加息预期，加入强制激活列表
+    MACRO_EVENT_TYPES = ("nfp", "cpi", "ppi", "fed_speech")
+    # SPEC-Phase2 §7.3: 非宏观事件（无 surprise/priced_in 等宏观评分维度），
+    # direction 由 collector 预计算（dominant_direction），直接驱动信号
+    NON_MACRO_EVENT_TYPES = ("tech_upgrade", "sec_deadline", "congressional_hearing")
+    # direction 直接驱动信号的事件类型（无宏观评分维度，collector 已预计算 direction）
+    # fed_speech 虽在 MACRO_EVENT_TYPES（影响加息预期），但无 macro data，走 direction 驱动
+    DIRECTION_DRIVEN_TYPES = NON_MACRO_EVENT_TYPES + ("fed_speech",)
 
     def evaluate(self, kline_data: dict[str, Any]) -> EventDrivenSignal:
         """
@@ -244,10 +312,12 @@ class EventDrivenStrategy:
         # Phase 2: 归一化未知 event_type 为 "none"（EventSignal 枚举校验要求）
         event_type = raw_event_type if raw_event_type in VALID_EVENT_TYPES else "none"
 
+        # 扩展后：四选一触发（SPEC-Phase2 §7.1）
         is_macro_event_active = (
             in_fomc
             or (cesi is not None and abs(cesi) >= self.CESI_TRIGGER_THRESHOLD)
             or event_type in self.MACRO_EVENT_TYPES
+            or event_type in ("tech_upgrade", "sec_deadline", "congressional_hearing")
         )
 
         if not is_macro_event_active:
@@ -265,6 +335,13 @@ class EventDrivenStrategy:
                 forward_guidance="",
                 mode="none",
             )
+
+        # SPEC-Phase2 §7.3: direction 驱动型事件（tech_upgrade/sec_deadline/
+        # congressional_hearing/fed_speech）无宏观评分维度，signal 直接由
+        # collector 预计算的 dominant_direction 决定，跳过 6 维 composite 评分
+        # 及 FOMC 专属的 hike_prob 偏移 / 前瞻指引 / 三阶段权衡。
+        if event_type in self.DIRECTION_DRIVEN_TYPES:
+            return self._evaluate_direction_driven(kline_data, event_ctx, event_type, cycle_phase)
 
         scores = self._compute_scores(kline_data, event_ctx)
 
@@ -356,6 +433,63 @@ class EventDrivenStrategy:
             scores=scores,
             reason=reason,
             forward_guidance=forward_guidance,
+            mode=mode,
+        )
+
+    def _evaluate_direction_driven(
+        self,
+        kline_data: dict[str, Any],
+        event_ctx: dict[str, Any],
+        event_type: str,
+        cycle_phase: str,
+    ) -> EventDrivenSignal:
+        """SPEC-Phase2 §7.3: direction 驱动型事件评分。
+
+        适用于 tech_upgrade / sec_deadline / congressional_hearing / fed_speech。
+        这些事件无 surprise/priced_in/real_rate 等宏观评分维度，direction 由
+        collector 预计算并写入 dominant_direction，直接驱动信号：
+          - dominant_direction=long  → signal=long
+          - dominant_direction=short → signal=short
+          - dominant_direction=neutral → signal=neutral
+
+        strength = PHASE_POSITION_MULT[cycle_phase] × direction_confidence
+        不应用 FOMC 专属的 hike_prob 偏移 / 前瞻指引 / 三阶段权衡。
+
+        FAIL-OPEN: dominant_direction 缺失时返回 neutral。
+        """
+        raw_direction = event_ctx.get("dominant_direction", "neutral")
+        signal = raw_direction if raw_direction in ("long", "short") else "neutral"
+
+        phase_mult = PHASE_POSITION_MULT.get(cycle_phase, 1.0)
+        # direction 置信度：collector 已做评分，非 neutral 方向置信 0.7
+        dir_confidence = 0.7 if signal != "neutral" else 0.0
+        strength = round(min(1.0, phase_mult * dir_confidence), 3)
+        confidence = 0.7 if signal != "neutral" else 0.4
+
+        if signal == "long":
+            reason = f"{event_type} 事件方向看多（collector 预评分）"
+            mode = "direction_driven_long"
+        elif signal == "short":
+            reason = f"{event_type} 事件方向看空（collector 预评分）"
+            mode = "direction_driven_short"
+        else:
+            reason = f"{event_type} 事件方向中性，观望"
+            mode = "direction_driven_neutral"
+
+        elasticity = self._compute_elasticity(signal, kline_data)
+
+        return EventSignal(
+            signal=signal,
+            strength=strength,
+            elasticity=elasticity,
+            event_type=event_type,
+            event_phase=cycle_phase,
+            window_start=event_ctx.get("window_start"),
+            window_end=event_ctx.get("window_end"),
+            confidence=confidence,
+            scores={"dominant_direction": raw_direction},
+            reason=reason,
+            forward_guidance="",
             mode=mode,
         )
 
@@ -1148,18 +1282,24 @@ class EventDrivenTrader:
         return base * signal.strength * phase_mult * elasticity_mult
 
     def _compute_sl_tp(self, signal: EventSignal, kline_data: dict) -> tuple[float, float]:
-        """SL/TP：ATR 自适应（SL=max(0.04, 5×ATR/close)），TP=3×SL。"""
+        """SL/TP：ATR 自适应，盈亏比目标与上下限引用集中配置。
+
+        SL = clamp(5×ATR/close, sl_floor, sl_ceil)
+        TP = clamp(SL × rr_ratio_target, tp_floor, tp_ceil)
+        约束值来自 param_center / sl_tp_config（FAIL-OPEN 兜底）。
+        """
+        c = _get_sltp_constraints()
         atr = kline_data.get("atr", 0.0)
         close = kline_data.get("close")
         close_price = float(close[-1]) if close and hasattr(close, "__len__") and len(close) > 0 else 0
         if atr is None or float(atr) <= 0 or close_price <= 0:
-            return 0.04, 0.12  # FAIL-OPEN：硬编码下限
+            return c["sl_floor"], c["tp_floor"]  # FAIL-OPEN：集中配置下限
         try:
-            sl_pct = max(0.04, min(0.15, 5.0 * float(atr) / close_price))
+            sl_pct = max(c["sl_floor"], min(c["sl_ceil"], 5.0 * float(atr) / close_price))
         except (TypeError, ValueError, ZeroDivisionError):
-            return 0.04, 0.12
-        tp_pct = min(0.30, sl_pct * 3.0)
-        return sl_pct, tp_pct
+            return c["sl_floor"], c["tp_floor"]
+        tp_pct = max(c["tp_floor"], min(c["tp_ceil"], sl_pct * c["rr_ratio_target"]))
+        return round(sl_pct, 4), round(tp_pct, 4)
 
     def _days_since_event(self, signal: EventSignal) -> float:
         """计算距事件落地的天数。FAIL-OPEN → 0.0。"""

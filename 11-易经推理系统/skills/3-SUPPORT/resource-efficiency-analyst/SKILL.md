@@ -1,3 +1,12 @@
+---
+name: resource-efficiency-analyst
+description: "资源效率分析师 (resource-efficiency-analyst)"
+version: 1.0.0
+status: active
+category: support
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

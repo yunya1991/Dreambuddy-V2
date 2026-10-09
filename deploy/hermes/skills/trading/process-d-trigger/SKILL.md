@@ -1,3 +1,12 @@
+---
+name: process-d-trigger
+description: "SKILL: process-d-trigger"
+version: 1.0.0
+status: active
+category: trading
+triggers: []
+---
+
 ## Autonomy Boundary
 
 可自主执行：

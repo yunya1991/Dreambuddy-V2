@@ -158,14 +158,20 @@ export class IntentClarificationEngine {
     }
 
     // 3. 消息长度和泛化度检测
-    const messageLength = userMessage.trim().length;
-    if (messageLength < 10) {
+    // 中文信息密度高：1个中文字符 ≈ 2-3个英文字符的信息量
+    // 用"有效长度"衡量：中文字符计2，英文/数字计1
+    const effectiveLength = [...userMessage.trim()].reduce((sum, ch) => {
+      return sum + (ch.charCodeAt(0) > 0x4e00 ? 2 : 1);
+    }, 0);
+    if (effectiveLength < 6) {
       score += 20;
-      reasons.push(`消息过短（${messageLength}字符），意图可能不完整`);
+      reasons.push(`消息过短（有效长度${effectiveLength}），意图可能不完整`);
     }
-    const vagueKeywords = ['分析', '看看', '怎么样', '如何', '帮我看', '说说', 'analyze', 'check', 'how about'];
+    // 泛化关键词检测：中文口语化表达（看看/怎么样/帮我看/说说）不算泛化
+    // 只有极度模糊的英文才算（如 "how about"）
+    const vagueKeywords = ['how about'];
     const hasVagueKeyword = vagueKeywords.some(kw => userMessage.toLowerCase().includes(kw));
-    if (hasVagueKeyword && messageLength < 30) {
+    if (hasVagueKeyword && effectiveLength < 40) {
       score += 15;
       reasons.push('包含泛化关键词且缺少具体方向');
     }

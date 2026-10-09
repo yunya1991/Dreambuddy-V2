@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Iterable, List
 from uuid import uuid4
@@ -47,6 +48,18 @@ def records_to_cleaned_df(records: Iterable[DataRecord]) -> CleanedDF:
             frag = pd.DataFrame(rec.timeseries)
         elif rec.category == "news" and rec.events:
             frag = pd.DataFrame(rec.events)
+            # ★ FIX 2026-10-09: news 类需保留 metrics（od_policy_sentiment_0_1/od_event_type/
+            #   od_is_important/od_decay_hl_hrs/od_tickers_hit_csl）和 raw（tickers_hit/title/description），
+            #   否则 Silver 清洗后事件驱动 compute_coin_event_positive_strength 永远返回 0 → 无持仓。
+            if isinstance(rec.metrics, dict) and rec.metrics:
+                for _k, _v in rec.metrics.items():
+                    if _k not in frag.columns:
+                        frag[_k] = _v
+            if isinstance(rec.raw, dict) and rec.raw:
+                for _k, _v in rec.raw.items():
+                    if _k not in frag.columns:
+                        # list 类型转 JSON 字符串（tickers_hit 等），避免 pandas 列类型混乱
+                        frag[_k] = json.dumps(_v, ensure_ascii=False) if isinstance(_v, (list, dict)) else _v
         else:
             # macro 或 fallback：metrics 扁平 → 1行
             row = dict(rec.metrics) if isinstance(rec.metrics, dict) else {}
@@ -152,17 +165,30 @@ def cleaned_df_to_records(
         }
         if category == "news":
             # events 流
-            ev_cols = [c for c in ("timestamp", "title", "importance") if c in grp_cols]
-            events = grp[ev_cols].to_dict(orient="records")
+            ev_cols = [c for c in ("timestamp", "title", "importance", "event_type", "published_ms") if c in grp_cols]
+            events = grp[ev_cols].to_dict(orient="records") if ev_cols else []
             metrics = {asset_col: asset}
             if metrics_cols:
                 sample = grp.iloc[0]
                 for c in metrics_cols & set(sample.index):
                     metrics[c] = sample[c]
+            # ★ FIX 2026-10-09: 还原 raw（tickers_hit/title/description/...）供事件驱动策略使用
+            raw = {}
+            for _rk in ("tickers_hit", "title", "description", "tags", "newsUrl", "publishTimestamp"):
+                if _rk in grp_cols:
+                    _val = grp.iloc[0][_rk]
+                    if isinstance(_val, str) and _rk == "tickers_hit":
+                        # records_to_cleaned_df 中 list 被 json.dumps 为字符串，这里还原
+                        try:
+                            raw[_rk] = json.loads(_val)
+                        except (json.JSONDecodeError, TypeError):
+                            raw[_rk] = _val
+                    else:
+                        raw[_rk] = _val if not (isinstance(_val, float) and pd.isna(_val)) else ""
             records.append(DataRecord(
                 source=source, category=category, sub_category=grp_sub_category,
                 timestamp=_first_iso(grp, timestamp_col),
-                metrics=metrics, events=events, timeseries=[], raw={},
+                metrics=metrics, events=events, timeseries=[], raw=raw,
             ))
         elif category in ("finance", "chain") and {
             "timestamp", "close", "volume", "open", "high", "low",

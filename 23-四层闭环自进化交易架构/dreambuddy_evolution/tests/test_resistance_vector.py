@@ -247,6 +247,10 @@ class TestResistanceVectorPhase1:
     # -------------------------------------------------------------- TR-RV-06 (FO-1 monkeypatch)
     def test_rv06_sentiment_fo1_monkeypatch_neutral_and_quality_drop(self, monkeypatch):
         """TR-RV-06：SentimentEngine FO-1 降级（_SENTIMENT_FO1_ACTIVE=True）→ quality_score -0.15pp，reflexivity 降到 0.66 以下"""
+        from dreambuddy_evolution.agi_config import set_switch
+        # 关闭微结构开关：setup01 无微结构数据→避免 FUNDING_NONE/ORDERBOOK_NONE/OI_NONE 3 flag
+        # 触发 FO-2 (quality×0.4) 压缩 sent_fo_penalty 0.15→0.06，隔离 sentiment FO-1 测试
+        set_switch("enable_microstructure_resistance", False)
         rv = self._rv()
         rf_mod = self._rf_module()
         data = _make_mock_raw_data("setup01_5050_book")

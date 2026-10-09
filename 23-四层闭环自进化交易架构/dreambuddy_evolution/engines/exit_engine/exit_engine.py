@@ -93,6 +93,9 @@ class EvolutionExitEngine:
     ]
     EVOLUTION_REDUCE_COOLDOWN_SEC = 4 * 3600  # 与 BCRM 共 4H（按 symbol 独立）
 
+    # 规则 3a: 软投票冷却期（复用 BCRM 同源设计 4H）
+    SOFT_VOTE_COOLDOWN_SEC: int = 4 * 3600
+
     def __init__(
         self,
         okx_client: Any = None,
@@ -101,6 +104,7 @@ class EvolutionExitEngine:
         shadow_rl_tracker: Any = None,
         log_fn: Optional[Callable[[str, str], None]] = None,
         strategy_params: Optional[ExitStrategyParams] = None,
+        timeout_arbitrator: Any = None,
     ):
         """
         Args:
@@ -110,6 +114,7 @@ class EvolutionExitEngine:
             shadow_rl_tracker: ShadowRLTracker（用于记录离场决策 (s,a,R,s')）
             log_fn: 日志回调 fn(msg, level)
             strategy_params: 离场策略参数基因（Phase 5 参数自适应）
+            timeout_arbitrator: TimeoutVoteArbitrator（软投票仲裁层，None=不启用规则3a）
         """
         self.okx_client = okx_client
         self.ess_provider = ess_provider
@@ -130,6 +135,11 @@ class EvolutionExitEngine:
         # 规则 2d 冷却期：记录每个 symbol 上次 evolution 反向减仓的时间戳
         #   与 _last_bcrm_reduce_ts 独立（互不干扰），冷却期 4H
         self._last_evolution_reduce_ts: Dict[str, float] = {}
+        # 规则 3a: 软投票仲裁层（TimeoutVoteArbitrator 实例，None=不启用）
+        self._timeout_arbitrator = timeout_arbitrator
+        # 规则 3a 冷却期：记录每个 symbol 上次软投票触发的时间戳
+        #   触发后 SOFT_VOTE_COOLDOWN_SEC(4H) 内不再触发
+        self._last_soft_vote_ts: Dict[str, float] = {}
 
     def _log(self, msg: str, level: str = "INFO") -> None:
         try:
@@ -275,6 +285,20 @@ class EvolutionExitEngine:
 
         # 优化2: 分批止盈 R 倍数（从 context 读取或计算）
         r_multiple = float(ctx.get("r_multiple", 0.0) or 0.0)
+
+        # 优化2 扩展: TP 时间衰减桥接 — tp_decayed_pct 存在时用衰减后 TP 间距重算 R 倍数
+        tp_decayed_pct = float(ctx.get("tp_decayed_pct", 0.0) or 0.0)
+        if tp_decayed_pct > 0 and entry_price > 0:
+            if pos_side == "long":
+                _decayed_tp_px = entry_price * (1 + tp_decayed_pct)
+            else:
+                _decayed_tp_px = entry_price * (1 - tp_decayed_pct)
+            _tp_diff = _decayed_tp_px - entry_price
+            if _tp_diff > 0:
+                if pos_side == "long":
+                    r_multiple = (current_price - entry_price) / _tp_diff
+                else:
+                    r_multiple = (entry_price - current_price) / _tp_diff
 
         # 优化3: 超时信号评估所需信息
         has_stronger_signal = bool(ctx.get("has_stronger_signal", False))
@@ -641,6 +665,51 @@ class EvolutionExitEngine:
         except Exception as e:
             self._log(
                 f"[EvolutionExitEngine] evolution 反向信号检查异常(FAIL-OPEN): {e}",
+                "WARN",
+            )
+            return None
+
+    def _check_timeout_soft_vote(self, ctx: Dict[str, Any]) -> Optional[ExitDecision]:
+        """规则 3a: 软投票仲裁层（亏损仓超时触发）
+
+        亏损仓超时 → 四 voter 软投票决定 force_close/hold/adjust_sl_tp。
+        盈利仓跳过软投票 → 返回 None 让 3b 换仓逻辑接管。
+        冷却期 SOFT_VOTE_COOLDOWN_SEC(4H) 内 → 返回 None 落回后续规则。
+
+        FAIL-OPEN: 任何异常返回 None（落回后续规则）
+        """
+        try:
+            if self._timeout_arbitrator is None:
+                return None
+
+            symbol = str(ctx.get("symbol", "UNKNOWN"))
+            upl_ratio = float(ctx.get("upl_ratio", 0.0) or 0.0)
+
+            # 冷却期检查：4H 内不再触发软投票（按 symbol 独立）
+            import time as _time
+            _now = _time.time()
+            _last_ts = self._last_soft_vote_ts.get(symbol, 0.0)
+            if _last_ts > 0 and (_now - _last_ts) < self.SOFT_VOTE_COOLDOWN_SEC:
+                _remain_min = (self.SOFT_VOTE_COOLDOWN_SEC - (_now - _last_ts)) / 60
+                self._log(
+                    f"[EvolutionExitEngine] {symbol} 软投票冷却期内 "
+                    f"(剩余 {_remain_min:.0f}min) → 跳过规则 3a，落回后续规则",
+                    "DEBUG",
+                )
+                return None
+
+            # 盈利守卫：盈利仓跳过软投票，让 3b 换仓逻辑接管
+            if upl_ratio > 0:
+                return None
+
+            # 调用仲裁器
+            decision = self._timeout_arbitrator.arbitrate(ctx)
+            if decision is not None:
+                self._last_soft_vote_ts[symbol] = _now
+            return decision
+        except Exception as e:
+            self._log(
+                f"[EvolutionExitEngine] 软投票检查异常(FAIL-OPEN): {e}",
                 "WARN",
             )
             return None

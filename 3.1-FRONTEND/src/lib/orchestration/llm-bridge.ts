@@ -195,6 +195,7 @@ export async function callLLM(options: LLMCallOptions, uid?: string): Promise<LL
         max_tokens: options.maxTokens ?? 2000,
       }),
       signal: controller.signal,
+      cache: 'no-store',
     });
 
     const latencyMs = Date.now() - startTime;
@@ -249,6 +250,7 @@ async function callAnthropic(
       messages: [{ role: 'user', content: options.prompt }],
     }),
     signal: controller.signal,
+    cache: 'no-store',
   });
 
   if (!response.ok) {

@@ -105,10 +105,11 @@ export interface HistoricalPerformance {
 
 export class ChainPlanner {
   private tokenBudget: number;
-  private defaultBudget = 8000;
+  // 默认 0 = 不限制（用户可按需设置预算）
+  private defaultBudget = 0;
 
   constructor(tokenBudget?: number) {
-    this.tokenBudget = tokenBudget || this.defaultBudget;
+    this.tokenBudget = tokenBudget ?? this.defaultBudget;
   }
 
   // ============================================================
@@ -353,6 +354,10 @@ export class ChainPlanner {
     steps: ThinkingStepDefinition[],
     budget: number
   ): { steps: ThinkingStepDefinition[]; pruned: ChainPlanResult['prunedNodes'] } {
+    // 预算为 0 = 不限制，跳过过滤
+    if (budget <= 0) {
+      return { steps, pruned: [] };
+    }
     const pruned: ChainPlanResult['prunedNodes'] = [];
     const kept: ThinkingStepDefinition[] = [];
     let currentCost = 0;
@@ -391,6 +396,8 @@ export class ChainPlanner {
     totalTokens: number,
     budget: number
   ): 'full' | 'standard' | 'lean' {
+    // 预算为 0 = 不限制，始终返回 full
+    if (budget <= 0) return 'full';
     const ratio = totalTokens / budget;
     if (ratio >= 0.8) return 'full';
     if (ratio >= 0.4) return 'standard';
@@ -538,9 +545,9 @@ export class DynamicInsertionPlanner {
       c => !executedSteps.includes(c.stepId)
     );
 
-    // 按预算排序插入
+    // 按预算排序插入（预算 ≤ 0 = 不限制）
     for (const candidate of availableCandidates) {
-      if (totalCost + candidate.cost <= remainingBudget) {
+      if (remainingBudget <= 0 || totalCost + candidate.cost <= remainingBudget) {
         insertions.push({
           ...candidate,
           insertAfter: lowConfidenceStepId,

@@ -200,6 +200,10 @@ STANDARD_CHAINS: Dict[str, ChainSpec] = {
 
 
 # 意图类型到执行链路的映射 (对应规范中的六种意图)
+# @deprecated (SPEC 阶段5): INTENT_CHAIN_MAP 已被 SkillSelector 替代。
+# 当 USE_SKILL_ORCHESTRATION=true 时，链路推断由 SkillSelector 接管，不走此映射表。
+# 此代码保留作为回退路径，下一版本确认无回归后可彻底删除。
+# 迁移指南: 新增意图类型应在 registry.json 的 SKILL triggers 中定义。
 INTENT_CHAIN_MAP: Dict[str, str] = {
     "TREND_FOLLOWING":   "A",    # C1→F2/F3→A2→A4 (趋势跟随, 走A链精简)
     "MEAN_REVERSION":    "A",    # C1→F2/F3→A2→A4 (均值回归, 走A链精简)

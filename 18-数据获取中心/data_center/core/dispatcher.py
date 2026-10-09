@@ -62,6 +62,14 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.finance.etf_flow_collector import EtfFlowCollector
     from data_center.collectors.macro.fred_collector import FredCollector
     from data_center.collectors.macro.fed_event_collector import FedEventCollector
+    # SPEC-Phase2 §6.1: 加密技术升级事件（CoinMarketCal）
+    from data_center.collectors.macro.coinmarketcal_collector import CoinMarketCalCollector
+    # SPEC-Phase2 §6.3: SEC 执法行动 / 加密政策事件
+    from data_center.collectors.macro.sec_rss_collector import SecRssCollector
+    # SPEC-Phase2 §6.4: 国会听证会（加密监管相关）
+    from data_center.collectors.macro.congressional_hearing_collector import (
+        CongressionalHearingCollector,
+    )
     from data_center.collectors.news.feedparser_collector import FeedparserCollector
     from data_center.collectors.news.gdelt_collector import GdeltCollector
     from data_center.collectors.news.odaily_newsflash import OdailyNewsflashCollector
@@ -86,6 +94,12 @@ def _register_defaults(reg: Registry) -> None:
 
     reg.register("macro", "fred", FredCollector)
     reg.register("macro", "cme", FedEventCollector)
+    # SPEC-Phase2 §6.1: CoinMarketCal 加密技术升级事件
+    reg.register("protocol", "coinmarketcal", CoinMarketCalCollector)
+    # SPEC-Phase2 §6.3: SEC RSS 执法行动事件
+    reg.register("news", "sec", SecRssCollector)
+    # SPEC-Phase2 §6.4: 国会听证会事件
+    reg.register("macro", "congress", CongressionalHearingCollector)
     reg.register("finance", "yfinance", YFinanceCollector)
     reg.register("chain", "ccxt", CcxtCollector)
     reg.register("chain", "etherscan", EtherscanCollector)

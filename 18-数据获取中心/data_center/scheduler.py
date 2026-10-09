@@ -552,4 +552,20 @@ class CollectionScheduler:
             params={"type": "fedwatch"},
             interval_sec=3600,  # 1 小时
         ))
+        # ── SPEC-Phase2 §6.3: news/sec SEC RSS 执法行动（15min）
+        #    3 feed 合并 + 三层去重，15min 轮询及时捕获加密相关执法行动
+        tasks.append(CollectionTask(
+            name="sec_rss_enforcement",
+            category="news", source="sec",
+            params={},
+            interval_sec=900,  # 15 分钟
+        ))
+        # ── SPEC-Phase2 §6.4: macro/congress 国会听证会（6h）
+        #    听证会日程更新频率低，6h 轮询足够；crypto_only=True 仅采集加密相关
+        tasks.append(CollectionTask(
+            name="congressional_hearing",
+            category="macro", source="congress",
+            params={"crypto_only": True},
+            interval_sec=21600,  # 6 小时
+        ))
         return tasks

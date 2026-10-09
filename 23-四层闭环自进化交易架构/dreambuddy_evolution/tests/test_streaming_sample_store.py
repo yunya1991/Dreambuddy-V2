@@ -159,7 +159,7 @@ class TestFailOpen:
 
     def test_fail_open_on_invalid_path(self):
         """无效路径 → 降级内存模式"""
-        store = StreamingSampleStore("/invalid/path/that/cannot/exist.db")
+        store = StreamingSampleStore("/tmp/nonexistent_dir_streaming/db.sqlite")
         # 降级后仍可 append
         store.append({"symbol": "BTC", "reward": 0.1})
         assert store.count() == 1
