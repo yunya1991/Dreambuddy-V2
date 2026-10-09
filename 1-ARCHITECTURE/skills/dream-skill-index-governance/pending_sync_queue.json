@@ -64,6 +64,91 @@
       "path": "16-调控系统/scripts/param_center/README.md",
       "added_at": "2026-10-09T12:32:15.804491+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-09T15:39:48.581858+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md",
+      "added_at": "2026-10-09T15:39:48.581886+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/docs/CHANGELOG.md",
+      "added_at": "2026-10-09T15:39:48.581888+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/param_center/README.md",
+      "added_at": "2026-10-09T15:39:48.581889+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md",
+      "added_at": "2026-10-09T15:39:48.581890+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "23-四层闭环自进化交易架构/docs/SPEC复审报告_自进化系统做空能力疏通探讨_v0.2.md",
+      "added_at": "2026-10-09T15:39:48.581891+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "23-四层闭环自进化交易架构/docs/SPEC评审报告_自进化系统做空能力疏通探讨_v0.1.md",
+      "added_at": "2026-10-09T15:39:48.581892+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "29-事件驱动策略系统/docs/SPEC-Phase2-扩展事件类型与双轨制触发.md",
+      "added_at": "2026-10-09T15:39:48.581893+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/acceptance_bundles/20261009_spl_p0p4_full/acceptance_report.md",
+      "added_at": "2026-10-09T15:39:48.581895+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/acceptance_bundles/20261009_spl_p0p4_full/wrapup_report.md",
+      "added_at": "2026-10-09T15:39:48.581896+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/README.md",
+      "added_at": "2026-10-09T15:39:48.581897+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/CHANGELOG.md",
+      "added_at": "2026-10-09T15:39:48.581899+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-09T15:39:48.581900+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/SPEC-分布式计算协同部署方案.md",
+      "added_at": "2026-10-09T15:39:48.581901+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/phase1/deploy-checklist.md",
+      "added_at": "2026-10-09T15:39:48.581901+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261009_fix_event_driven_no_position/acceptance_report.md",
+      "added_at": "2026-10-09T15:39:48.581904+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261009_short_integration/acceptance_report.md",
+      "added_at": "2026-10-09T15:39:48.581905+00:00",
+      "action": "sync_doc_index"
     }
   ],
   "processed": [

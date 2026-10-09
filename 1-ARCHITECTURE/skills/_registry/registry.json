@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "total_count": 204,
+  "total_count": 206,
   "skills": [
     {
       "name": "polling-trader-reload",
@@ -361,6 +361,57 @@
       "facets": {
         "domain": "architecture",
         "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-code-deploy-pipeline",
+      "description": "Orchestrates full code delivery pipeline: local commit → GitHub CI (Actions) → server deploy (webhook/update.sh) → healthcheck → rollback. Invoke when user wants to sync code to cloud, deploy to server, set up CI/CD, or roll back a bad deployment.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/dream-code-deploy-pipeline/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "部署",
+        "同步代码",
+        "CI",
+        "CD",
+        "自动部署",
+        "deploy",
+        "sync",
+        "webhook",
+        "回滚",
+        "rollback",
+        "上线"
+      ],
+      "depends_on": [
+        "dream-code-commit-sync-workflow",
+        "git",
+        "github-actions",
+        "update.sh",
+        "healthcheck.sh"
+      ],
+      "provides": [
+        "code-delivery",
+        "ci-cd",
+        "auto-deploy",
+        "rollback"
+      ],
+      "cognitive_links": [],
+      "content_hash": "1e9f7402a6bd186940901cd322f303d9235eb26bd8a77f4ad80c355f6868cb3b",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -2132,6 +2183,57 @@
       "provides": [],
       "cognitive_links": [],
       "content_hash": "d7f6ecb6e778e4e7c72f6e3bfd3a1c0a806b904a68e6889a9efcd83274a61af8",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-code-deploy-pipeline",
+      "description": "Orchestrates full code delivery pipeline: local commit → GitHub CI (Actions) → server deploy (webhook/update.sh) → healthcheck → rollback. Invoke when user wants to sync code to cloud, deploy to server, set up CI/CD, or roll back a bad deployment.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-code-deploy-pipeline/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "部署",
+        "同步代码",
+        "CI",
+        "CD",
+        "自动部署",
+        "deploy",
+        "sync",
+        "webhook",
+        "回滚",
+        "rollback",
+        "上线"
+      ],
+      "depends_on": [
+        "dream-code-commit-sync-workflow",
+        "git",
+        "github-actions",
+        "update.sh",
+        "healthcheck.sh"
+      ],
+      "provides": [
+        "code-delivery",
+        "ci-cd",
+        "auto-deploy",
+        "rollback"
+      ],
+      "cognitive_links": [],
+      "content_hash": "1e9f7402a6bd186940901cd322f303d9235eb26bd8a77f4ad80c355f6868cb3b",
       "parse_error": null,
       "override_fields": null,
       "facets": {

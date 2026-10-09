@@ -78,7 +78,7 @@ echo "✓ .env.production generated (DOMAIN=${DOMAIN})"
 # ── 安装依赖 ──
 echo ">>> [2/6] 安装依赖 (pnpm install)"
 cd "${FRONTEND_DIR}"
-pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+pnpm install --frozen-lockfile --dangerously-allow-all-builds 2>/dev/null || pnpm install --dangerously-allow-all-builds
 echo "✓ 依赖安装完成"
 
 # ── Prisma 迁移 ──

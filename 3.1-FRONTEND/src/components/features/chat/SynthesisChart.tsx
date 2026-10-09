@@ -12,6 +12,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   RadialBarChart, RadialBar, Cell,
   CartesianGrid, ScatterChart, Scatter, PieChart, Pie,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 
 export interface ChartSpec {
@@ -61,6 +62,10 @@ export function SynthesisChart({ chart }: SynthesisChartProps) {
       return <ScatterChartView title={title} data={data} />;
     case 'pie':
       return <PieChartView title={title} data={data} />;
+    case 'radar':
+      return <RadarChartView title={title} data={data} config={chart.config} />;
+    case 'bullet':
+      return <BulletChartView title={title} data={data} />;
     default:
       return <TextFallback title={title} data={data} />;
   }
@@ -275,85 +280,94 @@ function SankeyChart({ title, data }: { title: string; data: unknown }) {
   );
 }
 
-// ── Heatmap (纯 SVG/CSS 网格) ──────────────
+// ── Heatmap (矩阵格式: rows/cols/values + current 高亮) ─────
 function HeatmapChart({ title, data }: { title: string; data: unknown }) {
-  if (!Array.isArray(data)) {
-    return <TextFallback title={title} data={data} />;
+  // 支持两种格式: 矩阵格式 {rows, cols, values, current} 或数组格式 [[row,col,val], ...]
+  let rows: string[] = [];
+  let cols: string[] = [];
+  let values: number[][] = [];
+  let current: { row: string; col: string; value: number; label: string } | null = null;
+
+  if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+    const d = data as Record<string, unknown>;
+    rows = (d.rows as string[]) || [];
+    cols = (d.cols as string[]) || [];
+    values = (d.values as number[][]) || [];
+    current = (d.current as any) || null;
+  } else if (Array.isArray(data)) {
+    const cells = data
+      .map((d: unknown) => {
+        if (Array.isArray(d) && d.length >= 3) {
+          return { row: String(d[0]), col: String(d[1]), value: Number(d[2]) };
+        }
+        return null;
+      })
+      .filter((c): c is { row: string; col: string; value: number } => c !== null && !isNaN(c.value));
+    rows = Array.from(new Set(cells.map(c => c.row)));
+    cols = Array.from(new Set(cells.map(c => c.col)));
+    values = rows.map(r => cols.map(c => cells.find(cc => cc.row === r && cc.col === c)?.value ?? 0));
   }
-  // 格式: [[row, col, value], ...]
-  const cells = data
-    .map((d: unknown) => {
-      if (Array.isArray(d) && d.length >= 3) {
-        return { row: String(d[0]), col: String(d[1]), value: Number(d[2]) };
-      }
-      return null;
-    })
-    .filter((c): c is { row: string; col: string; value: number } => c !== null && !isNaN(c.value));
 
-  if (cells.length === 0) return <TextFallback title={title} data={data} />;
+  if (rows.length === 0 || cols.length === 0) return <TextFallback title={title} data={data} />;
 
-  const rows = Array.from(new Set(cells.map(c => c.row)));
-  const cols = Array.from(new Set(cells.map(c => c.col)));
-  const maxVal = Math.max(...cells.map(c => Math.abs(c.value)), 1);
+  const maxVal = Math.max(...values.flat().map(v => Math.abs(v)), 1);
 
-  // 颜色映射: 负值→红, 正值→绿, 0→灰
   const colorFor = (v: number) => {
-    if (v === 0) return '#374151';
+    if (v === 0) return '#1f2937';
     const ratio = Math.min(1, Math.abs(v) / maxVal);
-    if (v > 0) {
-      // 绿色渐变
-      const r = Math.round(52 + (34 - 52) * (1 - ratio));
-      const g = Math.round(211 + (197 - 211) * (1 - ratio));
-      const b = Math.round(153 + (94 - 153) * (1 - ratio));
-      return `rgb(${r},${g},${b})`;
-    }
-    // 红色渐变
-    const r = Math.round(248 + (239 - 248) * (1 - ratio));
-    const g = Math.round(113 + (68 - 113) * (1 - ratio));
-    const b = Math.round(113 + (68 - 113) * (1 - ratio));
-    return `rgb(${r},${g},${b})`;
+    if (v >= 3) return '#dc2626'; // 高风险-红
+    if (v >= 2) return `rgba(251, 146, 60, ${0.4 + ratio * 0.5})`; // 矛盾-橙
+    if (v >= 1) return `rgba(55, 65, 81, ${0.3 + ratio * 0.3})`; // 一致-暗灰
+    return '#1f2937';
   };
 
-  const cellW = 70;
-  const cellH = 28;
+  const cellW = 68;
+  const cellH = 26;
 
   return (
     <div className="my-2 overflow-x-auto">
       <div className="text-[11px] text-gray-400 mb-1">{title}</div>
+      {current && (
+        <div className="text-[10px] text-amber-400 mb-1">
+          ▸ {current.row} × {current.col}: {current.label}
+        </div>
+      )}
       <table className="border-collapse" style={{ minWidth: '100%' }}>
         <thead>
           <tr>
-            <th style={{ width: 70, padding: '2px 4px' }} className="text-[10px] text-gray-500 text-left" />
+            <th style={{ width: 64, padding: '2px 4px' }} className="text-[10px] text-gray-500 text-left" />
             {cols.map(c => (
-              <th key={c} style={{ width: cellW, padding: '2px 4px' }} className="text-[10px] text-gray-400 text-center">
+              <th key={c} style={{ width: cellW, padding: '2px 4px' }} className="text-[9px] text-gray-400 text-center font-medium">
                 {c}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map(r => (
+          {rows.map((r, ri) => (
             <tr key={r}>
-              <td style={{ padding: '2px 4px' }} className="text-[10px] text-gray-400 whitespace-nowrap">
+              <td style={{ padding: '2px 4px' }} className="text-[9px] text-gray-400 whitespace-nowrap font-medium">
                 {r}
               </td>
-              {cols.map(c => {
-                const cell = cells.find(cc => cc.row === r && cc.col === c);
-                const v = cell?.value ?? 0;
+              {cols.map((c, ci) => {
+                const v = values[ri]?.[ci] ?? 0;
+                const isCurrent = current?.row === r && current?.col === c;
+                const label = v >= 3 ? '⚠' : v >= 2 ? '⚡' : v >= 1 ? '✓' : '—';
                 return (
-                  <td key={c} style={{ padding: '2px 4px' }}>
+                  <td key={c} style={{ padding: '2px' }}>
                     <div
-                      className="rounded text-center text-[10px] font-medium"
+                      className="rounded text-center text-[10px] font-bold flex items-center justify-center"
                       style={{
-                        width: cellW - 8,
+                        width: cellW - 6,
                         height: cellH,
-                        lineHeight: `${cellH}px`,
                         backgroundColor: colorFor(v),
-                        color: Math.abs(v) / maxVal > 0.5 ? '#fff' : '#d1d5db',
+                        color: v >= 2 ? '#fff' : '#9ca3af',
+                        border: isCurrent ? '2px solid #fbbf24' : '1px solid #374151',
+                        boxShadow: isCurrent ? '0 0 6px rgba(251,191,36,0.4)' : 'none',
                       }}
                       title={`${r} / ${c}: ${v}`}
                     >
-                      {v}
+                      {label}
                     </div>
                   </td>
                 );
@@ -362,14 +376,80 @@ function HeatmapChart({ title, data }: { title: string; data: unknown }) {
           ))}
         </tbody>
       </table>
+      <div className="text-[9px] text-gray-500 mt-1 flex gap-3">
+        <span>✓ 一致</span><span>⚡ 矛盾</span><span>⚠ 高风险</span>
+      </div>
     </div>
   );
 }
 
-// ── Candlestick (OHLC) ─────────────────────
+// ── Candlestick (OHLC SVG 可视化) ──────────
 function CandlestickChart({ title, data }: { title: string; data: unknown }) {
-  // data: array of { time, open, high, low, close } or { o, h, l, c }
-  const arr = Array.isArray(data) ? data : [];
+  // 支持两种格式: 单个 OHLC 对象 {open, high, low, close, change} 或数组 [{time, o, h, l, c}, ...]
+  let ohlc: { open: number; high: number; low: number; close: number; change?: number } | null = null;
+  let arr: any[] = [];
+
+  if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+    const d = data as Record<string, unknown>;
+    if (d.open || d.close || d.high || d.low) {
+      ohlc = {
+        open: Number(d.open ?? d.o ?? 0),
+        high: Number(d.high ?? d.h ?? 0),
+        low: Number(d.low ?? d.l ?? 0),
+        close: Number(d.close ?? d.c ?? 0),
+        change: d.change !== undefined ? Number(d.change) : undefined,
+      };
+    }
+  } else if (Array.isArray(data)) {
+    arr = data;
+  }
+
+  // 单根蜡烛图（24h OHLC）
+  if (ohlc) {
+    const { open, high, low, close, change } = ohlc;
+    const up = close >= open;
+    const color = up ? '#34d399' : '#f87171';
+    const w = 280, h = 140;
+    const pad = 20;
+    const allVals = [open, high, low, close].filter(v => v > 0);
+    if (allVals.length === 0) return <TextFallback title={title} data={data} />;
+    const min = Math.min(...allVals);
+    const max = Math.max(...allVals);
+    const range = max - min || 1;
+    const scaleY = (v: number) => h - pad - ((v - min) / range) * (h - pad * 2);
+
+    const bodyTop = scaleY(Math.max(open, close));
+    const bodyBot = scaleY(Math.min(open, close));
+    const bodyH = Math.max(4, bodyBot - bodyTop);
+    const wickX = w / 2;
+    const bodyW = 40;
+    const bodyX = wickX - bodyW / 2;
+    const chgText = change !== undefined ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '';
+    const chgColor = (change ?? 0) >= 0 ? '#34d399' : '#f87171';
+
+    return (
+      <div className="my-2">
+        <div className="text-[11px] text-gray-400 mb-1">{title}</div>
+        <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ maxHeight: 160 }}>
+          {/* 高低影线 */}
+          <line x1={wickX} y1={scaleY(high)} x2={wickX} y2={scaleY(low)} stroke={color} strokeWidth={1.5} />
+          {/* 蜡烛实体 */}
+          <rect x={bodyX} y={bodyTop} width={bodyW} height={bodyH} fill={color} fillOpacity={0.7} stroke={color} rx={2} />
+          {/* 价格标注 */}
+          <text x={wickX + bodyW / 2 + 6} y={scaleY(high) + 4} fill="#9ca3af" fontSize={9}>H {high.toFixed(2)}</text>
+          <text x={wickX + bodyW / 2 + 6} y={scaleY(low) + 4} fill="#9ca3af" fontSize={9}>L {low.toFixed(2)}</text>
+          <text x={bodyX - 4} y={bodyTop + 4} fill={color} fontSize={9} textAnchor="end">{(open >= close ? open : close).toFixed(2)}</text>
+          <text x={bodyX - 4} y={bodyBot + 10} fill={color} fontSize={9} textAnchor="end">{(open < close ? open : close).toFixed(2)}</text>
+          {/* 涨跌幅 */}
+          {chgText && (
+            <text x={w / 2} y={pad - 6} fill={chgColor} fontSize={11} fontWeight="bold" textAnchor="middle">{chgText}</text>
+          )}
+        </svg>
+      </div>
+    );
+  }
+
+  // 数组格式：表格展示
   if (arr.length === 0) {
     return <div className="text-xs text-gray-500 italic p-2">{title}: 无 OHLC 数据</div>;
   }
@@ -460,6 +540,137 @@ function PieChartView({ title, data }: { title: string; data: unknown }) {
           <Tooltip />
         </PieChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── Radar (多维评分雷达) ───────────────────
+function RadarChartView({ title, data, config }: { title: string; data: unknown; config?: Record<string, unknown> }) {
+  let radarData: { axis: string; value: number }[] = [];
+  if (Array.isArray(data)) {
+    radarData = data
+      .map((d: any) => {
+        if (typeof d === 'object' && d !== null) {
+          return { axis: String(d.axis ?? d.name ?? d.key ?? ''), value: Number(d.value ?? d.val ?? 0) };
+        }
+        return null;
+      })
+      .filter((d): d is { axis: string; value: number } => d !== null && !!d.axis);
+  } else if (typeof data === 'object' && data !== null) {
+    radarData = buildSeriesData(data as Record<string, unknown>).map(d => ({ axis: d.name, value: d.value }));
+  }
+  if (radarData.length < 3) return <TextFallback title={title} data={data} />;
+
+  const maxVal = (config?.max as number) || 100;
+
+  return (
+    <div className="my-2">
+      <div className="text-[11px] text-gray-400 mb-1">{title}</div>
+      <ResponsiveContainer width="100%" height={220}>
+        <RadarChart data={radarData} margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
+          <PolarGrid stroke="#374151" strokeOpacity={0.4} />
+          <PolarAngleAxis dataKey="axis" tick={{ fill: '#9ca3af', fontSize: 10 }} />
+          <PolarRadiusAxis angle={90} domain={[0, maxVal]} tick={{ fill: '#6b7280', fontSize: 8 }} />
+          <Radar
+            name={title}
+            dataKey="value"
+            stroke={COLORS[0]}
+            fill={COLORS[0]}
+            fillOpacity={0.25}
+            strokeWidth={2}
+            dot={{ r: 3, fill: COLORS[0] }}
+          />
+          <Tooltip
+            contentStyle={{
+              background: '#1f2937',
+              border: '1px solid #374151',
+              borderRadius: 6,
+              fontSize: 11,
+            }}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── Bullet (回测 vs 行业基准) ──────────────
+function BulletChartView({ title, data }: { title: string; data: unknown }) {
+  if (!Array.isArray(data)) return <TextFallback title={title} data={data} />;
+  const items = data
+    .map((d: any) => ({
+      name: String(d.name ?? d.label ?? ''),
+      value: Number(d.value ?? 0),
+      thresholds: (d.thresholds ?? []).map((t: any) => Number(t)),
+      max: Number(d.max ?? 100),
+      inverted: Boolean(d.inverted),
+    }))
+    .filter(d => d.name && !isNaN(d.value));
+
+  if (items.length === 0) return <TextFallback title={title} data={data} />;
+
+  const tierColor = (val: number, thresholds: number[], inverted: boolean) => {
+    if (inverted) {
+      // 回撤：越小越好
+      if (val <= thresholds[2]) return { color: '#34d399', tier: 'Elite' };
+      if (val <= thresholds[1]) return { color: '#60a5fa', tier: 'Excellent' };
+      if (val <= thresholds[0]) return { color: '#fbbf24', tier: 'Safe' };
+      return { color: '#f87171', tier: 'Over Risk' };
+    }
+    // 胜率/夏普：越大越好
+    if (val >= thresholds[2]) return { color: '#34d399', tier: 'Elite' };
+    if (val >= thresholds[1]) return { color: '#60a5fa', tier: 'Excellent' };
+    if (val >= thresholds[0]) return { color: '#fbbf24', tier: 'Qualified' };
+    return { color: '#f87171', tier: 'Below' };
+  };
+
+  return (
+    <div className="my-2 space-y-3">
+      <div className="text-[11px] text-gray-400 mb-1">{title}</div>
+      {items.map((item, idx) => {
+        const { color, tier } = tierColor(item.value, item.thresholds, item.inverted);
+        const valPct = Math.max(0, Math.min(100, (item.value / item.max) * 100));
+        const barW = 300;
+        const thresholds = item.inverted
+          ? item.thresholds.map(t => (t / item.max) * 100).reverse()
+          : item.thresholds.map(t => (t / item.max) * 100);
+        return (
+          <div key={idx}>
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-[10px] text-gray-400">{item.name}</span>
+              <span className="text-[10px] font-bold" style={{ color }}>
+                {item.value.toFixed(item.max > 10 ? 1 : 2)} <span className="text-gray-500">/ {tier}</span>
+              </span>
+            </div>
+            <svg width="100%" viewBox={`0 0 ${barW} 14`} style={{ maxHeight: 14 }}>
+              {/* 基准区域背景 */}
+              {item.inverted ? (
+                <>
+                  <rect x={0} y={0} width={(thresholds[0] / 100) * barW} height={14} fill="#f87171" fillOpacity={0.15} rx={2} />
+                  <rect x={(thresholds[0] / 100) * barW} y={0} width={((thresholds[1] - thresholds[0]) / 100) * barW} height={14} fill="#fbbf24" fillOpacity={0.15} rx={0} />
+                  <rect x={(thresholds[1] / 100) * barW} y={0} width={((thresholds[2] - thresholds[1]) / 100) * barW} height={14} fill="#60a5fa" fillOpacity={0.15} rx={0} />
+                  <rect x={(thresholds[2] / 100) * barW} y={0} width={barW - (thresholds[2] / 100) * barW} height={14} fill="#34d399" fillOpacity={0.15} rx={2} />
+                </>
+              ) : (
+                <>
+                  <rect x={0} y={0} width={(thresholds[0] / 100) * barW} height={14} fill="#f87171" fillOpacity={0.15} rx={2} />
+                  <rect x={(thresholds[0] / 100) * barW} y={0} width={((thresholds[1] - thresholds[0]) / 100) * barW} height={14} fill="#fbbf24" fillOpacity={0.15} />
+                  <rect x={(thresholds[1] / 100) * barW} y={0} width={((thresholds[2] - thresholds[1]) / 100) * barW} height={14} fill="#60a5fa" fillOpacity={0.15} />
+                  <rect x={(thresholds[2] / 100) * barW} y={0} width={barW - (thresholds[2] / 100) * barW} height={14} fill="#34d399" fillOpacity={0.15} rx={2} />
+                </>
+              )}
+              {/* 阈值标记线 */}
+              {thresholds.map((t, i) => (
+                <line key={i} x1={(t / 100) * barW} y1={0} x2={(t / 100) * barW} y2={14} stroke="#6b7280" strokeWidth={0.5} strokeDasharray="2 2" />
+              ))}
+              {/* 实际值条 */}
+              <rect x={0} y={3} width={(valPct / 100) * barW} height={8} fill={color} fillOpacity={0.8} rx={2} />
+              {/* 值标记 */}
+              <line x1={(valPct / 100) * barW} y1={0} x2={(valPct / 100) * barW} y2={14} stroke={color} strokeWidth={1.5} />
+            </svg>
+          </div>
+        );
+      })}
     </div>
   );
 }

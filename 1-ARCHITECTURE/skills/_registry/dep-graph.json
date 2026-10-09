@@ -52,6 +52,11 @@
       "status": "shadow"
     },
     {
+      "id": "dream-code-deploy-pipeline",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
       "id": "dream-eng-mgmt-workflow",
       "category": "orchestration",
       "status": "active"
@@ -244,6 +249,11 @@
     {
       "id": "dream-scattered-file-cleanup",
       "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-code-deploy-pipeline",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -1134,6 +1144,31 @@
       "resolved": true
     },
     {
+      "from": "dream-code-deploy-pipeline",
+      "to": "dream-code-commit-sync-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "git",
+      "resolved": false
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "github-actions",
+      "resolved": false
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "update.sh",
+      "resolved": false
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "healthcheck.sh",
+      "resolved": false
+    },
+    {
       "from": "dream-eng-mgmt-workflow",
       "to": "dream-strategy-research",
       "resolved": true
@@ -1597,6 +1632,31 @@
       "from": "dream-module-post-dev-verify-workflow",
       "to": "dream-code-sync-orphan-scan-workflow",
       "resolved": true
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "dream-code-commit-sync-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "git",
+      "resolved": false
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "github-actions",
+      "resolved": false
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "update.sh",
+      "resolved": false
+    },
+    {
+      "from": "dream-code-deploy-pipeline",
+      "to": "healthcheck.sh",
+      "resolved": false
     },
     {
       "from": "dream-eng-mgmt-workflow",

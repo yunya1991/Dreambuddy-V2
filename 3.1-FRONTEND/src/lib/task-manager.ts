@@ -1250,18 +1250,33 @@ function generateProfessionalReport(
     L.push('');
   }
 
-  // ===== 7. 回测验证 =====
+  // ===== 7. 回测验证（含行业基准对标） =====
   if (hookBacktest?.backtestResult) {
     const bt = hookBacktest.backtestResult;
     L.push(isZh ? `## 回测验证` : `## Backtest Validation`);
-    L.push(isZh ? `| 指标 | 数值 |` : `| Metric | Value |`);
-    L.push(isZh ? `|------|------|` : `|--------|-------|`);
-    L.push(`| ${isZh ? '胜率' : 'Win Rate'} | ${bt.winRate}% |`);
-    L.push(`| ${isZh ? '夏普比率' : 'Sharpe'} | ${bt.sharpeRatio} |`);
-    L.push(`| ${isZh ? '最大回撤' : 'Max Drawdown'} | ${bt.maxDrawdown}% |`);
-    L.push(`| ${isZh ? '回测周期' : 'Period'} | ${bt.samplePeriod || 'N/A'} |`);
-    L.push(`| ${isZh ? '交易次数' : 'Trades'} | ${bt.trades || 'N/A'} |`);
-    L.push(`| ${isZh ? '验证结果' : 'Result'} | ${hookBacktest.passed ? '✅ 通过' : '❌ 未通过'} |`);
+
+    // 行业基准评级
+    const winRateTier = bt.winRate >= 70 ? (isZh ? '顶尖' : 'Elite') :
+                        bt.winRate >= 65 ? (isZh ? '优秀' : 'Excellent') :
+                        bt.winRate >= 55 ? (isZh ? '合格' : 'Qualified') :
+                        (isZh ? '待改进' : 'Below Standard');
+    const sharpeTier = bt.sharpeRatio >= 2.0 ? (isZh ? '顶尖' : 'Elite') :
+                       bt.sharpeRatio >= 1.5 ? (isZh ? '优秀' : 'Excellent') :
+                       bt.sharpeRatio >= 1.0 ? (isZh ? '可接受' : 'Acceptable') :
+                       (isZh ? '待改进' : 'Below Standard');
+    const ddTier = bt.maxDrawdown <= 10 ? (isZh ? '顶尖' : 'Elite') :
+                  bt.maxDrawdown <= 15 ? (isZh ? '优秀' : 'Excellent') :
+                  bt.maxDrawdown <= 20 ? (isZh ? '安全线' : 'Safe Line') :
+                  (isZh ? '超风险线' : 'Over Risk');
+
+    L.push(isZh ? `| 指标 | 数值 | 行业基准 | 评级 |` : `| Metric | Value | Benchmark | Tier |`);
+    L.push(isZh ? `|------|------|----------|------|` : `|--------|-------|----------|------|`);
+    L.push(`| ${isZh ? '胜率' : 'Win Rate'} | ${bt.winRate}% | ${isZh ? '≥55%合格/≥65%优秀/≥70%顶尖' : '≥55% Q/≥65% E/≥70% Elite'} | ${winRateTier} |`);
+    L.push(`| ${isZh ? '夏普比率' : 'Sharpe'} | ${bt.sharpeRatio} | ${isZh ? '≥1.0可接受/≥1.5优秀/≥2.0顶尖' : '≥1.0 A/≥1.5 E/≥2.0 Elite'} | ${sharpeTier} |`);
+    L.push(`| ${isZh ? '最大回撤' : 'Max Drawdown'} | ${bt.maxDrawdown}% | ${isZh ? '≤20%安全/≤15%优秀/≤10%顶尖' : '≤20% S/≤15% E/≤10% Elite'} | ${ddTier} |`);
+    L.push(`| ${isZh ? '回测周期' : 'Period'} | ${bt.samplePeriod || 'N/A'} | — | — |`);
+    L.push(`| ${isZh ? '交易次数' : 'Trades'} | ${bt.trades || 'N/A'} | — | — |`);
+    L.push(`| ${isZh ? '验证结果' : 'Result'} | ${hookBacktest.passed ? '✅ 通过' : '❌ 未通过'} | — | — |`);
     L.push('');
   }
 
@@ -1281,6 +1296,128 @@ function generateProfessionalReport(
     }
     L.push('');
   }
+
+  // ===== 8.5 深度解读：跨维度交叉分析 + 情景推演 =====
+  L.push(isZh ? `## 深度解读` : `## Deep Interpretation`);
+
+  // 跨维度交叉分析（规则引擎）
+  const crossDim: string[] = [];
+  if (marketData?.fundingRate && marketData?.price) {
+    const fr = parseFloat(marketData.fundingRate);
+    const p = marketData.price;
+    const h = marketData.high24h || p;
+    const l = marketData.low24h || p;
+    const rangePct = h > l ? ((h - l) / l * 100) : 0;
+    const posInRange = h > l ? ((p - l) / (h - l) * 100) : 50;
+
+    if (fr > 0.0001 && posInRange > 80) {
+      crossDim.push(isZh
+        ? `- **资金费率+(${(fr*100).toFixed(4)}%)偏多且价格接近24h高点(${posInRange.toFixed(0)}%)** → 多头情绪过热，短期回调风险上升。但若市场状态为 trending，回调幅度可能有限。`
+        : `- **Funding +${(fr*100).toFixed(4)}% bullish + price near 24h high (${posInRange.toFixed(0)}%)** → Overheated bullish sentiment, pullback risk elevated. But if trending regime, pullback may be limited.`);
+    } else if (fr < -0.0001 && posInRange < 20) {
+      crossDim.push(isZh
+        ? `- **资金费率(${(fr*100).toFixed(4)}%)偏空且价格接近24h低点(${posInRange.toFixed(0)}%)** → 空头情绪主导，可能继续下探。但空头过度拥挤时反而可能出现轧空反弹。`
+        : `- **Funding ${(fr*100).toFixed(4)}% bearish + price near 24h low (${posInRange.toFixed(0)}%)** → Bearish dominant, may continue down. But overcrowded shorts could trigger squeeze.`);
+    } else if (fr > 0.0001 && posInRange < 50) {
+      crossDim.push(isZh
+        ? `- **矛盾信号：资金费率+(${(fr*100).toFixed(4)}%)偏多但价格处于24h下半区(${posInRange.toFixed(0)}%)** → 多头付费但价格未配合上行，可能预示多头力量减弱，需警惕多头平仓引发下跌。`
+        : `- **Contradiction: Funding +${(fr*100).toFixed(4)}% bullish but price in lower half (${posInRange.toFixed(0)}%)** → Longs paying but price not following, bullish momentum may be fading, watch for long unwinding.`);
+    } else if (fr < -0.0001 && posInRange > 50) {
+      crossDim.push(isZh
+        ? `- **矛盾信号：资金费率(${(fr*100).toFixed(4)}%)偏空但价格处于24h上半区(${posInRange.toFixed(0)}%)** → 空头付费但价格抗跌，可能预示空头力量不足，有反弹潜力。`
+        : `- **Contradiction: Funding ${(fr*100).toFixed(4)}% bearish but price in upper half (${posInRange.toFixed(0)}%)** → Shorts paying but price resilient, shorts may be weakening, rebound potential.`);
+    } else {
+      crossDim.push(isZh
+        ? `- **资金费率${(fr*100).toFixed(4)}%中性，价格位于24h区间${posInRange.toFixed(0)}%位置** → 各维度信号基本一致，市场处于均衡状态，需等待方向性突破。`
+        : `- **Funding ${(fr*100).toFixed(4)}% neutral, price at ${posInRange.toFixed(0)}% of 24h range** → Signals aligned, market balanced, awaiting directional breakout.`);
+    }
+    if (rangePct > 8) {
+      crossDim.push(isZh
+        ? `- **24h波动幅度${rangePct.toFixed(1)}%偏大** → 市场波动率高，止损需适当放宽，仓位需控制。`
+        : `- **24h range ${rangePct.toFixed(1)}% elevated** → High volatility, widen stops, reduce position size.`);
+    } else if (rangePct < 2) {
+      crossDim.push(isZh
+        ? `- **24h波动幅度${rangePct.toFixed(1)}%偏小** → 市场蓄势待发，可能即将出现方向性突破。`
+        : `- **24h range ${rangePct.toFixed(1)}% compressed** → Market coiling, directional breakout likely imminent.`);
+    }
+  }
+
+  // 矛盾论交叉分析
+  if (hookContradiction?.primaryContradiction) {
+    const pc = hookContradiction.primaryContradiction;
+    crossDim.push(isZh
+      ? `- **矛盾论分析**：主要矛盾为"${pc.desc || '未知'}"（强度: ${pc.intensity || '未知'}）。矛盾强度高时，市场方向不确定性增加，建议轻仓或观望；矛盾强度低时，趋势更明确。`
+      : `- **Contradiction Analysis**: Primary contradiction "${pc.desc || 'unknown'}" (intensity: ${pc.intensity || 'unknown'}). High intensity → increased uncertainty, reduce size or wait; Low intensity → clearer trend.`);
+  }
+
+  // 回测与方向的交叉验证
+  if (hookBacktest?.backtestResult && direction !== 'neutral') {
+    const bt = hookBacktest.backtestResult;
+    const btConf = bt.winRate >= 65 ? (isZh ? '历史回测支撑当前方向判断，策略可信度高' : 'Backtest supports current direction, high confidence') :
+                    bt.winRate >= 55 ? (isZh ? '历史回测勉强支撑当前方向，需谨慎执行' : 'Backtest marginally supports direction, proceed cautiously') :
+                    (isZh ? '历史回测数据不支持当前方向，需警惕信号可靠性' : 'Backtest does not support direction, signal reliability questionable');
+    crossDim.push(isZh
+      ? `- **回测交叉验证**：方向${directionText} + 回测胜率${bt.winRate}% → ${btConf}`
+      : `- **Backtest Cross-validation**: Direction ${directionText} + Win rate ${bt.winRate}% → ${btConf}`);
+  }
+
+  // 市场状态与策略匹配
+  if (hookRegime?.regime) {
+    const reg = hookRegime.regime;
+    let regImpl: string;
+    if (reg === 'trending' || reg === 'bull_trend' || reg === 'bear_trend') {
+      regImpl = isZh ? '趋势策略有效（顺势、加仓、移动止损），逆势操作风险高' : 'Trend strategies effective (follow, add, trail stop), counter-trend risky';
+    } else if (reg === 'ranging' || reg === 'range') {
+      regImpl = isZh ? '震荡策略有效（区间交易、高抛低吸），追涨杀跌易亏损' : 'Range strategies effective (buy low sell high), momentum chasing risky';
+    } else if (reg === 'volatile' || reg === 'high_volatility') {
+      regImpl = isZh ? '高波动策略有效（期权、波动率交易），需缩小仓位、放宽止损' : 'Volatility strategies effective (options, vol trading), reduce size, widen stops';
+    } else {
+      regImpl = isZh ? '状态不明确，建议中性策略或观望' : 'Regime unclear, suggest neutral strategy or wait';
+    }
+    crossDim.push(isZh
+      ? `- **市场状态匹配**：当前状态 ${reg} → ${regImpl}`
+      : `- **Regime Match**: Current ${reg} → ${regImpl}`);
+  }
+
+  for (const line of crossDim) L.push(line);
+  L.push('');
+
+  // 情景推演（概率从高到低）
+  L.push(isZh ? `**情景推演**:` : `**Scenario Analysis**:`);
+  const scenarios: string[] = [];
+  if (direction === 'long') {
+    scenarios.push(isZh
+      ? `- **情景一（概率50%）**：多头延续，突破24h高点 $${(marketData?.high24h || 0).toLocaleString()}，目标 $${((marketData?.high24h || 0) * 1.03).toFixed(2)}。触发条件：资金费率维持正值且成交量放大。`
+      : `- **Scenario 1 (50%)**: Bullish continuation, break 24h high $${(marketData?.high24h || 0).toLocaleString()}, target $${((marketData?.high24h || 0) * 1.03).toFixed(2)}. Trigger: funding stays positive + volume increases.`);
+    scenarios.push(isZh
+      ? `- **情景二（概率30%）**：短线回调至 $${((marketData?.price || 0) * 0.97).toFixed(2)} 附近获支撑后反弹。触发条件：短期获利了结、RSI超买修正。`
+      : `- **Scenario 2 (30%)**: Pullback to $${((marketData?.price || 0) * 0.97).toFixed(2)} support then rebound. Trigger: profit-taking, RSI overbought correction.`);
+    scenarios.push(isZh
+      ? `- **情景三（概率20%）**：跌破支撑 $${((marketData?.low24h || 0) * 0.98).toFixed(2)}，趋势反转。触发条件：资金费率转负、链上大额流出。`
+      : `- **Scenario 3 (20%)**: Break below support $${((marketData?.low24h || 0) * 0.98).toFixed(2)}, trend reversal. Trigger: funding turns negative, large on-chain outflow.`);
+  } else if (direction === 'short') {
+    scenarios.push(isZh
+      ? `- **情景一（概率50%）**：空头延续，跌破24h低点 $${(marketData?.low24h || 0).toLocaleString()}，目标 $${((marketData?.low24h || 0) * 0.97).toFixed(2)}。触发条件：资金费率维持负值且卖压持续。`
+      : `- **Scenario 1 (50%)**: Bearish continuation, break 24h low $${(marketData?.low24h || 0).toLocaleString()}, target $${((marketData?.low24h || 0) * 0.97).toFixed(2)}. Trigger: funding stays negative + selling pressure.`);
+    scenarios.push(isZh
+      ? `- **情景二（概率30%）**：短线反弹至 $${((marketData?.price || 0) * 1.03).toFixed(2)} 附近受阻后回落。触发条件：空头回补、RSI超卖修正。`
+      : `- **Scenario 2 (30%)**: Bounce to $${((marketData?.price || 0) * 1.03).toFixed(2)} resistance then decline. Trigger: short covering, RSI oversold correction.`);
+    scenarios.push(isZh
+      ? `- **情景三（概率20%）**：突破阻力 $${((marketData?.high24h || 0) * 1.02).toFixed(2)}，趋势反转。触发条件：资金费率转正、链上大额流入。`
+      : `- **Scenario 3 (20%)**: Break above resistance $${((marketData?.high24h || 0) * 1.02).toFixed(2)}, trend reversal. Trigger: funding turns positive, large on-chain inflow.`);
+  } else {
+    scenarios.push(isZh
+      ? `- **情景一（概率40%）**：维持震荡，区间 $${(marketData?.low24h || 0).toLocaleString()} - $${(marketData?.high24h || 0).toLocaleString()}。触发条件：多空力量均衡。`
+      : `- **Scenario 1 (40%)**: Range-bound, $${(marketData?.low24h || 0).toLocaleString()} - $${(marketData?.high24h || 0).toLocaleString()}. Trigger: balanced bull/bear forces.`);
+    scenarios.push(isZh
+      ? `- **情景二（概率35%）**：向上突破 $${(marketData?.high24h || 0).toLocaleString()}，转多头。触发条件：资金费率转正、成交量放大。`
+      : `- **Scenario 2 (35%)**: Upside breakout above $${(marketData?.high24h || 0).toLocaleString()}, turn bullish. Trigger: funding turns positive + volume surge.`);
+    scenarios.push(isZh
+      ? `- **情景三（概率25%）**：向下跌破 $${(marketData?.low24h || 0).toLocaleString()}，转空头。触发条件：资金费率转负、恐慌情绪蔓延。`
+      : `- **Scenario 3 (25%)**: Downside break below $${(marketData?.low24h || 0).toLocaleString()}, turn bearish. Trigger: funding turns negative + panic selling.`);
+  }
+  for (const s of scenarios) L.push(s);
+  L.push('');
 
   // ===== 9. 操作建议与风险提示 =====
   L.push(isZh ? `## 操作建议与风险提示` : `## Action Plan & Risk Disclaimer`);
@@ -1323,6 +1460,7 @@ function generateChartSpecs(
   execResult: any,
   lang: 'zh' | 'en',
   symbol: string,
+  marketData?: MarketData | null,
 ): any[] {
   const isZh = lang === 'zh';
   const charts: any[] = [];
@@ -1427,6 +1565,113 @@ function generateChartSpecs(
       type: 'line',
       title: isZh ? '链路置信度趋势' : 'Chain Confidence Trend',
       data: stepConfidences,
+    });
+  }
+
+  // 6. 多维评分雷达图 — 各子系统维度评分一览
+  const radarAxes: { axis: string; value: number }[] = [];
+  const dimMax = 100;
+  for (const sk of allSkills) {
+    const name = skillNames[sk.skillId as keyof typeof skillNames];
+    if (name) {
+      radarAxes.push({ axis: name, value: sk.confidence || 0 });
+    }
+  }
+  if (radarAxes.length >= 3) {
+    charts.push({
+      type: 'radar',
+      title: isZh ? '多维评分雷达' : 'Multi-dimensional Radar',
+      data: radarAxes,
+      config: { max: dimMax },
+    });
+  }
+
+  // 7. 回测 vs 行业基准 Bullet 图
+  if (lastBacktest?.backtestResult) {
+    const bt = lastBacktest.backtestResult;
+    charts.push({
+      type: 'bullet',
+      title: isZh ? '回测 vs 行业基准' : 'Backtest vs Benchmark',
+      data: [
+        {
+          name: isZh ? '胜率' : 'Win Rate',
+          value: bt.winRate,
+          thresholds: [55, 65, 70], // 合格/优秀/顶尖
+          max: 100,
+        },
+        {
+          name: isZh ? '夏普' : 'Sharpe',
+          value: Number(bt.sharpeRatio),
+          thresholds: [1.0, 1.5, 2.0],
+          max: 3.0,
+        },
+        {
+          name: isZh ? '回撤%' : 'MaxDD%',
+          value: bt.maxDrawdown,
+          thresholds: [20, 15, 10], // 注意：回撤越小越好，阈值倒序
+          max: 30,
+          inverted: true,
+        },
+      ],
+    });
+  }
+
+  // 8. 维度交叉热力图 — 资金费率 × 价格位置 × 方向
+  if (marketData?.fundingRate && marketData?.price && (marketData.high24h || marketData.low24h)) {
+    const fr = parseFloat(marketData.fundingRate);
+    const p = marketData.price;
+    const h = marketData.high24h || p;
+    const l = marketData.low24h || p;
+    const posInRange = h > l ? Math.round((p - l) / (h - l) * 100) : 50;
+    const frPct = (fr * 100).toFixed(4);
+
+    // 热力图数据：行=资金费率区间, 列=价格位置区间, 值=风险等级
+    const frLabel = fr > 0.0001 ? (isZh ? '费率偏多' : 'FR Bullish') :
+                    fr < -0.0001 ? (isZh ? '费率偏空' : 'FR Bearish') :
+                    (isZh ? '费率中性' : 'FR Neutral');
+    const posLabel = posInRange > 66 ? (isZh ? '高位' : 'Upper') :
+                    posInRange < 33 ? (isZh ? '低位' : 'Lower') :
+                    (isZh ? '中位' : 'Mid');
+
+    // 根据交叉确定信号强度
+    let signal: number;
+    let signalText: string;
+    if (fr > 0.0001 && posInRange > 66) { signal = 3; signalText = isZh ? '过热回调风险' : 'Overheated pullback risk'; }
+    else if (fr < -0.0001 && posInRange < 33) { signal = 3; signalText = isZh ? '恐慌下探风险' : 'Panic downside risk'; }
+    else if (fr > 0.0001 && posInRange < 33) { signal = 2; signalText = isZh ? '矛盾:多头减弱' : 'Contradiction: longs weakening'; }
+    else if (fr < -0.0001 && posInRange > 66) { signal = 2; signalText = isZh ? '矛盾:空头减弱' : 'Contradiction: shorts weakening'; }
+    else { signal = 1; signalText = isZh ? '信号一致' : 'Signals aligned'; }
+
+    charts.push({
+      type: 'heatmap',
+      title: isZh ? '维度交叉分析' : 'Cross-dimensional Analysis',
+      data: {
+        rows: [isZh ? '费率偏多' : 'FR Bullish', isZh ? '费率中性' : 'FR Neutral', isZh ? '费率偏空' : 'FR Bearish'],
+        cols: [isZh ? '低位(<33%)' : 'Low (<33%)', isZh ? '中位(33-66%)' : 'Mid (33-66%)', isZh ? '高位(>66%)' : 'High (>66%)'],
+        values: [
+          [2, 1, 3],  // 费率偏多: 低位=矛盾, 中位=一致, 高位=过热
+          [1, 1, 1],  // 费率中性: 全一致
+          [3, 1, 2],  // 费率偏空: 低位=恐慌, 中位=一致, 高位=矛盾
+        ],
+        current: { row: frLabel, col: posLabel, value: signal, label: signalText },
+        fundingRate: frPct,
+        pricePosition: posInRange,
+      },
+    });
+  }
+
+  // 9. K线/价格区间图（OHLC 可视化）
+  if (marketData?.price && (marketData.high24h || marketData.low24h || marketData.open24h)) {
+    charts.push({
+      type: 'candlestick',
+      title: isZh ? '24h 价格区间' : '24h Price Range',
+      data: {
+        open: marketData.open24h || marketData.price,
+        high: marketData.high24h || marketData.price,
+        low: marketData.low24h || marketData.price,
+        close: marketData.price,
+        change: marketData.change24h,
+      },
     });
   }
 
@@ -1581,39 +1826,115 @@ async function executeWithPlanner(
 
     const stepOutputsText = buildLLMInputText(validResults, structuredMetrics, lang);
 
+    // 获取实时市场数据（用于降级研报+图表生成）
+    let chartMarketData: MarketData | null = null;
+    try {
+      chartMarketData = await fetchMarketData(
+        rawSymbol, instId, category, displayName, undefined, lang,
+      );
+    } catch { /* 降级处理 */ }
+
     if (stepOutputsText.trim() && isAnalysisIntent) {
       try {
         const summarySystemPrompt = lang === 'zh'
-          ? `你是一位资深的数字资产分析师，擅长将技术面、基本面、资金流向、市场情绪等多维度数据整合成有深度的行情分析报告。
+          ? `你是一位顶级加密货币研究机构的资深分析师，你的报告需要对标 Bloomberg Intelligence / Glassnode Studio / Messari Pro 级别的专业研报质量。你的优势在于：不仅有多维度数据，还拥有独有的量化子系统（市场状态识别、矛盾论分析、资金情报、回测验证、贝叶斯优化等），这些是你超越通用大模型的核心壁垒。
 
-核心要求：
-1. **数据驱动**：必须基于提供的具体指标数据进行分析，不能泛泛而谈。引用具体数值（如"RSI为55"、"资金费率为0.01%"等）来支撑你的判断。
-2. **结构清晰**：
-   - 用 \`## 核心结论\` 开头，用2-3句话给出明确方向和关键依据
-   - 然后用 \`## 详细分析\` 分段展开：**技术面分析**、**资金流向**、**市场情绪**、**链上与基本面**、**宏观环境**（有数据的维度就写，没有的跳过）
-   - 最后用 \`## 操作建议与风险提示\` 结尾
-3. **有深度**：不仅说"看涨/看跌"，要说明为什么——指标处于什么水平、历史上这种情况通常意味着什么、各维度是否有矛盾
-4. **语气专业但易懂**，类似专业分析师的口头汇报风格
-5. 用 **加粗** 标注分段标题，不要使用 "###" Markdown 标题
-6. 控制在 800-1200 字，信息密度要高
-7. 不要暴露内部调度信息（如"调用了XX技能"、"置信度XX%"等）`
-          : `You are a senior digital asset analyst skilled at integrating technical, fundamental, flow, and sentiment data into in-depth market reports.
+## 输出结构（三层递进，必须严格遵守）
 
-Core requirements:
-1. **Data-driven**: Base your analysis on the specific metrics provided, not vague statements. Cite concrete numbers (e.g. "RSI at 55", "funding rate 0.01%") to support your judgment.
-2. **Clear structure**:
-   - Start with \`## Core Conclusion\` — 2-3 sentences with clear direction and key rationale
-   - Then \`## Detailed Analysis\` with sections: **Technical Analysis**, **Fund Flows**, **Market Sentiment**, **On-chain & Fundamentals**, **Macro Environment** (only include sections with data)
-   - End with \`## Actionable Advice & Risk Warnings\`
-3. **Depth**: Don't just say "bullish/bearish" — explain why: what level are indicators at, what does this historically mean, are there contradictions across dimensions
-4. Professional but accessible tone
-5. Use **bold** for section headers, not "###" markdown headers
-6. Keep at 800-1200 words, high information density
-7. Don't expose internal scheduling info (e.g. "called XX skill", "confidence XX%", etc.)`;
+### 第一层：核心观点（约150字）
+用 \`## 核心结论\` 开头：
+- 一句话给出明确方向判断（偏多/偏空/中性）和目标价位区间
+- 2-3句话给出关键依据：最核心的2-3个指标数据支撑你的判断
+- 如果有实时价格，必须引用：当前价格 $XXX（24h +/-X%）
+
+### 第二层：多维度详细分析（约600字）
+用 \`## 详细分析\` 开头，按维度分段（有数据的维度必须写，用 **加粗** 标注维度标题）：
+
+**技术面分析**：必须引用具体数值（如"RSI 55.3，处于中性偏多区域"、"MACD金叉，柱状图+0.023"），说明指标处于什么水平、历史上该水平通常意味着什么。结合当前价格给出关键支撑/阻力位。
+
+**资金流向**：如果资金费率 >0.01% → 多头付费，市场偏多情绪过热；< -0.01% → 空头付费，偏空情绪；中性区间 → 市场均衡。必须引用具体费率数值并解读。
+
+**市场状态**：如果提供了市场状态数据（如 trending/ranging/volatile），说明当前处于什么状态、该状态的历史持续性、推荐的策略类型。
+
+**矛盾与风险**：检查各维度信号是否一致。如果技术面偏多但资金面偏空，明确指出矛盾。说明主要矛盾是什么、矛盾强度、可能的演进方向。
+
+**回测与策略验证**：如果提供了回测数据，必须对比行业基准：
+- 胜率 ≥55% 合格，≥65% 优秀，≥70% 顶尖
+- 夏普比率 ≥1.0 可接受，≥1.5 优秀，≥2.0 顶尖
+- 最大回撤 ≤20% 安全线，≤15% 优秀，≤10% 顶尖
+明确说明策略在哪个水平、是否值得执行。
+
+### 第三层：深度解读（约300字）
+用 \`## 深度解读\` 开头：
+- **跨维度交叉分析**：不同维度之间的因果关系和逻辑链条。例如"资金费率为正 + 技术面RSI超买 → 短期可能回调，但市场状态为trending → 回调幅度有限"
+- **行业基准对比**：将当前指标对标行业常见基准，明确所处水平
+- **情景推演**：给出2-3个可能情景（概率从高到低），每个情景给出触发条件和预期走势
+- 独有优势展示：如果子系统提供了矛盾论/贝叶斯优化/资金情报等独有分析数据，在这里深入解读——这是通用大模型无法提供的维度
+
+### 结尾：操作建议与风险提示（约150字）
+用 \`## 操作建议与风险提示\` 结尾：
+- 方向明确时给出参考入场区间、止损位、止盈位（基于实时价格计算）
+- 方向不明确时给出关键支撑/阻力位和突破后跟进策略
+- 风险提示
+
+## 写作规范
+1. **绝对数据驱动**：每个判断必须引用具体数值，禁止泛泛而谈
+2. **信息密度极高**：总长800-1200字，每句话都要有信息增量
+3. 用 **加粗** 标注分段标题，不要使用 "###" Markdown 标题
+4. 语气对标专业研报：客观、精确、有逻辑链条
+5. 不要暴露内部调度信息（如"调用了XX技能"、"置信度XX%"等）
+6. 展现独有优势：矛盾论交叉分析、子系统钩子数据、贝叶斯优化参数等是通用大模型没有的，要充分利用`
+          : `You are a senior analyst at a top-tier crypto research institution. Your reports should benchmark against Bloomberg Intelligence / Glassnode Studio / Messari Pro quality. Your edge: proprietary quant subsystems (regime detection, contradiction theory, capital intelligence, backtest validation, Bayesian optimization) — these are your core advantages over generic LLMs.
+
+## Output Structure (Three-layer progressive, strictly follow)
+
+### Layer 1: Core View (~150 words)
+Start with \`## Core Conclusion\`:
+- One sentence: clear direction (bullish/bearish/neutral) and target price range
+- 2-3 sentences: key rationale with 2-3 core metric data points
+- If real-time price available, must cite: Current price $XXX (24h +/-X%)
+
+### Layer 2: Multi-dimensional Analysis (~600 words)
+Start with \`## Detailed Analysis\`, sections by dimension (with **bold** headers):
+
+**Technical Analysis**: Must cite specific values (e.g. "RSI 55.3, neutral-bullish zone", "MACD golden cross, histogram +0.023"). Explain what level indicators are at, historical implications. Include key support/resistance with current price.
+
+**Capital Flows**: Funding rate >0.01% → longs paying, overheated bullish; < -0.01% → shorts paying, bearish; neutral → balanced. Must cite specific rate and interpret.
+
+**Market Regime**: If regime data provided (trending/ranging/volatile), explain current state, historical persistence, recommended strategy types.
+
+**Contradictions & Risk**: Check cross-dimension signal consistency. If technical bullish but capital bearish, explicitly state contradiction. Identify primary contradiction, intensity, possible evolution.
+
+**Backtest & Strategy Validation**: If backtest data provided, compare against industry benchmarks:
+- Win rate ≥55% qualified, ≥65% excellent, ≥70% elite
+- Sharpe ≥1.0 acceptable, ≥1.5 excellent, ≥2.0 elite
+- Max drawdown ≤20% safe, ≤15% excellent, ≤10% elite
+State which tier strategy falls in.
+
+### Layer 3: Deep Interpretation (~300 words)
+Start with \`## Deep Interpretation\`:
+- **Cross-dimensional analysis**: Causal chains between dimensions. E.g. "Positive funding + RSI overbought → short-term pullback likely, but trending regime → limited pullback depth"
+- **Industry benchmark comparison**: Position current metrics against industry standards
+- **Scenario analysis**: 2-3 scenarios (high to low probability), each with trigger conditions and expected moves
+- Showcase proprietary advantages: contradiction theory / Bayesian optimization / capital intelligence data — dimensions generic LLMs cannot provide
+
+### Ending: Actionable Advice & Risk (~150 words)
+Start with \`## Actionable Advice & Risk Warnings\`:
+- Clear direction: entry range, stop loss, take profit (calculated from real-time price)
+- Unclear: key support/resistance and breakout-follow strategy
+- Risk disclaimer
+
+## Writing Standards
+1. **Absolutely data-driven**: Every judgment must cite specific values, no vague statements
+2. **Extremely high information density**: 800-1200 words total, every sentence must add information
+3. Use **bold** for section headers, not "###" markdown headers
+4. Professional report tone: objective, precise, logical chains
+5. Don't expose internal scheduling info (e.g. "called XX skill", "confidence XX%", etc.)
+6. Leverage proprietary advantages: contradiction cross-analysis, subsystem hook data, Bayesian optimized params — these are unavailable to generic LLMs`;
 
         const summaryUserPrompt = lang === 'zh'
-          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n以下是多维度分析数据（请充分利用这些具体指标）：\n\n${stepOutputsText}\n\n请基于以上数据，生成一份专业、有深度的行情分析报告。`
-          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nMulti-dimensional analysis data (please make full use of these specific metrics):\n\n${stepOutputsText}\n\nBased on the above data, generate a professional, in-depth market analysis report.`;
+          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n以下是来自多个量化子系统的多维度分析数据（请充分利用这些具体指标，不要遗漏任何可用数据）：\n\n${stepOutputsText}\n\n请严格按照三层递进结构（核心结论 → 详细分析 → 深度解读 → 操作建议），生成一份对标 Bloomberg Intelligence / Messari Pro 级别的专业研报。\n\n关键要求：\n1. 每个判断必须引用具体数值\n2. 资金费率、回测指标必须对照行业基准解读\n3. 深度解读层必须做跨维度交叉分析+情景推演\n4. 充分利用矛盾论/贝叶斯优化/资金情报等子系统数据，这是通用大模型无法提供的独有优势`
+          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nMulti-dimensional analysis data from multiple quant subsystems (please make full use of these specific metrics, don't omit any available data):\n\n${stepOutputsText}\n\nPlease strictly follow the three-layer progressive structure (Core Conclusion → Detailed Analysis → Deep Interpretation → Actionable Advice), generating a professional report benchmarking against Bloomberg Intelligence / Messari Pro quality.\n\nKey requirements:\n1. Every judgment must cite specific values\n2. Funding rate and backtest metrics must be interpreted against industry benchmarks\n3. Deep interpretation layer must include cross-dimensional analysis + scenario analysis\n4. Leverage contradiction theory / Bayesian optimization / capital intelligence subsystem data — these are proprietary advantages unavailable to generic LLMs`;
 
         const llmResult = await callLLM({
           prompt: summaryUserPrompt,
@@ -1630,36 +1951,74 @@ Core requirements:
       }
       // LLM 返回空内容或过短时，从执行数据生成专业研报
       if (!summaryReport || summaryReport.trim().length < 200) {
-        // 获取实时市场数据注入研报
-        let mdForReport: MarketData | null = null;
-        try {
-          mdForReport = await fetchMarketData(
-            rawSymbol, instId, category, displayName, undefined, lang,
-          );
-        } catch { /* 降级处理 */ }
-        summaryReport = generateProfessionalReport(validResults, execResult, lang, displayName || rawSymbol || '', mdForReport);
+        // 复用已获取的市场数据生成降级研报
+        summaryReport = generateProfessionalReport(validResults, execResult, lang, displayName || rawSymbol || '', chartMarketData);
         console.log(`[executeWithPlanner] LLM 返回过短(${summaryReport?.length || 0}字)，使用专业研报生成器`);
       }
     } else if (isAnalysisIntent) {
       // 分析类意图但无编排结果：直接用 LLM 基于用户问题生成分析
       try {
         const fallbackSystemPrompt = lang === 'zh'
-          ? `你是一位资深的数字资产分析师。请直接回答用户的分析请求，给出专业、有深度的行情分析。
+          ? `你是一位顶级加密货币研究机构的资深分析师，对标 Bloomberg Intelligence / Glassnode Studio 级别的专业研报质量。
 
-要求：
-1. 用 \`## 核心结论\` 开头，给出明确方向判断
-2. 用 \`## 详细分析\` 展开技术面、资金面、情绪面等维度
-3. 用 \`## 操作建议与风险提示\` 结尾
-4. 语气专业但易懂，控制在 600-1000 字
-5. 不要暴露内部调度信息`
-          : `You are a senior digital asset analyst. Answer the user's analysis request directly with a professional, in-depth market analysis.
+## 输出结构（三层递进）
 
-Requirements:
-1. Start with \`## Core Conclusion\` with clear direction
-2. Use \`## Detailed Analysis\` for technical, flow, sentiment dimensions
-3. End with \`## Actionable Advice & Risk Warnings\`
-4. Professional but accessible tone, 600-1000 words
-5. Don't expose internal scheduling info`;
+### 第一层：核心结论（约150字）
+用 \`## 核心结论\` 开头：
+- 明确方向判断（偏多/偏空/中性）
+- 关键依据2-3句话，每句必须有具体数值或事实支撑
+- 如有价格信息必须引用
+
+### 第二层：详细分析（约500字）
+用 \`## 详细分析\` 开头，用 **加粗** 标注维度标题：
+- **技术面分析**：RSI/MACD/均线等指标的具体数值和含义
+- **资金流向**：资金费率解读（>0.01%偏多过热，<-0.01%偏空，中性区间均衡）
+- **市场情绪**：多空力量对比
+- **风险提示**：关键支撑/阻力位
+
+### 第三层：深度解读（约200字）
+用 \`## 深度解读\` 开头：
+- 跨维度逻辑链条（如"技术面偏多+资金面偏空=矛盾，短期可能回调"）
+- 2-3个情景推演（高概率到低概率）
+
+### 结尾：操作建议与风险提示（约100字）
+用 \`## 操作建议与风险提示\` 结尾
+
+## 规范
+1. 绝对数据驱动，禁止泛泛而谈
+2. 用 **加粗** 标注标题，不用 "###" Markdown
+3. 总长 800-1100 字，信息密度极高
+4. 不要暴露内部调度信息`
+          : `You are a senior analyst at a top-tier crypto research institution, benchmarking against Bloomberg Intelligence / Glassnode Studio quality.
+
+## Output Structure (Three-layer progressive)
+
+### Layer 1: Core Conclusion (~150 words)
+Start with \`## Core Conclusion\`:
+- Clear direction (bullish/bearish/neutral)
+- Key rationale with specific data points
+- Cite price if available
+
+### Layer 2: Detailed Analysis (~500 words)
+Start with \`## Detailed Analysis\` with **bold** dimension headers:
+- **Technical Analysis**: RSI/MACD/MA specific values and implications
+- **Capital Flows**: Funding rate interpretation (>0.01% overheated bullish, <-0.01% bearish, neutral balanced)
+- **Market Sentiment**: Bull/bear power comparison
+- **Risk**: Key support/resistance levels
+
+### Layer 3: Deep Interpretation (~200 words)
+Start with \`## Deep Interpretation\`:
+- Cross-dimensional logic chains (e.g. "technical bullish + capital bearish = contradiction, short-term pullback likely")
+- 2-3 scenario analysis (high to low probability)
+
+### Ending: Actionable Advice & Risk (~100 words)
+Start with \`## Actionable Advice & Risk Warnings\`
+
+## Standards
+1. Absolutely data-driven, no vague statements
+2. Use **bold** headers, not "###" markdown
+3. Total 800-1100 words, extremely high information density
+4. Don't expose internal scheduling info`;
 
         const fallbackUserPrompt = lang === 'zh'
           ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n请直接分析${displayName || rawSymbol}的未来走势。`
@@ -1706,9 +2065,38 @@ Requirements:
         const title = coreMatchZh ? '💡 核心观点' : '💡 Core View';
         coreView = `**${title}**\n\n${coreText}\n\n---\n`;
         detailedAnalysis = summaryReport.replace(coreMatch[0], '').trim();
+
+        // 提取深度解读层（第三层）
+        const deepMatchZh = detailedAnalysis.match(/##\s*深度解读\n([\s\S]*?)(?=\n##\s|$)/);
+        const deepMatchEn = detailedAnalysis.match(/##\s*Deep Interpretation\n([\s\S]*?)(?=\n##\s|$)/);
+        const deepMatch = deepMatchZh || deepMatchEn;
+        let deepSection = '';
+        if (deepMatch && deepMatch[1]) {
+          const deepText = deepMatch[1].trim();
+          const deepTitle = deepMatchZh ? '🔬 深度解读' : '🔬 Deep Interpretation';
+          deepSection = `**${deepTitle}**\n\n${deepText}\n\n---\n`;
+          detailedAnalysis = detailedAnalysis.replace(deepMatch[0], '').trim();
+        }
+
+        // 提取操作建议层
+        const adviceMatchZh = detailedAnalysis.match(/##\s*操作建议与风险提示\n([\s\S]*?)(?=\n##\s|$)/);
+        const adviceMatchEn = detailedAnalysis.match(/##\s*Actionable Advice & Risk Warnings\n([\s\S]*?)(?=\n##\s|$)/);
+        const adviceMatch = adviceMatchZh || adviceMatchEn;
+        let adviceSection = '';
+        if (adviceMatch && adviceMatch[1]) {
+          const adviceText = adviceMatch[1].trim();
+          const adviceTitle = adviceMatchZh ? '📋 操作建议与风险提示' : '📋 Actionable Advice & Risk';
+          adviceSection = `**${adviceTitle}**\n\n${adviceText}`;
+          detailedAnalysis = detailedAnalysis.replace(adviceMatch[0], '').trim();
+        }
+
+        // 详细分析层（第二层）— 移除标题后作为主体
         detailedAnalysis = detailedAnalysis.replace(/^##\s*(详细分析|Detailed Analysis)\n*/i, '').trim();
         const detailTitle = coreMatchZh ? '📊 详细分析' : '📊 Detailed Analysis';
-        detailedAnalysis = `**${detailTitle}**\n\n${detailedAnalysis}`;
+        detailedAnalysis = `**${detailTitle}**\n\n${detailedAnalysis}\n\n---\n`;
+
+        // 组合三层结构
+        detailedAnalysis = detailedAnalysis + deepSection + adviceSection;
       }
     }
 
@@ -1734,7 +2122,7 @@ Requirements:
     // 10. 构建 ResultFile
     // 生成图表规格（供前端 SynthesisChart 渲染）
     const chartSpecs = isAnalysisIntent && validResults.length > 0
-      ? generateChartSpecs(validResults, execResult, lang, displayName || rawSymbol || '')
+      ? generateChartSpecs(validResults, execResult, lang, displayName || rawSymbol || '', chartMarketData)
       : [];
 
     const result: ResultFile = {
@@ -1915,7 +2303,7 @@ export async function executeConversationTaskInline(
   // ============================================================
   if (intentType === 'market_query') {
     const marketData = await fetchMarketData(
-      rawSymbol, instId, category, displayName, undefined, lang,
+      rawSymbol, instId, category as 'crypto' | 'macro', displayName, undefined, lang,
     );
     const priceCard = formatMarketData(marketData, ['market_query'], lang);
     const now = new Date().toISOString();
