@@ -240,6 +240,8 @@ async function fetchSkillCandidates(
       skill_candidates: [],
       built_at: Date.now(),
       intent_type: intentType,
+      solution_cases: [],
+      cvg_result: null,
     });
 
     return plan.selections.map(sel => {
