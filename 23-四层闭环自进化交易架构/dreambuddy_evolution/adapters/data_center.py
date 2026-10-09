@@ -232,6 +232,138 @@ class DataCenterAdapter:
                             pass
         return out
 
+    # ================================================================
+    # 🆕 Phase 9: 事件驱动策略 — 经济日历 / FedWatch / FOMC 日历查询
+    # ================================================================
+    def query_economic_calendar(self) -> dict[str, Any]:
+        """查询最新 CPI/NFP/PPI actual/forecast/surprise（event_context 注入用）。
+
+        Returns dict keyed by indicator (cpi/nfp/ppi)，每项含
+        actual/forecast/surprise/previous/cesi?/release_date?/_record_timestamp。
+        FAIL-OPEN: 查询失败返回空 dict。
+        """
+        out: dict[str, Any] = {}
+        for indicator in ("cpi", "nfp", "ppi"):
+            rec = self._query_latest_record_by_source(
+                "econ_calendar", "macro", indicator
+            )
+            if not rec:
+                continue
+            m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+            entry: dict[str, Any] = {}
+            for k in ("actual", "forecast", "surprise", "previous"):
+                if k in m:
+                    try:
+                        entry[k] = float(m[k])
+                    except (ValueError, TypeError):
+                        pass
+            if "cesi" in m:
+                try:
+                    entry["cesi"] = float(m["cesi"])
+                except (ValueError, TypeError):
+                    pass
+            if "release_date" in m:
+                entry["release_date"] = m["release_date"]
+            entry["_record_timestamp"] = rec.get("timestamp", "")
+            if entry:
+                out[indicator] = entry
+        return out
+
+    def query_fedwatch(self) -> dict[str, Any]:
+        """查询最新 CME FedWatch 加息/降息概率 + 下次 FOMC 会议日期。
+
+        cme-fedwatch 包返回 effr/current_target 但不含 meeting_date；
+        investing.com 降级路径返回 meeting_date/target_rate。
+        本方法取最新记录的概率 + 最近含 meeting_date 的记录的会议日期（合并）。
+
+        Returns dict with hike_prob/cut_prob/hold_prob/meeting_date?/effr?。
+        FAIL-OPEN: 查询失败返回空 dict。
+        """
+        out: dict[str, Any] = {}
+        # 取最新记录（概率值）
+        rec = self._query_latest_record_by_source("cme", "macro", "fedwatch")
+        if not rec:
+            return out
+        m = rec.get("metrics", {}) if isinstance(rec, dict) else {}
+        for k in ("hike_prob", "cut_prob", "hold_prob", "effr"):
+            if k in m:
+                try:
+                    out[k] = float(m[k])
+                except (ValueError, TypeError):
+                    pass
+        for k in ("meeting_date", "target_rate", "current_target", "trade_date"):
+            if k in m:
+                out[k] = m[k]
+        out["_record_timestamp"] = rec.get("timestamp", "")
+
+        # meeting_date 缺失时，查最近 5 条记录中含 meeting_date 的
+        if "meeting_date" not in out or not out.get("meeting_date"):
+            try:
+                conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT * FROM records "
+                    "WHERE source = 'cme' AND sub_category = 'fedwatch' "
+                    "AND metrics LIKE '%meeting_date%' "
+                    "ORDER BY timestamp DESC LIMIT 1"
+                )
+                row = cursor.fetchone()
+                conn.close()
+                if row:
+                    d = dict(row)
+                    m2 = d.get("metrics", "{}")
+                    if isinstance(m2, str):
+                        try:
+                            m2 = json.loads(m2)
+                        except Exception:
+                            m2 = {}
+                    md = m2.get("meeting_date", "") if isinstance(m2, dict) else ""
+                    if md:
+                        out["meeting_date"] = md
+            except Exception as e:
+                logger.debug("[FO] fedwatch meeting_date fallback fail: %s", e)
+        return out
+
+    def query_fomc_calendar(self) -> list[dict[str, Any]]:
+        """查询 FOMC 会议日历记录（供 EventWindowTracker 判定 next/last FOMC）。
+
+        Returns list of {meeting_date, timestamp} 按时间升序。
+        FAIL-OPEN: 查询失败返回空列表。
+        """
+        out: list[dict[str, Any]] = []
+        try:
+            conn = sqlite3.connect(self._db_path, timeout=_DB_TIMEOUT)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM records "
+                "WHERE source = 'cme' AND sub_category = 'fomc_calendar' "
+                "ORDER BY timestamp ASC"
+            )
+            rows = cursor.fetchall()
+            conn.close()
+            for row in rows:
+                d = dict(row)
+                raw = d.get("raw", "{}")
+                if isinstance(raw, str):
+                    try:
+                        raw = json.loads(raw)
+                    except Exception:
+                        raw = {}
+                meeting_date = ""
+                if isinstance(raw, dict):
+                    meeting_date = raw.get("meeting_date", "")
+                out.append(
+                    {
+                        "meeting_date": meeting_date,
+                        "timestamp": d.get("timestamp", ""),
+                    }
+                )
+        except Exception as e:
+            logger.debug("[FO] query_fomc_calendar fail: %s", e)
+        return out
+
     def _query_latest_by_source(self, source: str, category: str) -> dict[str, float]:
         """通用：按 source 查最新 record，提取数值 metrics。"""
         rec = self._query_latest_record_by_source(source, category)

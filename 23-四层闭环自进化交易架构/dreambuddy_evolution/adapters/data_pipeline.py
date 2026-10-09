@@ -26,6 +26,7 @@ from .path_library import PathLibrary
 from .coin_scanner import CoinScanner
 from .ftc_orchestrator import FTCOrchestrator
 from .ftc_executor import evaluate_ftc
+from ..core.event_window_tracker import EventWindowTracker
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,8 @@ class DataPipelineAdapter:
         except Exception as _e:
             logger.warning("[FO] FTCOrchestrator init failed: %s", _e)
             self._ftc_orch = None
+        # Phase 9: 事件驱动策略 — FOMC 周期 + 宏观事件注入
+        self._event_tracker = EventWindowTracker()
 
     def assemble(self, symbol: str, inst_id: str) -> dict[str, Any]:
         """
@@ -354,6 +357,20 @@ class DataPipelineAdapter:
                 kline_data["liq_index_change"] = max(0.0, min(2.0, vol_ratio - 1.0))
                 kline_data["vol_ratio"] = round(vol_ratio, 4)  # 供 PathLibrary 使用
 
+        # 5e. 事件驱动策略 event_context 注入（Phase 9）
+        #    数据流：data_center.db → fedwatch(econ_calendar/fomc_calendar)
+        #    → EventWindowTracker → cycle_phase/in_fomc_cycle/event_type/cesi
+        #    供 EventDrivenStrategy.evaluate() 消费（影子模式）
+        if self._data_center is not None:
+            try:
+                event_ctx, cesi = self._build_event_context()
+                kline_data["event_context"] = event_ctx
+                if cesi is not None:
+                    kline_data["cesi"] = cesi
+            except Exception as e:
+                logger.warning("[FO] event_context injection crash: %s", e)
+                kline_data["event_context"] = {}
+
         # 6. ripples (Phase 2: R1 hit 基于 ESS 方向 vs K线方向一致性)
         kline_data["ripples"] = self._build_ripples(kline_data)
 
@@ -425,6 +442,136 @@ class DataPipelineAdapter:
             "R2": {"hits": r2_hits, "candidates": r2_cands, "delta_t_hours": 4, "tau": 4.0},
             "R3": {"hits": r3_hits, "candidates": r3_cands, "delta_t_hours": 12, "tau": 12.0},
         }
+
+    # ---------------------------------------------------------- 事件驱动策略
+    def _build_event_context(self) -> tuple[dict[str, Any], float | None]:
+        """构建 event_context dict + cesi 值（Phase 9 事件驱动策略注入）。
+
+        数据流：
+          data_center.db → fedwatch(hike_prob, meeting_date)
+                         → econ_calendar(CPI/NFP/PPI actual/forecast/surprise)
+                         → fomc_calendar(FOMC 会议日期)
+          EventWindowTracker.get_context() → cycle_phase/in_fomc_cycle/repricing_sub_phase
+
+        event_type 判定：
+          - cycle_phase=="event" → "fomc"（FOMC 当天）
+          - econ_calendar 记录 release_date 匹配今天 → cpi/nfp/ppi
+          - econ_calendar 记录采集时间在 48h 内 → cpi/nfp/ppi（调度器当天采新发布数据）
+          - 否则 → "none"（但在 FOMC 周期内仍会激活策略）
+
+        Returns (event_context_dict, cesi_value)
+        """
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+
+        # 1. 查询 FedWatch 概率 + 会议日期
+        fedwatch = self._data_center.query_fedwatch()
+        hike_prob = fedwatch.get("hike_prob")
+        cut_prob = fedwatch.get("cut_prob")
+        meeting_date_str = fedwatch.get("meeting_date", "")
+
+        # 2. 查询经济日历数据
+        econ_cal = self._data_center.query_economic_calendar()
+
+        # 3. 解析 next/last FOMC 时间
+        next_fomc = None
+        last_fomc = None
+
+        # 优先用 fomc_calendar 记录
+        fomc_cal = self._data_center.query_fomc_calendar()
+        for item in fomc_cal:
+            ts = item.get("timestamp", "")
+            dt = None
+            try:
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            except Exception:
+                md = item.get("meeting_date", "")
+                if md:
+                    try:
+                        dt = datetime.strptime(md, "%Y-%m-%d").replace(
+                            tzinfo=timezone.utc
+                        )
+                    except ValueError:
+                        continue
+            if dt is None:
+                continue
+            if dt > now and (next_fomc is None or dt < next_fomc):
+                next_fomc = dt
+            elif dt <= now and (last_fomc is None or dt > last_fomc):
+                last_fomc = dt
+
+        # 降级：从 fedwatch meeting_date 解析 next_fomc
+        if next_fomc is None and meeting_date_str:
+            for fmt in ("%b %d, %Y", "%B %d, %Y", "%Y-%m-%d"):
+                try:
+                    next_fomc = datetime.strptime(meeting_date_str, fmt).replace(
+                        tzinfo=timezone.utc
+                    )
+                    break
+                except ValueError:
+                    continue
+
+        # 4. EventWindowTracker 计算 FOMC 周期阶段
+        forecast = econ_cal.get("cpi", {}).get("forecast")
+        previous = econ_cal.get("cpi", {}).get("previous")
+
+        event_ctx = self._event_tracker.get_context(
+            next_fomc=next_fomc,
+            last_fomc=last_fomc,
+            hike_prob=hike_prob,
+            cut_prob=cut_prob,
+            forecast=forecast,
+            previous=previous,
+        )
+
+        # 5. 判定 event_type（fomc/nfp/cpi/ppi/none）
+        event_type = "none"
+
+        # FOMC 当天
+        if event_ctx.get("cycle_phase") == "event":
+            event_type = "fomc"
+
+        # CPI/NFP/PPI 当日发布检测
+        if event_type == "none":
+            today_str = now.strftime("%Y-%m-%d")
+            for indicator, et in (("cpi", "cpi"), ("nfp", "nfp"), ("ppi", "ppi")):
+                data = econ_cal.get(indicator, {})
+                # 方式1: release_date 匹配今天
+                release_date = data.get("release_date", "")
+                if release_date and release_date == today_str:
+                    event_type = et
+                    break
+                # 方式2: 记录采集时间在 48h 内（调度器当天采新发布数据）
+                rec_ts = data.get("_record_timestamp", "")
+                if rec_ts:
+                    try:
+                        rec_dt = datetime.fromisoformat(
+                            rec_ts.replace("Z", "+00:00")
+                        )
+                        if (now - rec_dt).total_seconds() < 48 * 3600:
+                            event_type = et
+                            break
+                    except Exception:
+                        pass
+
+        event_ctx["event_type"] = event_type
+
+        # 6. 计算 CESI（标准化超预期 z-score）
+        # 优先用 metrics 中的 cesi（collector 已计算），否则用 surprise/|forecast| 代理
+        cesi = None
+        for indicator in ("cpi", "nfp", "ppi"):
+            data = econ_cal.get(indicator, {})
+            if "cesi" in data:
+                cesi = data["cesi"]
+                break
+            surprise = data.get("surprise")
+            forecast_val = data.get("forecast")
+            if surprise is not None and forecast_val and abs(forecast_val) > 0:
+                cesi = surprise / abs(forecast_val)
+                break
+
+        return event_ctx, cesi
 
     # ---------------------------------------------------------- 认知系统
     def get_cognitive_bridge(self) -> CognitiveBridge:
