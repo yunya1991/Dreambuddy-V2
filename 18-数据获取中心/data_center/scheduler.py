@@ -193,13 +193,14 @@ class CollectionScheduler:
                 params={"series": s},
                 interval_sec=3600,
             ))
-        # ── finance/yfinance ^VIX（15min）──
-        tasks.append(CollectionTask(
-            name="yfinance_vix",
-            category="finance", source="yfinance",
-            params={"symbol": "^VIX"},
-            interval_sec=900,
-        ))
+        # ── finance/yfinance 跨市场标的（15min）──
+        for sym in ("^VIX", "DX-Y.NYB", "GC=F", "SPY", "QQQ", "^TNX", "CL=F", "BTC-USD"):
+            tasks.append(CollectionTask(
+                name=f"yfinance_{sym.lower().replace('^','').replace('=','_').replace('-','_')}",
+                category="finance", source="yfinance",
+                params={"symbol": sym},
+                interval_sec=900,
+            ))
         # ── chain/ccxt BTC ticker（5min）──
         tasks.append(CollectionTask(
             name="ccxt_btc",
