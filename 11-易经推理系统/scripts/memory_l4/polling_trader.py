@@ -1422,6 +1422,15 @@ class PollingTrader:
             "last_adjust_ts": 0.0, # 上次调节时间戳
             "adjust_cooldown_s": 1800,  # 30 分钟最多调一次
         }
+        # F1: 空单 F1 试错门槛动态调节（独立于 _gate_threshold_state，仅记录空单）
+        self._f1_trial_short_threshold: float = self.F1_TRIAL_SHORT_BASE_THRESHOLD
+        self._f1_trial_short_state: dict = {
+            "n_min": 30,
+            "n_max": 150,
+            "recent_pnl": [],       # [(pnl_pct, direction), ...] 仅空单
+            "last_adjust_ts": 0.0,
+            "adjust_cooldown_s": 1800,
+        }
         self._init_phase1_three_components()
 
         # ──────────────────────────────────────────────────────
@@ -8399,6 +8408,24 @@ class PollingTrader:
         """获取当前默认杠杆倍数"""
         return float(self.okx_client.cfg.get("default_leverage", 3))
 
+    def _compute_effective_leverage(self, base_leverage: float,
+                                    leverage_factor: float,
+                                    is_trial: bool) -> int:
+        """F2: 计算有效杠杆。试错仓杠杆上限 2x，正常仓无上限。
+
+        Args:
+            base_leverage: 配置的基础杠杆（如 5）
+            leverage_factor: 风控杠杆调整因子（如 1.0/0.5/2.0）
+            is_trial: 是否为试错仓
+
+        Returns:
+            有效杠杆（整数，试错仓 ≤ TRIAL_MAX_LEVERAGE=2）
+        """
+        raw = base_leverage * leverage_factor
+        if is_trial:
+            return max(1, min(int(self.TRIAL_MAX_LEVERAGE), int(round(raw))))
+        return max(1, int(round(raw)))
+
     def _compute_p2_dynamic_sizing_factors(self, hexagram: str,
                                            lookback: int = 30,
                                            min_samples: int = 5) -> Dict:
@@ -9757,6 +9784,11 @@ class PollingTrader:
                     )
                 self._maybe_adjust_gate_base_threshold(trade_snapshot={
                     "coin": coin, "pnl_pct": float(pnl_pct), "score_consensus": _sc,
+                    "direction": _dr,
+                })
+                # F1: 空单 F1 试错门槛动态调节（仅记录空单）
+                self._maybe_adjust_f1_trial_short_threshold(trade_snapshot={
+                    "coin": coin, "pnl_pct": float(pnl_pct), "direction": _dr,
                 })
             except Exception as _gte:
                 self._log(f"[{coin}] 基础阈值动态调节记录异常（忽略）：{type(_gte).__name__}", "DEBUG")
@@ -9880,6 +9912,14 @@ class PollingTrader:
     TRIAL_REVERSE_PCT = -0.030
     TRIAL_FIRST_EVAL_SEC = 1800       # 首次评估：持仓≥30min
     TRIAL_REEVAL_INTERVAL_SEC = 3600  # 重评估间隔：每60min一次
+    TRIAL_MAX_HOLD_SEC: int = 4 * 3600  # F4: 试错仓最大持仓时间（4h无趋势则离场）
+
+    # F1: 空单 F1 试错门槛独立于 short_confidence_threshold，默认 0.90（非 0.80）
+    F1_TRIAL_SHORT_BASE_THRESHOLD: float = 0.90
+    # F2: 试错仓杠杆上限 2x（正常仓无上限）
+    TRIAL_MAX_LEVERAGE: float = 2.0
+    # F3: F1 试错通路的 score_consensus 下限（低于此值即使置信度高也不放行）
+    F1_TRIAL_MIN_SCORE_CONSENSUS: float = 0.30
 
     def _compute_trial_action(self, price_chg_pct: float) -> str:
         """根据价格变动判定试错动作。
@@ -9916,6 +9956,17 @@ class PollingTrader:
             return True
         now = now_ts if now_ts is not None else time.time()
         return (now - last_eval) >= self.TRIAL_REEVAL_INTERVAL_SEC
+
+    def _should_trial_timeout_close(self, position_age_sec: float) -> bool:
+        """F4: 试错仓是否达到超时平仓条件（持仓 ≥ TRIAL_MAX_HOLD_SEC=4h）。
+
+        Args:
+            position_age_sec: 持仓时长（秒）
+
+        Returns:
+            True if position_age_sec >= TRIAL_MAX_HOLD_SEC
+        """
+        return position_age_sec >= self.TRIAL_MAX_HOLD_SEC
 
     # ── P2: 易经离场浮亏+风险联合强制平仓 ──
     # ★ FIX: 阈值基于价格变动率而非保证金收益率，避免高杠杆持仓因轻微价格波动误触发
@@ -14086,10 +14137,38 @@ class PollingTrader:
                             "INFO",
                         )
                     else:
-                        self._log(
-                            f"[{coin}] 试错评估:趋势不明 → 维持试错仓位",
-                            "INFO",
-                        )
+                        # F4: 超时无趋势 → 强制平仓（4h 未确认趋势 = 趋势不明 = 应离场）
+                        if self._should_trial_timeout_close(position_age_sec):
+                            self._log(
+                                f"[{coin}] 试错评估:超时无趋势 → 平仓 | "
+                                f"持仓={position_age_sec/3600:.1f}h ≥ {self.TRIAL_MAX_HOLD_SEC/3600:.0f}h "
+                                f"盈亏={upl:.2f}({upl_ratio:.2%})",
+                                "WARN",
+                            )
+                            _exit_price = _cur_price
+                            if pos_side == "long":
+                                _r = self.okx_client.market_close_long(
+                                    inst_id, reason="trial_max_hold_timeout"
+                                )
+                            else:
+                                _r = self.okx_client.market_close_short(
+                                    inst_id, reason="trial_max_hold_timeout"
+                                )
+                            if _r.get("ok") or _r.get("dry_run"):
+                                self._handle_close_position(
+                                    inst_id=inst_id, coin=coin, pos_side=pos_side,
+                                    exit_price=_exit_price,
+                                    exit_reason="trial_max_hold_timeout",
+                                    pnl=upl, pnl_pct=upl_ratio,
+                                )
+                                _trial_closed = True
+                        else:
+                            self._log(
+                                f"[{coin}] 试错评估:趋势不明 → 维持试错仓位 "
+                                f"(持仓={position_age_sec/60:.0f}min, "
+                                f"超时={self.TRIAL_MAX_HOLD_SEC/3600:.0f}h)",
+                                "INFO",
+                            )
                 # 标记评估时间戳（支持60min定期重评估），并保留 trial_eval_done 向后兼容
                 tracker_pos.trial_eval_done = True
                 tracker_pos.last_trial_eval_ts = time.time()
@@ -15166,9 +15245,9 @@ class PollingTrader:
         #   设计意图：P1=BLOCK 已反映趋势风险，F1 通路只需模型高置信度即可极小仓试错。
         #   开关 enable_f1_trial_regime_threshold=True 可切回 effective_threshold（含 regime 形态调整）。
         _f1_trial_base_threshold = (
-            float(self.short_confidence_threshold)
+            float(self._f1_trial_short_threshold)   # 空单动态门槛（默认0.90，基于空单历史盈亏调节）
             if direction == "DOWN"
-            else float(self.confidence_threshold)
+            else float(self.confidence_threshold)    # 多单不变
         )
 
         # P2-05: 形态乘数作用到置信度阈值（放在所有阈值调整之后、最终比对之前）
@@ -15324,9 +15403,12 @@ class PollingTrader:
         _f1_trial_mode = False
         if _score_consensus >= self._gate_base_threshold:
             pass  # 正常通路
-        elif _p1_out_for_gate == "BLOCK" and confidence >= _f1_trial_threshold:
+        elif (_p1_out_for_gate == "BLOCK"
+              and confidence >= _f1_trial_threshold
+              and _score_consensus >= self.F1_TRIAL_MIN_SCORE_CONSENSUS):
             # F1 永不 BLOCK：P1=BLOCK 但模型高置信度 → 极小仓试错
             #   门槛默认用基础门槛（不含 regime 形态调整），开关可切回 effective_threshold
+            #   F3: score_consensus 须 ≥ 0.30（低于此值说明三层共识极低，不试错）
             _f1_trial_mode = True
             is_trial = True
             self._log(
@@ -15338,11 +15420,18 @@ class PollingTrader:
                 "INFO",
             )
         else:
+            # F3: 区分跳过原因（score_consensus 低于 F1 下限 vs 置信度不够）
+            if _p1_out_for_gate == "BLOCK" and confidence >= _f1_trial_threshold:
+                _reason = (f"score_cons={_score_consensus:.3f} < F1试错下限="
+                           f"{self.F1_TRIAL_MIN_SCORE_CONSENSUS}")
+            else:
+                _reason = (f"conf={confidence:.2f} < f1_thr={_f1_trial_threshold:.4f}"
+                           f" 或 P1={_p1_out_for_gate}")
             self._log(
                 f"[{coin}] 过滤层共识分低于基础门槛 跳过开仓 | "
                 f"score_cons={_score_consensus:.3f} < threshold={self._gate_base_threshold:.3f}"
                 f" P1={_p1_out_for_gate} Elder={_elder_grade_for_gate} S_B={_score_b_for_gate:.2f}"
-                f" conf={confidence:.2f} 方向={direction}{_gate_debug_info}",
+                f" conf={confidence:.2f} 方向={direction} 原因={_reason}{_gate_debug_info}",
                 "INFO",
             )
             return
@@ -15621,6 +15710,11 @@ class PollingTrader:
                 )
                 leverage = _bdsm_max_lev
                 effective_leverage = max(1, round(leverage * leverage_factor))
+
+        # F2: 试错仓杠杆上限 2x（在 BDSM 块之后应用，避免 BDSM 覆盖 trial cap）
+        effective_leverage = self._compute_effective_leverage(
+            leverage, leverage_factor, is_trial
+        )
 
         balance = self.okx_client.get_balance()
 
@@ -16887,6 +16981,78 @@ class PollingTrader:
         except Exception as _ate:
             self._log(
                 f"[基础阈值动态调节] 异常（忽略）：{type(_ate).__name__}", "WARN"
+            )
+
+    def _maybe_adjust_f1_trial_short_threshold(self, trade_snapshot: Optional[dict] = None) -> None:
+        """F1: 基于空单历史盈亏动态收紧 F1 试错门槛。
+
+        规则（仅记录空单，多单不影响）：
+          - 记录空单平仓盈亏到滑动窗口
+          - 最近 N≥30 笔空单胜率 < 40% → 门槛上调 +0.02（收紧）
+          - 最近 N≥30 笔空单胜率 ≥ 60% → 门槛下调 -0.01（放宽）
+          - 其他情况：不调整
+          - 调节步长 +0.02/-0.01，硬边界 [0.85, 0.98]
+          - 冷却期：30 分钟最多调节 1 次
+        """
+        import time as _t
+        _snap = trade_snapshot or {}
+        _direction = str(_snap.get("direction", "") or "").upper()
+
+        # 仅记录空单
+        if _direction != "DOWN":
+            return
+
+        _state = getattr(self, "_f1_trial_short_state", None) or {}
+        _recent = list(_state.get("recent_pnl") or [])
+
+        # 追加本次空单盈亏
+        _pnl_pct = float(_snap.get("pnl_pct", 0.0) or 0.0)
+        _recent.append((_pnl_pct, _direction))
+        _n_max = int(_state.get("n_max", 150))
+        if len(_recent) > _n_max:
+            _recent = _recent[-_n_max:]
+        _state["recent_pnl"] = _recent
+
+        _n_min = int(_state.get("n_min", 30))
+        _cd = int(_state.get("adjust_cooldown_s", 1800))
+        _now = _t.time()
+
+        if len(_recent) < _n_min:
+            return
+        if _now - float(_state.get("last_adjust_ts", 0.0) or 0.0) < _cd:
+            return
+
+        try:
+            wins = sum(1 for (pnl, _) in _recent if pnl > 0)
+            total = len(_recent)
+            win_rate = wins / max(1, total)
+            old_thr = float(self._f1_trial_short_threshold)
+            delta = 0.0
+
+            if win_rate < 0.40:
+                delta = +0.02  # 空单胜率<40% → 收紧
+            elif win_rate >= 0.60:
+                delta = -0.01  # 空单胜率≥60% → 放宽
+
+            if abs(delta) < 1e-9:
+                return
+
+            new_thr = max(0.85, min(0.98, old_thr + delta))
+            if abs(new_thr - old_thr) < 1e-5:
+                return
+
+            self._f1_trial_short_threshold = float(new_thr)
+            _state["last_adjust_ts"] = _now
+            _snap_coin = _snap.get("coin", "N/A")
+            self._log(
+                f"[F1空单门槛动态调节] 触发样本={total}/{_n_min} | 胜率={win_rate:.2%} "
+                f"| 门槛 {old_thr:.3f}→{new_thr:.3f} Δ={delta:+.3f}"
+                f" | 触发平仓={_snap_coin} 本次={_pnl_pct:+.3%}",
+                "INFO",
+            )
+        except Exception as _ate:
+            self._log(
+                f"[F1空单门槛动态调节] 异常（忽略）：{type(_ate).__name__}", "WARN"
             )
 
     def _adjust_confidence_threshold(self) -> float:
