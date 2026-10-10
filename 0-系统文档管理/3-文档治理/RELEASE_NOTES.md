@@ -186,7 +186,7 @@
 - **验证方式**: 链接有效性抽查 + 版本一致性检查
 
 #### P0 权威冲突修复
-- 根 [TECHNICAL_DESIGN.md](../../TECHNICAL_DESIGN.md) 降级为 LEGACY 归档，重定向到 SSoT v3.0
+- 根 [TECHNICAL_DESIGN.md（已归档，见 ARCHIVE_INDEX）](../../ARCHIVE_INDEX.md) 降级为 LEGACY 归档，重定向到 SSoT v3.0
 - 根 [ENGINEERING_INDEX.md](../../ENGINEERING_INDEX.md) 升级到 v3.0，SSoT 层级表消除双 v3.0 冲突
 
 #### P1 导航信息刷新

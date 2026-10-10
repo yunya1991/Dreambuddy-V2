@@ -14,8 +14,13 @@
 ├── docs/
 │   ├── SPEC-分布式计算协同部署方案.md   # 核心设计 SPEC
 │   ├── ENGINEERING_INDEX.md            # 本文件
+│   ├── TECHNICAL_DESIGN.md            # 技术设计
+│   ├── API_SPEC.md                     # 接口规格
 │   ├── CHANGELOG.md                    # 变更日志
+│   ├── DEPLOYMENT_CHECKLIST.md         # 部署检查清单
 │   └── README.md                       # 文档索引
+├── phase1/                             # 云端核心上线脚本
+├── phase2/                             # 协同增强脚本
 └── README.md                           # 模块入口
 ```
 
@@ -24,6 +29,10 @@
 | 文档 | 说明 |
 |------|------|
 | [SPEC-分布式计算协同部署方案.md](./SPEC-分布式计算协同部署方案.md) | 完整架构设计（模块分工、通信机制、降级策略、成本、实施路线） |
+| [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 技术设计（架构、部署分阶段、关键决策、降级策略） |
+| [API_SPEC.md](./API_SPEC.md) | 接口规格（部署脚本、服务端口、健康检查、环境变量） |
+| [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) | 部署检查清单 |
+| [CHANGELOG.md](./CHANGELOG.md) | 变更日志 |
 
 ## 4. 核心组件（规划中）
 

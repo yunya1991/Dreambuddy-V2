@@ -37,6 +37,7 @@ IGNORED_DIRS = {'.git', 'node_modules', '__pycache__', '.venv', 'dist', 'build',
 # 匹配 [text](target)，target 内不含换行与右括号
 LINK_RE = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
 EXTERNAL_RE = re.compile(r'^(https?:|mailto:|ftp:|tel:)', re.IGNORECASE)
+FILE_RE = re.compile(r'^file:///?', re.IGNORECASE)
 # 链接 target 末尾的可选 title：[text](path "title")
 TITLE_RE = re.compile(r'\s+"[^"]*"$')
 # 内联代码 span：`...`（在链接提取前剥离，避免把代码示例里的 [text](path) 误判为链接）
@@ -101,6 +102,16 @@ def resolve_target(md_path, target):
         return None
     if target.startswith('#'):
         return None  # 纯锚点
+    # 处理 file:// 绝对路径链接（file:///abs/path 或 file://abs/path）
+    file_match = FILE_RE.match(target)
+    if file_match:
+        abs_part = target[file_match.end():]
+        # file:///path → /path；file://path → path（按 Unix 绝对路径处理）
+        if not abs_part.startswith('/'):
+            abs_part = '/' + abs_part
+        resolved = Path(abs_part)
+        # 剥离锚点
+        return Path(str(resolved).split('#', 1)[0].split('?', 1)[0])
     # 剥离锚点与查询串
     path_part = target.split('#', 1)[0].split('?', 1)[0].strip()
     if not path_part:
