@@ -75,6 +75,8 @@ def test_get_sltp_params_pepe_bull():
 def test_cache_ttl_5min():
     """5min 内重复查询不应触发底层 get_sltp_params 调用"""
     repo = ParamRepository(cache_ttl_seconds=300)
+    # 清空聚合缓存（避免磁盘已存在的 aggregated_params.json 干扰）
+    repo._aggregated_cache.clear()
     # 用 spy 计数底层调用
     with patch(
         "param_center.repository._underlying_get_sltp_params",
@@ -91,6 +93,8 @@ def test_cache_ttl_5min():
 def test_cache_expiry():
     """缓存过期后应重新调用底层"""
     repo = ParamRepository(cache_ttl_seconds=1)  # 1s 便于测试
+    # 清空聚合缓存（避免磁盘已存在的 aggregated_params.json 干扰）
+    repo._aggregated_cache.clear()
     with patch(
         "param_center.repository._underlying_get_sltp_params",
         wraps=lambda *a, **kw: SLTPParams(),
