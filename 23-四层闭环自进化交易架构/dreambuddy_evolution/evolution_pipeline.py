@@ -984,6 +984,7 @@ class EvolutionPipeline:
                 "statistical_validation": {"validated": False, "reason": "no_paths"},
                 "hjb_policy": None,
                 "primary_contradiction": None,
+                "dimension_predictions": {},
                 "exogenous_pc": None,
                 "structural_break": None,
                 "shift_result": None,
@@ -999,6 +1000,7 @@ class EvolutionPipeline:
 
         # === Phase 3.4: 主要矛盾识别（开关 + FAIL-OPEN）— 先于 HJB ===
         primary_contradiction = None
+        self._last_dimension_predictions = {}
         try:
             from dreambuddy_evolution.agi_config import get_switch
             if get_switch("enable_contradiction_identifier", True):
@@ -1014,6 +1016,15 @@ class EvolutionPipeline:
                     causal_engine=self._get_causal_engine(),
                     meta_cognition_gate=self._get_meta_cognition_gate(),
                 )
+                # 方向3: 从 paths 提取每维度方向预测，供 ReverseDeriver 逆向推导
+                try:
+                    from dreambuddy_evolution.engines.reverse_derivation_integration import (
+                        extract_dimension_predictions,
+                    )
+                    self._last_dimension_predictions = extract_dimension_predictions(paths)
+                except Exception as _e:
+                    logger.debug("[FO] extract_dimension_predictions fail: %s", _e)
+                    self._last_dimension_predictions = {}
         except Exception as e:  # noqa: BLE001  HC-AGI-18
             logger.debug("[FO-AGI-Pipeline][Contradiction] fail: %s", e)
 
@@ -1372,6 +1383,8 @@ class EvolutionPipeline:
                 "backend": hjb_policy["backend"],
             } if hjb_policy is not None else None,
             "primary_contradiction": primary_contradiction,
+            # 方向3: 每维度方向预测，供 ReverseDeriver 逆向推导
+            "dimension_predictions": self._last_dimension_predictions,
             # Phase 1-3 新增返回字段
             "exogenous_pc": _exogenous_pc,
             "structural_break": self._last_structural_break,
@@ -1647,6 +1660,8 @@ class EvolutionPipeline:
                 "path_info": path_selection.get("path_info", {}),
                 "statistical_validation": stat_val,
                 "n_paths": len(paths),
+                # 方向3: 每维度方向预测，供 ReverseDeriver 逆向推导
+                "dimension_predictions": path_selection.get("dimension_predictions", {}),
             },
             "level0_d_star": d_star,
             "level0_confidence": d_star_result["confidence"],

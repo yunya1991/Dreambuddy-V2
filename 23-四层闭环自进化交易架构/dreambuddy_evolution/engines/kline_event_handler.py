@@ -441,6 +441,11 @@ class KlineEventHandler:
 
                 if hasattr(pipeline, "_select_optimal_path"):
                     raw_optimal = pipeline._select_optimal_path(paths, r_vector)
+                    # 方向3: 存储每维度方向预测，供 create_snapshot 逆向推导使用
+                    self._last_dimension_predictions = (
+                        raw_optimal.get("dimension_predictions", {})
+                        if isinstance(raw_optimal, dict) else {}
+                    )
                     # 适配 EvolutionPipeline 返回的嵌套结构
                     if raw_optimal and raw_optimal.get("optimal_path"):
                         op = raw_optimal["optimal_path"]
@@ -542,6 +547,8 @@ class KlineEventHandler:
         """P2-S4b: auto_execute 时存储 pre_trade_snapshot（FAIL-OPEN）"""
         try:
             from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+            # 方向3: 传入 dimension_predictions 供 ReverseDeriver 逆向推导
+            dim_predictions = getattr(self, "_last_dimension_predictions", {}) or {}
             snapshot = ReflectionEngine().create_snapshot(
                 symbol=symbol,
                 u_open=position_mult,  # 仓位乘数（而非固定 0.1）
@@ -552,6 +559,7 @@ class KlineEventHandler:
                 cbr_sim=0.5,
                 cbr_top1_outcome="TP",
                 cluster_id="",
+                dimension_predictions=dim_predictions,
             )
             self._get_bridge().store_snapshot(symbol, snapshot)
         except Exception as e:
