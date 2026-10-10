@@ -47,10 +47,11 @@ class Evidence:
     created_at: int = field(default_factory=lambda: int(time.time() * 1000))
 
     def to_dict(self) -> dict[str, Any]:
+        level_val = self.level.value if isinstance(self.level, EvidenceLevel) else str(self.level)
         return {
             "evidence_id": self.evidence_id,
             "result": self.result,
-            "level": self.level.value,
+            "level": level_val,
             "provenance": self.provenance,
             "confidence": self.confidence,
             "known_gaps": self.known_gaps,

@@ -310,17 +310,17 @@ class GitHubApiAdapter:
 ### P0 — 核心骨架（1-2天）
 
 - [x] 目录结构 + Evidence 数据结构 + 分析器基类
-- [ ] Python AST 分析器（模块/类/函数清单 + import 依赖）
-- [ ] 依赖图构建 + 环检测
-- [ ] 调用链追踪（入口→调用路径）
-- [ ] 单元测试（Evidence 结构 + Python 分析器）
+- [x] Python AST 分析器（模块/类/函数清单 + import 依赖）
+- [x] 依赖图构建 + 环检测
+- [x] 调用链追踪（入口→调用路径）
+- [x] 单元测试（Evidence 结构 + Python 分析器）
 
 ### P1 — 增强能力（2-3天）
 
-- [ ] Git 历史溯源（log/blame）
+- [x] Git 历史溯源（log/blame）
 - [ ] 关键算法还原（AST 模式匹配）
 - [ ] 依赖版本审计
-- [ ] DSH S33 节点接入
+- [x] DSH S33 节点接入
 - [ ] 集成测试（端到端分析 dreambuddy 自身模块）
 
 ### P2 — 扩展集成（3-5天）
