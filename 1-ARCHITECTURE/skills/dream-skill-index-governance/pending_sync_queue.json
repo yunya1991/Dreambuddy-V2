@@ -1,5 +1,16 @@
 {
-  "pending": [
+  "pending": [],
+  "processed": [
+    {
+      "path": "0-系统文档管理/zzz_test_doc.md",
+      "added_at": "2026-10-09T00:47:09.484330+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261009_fix_event_driven_no_position/acceptance_report.md",
+      "added_at": "2026-10-09T00:47:09.484344+00:00",
+      "action": "sync_doc_index"
+    },
     {
       "path": "0-系统文档管理/INDEX.md",
       "added_at": "2026-10-09T11:45:59.507276+00:00",
@@ -314,17 +325,110 @@
       "path": "33-REA逆向解析工程/SPEC.md",
       "added_at": "2026-10-10T16:00:30.513718+00:00",
       "action": "sync_doc_index"
-    }
-  ],
-  "processed": [
+    },
     {
-      "path": "0-系统文档管理/zzz_test_doc.md",
-      "added_at": "2026-10-09T00:47:09.484330+00:00",
+      "path": "acceptance_bundles/20261010_fix_handle_debate_mcp_import/wrapup_report.md",
+      "added_at": "2026-10-10T16:27:28.930968+00:00",
       "action": "sync_doc_index"
     },
     {
-      "path": "acceptance_bundles/20261009_fix_event_driven_no_position/acceptance_report.md",
-      "added_at": "2026-10-09T00:47:09.484344+00:00",
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T16:40:01.099947+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/README.md",
+      "added_at": "2026-10-10T16:40:01.100035+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-10T16:52:12.251874+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T16:52:12.251904+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "22-执行引擎中心/docs/API_SPEC.md",
+      "added_at": "2026-10-10T16:52:12.251906+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "22-执行引擎中心/docs/CHANGELOG.md",
+      "added_at": "2026-10-10T16:52:12.251907+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "22-执行引擎中心/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-10T16:52:12.251908+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "22-执行引擎中心/docs/README.md",
+      "added_at": "2026-10-10T16:52:12.251909+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "22-执行引擎中心/docs/TECHNICAL_DESIGN.md",
+      "added_at": "2026-10-10T16:52:12.251910+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "25-用户策略生成系统/README.md",
+      "added_at": "2026-10-10T16:52:12.251912+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "26-策略管理模块/README.md",
+      "added_at": "2026-10-10T16:52:12.251913+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "27-策略治理审批系统/README.md",
+      "added_at": "2026-10-10T16:52:12.251913+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "28-策略信号触发模块/README.md",
+      "added_at": "2026-10-10T16:52:12.251914+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/API_SPEC.md",
+      "added_at": "2026-10-10T16:52:12.251917+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-10T16:52:12.251918+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/TECHNICAL_DESIGN.md",
+      "added_at": "2026-10-10T16:52:12.251918+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "6-图结构上下文压缩/docs/API_SPEC.md",
+      "added_at": "2026-10-10T16:52:12.251919+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "6-图结构上下文压缩/docs/CHANGELOG.md",
+      "added_at": "2026-10-10T16:52:12.251920+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "6-图结构上下文压缩/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-10T16:52:12.251921+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "6-图结构上下文压缩/docs/TECHNICAL_DESIGN.md",
+      "added_at": "2026-10-10T16:52:12.251921+00:00",
       "action": "sync_doc_index"
     }
   ]
