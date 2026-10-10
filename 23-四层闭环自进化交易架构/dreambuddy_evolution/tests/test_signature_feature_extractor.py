@@ -89,8 +89,8 @@ class TestFailOpenDegradation:
         features = ext.extract([0.1, 0.2, 0.3, 0.4, 0.5], price_path)
         assert len(features) == 17  # 仍返回 17 维（可能 pad zeros）
 
-    def test_all_unavailable_pads_zeros(self):
-        """所有签名库不可用时应 pad zeros 保持 17 维."""
+    def test_all_unavailable_uses_numpy_fallback(self):
+        """signatory/esig 都不可用时应降级到 numpy fallback，产生非零签名特征."""
         from dreambuddy_evolution.core.signature_feature_extractor import SignatureFeatureExtractor
         ext = SignatureFeatureExtractor()
         ext._signatory_available = False
@@ -99,8 +99,9 @@ class TestFailOpenDegradation:
         price_path = np.cumsum(np.random.randn(20)) + 100
         features = ext.extract([0.1, 0.2, 0.3, 0.4, 0.5], price_path)
         assert len(features) == 17
-        # 签名部分应全零
-        assert all(abs(v) < 1e-6 for v in features[5:])
+        # numpy fallback 应产生非零签名特征
+        assert any(abs(v) > 1e-6 for v in features[5:]), \
+            "signatory/esig 不可用时 numpy fallback 应产生非零签名特征"
 
     def test_empty_price_path_returns_state_only(self):
         """空价格路径应返回 5 维状态 + 12 维零."""

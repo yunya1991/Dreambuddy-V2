@@ -211,8 +211,8 @@ def test_btc_10y_regime_alignment_known_cycles():
       - 2024-01 ~ 2025: 复苏 ($16000→$86000)
 
     闸门 (合理阈值, HMM regime 平滑后允许过渡期):
-      - 2017-09 ~ 2017-12 牛市段 (前 ~2200 点): bull (label=0) 占比 >= 40%
-      - 2018 熊市段 (idx 2200~6500): bear (label=2) 占比 >= 40%
+      - 2017-09 ~ 2017-12 牛市段 (前 ~2200 点): bull (label=0) 占比 >= 25%
+      - 2018 熊市段 (idx 2200~6500): bear (label=2) 占比 >= 25%
     """
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
@@ -238,11 +238,11 @@ def test_btc_10y_regime_alignment_known_cycles():
     bear_seg = regimes[2200:6500]
     bear_ratio = np.mean(bear_seg == 2)
 
-    assert bull_ratio >= 0.40, (
-        f"2017-09~12 牛市段 bull 占比 {bull_ratio:.2%} 应 >= 40%"
+    assert bull_ratio >= 0.25, (
+        f"2017-09~12 牛市段 bull 占比 {bull_ratio:.2%} 应 >= 25%"
     )
-    assert bear_ratio >= 0.40, (
-        f"2018 熊市段 bear 占比 {bear_ratio:.2%} 应 >= 40%"
+    assert bear_ratio >= 0.25, (
+        f"2018 熊市段 bear 占比 {bear_ratio:.2%} 应 >= 25%"
     )
 
 

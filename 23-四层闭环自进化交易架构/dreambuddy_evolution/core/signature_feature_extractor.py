@@ -97,16 +97,16 @@ class SignatureFeatureExtractor:
         return list(np.concatenate([state_arr, sig_features]))
 
     def _compute_signature(self, price_path: list | np.ndarray) -> np.ndarray:
-        """计算路径签名（FAIL-OPEN 三级降级）."""
+        """计算路径签名（FAIL-OPEN 三级降级）.
+
+        降级链: signatory → esig → SignatureEngine.numpy → 本地 numpy fallback.
+        纯 numpy 实现始终可用，因此不会 pad zeros（除非路径过短）。
+        """
         path = np.asarray(price_path, dtype=np.float64).ravel()
         if len(path) < 2:
             return np.zeros(self.SIGNATURE_DIM, dtype=np.float64)
 
-        # 当 signatory 和 esig 都不可用时，pad zeros（policy 仍可工作于原始 5 维特征）
-        if not self._signatory_available and not self._esig_available:
-            return np.zeros(self.SIGNATURE_DIM, dtype=np.float64)
-
-        # Level 1-3: 复用 SignatureEngine（signatory 或 esig 可用时）
+        # Level 1-3: 复用 SignatureEngine（signatory / esig / numpy 三级降级）
         if self._signature_engine is not None:
             try:
                 sig = self._signature_engine.signature(path)
@@ -114,7 +114,7 @@ class SignatureFeatureExtractor:
             except Exception as exc:  # noqa: BLE001
                 logger.debug(f"[FO-EVO] SignatureEngine 失败: {exc}")
 
-        # Level 4: numpy 手动迭代积分签名（最简签名）
+        # Level 4: numpy 手动迭代积分签名（最简签名，始终可用）
         return self._numpy_signature_fallback(path)
 
     def _numpy_signature_fallback(self, path: np.ndarray) -> np.ndarray:

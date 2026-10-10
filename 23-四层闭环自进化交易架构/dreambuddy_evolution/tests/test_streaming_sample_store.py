@@ -157,9 +157,12 @@ class TestJsonlMigration:
 class TestFailOpen:
     """D5: sqlite 异常时降级为内存存储"""
 
-    def test_fail_open_on_invalid_path(self):
-        """无效路径 → 降级内存模式"""
-        store = StreamingSampleStore("/tmp/nonexistent_dir_streaming/db.sqlite")
+    def test_fail_open_on_invalid_path(self, tmp_path):
+        """无效路径（父路径是文件而非目录）→ 降级内存模式"""
+        # 用一个文件作为"父目录"，使 Path(parent).mkdir() 失败 → 触发 FAIL-OPEN 降级
+        fake_parent = tmp_path / "not_a_directory"
+        fake_parent.write_text("i am a file, not a directory")
+        store = StreamingSampleStore(fake_parent / "db.sqlite")
         # 降级后仍可 append
         store.append({"symbol": "BTC", "reward": 0.1})
         assert store.count() == 1

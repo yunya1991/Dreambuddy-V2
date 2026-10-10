@@ -60,9 +60,6 @@ class GrangerCausalityChecker:
             }
             None if 检验无法执行.
         """
-        if not _HAS_STATSMODELS:
-            return None
-
         cause_arr = np.asarray(cause, dtype=float)
         effect_arr = np.asarray(effect, dtype=float)
 
@@ -78,9 +75,16 @@ class GrangerCausalityChecker:
         if cause_arr.size < min_samples:
             return None
 
+        # statsmodels 可用 → 用 statsmodels; 否则用 numpy 降级实现
+        if _HAS_STATSMODELS:
+            return self._check_statsmodels(cause_arr, effect_arr)
+        return self._check_numpy(cause_arr, effect_arr)
+
+    def _check_statsmodels(self, cause_arr: np.ndarray,
+                           effect_arr: np.ndarray) -> dict[str, Any] | None:
+        """statsmodels 实现的 Granger 检验."""
         # ADF 平稳性检验（避免伪回归）
         try:
-            # statsmodels 0.15+ 新增 result_object 参数；旧版兼容回退
             try:
                 adf_result = adfuller(effect_arr, autolag="AIC", result_object=False)
             except TypeError:
@@ -93,6 +97,7 @@ class GrangerCausalityChecker:
         if not is_stationary:
             cause_arr = np.diff(cause_arr)
             effect_arr = np.diff(effect_arr)
+            min_samples = self._max_lag * 3 + 5
             if cause_arr.size < min_samples:
                 return None
 
@@ -100,7 +105,6 @@ class GrangerCausalityChecker:
         # grangercausalitytests 需要 2D array: [effect, cause]
         data = np.column_stack([effect_arr, cause_arr])
         try:
-            # statsmodels 0.15+ 移除了 verbose 参数
             try:
                 results = grangercausalitytests(data, maxlag=self._max_lag, verbose=False)
             except TypeError:
@@ -117,7 +121,6 @@ class GrangerCausalityChecker:
             if lag not in results:
                 continue
             try:
-                # ssr_ftest: F 检验
                 test_results = results[lag][0]["ssr_ftest"]
                 f_stat = float(test_results[0])
                 p_val = float(test_results[1])
@@ -135,6 +138,88 @@ class GrangerCausalityChecker:
             "f_stat": best_f,
             "stationarized": not is_stationary,
         }
+
+    def _check_numpy(self, cause_arr: np.ndarray,
+                     effect_arr: np.ndarray) -> dict[str, Any] | None:
+        """纯 numpy 实现的 Granger 因果检验（statsmodels 不可用时降级）.
+
+        F 检验: 比较受限模型 (仅 effect 滞后) 与非受限模型 (effect+cause 滞后).
+        H0: cause 不 Granger-cause effect.
+        """
+        # 对齐长度
+        n = min(len(cause_arr), len(effect_arr))
+        cause_arr = cause_arr[:n]
+        effect_arr = effect_arr[:n]
+
+        best_lag = 1
+        best_p = 1.0
+        best_f = 0.0
+
+        for lag in range(1, self._max_lag + 1):
+            if n <= lag * 2 + 2:
+                continue
+            try:
+                f_stat, p_val = self._granger_f_test(cause_arr, effect_arr, lag)
+                if p_val < best_p:
+                    best_p = p_val
+                    best_lag = lag
+                    best_f = f_stat
+            except Exception:
+                continue
+
+        return {
+            "is_granger_cause": best_p < self._alpha,
+            "p_value": best_p,
+            "best_lag": best_lag,
+            "f_stat": best_f,
+            "stationarized": False,
+        }
+
+    @staticmethod
+    def _granger_f_test(cause: np.ndarray, effect: np.ndarray,
+                        lag: int) -> tuple[float, float]:
+        """单 lag 的 Granger F 检验.
+
+        受限: Y_t = c + sum_{i=1..lag} a_i Y_{t-i}
+        非受限: Y_t = c + sum a_i Y_{t-i} + sum b_j X_{t-j}
+        F = ((RSS_r - RSS_u)/lag) / (RSS_u/(n - 2*lag - 1))
+        """
+        n = len(effect)
+        # 构建滞后矩阵
+        Y = effect[lag:]  # 因变量
+        k = n - lag
+        # 受限模型设计矩阵: [1, Y_{t-1}, ..., Y_{t-lag}]
+        X_r = np.ones((k, lag + 1))
+        for i in range(lag):
+            X_r[:, i + 1] = effect[lag - 1 - i: n - 1 - i]
+        # 非受限模型设计矩阵: 受限 + [X_{t-1}, ..., X_{t-lag}]
+        X_u = np.ones((k, 2 * lag + 1))
+        X_u[:, :lag + 1] = X_r
+        for i in range(lag):
+            X_u[:, lag + 1 + i] = cause[lag - 1 - i: n - 1 - i]
+
+        # OLS: beta = (X^T X)^-1 X^T Y
+        beta_r = np.linalg.lstsq(X_r, Y, rcond=None)[0]
+        beta_u = np.linalg.lstsq(X_u, Y, rcond=None)[0]
+        resid_r = Y - X_r @ beta_r
+        resid_u = Y - X_u @ beta_u
+        rss_r = float(np.sum(resid_r ** 2))
+        rss_u = float(np.sum(resid_u ** 2))
+
+        df_num = lag
+        df_den = k - (2 * lag + 1)
+        if df_den <= 0 or rss_u <= 0:
+            return 0.0, 1.0
+        f_stat = ((rss_r - rss_u) / df_num) / (rss_u / df_den)
+
+        # p 值: 优先用 scipy F 分布; 不可用时用 F 统计量阈值近似
+        try:
+            from scipy import stats as _sp_stats
+            p_val = float(1.0 - _sp_stats.f.cdf(f_stat, df_num, df_den))
+        except Exception:
+            # 降级: F > 3.0 视为显著 (α≈0.05 时 F 临界值约 3.0)
+            p_val = 0.01 if f_stat > 3.0 else 0.5
+        return f_stat, p_val
 
     def check_per_regime(self, cause: list[float] | np.ndarray,
                          effect: list[float] | np.ndarray,
