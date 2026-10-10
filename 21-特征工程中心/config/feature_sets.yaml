@@ -46,3 +46,9 @@ feature_sets:
   yijing_bagua_cycle:
     modules:
       - yijing_cycle
+
+  # 基本面全集（价格代理比率 + 基本面时序衍生特征，供 9-基本面分析 DAL SnapshotProvider 消费）
+  fundamental_full:
+    modules:
+      - fundamental_ratios
+      - fundamental_features
