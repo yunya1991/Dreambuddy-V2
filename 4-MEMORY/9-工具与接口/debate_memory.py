@@ -107,6 +107,49 @@ class DebateMemory:
                 CREATE INDEX IF NOT EXISTS idx_debate_tags
                 ON debate_memories(tags)
             """)
+            # SPEC v1.2-rc1 §6 P1: CBR 案例表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS debate_cbr_cases (
+                    case_id TEXT PRIMARY KEY,
+                    topic TEXT NOT NULL,
+                    topic_type TEXT DEFAULT 'general',
+                    strategies_used TEXT DEFAULT '[]',
+                    winner TEXT DEFAULT 'draw',
+                    bull_score REAL DEFAULT 0.0,
+                    bear_score REAL DEFAULT 0.0,
+                    effective_strategies TEXT DEFAULT '[]',
+                    adaptation_hints TEXT DEFAULT '[]',
+                    created_at REAL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_cbr_topic
+                ON debate_cbr_cases(topic)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_cbr_type
+                ON debate_cbr_cases(topic_type)
+            """)
+            # SPEC v1.2-rc1 §6 P1: 策略权重表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS debate_strategy_weights (
+                    strategy TEXT NOT NULL,
+                    topic_type TEXT NOT NULL,
+                    alpha REAL DEFAULT 1.0,
+                    beta REAL DEFAULT 1.0,
+                    updated_at REAL,
+                    PRIMARY KEY (strategy, topic_type)
+                )
+            """)
+            # SPEC v1.2-rc1 §6 P1: Persona Elo 表
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS debate_elo (
+                    persona TEXT PRIMARY KEY,
+                    elo REAL DEFAULT 1200.0,
+                    debates INTEGER DEFAULT 0,
+                    updated_at REAL
+                )
+            """)
             conn.commit()
 
     # ── 1. add ──────────────────────────────────────────────
@@ -269,3 +312,201 @@ class DebateMemory:
             return {"ok": True, "db_path": self._db_path}
         except sqlite3.Error as e:
             return {"ok": False, "error": str(e), "db_path": self._db_path}
+
+    # ============================================================
+    # SPEC v1.2-rc1 §6 P1: CBR 案例表 + 策略权重表 + Elo 表
+    # ============================================================
+
+    # ── CBR 案例 ──────────────────────────────────────────────
+
+    def add_cbr_case(
+        self,
+        topic: str,
+        topic_type: str = "general",
+        strategies_used: str = "[]",
+        winner: str = "draw",
+        bull_score: float = 0.0,
+        bear_score: float = 0.0,
+        effective_strategies: str = "[]",
+        adaptation_hints: str = "[]",
+    ) -> str | None:
+        """添加 CBR 案例。"""
+        case_id = f"CBR-{int(time.time() * 1000)}-{random.randint(1000, 9999)}"
+        now = time.time()
+        try:
+            with self._conn() as conn:
+                conn.execute(
+                    "INSERT INTO debate_cbr_cases "
+                    "(case_id, topic, topic_type, strategies_used, winner, "
+                    "bull_score, bear_score, effective_strategies, "
+                    "adaptation_hints, created_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (case_id, topic, topic_type, strategies_used, winner,
+                     bull_score, bear_score, effective_strategies,
+                     adaptation_hints, now),
+                )
+                conn.commit()
+            return case_id
+        except sqlite3.Error as e:
+            logger.error("添加 CBR 案例失败: %s", e)
+            return None
+
+    def search_cbr_cases(
+        self, query: str, top_k: int = 5,
+        topic_type: str | None = None,
+    ) -> list[dict]:
+        """搜索 CBR 案例 (LIKE 模糊匹配)。"""
+        pattern = f"%{query}%"
+        try:
+            with self._conn() as conn:
+                if topic_type:
+                    rows = conn.execute(
+                        "SELECT * FROM debate_cbr_cases "
+                        "WHERE topic LIKE ? AND topic_type = ? "
+                        "ORDER BY created_at DESC LIMIT ?",
+                        (pattern, topic_type, top_k),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        "SELECT * FROM debate_cbr_cases "
+                        "WHERE topic LIKE ? "
+                        "ORDER BY created_at DESC LIMIT ?",
+                        (pattern, top_k),
+                    ).fetchall()
+                return [dict(r) for r in rows]
+        except sqlite3.Error as e:
+            logger.error("搜索 CBR 案例失败: %s", e)
+            return []
+
+    def cbr_case_count(self) -> int:
+        """CBR 案例总数。"""
+        try:
+            with self._conn() as conn:
+                return conn.execute(
+                    "SELECT COUNT(*) FROM debate_cbr_cases"
+                ).fetchone()[0]
+        except sqlite3.Error:
+            return 0
+
+    # ── 策略权重 ──────────────────────────────────────────────
+
+    def add_strategy_weight(
+        self,
+        strategy: str,
+        topic_type: str,
+        alpha: float = 1.0,
+        beta: float = 1.0,
+    ) -> bool:
+        """添加或替换策略权重 (UPSERT)。"""
+        now = time.time()
+        try:
+            with self._conn() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO debate_strategy_weights "
+                    "(strategy, topic_type, alpha, beta, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (strategy, topic_type, alpha, beta, now),
+                )
+                conn.commit()
+            return True
+        except sqlite3.Error as e:
+            logger.error("添加策略权重失败: %s", e)
+            return False
+
+    def get_strategy_weights(
+        self, topic_type: str,
+    ) -> list[dict]:
+        """获取指定话题类型的所有策略权重。"""
+        try:
+            with self._conn() as conn:
+                rows = conn.execute(
+                    "SELECT * FROM debate_strategy_weights "
+                    "WHERE topic_type = ? ORDER BY alpha DESC",
+                    (topic_type,),
+                ).fetchall()
+                return [dict(r) for r in rows]
+        except sqlite3.Error as e:
+            logger.error("获取策略权重失败: %s", e)
+            return []
+
+    def update_strategy_weight(
+        self,
+        strategy: str,
+        topic_type: str,
+        alpha: float,
+        beta: float,
+    ) -> bool:
+        """更新策略权重 (如不存在则插入)。"""
+        now = time.time()
+        try:
+            with self._conn() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO debate_strategy_weights "
+                    "(strategy, topic_type, alpha, beta, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (strategy, topic_type, alpha, beta, now),
+                )
+                conn.commit()
+            return True
+        except sqlite3.Error as e:
+            logger.error("更新策略权重失败: %s", e)
+            return False
+
+    # ── Persona Elo ───────────────────────────────────────────
+
+    def add_elo(
+        self,
+        persona: str,
+        elo: float = 1200.0,
+        debates: int = 0,
+    ) -> bool:
+        """添加 Persona Elo 记录 (如不存在)。"""
+        now = time.time()
+        try:
+            with self._conn() as conn:
+                conn.execute(
+                    "INSERT OR IGNORE INTO debate_elo "
+                    "(persona, elo, debates, updated_at) "
+                    "VALUES (?, ?, ?, ?)",
+                    (persona, elo, debates, now),
+                )
+                conn.commit()
+            return True
+        except sqlite3.Error as e:
+            logger.error("添加 Elo 失败: %s", e)
+            return False
+
+    def get_elo(self, persona: str) -> dict | None:
+        """获取 Persona Elo。"""
+        try:
+            with self._conn() as conn:
+                row = conn.execute(
+                    "SELECT * FROM debate_elo WHERE persona = ?",
+                    (persona,),
+                ).fetchone()
+                return dict(row) if row else None
+        except sqlite3.Error as e:
+            logger.error("获取 Elo 失败: %s", e)
+            return None
+
+    def update_elo(
+        self,
+        persona: str,
+        elo: float,
+        debates: int,
+    ) -> bool:
+        """更新 Persona Elo (如不存在则插入)。"""
+        now = time.time()
+        try:
+            with self._conn() as conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO debate_elo "
+                    "(persona, elo, debates, updated_at) "
+                    "VALUES (?, ?, ?, ?)",
+                    (persona, elo, debates, now),
+                )
+                conn.commit()
+            return True
+        except sqlite3.Error as e:
+            logger.error("更新 Elo 失败: %s", e)
+            return False

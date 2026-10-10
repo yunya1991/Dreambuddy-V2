@@ -40,6 +40,8 @@ class Persona:
         opponent_thesis: Optional[str] = None,
         background: str = "",
         memories: Optional[list[str]] = None,
+        strategy_weights: Optional[dict] = None,
+        cold_start: bool = False,
     ) -> str:
         """基于 Persona 生成 system prompt。
 
@@ -82,12 +84,54 @@ class Persona:
             f"背景：{self.backstory}，你的专业领域：{', '.join(self.expertise)}。",
             f"绝对禁止：{', '.join(self.forbidden)}。",
         ]
+
+        # 注入正反方辩论策略（debate-pro-side / debate-con-side SKILL）
+        if self.side == "bull":
+            parts.append(
+                "## 正方策略指导\n"
+                "- 承担举证责任：建构自证成立的论证体系（prima facie）\n"
+                "- 论点排列：最强论点放首位，梯级论证（claim→warrant→impact）\n"
+                "- 预防性反驳：预判反方2-3个主要攻击，提前用1-2句回应\n"
+                "- 定义博弈：选择公平但对正方有利的定义，概念清晰不留漏洞\n"
+                "- 数据引用：至少2层证据支撑每个论点（数据+研究/专家）\n"
+                "- 反方案应对(STOP)：Solvency缺陷+Theory理论+Offense攻击+Permutation兼行\n"
+                "- 禁止：偷换概念、虚假证据、人身攻击、四辩引入新论据"
+            )
+        elif self.side == "bear":
+            parts.append(
+                "## 反方策略指导\n"
+                "- 推翻举证：无需证明己方成立，只需正方不成立（presumption在反方）\n"
+                "- 反驳四维：Logic逻辑(找因果跳跃/隐含假设) + Definitions定义(找歧义) "
+                "+ Analogies类比(延伸到荒谬) + Evidence证据(反例/数据不足/误用)\n"
+                "- 独立立论：不能只挑刺，需提出2+个正方论点之外的独立论据\n"
+                "- 定义攻击：如正方定义偏颇，一辩中立即提出替代定义（后续不能补提）\n"
+                "- 翻转引入：将正方开场例子翻转为支持反方的理由\n"
+                "- 专属战术：Counterplan(替代方案) + Disadvantage(劣势论证) "
+                "+ 价值翻转 + 拖延举证(质疑证据充分性) + Kritik(批判底层假设)\n"
+                "- 质询策略：封闭式提问+追问暴露矛盾+两难问题+确认型提问\n"
+                "- 禁止：纯破坏无建构、偷换概念、虚假证据、放弃定义权"
+            )
+
         if opponent_thesis:
             parts.append(f"对方上一轮核心论点：{opponent_thesis}，请针对性反驳。")
         if background:
             parts.append(f"背景信息：{background}")
         if memories:
             parts.append(f"历史辩论中的有效论据（可引用）：{'; '.join(memories)}")
+
+        # §5.6.1: 注入策略推荐 (基于历史胜率) — 仅 bull/bear, 非 judge
+        if strategy_weights:
+            sorted_sw = sorted(
+                strategy_weights.items(),
+                key=lambda x: x[1], reverse=True,
+            )[:2]  # Top-2
+            label = "[低置信度，仅供参考]" if cold_start else ""
+            rec_lines = ["## 推荐策略（基于历史胜率）"]
+            for strat, prob in sorted_sw:
+                rec_lines.append(
+                    f"- {strat} (胜率 {prob:.0%}) {label}")
+            parts.append("\n".join(rec_lines))
+
         parts.append(
             '输出 JSON: {"thesis": "...", "arguments": ["...", "..."], '
             '"quote": "金句", "confidence": 0.0-1.0}'
@@ -182,7 +226,11 @@ _KEYWORD_MAP: list[tuple[list[str], str, str]] = [
 ]
 
 
-def match_personas(topic: str) -> tuple[Persona, Persona]:
+def match_personas(
+    topic: str,
+    elo_registry: Optional[dict] = None,
+    epsilon: float = 0.2,
+) -> tuple[Persona, Persona]:
     """根据话题关键词自动匹配 Bull/Bear Persona。
 
     匹配规则：
@@ -190,11 +238,53 @@ def match_personas(topic: str) -> tuple[Persona, Persona]:
     - "AI/人工智能/大模型/LLM" → 技术乐观派 vs 伦理审慎派
     - 通用 → 乐观分析师 vs 谨慎风控师
 
+    §5.6.2: 传入 elo_registry 时用 ε-贪心策略选择 Persona:
+    - ε 概率随机探索 (选任意同类 Persona)
+    - 1-ε 概率选 Elo 最高的
+
+    Args:
+        topic: 辩论话题
+        elo_registry: {persona_name: elo_score}, None 时退化为原始匹配 (HC3)
+        epsilon: 探索概率 (默认 0.2), ε=0 纯利用, ε=1 纯探索
+
     Returns:
         (bull_persona, bear_persona)
     """
-    for keywords, bull_name, bear_name in _KEYWORD_MAP:
+    import random as _random
+
+    # 关键词匹配确定 Persona 类型
+    bull_name, bear_name = DEFAULT_BULL.name, DEFAULT_BEAR.name
+    for keywords, bn, rn in _KEYWORD_MAP:
         for kw in keywords:
             if kw in topic:
-                return PRESET_PERSONAS[bull_name], PRESET_PERSONAS[bear_name]
-    return DEFAULT_BULL, DEFAULT_BEAR
+                bull_name, bear_name = bn, rn
+                break
+        else:
+            continue
+        break
+
+    # 无 elo_registry → 原始行为 (HC3 向后兼容)
+    if elo_registry is None:
+        return PRESET_PERSONAS[bull_name], PRESET_PERSONAS[bear_name]
+
+    # §5.6.2: ε-贪心选择
+    # 从所有同 side 的 Persona 中选
+    bull_candidates = [p for p in PRESET_PERSONAS.values() if p.side == "bull"]
+    bear_candidates = [p for p in PRESET_PERSONAS.values() if p.side == "bear"]
+
+    def _select(candidates, default_name):
+        if len(candidates) <= 1:
+            return candidates[0] if candidates else PRESET_PERSONAS[default_name]
+        if _random.random() < epsilon:
+            # 探索: 随机选
+            return _random.choice(candidates)
+        else:
+            # 利用: 选 Elo 最高的
+            return max(
+                candidates,
+                key=lambda p: elo_registry.get(p.name, 1200),
+            )
+
+    bull = _select(bull_candidates, bull_name)
+    bear = _select(bear_candidates, bear_name)
+    return bull, bear
