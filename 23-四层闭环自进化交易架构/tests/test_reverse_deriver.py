@@ -74,3 +74,54 @@ def test_derive_all_correct_no_wrong_dimensions():
 
     assert result.wrong_dimensions == []
     assert all(v is True for v in result.per_dimension_correctness.values())
+
+
+def test_derive_all_wrong_dimensions():
+    """RED: 所有维度判断错误时，全部进入 wrong_dimensions。"""
+    deriver = ReverseDeriver()
+    snapshot = _make_snapshot({"C1": "long", "C2": "long", "C3": "long"})
+    outcome = {"real_direction": "short", "real_outcome": "SL"}
+
+    result = deriver.derive(snapshot, outcome)
+
+    assert set(result.wrong_dimensions) == {"C1", "C2", "C3"}
+    assert all(v is False for v in result.per_dimension_correctness.values())
+    # 多数维度错 → weight_error
+    assert result.root_cause_type == "weight_error"
+    assert result.confidence == 0.0
+
+
+def test_derive_false_failure_correct_dimensions_but_sl():
+    """RED: 假失败 — 维度判断全对但被扫损(SL)。
+
+    方向对却被扫损，不应归因为维度错误，optimization_action 应偏向参数/止损调整。
+    """
+    deriver = ReverseDeriver()
+    snapshot = _make_snapshot({"C1": "long", "C2": "long"})
+    outcome = {"real_direction": "long", "real_outcome": "SL"}  # 方向对但SL=假失败
+
+    result = deriver.derive(snapshot, outcome)
+
+    assert result.wrong_dimensions == []
+    assert all(v is True for v in result.per_dimension_correctness.values())
+    # 全对 → root_cause_type 为 unknown，不做因子调整
+    assert result.root_cause_type == "unknown"
+    assert result.optimization_action == "no_adjustment"
+
+
+def test_derive_true_failure_wrong_dimensions_and_sl():
+    """RED: 真失败 — 维度判断错且亏损(SL)。
+
+    应定位错误维度并给出降权/审计因子的优化动作。
+    """
+    deriver = ReverseDeriver()
+    snapshot = _make_snapshot({"C1": "short", "C2": "short", "C3": "long"})
+    outcome = {"real_direction": "long", "real_outcome": "SL"}  # 真实long，C1/C2错
+
+    result = deriver.derive(snapshot, outcome)
+
+    assert set(result.wrong_dimensions) == {"C1", "C2"}
+    assert result.per_dimension_correctness["C3"] is True
+    # 2/3 错 → wrong_ratio >= 0.5 → weight_error
+    assert result.root_cause_type == "weight_error"
+    assert "降低" in result.optimization_action or "检查" in result.optimization_action

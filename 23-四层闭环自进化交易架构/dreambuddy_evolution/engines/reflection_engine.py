@@ -46,11 +46,14 @@ class ReflectionEngine:
         cbr_top1_outcome: str,
         cluster_id: str,
         dimension_predictions: dict[str, str] | None = None,
+        dimension_factors: dict[str, dict[str, float]] | None = None,
     ) -> dict[str, Any]:
         """§1.6.3 A6: 开仓瞬间快照（事后反思基础）
 
-        方向3 扩展：增加 dimension_predictions（每维度方向预测），
-        供 ReverseDeriver 逆向推导使用。
+        方向3 扩展：
+        - dimension_predictions：每维度方向预测 {C1: "long", C2: "short", ...}
+        - dimension_factors：每维度因子权重 {C1: {因子名: 权重}, ...}
+        供 ReverseDeriver 逆向推导 + apply_reward_with_derive 精准奖惩使用。
         """
         return {
             "symbol": symbol,
@@ -63,6 +66,7 @@ class ReflectionEngine:
             "cbr_top1_outcome": cbr_top1_outcome,
             "cluster_id": cluster_id,
             "dimension_predictions": dimension_predictions or {},
+            "dimension_factors": dimension_factors or {},
         }
 
     def calculate_cs(
@@ -173,6 +177,59 @@ class ReflectionEngine:
 
         # -0.2≤CS<0.7（中性/判断一般）
         return {"ess_delta": 0.0, "gmax_mult": 1.0, "cluster_weight_mult": 1.0}
+
+    def apply_reward_with_derive(
+        self,
+        cs: float,
+        outcome: str,
+        cluster_id: str,
+        ess_id: str,
+        gmax: float,
+        snapshot: dict[str, Any],
+        derive_result: Any,
+    ) -> dict[str, Any]:
+        """方向3 精准奖惩：基于 ReverseDeriver 逆向推导结果调整因子权重。
+
+        类比反向传播的 SGD 更新：
+        - base_reward = apply_reward() 四维奖惩表（ESS/gmax/cluster）
+        - factor_adjustments：错误维度因子 ×0.9 降权，正确维度因子 ×1.05 升权
+
+        FAIL-OPEN：derive_result.confidence < 0.3 或 neutral 时不做因子调整。
+
+        Args:
+            snapshot: 开仓快照，须含 dimension_factors: {C1: {因子: 权重}, ...}
+            derive_result: ReverseDeriver.derive() 的输出
+
+        Returns:
+            {**base_reward, "factor_adjustments": {因子名: 新权重}}
+        """
+        base_reward = self.apply_reward(cs, outcome, cluster_id, ess_id, gmax)
+
+        factor_adjustments: dict[str, float] = {}
+
+        try:
+            # FAIL-OPEN：confidence 不足或无维度正确性数据 → 不调整
+            confidence = float(getattr(derive_result, "confidence", 0.0) or 0.0)
+            per_dim_correctness = getattr(derive_result, "per_dimension_correctness", None) or {}
+
+            if confidence < 0.3 or not per_dim_correctness:
+                return {**base_reward, "factor_adjustments": factor_adjustments}
+
+            dimension_factors = snapshot.get("dimension_factors") or {}
+
+            for dim, correct in per_dim_correctness.items():
+                factors = dimension_factors.get(dim) or {}
+                mult = 0.9 if not correct else 1.05  # 错误降权10%，正确升权5%
+                for factor_name, weight in factors.items():
+                    try:
+                        factor_adjustments[factor_name] = round(float(weight) * mult, 6)
+                    except (TypeError, ValueError):
+                        continue
+
+            return {**base_reward, "factor_adjustments": factor_adjustments}
+        except Exception as e:
+            logger.warning("[FO] apply_reward_with_derive fail: %s", e)
+            return {**base_reward, "factor_adjustments": {}}
 
     # --------------------------------------------------------------------------
     # 权重自适应：基于案例库胜率调整组合权重并持久化
