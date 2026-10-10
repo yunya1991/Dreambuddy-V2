@@ -95,6 +95,21 @@ class TestTradeSettlementBridgeOnTradeSettled:
         assert result["ess_delta"] == pytest.approx(-0.05, abs=0.001)
         assert result["cs"] <= -0.2
 
+    def test_on_trade_settled_returns_factor_adjustments(self, tmp_path):
+        """RED: snapshot含dimension_predictions时，on_trade_settled返回factor_adjustments。"""
+        from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
+        bridge = TradeSettlementBridge(snapshot_dir=str(tmp_path))
+        snap = {"symbol": "BTC", "action": "long", "level0_dstar": "long", "ess_dir": "long",
+                "cbr_top1_outcome": "TP", "cluster_id": "c1", "ess_id": "e1", "cbr_sim": 0.8,
+                "u_open": 0.1,
+                "dimension_predictions": {"C1": "long", "C2": "short"},
+                "dimension_factors": {"C1": {"资金流入": 0.5}, "C2": {"多空比": 0.4}}}
+        bridge.store_snapshot("BTC", snap)
+        trade_rec = self._make_trade_rec(direction="long", exit_p=51000.0, pnl=10.0)
+        result = bridge.on_trade_settled(trade_rec)
+        assert "factor_adjustments" in result
+        assert isinstance(result["factor_adjustments"], dict)
+
     def test_on_trade_settled_no_snapshot_reconstruct(self, tmp_path):
         """无持久化 snapshot 时从 trade_rec 降级重建，不崩溃"""
         from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge

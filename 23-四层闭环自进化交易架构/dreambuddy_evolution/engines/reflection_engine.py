@@ -6,6 +6,7 @@ pre_trade_snapshot → CS 一致性得分 → 四维奖惩表 → ESS/gmax 更�
 """
 import math
 import logging
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -16,6 +17,8 @@ class ReflectionEngine:
 
     # REDUCE_WEIGHT 冷启动阈值：样本 < 20 只收集不调整
     _REDUCE_WEIGHT_WARM_THRESHOLD = 20
+    # 因子调整冷却期（秒）：同一因子在冷却期内不重复调整，防止过度拟合
+    _FACTOR_COOLDOWN_SECONDS = 3600
 
     def __init__(self, case_library: Any = None, gene_library: dict[str, Any] | None = None) -> None:
         # 入场侧 REDUCE_WEIGHT 样本计数器（cluster_id|ess_id → count）
@@ -24,6 +27,8 @@ class ReflectionEngine:
         self._case_library = case_library
         # 基因库（可选，_maybe_auto_adjust_weight 调整并持久化）
         self._gene_library = gene_library or {}
+        # 因子调整冷却期记录 {因子名: 上次调整时间戳}
+        self._factor_cooldown: dict[str, float] = {}
 
     def _get_reduce_weight_count(self, cluster_id: str, ess_id: str) -> int:
         """获取 REDUCE_WEIGHT 样本计数"""
@@ -47,12 +52,16 @@ class ReflectionEngine:
         cluster_id: str,
         dimension_predictions: dict[str, str] | None = None,
         dimension_factors: dict[str, dict[str, float]] | None = None,
+        attention_weights: list[float] | None = None,
+        factor_values: dict[str, float] | None = None,
     ) -> dict[str, Any]:
         """§1.6.3 A6: 开仓瞬间快照（事后反思基础）
 
         方向3 扩展：
         - dimension_predictions：每维度方向预测 {C1: "long", C2: "short", ...}
         - dimension_factors：每维度因子权重 {C1: {因子名: 权重}, ...}
+        - attention_weights：cross_attention 输出的维度注意力权重
+        - factor_values：各因子实际计算值 {因子名: 值}
         供 ReverseDeriver 逆向推导 + apply_reward_with_derive 精准奖惩使用。
         """
         return {
@@ -67,6 +76,8 @@ class ReflectionEngine:
             "cluster_id": cluster_id,
             "dimension_predictions": dimension_predictions or {},
             "dimension_factors": dimension_factors or {},
+            "attention_weights": attention_weights or [],
+            "factor_values": factor_values or {},
         }
 
     def calculate_cs(
@@ -220,9 +231,18 @@ class ReflectionEngine:
             for dim, correct in per_dim_correctness.items():
                 factors = dimension_factors.get(dim) or {}
                 mult = 0.9 if not correct else 1.05  # 错误降权10%，正确升权5%
+                now = time.time()
                 for factor_name, weight in factors.items():
+                    # 冷却期检查：同一因子在冷却期内不重复调整
+                    last_adjust = self._factor_cooldown.get(factor_name, 0.0)
+                    if now - last_adjust < self._FACTOR_COOLDOWN_SECONDS:
+                        continue
                     try:
-                        factor_adjustments[factor_name] = round(float(weight) * mult, 6)
+                        raw = float(weight) * mult
+                        # 边界约束：权重 ∈ [0.1, 2.0]，防止过度调整（SPEC §9）
+                        clamped = max(0.1, min(2.0, raw))
+                        factor_adjustments[factor_name] = round(clamped, 6)
+                        self._factor_cooldown[factor_name] = now
                     except (TypeError, ValueError):
                         continue
 

@@ -138,15 +138,33 @@ class TradeSettlementBridge:
 
             # 3. 调用 ReflectionEngine: calculate_cs → apply_reward
             from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+            from dreambuddy_evolution.engines.reverse_deriver import ReverseDeriver
             engine = ReflectionEngine()
             cs = engine.calculate_cs(snapshot, outcome)
-            reward = engine.apply_reward(
-                cs=cs,
-                outcome=real_outcome,
-                cluster_id=snapshot.get("cluster_id", ""),
-                ess_id=snapshot.get("ess_id", ""),
-                gmax=1.0,
-            )
+
+            # 方向3: 逆向推导 + 精准奖惩（FAIL-OPEN：snapshot缺维度数据时降级为普通奖惩）
+            derive_result = None
+            try:
+                deriver = ReverseDeriver()
+                derive_result = deriver.derive(snapshot, outcome)
+                reward = engine.apply_reward_with_derive(
+                    cs=cs,
+                    outcome=real_outcome,
+                    cluster_id=snapshot.get("cluster_id", ""),
+                    ess_id=snapshot.get("ess_id", ""),
+                    gmax=1.0,
+                    snapshot=snapshot,
+                    derive_result=derive_result,
+                )
+            except Exception as e:
+                logger.warning("[FO] reverse derive fallback to apply_reward: %s", e)
+                reward = engine.apply_reward(
+                    cs=cs,
+                    outcome=real_outcome,
+                    cluster_id=snapshot.get("cluster_id", ""),
+                    ess_id=snapshot.get("ess_id", ""),
+                    gmax=1.0,
+                )
 
             return {
                 "cs": round(cs, 4),
@@ -154,6 +172,7 @@ class TradeSettlementBridge:
                 "gmax_mult": reward.get("gmax_mult", 1.0),
                 "cluster_weight_mult": reward.get("cluster_weight_mult", 1.0),
                 "anti_pattern_flag": reward.get("anti_pattern_flag", False),
+                "factor_adjustments": reward.get("factor_adjustments", {}),
             }
         except Exception as e:
             logger.warning("[FO] on_trade_settled crash: %s", e)
@@ -308,4 +327,5 @@ class TradeSettlementBridge:
             "gmax_mult": 1.0,
             "cluster_weight_mult": 1.0,
             "anti_pattern_flag": False,
+            "factor_adjustments": {},
         }

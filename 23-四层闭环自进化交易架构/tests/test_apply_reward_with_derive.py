@@ -146,3 +146,73 @@ def test_fail_open_neutral_result_skips_factor_adjustment():
 
     # 空调整：不修改任何因子权重
     assert reward["factor_adjustments"] == {}
+
+
+def test_factor_weight_clamped_to_lower_bound():
+    """RED: 降权后权重不低于下界 0.1。"""
+    engine = ReflectionEngine()
+    deriver = ReverseDeriver()
+    # C1预测long，实际short → C1错 → 降权
+    # 权重 0.05 × 0.9 = 0.045，应被 clamp 到 0.1
+    snapshot = _make_snapshot(
+        dim_predictions={"C1": "long"},
+        dim_factors={"C1": {"资金流入": 0.05}},
+    )
+    outcome = {"real_direction": "short", "real_outcome": "SL"}
+
+    derive_result = deriver.derive(snapshot, outcome)
+    reward = engine.apply_reward_with_derive(
+        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
+        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+    )
+
+    assert reward["factor_adjustments"]["资金流入"] == pytest.approx(0.1)
+
+
+def test_factor_weight_clamped_to_upper_bound():
+    """RED: 升权后权重不高于上界 2.0。"""
+    engine = ReflectionEngine()
+    deriver = ReverseDeriver()
+    # C1预测long，实际long → C1对 → 升权
+    # 权重 1.95 × 1.05 = 2.0475，应被 clamp 到 2.0
+    snapshot = _make_snapshot(
+        dim_predictions={"C1": "long"},
+        dim_factors={"C1": {"资金流入": 1.95}},
+    )
+    outcome = {"real_direction": "long", "real_outcome": "TP"}
+
+    derive_result = deriver.derive(snapshot, outcome)
+    reward = engine.apply_reward_with_derive(
+        cs=0.9, outcome="TP", cluster_id="C001", ess_id="e1",
+        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+    )
+
+    assert reward["factor_adjustments"]["资金流入"] == pytest.approx(2.0)
+
+
+def test_factor_cooldown_prevents_repeated_adjustment():
+    """RED: 冷却期内同一因子不重复调整。"""
+    import time
+    engine = ReflectionEngine()
+    deriver = ReverseDeriver()
+    snapshot = _make_snapshot(
+        dim_predictions={"C1": "long"},
+        dim_factors={"C1": {"资金流入": 0.5}},
+    )
+    outcome = {"real_direction": "short", "real_outcome": "SL"}
+
+    # 第一次调整
+    derive_result = deriver.derive(snapshot, outcome)
+    reward1 = engine.apply_reward_with_derive(
+        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
+        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+    )
+    # C1 错 → 降权 ×0.9 = 0.45
+    assert reward1["factor_adjustments"]["资金流入"] == pytest.approx(0.45)
+
+    # 立即第二次调整（冷却期内）→ 不应再调整
+    reward2 = engine.apply_reward_with_derive(
+        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
+        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+    )
+    assert "资金流入" not in reward2["factor_adjustments"]

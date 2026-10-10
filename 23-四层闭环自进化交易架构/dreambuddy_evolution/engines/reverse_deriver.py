@@ -24,6 +24,7 @@ class ReverseDeriveResult:
     per_dimension_correctness: dict[str, bool] = field(default_factory=dict)
     per_dimension_cs: dict[str, float] = field(default_factory=dict)
     wrong_dimensions: list[str] = field(default_factory=list)
+    wrong_dimension_pattern: str = ""  # 排序后的错误维度组合，如 "C1+C3"
     root_cause: str = ""
     root_cause_type: str = "unknown"  # factor_error / weight_error / data_error / unknown
     confidence: float = 0.0
@@ -68,15 +69,12 @@ class ReverseDeriver:
                     f"无效 real_direction: {real_direction}")
 
             # Step 1: 每维度正确性
-            per_dim_correctness: dict[str, bool] = {}
-            per_dim_cs: dict[str, float] = {}
-            for dim, pred_dir in dim_predictions.items():
-                pred_dir = str(pred_dir).lower()
-                correct = self._direction_match(pred_dir, real_direction)
-                per_dim_correctness[dim] = correct
-                per_dim_cs[dim] = 1.0 if correct else -1.0
+            per_dim_correctness, per_dim_cs = self._per_dimension_correctness(
+                dim_predictions, real_direction)
 
             wrong_dims = [d for d, c in per_dim_correctness.items() if not c]
+            # 多维度联合归因：排序后的错误维度组合模式（供 CBR 检索）
+            wrong_dimension_pattern = "+".join(sorted(wrong_dims))
 
             # Step 2-3: 根因分析
             root_cause, root_cause_type = self._analyze_root_cause(
@@ -86,32 +84,54 @@ class ReverseDeriver:
             optimization_action = self._recommend_action(
                 wrong_dims, root_cause_type, outcome)
 
-            # 置信度：正确维度占比
+            # 置信度：反映推导结论的可靠性（数据充分度），而非正确率
+            # 维度越多 → 归因越可靠；单维度判断可信度中等（0.333）
             total = len(per_dim_correctness)
-            correct_count = sum(per_dim_correctness.values())
-            confidence = round(correct_count / total, 3) if total > 0 else 0.0
+            confidence = round(min(1.0, total / 3.0), 3) if total > 0 else 0.0
 
-            known_gaps = [
-                "维度预测方向来自 PrimaryContradictionIdentifier 输入 paths",
-                "因子值缺失时无法区分 factor_error 与 data_error",
-                "动态调用/条件分支的维度判断可能不准确",
-            ]
-
-            return ReverseDeriveResult(
-                per_dimension_correctness=per_dim_correctness,
-                per_dimension_cs=per_dim_cs,
-                wrong_dimensions=wrong_dims,
-                root_cause=root_cause,
-                root_cause_type=root_cause_type,
-                confidence=confidence,
-                known_gaps=known_gaps,
-                optimization_action=optimization_action,
+            return self._output_evidence(
+                per_dim_correctness, per_dim_cs, wrong_dims,
+                wrong_dimension_pattern, root_cause, root_cause_type,
+                confidence, optimization_action,
             )
         except Exception as e:
             logger.warning("[FO] ReverseDeriver fail: %s", e)
             return self._neutral_result(snapshot, outcome, str(e))
 
     # ------------------------------------------------------------------
+    def _per_dimension_correctness(self, dim_predictions: dict,
+                                    real_direction: str) -> tuple[dict, dict]:
+        """Step1: 每维度预测方向 vs 实际方向 → 正确性 + 维度CS。"""
+        per_dim_correctness: dict[str, bool] = {}
+        per_dim_cs: dict[str, float] = {}
+        for dim, pred_dir in dim_predictions.items():
+            pred_dir = str(pred_dir).lower()
+            correct = self._direction_match(pred_dir, real_direction)
+            per_dim_correctness[dim] = correct
+            per_dim_cs[dim] = 1.0 if correct else -1.0
+        return per_dim_correctness, per_dim_cs
+
+    def _output_evidence(self, per_dim_correctness, per_dim_cs, wrong_dims,
+                         wrong_dimension_pattern, root_cause, root_cause_type,
+                         confidence, optimization_action) -> ReverseDeriveResult:
+        """Step4: 输出逆向 Evidence（ReverseDeriveResult）。"""
+        known_gaps = [
+            "维度预测方向来自 PrimaryContradictionIdentifier 输入 paths",
+            "因子值缺失时无法区分 factor_error 与 data_error",
+            "动态调用/条件分支的维度判断可能不准确",
+        ]
+        return ReverseDeriveResult(
+            per_dimension_correctness=per_dim_correctness,
+            per_dimension_cs=per_dim_cs,
+            wrong_dimensions=wrong_dims,
+            wrong_dimension_pattern=wrong_dimension_pattern,
+            root_cause=root_cause,
+            root_cause_type=root_cause_type,
+            confidence=confidence,
+            known_gaps=known_gaps,
+            optimization_action=optimization_action,
+        )
+
     def _direction_match(self, pred: str, real: str) -> bool:
         """预测方向与实际方向是否一致（wait 始终算不匹配）。"""
         if pred not in self.VALID_DIRECTIONS or real not in self.VALID_DIRECTIONS:
@@ -120,15 +140,88 @@ class ReverseDeriver:
             return False
         return pred == real
 
+    def _evidence_trace(self, snapshot: dict, wrong_dim: str) -> dict:
+        """Step3: 证据链回溯 — 因子值/权重/数据源定位根因。
+
+        对错误维度的每个因子收集：
+        - weight: 因子权重
+        - value: 因子实际值（缺失则 None）
+        - weight_anomaly: 权重是否异常（>0.8 或 <0.05）
+        - value_anomaly: 因子值是否异常（为0或缺失）
+
+        返回 root_cause_candidate:
+        - weight_error: 存在权重异常
+        - data_error: 因子值缺失
+        - factor_error: 因子值正常但判断仍错
+        """
+        dimension_factors = snapshot.get("dimension_factors") or {}
+        factor_values = snapshot.get("factor_values") or {}
+
+        factors_info: dict[str, dict] = {}
+        has_weight_anomaly = False
+        has_missing_value = False
+
+        for factor_name, weight in (dimension_factors.get(wrong_dim) or {}).items():
+            try:
+                w = float(weight)
+            except (TypeError, ValueError):
+                w = 0.0
+            value = factor_values.get(factor_name)
+            weight_anomaly = w > 0.8 or w < 0.05
+            value_anomaly = value is None or value == 0
+            if weight_anomaly:
+                has_weight_anomaly = True
+            if value is None:
+                has_missing_value = True
+            factors_info[factor_name] = {
+                "weight": w,
+                "value": value,
+                "weight_anomaly": weight_anomaly,
+                "value_anomaly": value_anomaly,
+            }
+
+        if has_weight_anomaly:
+            root_cause_candidate = "weight_error"
+        elif has_missing_value:
+            root_cause_candidate = "data_error"
+        else:
+            root_cause_candidate = "factor_error"
+
+        return {
+            "dimension": wrong_dim,
+            "factors": factors_info,
+            "root_cause_candidate": root_cause_candidate,
+        }
+
     def _analyze_root_cause(self, per_dim_correctness: dict[str, bool],
                              snapshot: dict, outcome: dict) -> tuple[str, str]:
-        """根因分类。"""
+        """根因分类。优先使用证据链回溯，回退到错误比例启发式。"""
         wrong_dims = [d for d, c in per_dim_correctness.items() if not c]
         total = len(per_dim_correctness)
 
         if not wrong_dims:
             return "所有维度判断正确", "unknown"
 
+        # 优先：证据链回溯（需要 dimension_factors）
+        dimension_factors = snapshot.get("dimension_factors") or {}
+        if dimension_factors:
+            candidates = []
+            for dim in wrong_dims:
+                evidence = self._evidence_trace(snapshot, dim)
+                candidates.append(evidence["root_cause_candidate"])
+
+            if candidates:
+                # 多数投票决定 root_cause_type
+                from collections import Counter
+                counter = Counter(candidates)
+                root_cause_type = counter.most_common(1)[0][0]
+                return (
+                    f"维度{','.join(wrong_dims)}判断错误，"
+                    f"证据链根因: {root_cause_type}",
+                    root_cause_type,
+                )
+
+        # 回退：错误比例启发式
         wrong_ratio = len(wrong_dims) / total if total > 0 else 0
 
         # 多数维度判断错 → 可能是权重问题（主导维度权重不足）
@@ -172,6 +265,7 @@ class ReverseDeriver:
             per_dimension_correctness={},
             per_dimension_cs={},
             wrong_dimensions=[],
+            wrong_dimension_pattern="",
             root_cause=f"reverse_derive_failed: {reason}",
             root_cause_type="unknown",
             confidence=0.0,
