@@ -1,7 +1,9 @@
 ---
 name: dream-pretrade-gatekeeper
-description: 统一执行"交易前门禁"：数据完整性、评分冲突、账户回撤熔断、执行成本/滑点阈值、事件风险与 Dream Mode 降级，输出 PASS/SKIP 与理由码。
+description: 统一执行"交易前门禁"：数据完整性、评分冲突、账户回撤熔断、执行成本/滑点阈值、事件风险与 Dream Mode 降级，输出 PASS/SKIP
+  与理由码。
 license: Internal
+category: trading
 ---
 
 ## Autonomy Boundary

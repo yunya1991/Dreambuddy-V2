@@ -1,6 +1,9 @@
 ---
-name: "polling-trader-reload"
-description: "Reload polling_trader after code changes: kill old → wait flock release → start new with same config → verify pidfile + main loop. Invoke when polling_trader.py modified or user says '重启/reload polling_trader'."
+name: polling-trader-reload
+description: 'Reload polling_trader after code changes: kill old → wait flock release
+  → start new with same config → verify pidfile + main loop. Invoke when polling_trader.py
+  modified or user says ''重启/reload polling_trader''.'
+category: tooling
 ---
 
 # Polling Trader Reload

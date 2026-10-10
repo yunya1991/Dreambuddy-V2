@@ -1,13 +1,14 @@
 ---
-title: "贝叶斯参数优化 SKILL v2.0"
-summary: "基于贝叶斯推断进行200轮参数寻优，支持独立运行(3AM自动化)或被Screen2调用，输出优化报告到邮箱"
+category: orchestration
+title: 贝叶斯参数优化 SKILL v2.0
+summary: 基于贝叶斯推断进行200轮参数寻优，支持独立运行(3AM自动化)或被Screen2调用，输出优化报告到邮箱
 trigger:
-  - "贝叶斯"
-  - "bayesian"
-  - "参数优化"
-  - "parameter optimization"
-  - "贝叶斯优化"
-  - "200轮寻优"
+- 贝叶斯
+- bayesian
+- 参数优化
+- parameter optimization
+- 贝叶斯优化
+- 200轮寻优
 ---
 
 ## Autonomy Boundary

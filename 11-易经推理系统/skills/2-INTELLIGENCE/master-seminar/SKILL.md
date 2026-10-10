@@ -1,14 +1,19 @@
 ---
 name: master-seminar
-description: |
-  🎓 大师研讨SKILL - 让已蒸馏的交易大师基于A系列报告分阵营辩论
+description: '🎓 大师研讨SKILL - 让已蒸馏的交易大师基于A系列报告分阵营辩论
+
   核心职能: 大师分阵营辩论 / 挑刺 / 追问 / 进化
+
   触发词: 大师研讨、召唤大师辩论、让大师讨论、大师评议
+
   差异化: 基于每日A系资料训练，驱动大师动态进化
+
+  '
 version: 1.0.0
 created: 2026-04-29
 updated: 2026-04-29
 status: 构建中
+category: orchestration
 ---
 
 ## Autonomy Boundary

@@ -1,6 +1,7 @@
 ---
-name: "dream-arch-collaboration-workflow"
-description: "三层架构能力协同调用规范+认知系统协作流程。Invoke for 主骨架调用链编排、跨子系统协同、LLM四阶段协作、认知recall命中架构记忆、或需调用DreamOS/DSH/子域能力时。"
+name: dream-arch-collaboration-workflow
+description: 三层架构能力协同调用规范+认知系统协作流程。Invoke for 主骨架调用链编排、跨子系统协同、LLM四阶段协作、认知recall命中架构记忆、或需调用DreamOS/DSH/子域能力时。
+category: orchestration
 ---
 
 ## Autonomy Boundary

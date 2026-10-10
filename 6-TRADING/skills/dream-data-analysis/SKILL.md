@@ -1,8 +1,9 @@
 ---
 name: dream-data-analysis
 description: 将每轮多维输出沉淀为可统计时间序列并产出趋势/阻力/归因图与校准建议。Invoke when 需要把长期记忆与数学统计用于趋势惯性与阻力最小原则落地。触发词：数据分析、趋势图、阻力分析、校准建议、雷达图、图表展示、可视化、Dashboard、MA/EMA、趋势强度、阻力分解、长期记忆统计、episode分析
-license: Internal
 version: 1.0.0
+license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

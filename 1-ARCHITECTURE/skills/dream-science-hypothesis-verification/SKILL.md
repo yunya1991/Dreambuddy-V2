@@ -7,23 +7,24 @@ updated: 2026-10-05
 license: Internal
 status: shadow
 category: research
-domain: 1-ARCHITECTURE
 triggers:
-  - 假设验证
-  - hypothesis verification
-  - 可证伪性
-  - 对照实验
-  - 统计显著性
-  - 消融实验
-  - 策略验证
+- 假设验证
+- hypothesis verification
+- 可证伪性
+- 统计显著性
+- 消融实验
+- 策略验证
+- 假设对照验证
+- 可证伪对照
 depends_on: []
 provides:
-  - hypothesis-testing
-  - ab-experiment
-  - ablation-study
+- hypothesis-testing
+- ab-experiment
+- ablation-study
 cognitive_links:
-  - VM-1791173248403-1c154994
-  - VM-1791173704722-9afd838c
+- VM-1791173248403-1c154994
+- VM-1791173704722-9afd838c
+domain: 1-ARCHITECTURE
 ---
 
 # dream-science-hypothesis-verification — 不确定推演论证引擎

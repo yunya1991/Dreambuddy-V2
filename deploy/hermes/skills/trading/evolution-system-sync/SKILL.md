@@ -1,6 +1,8 @@
 ---
 name: evolution-system-sync
-description: Dream-Agent 协作网络 / DZE 开发链定时同步与审计（3-EVOLUTION 进化系统）。触发词：Dream-Agent 每小时同步、DZE 每日审计、dream-agent-bridge、dze-bridge、账本、区块高度、DREAM 奖励、Validator 队列、进化系统状态、DreamAgent-Sync-Hourly、DZEChain-Audit-Daily。
+description: Dream-Agent 协作网络 / DZE 开发链定时同步与审计（3-EVOLUTION 进化系统）。触发词：Dream-Agent 每小时同步、DZE
+  每日审计、dream-agent-bridge、dze-bridge、账本、区块高度、DREAM 奖励、Validator 队列、进化系统状态、DreamAgent-Sync-Hourly、DZEChain-Audit-Daily。
+category: orchestration
 ---
 
 ## Autonomy Boundary

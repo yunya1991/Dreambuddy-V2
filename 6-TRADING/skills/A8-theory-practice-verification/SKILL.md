@@ -1,10 +1,11 @@
 ---
-name: "A8-theory-practice-verification"
-description: "🔍 理论与实践结合验证SKILL - 纯粹的理性内部批评自循环。检查A0-A7的理论与实践结合情况，做到'知行合一'，通过自我批评敦促系统进化。触发词：A8、理论与实践结合、知行合一、自我批评、系统检验、批判性思维、辩证思维、系统进化、内部批评、自循环"
-version: "1.6 (纯粹理性内部批评自循环)"
-created: "2026-04-26"
-updated: "2026-04-29"
-status: "构建中"
+name: A8-theory-practice-verification
+description: 🔍 理论与实践结合验证SKILL - 纯粹的理性内部批评自循环。检查A0-A7的理论与实践结合情况，做到'知行合一'，通过自我批评敦促系统进化。触发词：A8、理论与实践结合、知行合一、自我批评、系统检验、批判性思维、辩证思维、系统进化、内部批评、自循环
+version: 1.6 (纯粹理性内部批评自循环)
+created: '2026-04-26'
+updated: '2026-04-29'
+status: 构建中
+category: research
 ---
 
 ## Autonomy Boundary

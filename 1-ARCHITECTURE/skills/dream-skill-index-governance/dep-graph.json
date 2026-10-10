@@ -3,12 +3,12 @@
   "nodes": [
     {
       "id": "polling-trader-reload",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "dream-arch-collaboration-workflow",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -28,7 +28,7 @@
     },
     {
       "id": "dream-classic-pipeline-tdd-migration",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "id": "safe-service-restart",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "id": "dream-scattered-file-cleanup",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -93,7 +93,7 @@
     },
     {
       "id": "evolution-case-ingest",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -128,7 +128,7 @@
     },
     {
       "id": "dreambuddy-os",
-      "category": "system-kernel",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -138,12 +138,12 @@
     },
     {
       "id": "skill-creator",
-      "category": "meta",
+      "category": "tooling",
       "status": "active"
     },
     {
-      "id": "debate-classic-methodology",
-      "category": "uncategorized",
+      "id": "debate-classic-methodology-—-oxford-式经典辩论赛制",
+      "category": "meta",
       "status": "active"
     },
     {
@@ -163,7 +163,7 @@
     },
     {
       "id": "data-troubleshoot",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -208,7 +208,7 @@
     },
     {
       "id": "dream-self-iteration-workflow",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -318,12 +318,12 @@
     },
     {
       "id": "polling-trader-reload",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "dream-arch-collaboration-workflow",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -343,7 +343,7 @@
     },
     {
       "id": "dream-classic-pipeline-tdd-migration",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -353,7 +353,7 @@
     },
     {
       "id": "safe-service-restart",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -363,7 +363,7 @@
     },
     {
       "id": "dream-scattered-file-cleanup",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -408,7 +408,7 @@
     },
     {
       "id": "evolution-case-ingest",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -443,7 +443,7 @@
     },
     {
       "id": "dreambuddy-os",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -453,12 +453,12 @@
     },
     {
       "id": "skill-creator",
-      "category": "meta",
+      "category": "tooling",
       "status": "active"
     },
     {
-      "id": "debate-classic-methodology",
-      "category": "uncategorized",
+      "id": "debate-classic-methodology-—-oxford-式经典辩论赛制",
+      "category": "meta",
       "status": "active"
     },
     {
@@ -478,7 +478,7 @@
     },
     {
       "id": "data-troubleshoot",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -523,7 +523,7 @@
     },
     {
       "id": "dream-self-iteration-workflow",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -633,62 +633,62 @@
     },
     {
       "id": "dream-oneirology",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-strategy-parser",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-strategy-research",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-systematic-trading",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-tactical-validator",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dual-agent-conflict-gate",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "system-maintenance",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-contradiction-theory",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-data-analysis",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-bayesian-opt",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-knowledge",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-risk-position-sizing",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -698,37 +698,37 @@
     },
     {
       "id": "dream-screen2-second",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-tactical-executor",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "A8-theory-practice-verification",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-first-principles",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-exit-skill-v2",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-intelligence-monitor",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-screen3-third",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -738,27 +738,27 @@
     },
     {
       "id": "dream-screen1-first",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-signal-scoring-spec",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "master-seminar",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-pretrade-gatekeeper",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-bailian-integration",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
@@ -768,22 +768,22 @@
     },
     {
       "id": "learning-episode-writer",
-      "category": "uncategorized",
+      "category": "cognition",
       "status": "active"
     },
     {
       "id": "dream-doc-sync-gate",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-attention-radar",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-backtest",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -798,47 +798,47 @@
     },
     {
       "id": "learning-proposal-generator",
-      "category": "uncategorized",
+      "category": "cognition",
       "status": "active"
     },
     {
       "id": "learning-lesson-distiller",
-      "category": "uncategorized",
+      "category": "cognition",
       "status": "active"
     },
     {
       "id": "safe-main-merge",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "dream-constitution",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "memory-manager",
-      "category": "uncategorized",
+      "category": "cognition",
       "status": "active"
     },
     {
       "id": "branch-lifecycle-automation",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "dream-knowledge",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "code-review-merge-assistant",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "architecture-sync-guard",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -848,32 +848,32 @@
     },
     {
       "id": "learning-episode-writer",
-      "category": "uncategorized",
+      "category": "cognition",
       "status": "active"
     },
     {
       "id": "dream-strategy-parser",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-strategy-research",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-tactical-validator",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-contradiction-theory",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-risk-position-sizing",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -883,27 +883,27 @@
     },
     {
       "id": "dream-tactical-executor",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "A8-theory-practice-verification",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-first-principles",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-exit-skill-v2",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-intelligence-monitor",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -913,12 +913,12 @@
     },
     {
       "id": "dream-signal-scoring-spec",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "dream-pretrade-gatekeeper",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -928,52 +928,52 @@
     },
     {
       "id": "dream-execution-cost-model",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-oneirology",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-data-analysis",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-knowledge",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "master-seminar",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-bailian-integration",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "dream-intelligence-analysis",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-archive-center",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-performance-review",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "boss-secretary",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -983,7 +983,7 @@
     },
     {
       "id": "ai-trading-compliance",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -993,12 +993,12 @@
     },
     {
       "id": "dream-product-hub-maintenance",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "dream-cost-control",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -1008,142 +1008,142 @@
     },
     {
       "id": "auto-repair",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "find-skills",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "ontology",
-      "category": "uncategorized",
+      "category": "research",
       "status": "active"
     },
     {
       "id": "markdown-new",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "skill-creator",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "github",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "tavily",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "skill-creator",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "using-git-worktrees",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "test-driven-development",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "systematic-debugging",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "using-superpowers",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "dispatching-parallel-agents",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "executing-plans",
-      "category": "uncategorized",
+      "category": "meta",
       "status": "active"
     },
     {
       "id": "finishing-a-development-branch",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "brainstorming",
-      "category": "uncategorized",
+      "category": "meta",
       "status": "active"
     },
     {
       "id": "writing-plans",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "requesting-code-review",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "receiving-code-review",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "writing-skills",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "verification-before-completion",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "subagent-driven-development",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
       "id": "t1-strategy-synthesis",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "t2-trade-execution",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "t3-risk-gatekeeper",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "t0-market-cognition",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "meta-reflection",
-      "category": "uncategorized",
+      "category": "cognition",
       "status": "active"
     },
     {
       "id": "intelligence-radar",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -1168,7 +1168,7 @@
     },
     {
       "id": "6-trading-screen1-framework",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
@@ -1193,7 +1193,7 @@
     },
     {
       "id": "evolution-system-sync",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
@@ -1203,7 +1203,7 @@
     },
     {
       "id": "hermes-feishu-bot-debug",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -1218,22 +1218,22 @@
     },
     {
       "id": "agent-a-trading",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "screen-martin-trading",
-      "category": "uncategorized",
+      "category": "trading",
       "status": "active"
     },
     {
       "id": "agent-collab-supervisor",
-      "category": "uncategorized",
+      "category": "orchestration",
       "status": "active"
     },
     {
       "id": "graph-context-compressor",
-      "category": "uncategorized",
+      "category": "tooling",
       "status": "active"
     }
   ],

@@ -1,6 +1,11 @@
 ---
-name: "dream-self-iteration-workflow"
-description: "Orchestrates L4 self-iteration: hermes reflection (trace analysis → skill-creator) + param optimization (Bayesian + walk-forward) + case ingest gate (4-dim value assessment) + doc sync (checksum → dream-doc-sync). Invoke for L4 self-iteration, hermes auto-reflection, parameter auto-optimization, case library ingest, or document auto-sync."
+name: dream-self-iteration-workflow
+description: 'Orchestrates L4 self-iteration: hermes reflection (trace analysis →
+  skill-creator) + param optimization (Bayesian + walk-forward) + case ingest gate
+  (4-dim value assessment) + doc sync (checksum → dream-doc-sync). Invoke for L4 self-iteration,
+  hermes auto-reflection, parameter auto-optimization, case library ingest, or document
+  auto-sync.'
+category: orchestration
 ---
 
 ## Autonomy Boundary

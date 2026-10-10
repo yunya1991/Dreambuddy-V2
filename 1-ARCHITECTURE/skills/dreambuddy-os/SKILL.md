@@ -1,34 +1,53 @@
 ---
 name: dreambuddy-os
-description: |
-  Dreambuddy V2 AI 驱动操作系统 — 系统级 SKILL 内核
+description: 'Dreambuddy V2 AI 驱动操作系统 — 系统级 SKILL 内核
+
 
   定位： Dreambuddy OS 的核心调度层，通过调用已有 SKILL 和 API 实现完整协作，
+
   本身是纯编排层，不重复建设任何能力。
 
+
   核心能力：
+
   1. 意图识别 — 零 Token 本地计算，6 种意图类型
+
   2. 架构规划（SACG 四层）— 基于 A1 Feed + 知识库 + 记忆构建蓝图/执行图/时间线/图存储
+
   3. 节点注册表 NodeRegistry — 35个模块配置 + 11个本地实现
+
   4. 统一节点执行器 UnifiedNodeExecutor — 整合注册表+适配器+重试+降级
+
   5. 动态执行 — 三大思维链主链 + 节点动态组合 + 反思决策
+
   6. 错误码体系 — 6大类错误码，标准化错误处理
+
   7. 压力测试框架 — 6种压测场景，性能验证
+
   8. 自我进化 — A7/A8 实践论 + gap_score 路由 + 做梦部
+
   9. D-Z-E 开发链 — 自进化引擎驱动，向外学习创建新能力
+
   10. 预算管理 — Token 三档 + 仓位风控 + 成本核算
+
 
   验证实验： Agent B（系统架构验证组）通过执行本 SKILL 来验证整个系统设计的可行性。
 
+
   调用原则：
+
   - 调用的不重复建设
+
   - 能力清单在总架构中已存在
+
   - 架构检查模块可定期验证执行效果
 
+  '
 version: 1.1.0
 created: 2026-06-27
 updated: 2026-07-01
 license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

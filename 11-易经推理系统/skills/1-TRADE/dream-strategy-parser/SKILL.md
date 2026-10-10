@@ -1,10 +1,12 @@
 ---
 name: dream-strategy-parser
-description: 战略解析器v2.0 - 读取strategy_library.yaml v3.0，按7种Regime匹配策略+工具组合，输出战略指令到评分系统。触发词：战略解析、strategy parse、战略匹配、战略指令、strategy directive、Step0路由、Regime匹配、策略选择。
-license: Internal
+description: 战略解析器v2.0 - 读取strategy_library.yaml v3.0，按7种Regime匹配策略+工具组合，输出战略指令到评分系统。触发词：战略解析、strategy
+  parse、战略匹配、战略指令、strategy directive、Step0路由、Regime匹配、策略选择。
 version: 2.0.0
-created: "2026-04-20"
-updated: "2026-04-27"
+created: '2026-04-20'
+updated: '2026-04-27'
+license: Internal
+category: trading
 ---
 
 ## Autonomy Boundary

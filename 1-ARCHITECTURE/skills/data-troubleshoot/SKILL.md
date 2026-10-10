@@ -1,6 +1,10 @@
 ---
-name: "data-troubleshoot"
-description: "排查基本面数据链路问题：前端显示异常值（0.000、错误标签、量级不对、字段缺失）时，系统化追踪 18-DB→backfill→19-DAL→快照→API→前端 全链路，含字段契约验证、数据质量检查、云端一致性核对。Invoke when frontend shows suspicious values (0.000, wrong labels, missing fields, magnitude errors) or user reports incorrect fundamental data."
+name: data-troubleshoot
+description: 排查基本面数据链路问题：前端显示异常值（0.000、错误标签、量级不对、字段缺失）时，系统化追踪 18-DB→backfill→19-DAL→快照→API→前端
+  全链路，含字段契约验证、数据质量检查、云端一致性核对。Invoke when frontend shows suspicious values (0.000,
+  wrong labels, missing fields, magnitude errors) or user reports incorrect fundamental
+  data.
+category: tooling
 ---
 
 # Data Troubleshoot (基本面数据排查)

@@ -1,6 +1,9 @@
 ---
 name: intelligence-radar
-description: Use when monitoring market intelligence, detecting signal regime shifts across the three-screen MA system, or tiering response triggers (P0/P1, Level 1-3) across the trading decision chain
+description: Use when monitoring market intelligence, detecting signal regime shifts
+  across the three-screen MA system, or tiering response triggers (P0/P1, Level 1-3)
+  across the trading decision chain
+category: orchestration
 ---
 
 ## Autonomy Boundary

@@ -1,10 +1,16 @@
 ---
 name: dream-product-hub-maintenance
-version: "1.0.0"
-description: "产物中心前端(localhost:3456)维护指南。覆盖内容扫描、文件格式、分类映射、常见踩坑及修复。触发词：产物中心、Product Hub、feed修复、内容不显示、excerpt、article显示"
-tags: [frontend, maintenance, product-hub, nextjs]
+description: 产物中心前端(localhost:3456)维护指南。覆盖内容扫描、文件格式、分类映射、常见踩坑及修复。触发词：产物中心、Product
+  Hub、feed修复、内容不显示、excerpt、article显示
+version: 1.0.0
+category: orchestration
+tags:
+- frontend
+- maintenance
+- product-hub
+- nextjs
 agent_created: true
-created_at: "2026-05-06"
+created_at: '2026-05-06'
 ---
 
 ## Autonomy Boundary

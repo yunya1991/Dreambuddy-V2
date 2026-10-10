@@ -1,6 +1,9 @@
 ---
 name: meta-reflection
-description: Use when reviewing closed trading episodes, attributing outcomes to cognitive biases, detecting paper-tiger integration, or iterating executable lessons into the next decision cycle
+description: Use when reviewing closed trading episodes, attributing outcomes to cognitive
+  biases, detecting paper-tiger integration, or iterating executable lessons into
+  the next decision cycle
+category: cognition
 ---
 
 ## Autonomy Boundary

@@ -1,6 +1,10 @@
 ---
 name: memory-manager
-description: Local memory management for agents. Compression detection, auto-snapshots, and semantic search. Use when agents need to detect compression risk before memory loss, save context snapshots, search historical memories, or track memory usage patterns. Never lose context again.
+description: Local memory management for agents. Compression detection, auto-snapshots,
+  and semantic search. Use when agents need to detect compression risk before memory
+  loss, save context snapshots, search historical memories, or track memory usage
+  patterns. Never lose context again.
+category: cognition
 ---
 
 ## Autonomy Boundary

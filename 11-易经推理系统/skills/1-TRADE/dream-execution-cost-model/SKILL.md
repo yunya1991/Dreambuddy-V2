@@ -2,6 +2,7 @@
 name: dream-execution-cost-model
 description: 在下单前评估手续费、滑点与最坏成交假设，给出是否允许市价单/是否需要降级执行的建议，供 dream-multiSkill 做执行前门禁。
 license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

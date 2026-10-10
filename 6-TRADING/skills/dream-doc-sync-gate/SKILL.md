@@ -1,15 +1,16 @@
 ---
-title: "文档同步门禁 SKILL v1.0"
-summary: "PR 提交/合并前检查文档是否与代码变更保持同步，输出待更新文档清单"
+version: '1.0'
+updated: '2026-05-27'
+category: orchestration
+title: 文档同步门禁 SKILL v1.0
+summary: PR 提交/合并前检查文档是否与代码变更保持同步，输出待更新文档清单
 trigger:
-  - "文档同步"
-  - "doc sync"
-  - "文档门禁"
-  - "doc gate"
-  - "PR 文档检查"
-  - "dream-doc-sync-gate"
-version: "1.0"
-updated: "2026-05-27"
+- 文档同步
+- doc sync
+- 文档门禁
+- doc gate
+- PR 文档检查
+- dream-doc-sync-gate
 ---
 
 ## Autonomy Boundary

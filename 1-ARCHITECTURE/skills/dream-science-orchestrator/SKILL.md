@@ -1,15 +1,34 @@
 ---
 name: dream-science-orchestrator
-description: "科研引擎统一入口。根据任务类型路由到具体科研 SKILL，复用 dream-research-workflow 的 5 维交叉验证和 hermes 反思，输出可执行开发任务打通调研→开发衔接。触发词：科研编排、研究引擎、调研开发、科研任务"
+description: 科研引擎统一入口。根据任务类型路由到具体科研 SKILL，复用 dream-research-workflow 的 5 维交叉验证和 hermes
+  反思，输出可执行开发任务打通调研→开发衔接。触发词：科研编排、研究引擎、调研开发、科研任务
 version: 1.0.0
 created: 2026-10-05
 updated: 2026-10-05
 license: Internal
 status: shadow
 category: orchestration
-triggers: [科研编排, 研究引擎, 调研开发, 科研任务, 研究编排]
-depends_on: [dream-research-workflow, dream-science-literature-review, dream-science-cross-disciplinary, dream-science-hypothesis-verification, dream-science-uncertainty-reasoning, dream-science-framework-research, dream-science-statistics-check, dream-science-peer-review, drawio, nature-figure]
-provides: [research-orchestration, research-to-development]
+triggers:
+- 科研编排
+- 研究引擎
+- 调研开发
+- 科研任务
+- 科研引擎编排
+- 研究任务编排
+depends_on:
+- dream-research-workflow
+- dream-science-literature-review
+- dream-science-cross-disciplinary
+- dream-science-hypothesis-verification
+- dream-science-uncertainty-reasoning
+- dream-science-framework-research
+- dream-science-statistics-check
+- dream-science-peer-review
+- drawio
+- nature-figure
+provides:
+- research-orchestration
+- research-to-development
 ---
 
 # Dream Science Orchestrator — 科研引擎统一入口

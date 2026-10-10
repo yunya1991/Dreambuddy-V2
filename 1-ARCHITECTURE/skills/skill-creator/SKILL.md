@@ -1,16 +1,32 @@
 ---
 name: skill-creator
-description: "Guide for creating effective skills with mandatory multi-domain research. Use when users want to create a new skill or update an existing skill that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations. Enforces 5-domain research (AI/finance/product/engineering/GitHub) before skill formation per project hard constraint VM-1790765308904."
+description: Guide for creating effective skills with mandatory multi-domain research.
+  Use when users want to create a new skill or update an existing skill that extends
+  Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+  Enforces 5-domain research (AI/finance/product/engineering/GitHub) before skill
+  formation per project hard constraint VM-1790765308904.
 version: 2.0.0
 created: 2026-09-21
 updated: 2026-10-01
 license: Complete terms in LICENSE.txt
 status: active
-category: meta
-triggers: [创建 skill, 新建 skill, 生成 skill, 更新 skill, skill-creator, 创建技能]
-depends_on: [dream-skill-index-governance]
-provides: [skill-creation, skill-iteration, multi-domain-research]
-cognitive_links: [VM-1790765308904-4f460e48, VM-1790864180936-faa44e02]
+category: tooling
+triggers:
+- 创建 skill
+- 新建 skill
+- 生成 skill
+- 更新 skill
+- skill-creator
+- 创建技能
+depends_on:
+- dream-skill-index-governance
+provides:
+- skill-creation
+- skill-iteration
+- multi-domain-research
+cognitive_links:
+- VM-1790765308904-4f460e48
+- VM-1790864180936-faa44e02
 ---
 
 ## Autonomy Boundary

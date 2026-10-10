@@ -1,6 +1,8 @@
 ---
 name: t0-market-cognition
-description: "Multi-dimensional market cognition: information collection, conflict analysis, path-of-least-resistance, regime classification, and direction determination."
+description: 'Multi-dimensional market cognition: information collection, conflict
+  analysis, path-of-least-resistance, regime classification, and direction determination.'
+category: trading
 ---
 
 ## Autonomy Boundary

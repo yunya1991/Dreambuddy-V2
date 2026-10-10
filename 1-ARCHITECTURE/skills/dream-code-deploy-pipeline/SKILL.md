@@ -1,13 +1,36 @@
 ---
-name: "dream-code-deploy-pipeline"
-description: "Orchestrates full code delivery pipeline: local commit → GitHub CI (Actions) → server deploy (webhook/update.sh) → healthcheck → rollback. Invoke when user wants to sync code to cloud, deploy to server, set up CI/CD, or roll back a bad deployment."
+name: dream-code-deploy-pipeline
+description: 'Orchestrates full code delivery pipeline: local commit → GitHub CI (Actions)
+  → server deploy (webhook/update.sh) → healthcheck → rollback. Invoke when user wants
+  to sync code to cloud, deploy to server, set up CI/CD, or roll back a bad deployment.'
 version: 1.0.0
 created: 2026-10-09
 status: active
 category: orchestration
-triggers: [部署, 同步代码, CI, CD, 自动部署, deploy, sync, webhook, 回滚, rollback, 上线]
-depends_on: [dream-code-commit-sync-workflow, git, github-actions, update.sh, healthcheck.sh]
-provides: [code-delivery, ci-cd, auto-deploy, rollback]
+triggers:
+- 部署
+- CI
+- CD
+- 自动部署
+- deploy
+- sync
+- webhook
+- 回滚
+- rollback
+- 上线
+- 部署同步
+- CI/CD 部署
+depends_on:
+- dream-code-commit-sync-workflow
+- git
+- github-actions
+- update.sh
+- healthcheck.sh
+provides:
+- code-delivery
+- ci-cd
+- auto-deploy
+- rollback
 ---
 
 # Dream Code Deploy Pipeline — 代码交付全链路工作流

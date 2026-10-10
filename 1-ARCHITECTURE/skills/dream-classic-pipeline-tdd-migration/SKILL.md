@@ -1,6 +1,11 @@
 ---
-name: "dream-classic-pipeline-tdd-migration"
-description: "Orchestrates Classic Pipeline C0-C8 nine-node TDD migration: RED test (assert real business logic) → GREEN impl (simplified extraction from ml_trade_service.py) → REFACTOR (full suite no regression) → E2E serial validation → frontend agent-browser acceptance. Invoke for classic pipeline node migration, C0-C8 TDD, node RED-GREEN-REFACTOR cycle, or frontend pipeline acceptance testing."
+name: dream-classic-pipeline-tdd-migration
+description: 'Orchestrates Classic Pipeline C0-C8 nine-node TDD migration: RED test
+  (assert real business logic) → GREEN impl (simplified extraction from ml_trade_service.py)
+  → REFACTOR (full suite no regression) → E2E serial validation → frontend agent-browser
+  acceptance. Invoke for classic pipeline node migration, C0-C8 TDD, node RED-GREEN-REFACTOR
+  cycle, or frontend pipeline acceptance testing.'
+category: orchestration
 ---
 
 ## Autonomy Boundary

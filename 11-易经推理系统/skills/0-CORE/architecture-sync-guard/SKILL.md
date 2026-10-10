@@ -1,6 +1,8 @@
 ---
 name: architecture-sync-guard
-description: 主干合并前的架构冲突与信息同步守卫流程。用于“检查架构一致性”“检查改一处是否需要同步其他文档/契约”“PR门禁冲突排查”等场景，确保 constraints/workflows/docs 的联动更新完整。
+description: 主干合并前的架构冲突与信息同步守卫流程。用于“检查架构一致性”“检查改一处是否需要同步其他文档/契约”“PR门禁冲突排查”等场景，确保 constraints/workflows/docs
+  的联动更新完整。
+category: orchestration
 ---
 
 ## Autonomy Boundary

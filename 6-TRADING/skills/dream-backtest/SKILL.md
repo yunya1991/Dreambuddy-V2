@@ -1,14 +1,15 @@
 ---
-title: "回测引擎 SKILL v2.0"
-summary: "独立回测能力：支持被Screen2调用或3AM自动化独立运行，输出结构化报告到邮箱"
+category: trading
+title: 回测引擎 SKILL v2.0
+summary: 独立回测能力：支持被Screen2调用或3AM自动化独立运行，输出结构化报告到邮箱
 trigger:
-  - "回测"
-  - "backtest"
-  - "回测验证"
-  - "参数验证"
-  - "历史表现"
-  - "运行回测"
-  - "执行回测"
+- 回测
+- backtest
+- 回测验证
+- 参数验证
+- 历史表现
+- 运行回测
+- 执行回测
 ---
 
 ## Autonomy Boundary

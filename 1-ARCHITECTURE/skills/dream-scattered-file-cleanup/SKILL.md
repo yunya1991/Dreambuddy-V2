@@ -1,6 +1,7 @@
 ---
-name: "dream-scattered-file-cleanup"
-description: "散落文件治理工作流（金融级+盆景式）：双维度分类→状态机判断→索引登记→三态决策→认知闭环5步流程。Invoke when 处理散落文件、隐藏目录排查、标号目录根层文件清理、或需统一文档管理时。"
+name: dream-scattered-file-cleanup
+description: 散落文件治理工作流（金融级+盆景式）：双维度分类→状态机判断→索引登记→三态决策→认知闭环5步流程。Invoke when 处理散落文件、隐藏目录排查、标号目录根层文件清理、或需统一文档管理时。
+category: orchestration
 ---
 
 ## Autonomy Boundary

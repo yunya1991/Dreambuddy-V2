@@ -1,6 +1,8 @@
 ---
-name: "evolution-case-ingest"
-description: "为自进化系统案例库（washout/washout_reversal/pump_dump_reversal）新增闭环训练案例。Invoke when 用户要求为自进化系统增加训练案例、入库市场行情样本、或补充 CBR/KNN 案例库。"
+name: evolution-case-ingest
+description: 为自进化系统案例库（washout/washout_reversal/pump_dump_reversal）新增闭环训练案例。Invoke
+  when 用户要求为自进化系统增加训练案例、入库市场行情样本、或补充 CBR/KNN 案例库。
+category: trading
 ---
 
 ## Autonomy Boundary

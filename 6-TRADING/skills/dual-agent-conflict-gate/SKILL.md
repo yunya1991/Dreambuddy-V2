@@ -1,9 +1,11 @@
 ---
 name: dual-agent-conflict-gate
-description: 双代理协作冲突前置门禁。每次 agent 开始任务前调用，读取 git status / 分支状态，检查文件边界、共享文件占用、契约冻结级别与并行条件，输出 SAFE / WARNING / BLOCK + reason_codes。触发词：冲突检查、协作门禁、任务前检查、conflict gate、开始任务
-version: "1.0"
-created: "2026-05-17"
-status: "已上线"
+description: 双代理协作冲突前置门禁。每次 agent 开始任务前调用，读取 git status / 分支状态，检查文件边界、共享文件占用、契约冻结级别与并行条件，输出
+  SAFE / WARNING / BLOCK + reason_codes。触发词：冲突检查、协作门禁、任务前检查、conflict gate、开始任务
+version: '1.0'
+created: '2026-05-17'
+status: 已上线
+category: orchestration
 ---
 
 ## Autonomy Boundary

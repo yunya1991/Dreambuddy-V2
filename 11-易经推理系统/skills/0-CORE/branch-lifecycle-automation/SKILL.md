@@ -1,6 +1,7 @@
 ---
 name: branch-lifecycle-automation
 description: 分支与 PR 生命周期自动治理技能。用于“清理分支堆积”“自动标记状态”“定时收敛 PR/分支”场景；默认低风险自动处置，高风险升级人工处理。
+category: tooling
 ---
 
 ## Autonomy Boundary

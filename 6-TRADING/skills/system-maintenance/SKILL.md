@@ -1,23 +1,33 @@
 ---
 name: system-maintenance
-description: |
-  🔧 系统维护 SKILL - 基于架构文档的系统健康检查与修复
+description: '🔧 系统维护 SKILL - 基于架构文档的系统健康检查与修复
+
 
   核心能力：
+
   1. 架构健康检查：对照架构文档检查各模块实现状态
+
   2. 问题追踪：识别实现与规划的偏差
+
   3. 维护报告：生成定期维护报告
+
   4. 修复流程：按架构规划执行修复或触发开发任务
 
+
   触发词：
+
   - 系统维护、架构检查、健康检查、周维护、月度维护
+
   - 检查架构、查看进度、更新状态、架构同步
+
   - 发现问题、修复计划、迭代规划
 
+  '
 version: 1.0.0
 created: 2026-06-25
 updated: 2026-06-25
 license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

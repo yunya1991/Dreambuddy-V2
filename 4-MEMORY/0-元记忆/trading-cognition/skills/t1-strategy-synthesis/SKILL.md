@@ -1,6 +1,8 @@
 ---
 name: t1-strategy-synthesis
-description: "Synthesize strategic directive, three-scenario Bayesian deduction, and contingency plan from T0 market cognition output."
+description: Synthesize strategic directive, three-scenario Bayesian deduction, and
+  contingency plan from T0 market cognition output.
+category: trading
 ---
 
 ## Autonomy Boundary

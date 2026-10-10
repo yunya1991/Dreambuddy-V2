@@ -1,15 +1,21 @@
 ---
 name: dream-contradiction-theory
-description: |
-  ⚖️ A0 矛盾分析理论 — A1/A2/A3的统一矛盾操作系统
+description: '⚖️ A0 矛盾分析理论 — A1/A2/A3的统一矛盾操作系统
+
   蒸馏毛泽东《矛盾论》+《孙子兵法》+克劳塞维茨《战争论》的核心方法论，
+
   为A1(发现矛盾)、A2(抓住矛盾)、A3(利用矛盾)提供统一的矛盾分析框架。
+
   禁止"信号不足=等待"，矛盾永远存在，关键是识别主要矛盾并利用它。
+
   触发词：矛盾分析、主要矛盾、矛盾论、矛盾发现、矛盾利用、抓主要矛盾、矛盾转化
-license: Internal
+
+  '
 version: 1.1.0
 created: 2026-04-26
 updated: 2026-04-26
+license: Internal
+category: research
 ---
 
 ## Autonomy Boundary

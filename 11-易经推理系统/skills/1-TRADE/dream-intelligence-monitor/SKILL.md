@@ -1,17 +1,25 @@
 ---
 name: dream-intelligence-monitor
-description: |
-  📡 情报监控 — 永不间断的市场雷达
+description: '📡 情报监控 — 永不间断的市场雷达
+
   每小时运行，持续监控市场状态变化、异常信号、战略环境变更，
+
   当检测到重大变化时，触发相应的响应流程。
+
   ⚠️ v4.8新增: **Level 1.5 A2增量更新脚本** (2026-04-29修复)
+
   ⚠️ v4.9新增: **A6→做梦部自动复制脚本** (2026-04-29修复)
+
   ⚠️ v4.9新增: **Level 1.5 A2增量更新脚本** (2026-04-29修复)
+
   触发词：情报监控、市场监控、实时监控、异常告警、战略变更、P0告警、重大变化、A4上报、A4触发A6、宏观资产、共振信号、风险库检测、Exit Skill联动
-license: Internal
+
+  '
 version: 4.9.0
 created: 2026-04-20
 updated: 2026-04-29
+license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

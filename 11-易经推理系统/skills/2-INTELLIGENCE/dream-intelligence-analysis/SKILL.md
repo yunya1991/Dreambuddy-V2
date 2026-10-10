@@ -1,14 +1,18 @@
 ---
 name: dream-intelligence-analysis
-description: |
-  📡 情报分析核心理论与工具箱 — 蒸馏自《情报分析心理学》+ 《结构化分析技术》
+description: '📡 情报分析核心理论与工具箱 — 蒸馏自《情报分析心理学》+ 《结构化分析技术》
+
   提供认知偏见检查、结构化分析工具、情报验证流程，提升 A6 情报分析的专业性和严谨性。
-  
+
+
   触发词：情报分析、认知偏见、结构化分析、红队分析、情景分析、关键假设检查、ACH、竞争性假设分析、情报验证、不确定性分析
-license: Internal
+
+  '
 version: 1.0.0
 created: 2026-04-26
 updated: 2026-04-26
+license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

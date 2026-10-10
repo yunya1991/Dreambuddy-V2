@@ -1,26 +1,27 @@
 ---
-title: "第三屏: 实时执行层 SKILL v1.1"
-summary: "三屏交易体系执行层 - A7门禁→A4验证→A5入场→A6监控→A9离场 完整闭环"
+version: '1.0'
+updated: '2026-05-27'
+category: trading
+title: '第三屏: 实时执行层 SKILL v1.1'
+summary: 三屏交易体系执行层 - A7门禁→A4验证→A5入场→A6监控→A9离场 完整闭环
 trigger:
-  - "第三屏"
-  - "screen3"
-  - "实时执行"
-  - "入场执行"
-  - "A5执行"
-  - "监控加仓"
-  - "止盈止损"
-  - "紧急离场"
-  - "Screen 3"
-version: "1.0"
-updated: "2026-05-27"
+- 第三屏
+- screen3
+- 实时执行
+- 入场执行
+- A5执行
+- 监控加仓
+- 止盈止损
+- 紧急离场
+- Screen 3
 depends:
-  - dream-screen2-second
-  - A7-practice-theory
-  - dream-tactical-validator
-  - dream-tactical-executor
-  - dream-intelligence-monitor
-  - dream-exit-skill-v2
-  - dream-pretrade-gatekeeper
+- dream-screen2-second
+- A7-practice-theory
+- dream-tactical-validator
+- dream-tactical-executor
+- dream-intelligence-monitor
+- dream-exit-skill-v2
+- dream-pretrade-gatekeeper
 ---
 
 ## Autonomy Boundary

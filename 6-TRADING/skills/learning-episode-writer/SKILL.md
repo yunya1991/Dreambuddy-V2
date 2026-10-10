@@ -2,6 +2,7 @@
 name: learning-episode-writer
 description: 将每轮决策与结果固化为 episode（包含评分/门禁/执行/结果/证据引用），skip 也必须写入，作为学习闭环事实底座。
 license: Internal
+category: cognition
 ---
 
 ## Autonomy Boundary

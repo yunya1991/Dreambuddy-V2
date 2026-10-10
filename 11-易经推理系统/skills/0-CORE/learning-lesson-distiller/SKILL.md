@@ -2,6 +2,7 @@
 name: learning-lesson-distiller
 description: 从 episodes 蒸馏 lessons（规则/禁令/偏好），引入频次与严重度阈值，防止“1 次失败=1 条死规则”的噪声过拟合。
 license: Internal
+category: cognition
 ---
 
 ## Autonomy Boundary

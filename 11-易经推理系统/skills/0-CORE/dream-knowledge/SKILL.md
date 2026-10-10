@@ -1,24 +1,35 @@
 ---
 name: dream-knowledge
-description: |
-  📚 知识库SKILL - 核心交易策略和工具的动态知识库
-  
+description: '📚 知识库SKILL - 核心交易策略和工具的动态知识库
+
+
   核心能力：
+
   1. 知识沉淀：联网搜索/实践复盘 → 评分 → 入库
+
   2. 知识检索：按评分排序，高评分优先
+
   3. 知识进化：实践反馈驱动评分调整
+
   4. 定期维护：72h自动评估和清理
-  
+
+
   触发词：
+
   - 知识沉淀、知识入库、新策略入库
+
   - 知识检索、查找策略、找工具
+
   - 知识进化、评分更新、策略复盘
+
   - 知识库维护、知识评估
 
+  '
 version: 1.0.0
 created: 2026-04-27
 updated: 2026-04-27
 license: Internal
+category: research
 ---
 
 ## Autonomy Boundary

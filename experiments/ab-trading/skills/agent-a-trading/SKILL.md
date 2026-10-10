@@ -1,11 +1,12 @@
 ---
-title: "Agent A 交易大师 SKILL v1.0"
-summary: "Raw Claude 合约交易决策 - 六维分析框架：目标→身份→三维分析→自我进化→向外学习→预算管理"
+category: trading
+title: Agent A 交易大师 SKILL v1.0
+summary: Raw Claude 合约交易决策 - 六维分析框架：目标→身份→三维分析→自我进化→向外学习→预算管理
 trigger:
-  - "agent a 交易"
-  - "raw claude 交易"
-  - "agent a 决策"
-  - "执行 agent a"
+- agent a 交易
+- raw claude 交易
+- agent a 决策
+- 执行 agent a
 ---
 
 ## Autonomy Boundary

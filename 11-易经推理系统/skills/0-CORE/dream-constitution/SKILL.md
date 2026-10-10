@@ -1,8 +1,9 @@
 ---
 name: dream-constitution
 description: Dream-MultiSkill 系统最高指导宪法 (唯物主义版)。所有决策必须调取此文件作为第一性原理依据。触发词：宪法、最高指导、第一性原理、唯物主义、决策前必须
-license: Internal
 version: 1.0.0
+license: Internal
+category: research
 ---
 
 ## Autonomy Boundary

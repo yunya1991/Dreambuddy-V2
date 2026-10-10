@@ -1,11 +1,12 @@
 ---
 name: dream-performance-review
-description: "Dream-MultiSkill 绩效考核部 (HRBP) - 定期评估各部门/技能表现、顾问团考核、对不合格者启动PIP改进计划，改进无效时触发招聘流程。监控GitHub/技能市场热门项目。触发：绩效、考核、KPI、评分、评级、GitHub监控、市场情报、能力盘点、顾问考核、顾问绩效"
+description: Dream-MultiSkill 绩效考核部 (HRBP) - 定期评估各部门/技能表现、顾问团考核、对不合格者启动PIP改进计划，改进无效时触发招聘流程。监控GitHub/技能市场热门项目。触发：绩效、考核、KPI、评分、评级、GitHub监控、市场情报、能力盘点、顾问考核、顾问绩效
+category: orchestration
 metadata:
-  version: "4.0.0"
+  version: 4.0.0
   author: Dream-MultiSkill
   category: hr
-  last_updated: "2026-04-19"
+  last_updated: '2026-04-19'
 ---
 
 ## Autonomy Boundary

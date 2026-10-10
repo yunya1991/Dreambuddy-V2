@@ -1,15 +1,17 @@
 ---
 name: hermes-feishu-bot-debug
-description: 诊断和修复 Hermes Bot 飞书双向通信问题。涵盖 Gateway 配置、WebSocket 事件订阅、Channel Directory 管理、App 发布流程。
+description: 诊断和修复 Hermes Bot 飞书双向通信问题。涵盖 Gateway 配置、WebSocket 事件订阅、Channel Directory
+  管理、App 发布流程。
+category: tooling
 triggers:
-  - "飞书通信"
-  - "bot 收不到消息"
-  - "send_message 无目标"
-  - "群聊不回复"
-  - "单聊可以群聊不行"
-  - "事件订阅"
-  - "im.message.receive_v1"
-  - "WebSocket 事件"
+- 飞书通信
+- bot 收不到消息
+- send_message 无目标
+- 群聊不回复
+- 单聊可以群聊不行
+- 事件订阅
+- im.message.receive_v1
+- WebSocket 事件
 ---
 
 ## Autonomy Boundary

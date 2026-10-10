@@ -1,13 +1,14 @@
 ---
-name: "dream-bailian-integration"
-description: >
-  Dream-MultiSkill 百炼集成中心 - 统一管理百炼API调用、知识库构建、
-  工作流编排、Function Calling、产物传递(AAM)。触发词：百炼、知识库构建、
+name: dream-bailian-integration
+description: 'Dream-MultiSkill 百炼集成中心 - 统一管理百炼API调用、知识库构建、 工作流编排、Function Calling、产物传递(AAM)。触发词：百炼、知识库构建、
   RAG配置、API调用、百炼工作流、模型蒸馏、Function Calling配置。
-version: "v1.0"
-created: "2026-05-07"
-updated: "2026-05-07"
-status: "active"
+
+  '
+version: v1.0
+created: '2026-05-07'
+updated: '2026-05-07'
+status: active
+category: research
 ---
 
 ## Autonomy Boundary

@@ -1,6 +1,8 @@
 ---
 name: code-review-merge-assistant
-description: 本地一键代码审核与合并助手。用于“代码审核合并”“一键合并到main”“检查通过后自动合并”等场景，自动执行分支检查、PR检查等待、门禁通过后 squash 合并与主干同步。
+description: 本地一键代码审核与合并助手。用于“代码审核合并”“一键合并到main”“检查通过后自动合并”等场景，自动执行分支检查、PR检查等待、门禁通过后
+  squash 合并与主干同步。
+category: tooling
 ---
 
 ## Autonomy Boundary

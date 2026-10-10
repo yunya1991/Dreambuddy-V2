@@ -1,8 +1,9 @@
 ---
-name: "ai-trading-compliance"
-description: "AI 驱动的交易创新合规与治理门禁审查 v2.0 - 可执行版本。对 AI 建议/自动化/策略创新做合规审查并输出 pass/warn/fail。涉及变更包、门禁、灰度发布、回滚、审计时调用。"
-license: Internal
+name: ai-trading-compliance
+description: AI 驱动的交易创新合规与治理门禁审查 v2.0 - 可执行版本。对 AI 建议/自动化/策略创新做合规审查并输出 pass/warn/fail。涉及变更包、门禁、灰度发布、回滚、审计时调用。
 version: 2.0.0
+license: Internal
+category: trading
 ---
 
 ## Autonomy Boundary

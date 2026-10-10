@@ -1,10 +1,13 @@
 ---
-title: "老板秘书 SKILL (boss-secretary)"
+status: completed
+category: orchestration
+title: 老板秘书 SKILL (boss-secretary)
 department: governance
 type: documentation
-date: "2026-04-29"
-status: completed
-tags: ["SKILL", "v5.0"]
+date: '2026-04-29'
+tags:
+- SKILL
+- v5.0
 ---
 
 ## Autonomy Boundary

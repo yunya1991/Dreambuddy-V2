@@ -1,13 +1,17 @@
 ---
 name: dream-strategy-research
-description: |
-  🌐 深度调研 — 战略制定前的侦察兵
+description: '🌐 深度调研 — 战略制定前的侦察兵
+
   在制定战略前，系统性地收集市场情报、档案数据、链上信号、宏观环境、宏观资产背景。
+
   触发词：深度调研、市场调研、情报收集、档案研究、宏观分析、链上数据、调研完成请顾问评审、宏观背景、宏观资产、黄金、原油、铜
-license: Internal
+
+  '
 version: 1.7.0
 created: 2026-04-20
 updated: 2026-04-29
+license: Internal
+category: trading
 ---
 
 ## Autonomy Boundary

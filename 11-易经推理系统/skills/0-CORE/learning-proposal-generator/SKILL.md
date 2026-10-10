@@ -2,6 +2,7 @@
 name: learning-proposal-generator
 description: 将反思与蒸馏结果转为可治理的变更提案（proposal），只产出提案不自动应用，必须携带 rollback_plan_id 与 evidence_refs。
 license: Internal
+category: cognition
 ---
 
 ## Autonomy Boundary

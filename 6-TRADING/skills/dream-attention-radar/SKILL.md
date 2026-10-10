@@ -1,14 +1,12 @@
 ---
 name: dream-attention-radar
-description: |
-  📡 注意力雷达部 — 三源多头注意力标的筛选器
-  通过资金注意力、情绪注意力、周期注意力三大Query-Key-Value注意力头
-  做动态推理+协同注意力融合，输出做多/做空Top N具体标的排名。
-  触发词：注意力雷达、资金注意力、情绪注意力、周期注意力、
-         三源注意力、标的筛选、多空排名、attention radar
+description: "\U0001F4E1 注意力雷达部 — 三源多头注意力标的筛选器\n通过资金注意力、情绪注意力、周期注意力三大Query-Key-Value注意力头\n\
+  做动态推理+协同注意力融合，输出做多/做空Top N具体标的排名。\n触发词：注意力雷达、资金注意力、情绪注意力、周期注意力、\n       三源注意力、标的筛选、多空排名、attention\
+  \ radar\n"
 version: 1.0.0
 created: 2026-08-11
 updated: 2026-08-11
+category: orchestration
 department: 交叉分析部 (Attention-Radar)
 chain_phase: AX
 ---

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "total_count": 218,
+  "total_count": 247,
   "skills": [
     {
       "name": "polling-trader-reload",
@@ -624,6 +624,48 @@
       "evolution_log": []
     },
     {
+      "name": "knowledge-ingest",
+      "description": "知识沉淀 SKILL: SKILL 执行完成后将产出的知识/案例分类入库 + RAG 向量化 + 认知记录 + 索引更新。Invoke when research-type SKILLs complete, cognitive record tags contain 'knowledge-ingest', or explicit knowledge ingestion needed.",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/knowledge-ingest/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "knowledge",
+      "triggers": [
+        "知识沉淀",
+        "知识入库",
+        "knowledge ingest",
+        "调研入库",
+        "知识归档"
+      ],
+      "depends_on": [
+        "build_index.py",
+        "cognitive_adapter.py",
+        "index_query_adapter.py"
+      ],
+      "provides": [
+        "knowledge-ingestion",
+        "rag-indexing",
+        "cognitive-knowledge-bridge"
+      ],
+      "cognitive_links": [],
+      "content_hash": "daa70b6037870b306abd551a3e624811fb8994841d9d8c5ff296201ffa5ff0f8",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-arch-research-orchestrator",
       "description": "开工SKILL(默认名，方便记忆) — 架构调研编排元 SKILL: 自动编排「问题定义→调研→SPEC→评审→Plan」五阶段闭环，对应调研→SPEC→评审→PLAN流程。每步调度子 SKILL 输出结果，用户确认后推进。Invoke for architecture questions, spec formation, peer review planning, or structured research-to-plan workflows. 默认名: 开工SKILL/kickoff。",
       "version": "1.0.0",
@@ -1181,6 +1223,28 @@
         "resource_cost": "medium",
         "execution_mode": "auto"
       },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-classic-methodology",
+      "description": "",
+      "version": "0.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/debate-classic-methodology/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "uncategorized",
+      "triggers": [],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "6777bfd709be472d4be7a78b87d1a1f3ed280f7b68961ef4e47e77b0da1978a4",
+      "parse_error": "no_frontmatter_or_invalid_yaml",
+      "override_fields": null,
+      "facets": {},
       "confidence": 0.3,
       "apply_count": 0,
       "last_verified": null,
@@ -2152,6 +2216,549 @@
       "evolution_log": []
     },
     {
+      "name": "dream-science-peer-review",
+      "description": "同行评审SKILL，Devil's Advocate让步阈值协议+7模式阻断清单，多视角评审策略逻辑",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-peer-review/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "同行评审",
+        "peer review",
+        "Devil's Advocate",
+        "策略评审",
+        "审稿",
+        "评审报告"
+      ],
+      "depends_on": [],
+      "provides": [
+        "peer-review",
+        "strategy-audit",
+        "devils-advocate"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "f0cbcf983d1d252cb205a404ab9e70816c2bf2e6b22e7bb3d3576eb77f03cfcc",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-orchestrator",
+      "description": "科研引擎统一入口。根据任务类型路由到具体科研 SKILL，复用 dream-research-workflow 的 5 维交叉验证和 hermes 反思，输出可执行开发任务打通调研→开发衔接。触发词：科研编排、研究引擎、调研开发、科研任务",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-orchestrator/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "shadow",
+      "category": "orchestration",
+      "triggers": [
+        "科研编排",
+        "研究引擎",
+        "调研开发",
+        "科研任务",
+        "研究编排"
+      ],
+      "depends_on": [
+        "dream-research-workflow",
+        "dream-science-literature-review",
+        "dream-science-cross-disciplinary",
+        "dream-science-hypothesis-verification",
+        "dream-science-uncertainty-reasoning",
+        "dream-science-framework-research",
+        "dream-science-statistics-check",
+        "dream-science-peer-review",
+        "drawio",
+        "nature-figure"
+      ],
+      "provides": [
+        "research-orchestration",
+        "research-to-development"
+      ],
+      "cognitive_links": [],
+      "content_hash": "8f0a5f9ce9649f524d19cda76a0bf9499aceb5116d8299a6fcfa654195307a63",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-statistics-check",
+      "description": "回测统计审查SKILL，检查p值/效应量/置信区间/多重比较/数值一致性",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-statistics-check/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "统计审查",
+        "statistics check",
+        "p值",
+        "效应量",
+        "置信区间",
+        "多重比较",
+        "回测审查"
+      ],
+      "depends_on": [],
+      "provides": [
+        "statistics-audit",
+        "backtest-review"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "2df49dccff67f779c4d15c6cb593d72232bec76fd931f3542e48171e0fab9ba1",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-hypothesis-verification",
+      "description": "交易假设科研级验证SKILL，含可证伪性检验、对照实验、统计显著性、消融实验",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-hypothesis-verification/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "shadow",
+      "category": "research",
+      "triggers": [
+        "假设验证",
+        "hypothesis verification",
+        "可证伪性",
+        "对照实验",
+        "统计显著性",
+        "消融实验",
+        "策略验证"
+      ],
+      "depends_on": [],
+      "provides": [
+        "hypothesis-testing",
+        "ab-experiment",
+        "ablation-study"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "c6926df650e79e33f2fd6ec73a2ce48aef69d150cd5a7427cfa56c11df99c196",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "drawio",
+      "description": "Generate draw.io diagrams (architecture, flow, data flow) as editable .drawio files with optional PNG/SVG/PDF export",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/drawio/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [
+        "drawio",
+        "架构图",
+        "流程图",
+        "数据流图",
+        "diagram",
+        "architecture diagram",
+        "flow chart"
+      ],
+      "depends_on": [],
+      "provides": [
+        "diagram-generation",
+        "architecture-visualization"
+      ],
+      "cognitive_links": [],
+      "content_hash": "f508be4d94209f29c0aac3f84c95e9b65f73132f4a0a865fc5caf21da7674eb5",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "tooling",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-uncertainty-reasoning",
+      "description": "不确定性推理SKILL，量化策略不确定性：市场状态/参数敏感性/过拟合风险",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-uncertainty-reasoning/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "不确定性",
+        "uncertainty",
+        "贝叶斯推理",
+        "敏感性分析",
+        "过拟合",
+        "风险边界"
+      ],
+      "depends_on": [
+        "dream-science-hypothesis-verification"
+      ],
+      "provides": [
+        "uncertainty-quantification",
+        "sensitivity-analysis",
+        "overfitting-detection"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "ef44c378294c29a9ea40442fab77f859ca19eb97e443d1ec682f122fb010c879",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-cross-disciplinary",
+      "description": "跨学科调研SKILL，建立金融交易与复杂系统/统计物理/信息论/博弈论/网络科学的映射关系",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-cross-disciplinary/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "跨学科",
+        "cross-disciplinary",
+        "复杂系统",
+        "统计物理",
+        "信息论",
+        "博弈论",
+        "网络科学",
+        "跨领域调研"
+      ],
+      "depends_on": [],
+      "provides": [
+        "cross-disciplinary-research",
+        "theory-mapping"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "69cf503e6839c93b19118852d5151af9fbb09b0b75cf7b9196138e17bb559cb4",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-experiment-design",
+      "description": "科研实验设计。设计回测/对照实验的具体方案，确保实验可复现、可验证。触发词：实验设计、回测设计、对照实验、experiment design",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-experiment-design/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "实验设计",
+        "回测设计",
+        "对照实验",
+        "experiment design",
+        "A/B测试"
+      ],
+      "depends_on": [
+        "dream-science-hypothesis-verification",
+        "dream-science-statistics-check",
+        "dream-backtest"
+      ],
+      "provides": [
+        "experiment-design",
+        "reproducibility"
+      ],
+      "cognitive_links": [],
+      "content_hash": "5637b8924229a5ca64302442eed132c97bed8998061ca822333eeb4a11be8101",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-literature-review",
+      "description": "专业领域文献综述SKILL，PRISMA系统综述+Socratic引导，聚焦金融/量化/交易文献",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-literature-review/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "shadow",
+      "category": "research",
+      "triggers": [
+        "文献综述",
+        "literature review",
+        "金融文献",
+        "量化交易调研",
+        "PRISMA",
+        "研究空白"
+      ],
+      "depends_on": [
+        "dream-research-workflow"
+      ],
+      "provides": [
+        "literature-review",
+        "research-gap-identification"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "1851b5330ced06f7b75073f71a7dba188fb47c754c132c522a23449571a08ae0",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-framework-research",
+      "description": "整体框架研究SKILL，多Agent辩论模式研究交易系统顶层架构",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-framework-research/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "框架研究",
+        "framework research",
+        "架构设计",
+        "多策略组合",
+        "风控框架",
+        "自进化框架",
+        "系统架构"
+      ],
+      "depends_on": [
+        "dream-science-cross-disciplinary"
+      ],
+      "provides": [
+        "framework-research",
+        "architecture-comparison",
+        "multi-agent-debate"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "706a88684345da772cd6f1114762d02687031dda91b6dc7efff3e97ed218f2a7",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-paper-writing",
+      "description": "科研论文写作。将策略研究成果撰写为结构化研究报告，借鉴 Style Calibration 方法平衡学术严谨性与工程可落地性。触发词：论文写作、研究报告、科研写作、paper writing",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/dream-science-paper-writing/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "论文写作",
+        "研究报告",
+        "科研写作",
+        "paper writing",
+        "撰写报告"
+      ],
+      "depends_on": [
+        "dream-science-literature-review",
+        "dream-science-hypothesis-verification",
+        "dream-science-statistics-check",
+        "nature-figure"
+      ],
+      "provides": [
+        "paper-writing",
+        "style-calibration"
+      ],
+      "cognitive_links": [],
+      "content_hash": "bc90222ede5ccd32928155fb377f60d8626bb75f17a1eba756e5f556de7c3557",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "nature-figure",
+      "description": "Nature/高影响力期刊投稿级科研图工作流，含多面板证据架构、子图对齐门、PDF碰撞审计",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/research/nature-figure/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [
+        "Nature figure",
+        "投稿级图片",
+        "publication plot",
+        "scientific figure",
+        "figures4papers",
+        "论文示意图",
+        "回测图表",
+        "策略可视化"
+      ],
+      "depends_on": [
+        "nature-shared"
+      ],
+      "provides": [
+        "scientific-figure",
+        "publication-plot",
+        "backtest-visualization"
+      ],
+      "cognitive_links": [],
+      "content_hash": "da947ce687c4e60ff404702e2a97ff683f947d361b53197f4fdcfb10fece73a7",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "tooling",
+        "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "polling-trader-reload",
+      "description": "Reload polling_trader after code changes: kill old → wait flock release → start new with same config → verify pidfile + main loop. Invoke when polling_trader.py modified or user says '重启/reload polling_trader'.",
+      "version": "0.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/polling-trader-reload/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "uncategorized",
+      "triggers": [],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "6b6386d9fe39e3c6c619885f943c61b9484248751ad3486c621c0166acbc8191",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-arch-collaboration-workflow",
       "description": "三层架构能力协同调用规范+认知系统协作流程。Invoke for 主骨架调用链编排、跨子系统协同、LLM四阶段协作、认知recall命中架构记忆、或需调用DreamOS/DSH/子域能力时。",
       "version": "0.0.0",
@@ -2381,6 +2988,76 @@
       "evolution_log": []
     },
     {
+      "name": "safe-service-restart",
+      "description": "服务重启硬门禁流程：commit → 验证工作区干净 → 重启 → 验证前后代码一致。Invoke whenever a backend/frontend service needs to be restarted after code changes, to prevent regression from uncommitted changes.",
+      "version": "0.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/safe-service-restart/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "uncategorized",
+      "triggers": [],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "da9c6cd5c61c325dcf2b5e31ecede03979a06c2fc80be958d6e808eca17de04f",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-peer-review",
+      "description": "同行评审SKILL，Devil's Advocate让步阈值协议+7模式阻断清单，多视角评审策略逻辑",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-peer-review/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "同行评审",
+        "peer review",
+        "Devil's Advocate",
+        "策略评审",
+        "审稿",
+        "评审报告"
+      ],
+      "depends_on": [],
+      "provides": [
+        "peer-review",
+        "strategy-audit",
+        "devils-advocate"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "f0cbcf983d1d252cb205a404ab9e70816c2bf2e6b22e7bb3d3576eb77f03cfcc",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-scattered-file-cleanup",
       "description": "散落文件治理工作流（金融级+盆景式）：双维度分类→状态机判断→索引登记→三态决策→认知闭环5步流程。Invoke when 处理散落文件、隐藏目录排查、标号目录根层文件清理、或需统一文档管理时。",
       "version": "0.0.0",
@@ -2398,6 +3075,54 @@
       "facets": {
         "domain": "architecture",
         "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-orchestrator",
+      "description": "科研引擎统一入口。根据任务类型路由到具体科研 SKILL，复用 dream-research-workflow 的 5 维交叉验证和 hermes 反思，输出可执行开发任务打通调研→开发衔接。触发词：科研编排、研究引擎、调研开发、科研任务",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-orchestrator/SKILL.md",
+      "location_role": "project-index",
+      "status": "shadow",
+      "category": "orchestration",
+      "triggers": [
+        "科研编排",
+        "研究引擎",
+        "调研开发",
+        "科研任务",
+        "研究编排"
+      ],
+      "depends_on": [
+        "dream-research-workflow",
+        "dream-science-literature-review",
+        "dream-science-cross-disciplinary",
+        "dream-science-hypothesis-verification",
+        "dream-science-uncertainty-reasoning",
+        "dream-science-framework-research",
+        "dream-science-statistics-check",
+        "dream-science-peer-review",
+        "drawio",
+        "nature-figure"
+      ],
+      "provides": [
+        "research-orchestration",
+        "research-to-development"
+      ],
+      "cognitive_links": [],
+      "content_hash": "bb6fce608d47ec416cd98cb150da328d7c5971df0a33feceb3213430033e53e1",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "research",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -2978,6 +3703,91 @@
       "evolution_log": []
     },
     {
+      "name": "dream-science-statistics-check",
+      "description": "回测统计审查SKILL，检查p值/效应量/置信区间/多重比较/数值一致性",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-statistics-check/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "统计审查",
+        "statistics check",
+        "p值",
+        "效应量",
+        "置信区间",
+        "多重比较",
+        "回测审查"
+      ],
+      "depends_on": [],
+      "provides": [
+        "statistics-audit",
+        "backtest-review"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "2df49dccff67f779c4d15c6cb593d72232bec76fd931f3542e48171e0fab9ba1",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-hypothesis-verification",
+      "description": "交易假设科研级验证SKILL，含可证伪性检验、对照实验、统计显著性、消融实验",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-hypothesis-verification/SKILL.md",
+      "location_role": "project-index",
+      "status": "shadow",
+      "category": "research",
+      "triggers": [
+        "假设验证",
+        "hypothesis verification",
+        "可证伪性",
+        "对照实验",
+        "统计显著性",
+        "消融实验",
+        "策略验证"
+      ],
+      "depends_on": [],
+      "provides": [
+        "hypothesis-testing",
+        "ab-experiment",
+        "ablation-study"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "c6926df650e79e33f2fd6ec73a2ce48aef69d150cd5a7427cfa56c11df99c196",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dreambuddy-os",
       "description": "Dreambuddy V2 AI 驱动操作系统 — 系统级 SKILL 内核\n\n定位： Dreambuddy OS 的核心调度层，通过调用已有 SKILL 和 API 实现完整协作，\n本身是纯编排层，不重复建设任何能力。\n\n核心能力：\n1. 意图识别 — 零 Token 本地计算，6 种意图类型\n2. 架构规划（SACG 四层）— 基于 A1 Feed + 知识库 + 记忆构建蓝图/执行图/时间线/图存储\n3. 节点注册表 NodeRegistry — 35个模块配置 + 11个本地实现\n4. 统一节点执行器 UnifiedNodeExecutor — 整合注册表+适配器+重试+降级\n5. 动态执行 — 三大思维链主链 + 节点动态组合 + 反思决策\n6. 错误码体系 — 6大类错误码，标准化错误处理\n7. 压力测试框架 — 6种压测场景，性能验证\n8. 自我进化 — A7/A8 实践论 + gap_score 路由 + 做梦部\n9. D-Z-E 开发链 — 自进化引擎驱动，向外学习创建新能力\n10. 预算管理 — Token 三档 + 仓位风控 + 成本核算\n\n验证实验： Agent B（系统架构验证组）通过执行本 SKILL 来验证整个系统设计的可行性。\n\n调用原则：\n- 调用的不重复建设\n- 能力清单在总架构中已存在\n- 架构检查模块可定期验证执行效果\n",
       "version": "1.1.0",
@@ -3156,6 +3966,45 @@
       "evolution_log": []
     },
     {
+      "name": "drawio",
+      "description": "Generate draw.io diagrams (architecture, flow, data flow) as editable .drawio files with optional PNG/SVG/PDF export",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/drawio/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [
+        "drawio",
+        "架构图",
+        "流程图",
+        "数据流图",
+        "diagram",
+        "architecture diagram",
+        "flow chart"
+      ],
+      "depends_on": [],
+      "provides": [
+        "diagram-generation",
+        "architecture-visualization"
+      ],
+      "cognitive_links": [],
+      "content_hash": "f508be4d94209f29c0aac3f84c95e9b65f73132f4a0a865fc5caf21da7674eb5",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-arch-gap-analysis-workflow",
       "description": "Orchestrates architecture gap analysis: recall → two-round audit → SPEC-A (gap list) → 3-dimension parallel Agent research (finance/AI multi-agent/GitHub) → integrate insights → SPEC-B (4-layer optimization + P0-P3 roadmap) → NotifyUser → hermes reflection. Invoke for 架构盘点/架构缺口/全局架构/SPEC-A/SPEC-B/架构现状/架构优化方案.",
       "version": "1.0.0",
@@ -3284,6 +4133,93 @@
       "evolution_log": []
     },
     {
+      "name": "dream-science-uncertainty-reasoning",
+      "description": "不确定性推理SKILL，量化策略不确定性：市场状态/参数敏感性/过拟合风险",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-uncertainty-reasoning/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "不确定性",
+        "uncertainty",
+        "贝叶斯推理",
+        "敏感性分析",
+        "过拟合",
+        "风险边界"
+      ],
+      "depends_on": [
+        "dream-science-hypothesis-verification"
+      ],
+      "provides": [
+        "uncertainty-quantification",
+        "sensitivity-analysis",
+        "overfitting-detection"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "ef44c378294c29a9ea40442fab77f859ca19eb97e443d1ec682f122fb010c879",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-cross-disciplinary",
+      "description": "跨学科调研SKILL，建立金融交易与复杂系统/统计物理/信息论/博弈论/网络科学的映射关系",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-cross-disciplinary/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "跨学科",
+        "cross-disciplinary",
+        "复杂系统",
+        "统计物理",
+        "信息论",
+        "博弈论",
+        "网络科学",
+        "跨领域调研"
+      ],
+      "depends_on": [],
+      "provides": [
+        "cross-disciplinary-research",
+        "theory-mapping"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "69cf503e6839c93b19118852d5151af9fbb09b0b75cf7b9196138e17bb559cb4",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "debate-pro-side",
       "description": "正方辩手辩论策略方法论。Invoke when 正方辩论策略、prima facie举证、正方persona构建。",
       "version": "1.0.0",
@@ -3302,6 +4238,37 @@
       "provides": [],
       "cognitive_links": [],
       "content_hash": "435dbbd14fbb25e7886047499663402c1794045c447b16b043312246229a875d",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "nature-shared",
+      "description": "nature-skills 共享内容目录，提供通用样式模板和工具函数",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/nature-shared/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [],
+      "depends_on": [],
+      "provides": [
+        "shared-templates",
+        "shared-styles"
+      ],
+      "cognitive_links": [],
+      "content_hash": "172d4422124fec900c3d201c5e14b84e12f73966cea7d097c38e42298fae313b",
       "parse_error": null,
       "override_fields": null,
       "facets": {
@@ -3342,6 +4309,47 @@
       "facets": {
         "domain": "architecture",
         "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-experiment-design",
+      "description": "科研实验设计。设计回测/对照实验的具体方案，确保实验可复现、可验证。触发词：实验设计、回测设计、对照实验、experiment design",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-experiment-design/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "实验设计",
+        "回测设计",
+        "对照实验",
+        "experiment design",
+        "A/B测试"
+      ],
+      "depends_on": [
+        "dream-science-hypothesis-verification",
+        "dream-science-statistics-check",
+        "dream-backtest"
+      ],
+      "provides": [
+        "experiment-design",
+        "reproducibility"
+      ],
+      "cognitive_links": [],
+      "content_hash": "0b2d14ebea2558147d745211c3d2e5862f9597cbfd179d083e948d35bfa71e7e",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "verification",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -3415,6 +4423,49 @@
       "evolution_log": []
     },
     {
+      "name": "dream-science-literature-review",
+      "description": "专业领域文献综述SKILL，PRISMA系统综述+Socratic引导，聚焦金融/量化/交易文献",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-literature-review/SKILL.md",
+      "location_role": "project-index",
+      "status": "shadow",
+      "category": "research",
+      "triggers": [
+        "文献综述",
+        "literature review",
+        "金融文献",
+        "量化交易调研",
+        "PRISMA",
+        "研究空白"
+      ],
+      "depends_on": [
+        "dream-research-workflow"
+      ],
+      "provides": [
+        "literature-review",
+        "research-gap-identification"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "1851b5330ced06f7b75073f71a7dba188fb47c754c132c522a23449571a08ae0",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-self-iteration-workflow",
       "description": "Orchestrates L4 self-iteration: hermes reflection (trace analysis → skill-creator) + param optimization (Bayesian + walk-forward) + case ingest gate (4-dim value assessment) + doc sync (checksum → dream-doc-sync). Invoke for L4 self-iteration, hermes auto-reflection, parameter auto-optimization, case library ingest, or document auto-sync.",
       "version": "0.0.0",
@@ -3477,6 +4528,51 @@
       "facets": {
         "domain": "architecture",
         "task_type": "dev",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "dream-science-framework-research",
+      "description": "整体框架研究SKILL，多Agent辩论模式研究交易系统顶层架构",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-framework-research/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "框架研究",
+        "framework research",
+        "架构设计",
+        "多策略组合",
+        "风控框架",
+        "自进化框架",
+        "系统架构"
+      ],
+      "depends_on": [
+        "dream-science-cross-disciplinary"
+      ],
+      "provides": [
+        "framework-research",
+        "architecture-comparison",
+        "multi-agent-debate"
+      ],
+      "cognitive_links": [
+        "VM-1791173248403-1c154994",
+        "VM-1791173704722-9afd838c"
+      ],
+      "content_hash": "706a88684345da772cd6f1114762d02687031dda91b6dc7efff3e97ed218f2a7",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "research",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -3614,6 +4710,48 @@
       "evolution_log": []
     },
     {
+      "name": "dream-science-paper-writing",
+      "description": "科研论文写作。将策略研究成果撰写为结构化研究报告，借鉴 Style Calibration 方法平衡学术严谨性与工程可落地性。触发词：论文写作、研究报告、科研写作、paper writing",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-science-paper-writing/SKILL.md",
+      "location_role": "project-index",
+      "status": "proposed",
+      "category": "research",
+      "triggers": [
+        "论文写作",
+        "研究报告",
+        "科研写作",
+        "paper writing",
+        "撰写报告"
+      ],
+      "depends_on": [
+        "dream-science-literature-review",
+        "dream-science-hypothesis-verification",
+        "dream-science-statistics-check",
+        "nature-figure"
+      ],
+      "provides": [
+        "paper-writing",
+        "style-calibration"
+      ],
+      "cognitive_links": [],
+      "content_hash": "a7dffb3332de8f2846d3ad07cfa98951aa243f0aa2a733b6eb0a643bd11eb074",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-doc-sync-workflow",
       "description": "Orchestrates 7-step doc index sync: change parse → 0-系统文档管理/INDEX update → 2-KNOWLEDGE index update → doc_lint+link_checker validate → doc_coverage → feishu base sync → cognitive record. Invoke when docs are added/deleted/modified, or cognitive record tags contain 'doc-sync'.",
       "version": "1.0.0",
@@ -3738,6 +4876,49 @@
       "facets": {
         "domain": "architecture",
         "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "nature-figure",
+      "description": "Nature/高影响力期刊投稿级科研图工作流，含多面板证据架构、子图对齐门、PDF碰撞审计",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/nature-figure/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "tooling",
+      "triggers": [
+        "Nature figure",
+        "投稿级图片",
+        "publication plot",
+        "scientific figure",
+        "figures4papers",
+        "论文示意图",
+        "回测图表",
+        "策略可视化"
+      ],
+      "depends_on": [
+        "nature-shared"
+      ],
+      "provides": [
+        "scientific-figure",
+        "publication-plot",
+        "backtest-visualization"
+      ],
+      "cognitive_links": [],
+      "content_hash": "da947ce687c4e60ff404702e2a97ff683f947d361b53197f4fdcfb10fece73a7",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "verification",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"

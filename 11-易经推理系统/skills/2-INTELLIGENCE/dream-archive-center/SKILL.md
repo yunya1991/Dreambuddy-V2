@@ -1,8 +1,9 @@
 ---
 name: dream-archive-center
 description: Dream-MultiSkill 档案管理中心 — 外部历史经验库，与内部记忆互补。收集成功案例、失败教训、行业最佳实践，通过联网搜索获取外部档案。触发词：档案、案例、教训、历史经验、外部调研、类似事件
-license: Internal
 version: 1.0.0
+license: Internal
+category: orchestration
 ---
 
 ## Autonomy Boundary

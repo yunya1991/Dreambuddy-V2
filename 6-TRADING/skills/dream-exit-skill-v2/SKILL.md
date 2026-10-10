@@ -1,14 +1,14 @@
 ---
-name: "dream-exit-skill-v2"
-description: >
-  A9 离场决策 v2.2 - 四层离场决策链 + 风险库(21事件) + A6联动 +
-  OKX TP/SL联动 + MEMORY日志 + 自动推送 + 参数优化。
-  触发词：离场决策、A9、风险检查、强制离场、参数优化、停止损失、
-  移动止损、分批离场、风险事件、A6联动、MEMORY日志
-version: "v2.2"
-created: "2026-05-05"
-updated: "2026-05-06"
-status: "active"
+name: dream-exit-skill-v2
+description: 'A9 离场决策 v2.2 - 四层离场决策链 + 风险库(21事件) + A6联动 + OKX TP/SL联动 + MEMORY日志 +
+  自动推送 + 参数优化。 触发词：离场决策、A9、风险检查、强制离场、参数优化、停止损失、 移动止损、分批离场、风险事件、A6联动、MEMORY日志
+
+  '
+version: v2.2
+created: '2026-05-05'
+updated: '2026-05-06'
+status: active
+category: trading
 ---
 
 ## Autonomy Boundary

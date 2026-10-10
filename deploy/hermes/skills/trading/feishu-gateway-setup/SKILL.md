@@ -1,16 +1,17 @@
 ---
 name: feishu-gateway-setup
-description: Feishu Bot 与 Hermes Gateway 的双向通信配置与排错。涵盖 App 创建、权限配置、事件订阅、发布流程、Gateway config.yaml、频道目录持久化、以及群聊/单聊消息收发调试。
+description: Feishu Bot 与 Hermes Gateway 的双向通信配置与排错。涵盖 App 创建、权限配置、事件订阅、发布流程、Gateway
+  config.yaml、频道目录持久化、以及群聊/单聊消息收发调试。
 category: trading
 triggers:
-  - "飞书通信"
-  - "feishu bot"
-  - "hermes gateway feishu"
-  - "群聊不回复"
-  - "收不到消息"
-  - "事件订阅"
-  - "channel directory"
-  - "send_message"
+- feishu bot
+- hermes gateway feishu
+- 收不到消息
+- channel directory
+- send_message
+- 飞书网关配置
+- feishu gateway setup
+- 飞书机器人接入
 ---
 
 ## Autonomy Boundary

@@ -1,51 +1,5 @@
 {
   "schema_version": "1.0",
-  "total_drifted": 5,
-  "drifted": [
-    {
-      "name": "polling-trader-reload",
-      "present_roles": [
-        "trae-entry"
-      ],
-      "missing_roles": [
-        "project-index"
-      ]
-    },
-    {
-      "name": "safe-service-restart",
-      "present_roles": [
-        "trae-entry"
-      ],
-      "missing_roles": [
-        "project-index"
-      ]
-    },
-    {
-      "name": "nature-shared",
-      "present_roles": [
-        "trae-entry"
-      ],
-      "missing_roles": [
-        "project-index"
-      ]
-    },
-    {
-      "name": "knowledge-ingest",
-      "present_roles": [
-        "project-index"
-      ],
-      "missing_roles": [
-        "trae-entry"
-      ]
-    },
-    {
-      "name": "debate-classic-methodology",
-      "present_roles": [
-        "project-index"
-      ],
-      "missing_roles": [
-        "trae-entry"
-      ]
-    }
-  ]
+  "total_drifted": 0,
+  "drifted": []
 }

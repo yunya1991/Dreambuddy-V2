@@ -1,6 +1,7 @@
 ---
 name: safe-main-merge
 description: 面向新手和团队成员的主干安全合并标准流程。用于“准备合并到main/主干”“发布前检查”“PR合并与回滚”场景，执行稳定的分支、校验、合并、验证、回滚步骤，避免直接推main导致风险。
+category: tooling
 ---
 
 ## Autonomy Boundary

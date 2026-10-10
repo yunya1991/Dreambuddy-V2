@@ -1,11 +1,12 @@
 ---
 name: dream-cost-control
-description: "Dream-MultiSkill 成本控制部 (CFO) - 交易成本分析、算力预算控制、收益归因、ROI评估。超预算时告警。触发：成本、预算、ROI、收益、手续费、滑点、API费用"
+description: Dream-MultiSkill 成本控制部 (CFO) - 交易成本分析、算力预算控制、收益归因、ROI评估。超预算时告警。触发：成本、预算、ROI、收益、手续费、滑点、API费用
+category: orchestration
 metadata:
-  version: "1.0.0"
+  version: 1.0.0
   author: Dream-MultiSkill
   category: finance
-  last_updated: "2026-04-18"
+  last_updated: '2026-04-18'
 ---
 
 ## Autonomy Boundary

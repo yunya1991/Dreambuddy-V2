@@ -1,6 +1,11 @@
 ---
 name: markdown-new
-description: "Convert public web pages into clean Markdown with markdown.new for AI workflows. Use when tasks require URL-to-Markdown conversion for summarization, RAG ingestion, extraction, archiving, or token reduction, including selecting conversion method (auto/ai/browser), enabling image retention, and handling rate limits or conversion failures."
+description: Convert public web pages into clean Markdown with markdown.new for AI
+  workflows. Use when tasks require URL-to-Markdown conversion for summarization,
+  RAG ingestion, extraction, archiving, or token reduction, including selecting conversion
+  method (auto/ai/browser), enabling image retention, and handling rate limits or
+  conversion failures.
+category: tooling
 ---
 
 ## Autonomy Boundary

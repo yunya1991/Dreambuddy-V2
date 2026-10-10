@@ -77,6 +77,11 @@
       "status": "active"
     },
     {
+      "id": "knowledge-ingest",
+      "category": "knowledge",
+      "status": "active"
+    },
+    {
       "id": "dream-arch-research-orchestrator",
       "category": "orchestration",
       "status": "active"
@@ -134,6 +139,11 @@
     {
       "id": "skill-creator",
       "category": "meta",
+      "status": "active"
+    },
+    {
+      "id": "debate-classic-methodology",
+      "category": "uncategorized",
       "status": "active"
     },
     {
@@ -247,6 +257,71 @@
       "status": "active"
     },
     {
+      "id": "dream-science-peer-review",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-orchestrator",
+      "category": "orchestration",
+      "status": "shadow"
+    },
+    {
+      "id": "dream-science-statistics-check",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-hypothesis-verification",
+      "category": "research",
+      "status": "shadow"
+    },
+    {
+      "id": "drawio",
+      "category": "tooling",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-uncertainty-reasoning",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-cross-disciplinary",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-experiment-design",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-literature-review",
+      "category": "research",
+      "status": "shadow"
+    },
+    {
+      "id": "dream-science-framework-research",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-paper-writing",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "nature-figure",
+      "category": "tooling",
+      "status": "active"
+    },
+    {
+      "id": "polling-trader-reload",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
       "id": "dream-arch-collaboration-workflow",
       "category": "uncategorized",
       "status": "active"
@@ -277,9 +352,24 @@
       "status": "active"
     },
     {
+      "id": "safe-service-restart",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-peer-review",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
       "id": "dream-scattered-file-cleanup",
       "category": "uncategorized",
       "status": "active"
+    },
+    {
+      "id": "dream-science-orchestrator",
+      "category": "orchestration",
+      "status": "shadow"
     },
     {
       "id": "dream-code-deploy-pipeline",
@@ -342,6 +432,16 @@
       "status": "active"
     },
     {
+      "id": "dream-science-statistics-check",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-hypothesis-verification",
+      "category": "research",
+      "status": "shadow"
+    },
+    {
       "id": "dreambuddy-os",
       "category": "uncategorized",
       "status": "active"
@@ -362,6 +462,11 @@
       "status": "active"
     },
     {
+      "id": "drawio",
+      "category": "tooling",
+      "status": "active"
+    },
+    {
       "id": "dream-arch-gap-analysis-workflow",
       "category": "orchestration",
       "status": "active"
@@ -377,8 +482,23 @@
       "status": "active"
     },
     {
+      "id": "dream-science-uncertainty-reasoning",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
+      "id": "dream-science-cross-disciplinary",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
       "id": "debate-pro-side",
       "category": "cognition",
+      "status": "active"
+    },
+    {
+      "id": "nature-shared",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -387,9 +507,19 @@
       "status": "active"
     },
     {
+      "id": "dream-science-experiment-design",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
       "id": "dream-tdd-dev-workflow",
       "category": "orchestration",
       "status": "active"
+    },
+    {
+      "id": "dream-science-literature-review",
+      "category": "research",
+      "status": "shadow"
     },
     {
       "id": "dream-self-iteration-workflow",
@@ -402,6 +532,11 @@
       "status": "active"
     },
     {
+      "id": "dream-science-framework-research",
+      "category": "research",
+      "status": "proposed"
+    },
+    {
       "id": "tee-red-green-progress",
       "category": "tooling",
       "status": "active"
@@ -410,6 +545,11 @@
       "id": "dream-research-workflow",
       "category": "orchestration",
       "status": "active"
+    },
+    {
+      "id": "dream-science-paper-writing",
+      "category": "research",
+      "status": "proposed"
     },
     {
       "id": "dream-doc-sync-workflow",
@@ -424,6 +564,11 @@
     {
       "id": "debate-adjudication-methodology",
       "category": "cognition",
+      "status": "active"
+    },
+    {
+      "id": "nature-figure",
+      "category": "tooling",
       "status": "active"
     },
     {
@@ -1274,6 +1419,21 @@
       "resolved": false
     },
     {
+      "from": "knowledge-ingest",
+      "to": "build_index.py",
+      "resolved": false
+    },
+    {
+      "from": "knowledge-ingest",
+      "to": "cognitive_adapter.py",
+      "resolved": false
+    },
+    {
+      "from": "knowledge-ingest",
+      "to": "index_query_adapter.py",
+      "resolved": false
+    },
+    {
       "from": "dream-arch-research-orchestrator",
       "to": "dream-contradiction-theory",
       "resolved": true
@@ -1639,6 +1799,111 @@
       "resolved": true
     },
     {
+      "from": "dream-science-orchestrator",
+      "to": "dream-research-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-literature-review",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-cross-disciplinary",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-uncertainty-reasoning",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-framework-research",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-statistics-check",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-peer-review",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "drawio",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "nature-figure",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-uncertainty-reasoning",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-experiment-design",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-experiment-design",
+      "to": "dream-science-statistics-check",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-experiment-design",
+      "to": "dream-backtest",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-literature-review",
+      "to": "dream-research-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-framework-research",
+      "to": "dream-science-cross-disciplinary",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "dream-science-literature-review",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "dream-science-statistics-check",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "nature-figure",
+      "resolved": true
+    },
+    {
+      "from": "nature-figure",
+      "to": "nature-shared",
+      "resolved": true
+    },
+    {
       "from": "dream-backtest-verify",
       "to": "bcrm2.data_fetcher",
       "resolved": false
@@ -1696,6 +1961,56 @@
     {
       "from": "dream-module-post-dev-verify-workflow",
       "to": "dream-code-sync-orphan-scan-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-research-workflow",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-literature-review",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-cross-disciplinary",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-uncertainty-reasoning",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-framework-research",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-statistics-check",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "dream-science-peer-review",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "drawio",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-orchestrator",
+      "to": "nature-figure",
       "resolved": true
     },
     {
@@ -1964,6 +2279,26 @@
       "resolved": true
     },
     {
+      "from": "dream-science-uncertainty-reasoning",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-experiment-design",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-experiment-design",
+      "to": "dream-science-statistics-check",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-experiment-design",
+      "to": "dream-backtest",
+      "resolved": true
+    },
+    {
       "from": "dream-tdd-dev-workflow",
       "to": "dream-contradiction-theory",
       "resolved": true
@@ -1976,6 +2311,11 @@
     {
       "from": "dream-tdd-dev-workflow",
       "to": "test-driven-development",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-literature-review",
+      "to": "dream-research-workflow",
       "resolved": true
     },
     {
@@ -1996,6 +2336,11 @@
     {
       "from": "dream-genome-factor-workflow",
       "to": "test-driven-development",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-framework-research",
+      "to": "dream-science-cross-disciplinary",
       "resolved": true
     },
     {
@@ -2039,6 +2384,26 @@
       "resolved": false
     },
     {
+      "from": "dream-science-paper-writing",
+      "to": "dream-science-literature-review",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "dream-science-hypothesis-verification",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "dream-science-statistics-check",
+      "resolved": true
+    },
+    {
+      "from": "dream-science-paper-writing",
+      "to": "nature-figure",
+      "resolved": true
+    },
+    {
       "from": "dream-doc-sync-workflow",
       "to": "doc_lint.py",
       "resolved": false
@@ -2077,6 +2442,11 @@
       "from": "dream-skill-index-governance",
       "to": "hermes-rollback-actuator",
       "resolved": false
+    },
+    {
+      "from": "nature-figure",
+      "to": "nature-shared",
+      "resolved": true
     },
     {
       "from": "dream-science-orchestrator",

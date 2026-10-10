@@ -1,11 +1,12 @@
 ---
-title: "三屏马丁交易 Agent SKILL v1.0"
-summary: "三屏体系+马丁策略，系统标准六维评分，高确认度才出手，吃波动的钱，跨市场多标的"
+category: trading
+title: 三屏马丁交易 Agent SKILL v1.0
+summary: 三屏体系+马丁策略，系统标准六维评分，高确认度才出手，吃波动的钱，跨市场多标的
 trigger:
-  - "三屏马丁"
-  - "三屏交易"
-  - "screen trade"
-  - "马丁执行"
+- 三屏马丁
+- 三屏交易
+- screen trade
+- 马丁执行
 ---
 
 ## Autonomy Boundary

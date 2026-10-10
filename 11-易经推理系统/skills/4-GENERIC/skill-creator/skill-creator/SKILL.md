@@ -1,8 +1,11 @@
 ---
 name: skill-creator
-description: "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends agent capabilities with specialized knowledge, workflows, or tool integrations."
-description_zh: "创建和维护自定义技能的指南"
-description_en: "Guide for creating custom skills"
+description: Guide for creating effective skills. This skill should be used when users
+  want to create a new skill (or update an existing skill) that extends agent capabilities
+  with specialized knowledge, workflows, or tool integrations.
+category: tooling
+description_zh: 创建和维护自定义技能的指南
+description_en: Guide for creating custom skills
 ---
 
 ## Autonomy Boundary

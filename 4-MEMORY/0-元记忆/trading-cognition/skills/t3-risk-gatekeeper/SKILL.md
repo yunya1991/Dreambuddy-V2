@@ -1,6 +1,9 @@
 ---
 name: t3-risk-gatekeeper
-description: "Pre-trade gatekeeping, in-trade circuit breaker and post-trade attribution. The hard gate itself — all checks are non-negotiable constraints derived from A7 (practice gate) + A4 constraint system."
+description: Pre-trade gatekeeping, in-trade circuit breaker and post-trade attribution.
+  The hard gate itself — all checks are non-negotiable constraints derived from A7
+  (practice gate) + A4 constraint system.
+category: trading
 ---
 
 ## Autonomy Boundary

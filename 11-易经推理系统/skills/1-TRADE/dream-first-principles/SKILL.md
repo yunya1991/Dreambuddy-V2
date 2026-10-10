@@ -1,14 +1,19 @@
 ---
 name: dream-first-principles
-description: |
-  🧠 第一性原理分析 — 战略制定的哲学根基
+description: '🧠 第一性原理分析 — 战略制定的哲学根基
+
   基于"市场总是沿着阻力最小方向运行"和"趋势具有延续性"两大原理，
+
   深度分析当前市场状态，推演阻力来源与趋势动力。
+
   触发词：第一性原理、阻力最小、趋势分析、动力分析、市场本质、分析完成请顾问评审、宏观资产、黄金、原油、铜
-license: Internal
+
+  '
 version: 2.6.1
 created: 2026-04-20
 updated: 2026-05-07
+license: Internal
+category: research
 ---
 
 ## Autonomy Boundary

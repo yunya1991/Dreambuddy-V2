@@ -1,3 +1,8 @@
+---
+name: debate-classic-methodology-—-oxford-式经典辩论赛制
+category: meta
+status: active
+---
 # debate-classic-methodology — Oxford 式经典辩论赛制
 
 > SPEC v2.0-rc3 第四节。将 v1 的简单轮次循环升级为正式辩论赛制。
