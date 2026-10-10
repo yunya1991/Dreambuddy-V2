@@ -127,7 +127,9 @@ dreambuddy 开发过程中频繁遇到以下需求：
 │   ├── git_history.py               # git 历史溯源
 │   ├── algorithm_reducer.py         # 算法还原（已实现）
 │   ├── dependency_audit.py          # 依赖审计（已实现）
-│   └── coverage_analyzer.py         # 测试覆盖分析（已实现）
+│   ├── coverage_analyzer.py         # 测试覆盖分析（已实现）
+│   ├── investigation_workflow.py    # 逆向调查工作流（已实现）
+│   └── cognitive_integration.py     # 认知记忆集成（已实现）
 ├── adapters/                        # 适配器层
 │   ├── __init__.py
 │   ├── rea_mcp_adapter.py           # morluto/rea MCP 集成
@@ -335,8 +337,8 @@ class GitHubApiAdapter:
 
 ### P3 — 优化与应用（持续）
 
-- [ ] 逆向调查工作流编排（定位→追踪→还原→标注）
-- [ ] 与认知记忆系统集成（分析结果 record 入库）
+- [x] 逆向调查工作流编排（定位→追踪→还原→标注）
+- [x] 与认知记忆系统集成（分析结果 record 入库）
 - [ ] 金融逆向推导应用（见方向3）
 
 ---
@@ -375,6 +377,14 @@ class GitHubApiAdapter:
 3. REA MCP 适配器：is_available() 检测 rea 安装，未安装时降级返回 + Evidence(level=unknown)
 4. 测试覆盖分析：能解析 coverage.xml，计算行/分支覆盖率，识别未覆盖行 + Evidence
 5. 全部新增测试 + 回归测试零失败（77/77）
+
+### P3 验收
+
+1. 逆向调查工作流：四阶段(定位→追踪→还原→标注)完整执行，每阶段输出 Evidence
+2. 认知记忆集成：调查结果格式化为认知记忆内容，输出 record 参数(content + quality_level + tags)
+3. DSH S33_rea_investigate 节点：可通过 IPC 调用，返回含 cognitive_record 的结构化结果
+4. python_analyzer.py 修复 IfExp.body 类型判断 bug（影响 _extract_functions 方法检测）
+5. 全部新增测试 + 回归测试零失败（109/109）
 
 ---
 

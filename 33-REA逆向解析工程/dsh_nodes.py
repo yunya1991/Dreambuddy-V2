@@ -34,12 +34,15 @@ if str(_MODULE_DIR) not in sys.path:
 from core.dependency_graph import DependencyGraph
 from core.call_chain_tracer import CallChainTracer
 from core.python_analyzer import PythonAnalyzer
+from core.investigation_workflow import investigate
+from core.cognitive_integration import prepare_record_params
 
 
 __all__ = [
     "S33_rea_analyze",
     "S33_rea_trace",
     "S33_rea_compare",
+    "S33_rea_investigate",
     "DSH_NODE_REGISTRY",
     "dispatch",
 ]
@@ -351,6 +354,67 @@ def _analyze_project(target: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# S33_rea_investigate - 逆向调查工作流
+# ---------------------------------------------------------------------------
+
+def S33_rea_investigate(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_investigate 节点：四阶段逆向调查工作流。
+
+    定位(Locate)→追踪(Trace)→还原(Reduce)→标注(Annotate)
+
+    Params:
+        target: 本地路径（目录或文件）（必填）
+        feature: 要调查的功能描述（可选）
+        entry: 入口函数名（可选）
+        trace_id: 调用方传入的 trace_id（可选）
+
+    Returns (SubagentOutput):
+        ok=True:
+            result = {summary, phases, evidence, known_gaps, cognitive_record}
+        ok=False:
+            error: 错误描述
+    """
+    target = str(params.get("target") or "").strip()
+    if not target:
+        return _make_output(
+            "S33_rea_investigate",
+            str(params.get("trace_id") or _gen_trace_id("s33inv")),
+            ok=False, result={}, error="missing_target",
+        )
+
+    feature = params.get("feature")
+    entry = params.get("entry")
+    trace_id = str(params.get("trace_id") or _gen_trace_id("s33inv"))
+
+    try:
+        investigation = investigate(target, feature=feature, entry=entry)
+
+        # 准备认知记忆参数
+        cognitive_record = prepare_record_params(investigation)
+
+        # 序列化 Evidence
+        evidence_dicts = [
+            e.to_dict() if hasattr(e, "to_dict") else e
+            for e in investigation.get("evidence", [])
+        ]
+
+        return _make_output("S33_rea_investigate", trace_id, ok=True, result={
+            "summary": investigation.get("summary", ""),
+            "feature": investigation.get("feature"),
+            "phases": investigation.get("phases", {}),
+            "evidence": evidence_dicts,
+            "known_gaps": investigation.get("known_gaps", []),
+            "cognitive_record": cognitive_record,
+            "trace_id": trace_id,
+        })
+    except Exception as e:
+        return _make_output(
+            "S33_rea_investigate", trace_id,
+            ok=False, result={}, error=f"{type(e).__name__}: {e}",
+        )
+
+
+# ---------------------------------------------------------------------------
 # DSH 节点注册表 - 供 DSH server.py 注册路由
 # ---------------------------------------------------------------------------
 
@@ -358,6 +422,7 @@ DSH_NODE_REGISTRY: Dict[str, Any] = {
     "s33_rea_analyze": S33_rea_analyze,
     "s33_rea_trace": S33_rea_trace,
     "s33_rea_compare": S33_rea_compare,
+    "s33_rea_investigate": S33_rea_investigate,
 }
 
 

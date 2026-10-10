@@ -126,8 +126,16 @@ class PythonAnalyzer(AnalyzerBase):
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 # 跳过类的方法（已在 classes 中提取）
-                if any(isinstance(parent, ast.ClassDef) for parent in ast.walk(tree)
-                       if hasattr(parent, "body") and node in getattr(parent, "body", [])):
+                # 注意: ast.walk 遍历所有节点，部分节点(IfExp/Lambda)的 body
+                # 是单个表达式而非列表，需先检查 isinstance(body, list)
+                is_method = False
+                for parent in ast.walk(tree):
+                    parent_body = getattr(parent, "body", None)
+                    if isinstance(parent_body, list) and node in parent_body:
+                        if isinstance(parent, ast.ClassDef):
+                            is_method = True
+                            break
+                if is_method:
                     continue
                 functions.append({
                     "name": node.name,
