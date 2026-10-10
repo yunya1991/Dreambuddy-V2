@@ -149,6 +149,66 @@
       "path": "acceptance_bundles/20261009_short_integration/acceptance_report.md",
       "added_at": "2026-10-09T15:39:48.581905+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md",
+      "added_at": "2026-10-09T17:01:06.245143+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md",
+      "added_at": "2026-10-09T18:11:05.365127+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md",
+      "added_at": "2026-10-09T18:29:30.236138+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T03:18:15.439163+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3-FRONTEND/FRONTEND_SYSTEM.md",
+      "added_at": "2026-10-10T03:18:15.439179+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/README.md",
+      "added_at": "2026-10-10T03:18:15.439180+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/docs/v3-frontend-architecture.md",
+      "added_at": "2026-10-10T03:18:15.439181+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T03:22:20.483891+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3-FRONTEND/FRONTEND_SYSTEM.md",
+      "added_at": "2026-10-10T03:22:20.483912+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/README.md",
+      "added_at": "2026-10-10T03:22:20.483914+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/docs/v3-frontend-architecture.md",
+      "added_at": "2026-10-10T03:22:20.483915+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md",
+      "added_at": "2026-10-10T03:22:20.483917+00:00",
+      "action": "sync_doc_index"
     }
   ],
   "processed": [

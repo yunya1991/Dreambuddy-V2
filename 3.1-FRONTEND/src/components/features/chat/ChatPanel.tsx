@@ -19,6 +19,11 @@ import { EnhancementHints } from './EnhancementHints';
 import { InsightCard } from './InsightCard';
 import { RecommendationCard } from './RecommendationCard';
 import { SynthesisChart } from './SynthesisChart';
+import { DimensionHooks, type DimensionHook } from './DimensionHooks';
+import { DecisionHooks, type DecisionHook } from './DecisionHooks';
+import { StrategyHooks, type StrategyHook } from './StrategyHooks';
+import { ExecutionReviewHooks, type ExecutionReviewHook } from './ExecutionReviewHooks';
+import { MonitorHooks, type MonitorHook } from './MonitorHooks';
 
 /**
  * ChatPanel — 聊天主面板 (DREAM OS 核心交互入口)
@@ -276,12 +281,96 @@ export function ChatPanel() {
                     </div>
                   )}
                   {lastChartSpecs && lastChartSpecs.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 p-3 bg-gray-800/40 rounded-lg border border-gray-700/30">
-                      {lastChartSpecs.map((chart, ci) => (
-                        <SynthesisChart key={ci} chart={chart} />
-                      ))}
+                    <div className="p-3 bg-gradient-to-b from-gray-800/40 to-gray-900/40 rounded-lg border border-gray-700/30">
+                      <div className="text-[10px] text-gray-500 mb-2 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>可视化分析</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {lastChartSpecs.map((chart, ci) => {
+                          const fullSpan = ['radar', 'bullet', 'heatmap', 'candlestick'].includes(chart.type);
+                          return (
+                            <div key={ci} className={fullSpan ? 'sm:col-span-2 lg:col-span-3' : ''}>
+                              <SynthesisChart chart={chart} />
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
+                  <DimensionHooks
+                    onSelect={(hook: DimensionHook) => {
+                      // 点击维度钩子 → 发送对应 prompt 触发深度分析
+                      if (activeSessionId) {
+                        addMessage(activeSessionId, {
+                          id: `msg_${Date.now()}`,
+                          role: 'user',
+                          content: hook.prompt,
+                          timestamp: Date.now(),
+                        });
+                        sendToTaskStream(hook.prompt, activeSessionId);
+                      }
+                    }}
+                    disabled={isStreaming}
+                  />
+                  <DecisionHooks
+                    onSelect={(hook: DecisionHook) => {
+                      if (activeSessionId) {
+                        addMessage(activeSessionId, {
+                          id: `msg_${Date.now()}`,
+                          role: 'user',
+                          content: hook.prompt,
+                          timestamp: Date.now(),
+                        });
+                        sendToTaskStream(hook.prompt, activeSessionId);
+                      }
+                    }}
+                    disabled={isStreaming}
+                  />
+                  <StrategyHooks
+                    onSelect={(hook: StrategyHook) => {
+                      if (activeSessionId) {
+                        addMessage(activeSessionId, {
+                          id: `msg_${Date.now()}`,
+                          role: 'user',
+                          content: hook.prompt,
+                          timestamp: Date.now(),
+                        });
+                        sendToTaskStream(hook.prompt, activeSessionId);
+                      }
+                    }}
+                    disabled={isStreaming}
+                  />
+                  <ExecutionReviewHooks
+                    onSelect={(hook: ExecutionReviewHook) => {
+                      if (activeSessionId) {
+                        addMessage(activeSessionId, {
+                          id: `msg_${Date.now()}`,
+                          role: 'user',
+                          content: hook.prompt,
+                          timestamp: Date.now(),
+                        });
+                        sendToTaskStream(hook.prompt, activeSessionId);
+                      }
+                    }}
+                    disabled={isStreaming}
+                  />
+                  <MonitorHooks
+                    onSelect={(hook: MonitorHook) => {
+                      if (activeSessionId) {
+                        addMessage(activeSessionId, {
+                          id: `msg_${Date.now()}`,
+                          role: 'user',
+                          content: hook.prompt,
+                          timestamp: Date.now(),
+                        });
+                        sendToTaskStream(hook.prompt, activeSessionId);
+                      }
+                    }}
+                    disabled={isStreaming}
+                  />
                   <InsightCard
                     insights={lastSynthesis?.insights || []}
                     defaultExpandFirst

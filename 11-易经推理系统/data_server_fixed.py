@@ -98,6 +98,10 @@ YIJING_INITIAL_CAPITAL = 2046.75
 
 _cache = {}
 
+# 事件驱动策略状态缓存（最近一次成功读取的结果 + 时间戳）
+# 用于读取失败（写入竞态）时回退，避免前端"一会儿有数据一会儿没有"
+_event_driven_cache = None
+
 
 def _json_default(obj):
     """JSON 序列化兜底：处理 numpy 类型（screen_engine 等模块返回的数据可能含 int64/float64）
@@ -1885,23 +1889,40 @@ def get_event_driven_state() -> dict:
     影子模式语义：仅评估 + 写状态，不影响实盘交易。
     预留接口：成熟后可被 SubSystemBridge.get_event_signal() 消费。
 
-    FAIL-OPEN：文件不存在或读取异常时返回中性兜底状态。
+    可靠性优化：
+      - 内存缓存最近一次成功结果（_event_driven_cache），TTL 3s，减少磁盘 IO
+      - 读取失败（文件写入竞态 / JSON 不完整）时回退到缓存，避免前端"一会儿有数据一会儿没有"
+      - 写入端已改为原子写入（tmp + os.replace），双保险
     """
+    global _event_driven_cache
+    state_path = Path(__file__).parent / "data" / "event_driven_state.json"
+    now = time.time()
+    # 3 秒内的缓存直接返回（减少磁盘 IO + 缩小竞态窗口）
+    if _event_driven_cache and (now - _event_driven_cache["ts"] < 3):
+        return _event_driven_cache["data"]
     try:
-        state_path = Path(__file__).parent / "data" / "event_driven_state.json"
         if not state_path.exists():
-            return {
+            result = {
                 "mode": "shadow",
                 "available": False,
                 "reason": "state file not yet written (waiting for first kline close)",
                 "signal": {"signal": "neutral", "reason": "no_data_yet"},
                 "updated_at": None,
             }
+            # 文件不存在不缓存（可能下一秒就有了）
+            return result
         import json as _json
         state = _json.loads(state_path.read_text(encoding="utf-8"))
         state["available"] = True
+        _event_driven_cache = {"data": state, "ts": now}
         return state
     except Exception as e:
+        # 读取失败（典型：写入竞态读到半截 JSON）→ 回退到最近一次成功缓存
+        if _event_driven_cache:
+            cached = dict(_event_driven_cache["data"])
+            cached["_stale"] = True
+            cached["_stale_reason"] = f"read_fail_fallback: {e}"
+            return cached
         return {
             "mode": "shadow",
             "available": False,
@@ -4736,6 +4757,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", len(body))
+        # 禁止浏览器缓存，确保用户总是拿到最新版 monitor.html
+        # （之前缺这个头导致用户看到缓存的旧页面，事件驱动面板显示"无数据"）
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.end_headers()
         self.wfile.write(body)
 

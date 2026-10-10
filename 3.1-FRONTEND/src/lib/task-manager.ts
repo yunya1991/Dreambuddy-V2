@@ -34,6 +34,9 @@ import {
   extractSymbolFromMessage,
   type MarketData,
 } from './market-data-adapter';
+import { fetchMarketMetrics, formatMarketMetricsForLLM } from './market-data-fetcher';
+import { fetchMetricViaTavily } from './tavily-service';
+import { fetchCognitiveContext, formatCognitiveContextForLLM } from './cognitive-context-fetcher';
 import {
   getChainByThinkingDepth,
   detectThinkingDepth,
@@ -1033,7 +1036,7 @@ export function buildStructuredMetrics(stepResults: Array<{
       metrics.backtest.push({ name: key, value, source });
     } else if (regimeKeys.some(k => keyLower.includes(k.toLowerCase()))) {
       metrics.regime.push({ name: key, value, source });
-    } else if (key !== 'direction' && key !== 'confidence' && key !== 'analysis' && key !== 'symbol' && key !== 'timestamp' && key !== 'tokensUsed' && key !== 'dataSource' && key !== 'signalSource' && key !== 'raw' && key !== 'executionReady') {
+    } else if (key !== 'direction' && key !== 'confidence' && key !== 'symbol' && key !== 'timestamp' && key !== 'tokensUsed' && key !== 'dataSource' && key !== 'signalSource' && key !== 'raw' && key !== 'executionReady') {
       metrics.other.push({ name: key, value, source });
     }
   }
@@ -1066,23 +1069,57 @@ export function buildStructuredMetrics(stepResults: Array<{
 }
 
 export function buildLLMInputText(
-  validResults: Array<{ stepId: string; label: string; answer: string }>,
+  validResults: Array<{ stepId: string; label: string; answer: string; skillsDetailed?: Array<{ skillId: string; skillName: string; confidence: number; outputs: Record<string, unknown> }> }>,
   metrics: StructuredMetrics,
   lang: 'zh' | 'en'
 ): string {
   const sections: string[] = [];
 
-  // 步骤分析摘要
-  const stepSummary = validResults.map(s =>
-    `## ${s.label || s.stepId}\n${s.answer}`
-  ).join('\n\n');
-
-  if (stepSummary) {
-    sections.push(lang === 'zh' ? '--- 各维度分析摘要 ---' : '--- Analysis Summaries ---');
-    sections.push(stepSummary);
+  // 1. 各技能详细输出（方向+置信度+分析文本）— 这是 LLM 生成分析的核心依据
+  const skillDetails: string[] = [];
+  for (const step of validResults) {
+    if (!step.skillsDetailed) continue;
+    for (const sk of step.skillsDetailed) {
+      const detailLines: string[] = [];
+      const outputs = sk.outputs || {};
+      const direction = outputs.direction ? String(outputs.direction) : 'N/A';
+      detailLines.push(`### ${sk.skillName}`);
+      detailLines.push(`- 方向判断: ${direction}`);
+      detailLines.push(`- 置信度: ${sk.confidence}%`);
+      // 分析文本（如果有）
+      if (outputs.analysis) {
+        const analysisText = String(outputs.analysis);
+        detailLines.push(`- 分析过程: ${analysisText}`);
+      }
+      // 推荐策略
+      if (outputs.recommendedStrategies) {
+        detailLines.push(`- 推荐策略: ${JSON.stringify(outputs.recommendedStrategies)}`);
+      }
+      // 主要矛盾
+      if (outputs.primaryContradiction) {
+        detailLines.push(`- 主要矛盾: ${JSON.stringify(outputs.primaryContradiction)}`);
+      }
+      // 回测结果
+      if (outputs.backtestResult) {
+        detailLines.push(`- 回测结果: ${JSON.stringify(outputs.backtestResult)}`);
+      }
+      // 优化参数
+      if (outputs.optimizedParams) {
+        detailLines.push(`- 优化参数: ${JSON.stringify(outputs.optimizedParams)}`);
+      }
+      // 情报预警
+      if (outputs.alerts) {
+        detailLines.push(`- 情报预警: ${JSON.stringify(outputs.alerts)}`);
+      }
+      skillDetails.push(detailLines.join('\n'));
+    }
+  }
+  if (skillDetails.length > 0) {
+    sections.push(lang === 'zh' ? '--- 各子系统详细输出（核心分析依据）---' : '--- Subsystem Detailed Outputs (Core Analysis Basis) ---');
+    sections.push(skillDetails.join('\n\n'));
   }
 
-  // 结构化指标
+  // 2. 结构化指标（按维度组织）
   const metricSections: Array<{ key: keyof StructuredMetrics; titleZh: string; titleEn: string }> = [
     { key: 'technical', titleZh: '技术面指标', titleEn: 'Technical Indicators' },
     { key: 'flow', titleZh: '资金流向数据', titleEn: 'Fund Flow Data' },
@@ -1106,6 +1143,23 @@ export function buildLLMInputText(
       return `- ${item.name}: ${item.value}${source}`;
     });
     sections.push(lines.join('\n'));
+  }
+
+  // 3. 各维度投票汇总
+  const directionCount = new Map<string, number>();
+  for (const step of validResults) {
+    if (!step.skillsDetailed) continue;
+    for (const sk of step.skillsDetailed) {
+      const dir = String(sk.outputs?.direction || 'neutral');
+      directionCount.set(dir, (directionCount.get(dir) || 0) + 1);
+    }
+  }
+  if (directionCount.size > 0) {
+    const voteText = Array.from(directionCount.entries())
+      .map(([dir, cnt]) => `${dir}: ${cnt}票`)
+      .join(', ');
+    sections.push(`\n--- ${lang === 'zh' ? '维度投票汇总' : 'Dimension Voting Summary'} ---`);
+    sections.push(voteText);
   }
 
   return sections.join('\n\n');
@@ -1824,66 +1878,146 @@ async function executeWithPlanner(
     // 从所有技能输出中提取结构化指标，按维度组织
     const structuredMetrics = buildStructuredMetrics(stepRawResults);
 
-    const stepOutputsText = buildLLMInputText(validResults, structuredMetrics, lang);
-
-    // 获取实时市场数据（用于降级研报+图表生成）
+    // 获取实时市场数据（价格直接注入，不依赖子系统）
     let chartMarketData: MarketData | null = null;
     try {
       chartMarketData = await fetchMarketData(
-        rawSymbol, instId, category, displayName, undefined, lang,
+        rawSymbol, instId, category as 'crypto' | 'macro', displayName, undefined, lang,
       );
     } catch { /* 降级处理 */ }
+
+    const stepOutputsText = buildLLMInputText(validResults, structuredMetrics, lang);
+
+    // 将实时价格数据注入 LLM 输入（价格是基础数据，直接注入）
+    const priceInjection = chartMarketData?.price
+      ? (lang === 'zh'
+          ? `\n\n--- 实时市场数据（直接注入，非子系统输出）---\n当前价格: $${chartMarketData.price.toLocaleString()}\n24h涨跌: ${chartMarketData.change24h !== null ? (chartMarketData.change24h >= 0 ? '+' : '') + chartMarketData.change24h.toFixed(2) + '%' : 'N/A'}\n24h最高: $${chartMarketData.high24h?.toLocaleString() || 'N/A'}\n24h最低: $${chartMarketData.low24h?.toLocaleString() || 'N/A'}\n数据来源: ${chartMarketData.source === 'okx' ? 'OKX实时行情' : chartMarketData.source}\n更新时间: ${chartMarketData.timestamp}\n`
+          : `\n\n--- Real-time Market Data (injected directly) ---\nCurrent Price: $${chartMarketData.price.toLocaleString()}\n24h Change: ${chartMarketData.change24h !== null ? (chartMarketData.change24h >= 0 ? '+' : '') + chartMarketData.change24h.toFixed(2) + '%' : 'N/A'}\n24h High: $${chartMarketData.high24h?.toLocaleString() || 'N/A'}\n24h Low: $${chartMarketData.low24h?.toLocaleString() || 'N/A'}\nSource: ${chartMarketData.source === 'okx' ? 'OKX Real-time' : chartMarketData.source}\nUpdated: ${chartMarketData.timestamp}\n`)
+      : '';
+
+    // effort_level 路由：quick=仅价格，deep=价格+市场指标+Tavily补齐
+    // 价格已在前面 priceInjection 注入，此处根据 thinkingMode 决定是否注入指标
+    const isDeep = thinkingMode === 'deep';
+
+    // 注入市场指标（资金费率/恐惧贪婪/多空比），来自 19-数据访问层 mm_metrics
+    // quick 模式跳过，仅注入价格
+    let metricsInjection = '';
+    let localMetrics: any = null;
+    if (isDeep) {
+      try {
+        localMetrics = await fetchMarketMetrics(rawSymbol);
+        if (localMetrics && !localMetrics.degraded) {
+          metricsInjection = '\n' + formatMarketMetricsForLLM(localMetrics, lang) + '\n';
+        }
+      } catch { /* 降级：不注入指标 */ }
+    }
+
+    // 数据缺失检测：本地没有的关键指标，用 Tavily 联网搜索补齐
+    // 持仓量、爆仓数据在 mm_metrics 中暂无，通过 Tavily 获取
+    // 仅 deep 模式触发
+    let tavilyInjection = '';
+    if (isDeep) {
+    try {
+      const missing: string[] = [];
+      if (!localMetrics || localMetrics.open_interest === undefined) missing.push('open_interest');
+      if (!localMetrics || localMetrics.liquidation_long === undefined) missing.push('liquidation');
+
+      if (missing.length > 0) {
+        const tavilyLines: string[] = [];
+
+        if (missing.includes('open_interest')) {
+          const oi = await fetchMetricViaTavily(
+            `${rawSymbol} open interest current 2026`,
+            /[\$]?([\d,]+\.?\d*)\s*(?:billion|B|bn)/i,
+            3
+          );
+          if (oi.value !== null) {
+            const oiStr = oi.value >= 1e9 ? `$${(oi.value / 1e9).toFixed(2)}B` : oi.value >= 1e6 ? `$${(oi.value / 1e6).toFixed(1)}M` : `$${oi.value.toFixed(0)}`;
+            tavilyLines.push(
+              lang === 'zh'
+                ? `持仓量: ${oiStr} (来源: Tavily联网搜索)`
+                : `Open Interest: ${oiStr} (source: Tavily web search)`
+            );
+          }
+        }
+
+        if (missing.includes('liquidation')) {
+          const liq = await fetchMetricViaTavily(
+            `${rawSymbol} liquidation 24h long short 2026`,
+            /([\d,]+\.?\d*)\s*(?:million|M|mn)/i,
+            3
+          );
+          if (liq.value !== null) {
+            const liqStr = liq.value >= 1e9 ? `$${(liq.value / 1e9).toFixed(2)}B` : liq.value >= 1e6 ? `$${(liq.value / 1e6).toFixed(1)}M` : `$${liq.value.toFixed(0)}`;
+            tavilyLines.push(
+              lang === 'zh'
+                ? `24h爆仓: ${liqStr} (来源: Tavily联网搜索)`
+                : `24h Liquidation: ${liqStr} (source: Tavily web search)`
+            );
+          }
+        }
+
+        if (tavilyLines.length > 0) {
+          tavilyInjection = (lang === 'zh' ? '\n--- 联网补充数据（本地缺失，Tavily搜索）---\n' : '\n--- Web补充数据（本地缺失，Tavily搜索）---\n')
+            + tavilyLines.join('\n') + '\n';
+        }
+      }
+    } catch { /* Tavily 失败不阻塞 */ }
+    } // end if (isDeep)
+
+    // 认知上下文注入（deep 模式）：检索认知记忆 + SKILL + 知识库
+    let cognitiveInjection = '';
+    if (isDeep) {
+      try {
+        const cognitiveQuery = `${rawSymbol} ${message}`.slice(0, 500);
+        const cognitiveCtx = await fetchCognitiveContext(cognitiveQuery, 3, lang);
+        cognitiveInjection = formatCognitiveContextForLLM(cognitiveCtx, lang);
+      } catch { /* 认知系统不可用，不阻塞 */ }
+    }
+
+    const llmInputText = stepOutputsText + priceInjection + metricsInjection + tavilyInjection + cognitiveInjection;
 
     if (stepOutputsText.trim() && isAnalysisIntent) {
       try {
         const summarySystemPrompt = lang === 'zh'
-          ? `你是一位顶级加密货币研究机构的资深分析师，你的报告需要对标 Bloomberg Intelligence / Glassnode Studio / Messari Pro 级别的专业研报质量。你的优势在于：不仅有多维度数据，还拥有独有的量化子系统（市场状态识别、矛盾论分析、资金情报、回测验证、贝叶斯优化等），这些是你超越通用大模型的核心壁垒。
+          ? `你是一位加密货币分析师，擅长用大白话给普通人讲清楚市场走势。你有独家的量化分析系统（技术指标、资金流向、市场情绪、回测验证等），这是你比普通AI更厉害的地方。
 
-## 输出结构（三层递进，必须严格遵守）
+## 核心原则
+1. **说人话**：用日常语言解释，不要堆砌专业术语。比如不说"RSI超买"，说"涨得有点快了，可能要歇一歇"
+2. **数据留给图表**：具体指标数值（RSI、MACD、资金费率等）不在文本里罗列，系统会自动用图表展示。你只需引用最关键的1-2个数字来支撑判断
+3. **讲清楚逻辑**：告诉用户"为什么"，而不只是"是什么"。比如"因为最近有大资金在买入，所以价格可能继续涨"
+4. **诚实面对不确定性**：数据不足时直说"这个维度数据不够，仅供参考"，不要编造
 
-### 第一层：核心观点（约150字）
+## 输出结构
+
+### 开头：一句话说清现状
 用 \`## 核心结论\` 开头：
-- 一句话给出明确方向判断（偏多/偏空/中性）和目标价位区间
-- 2-3句话给出关键依据：最核心的2-3个指标数据支撑你的判断
-- 如果有实时价格，必须引用：当前价格 $XXX（24h +/-X%）
+- 现在是偏多/偏空/震荡？当前价格是多少？
+- 用1-2句大白话说清楚最核心的判断依据
 
-### 第二层：多维度详细分析（约600字）
-用 \`## 详细分析\` 开头，按维度分段（有数据的维度必须写，用 **加粗** 标注维度标题）：
+### 中间：分维度用大白话解释
+用 \`## 详细分析\` 开头，每个维度一段（用 **加粗** 标注标题）：
 
-**技术面分析**：必须引用具体数值（如"RSI 55.3，处于中性偏多区域"、"MACD金叉，柱状图+0.023"），说明指标处于什么水平、历史上该水平通常意味着什么。结合当前价格给出关键支撑/阻力位。
+**技术面**：价格走势怎么样？均线是多头还是空头排列？关键支撑位和阻力位在哪？（只引用1-2个关键数字）
 
-**资金流向**：如果资金费率 >0.01% → 多头付费，市场偏多情绪过热；< -0.01% → 空头付费，偏空情绪；中性区间 → 市场均衡。必须引用具体费率数值并解读。
+**资金面**：大资金在买入还是卖出？市场情绪是贪婪还是恐惧？
 
-**市场状态**：如果提供了市场状态数据（如 trending/ranging/volatile），说明当前处于什么状态、该状态的历史持续性、推荐的策略类型。
+**市场状态**：现在是趋势行情还是震荡行情？这种行情下应该怎么做？
 
-**矛盾与风险**：检查各维度信号是否一致。如果技术面偏多但资金面偏空，明确指出矛盾。说明主要矛盾是什么、矛盾强度、可能的演进方向。
+**风险提示**：有没有信号矛盾？最大的风险是什么？
 
-**回测与策略验证**：如果提供了回测数据，必须对比行业基准：
-- 胜率 ≥55% 合格，≥65% 优秀，≥70% 顶尖
-- 夏普比率 ≥1.0 可接受，≥1.5 优秀，≥2.0 顶尖
-- 最大回撤 ≤20% 安全线，≤15% 优秀，≤10% 顶尖
-明确说明策略在哪个水平、是否值得执行。
+### 结尾：给个明确建议
+用 \`## 操作建议\` 结尾：
+- 可以考虑怎么做（比如"在XX附近可以轻仓买入，跌破XX止损"）
+- 提醒风险
 
-### 第三层：深度解读（约300字）
-用 \`## 深度解读\` 开头：
-- **跨维度交叉分析**：不同维度之间的因果关系和逻辑链条。例如"资金费率为正 + 技术面RSI超买 → 短期可能回调，但市场状态为trending → 回调幅度有限"
-- **行业基准对比**：将当前指标对标行业常见基准，明确所处水平
-- **情景推演**：给出2-3个可能情景（概率从高到低），每个情景给出触发条件和预期走势
-- 独有优势展示：如果子系统提供了矛盾论/贝叶斯优化/资金情报等独有分析数据，在这里深入解读——这是通用大模型无法提供的维度
-
-### 结尾：操作建议与风险提示（约150字）
-用 \`## 操作建议与风险提示\` 结尾：
-- 方向明确时给出参考入场区间、止损位、止盈位（基于实时价格计算）
-- 方向不明确时给出关键支撑/阻力位和突破后跟进策略
-- 风险提示
-
-## 写作规范
-1. **绝对数据驱动**：每个判断必须引用具体数值，禁止泛泛而谈
-2. **信息密度极高**：总长800-1200字，每句话都要有信息增量
-3. 用 **加粗** 标注分段标题，不要使用 "###" Markdown 标题
-4. 语气对标专业研报：客观、精确、有逻辑链条
-5. 不要暴露内部调度信息（如"调用了XX技能"、"置信度XX%"等）
-6. 展现独有优势：矛盾论交叉分析、子系统钩子数据、贝叶斯优化参数等是通用大模型没有的，要充分利用`
+## 写作要求
+- 总长500-800字，简洁明了
+- 每段都要有实际内容，不要空话套话
+- 专业术语第一次出现时用括号简单解释
+- 不要罗列数据表格，数据由图表展示
+- 不要暴露内部调度信息（如"调用了XX技能"、"置信度XX%"等）
+- 如果数据不足，明确标注"该维度数据获取有限，分析仅供参考"，不要编造`
           : `You are a senior analyst at a top-tier crypto research institution. Your reports should benchmark against Bloomberg Intelligence / Glassnode Studio / Messari Pro quality. Your edge: proprietary quant subsystems (regime detection, contradiction theory, capital intelligence, backtest validation, Bayesian optimization) — these are your core advantages over generic LLMs.
 
 ## Output Structure (Three-layer progressive, strictly follow)
@@ -1933,27 +2067,29 @@ Start with \`## Actionable Advice & Risk Warnings\`:
 6. Leverage proprietary advantages: contradiction cross-analysis, subsystem hook data, Bayesian optimized params — these are unavailable to generic LLMs`;
 
         const summaryUserPrompt = lang === 'zh'
-          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n以下是来自多个量化子系统的多维度分析数据（请充分利用这些具体指标，不要遗漏任何可用数据）：\n\n${stepOutputsText}\n\n请严格按照三层递进结构（核心结论 → 详细分析 → 深度解读 → 操作建议），生成一份对标 Bloomberg Intelligence / Messari Pro 级别的专业研报。\n\n关键要求：\n1. 每个判断必须引用具体数值\n2. 资金费率、回测指标必须对照行业基准解读\n3. 深度解读层必须做跨维度交叉分析+情景推演\n4. 充分利用矛盾论/贝叶斯优化/资金情报等子系统数据，这是通用大模型无法提供的独有优势`
-          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nMulti-dimensional analysis data from multiple quant subsystems (please make full use of these specific metrics, don't omit any available data):\n\n${stepOutputsText}\n\nPlease strictly follow the three-layer progressive structure (Core Conclusion → Detailed Analysis → Deep Interpretation → Actionable Advice), generating a professional report benchmarking against Bloomberg Intelligence / Messari Pro quality.\n\nKey requirements:\n1. Every judgment must cite specific values\n2. Funding rate and backtest metrics must be interpreted against industry benchmarks\n3. Deep interpretation layer must include cross-dimensional analysis + scenario analysis\n4. Leverage contradiction theory / Bayesian optimization / capital intelligence subsystem data — these are proprietary advantages unavailable to generic LLMs`;
+          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n以下是来自多个量化子系统的多维度分析数据 + 实时行情数据（请充分利用这些具体指标，不要遗漏任何可用数据）：\n\n${llmInputText}\n\n请用大白话生成分析报告。关键要求：\n1. 必须引用实时价格数据\n2. 讲清楚"为什么"，不只是"是什么"\n3. 具体指标数值留给图表，文本只引用最关键的1-2个数字\n4. 数据不足时直说，不要编造`
+          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nMulti-dimensional analysis data from multiple quant subsystems + real-time market data (please make full use of these specific metrics, don't omit any available data):\n\n${llmInputText}\n\nPlease generate an analysis report in plain language. Key requirements:\n1. Must cite real-time price data\n2. Explain "why", not just "what"\n3. Leave specific metric values to charts, only cite 1-2 key numbers in text\n4. If data is insufficient, say so directly, don't fabricate`;
 
         const llmResult = await callLLM({
           prompt: summaryUserPrompt,
           systemPrompt: summarySystemPrompt,
           temperature: 0.4,
-          timeoutMs: 60000,
+          maxTokens: 4096,
+          timeoutMs: 90000,
         });
         summaryReport = llmResult.content;
-        console.log(`[executeWithPlanner] LLM 汇总报告生成成功，${llmResult.tokensUsed} tokens, ${llmResult.latencyMs}ms`);
+        console.log(`[executeWithPlanner] LLM 汇总报告生成成功，长度=${summaryReport.length}字, ${llmResult.tokensUsed} tokens, ${llmResult.latencyMs}ms`);
       } catch (err) {
-        console.warn('[executeWithPlanner] LLM 汇总失败，降级为拼接模式:', err instanceof Error ? err.message : err);
-        // 降级：取第一个有效结果作为主要输出
-        summaryReport = validResults[0]?.answer || '分析完成，但未能生成综合报告。';
+        console.warn('[executeWithPlanner] LLM 汇总失败，降级为专业研报生成器:', err instanceof Error ? err.message : err);
+        // 降级：不使用 step.answer（只是技能方向+置信度的简单拼接，缺少分析逻辑）
+        // 直接置空，让后续 generateProfessionalReport 生成完整研报
+        summaryReport = '';
       }
-      // LLM 返回空内容或过短时，从执行数据生成专业研报
+      // LLM 返回空内容、过短、或降级置空时，从执行数据生成专业研报
       if (!summaryReport || summaryReport.trim().length < 200) {
-        // 复用已获取的市场数据生成降级研报
+        const beforeLen = summaryReport?.length || 0;
         summaryReport = generateProfessionalReport(validResults, execResult, lang, displayName || rawSymbol || '', chartMarketData);
-        console.log(`[executeWithPlanner] LLM 返回过短(${summaryReport?.length || 0}字)，使用专业研报生成器`);
+        console.log(`[executeWithPlanner] LLM 输出不足(${beforeLen}字)，使用专业研报生成器(${summaryReport.length}字)`);
       }
     } else if (isAnalysisIntent) {
       // 分析类意图但无编排结果：直接用 LLM 基于用户问题生成分析
@@ -2021,8 +2157,8 @@ Start with \`## Actionable Advice & Risk Warnings\`
 4. Don't expose internal scheduling info`;
 
         const fallbackUserPrompt = lang === 'zh'
-          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n\n请直接分析${displayName || rawSymbol}的未来走势。`
-          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n\nPlease analyze the future trend of ${displayName || rawSymbol}.`;
+          ? `用户问题：${message}\n标的：${displayName || rawSymbol}\n${priceInjection}${metricsInjection}${tavilyInjection}${cognitiveInjection}\n\n请用大白话分析${displayName || rawSymbol}的未来走势，必须引用实时价格和市场指标数据。`
+          : `User question: ${message}\nAsset: ${displayName || rawSymbol}\n${priceInjection}${metricsInjection}${tavilyInjection}${cognitiveInjection}\n\nPlease analyze the future trend of ${displayName || rawSymbol} in plain language, must cite real-time price and market metrics.`;
 
         const llmResult = await callLLM({
           prompt: fallbackUserPrompt,

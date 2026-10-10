@@ -103,7 +103,7 @@ const SKILL_KEYWORD_MAP: Array<{ keywords: string[]; module: string }> = [
   { keywords: ['sentiment', '情绪面'], module: 'sentiment' },
   { keywords: ['macro', '宏观'], module: 'macro' },
   { keywords: ['flow', '资金面'], module: 'flow' },
-  { keywords: ['valuation', '估值'], module: 'valuation' },
+  { keywords: ['valuation', '估值', '基本面'], module: 'valuation' },
   { keywords: ['onchain', '链上'], module: 'onchain' },
   { keywords: ['risk', '风险面'], module: 'risk' },
   { keywords: ['portfolio', '组合'], module: 'portfolio' },

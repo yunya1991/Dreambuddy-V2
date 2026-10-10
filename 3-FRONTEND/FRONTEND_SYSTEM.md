@@ -1,7 +1,9 @@
 # 用户前端系统完整设计
 
-> **版本**: v2.0
-> **更新日期**: 2026-05-14
+> **版本**: v3.1 | **更新日期**: 2026-10-10
+> **当前版本**: 3.1-FRONTEND (独立 Next.js 15.4 项目, 端口 3001, SACG 四层架构)
+> **详细文档**: [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) v3.1
+> **本项目 (3.0)**: Dream Universal Gateway, Next.js 14, 端口 3000, 三栏对话式界面 — 📦 归档参考
 
 ---
 

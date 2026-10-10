@@ -601,11 +601,11 @@ function BulletChartView({ title, data }: { title: string; data: unknown }) {
     .map((d: any) => ({
       name: String(d.name ?? d.label ?? ''),
       value: Number(d.value ?? 0),
-      thresholds: (d.thresholds ?? []).map((t: any) => Number(t)),
+      thresholds: Array.isArray(d.thresholds) ? d.thresholds.map((t: any) => Number(t)) : [],
       max: Number(d.max ?? 100),
       inverted: Boolean(d.inverted),
     }))
-    .filter(d => d.name && !isNaN(d.value));
+    .filter(d => d.name && !isNaN(d.value)) as { name: string; value: number; thresholds: number[]; max: number; inverted: boolean }[];
 
   if (items.length === 0) return <TextFallback title={title} data={data} />;
 

@@ -33,6 +33,7 @@ import { getCognitiveContextBuilder, withImitationContext, type IndexReference }
 import { getSkillSelector, type IntentResult } from './skill-selector';
 import { getDSHExecutionEngine, type SkillResult } from './dsh-execution-engine';
 import { CDriveCoordinator } from './c-drive';
+import { getMaxSupplementAttempts } from './quality-gate';
 import { SummaryAgent } from './summary-agent';
 import { getKnowledgeIngester } from './knowledge-ingest';
 import { getEvolutionAgent } from './evolution-agent';
@@ -636,39 +637,55 @@ export async function executeSkillOrchestration(
       });
 
       const coordinator = new CDriveCoordinator();
-      cdriveDecision = await coordinator.decideFromResults(skillResults, intentType);
+      let supplementAttempts = 0;
 
-      onProgress?.({
-        type: 'step_end',
-        stepId: 'CDRIVE',
-        message: isZh
-          ? `C-Drive 决策: ${cdriveDecision.action} (confidence=${cdriveDecision.confidence?.toFixed(2)})`
-          : `C-Drive decision: ${cdriveDecision.action} (confidence=${cdriveDecision.confidence?.toFixed(2)})`,
-        timestamp: Date.now(),
-        data: {
-          action: cdriveDecision.action,
-          confidence: cdriveDecision.confidence,
-          jump_to: cdriveDecision.jump_to,
-          supplement_module: cdriveDecision.supplement_module,
-        },
-      });
+      // C-Drive 决策 + SUPPLEMENT 循环（质量门驱动，最多 MAX_SUPPLEMENT_ATTEMPTS 次）
+      do {
+        cdriveDecision = await coordinator.decideFromResults(skillResults, intentType, supplementAttempts);
 
-      // C-Drive 建议 SUPPLEMENT → 补充执行 SubAgent
-      if (coordinator.shouldSupplement(cdriveDecision)) {
-        const suppModule = cdriveDecision.supplement_module;
         onProgress?.({
-          type: 'cross_validation',
-          stepId: 'SUPPLEMENT',
-          message: isZh ? `补充执行 SubAgent: ${suppModule}` : `Supplementing SubAgent: ${suppModule}`,
+          type: 'step_end',
+          stepId: 'CDRIVE',
+          message: isZh
+            ? `C-Drive 决策: ${cdriveDecision.action} (confidence=${cdriveDecision.confidence?.toFixed(2)})`
+            : `C-Drive decision: ${cdriveDecision.action} (confidence=${cdriveDecision.confidence?.toFixed(2)})`,
           timestamp: Date.now(),
+          data: {
+            action: cdriveDecision.action,
+            confidence: cdriveDecision.confidence,
+            jump_to: cdriveDecision.jump_to,
+            supplement_module: cdriveDecision.supplement_module,
+            quality_gate: (cdriveDecision as any).qualityGateResult,
+          },
         });
-        const suppResult = await engine.execute_skill(
- suppModule,
-          { ...plan.params, supplement: true },
-          context,
-        );
-        skillResults.push(suppResult);
-      }
+
+        // C-Drive 建议 SUPPLEMENT → 补充执行 SubAgent
+        if (coordinator.shouldSupplement(cdriveDecision)) {
+          const suppModule = cdriveDecision.supplement_module;
+          supplementAttempts++;
+          onProgress?.({
+            type: 'cross_validation',
+            stepId: 'SUPPLEMENT',
+            message: isZh
+              ? `补充执行 SubAgent: ${suppModule} (${supplementAttempts}/${getMaxSupplementAttempts()})`
+              : `Supplementing SubAgent: ${suppModule} (${supplementAttempts}/${getMaxSupplementAttempts()})`,
+            timestamp: Date.now(),
+          });
+          try {
+            const suppResult = await engine.execute_skill(
+              suppModule,
+              { ...plan.params, supplement: true },
+              context,
+            );
+            skillResults.push(suppResult);
+          } catch (e) {
+            console.warn(`[SUPPLEMENT] ${suppModule} 执行失败:`, e);
+            break;  // 执行失败退出循环
+          }
+        } else {
+          break;  // 非 SUPPLEMENT 决策退出循环
+        }
+      } while (coordinator.shouldSupplement(cdriveDecision) && supplementAttempts < getMaxSupplementAttempts());
     }
 
     // ── Step 5: 汇总（SummaryAgent） ──

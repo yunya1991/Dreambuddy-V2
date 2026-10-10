@@ -1,8 +1,8 @@
-# DreamBuddy v3 前端重构综合技术文档
+# DreamBuddy v3.1 前端技术文档
 
-> 版本: v3.0 | 日期: 2026-07-05 | 状态: 架构规划
-> 定位: WorkBuddy OS SACG 四层架构前端对齐方案
-> 约束: 新端口 3001 独立运行，不改动现有 v2 前端代码
+> 版本: v3.1 | 日期: 2026-10-10 | 状态: 已实现（P0-P3 全部完成）
+> 定位: WorkBuddy OS SACG 四层架构前端实现
+> 约束: 独立端口 3001 运行，与 3.0 前端（3-FRONTEND/dream-universal-gateway）隔离
 
 ---
 
@@ -10,277 +10,288 @@
 
 ### 1.1 项目定位
 
-DreamBuddy v3 前端是 AI 驱动的加密货币交易平台的全量重构版本。它不仅仅是一个 UI 重写，更是将前端架构从"以页面为中心的 God Component 模式"彻底转向"以 SACG 四层架构为骨架的领域驱动前端模式"。v3 前端以 WorkBuddy OS 的 SACG (Sense-Arrange-Compute-Graph) 模型作为顶层设计约束，确保每一个页面、每一个组件、每一条数据流都能在 SACG 模型中找到清晰的位置。
+DreamBuddy v3.1 前端是 AI 驱动的加密货币交易平台的全量重构版本。它以 WorkBuddy OS 的 SACG (Sense-Arrange-Compute-Graph) 模型作为顶层设计约束，将前端架构从"以页面为中心的 God Component 模式"彻底转向"以 SACG 四层架构为骨架的领域驱动前端模式"。
 
 核心定位公式:
 
 ```
-v3 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 + SSE 流式交互
+v3.1 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 + SSE 流式交互 + 认知记忆系统
 ```
 
-### 1.2 核心目标
+### 1.2 核心目标与达成状态
 
-| 编号 | 目标 | 对齐维度 | 验收标准 |
-|------|------|----------|----------|
-| G1 | SACG 架构完全对齐 | 全局 | 四层各有独立可视化面板，层间数据流可追踪 |
-| G2 | 消除 God Component | 架构 | 单文件不超过 300 行，最大组件不超过 5 个 useState |
-| G3 | 单一职责状态管理 | Store | 10 个 Zustand store 各管各的领域，无跨域耦合 |
-| G4 | 端口隔离部署 | 运维 | v2 跑在 3000，v3 跑在 3001，共享同一套 API Routes |
-| G5 | 模块化 API 集成 | 集成 | 19 个 API 域各自封装，统一错误处理，SSE 标准化 |
-| G6 | 双交易模式支持 | 业务 | AI Skill + Classic 两种模式各自有完整 UI 链路 |
-| G7 | 三屏交易系统独立页面 | 业务 | Elder 三屏交易作为独立应用层页面，Screen1/2/3 各自独立面板 + 数据联动 + 方向约束链路可视化 |
-| G8 | 零新增依赖 | 约束 | 不使用 lucide-react，不安装新 npm 包，纯文件操作迁移 |
+| 编号 | 目标 | 对齐维度 | 验收标准 | 状态 |
+|------|------|----------|----------|------|
+| G1 | SACG 架构完全对齐 | 全局 | 四层各有独立可视化面板，层间数据流可追踪 | ✅ 已完成 |
+| G2 | 消除 God Component | 架构 | 单文件不超过 300 行，最大组件不超过 5 个 useState | ✅ 已完成 |
+| G3 | 单一职责状态管理 | Store | 12 个 Zustand store 各管各的领域，无跨域耦合 | ✅ 已完成 |
+| G4 | 端口隔离部署 | 运维 | 3.0 跑在 3000，v3.1 跑在 3001，独立项目 | ✅ 已完成 |
+| G5 | 模块化 API 集成 | 集成 | 20 个 API 域各自封装，统一错误处理，SSE 标准化 | ✅ 已完成 |
+| G6 | 双交易模式支持 | 业务 | AI Skill + Classic 两种模式各自有完整 UI 链路 | ✅ 已完成 |
+| G7 | 三屏交易系统独立页面 | 业务 | Screen1/2/3 + Pipeline 各自独立面板 + 数据联动 + 方向约束链路可视化 | ✅ 已完成 |
+| G8 | 认知记忆系统 | 业务 | recall/record/verify 认知闭环 + 用户记忆 + 技能/文档索引 | ✅ 已完成 |
 
-### 1.3 技术栈选型与约束
+### 1.3 技术栈
 
-| 维度 | 选型 | 约束说明 |
-|------|------|----------|
-| 框架 | Next.js 15.5 (App Router) | 使用 `src/app/` 目录结构，Server Component + Client Component 混合渲染 |
+| 维度 | 选型 | 说明 |
+|------|------|------|
+| 框架 | Next.js 15.4 (App Router) | `src/app/` 目录结构，Server + Client Component 混合渲染 |
 | 样式 | Tailwind CSS v4 (`@tailwindcss/postcss`) | 无 `tailwind.config.js`，通过 CSS `@theme` 定义设计 token |
-| 语言 | TypeScript (strict) | 所有组件、store、工具函数均为 `.ts`/`.tsx` |
-| 状态管理 | Zustand | 轻量级，与 v2 现有 stores 架构一致，按领域拆分 |
+| 语言 | TypeScript 5.7 (strict) | 所有组件、store、工具函数均为 `.ts`/`.tsx` |
+| 状态管理 | Zustand 5.0 | 12 个 store 按领域拆分 |
 | 流式通信 | SSE (Server-Sent Events) | 9 种事件类型标准化处理 |
-| 图标 | Inline SVG | 不使用 lucide-react 或其他图标库 |
-| 数据可视化 | CSS + SVG | 不引入 chart.js / recharts，用原生 SVG 绘图 |
-| 依赖管理 | 无 npm/pnpm 安装能力 | 所有新模块通过纯文件复制创建 |
-| 认证 | NextAuth.js v5 (Session) | 复用 v2 的 auth 配置和 middleware |
+| 数据可视化 | Recharts 3.8 + SVG | 三屏图表、基本面图表使用 recharts，DAG/BAC 使用原生 SVG |
+| AI SDK | @ai-sdk/openai 1.0 + @ai-sdk/react 1.0 | AI 驱动的对话和意图处理 |
+| 认证 | NextAuth.js v5 (Session) + @auth/prisma-adapter | Prisma 数据库适配器，支持 Session 管理 |
+| 数据库 | Prisma 6.19 + @prisma/client | 用户、提案、审批等持久化 |
+| 加密 | bcryptjs 3.0 | 密码哈希 |
+| Markdown | react-markdown 10.1 | 消息和报告渲染 |
+| 图标 | Inline SVG (V3InlineSVG) | 不使用图标库，通过 V3InlineSVG 组件统一管理 |
+| ID 生成 | nanoid 5.1 | 唯一 ID 生成 |
+| 类型校验 | zod 3.24 | API 请求/响应类型验证 |
 
-### 1.4 新端口隔离策略
+### 1.4 项目隔离策略
 
 ```
-v2 Frontend (PORT 3000)          v3 Frontend (PORT 3001)
-┌─────────────────────────┐      ┌─────────────────────────┐
-│ src/app/                │      │ src/app/v3/             │
-│ ├── dashboard/          │      │ ├── dashboard/          │
-│ ├── chat/               │      │ │   ├── trade/          │
-│ ├── login/              │      │ │   ├── classic/        │
-│ └── api/ (shared)       │      │ │   ├── fundamental/    │
-│                         │      │ │   ├── monitor/        │
-│                         │      │ │   ├── memory/         │
-│                         │      │ │   ├── settings/       │
-│                         │      │ │   ├── reports/        │
-│                         │      │ │   └── governance/     │
-└─────────────────────────┘      │ ├── layout.tsx (独立)   │
-         │                       │ └── page.tsx            │
-         │                       └─────────────────────────┘
-         │                                   │
-         └─────── 共享 API Routes ───────────┘
-              (src/app/api/* 不变)
+3.0 Frontend (PORT 3000)              3.1 Frontend (PORT 3001)
+3-FRONTEND/dream-universal-gateway/    3.1-FRONTEND/
+┌─────────────────────────┐            ┌─────────────────────────────┐
+│ src/app/                │            │ src/app/                    │
+│ ├── dashboard/          │            │ ├── dashboard/             │
+│ ├── chat/               │            │ │   ├── trade/             │
+│ ├── login/              │            │ │   ├── classic/           │
+│ └── api/                │            │ │   ├── fundamental/       │
+│                         │            │ │   ├── three-screens/    │
+│ (v2 三栏对话式界面)      │            │ │   ├── monitor/          │
+│                         │            │ │   ├── memory/            │
+│                         │            │ │   ├── settings/          │
+│                         │            │ │   ├── reports/           │
+│                         │            │ │   ├── ranking/           │
+│                         │            │ │   ├── governance/        │
+│                         │            │ │   └── ...                │
+│                         │            │ ├── chat/                  │
+│                         │            │ ├── board/ (治理/审批)      │
+│                         │            │ ├── login/ register/         │
+│                         │            │ └── api/ (96+ 端点)         │
+└─────────────────────────┘            └─────────────────────────────┘
 ```
 
-隔离策略要点:
+隔离要点:
 
-1. **路由隔离**: v3 所有页面放在 `src/app/v3/` 目录下，通过 `/v3/dashboard` 等路径访问
-2. **布局隔离**: v3 拥有独立的 `layout.tsx`，不继承 v2 的 layout
-3. **API 共享**: 92 个 API 端点完全复用，v3 只需做前端 Client 层封装
-4. **Store 隔离**: v3 在 `src/stores/v3/` 下创建新 store，不修改 v2 的 `src/stores/`
-5. **组件隔离**: v3 组件放在 `src/components/v3/` 下，不改动 v2 组件
-6. **启动隔离**: 通过 `next dev -p 3001` 启动，v2 保持 `next dev -p 3000` 不变
+1. **独立项目**: 3.1-FRONTEND 是独立的 Next.js 项目，有自己的 `package.json`、`tsconfig.json`、`next.config.ts`
+2. **路由无前缀**: 页面直接在 `src/app/` 下，通过 `/dashboard/...` 路径访问（非 `/v3/dashboard`）
+3. **API 自建**: 3.1 拥有独立的 API Routes（96+ 端点），不共享 3.0 的 API
+4. **Store 独立**: Store 在 `src/stores/` 下，不修改 3.0 的 stores
+5. **组件独立**: 组件在 `src/components/features/` 和 `src/components/V3*.tsx` 下
+6. **启动方式**: `next dev -p 3001` 启动
 
 ---
 
-## 第二章：现状分析
+## 第二章：实现现状
 
-### 2.1 v2 前端问题总结
+### 2.1 代码统计
 
-#### God Component 问题清单
+| 维度 | 数据 |
+|------|------|
+| 页面路由 (page.tsx) | 56 个 |
+| API 路由 (route.ts) | 96+ 个 |
+| 组件文件 (features/) | 100+ 个 |
+| 基础组件 (V3*.tsx) | 8 个 (V3Card/V3Button/V3Badge/V3StatusDot/V3Tooltip/V3InlineSVG/V3Spinner/V3Empty) |
+| Store | 12 个 (含 index.ts) |
+| Lib 文件 | 160+ 个 (含 planner/ 21文件、orchestration/、SACG五训练循环、cognitive/、case/ 等) |
+| Layout 文件 | 3 个 (root / dashboard / classic) |
 
-| 文件 | 行数 | useState | fetch 调用 | useEffect | 核心问题 |
-|------|------|----------|-----------|-----------|----------|
-| `dashboard/page.tsx` | 7522 | 95 | 58 | 6 | 所有 Dashboard 功能堆叠在单文件 |
-| `task-manager.ts` | 127KB (约 3200 行) | — | — | — | 意图识别+路由+链路执行+产物管理全部耦合 |
-| `api/chat/route.ts` | 5188+ | — | — | — | SSE 处理+意图路由+链路编排+结果格式化全部内联 |
-| `classic-system-api.ts` | — | — | — | — | 13 个子标签页逻辑耦合在一个模块 |
+### 2.2 功能域与页面映射
 
-#### 架构缺失问题
+| 功能域 | 路由 | 页面数 | 组件数 | 状态 |
+|--------|------|--------|--------|------|
+| 概览 | `/dashboard` | 1 | LiveStatusPanel | ✅ |
+| AI 交易 | `/dashboard/trade` | 1 | ChatPanel + 18个Chat子组件 | ✅ |
+| 交易榜单 | `/dashboard/ranking` | 1 | 4个组件 (DecisionCard/RankingCard/RankingMonitor/PrefillOrderBanner) | ✅ |
+| 经典系统 | `/dashboard/classic` | 2 (含 [subtab]) | 8个组件 (Indicator/GovernanceFlow/Phase/Generation/Management/Signals等) | ✅ |
+| 基本面 | `/dashboard/fundamental` | 1 | 17个组件 (Flow/Macro/Onchain/Valuation/Sentiment/Intermarket/Breadth/WhaleTracker/UTXOAge/MVRVZone/SentimentHeatmap等) | ✅ |
+| 三屏系统 | `/dashboard/three-screens` | 6 (总览+screen1/2/3+pipeline+[screen]) | Screen1/2/3Panel + PipelineView + 3个charts | ✅ |
+| SACG 监控 | `/dashboard/monitor` | 5 (总览+compute/graph/arrange/sense) | 5个组件 (ReflectorPanel/CrossValidationPanel/SenseConfidenceGauge/SACGOverview/DAGGraphView) | ✅ |
+| 记忆管理 | `/dashboard/memory` | 5 (总览+user/dze/skills/docs) | 6个组件 (RecordExperienceForm/MemoryTimeline/DZEChainView/SkillIndexView/DocIndexView/MemoryTabNav) | ✅ |
+| 设置 | `/dashboard/settings` | 1 | 5个组件 (ApiKeyManager/TradingParamsPanel/StrategyManager/CompletenessWizard/ChannelManager) | ✅ |
+| 治理 | `/dashboard/governance` | 1 | GovernanceScreen | ✅ |
+| 人工审批 | `/board/approval` | 1 | GovernanceScreen (共享) | ✅ |
+| 提案管理 | `/board/proposals` | 2 (列表+[id]) | — | ✅ |
+| 绩效评审 | `/board/review` | 1 | — | ✅ |
+| 报告 | `/dashboard/reports` | 2 (列表+[id]) | ReportsScreen | ✅ |
+| Notebook | `/dashboard/notebook` | 1 | 7个组件 (NotebookPanel/ArtifactGallery/TaskCard/ActiveDZEChain/StepActionMenu/StepProgress/ActiveStrategyChain) | ✅ |
+| Token监控 | `/dashboard/token-monitor` | 1 | TokenMonitorPanel + TokenMonitorBadge | ✅ |
+| 图压缩 | `/dashboard/graph-compression` | 1 | GraphCompressionVisualizer | ✅ |
+| Chat | `/chat` | 1 | 共享Chat组件 | ✅ |
+| 工作流 | `/dashboard/workflow` | 1 | 3个组件 (WorkflowCard/WorkflowStatusBadge/WorkflowStepList) | ✅ |
+| 情报流 | `/dashboard/feed` | 1 | — | ✅ |
+| 情绪看板 | `/dashboard/mood-board` | 1 | MoodBoardPanel (共享) | ✅ |
+| 简报 | `/dashboard/briefing` | 1 | — | ✅ |
+| BDSM | `/dashboard/bdsm` | 1 | — | ✅ |
+| 运维 | `/dashboard/ops` | 1 | — | ✅ |
+| 元标注 | `/dashboard/meta-labeling` | 1 | — | ✅ |
+| 市场营销 | `/dashboard/market` | 6 (总览+segments/effectiveness/distribution/campaigns/audit) | — | ✅ |
+| 测试可视化 | `/dashboard/test-visualization` | 1 | — | ✅ |
+| 登录/注册/验证 | `/login` `/register` `/verify-email` | 3 | — | ✅ |
+| 充值 | `/recharge` | 1 | — | ✅ |
 
-| 问题域 | 现状 | 影响 |
-|--------|------|------|
-| hooks 目录 | 不存在 | 所有自定义逻辑写在组件内部，无法复用 |
-| utils 目录 | 不存在 | 工具函数散落在各 lib 文件中 |
-| Store 粒度 | 6 个粗粒度 store | chat-store 管消息+流式+UI 状态混杂 |
-| 组件层级 | 扁平化 | 无 Layout/Screen/Feature/Primitive 分层 |
-| 错误处理 | 每处独立 try-catch | 无统一错误边界和重试策略 |
-| 类型安全 | 部分 any 类型 | API 响应类型覆盖不全 |
+### 2.3 侧边栏导航
 
-### 2.2 代码统计
+侧边栏定义在 [dashboard/layout.tsx](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/app/dashboard/layout.tsx) 中，共 12 个一级导航项:
 
-| 维度 | v2 数据 | v3 目标 |
-|------|----------|----------|
-| lib 文件数 | 77 | 80+ (新增 hooks/utils) |
-| 组件文件数 | 20 | 60+ (分层架构) |
-| 最大文件行数 | 7522 (dashboard) | < 300 |
-| useState 总数 | 95+ (单文件) | < 5 (单组件) |
-| fetch 调用点 | 58 (单文件) | 统一走 API Client |
-| Store 数量 | 6 | 9 (按领域细分) |
-| API Route 文件 | 92 个端点 | 不变 (共享) |
-| 页面路由 | 12 个 | 20+ (v3 新增) |
+| 序号 | 标签 | 路由 | 图标 | 备注 |
+|------|------|------|------|------|
+| 1 | 概览 | `/dashboard` | ◉ | 主控台 |
+| 2 | AI 交易 | `/dashboard/trade` | ⚡ | ChatPanel + SSE 流式 |
+| 3 | 交易榜单 | `/dashboard/ranking` | 🏆 | 决策排行+预填单 |
+| 4 | 经典系统 | `/dashboard/classic` | 📊 | C0-C8 全链 |
+| 5 | 基本面 | `/dashboard/fundamental` | 📈 | 17个分析组件 |
+| 6 | 三屏系统 | `/dashboard/three-screens` | 🖥 | Elder 三屏 |
+| 7 | SACG 监控 | `/dashboard/monitor` | 🔍 | 四层可视化 |
+| 8 | 记忆管理 | `/dashboard/memory` | 🧠 | 用户/DZE/技能/文档 |
+| 9 | 设置 | `/dashboard/settings` | ⚙ | API/交易/策略/渠道 |
+| 10 | 治理 | `/dashboard/governance` | 🏛 | 治理流程 |
+| 11 | 人工审批 | `/board/approval` | 🛡️ | Badge 显示待审批数 |
+| 12 | 报告 | `/dashboard/reports` | 📋 | 产物中台 |
 
-### 2.3 模块可复用性评估表
-
-#### 可直接迁移模块 (15 个)
-
-| 模块 | 路径 | 迁移难度 | 注意事项 |
-|------|------|----------|----------|
-| types/index.ts | `src/types/index.ts` | 低 | 已包含完整的类型定义，可直接引用 |
-| intent/fallback-engine.ts | `src/lib/intent/` | 低 | 纯函数，无 UI 依赖 |
-| intent/intent-memory.ts | `src/lib/intent/` | 低 | 文件 I/O 操作，需确认路径 |
-| trading-mode.ts | `src/lib/trading-mode.ts` | 低 | 枚举+工具函数 |
-| strategy/types.ts | `src/lib/strategy/types.ts` | 低 | 纯类型定义 |
-| reflection-gates.ts | `src/lib/reflection-gates.ts` | 低 | 核心 Reflector 逻辑，需适配前端调用 |
-| monitor-bus.ts | `src/lib/monitor-bus.ts` | 中 | 服务端模块，前端通过 SSE 消费 |
-| token-monitor.ts | `src/lib/token-monitor.ts` | 低 | 监控逻辑，需确认触发方式 |
-| scheduler/cost-keeper.ts | `src/lib/scheduler/` | 低 | Token 计费逻辑 |
-| scheduler/skip-gate.ts | `src/lib/scheduler/` | 低 | 链路跳过决策逻辑 |
-| compressor-adapter/ | `src/lib/compressor-adapter/` | 低 | BAC 压缩适配层 |
-| bridge-client.ts | `src/lib/bridge-client.ts` | 低 | WorkBuddy 桥接客户端 |
-| uid.ts | `src/lib/uid.ts` | 低 | 唯一 ID 生成器 |
-| encryption.ts | `src/lib/encryption.ts` | 低 | AES 加密工具 |
-
-#### 需适配迁移模块 (3 个)
-
-| 模块 | 路径 | 适配内容 |
-|------|------|----------|
-| intent/smart-router.ts | `src/lib/intent/` | 需将服务端 LLM 调用改为 API 调用 |
-| knowledge-rag.ts | `src/lib/knowledge-rag.ts` | 需适配前端无文件系统环境 |
-| auth.ts | `src/lib/auth.ts` | 需适配 v3 的 Session 管理方式 |
-
-#### 需完全重写模块 (14 个)
-
-| 模块 | 原路径 | 重写原因 |
-|------|--------|----------|
-| dashboard/page.tsx | `src/app/dashboard/` | 7522 行 God Component，需拆分为 10+ 组件 |
-| task-manager.ts | `src/lib/task-manager.ts` | 127KB 耦合体，需拆分为 intent/chain/result 三个模块 |
-| strategy/chain-controller.ts | `src/lib/strategy/` | 链路控制逻辑需对齐 SACG C 层设计 |
-| dynamic-chain/executor.ts | `src/lib/dynamic-chain/` | 动态链执行需适配 Reflector 6 决策模型 |
-| dynamic-chain/runner.ts | `src/lib/dynamic-chain/` | 同上 |
-| dynamic-chain/graph-planner.ts | `src/lib/dynamic-chain/` | DAG 编排需对齐 SACG A 层 |
-| dynamic-chain/reflect-engine.ts | `src/lib/dynamic-chain/` | 反思引擎需对齐 SACG C 层 Reflector |
-| classic-system-api.ts | `src/lib/` | 13 子标签页逻辑需拆分 |
-| classic-system-bridge.ts | `src/lib/` | 需适配新 API Client 架构 |
-| classic-system-client.ts | `src/lib/` | 同上 |
-| classic-system-hooks.ts | `src/lib/` | 需重写为标准 React Hooks |
-| notebook/step-controller.ts | `src/lib/notebook/` | 需适配 v3 Notebook UI |
-| orchestration/ | `src/lib/orchestration/` | 全部 6 个文件需适配 SACG A 层 |
-| graph-reflection-bridge.ts | `src/lib/` | 需对齐 SACG G 层 BAC 压缩模型 |
+侧边栏特性:
+- 可折叠（折叠时宽 56px / 展开时 192px）
+- 人工审批项支持 Badge（轮询 `/api/board/approval/pending`，30s 间隔）
+- 路由高亮: `pathname === item.href` 或 `pathname.startsWith(item.href)`
 
 ---
 
-## 第三章：v3 架构设计
+## 第三章：架构设计
 
 ### 3.1 路由架构
 
-#### 完整页面路由映射表
+#### 完整页面路由映射
 
 ```
-src/app/v3/
-├── layout.tsx                    → V3AppShell (独立 layout)
-├── page.tsx                      → 重定向到 /v3/dashboard
-│
-├── login/
-│   └── page.tsx                  → 登录页 (复用 v2 认证逻辑)
+src/app/
+├── layout.tsx                        → RootLayout (全局 html/body)
+├── page.tsx                           → 首页 (重定向到 /dashboard)
+├── login/page.tsx                     → 登录页
+├── register/page.tsx                  → 注册页
+├── verify-email/page.tsx              → 邮箱验证页
+├── recharge/page.tsx                  → 充值页
+├── chat/page.tsx                      → 独立聊天页
 │
 ├── dashboard/
-│   ├── layout.tsx                → DashboardLayout (Sidebar + TopBar + Content)
-│   ├── page.tsx                  → 主控台三屏概览
+│   ├── layout.tsx                     → DashboardLayout (Sidebar + Content)
+│   ├── page.tsx                       → 概览 (主控台)
 │   │
-│   ├── trade/                    → AI Skill 交易
-│   │   ├── page.tsx              → 交易主页面 (聊天面板 + S 链追踪)
-│   │   ├── chain/                → S 系列链追踪子页面
-│   │   │   └── [chainId]/
-│   │   │       └── page.tsx      → 单链详情 (步骤/决策/产物)
-│   │   └── strategies/           → 策略管理
-│   │       ├── page.tsx          → 策略列表
-│   │       └── [strategyId]/
-│   │           └── page.tsx      → 策略详情+回测结果
+│   ├── trade/page.tsx                 → AI 交易 (ChatPanel + ChainTracker)
+│   ├── ranking/page.tsx               → 交易榜单
+│   ├── classic/
+│   │   ├── layout.tsx                 → Classic 独立 layout
+│   │   ├── page.tsx                   → 经典系统入口
+│   │   └── [subtab]/page.tsx          → 经典子标签 (动态路由)
+│   ├── fundamental/page.tsx           → 基本面分析
 │   │
-│   ├── classic/                  → 经典交易系统
-│   │   ├── page.tsx              → 经典主页面 (C0-C8 全链)
-│   │   ├── scan/                 → 宏观扫描 (C1)
-│   │   ├── universe/             → 品种池扫描 (C2)
-│   │   ├── gate/                 → 门禁检查 (C3)
-│   │   ├── arena/                → 竞技场评审 (C4)
-│   │   ├── select/               → 策略选择 (C5)
-│   │   ├── signal/               → 信号审查 (C6)
-│   │   ├── exit/                 → 离场监控 (C7)
-│   │   ├── audit/                → 追踪审计 (C8)
-│   │   └── governance/           → 治理流程 (Draft→Gate→Approval→Apply→Audit)
-│   │       └── [proposalId]/
-│   │           └── page.tsx      → 审批详情
+│   ├── three-screens/
+│   │   ├── page.tsx                   → 三屏总览
+│   │   ├── screen1/page.tsx           → 战略层（周线方向）
+│   │   ├── screen2/page.tsx           → 战术层（日线预设）
+│   │   ├── screen3/page.tsx           → 执行层（实时执行）
+│   │   ├── pipeline/page.tsx          → 全链路流水线
+│   │   └── [screen]/page.tsx          → 动态屏幕路由
 │   │
-│   ├── fundamental/              → 基本面分析
-│   │   ├── page.tsx              → 基本面总览
-│   │   ├── overview/             → 综合概览
-│   │   ├── onchain/              → 链上数据
-│   │   ├── macro/                → 宏观经济
-│   │   ├── sentiment/            → 市场情绪
-│   │   ├── flow/                 → 资金流向
-│   │   ├── valuation/            → 估值模型
-│   │   ├── narrative/            → 叙事分析
-│   │   ├── news/                 → 新闻日历
-│   │   ├── breadth/              → 市场广度
-│   │   ├── calendar/             → 事件日历
-│   │   └── intermarket/          → 跨市场分析
+│   ├── monitor/
+│   │   ├── page.tsx                   → SACG 监控总览
+│   │   ├── sense/page.tsx             → S 层 - 意图识别
+│   │   ├── arrange/page.tsx           → A 层 - 图编排 DAG
+│   │   ├── compute/page.tsx           → C 层 - 执行追踪
+│   │   └── graph/page.tsx             → G 层 - BAC 压缩+回放
 │   │
-│   ├── three-screens/            → 三屏交易系统（应用层）
-│   │   ├── page.tsx              → 三屏总览（Screen1/2/3 状态仪表盘）
-│   │   ├── screen1/              → 第一屏：战略层（周线方向判定）
-│   │   │   └── page.tsx          → 七维牛熊评分 + 方向锚 + 大师辩论
-│   │   ├── screen2/              → 第二屏：战术层（日线入场预设）
-│   │   │   └── page.tsx          → 三大预设价位 + 回测验证 + 贝叶斯优化
-│   │   ├── screen3/              → 第三屏：执行层（实时监控与执行）
-│   │   │   └── page.tsx          → A7门禁→A4验证→Gate→A5入场→A6监控→A9离场
-│   │   ├── pipeline/             → 执行流水线
-│   │   │   └── page.tsx          → 全链路执行状态 + 方向约束传递可视化
-│   │   └── history/              → 交易历史
-│   │       └── page.tsx          → 历史交易记录 + 离场报告
+│   ├── memory/
+│   │   ├── page.tsx                   → 记忆总览
+│   │   ├── user/page.tsx              → 用户偏好记忆
+│   │   ├── dze/page.tsx               → D-Z-E 工程链
+│   │   ├── skills/page.tsx            → 技能索引
+│   │   └── docs/page.tsx              → 文档索引
 │   │
-│   ├── monitor/                  → SACG 监控面板
-│   │   ├── page.tsx              → SACG 四层可视化总览
-│   │   ├── sense/               → S 层 - 意图识别
-│   │   ├── arrange/              → A 层 - 图编排 DAG
-│   │   ├── compute/              → C 层 - 执行追踪
-│   │   └── graph/                → G 层 - BAC 压缩+回放
-│   │
-│   ├── memory/                   → 记忆与自进化
-│   │   ├── page.tsx              → 记忆系统总览
-│   │   ├── dze/                 → D-Z-E 工程链
-│   │   └── preferences/          → 用户偏好记忆
-│   │
-│   ├── settings/                 → 系统设置
-│   │   ├── page.tsx              → 设置总览
-│   │   ├── api-keys/             → API 密钥管理
-│   │   ├── trading-params/       → 交易参数
-│   │   ├── strategies/           → 策略配置
-│   │   └── channels/             → 通信渠道
-│   │
-│   ├── reports/                  → 研报与产物中台
-│   │   ├── page.tsx              → 产物列表+筛选
-│   │   └── [reportId]/
-│   │       └── page.tsx          → 产物详情
-│   │
-│   └── governance/               → 治理面板
-│       ├── page.tsx              → 治理总览 (审批/提案/绩效)
-│       ├── proposals/            → 策略提案
-│       ├── review/               → 绩效评审
-│       └── approval/
-│           └── [id]/
-│               └── page.tsx      → 审批操作页
+│   ├── settings/page.tsx              → 系统设置
+│   ├── governance/page.tsx            → 治理面板
+│   ├── reports/page.tsx               → 报告列表
+│   ├── notebook/page.tsx              → Notebook
+│   ├── token-monitor/page.tsx         → Token 监控
+│   ├── graph-compression/page.tsx     → 图压缩可视化
+│   ├── mood-board/page.tsx            → 情绪看板
+│   ├── briefing/page.tsx              → 简报
+│   ├── bdsm/page.tsx                  → BDSM 模块
+│   ├── ops/page.tsx                   → 运维
+│   ├── meta-labeling/page.tsx         → 元标注
+│   ├── feed/page.tsx                  → 情报流
+│   ├── workflow/page.tsx              → 工作流
+│   ├── test-visualization/page.tsx    → 测试可视化
+│   └── market/                        → 市场营销
+│       ├── page.tsx
+│       ├── segments/page.tsx
+│       ├── effectiveness/page.tsx
+│       ├── distribution/page.tsx
+│       ├── campaigns/page.tsx
+│       └── audit/page.tsx
+│
+├── board/
+│   ├── page.tsx                       → 治理总览
+│   ├── approval/page.tsx              → 人工审批
+│   ├── proposals/page.tsx            → 提案列表
+│   ├── proposals/[id]/page.tsx        → 提案详情
+│   └── review/page.tsx                → 绩效评审
+│
+├── reports/[id]/page.tsx              → 报告详情
+│
+└── api/                               → API Routes (96+ 端点)
+    ├── auth/[...nextauth]/route.ts    → NextAuth 认证
+    ├── task/                          → 任务执行 (stream/result/confirm)
+    ├── intent/                        → 意图识别 (evaluate/steer)
+    ├── cognitive/                     → 认知系统 (recall/record/verify/stats/health/unified/knowledge)
+    ├── config/                        → 配置管理 (api-keys/trading-params/strategies/channels)
+    ├── classic/                       → 经典系统 (gate-thresholds/approvals/pipeline-state)
+    ├── board/                         → 治理 (proposals/approval/review/metrics)
+    ├── user/                          → 用户 (signin/checkin/me)
+    ├── user-memory/                   → 用户记忆 (preferences/notes/health)
+    ├── notebook/                      → 笔记本 (sync/tasks/step/state)
+    ├── monitor/                       → 监控 (stats/stream/events/proactive)
+    ├── market/                        → 市场 (yahoo/global/segments/effectiveness/distribution/campaigns/audit/content/route)
+    ├── onchain/                       → 链上数据 (btc/panewslab/bgeometrics/datacenter)
+    ├── data/                          → 数据 (macro/chain/market)
+    ├── ops/                           → 运维 (decision-levels/queues)
+    ├── compression/                   → 图压缩 (stats)
+    ├── feed/                          → 情报流
+    ├── briefings/                     → 简报
+    ├── mood-board/                    → 情绪看板
+    ├── meta-labeling/                 → 元标注
+    ├── positions/                      → 持仓
+    ├── trade-orders/                  → 交易订单
+    ├── price/                         → 价格
+    ├── artifacts/                     → 产物文件
+    ├── artifact/                      → 产物
+    ├── chain/                         → 链路产物
+    ├── reports/                       → 报告
+    ├── recharge/                      → 充值
+    ├── register/                      → 注册
+    ├── kyc/                           → KYC
+    ├── customer/                      → 客户
+    └── skills/                        → 技能 (index)
+    └── docs/                          → 文档 (sync/index)
 ```
 
 #### 路由与 SACG 层映射
 
-| 路由前缀 | 主要 SACG 层 | 辅助层 | 说明 |
-|----------|--------------|--------|------|
-| `/v3/dashboard/` | 全部 | — | 三屏概览，每屏对应一个 SACG 层高亮 |
-| `/v3/dashboard/trade/` | S + C | A | 意图识别输入(S) → 链路执行(C) |
-| `/v3/dashboard/classic/` | S + C | A | 同上，经典模式 |
-| `/v3/dashboard/fundamental/` | C | G | 执行层产物展示 + 图存储查询 |
-| `/v3/dashboard/monitor/` | 全部 | — | SACG 四层独立可视化 |
-| `/v3/dashboard/memory/` | G | S | 图存储层 + 意图识别反馈 |
-| `/v3/dashboard/settings/` | — | — | 配置管理，不直接对应 SACG |
-| `/v3/dashboard/reports/` | G | C | 图存储产物 + 执行产物关联 |
-| `/v3/dashboard/governance/` | A | C | 图编排层治理 + 执行层审计 |
+| 路由 | 主要 SACG 层 | 辅助层 | 说明 |
+|------|--------------|--------|------|
+| `/dashboard` | 全部 | — | 三屏概览 + SACG 状态 |
+| `/dashboard/trade` | S + C | A | 意图识别(S) → 链路执行(C) |
+| `/dashboard/classic` | S + C | A | 经典交易模式 |
+| `/dashboard/fundamental` | C | G | 执行层产物展示 + 图存储查询 |
+| `/dashboard/three-screens` | 全部 | — | 应用层：调用 A/C/F/G 域能力 |
+| `/dashboard/monitor` | 全部 | — | SACG 四层独立可视化 |
+| `/dashboard/memory` | G | S | 图存储层 + 意图识别反馈 |
+| `/dashboard/settings` | — | — | 配置管理 |
+| `/dashboard/governance` | A | C | 图编排层治理 + 执行层审计 |
+| `/dashboard/reports` | G | C | 图存储产物 + 执行产物关联 |
 
 ### 3.2 SACG 前端映射
 
@@ -297,7 +308,6 @@ src/app/v3/
 │           │  │   L1: Intent → Objective (收敛)              │       │
 │           │  │   L2: OKRSet (展开)                           │       │
 │           │  │   L3: ExecutionBlueprint (工程化)             │       │
-│           │  │ 意图历史热力图                                  │       │
 │           │  └─────────────────────────────────────────────┘       │
 ├───────────┼─────────────────────────────────────────────────────────┤
 │           │  A (Arrange/编排) - 图编排层                           │
@@ -305,7 +315,6 @@ src/app/v3/
 │  #3B82F6  │  │ DAG 图可视化 (节点+边)                         │       │
 │  蓝色     │  │ 节点状态: pending/active/done/skipped/failed  │       │
 │           │  │ ACFTG 链展示 (纵轴=阶段, 横轴=链)              │       │
-│           │  │ 动态编排过程动画                               │       │
 │           │  │ GraphPlanner 决策日志                           │       │
 │           │  └─────────────────────────────────────────────┘       │
 ├───────────┼─────────────────────────────────────────────────────────┤
@@ -316,7 +325,6 @@ src/app/v3/
 │           │  │   CONTINUE / REDO / INSERT_BEFORE             │       │
 │           │  │   JUMP_TO / EARLY_TERMINATE / SKIP            │       │
 │           │  │ 三链交叉验证投票面板                            │       │
-│           │  │ 上下文压缩进度条                                │       │
 │           │  └─────────────────────────────────────────────┘       │
 ├───────────┼─────────────────────────────────────────────────────────┤
 │           │  G (Graph/存储) - 图存储层                             │
@@ -326,194 +334,43 @@ src/app/v3/
 │           │  │ 压缩比率仪表盘                                 │       │
 │           │  │ Checkpointing 时间线                           │       │
 │           │  │ 历史回放播放器 (Play/Pause/Seek)               │       │
-│           │  │ 产物版本树                                     │       │
 │           │  └─────────────────────────────────────────────┘       │
 └───────────┴─────────────────────────────────────────────────────────┘
 ```
 
-#### S 层：意图识别可视化
+#### SACG 组件实现映射
 
-```typescript
-// S 层 UI 数据结构
-interface SenseLayerViewModel {
-  // 三层价值模型
-  layer1: {
-    intent: string;           // 原始意图 "分析BTC"
-    objective: string;       // 收敛后目标 "判断BTC短期方向"
-    convergenceScore: number; // 收敛置信度 0.85
-  };
-  layer2: {
-    okrSet: OKRItem[];       // 展开的 OKR 集合
-    // [{ objective: "完成多时间框架分析", keyResults: [...] }]
-  };
-  layer3: {
-    blueprint: string;       // 工程化蓝图 ID
-    chainAssignment: string;  // 分配的链路 S2_ANALYSIS
-    estimatedSteps: number;  // 预估步骤数
-  };
-  // 意图置信度
-  confidence: {
-    overall: number;          // 总置信度
-    domain: number;          // 领域置信度
-    task: number;             // 任务置信度
-    method: 'llm' | 'rule' | 'default';
-  };
-}
-```
-
-#### A 层：图编排 DAG 可视化
-
-```typescript
-// A 层 DAG 节点数据结构
-interface ArrangeDAGNode {
-  id: string;
-  name: string;
-  status: 'pending' | 'active' | 'done' | 'skipped' | 'failed';
-  layer: 'S' | 'A' | 'C' | 'G';
-  // DAG 边
-  dependencies: string[];      // 依赖的节点 ID
-  dependents: string[];        // 被依赖的节点 ID
-  // ACFTG 链信息
-  chainType: string;           // 'S' | 'C' | 'A' | 'F'
-  stage: string;               // 思维阶段
-  // 动态编排
-  isDynamic: boolean;          // 是否为动态插入节点
-  plannerDecision: string;     // GraphPlanner 决策日志
-  // 性能指标
-  latencyMs: number;
-  tokensUsed: number;
-}
-
-// A 层 DAG 边数据结构
-interface ArrangeDAGEdge {
-  from: string;
-  to: string;
-  type: 'dependency' | 'data_flow' | 'control_flow';
-  status: 'waiting' | 'active' | 'completed';
-}
-```
-
-#### C 层：执行追踪面板
-
-```typescript
-// Reflector 6 决策类型
-type ReflectorDecision =
-  | 'CONTINUE'           // 继续下一步
-  | 'REDO'               // 重做当前步
-  | 'INSERT_BEFORE'      // 在当前步前插入新步
-  | 'JUMP_TO'            // 跳转到指定步
-  | 'EARLY_TERMINATE'    // 提前终止
-  | 'SKIP';              // 跳过当前步
-
-interface ComputeStepViewModel {
-  stepId: string;
-  chainId: string;
-  stage: string;
-  status: 'pending' | 'running' | 'done' | 'redo' | 'skipped' | 'failed';
-  // Reflector 决策
-  reflector: {
-    decision: ReflectorDecision;
-    reasoning: string;
-    confidence: number;
-  };
-  // 三链交叉验证
-  crossValidation: {
-    chainA: { vote: 'approve' | 'reject' | 'abstain'; reasoning: string };
-    chainB: { vote: 'approve' | 'reject' | 'abstain'; reasoning: string };
-    chainC: { vote: 'approve' | 'reject' | 'abstain'; reasoning: string };
-    finalDecision: 'approved' | 'rejected' | 'tie_break';
-  };
-  // 上下文压缩
-  compression: {
-    originalTokens: number;
-    compressedTokens: number;
-    ratio: number;
-  };
-}
-```
-
-#### G 层：BAC 压缩可视化 + 历史回放
-
-```typescript
-// BAC 三层压缩数据结构
-interface GraphLayerViewModel {
-  // Blueprint 层 - 原始蓝图
-  blueprint: {
-    id: string;
-    nodes: GraphNode[];
-    edges: GraphEdge[];
-    totalTokens: number;
-    createdAt: string;
-  };
-  // Architecture 层 - 架构压缩
-  architecture: {
-    id: string;
-    compressedNodes: GraphNode[];
-    compressionRatio: number;
-    preservedPatterns: string[];
-  };
-  // Chronicle 层 - 编年史
-  chronicle: {
-    id: string;
-    timeline: ChronicleEntry[];
-    checkpoints: Checkpoint[];
-  };
-}
-
-interface Checkpoint {
-  id: string;
-  timestamp: string;
-  blueprintSnapshot: string;
-  architectureSnapshot: string;
-  triggerReason: string;   // 'milestone' | 'error' | 'manual' | 'periodic'
-}
-
-interface ChronicleEntry {
-  timestamp: string;
-  event: string;
-  layer: 'B' | 'A' | 'C';
-  summary: string;
-  artifactRef?: string;
-}
-```
+| SACG 层 | 组件 | 路径 | 功能 |
+|---------|------|------|------|
+| S (Sense) | SenseConfidenceGauge | `features/monitor/` | 意图置信度仪表 |
+| S (Sense) | ClarifyCard | `features/chat/` | 意图澄清交互 |
+| A (Arrange) | DAGGraphView | `features/monitor/` | DAG 图可视化 |
+| A (Arrange) | OrchestrationPanel | `features/orchestration/` | 编排面板 |
+| C (Compute) | ReflectorPanel | `features/monitor/` | Reflector 决策面板 |
+| C (Compute) | CrossValidationPanel | `features/monitor/` + `features/chain/` | 三链交叉验证 |
+| C (Compute) | ChainTracker | `features/chain/` | 链追踪面板 |
+| C (Compute) | ChainStepCard | `features/chain/` | 单步骤卡片 |
+| C (Compute) | ReflectorDecisionBadge | `features/chain/` | Reflector 决策标记 |
+| C (Compute) | SACELayerBadge | `features/chain/` | SACG 层级标记 |
+| C (Compute) | StepInterventionPanel | `features/chain/` | 步骤干预面板 |
+| G (Graph) | SACGOverview | `features/monitor/` | SACG 四层总览 |
+| G (Graph) | BACTimeline | `features/sacg/` | BAC 压缩时间线 |
+| G (Graph) | HistoryPlayer | `features/sacg/` | 历史回放播放器 |
+| G (Graph) | GraphCompressionVisualizer | `features/graph-compression/` | 图压缩可视化 |
+| 全部 | ThinkingCard | `features/chat/` | AI 思考过程展示 |
 
 ### 3.3 三屏交易系统 — 应用层
 
-三屏交易系统是 WorkBuddy OS 架构中的**实际应用层**，位于能力层之上。它调用 A_domain（执行闭环/情报闭环）、C_domain（经典指标）、F_domain（基本面）等能力模块来完成交易决策和执行。三屏交易系统拥有独立页面，不混入 AI Skill 或 Classic 交易页，因为它代表的是「基于模型系统的完整交易执行流程」。
-
-#### 应用层定位
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                   应用层 (Application Layer)               │
-│                                                         │
-│   ┌─────────────────────────────────────────────┐       │
-│   │  三屏交易系统 (Three-Screen Trading System)  │       │
-│   │  独立页面: /v3/dashboard/three-screens       │       │
-│   └──────────────────┬──────────────────────────┘       │
-│                      │ 调用能力层模块                      │
-├──────────────────────┼──────────────────────────────────┤
-│   SACG 四层          │ 能力层 (Capability Layer)           │
-│   ┌──────┐           │                                   │
-│   │  S   │           │  A_domain: A0矛盾论, A1调研,       │
-│   │  A   │◄──────────│    A2第一性原理, A3策略设计,        │
-│   │  C   │           │    A4验证, A5执行, A6情报,         │
-│   │  G   │           │    A7门禁, A8复盘, A9离场           │
-│   └──────┘           │  C_domain: C1技术扫描, C2品种池      │
-│                      │  F_domain: F1新闻, F2资金流         │
-│                      │  G_domain: 宪法, 合规, 风控          │
-│                      │  T_domain: 搜索, 产物, 记忆         │
-└──────────────────────┴──────────────────────────────────┘
-```
+三屏交易系统是 WorkBuddy OS 架构中的**实际应用层**，位于能力层之上。它调用 A_domain（执行闭环/情报闭环）、C_domain（经典指标）、F_domain（基本面）等能力模块来完成交易决策和执行。
 
 #### Elder 三屏体系前端映射
 
-| 屏 | 战略角色 | 路由 | 核心内容 | 调用的能力模块 | 输出 |
+| 屏 | 战略角色 | 路由 | 核心组件 | 调用的能力模块 | 输出 |
 |:---|:---|:---|:---|:---|:---|
-| **Screen1** | 战略层（周线方向） | `/v3/dashboard/three-screens/screen1` | 七维牛熊评分仪表盘 + MA200 方向锚 + 大师辩论面板 | A0矛盾论, A1调研, A2第一性原理, A3策略设计 | direction(LONG/SHORT), score(0-100), strategy_type |
-| **Screen2** | 战术层（日线预设） | `/v3/dashboard/three-screens/screen2` | 三大预设价位表（入场/加仓/止盈止损）+ 回测验证 + 贝叶斯参数优化面板 | dream-backtest, dream-bayesian-opt, A4验证 | 三大预设 + 信号强度 + 仓位建议 |
-| **Screen3** | 执行层（实时执行） | `/v3/dashboard/three-screens/screen3` | 执行流水线可视化: A7门禁→A4验证→Gate→A5入场→A6监控→A9离场 | A7门禁, A4验证, C3门禁, A5执行, A6情报, A9离场 | 仓位状态 + 执行日志 + 离场报告 |
-| **Pipeline** | 全链路视角 | `/v3/dashboard/three-screens/pipeline` | Screen1→2→3 完整数据流可视化 + 方向约束传递追踪 | 全部上述模块 | 链路健康度 + 瓶颈检测 |
+| **Screen1** | 战略层（周线方向） | `/dashboard/three-screens/screen1` | Screen1Panel + RadarDimensions + ConfidenceGauge | A0矛盾论, A1调研, A2第一性原理, A3策略设计 | direction(LONG/SHORT), score(0-100), strategy_type |
+| **Screen2** | 战术层（日线预设） | `/dashboard/three-screens/screen2` | Screen2Panel + FundamentalBars | dream-backtest, dream-bayesian-opt, A4验证 | 三大预设 + 信号强度 + 仓位建议 |
+| **Screen3** | 执行层（实时执行） | `/dashboard/three-screens/screen3` | Screen3Panel | A7门禁, A4验证, C3门禁, A5执行, A6情报, A9离场 | 仓位状态 + 执行日志 + 离场报告 |
+| **Pipeline** | 全链路视角 | `/dashboard/three-screens/pipeline` | PipelineView | 全部上述模块 | 链路健康度 + 方向约束传递 |
 
 #### 三屏数据流与方向约束
 
@@ -531,166 +388,29 @@ Screen1 (战略层)
   │                                                         │ 入场必须参照 Screen2 预设
   │                                                         │ 方向必须来自 Screen1
   │                                                         │ 内部流水线: A7→A4→Gate→A5→A6→A9
-  │                                                         │ A6 监控持续运行，实时调整
-  │                                                         │ A9 满足条件触发强制离场
   │
   └─── 记忆更新 ───→ Memory / Chronicle
 ```
 
-#### 三屏交易系统 UI 数据结构
-
-```typescript
-// Screen1 视图模型
-interface Screen1ViewModel {
-  symbol: string;
-  // 七维牛熊评分
-  dimensions: {
-    technical: { score: number; signal: string };     // 技术面
-    halving: { score: number; signal: string };       // 减半周期
-    miner: { score: number; signal: string };         // 矿工指标
-    onchain: { score: number; signal: string };       // 链上数据
-    macro: { score: number; signal: string };         // 宏观经济
-    intermarket: { score: number; signal: string };   // 跨市场
-    sentiment: { score: number; signal: string };     // 市场情绪
-  };
-  // 方向锚
-  directionAnchor: {
-    ma200Status: 'above' | 'below' | 'crossing';
-    threeDayConfirm: boolean;
-    direction: 'LONG' | 'SHORT';
-    overallScore: number;  // 0-100 综合评分
-    confidence: number;    // 0-1
-  };
-  // 大师辩论
-  debate: {
-    bullCase: string;
-    bearCase: string;
-    synthesis: string;
-  };
-  // 状态
-  status: 'idle' | 'analyzing' | 'done' | 'error';
-  updatedAt: string;
-}
-
-// Screen2 视图模型
-interface Screen2ViewModel {
-  symbol: string;
-  directionConstraint: 'LONG' | 'SHORT';  // 来自 Screen1
-  // 三大预设价位
-  presets: {
-    entry: { price: number; strength: 'strong' | 'moderate' | 'weak' };
-    addPosition: { price: number; size: number };
-    takeProfit: { price: number; levels: number[] };
-    stopLoss: { price: number; levels: number[] };
-  };
-  // 回测验证
-  backtest: {
-    winRate: number;
-    avgReturn: number;
-    maxDrawdown: number;
-    sampleSize: number;
-  };
-  // 贝叶斯优化
-  bayesianOpt: {
-    bestParams: Record<string, number>;
-    iterations: number;
-    improvement: number;
-  };
-  status: 'idle' | 'waiting_screen1' | 'computing' | 'done' | 'error';
-}
-
-// Screen3 视图模型
-interface Screen3ViewModel {
-  symbol: string;
-  directionConstraint: 'LONG' | 'SHORT';  // 来自 Screen1
-  presetConstraint: Screen2ViewModel['presets'];  // 来自 Screen2
-  // 执行流水线
-  pipeline: {
-    steps: PipelineStep[];
-    currentStep: string;
-    triggeredAt: string | null;
-  };
-  // 持仓状态
-  position: {
-    isOpen: boolean;
-    size: number;
-    entryPrice: number;
-    currentPrice: number;
-    unrealizedPnl: number;
-    leverage: number;
-  };
-  // A6 监控
-  monitor: {
-    alertCount: number;
-    lastAlertAt: string;
-    activeAlerts: Alert[];
-  };
-}
-
-// Pipeline 步骤
-interface PipelineStep {
-  id: string;           // A7_GATE | A4_VALIDATE | C3_GATE | A5_ENTRY | A6_MONITOR | A9_EXIT
-  name: string;
-  status: 'pending' | 'active' | 'passed' | 'failed' | 'skipped';
-  decision: string;
-  timestamp: string | null;
-  details: string;
-}
-```
-
 #### 三屏状态管理
 
-三屏交易系统需要一个独立的 Zustand store 来管理跨屏数据和方向约束传递：
+三屏交易系统使用独立的 Zustand store: [three-screens-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/stores/three-screens-store.ts)
 
-```typescript
-// src/stores/v3/three-screens-store.ts
-interface ThreeScreensState {
-  // 全局状态
-  activeScreen: 'overview' | 'screen1' | 'screen2' | 'screen3' | 'pipeline' | 'history';
-  symbol: string;
+#### 三屏辅助组件
 
-  // Screen1
-  screen1: Screen1ViewModel | null;
-  // Screen2
-  screen2: Screen2ViewModel | null;
-  // Screen3
-  screen3: Screen3ViewModel | null;
-
-  // 方向约束传递
-  directionConstraint: {
-    direction: 'LONG' | 'SHORT' | null;
-    source: 'screen1' | 'manual' | null;
-    lockedAt: string | null;
-  };
-
-  // 预设约束传递
-  presetConstraint: Screen2ViewModel['presets'] | null;
-
-  // 操作
-  setActiveScreen: (screen: ThreeScreensState['activeScreen']) => void;
-  setSymbol: (symbol: string) => void;
-  updateScreen1: (data: Partial<Screen1ViewModel>) => void;
-  updateScreen2: (data: Partial<Screen2ViewModel>) => void;
-  updateScreen3: (data: Partial<Screen3ViewModel>) => void;
-  propagateDirection: (direction: 'LONG' | 'SHORT') => void;
-  propagatePresets: (presets: Screen2ViewModel['presets']) => void;
-  resetAll: () => void;
-}
-```
-
-#### 关键集成点
-
-1. **方向约束硬传递**: Screen1 输出的 direction 作为硬性约束写入 `directionConstraint`，Screen2 和 Screen3 必须读取此约束，不允许自行判断方向
-2. **Screen2 等待机制**: Screen2 在 `directionConstraint` 为 null 时处于 `waiting_screen1` 状态，不执行任何计算
-3. **Screen3 唯一入场参考**: Screen3 的入场信号必须来自 Screen2 预设，不允许独立生成入场逻辑
-4. **记忆回写**: 每次完整三屏执行结束后，结果写入 G 层 Chronicle 和记忆系统，供后续查询和回放
+| 组件 | 路径 | 功能 |
+|------|------|------|
+| ConfidenceGauge | `features/three-screens/charts/` | 置信度仪表盘 |
+| RadarDimensions | `features/three-screens/charts/` | 七维雷达图 |
+| FundamentalBars | `features/three-screens/charts/` | 基本面柱状图 |
+| BullBearDebate | `features/chain/` | 大师辩论面板 |
 
 ### 3.4 状态管理架构
 
-#### Zustand Store 拆分方案
+#### Zustand Store 清单
 
 ```
-src/stores/v3/
+src/stores/
 ├── index.ts                      → 统一导出
 ├── session-store.ts              → 会话、消息、输入状态
 ├── chain-store.ts                → 链状态、步骤追踪、Reflector 决策
@@ -698,526 +418,446 @@ src/stores/v3/
 ├── classic-store.ts              → 经典系统完整状态 (C0-C8)
 ├── three-screens-store.ts        → 三屏交易系统状态 (Screen1/2/3 + 方向约束)
 ├── monitor-store.ts              → SACG 监控事件、管道状态
-├── memory-store.ts               → 记忆系统状态
-├── ui-store.ts                  → 面板折叠、主题、语言
-├── api-config-store.ts           → API 配置 (迁移自 v2)
-└── auth-store.ts                 → 认证 (迁移自 v2)
+├── memory-store.ts               → 记忆系统状态 (DZE链)
+├── user-memory-store.ts          → 用户偏好记忆 (notes/preferences)
+├── notebook-store.ts             → Notebook 任务和步骤状态
+├── ui-store.ts                   → 面板折叠、主题、语言
+├── api-config-store.ts           → API 配置 (密钥/交易参数/策略/渠道)
+└── auth-store.ts                 → 认证 (NextAuth Session)
 ```
 
-#### Store 详细设计
+#### Store 职责说明
 
-**1. useSessionStore** — 会话管理
+| Store | 职责 | 关键状态 |
+|------|------|----------|
+| useSessionStore | 会话管理 | sessions[], messages[], isStreaming, inputValue, lastIntent |
+| useChainStore | 链路追踪 (C+A) | activeChain, steps[], reflectorHistory[], dagNodes[], dagEdges[], artifacts[] |
+| useTradingStore | AI Skill 交易 | mode('ai_skill'\|'classic'), balance, positions[], sChainTraces[], params |
+| useClassicStore | 经典交易 (C0-C8) | phases[C0-C8], activePhase, governance, config |
+| useThreeScreensStore | 三屏系统 | screen1/2/3 data, directionConstraint, presetConstraint |
+| useMonitorStore | SACG 监控 | layers[S/A/C/G], pipeline, sseConnection |
+| useMemoryStore | 记忆系统 | dzeChains[D/Z/E], preferences[], stats |
+| useUserMemoryStore | 用户记忆 | notes[], preferences[], health |
+| useNotebookStore | Notebook | tasks[], activeTask, steps[], artifacts[] |
+| useUIStore | UI 状态 | sidebarCollapsed, rightPanelCollapsed, theme, commandPaletteOpen |
+| useApiConfigStore | API 配置 | apiKeys[], tradingParams, strategies[], channels[] |
+| useAuthStore | 认证 | session, user, loginState |
 
-```typescript
-interface SessionState {
-  // 会话列表
-  sessions: ChatSession[];
-  activeSessionId: string | null;
-  // 消息状态
-  messages: ChatMessage[];
-  isStreaming: boolean;
-  currentStreamContent: string;
-  // 输入状态
-  inputValue: string;
-  inputMode: 'chat' | 'command';
-  // 意图识别结果 (S 层)
-  lastIntent: IntentRecognitionResult | null;
-  // Actions
-  createSession: () => string;
-  switchSession: (id: string) => void;
-  sendMessage: (content: string) => Promise<void>;
-  appendStreamDelta: (delta: string) => void;
-  setLastIntent: (intent: IntentRecognitionResult) => void;
-}
-```
-
-**2. useChainStore** — 链路追踪 (C 层 + A 层部分)
-
-```typescript
-interface ChainState {
-  // 当前执行的链
-  activeChain: {
-    chainId: string;
-    chainType: string;          // 'S' | 'C' | 'A' | 'F'
-    chainName: string;
-    status: 'idle' | 'running' | 'paused' | 'completed' | 'failed';
-    startedAt: string;
-    completedAt?: string;
-  } | null;
-  // 步骤列表
-  steps: ComputeStepViewModel[];
-  activeStepIndex: number;
-  // Reflector 决策历史
-  reflectorHistory: ReflectorDecisionRecord[];
-  // DAG 数据 (A 层)
-  dagNodes: ArrangeDAGNode[];
-  dagEdges: ArrangeDAGEdge[];
-  // 链产物
-  artifacts: ChainArtifact[];
-  // Actions
-  setActiveChain: (chain: ActiveChain) => void;
-  updateStep: (stepId: string, update: Partial<ComputeStepViewModel>) => void;
-  addReflectorDecision: (record: ReflectorDecisionRecord) => void;
-  updateDAGNode: (nodeId: string, update: Partial<ArrangeDAGNode>) => void;
-}
-```
-
-**3. useTradingStore** — AI Skill 交易
-
-```typescript
-interface TradingState {
-  // 交易模式
-  mode: 'ai_skill' | 'classic';
-  // AI Skill 状态
-  aiSkill: {
-    isConnected: boolean;
-    activeStrategies: StrategyView[];
-    balance: BalanceInfo | null;
-    positions: PositionInfo[];
-    recentSignals: TradingSignal[];
-  };
-  // S 系列链追踪
-  sChainTraces: SChainTrace[];
-  // 交易参数
-  params: TradingParamsView | null;
-  // Actions
-  setMode: (mode: 'ai_skill' | 'classic') => void;
-  updateBalance: (balance: BalanceInfo) => void;
-  addSignal: (signal: TradingSignal) => void;
-  setSChainTrace: (trace: SChainTrace) => void;
-}
-```
-
-**4. useClassicStore** — 经典交易系统
-
-```typescript
-interface ClassicState {
-  // C0-C8 各阶段状态
-  phases: {
-    C0_DIRECT_ANSWER: PhaseStatus;
-    C1_MACRO_SCAN: PhaseStatus;
-    C2_UNIVERSE_SCAN: PhaseStatus;
-    C3_GATE_CHECK: PhaseStatus;
-    C4_ARENA_REVIEW: PhaseStatus;
-    C5_STRATEGY_SELECT: PhaseStatus;
-    C6_SIGNAL_REVIEW: PhaseStatus;
-    C7_EXIT_MONITOR: PhaseStatus;
-    C8_TRACKING_AUDIT: PhaseStatus;
-  };
-  // 当前激活的阶段
-  activePhase: string;
-  // 治理流程
-  governance: {
-    proposals: GovernanceProposal[];
-    activeProposalId: string | null;
-    governanceStage: 'draft' | 'gate' | 'approval' | 'apply' | 'audit';
-  };
-  // 交易配置 (经典指标)
-  config: {
-    knowledgeSource: number;    // 10-经典指标
-    indicatorSet: string[];
-    timeframe: string;
-  };
-  // Actions
-  setPhaseStatus: (phase: string, status: PhaseStatus) => void;
-  setActivePhase: (phase: string) => void;
-  updateGovernance: (update: Partial<ClassicGovernance>) => void;
-}
-```
-
-**5. useMonitorStore** — SACG 监控
-
-```typescript
-interface MonitorState {
-  // SACG 四层状态
-  layers: {
-    S: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-    A: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-    C: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-    G: { status: 'idle' | 'active' | 'error'; events: MonitorEvent[] };
-  };
-  // 管道状态
-  pipeline: {
-    activePipelines: PipelineStatus[];
-    throughput: { rps: number; avgLatencyMs: number };
-  };
-  // SSE 连接状态
-  sseConnection: 'disconnected' | 'connecting' | 'connected' | 'error';
-  // Actions
-  pushEvent: (layer: 'S' | 'A' | 'C' | 'G', event: MonitorEvent) => void;
-  setSSEStatus: (status: string) => void;
-  updatePipeline: (update: Partial<PipelineInfo>) => void;
-}
-```
-
-**6. useMemoryStore** — 记忆系统
-
-```typescript
-interface MemoryState {
-  // D-Z-E 工程链
-  dzeChains: {
-    D: { status: string; records: MemoryRecord[] };
-    Z: { status: string; records: MemoryRecord[] };
-    E: { status: string; records: MemoryRecord[] };
-  };
-  // 用户偏好记忆
-  preferences: UserPreference[];
-  // 记忆统计
-  stats: {
-    totalMemories: number;
-    compressionRatio: number;
-    lastEvolutionAt: string;
-  };
-  // Actions
-  updateDZEChain: (chain: 'D' | 'Z' | 'E', update: Partial<DZEChainState>) => void;
-  setPreferences: (prefs: UserPreference[]) => void;
-}
-```
-
-**7. useUIStore** — UI 状态
-
-```typescript
-interface UIState {
-  // 布局
-  sidebarCollapsed: boolean;
-  rightPanelCollapsed: boolean;
-  activeRightTab: 'analysis' | 'market' | 'reports' | 'settings';
-  // 主题
-  theme: 'dark' | 'light';
-  // 语言
-  locale: 'zh-CN' | 'en-US';
-  // Command Palette
-  commandPaletteOpen: boolean;
-  // 通知
-  notifications: Notification[];
-  // Actions
-  toggleSidebar: () => void;
-  toggleRightPanel: () => void;
-  setTheme: (theme: 'dark' | 'light') => void;
-  toggleCommandPalette: () => void;
-}
-```
-
-**8. useApiConfigStore** — API 配置 (迁移)
-
-```typescript
-// 迁移自 v2 src/stores/config-store.ts
-// 管理的配置域: API Keys / Trading Params / Strategies / Channels
-// 迁移时保持接口不变，仅调整内部 fetch 调用走统一 API Client
-```
-
-**9. useAuthStore** — 认证 (迁移)
-
-```typescript
-// 迁移自 v2 src/stores/auth-store.ts
-// 管理: session / user profile / login state
-// 迁移时保持 NextAuth Session 机制不变
-```
-
-### 3.4 组件层级设计
+### 3.5 组件层级设计
 
 ```
-src/components/v3/
-├── layout/                          → Layout 层
-│   ├── AppShell.tsx                → 应用外壳 (全屏容器)
-│   ├── Sidebar.tsx                 → 左侧导航栏
-│   ├── TopBar.tsx                  → 顶部栏 (面包屑/搜索/用户)
-│   ├── CommandPalette.tsx          → 命令面板 (Cmd+K)
-│   └── NotificationToast.tsx       → 通知提示
+src/components/
+├── V3Card.tsx                    → 基础卡片
+├── V3Button.tsx                  → 基础按钮
+├── V3Badge.tsx                   → 基础徽章
+├── V3StatusDot.tsx               → 状态圆点
+├── V3Tooltip.tsx                 → 工具提示
+├── V3InlineSVG.tsx               → 内联 SVG 图标
+├── V3Spinner.tsx                 → 加载动画
+├── V3Empty.tsx                   → 空状态
 │
-├── screens/                         → Screen 层 (页面级容器)
-│   ├── DashboardScreen.tsx          → 主控台三屏概览
-│   ├── TradeScreen.tsx              → AI Skill 交易页
-│   ├── ClassicScreen.tsx            → 经典交易页
-│   ├── FundamentalScreen.tsx        → 基本面分析页
-│   ├── ThreeScreensPage.tsx         → 三屏交易系统总览
-│   ├── MonitorScreen.tsx           → SACG 监控页
-│   ├── MemoryScreen.tsx            → 记忆管理页
-│   ├── SettingsScreen.tsx          → 系统设置页
-│   ├── ReportsScreen.tsx           → 产物中台页
-│   └── GovernanceScreen.tsx         → 治理面板页
-│
-├── features/                        → Feature 层 (业务功能组件)
-│   ├── chat/
-│   │   ├── ChatPanel.tsx           → 聊天面板
-│   │   ├── MessageList.tsx          → 消息列表
-│   │   ├── MessageItem.tsx         → 单条消息
-│   │   ├── ChatInput.tsx           → 输入区+快捷命令
-│   │   └── StreamingIndicator.tsx  → 流式输出指示器
-│   │
-│   ├── chain/
-│   │   ├── ChainTracker.tsx        → 链追踪面板
-│   │   ├── ChainStepCard.tsx       → 单步骤卡片
-│   │   ├── ReflectorDecisionBadge.tsx → Reflector 决策标记
-│   │   ├── CrossValidationPanel.tsx → 三链交叉验证面板
-│   │   └── SACELayerBadge.tsx      → SACG 层级标记
-│   │
-│   ├── data/
-│   │   ├── DataView.tsx            → 数据视图容器
-│   │   ├── MarketSnapshot.tsx      → 市场快照
-│   │   ├── BalanceCard.tsx          → 余额卡片
-│   │   └── PositionTable.tsx        → 持仓表格
-│   │
-│   ├── sacg/
-│   │   ├── SACGVisualizer.tsx      → SACG 四层总览可视化
-│   │   ├── SenseConfidenceGauge.tsx → 意图置信度仪表
-│   │   ├── ThreeLayerValueModel.tsx → 三层价值模型展示
-│   │   ├── DAGGraphView.tsx        → DAG 图可视化
-│   │   ├── ReflectorPanel.tsx      → Reflector 决策面板
-│   │   ├── BACTimeline.tsx         → BAC 压缩时间线
-│   │   └── HistoryPlayer.tsx       → 历史回放播放器
-│   │
-│   ├── classic/
-│   │   ├── ClassicPhasePanel.tsx   → 经典系统阶段面板
-│   │   ├── GovernanceFlow.tsx       → 治理流程 UI
-│   │   ├── PhaseIndicator.tsx      → 阶段指示器 (C0-C8)
-│   │   └── IndicatorConfig.tsx     → 经典指标配置
-│   │
-│   ├── fundamental/
-│   │   ├── FundamentalGrid.tsx      → 基本面指标网格
-│   │   ├── OnchainMetrics.tsx      → 链上数据
-│   │   ├── MacroDashboard.tsx      → 宏观面板
-│   │   └── SentimentHeatmap.tsx    → 情绪热力图
-│   │
-│   ├── three-screens/
-│   │   ├── Screen1Panel.tsx        → 战略层：七维牛熊评分 + 方向锚
-│   │   ├── Screen2Panel.tsx        → 战术层：三大预设价位 + 回测
-│   │   ├── Screen3Panel.tsx        → 执行层：流水线 + 持仓状态
-│   │   ├── PipelineView.tsx         → 全链路方向约束传递可视化
-│   │   ├── DirectionAnchor.tsx     → MA200 方向锚指示器
-│   │   ├── DebatePanel.tsx          → 大师辩论面板
-│   │   ├── PresetPriceTable.tsx    → 预设价位表
-│   │   ├── ExecutionPipeline.tsx   → A7→A4→Gate→A5→A6→A9 流水线
-│   │   └── ConstraintFlow.tsx      → 方向约束→预设约束传递箭头
-│   │
-│   ├── memory/
-│   │   ├── DZEChainView.tsx        → D-Z-E 链视图
-│   │   ├── MemoryTimeline.tsx       → 记忆时间线
-│   │   └── PreferenceEditor.tsx    → 偏好编辑器
-│   │
-│   ├── settings/
-│   │   ├── ApiKeyManager.tsx       → API 密钥管理
-│   │   ├── TradingParamsEditor.tsx → 交易参数编辑
-│   │   ├── StrategyManager.tsx     → 策略管理
-│   │   └── ChannelManager.tsx       → 通信渠道管理
-│   │
-│   └── reports/
-│       ├── ArtifactList.tsx        → 产物列表
-│       ├── ArtifactDetail.tsx      → 产物详情
-│       └── ArtifactFilter.tsx      → 产物筛选
-│
-├── primitives/                      → Primitive 层 (原子组件)
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── Badge.tsx
-│   ├── Dialog.tsx
-│   ├── Tooltip.tsx
-│   ├── StatusDot.tsx
-│   ├── ProgressBar.tsx
-│   ├── Tabs.tsx
-│   ├── Select.tsx
-│   ├── Input.tsx
-│   ├── Switch.tsx
-│   ├── Spinner.tsx
-│   ├── Avatar.tsx
-│   └── icons/                      → Inline SVG 图标
-│       ├── icon-search.tsx
-│       ├── icon-chart.tsx
-│       ├── icon-gear.tsx
-│       ├── icon-shield.tsx
-│       ├── icon-brain.tsx
-│       ├── icon-database.tsx
-│       └── ...
-│
-└── hooks/                           → 自定义 Hooks
-    ├── useSSE.ts                   → SSE 流式连接
-    ├── useAPI.ts                   → 统一 API 调用
-    ├── useChainTracker.ts          → 链追踪逻辑
-    ├── useRealtimeData.ts          → 实时数据轮询
-    ├── useKeyboard.ts              → 键盘快捷键
-    └── useDebounce.ts              → 防抖
+└── features/                     → 业务功能组件 (按域分层)
+    ├── chat/                     → 对话域 (19个组件)
+    │   ├── ChatPanel.tsx         → 聊天面板 (主容器)
+    │   ├── ChatInput.tsx         → 输入区+快捷命令
+    │   ├── MessageItem.tsx       → 单条消息
+    │   ├── StreamingIndicator.tsx → 流式输出指示器
+    │   ├── ThinkingCard.tsx      → AI 思考过程卡片
+    │   ├── ClarifyCard.tsx       → 意图澄清卡片
+    │   ├── SteerPanel.tsx        → 引导面板
+    │   ├── SynthesisChart.tsx    → 综合图表
+    │   ├── InsightCard.tsx       → 洞察卡片
+    │   ├── RecommendationCard.tsx → 推荐卡片
+    │   ├── ReportExport.tsx      → 报告导出
+    │   ├── MoodBoardPanel.tsx    → 情绪看板
+    │   ├── StepConfirmation.tsx  → 步骤确认
+    │   ├── EnhancementHints.tsx  → 增强提示
+    │   ├── MonitorHooks.tsx      → 监控钩子
+    │   ├── ExecutionReviewHooks.tsx → 执行审查钩子
+    │   ├── StrategyHooks.tsx     → 策略钩子
+    │   ├── DecisionHooks.tsx     → 决策钩子
+    │   └── DimensionHooks.tsx    → 维度钩子
+    │
+    ├── chain/                    → 链路追踪域 (7个组件)
+    │   ├── ChainTracker.tsx      → 链追踪面板
+    │   ├── ChainStepCard.tsx     → 单步骤卡片
+    │   ├── StepInterventionPanel.tsx → 步骤干预
+    │   ├── BullBearDebate.tsx    → 多空辩论
+    │   ├── SACELayerBadge.tsx    → SACG 层级标记
+    │   ├── ReflectorDecisionBadge.tsx → Reflector 决策标记
+    │   └── CrossValidationPanel.tsx → 三链交叉验证
+    │
+    ├── three-screens/            → 三屏交易域 (7个组件)
+    │   ├── Screen1Panel.tsx      → 战略层
+    │   ├── Screen2Panel.tsx      → 战术层
+    │   ├── Screen3Panel.tsx      → 执行层
+    │   ├── PipelineView.tsx      → 全链路视图
+    │   └── charts/               → 图表子组件
+    │       ├── ConfidenceGauge.tsx
+    │       ├── RadarDimensions.tsx
+    │       └── FundamentalBars.tsx
+    │
+    ├── fundamental/              → 基本面域 (17个组件)
+    │   ├── FundamentalGrid.tsx  → 基本面网格
+    │   ├── OverviewPanel.tsx     → 综合概览
+    │   ├── FlowPanel.tsx         → 资金流向
+    │   ├── MacroPanel.tsx        → 宏观经济
+    │   ├── MacroDashboard.tsx    → 宏观面板
+    │   ├── IntermarketPanel.tsx  → 跨市场分析
+    │   ├── SentimentPanel.tsx    → 市场情绪
+    │   ├── SentimentHeatmap.tsx  → 情绪热力图
+    │   ├── ValuationPanel.tsx    → 估值模型
+    │   ├── OnchainPanel.tsx      → 链上数据
+    │   ├── OnchainMetrics.tsx    → 链上指标
+    │   ├── BreadthPanel.tsx      → 市场广度
+    │   ├── ModuleDetail.tsx      → 模块详情
+    │   ├── NetFlowTrendChart.tsx → 净流趋势图
+    │   ├── WhaleTracker.tsx      → 巨鲸追踪
+    │   ├── UTXOAgeDistribution.tsx → UTXO 年龄分布
+    │   └── MVRVZoneChart.tsx     → MVRV 区域图
+    │
+    ├── classic/                  → 经典交易域 (8个组件)
+    │   ├── IndicatorPanel.tsx    → 指标面板
+    │   ├── GovernanceFlow.tsx    → 治理流程
+    │   ├── GovernancePanelEnhanced.tsx → 增强治理面板
+    │   ├── ClassicPhaseIndicator.tsx → 阶段指示器
+    │   ├── ClassicPhasePanel.tsx → 经典阶段面板
+    │   ├── GenerationPanel.tsx   → 生成面板
+    │   ├── ManagementPanel.tsx   → 管理面板
+    │   └── SignalsPanel.tsx      → 信号面板
+    │
+    ├── monitor/                  → SACG 监控域 (5个组件)
+    │   ├── SACGOverview.tsx      → SACG 四层总览
+    │   ├── DAGGraphView.tsx      → DAG 图可视化
+    │   ├── ReflectorPanel.tsx    → Reflector 决策面板
+    │   ├── CrossValidationPanel.tsx → 交叉验证面板
+    │   └── SenseConfidenceGauge.tsx → 意图置信度仪表
+    │
+    ├── sacg/                     → SACG 历史回放 (2个组件)
+    │   ├── BACTimeline.tsx       → BAC 压缩时间线
+    │   └── HistoryPlayer.tsx     → 历史回放播放器
+    │
+    ├── memory/                   → 记忆域 (6个组件)
+    │   ├── RecordExperienceForm.tsx → 经验记录表单
+    │   ├── MemoryTimeline.tsx    → 记忆时间线
+    │   ├── DZEChainView.tsx      → D-Z-E 链视图
+    │   ├── MemoryTabNav.tsx     → 记忆标签导航
+    │   ├── SkillIndexView.tsx   → 技能索引视图
+    │   └── DocIndexView.tsx     → 文档索引视图
+    │
+    ├── settings/                 → 设置域 (5个组件)
+    │   ├── ApiKeyManager.tsx    → API 密钥管理
+    │   ├── TradingParamsPanel.tsx → 交易参数面板
+    │   ├── StrategyManager.tsx  → 策略管理
+    │   ├── CompletenessWizard.tsx → 完整性向导
+    │   └── ChannelManager.tsx   → 通信渠道管理
+    │
+    ├── notebook/                 → Notebook 域 (7个组件)
+    │   ├── NotebookPanel.tsx    → Notebook 面板
+    │   ├── ArtifactGallery.tsx  → 产物画廊
+    │   ├── TaskCard.tsx         → 任务卡片
+    │   ├── ActiveDZEChain.tsx   → 活跃 DZE 链
+    │   ├── ActiveStrategyChain.tsx → 活跃策略链
+    │   ├── StepActionMenu.tsx   → 步骤操作菜单
+    │   └── StepProgress.tsx     → 步骤进度
+    │
+    ├── ranking/                  → 排行榜域 (4个组件)
+    │   ├── DecisionCard.tsx     → 决策卡片
+    │   ├── RankingCard.tsx      → 排名卡片
+    │   ├── RankingMonitor.tsx    → 排行监控
+    │   └── PrefillOrderBanner.tsx → 预填单横幅
+    │
+    ├── governance/               → 治理域 (1个组件)
+    │   └── GovernanceScreen.tsx → 治理面板
+    │
+    ├── reports/                  → 报告域 (1个组件)
+    │   └── ReportsScreen.tsx    → 报告页面
+    │
+    ├── workflow/                 → 工作流域 (3个组件)
+    │   ├── WorkflowCard.tsx     → 工作流卡片
+    │   ├── WorkflowStatusBadge.tsx → 状态徽章
+    │   └── WorkflowStepList.tsx → 步骤列表
+    │
+    ├── orchestration/           → 编排域 (1个组件)
+    │   └── OrchestrationPanel.tsx → 编排面板
+    │
+    ├── dashboard/               → 仪表盘域 (1个组件)
+    │   └── LiveStatusPanel.tsx → 实时状态面板
+    │
+    ├── token-monitor/           → Token 监控域 (2个组件)
+    │   ├── TokenMonitorPanel.tsx → Token 监控面板
+    │   └── TokenMonitorBadge.tsx → Token 监控徽章
+    │
+    └── graph-compression/       → 图压缩域 (1个组件)
+        └── GraphCompressionVisualizer.tsx → 图压缩可视化
 ```
 
-#### 组件层级关系图
+#### 组件层级关系
 
 ```
 Layout 层
-  └── AppShell
-       ├── Sidebar (导航路由)
-       ├── TopBar (搜索/通知/用户)
+  └── DashboardLayout (src/app/dashboard/layout.tsx)
+       ├── Sidebar (内联在 layout 中)
        └── Content Area
-            └── Screen 层
-                 └── TradeScreen (页面容器)
-                      ├── Feature 层
-                      │    ├── ChatPanel
-                      │    │    ├── MessageList
-                      │    │    │    └── MessageItem (含 Primitive)
-                      │    │    └── ChatInput (含 Primitive)
-                      │    ├── ChainTracker
-                      │    │    ├── ChainStepCard
-                      │    │    │    ├── ReflectorDecisionBadge
-                      │    │    │    └── CrossValidationPanel
-                      │    │    └── SACELayerBadge
-                      │    └── DataView
-                      │         ├── MarketSnapshot
-                      │         └── BalanceCard
-                      └── Primitive 层 (通过 Feature 间接引用)
+            └── Page 层 (src/app/dashboard/*/page.tsx)
+                 └── Feature 层 (src/components/features/*)
+                      └── Primitive 层 (src/components/V3*.tsx)
+```
+
+### 3.6 Lib 架构
+
+```
+src/lib/
+├── v3/api/                       → API Client 层 (20个域模块)
+│   ├── client.ts                 → ApiClient 基类
+│   ├── index.ts                  → 统一导出
+│   ├── task.ts                   → 任务执行 API
+│   ├── chat.ts                   → 对话 API
+│   ├── market.ts                 → 市场数据 API
+│   ├── trade.ts                  → 交易 API
+│   ├── config.ts                 → 配置管理 API
+│   ├── user.ts                   → 用户 API
+│   ├── reports.ts                → 报告 API
+│   ├── monitor.ts                → 监控 API
+│   ├── intent.ts                 → 意图识别 API
+│   ├── notebook.ts               → 笔记本 API
+│   ├── ops.ts                    → 运维 API
+│   ├── orchestrate.ts            → 编排 API
+│   ├── chain.ts                  → 链路产物 API
+│   ├── board.ts                  → 治理 API
+│   ├── fundamental.ts            → 基本面 API
+│   ├── feed.ts                   → 消息流 API
+│   ├── auth.ts                   → 认证 API
+│   ├── artifact.ts               → 产物文件 API
+│   └── register.ts               → 注册 API
+│
+├── planner/                      → 规划引擎 (21个文件)
+│   ├── planner.ts                → 主规划器
+│   ├── chain-planner.ts          → 链规划器
+│   ├── dynamic-node-planner.ts   → 动态节点规划
+│   ├── cross-validator.ts        → 交叉验证器
+│   ├── voting-calculator.ts      → 投票计算器
+│   ├── confidence-evaluator.ts   → 置信度评估器
+│   ├── skill-selector.ts         → 技能选择器
+│   ├── skills-registry.ts        → 技能注册表
+│   ├── module-registry.ts        → 模块注册表
+│   ├── chains-registry.ts        → 链注册表
+│   ├── bridge-client.ts          → 桥接客户端
+│   ├── methodology-executor.ts   → 方法论执行器
+│   ├── intent-clarification-engine.ts → 意图澄清引擎
+│   ├── intent-spec-writer.ts     → 意图规范编写器
+│   ├── node-gap-supplementer.ts  → 节点缺口补充器
+│   ├── tdd-execution-wrapper.ts  → TDD 执行包装器
+│   ├── supplement-memory-store.ts → 补充记忆存储
+│   ├── superpowers-skill-adapter.ts → 超能力技能适配器
+│   ├── superpowers-skill-fs.ts   → 超能力技能文件系统
+│   └── ... (types, index等)
+│
+├── orchestration/                → 编排层
+│   ├── llm-bridge.ts             → LLM 桥接
+│   ├── superpower-llm-bridge.ts  → 超能力 LLM 桥接
+│   ├── skill-llm-bridge-adapter.ts → 技能 LLM 桥接适配器
+│   ├── market-data-bridge.ts    → 市场数据桥接
+│   └── node-prompts.ts           → 节点提示词
+│
+├── cognitive/                    → 认知系统
+│   ├── cognitive-context-fetcher.ts → 认知上下文获取器
+│   ├── cognitive-context-builder.ts → 认知上下文构建器
+│   ├── cognitive-client.ts       → 认知客户端
+│   └── trae-memory-bridge.ts     → Trae 记忆桥接
+│
+├── case/                          → 案例检索
+│   ├── case-retriever.ts         → 案例检索器
+│   ├── case-verify-bridge.ts     → 案例验证桥接
+│   ├── case-bank-client.ts       → 案例库客户端
+│   └── solution-encoder.ts       → 解决方案编码器
+│
+├── SACG 五训练循环
+│   ├── s-intent-training-loop.ts → S 层意图训练循环
+│   ├── c-reflection-training-loop.ts → C 层反思训练循环
+│   ├── g-graph-training-loop.ts  → G 层图训练循环
+│   ├── dsh-path-training-loop.ts → DSH 路径训练循环
+│   └── llm-prompt-training-loop.ts → LLM 提示训练循环
+│
+├── dynamic-chain/                → 动态链
+│   ├── executor.ts               → 执行器
+│   ├── runner.ts                 → 运行器
+│   ├── graph-planner.ts          → 图规划器
+│   ├── reflect-engine.ts         → 反思引擎
+│   └── types.ts
+│
+├── dev-chain/                    → 开发链
+│   ├── chain-controller.ts
+│   ├── route.ts
+│   ├── steps/index.ts
+│   └── types.ts
+│
+├── strategy/                     → 策略
+│   ├── chain-controller.ts
+│   ├── route.ts
+│   ├── types.ts
+│   ├── index.ts
+│   └── steps/ (analysis/research/design/validate/execute)
+│
+├── compressor-adapter/          → 压缩适配器
+│   ├── adapter.ts
+│   ├── orchestrate-adapter.ts
+│   ├── external-stub.ts
+│   ├── fallback.ts
+│   ├── types.ts
+│   └── index.ts
+│
+├── scheduler/                    → 调度器
+│   ├── cost-keeper.ts            → 成本保持器
+│   ├── skip-gate.ts             → 跳过门禁
+│   └── index.ts
+│
+├── notebook/                     → Notebook
+│   ├── step-controller.ts
+│   └── types.ts
+│
+├── intent/                       → 意图识别
+│   ├── smart-router.ts
+│   ├── fallback-engine.ts
+│   ├── intent-memory.ts
+│   ├── intent-descriptions.ts
+│   └── index.ts
+│
+├── memory/                       → 记忆
+│   └── user-preference-memory.ts
+│
+├── 核心服务
+│   ├── task-manager.ts           → 任务管理器
+│   ├── intent-router.ts          → 意图路由器
+│   ├── sse-dispatcher.ts        → SSE 分发器
+│   ├── sse-client.ts            → SSE 客户端
+│   ├── use-sse.ts               → SSE Hook
+│   ├── api-client.ts            → API 客户端 (旧版)
+│   ├── auth.ts                  → 认证
+│   ├── auth-runtime.ts          → 认证运行时
+│   ├── encryption.ts            → 加密
+│   ├── prisma.ts                → Prisma 客户端
+│   ├── uid.ts                   → 唯一 ID 生成
+│   ├── trace-id.ts              → 追踪 ID
+│   ├── trading-mode.ts          → 交易模式
+│   ├── trading-hook.ts          → 交易 Hook
+│   ├── bridge-client.ts         → 桥接客户端
+│   ├── monitor-bus.ts           → 监控总线
+│   ├── token-monitor.ts         → Token 监控
+│   ├── use-token-monitor.ts     → Token 监控 Hook
+│   ├── use-monitor-data.ts      → 监控数据 Hook
+│   ├── reflection-gates.ts      → 反思门禁
+│   ├── reflection-engine.ts     → 反思引擎
+│   ├── quality-gate.ts          → 质量门禁
+│   ├── eval-layer.ts            → 评估层
+│   ├── drift-detector.ts        → 漂移检测器
+│   ├── imitation-counter.ts     → 模仿计数器
+│   ├── evolution-agent.ts       → 进化代理
+│   ├── skill-orchestration-executor.ts → 技能编排执行器
+│   ├── skill-selector.ts        → 技能选择器
+│   ├── research-orchestrator.ts → 研究编排器
+│   ├── knowledge-ingest.ts      → 知识摄入
+│   ├── knowledge-loader.ts      → 知识加载器
+│   ├── knowledge-rag.ts         → 知识 RAG
+│   ├── summary-agent.ts        → 摘要代理
+│   ├── graph-reflection-bridge.ts → 图反思桥接
+│   ├── bdsm-api.ts              → BDSM API
+│   ├── three-screens-api.ts    → 三屏 API
+│   ├── three-screens-mapper.ts → 三屏映射器
+│   ├── classic-system-api.ts   → 经典系统 API
+│   ├── classic-system-bridge.ts → 经典系统桥接
+│   ├── classic-system-client.ts → 经典系统客户端
+│   ├── classic-system-hooks.ts → 经典系统 Hooks
+│   ├── market-data-fetcher.ts  → 市场数据获取器
+│   ├── market-data-adapter.ts  → 市场数据适配器
+│   ├── test-market-adapter.ts   → 测试市场适配器
+│   ├── tavily-service.ts        → Tavily 服务
+│   ├── dsh-execution-engine.ts  → DSH 执行引擎
+│   ├── c-drive.ts               → C 驱动
+│   ├── c-reflection-training-loop.ts → C 反思训练循环
+│   ├── user-memory-client.ts    → 用户记忆客户端
+│   ├── module-api-client.ts     → 模块 API 客户端
+│   ├── jsonl-writer.ts          → JSONL 写入器
+│   ├── development-route-uids.ts → 开发路由 UID
+│   ├── dev-user.ts              → 开发用户
+│   ├── strategy-lifecycle-service.ts → 策略生命周期服务
+│   ├── strategy-task-order-service.ts → 策略任务顺序服务
+│   ├── strategy-task-order.ts   → 策略任务顺序
+│   └── strategy-artifacts.ts    → 策略产物
 ```
 
 ---
 
 ## 第四章：API 集成方案
 
-### 4.1 API Client 层封装设计
+### 4.1 API Client 层
 
-```typescript
-// src/lib/v3/api/client.ts
+API Client 封装在 [src/lib/v3/api/client.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/v3/api/client.ts) 中，基于 fetch 封装:
 
-/**
- * 统一 API Client
- * - 基于 fetch 封装
- * - 支持标准 REST 和 SSE
- * - 统一错误处理和重试
- */
-
-interface ApiClientConfig {
-  baseUrl: string;         // 默认 ''
-  timeout: number;         // 默认 30000ms
-  retries: number;         // 默认 2
-  headers?: Record<string, string>;
-}
-
-class ApiClient {
-  private config: ApiClientConfig;
-
-  async get<T>(path: string, options?: RequestInit): Promise<ApiResponse<T>> { /*...*/ }
-  async post<T>(path: string, body?: unknown): Promise<ApiResponse<T>> { /*...*/ }
-  async put<T>(path: string, body?: unknown): Promise<ApiResponse<T>> { /*...*/ }
-  async patch<T>(path: string, body?: unknown): Promise<ApiResponse<T>> { /*...*/ }
-  async delete<T>(path: string): Promise<ApiResponse<T>> { /*...*/ }
-
-  // SSE 专用
-  async sse<T>(path: string, body: unknown, handlers: SSEHandlers<T>): AbortController { /*...*/ }
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: ApiError;
-}
-
-interface ApiError {
-  code: string;
-  message: string;
-  retryable: boolean;
-  details?: unknown;
-}
-```
+- 支持 GET/POST/PUT/PATCH/DELETE
+- 统一错误处理和重试
+- SSE 专用方法
 
 ### 4.2 API 分组
 
-按 19 个业务域分组，每组一个 API 模块文件:
+按 20 个业务域分组，每组一个 API 模块文件:
 
 ```
 src/lib/v3/api/
 ├── client.ts                 → ApiClient 基类
 ├── index.ts                  → 统一导出
-├── task-api.ts               → 任务执行 (5 端点)
-├── chat-api.ts               → 对话 (2 端点)
-├── market-api.ts             → 市场数据 (8 端点)
-├── trade-api.ts              → 交易 (1 端点)
-├── config-api.ts             → 配置管理 (14 端点)
-├── user-api.ts               → 用户 (4 端点)
-├── reports-api.ts            → 研报 (1 端点)
-├── monitor-api.ts            → 监控 (3 端点)
-├── intent-api.ts             → 意图识别 (2 端点)
-├── notebook-api.ts           → 笔记本 (8 端点)
-├── ops-api.ts                → 运维 (2 端点)
-├── orchestrate-api.ts         → 编排 (2 端点)
-├── chain-api.ts              → 链路产物 (1 端点)
-├── board-api.ts              → 治理 (5 端点)
-├── fundamental-api.ts        → 基本面 (2 端点)
-├── feed-api.ts               → 消息流 (1 端点)
-├── auth-api.ts               → 认证 (NextAuth, 无自定义端点)
-├── artifact-api.ts           → 产物文件 (1 端点)
-└── register-api.ts           → 注册 (1 端点)
+├── task.ts                   → 任务执行
+├── chat.ts                   → 对话
+├── market.ts                 → 市场数据
+├── trade.ts                  → 交易
+├── config.ts                 → 配置管理
+├── user.ts                   → 用户
+├── reports.ts                → 报告
+├── monitor.ts                → 监控
+├── intent.ts                 → 意图识别
+├── notebook.ts               → 笔记本
+├── ops.ts                    → 运维
+├── orchestrate.ts             → 编排
+├── chain.ts                  → 链路产物
+├── board.ts                  → 治理
+├── fundamental.ts            → 基本面
+├── feed.ts                   → 消息流
+├── auth.ts                   → 认证
+├── artifact.ts               → 产物文件
+└── register.ts               → 注册
 ```
 
-### 4.3 SSE 流式集成方案
+### 4.3 认知系统 API
+
+3.1 新增的认知系统 API 端点:
+
+| 方法 | 路径 | 用途 |
+|------|------|------|
+| POST | /api/cognitive/recall | 检索历史经验 |
+| POST | /api/cognitive/record | 记录新经验 |
+| POST | /api/cognitive/verify | 验证已有记忆（贝叶斯置信度更新） |
+| GET | /api/cognitive/stats | 记忆统计 |
+| GET | /api/cognitive/health | 健康检查 |
+| POST | /api/cognitive/unified | 统一认知查询 |
+| GET | /api/cognitive/knowledge | 知识检索 |
+
+### 4.4 SSE 流式集成
 
 #### 9 种事件类型处理策略
 
 | 事件类型 | 数据方向 | 处理策略 | UI 响应 |
 |----------|----------|----------|---------|
 | `started` | Server → Client | 标记任务开始，初始化追踪 UI | 显示 "正在处理..." 动画 |
-| `thinking` | Server → Client | 显示 AI 思考过程 | 在 ChatPanel 中显示思考卡片 (ThinkingCard) |
-| `progress` | Server → Client | 更新链路步骤进度 | ChainTracker 中对应步骤状态更新为 running |
-| `text_delta` | Server → Client | 流式追加文本 | MessageItem 实时追加文本内容 |
-| `data_card` | Server → Client | 渲染结构化数据卡片 | 在消息流中插入 DataCard 组件 |
-| `artifact_ref` | Server → Client | 记录产物引用 | 在参考报告区域新增一条引用卡片 |
-| `action_required` | Server → Client | 需要用户操作 | 弹出 Dialog 或在消息中显示操作按钮 |
-| `done` | Server → Client | 标记任务完成 | 更新链追踪状态为 completed，停止流式动画 |
-| `error` | Server → Client | 错误处理 | 显示错误提示，根据 retryable 决定是否显示重试按钮 |
+| `thinking` | Server → Client | 显示 AI 思考过程 | ThinkingCard 组件 |
+| `progress` | Server → Client | 更新链路步骤进度 | ChainTracker 步骤状态更新 |
+| `text_delta` | Server → Client | 流式追加文本 | MessageItem 实时追加 |
+| `data_card` | Server → Client | 渲染结构化数据卡片 | 消息流中插入卡片 |
+| `artifact_ref` | Server → Client | 记录产物引用 | 参考报告区域新增引用 |
+| `action_required` | Server → Client | 需要用户操作 | StepConfirmation 弹窗 |
+| `done` | Server → Client | 标记任务完成 | 链追踪状态更新为 completed |
+| `error` | Server → Client | 错误处理 | 显示错误提示，根据 retryable 显示重试 |
 
-#### SSE Hook 设计
-
-```typescript
-// src/components/v3/hooks/useSSE.ts
-
-interface UseSSEOptions {
-  url: string;
-  body: unknown;
-  onEvent: (event: SSEEvent) => void;
-  onError?: (error: Error) => void;
-  onComplete?: () => void;
-  autoStart?: boolean;
-}
-
-function useSSE(options: UseSSEOptions) {
-  // 返回:
-  // - status: 'idle' | 'connecting' | 'streaming' | 'completed' | 'error'
-  // - abort: () => void
-  // - start: () => void
-  // - retry: () => void
-}
-```
-
-#### SSE 事件分发到 Store
-
-```typescript
-// SSE 事件到达后，根据类型分发到不同的 Zustand Store:
-function dispatchSSEEvent(event: SSEEvent): void {
-  switch (event.type) {
-    case 'started':
-      useChainStore.getState().setActiveChain(event.data.chain);
-      break;
-    case 'progress':
-      useChainStore.getState().updateStep(event.data.stepId, { status: 'running', progress: event.data.progress });
-      break;
-    case 'text_delta':
-      useSessionStore.getState().appendStreamDelta(event.data.content);
-      break;
-    case 'data_card':
-      // 插入到消息流
-      break;
-    case 'artifact_ref':
-      useChainStore.getState().addArtifact(event.data);
-      break;
-    case 'action_required':
-      // 触发 UI 弹窗
-      break;
-    case 'done':
-      useChainStore.getState().updateStep(event.data.stepId, { status: 'done' });
-      useSessionStore.getState().stopStreaming();
-      break;
-    case 'error':
-      useMonitorStore.getState().pushEvent('C', { type: 'error', data: event.data });
-      break;
-  }
-}
-```
-
-### 4.4 错误处理与重试策略
+### 4.5 错误处理策略
 
 | 错误类型 | 处理方式 | 重试策略 | 用户提示 |
 |----------|----------|----------|----------|
@@ -1227,7 +867,6 @@ function dispatchSSEEvent(event: SSEEvent): void {
 | 429 限流 | 排队等待 | 指数退避，最多 5 次 | "请求过于频繁，稍后重试" |
 | 500 服务错误 | 显示重试按钮 | 自动重试 1 次 | "服务异常，请稍后重试" |
 | SSE 连接断开 | 自动重连 | 指数退避，最多 10 次 | "连接中断，正在重连..." |
-| LLM 降级 | 降级到备用模型 | 自动切换 | "AI 模型切换中..." |
 
 ---
 
@@ -1273,13 +912,6 @@ C (Compute) #22C55E  绿色  — 执行追踪、Reflector 决策、验证通过
 G (Graph)   #EF4444  红色  — BAC 压缩、历史回放、Checkpoint
 ```
 
-这四色在 UI 中的使用规则:
-- **Sidebar 导航**: 每个一级导航项左侧有 SACG 层色条
-- **Badge/Tag**: 链路步骤上的 SACELayerBadge 使用对应层色
-- **进度条**: 四层各自的进度条使用对应层色
-- **DAG 节点**: 节点边框色表示所属 SACG 层
-- **状态面板**: 四层监控面板的 Tab 使用对应层色高亮
-
 #### 链系列色
 
 | 链系列 | 颜色 | 用途 |
@@ -1293,8 +925,8 @@ G (Graph)   #EF4444  红色  — BAC 压缩、历史回放、Checkpoint
 
 | 断点 | 宽度范围 | Sidebar | 右侧面板 | 布局模式 |
 |------|----------|---------|----------|----------|
-| `xl` | >= 1280px | 展开 (240px) | 展开 (320px) | 三栏完整 |
-| `lg` | 1024-1279px | 折叠 (64px, 仅图标) | 展开 (320px) | 双栏+图标侧栏 |
+| `xl` | >= 1280px | 展开 (192px) | 展开 | 完整 |
+| `lg` | 1024-1279px | 折叠 (56px, 仅图标) | 展开 | 双栏+图标侧栏 |
 | `md` | 768-1023px | 折叠 (隐藏) | 抽屉模式 | 单栏+抽屉 |
 | `sm` | < 768px | 隐藏 (汉堡菜单) | 底部弹窗 | 纯对话模式 |
 
@@ -1327,425 +959,290 @@ G (Graph)   #EF4444  红色  — BAC 压缩、历史回放、Checkpoint
 | 输入框 | 6px | `rounded-md` |
 | Badge | 9999px | `rounded-full` |
 | 弹窗 | 12px | `rounded-xl` |
-| 小元素 | 4px | `rounded` |
 
 ---
 
-## 第六章：实施路线图 P0-P3
+## 第六章：实施进度
 
-### P0 — 基础架构搭建
+### P0 — 基础架构 ✅ 已完成
 
-**目标**: 建立 v3 前端骨架，能独立运行在 3001 端口
+| 任务 | 状态 | 交付物 |
+|------|------|--------|
+| 端口 3001 启动配置 | ✅ | `next dev -p 3001` |
+| RootLayout + DashboardLayout | ✅ | `src/app/layout.tsx` + `src/app/dashboard/layout.tsx` |
+| Sidebar 导航 (12项) | ✅ | 内联在 DashboardLayout 中 |
+| 路由骨架 (56个 page.tsx) | ✅ | `src/app/` 下全部页面 |
+| Zustand stores (12个) | ✅ | `src/stores/` 下全部 store |
+| API Client 封装 (20个域) | ✅ | `src/lib/v3/api/` |
+| SSE Hook (useSSE) | ✅ | `src/lib/use-sse.ts` |
+| Primitive 组件 (8个 V3*) | ✅ | `src/components/V3*.tsx` |
 
-| 任务编号 | 任务 | 预估时间 | 依赖 | 交付物 |
-|----------|------|----------|------|--------|
-| P0-1 | 端口 3001 启动配置 | 0.5h | — | `next dev -p 3001` 可运行 |
-| P0-2 | v3 layout.tsx + AppShell | 2h | P0-1 | 独立布局，不继承 v2 |
-| P0-3 | Sidebar 导航组件 | 2h | P0-2 | 10 个一级导航（含三屏交易），SACG 层色条 |
-| P0-4 | TopBar 组件 | 1h | P0-2 | 面包屑+搜索+通知+用户 |
-| P0-5 | 路由骨架 (所有 page.tsx 占位) | 2h | P0-2 | 20+ 路由文件创建，`/` 重定向到 `/v3/dashboard` |
-| P0-6 | Zustand stores 初始化 (10 个) | 4h | P0-2 | `src/stores/v3/` 下全部 store 文件（含 three-screens-store） |
-| P0-7 | API Client 封装 | 3h | P0-2 | `src/lib/v3/api/client.ts` + 19 个域模块 |
-| P0-8 | SSE Hook (useSSE) | 2h | P0-7 | 9 种事件类型标准化处理 |
-| P0-9 | Primitive 组件库 (15 个) | 4h | P0-2 | Button/Card/Badge/Dialog 等 |
-| P0-10 | Inline SVG 图标集 | 2h | P0-2 | 20+ 个常用图标 |
-| P0-11 | 错误边界 + 全局错误处理 | 1h | P0-2 | ErrorBoundary 组件 |
-| P0-12 | useAPI Hook | 1h | P0-7 | 统一 API 调用 Hook |
+### P1 — 核心交易功能 ✅ 已完成
 
-**P0 总预估**: 24.5h (约 3 个工作日)
+| 任务 | 状态 | 交付物 |
+|------|------|--------|
+| ChatPanel + 18个子组件 | ✅ | `features/chat/` |
+| ChainTracker + 7个链路组件 | ✅ | `features/chain/` |
+| SSE 事件→Store 分发 | ✅ | `src/lib/sse-dispatcher.ts` |
+| SenseConfidenceGauge | ✅ | `features/monitor/` |
+| 交易参数管理面板 | ✅ | `features/settings/TradingParamsPanel.tsx` |
+| 策略管理面板 | ✅ | `features/settings/StrategyManager.tsx` |
+| API 密钥管理面板 | ✅ | `features/settings/ApiKeyManager.tsx` |
+| 通信渠道管理 | ✅ | `features/settings/ChannelManager.tsx` |
+| 完整性向导 | ✅ | `features/settings/CompletenessWizard.tsx` |
+| ThreeScreens 总览 + Screen1/2/3 + Pipeline | ✅ | `features/three-screens/` |
 
-**P0 验收标准**:
-- `localhost:3001/v3/dashboard` 可访问
-- Sidebar 导航可切换到所有子路由
-- API Client 可成功调用至少 3 个现有端点
-- SSE 连接可建立并接收事件
-- 所有 Primitive 组件在 Storybook 或测试页中可见
+### P2 — 经典交易 + 基本面 ✅ 已完成
 
-### P1 — 核心交易功能
+| 任务 | 状态 | 交付物 |
+|------|------|--------|
+| ClassicScreen + 8个组件 | ✅ | `features/classic/` |
+| 经典子标签动态路由 | ✅ | `classic/[subtab]/page.tsx` |
+| GovernanceFlow 组件 | ✅ | `features/classic/GovernanceFlow.tsx` |
+| FundamentalScreen + 17个组件 | ✅ | `features/fundamental/` |
 
-**目标**: 完成 AI Skill 交易核心页面，用户可通过对话触发 S 系列链
+### P3 — SACG 高级可视化 + 记忆 + 治理 ✅ 已完成
 
-| 任务编号 | 任务 | 预估时间 | 依赖 | 交付物 |
-|----------|------|----------|------|--------|
-| P1-1 | ChatPanel 组件 | 3h | P0 | 消息列表+输入框+快捷命令 |
-| P1-2 | MessageList 虚拟滚动 | 2h | P1-1 | 长消息列表性能优化 |
-| P1-3 | StreamingIndicator 组件 | 1h | P0-8 | 流式输出实时渲染 |
-| P1-4 | SSE 事件→Store 分发器 | 3h | P0-8, P0-6 | dispatchSSEEvent 完成 |
-| P1-5 | ChainTracker 组件 | 4h | P1-4 | S 系列链步骤可视化 |
-| P1-6 | ReflectorDecisionBadge | 2h | P1-5 | 6 种 Reflector 决策可视化 |
-| P1-7 | CrossValidationPanel | 3h | P1-5 | 三链交叉验证投票 UI |
-| P1-8 | SenseConfidenceGauge | 2h | P0-6 | S 层意图置信度仪表 |
-| P1-9 | ThreeLayerValueModel | 2h | P1-8 | 三层价值模型展开 UI |
-| P1-10 | 交易参数管理面板 | 3h | P0-7 | 迁移自 v2 SettingsTrading |
-| P1-11 | 策略 CRUD 面板 | 4h | P0-7 | 迁移自 v2 StrategyPanel |
-| P1-12 | API 密钥管理面板 | 3h | P0-7 | 迁移自 v2 SettingsAPI |
-| P1-13 | 可复用模块迁移 (15 个) | 4h | P0 | types, intent, trading-mode 等 |
-| P1-14 | TradeScreen 整合 | 3h | P1-1~P1-12 | `/v3/dashboard/trade` 完整页面 |
-| P1-15 | DataCard + MarketSnapshot | 2h | P0-7 | 数据卡片+市场概览 |
-| P1-16 | ThreeScreens 总览页 | 3h | P0 | `/v3/dashboard/three-screens` 三屏状态仪表盘 |
-| P1-17 | Screen1 战略层面板 | 4h | P1-16 | 七维牛熊评分 + MA200 方向锚 + 大师辩论 |
-| P1-18 | Screen2 战术层面板 | 4h | P1-16, P1-17 | 三大预设价位 + 回测验证 + 贝叶斯优化 + 方向约束等待态 |
-| P1-19 | Screen3 执行层面板 | 4h | P1-16, P1-18 | A7→A4→Gate→A5→A6→A9 流水线可视化 + 持仓状态 |
-| P1-20 | Pipeline 全链路页 | 3h | P1-17~P1-19 | Screen1→2→3 方向约束传递可视化 |
+| 任务 | 状态 | 交付物 |
+|------|------|--------|
+| SACG 监控 (5个组件) | ✅ | `features/monitor/` |
+| DAGGraphView | ✅ | `features/monitor/DAGGraphView.tsx` |
+| BACTimeline + HistoryPlayer | ✅ | `features/sacg/` |
+| 记忆系统 (6个组件) | ✅ | `features/memory/` |
+| GovernanceScreen | ✅ | `features/governance/` |
+| ReportsScreen | ✅ | `features/reports/` |
+| GraphCompressionVisualizer | ✅ | `features/graph-compression/` |
 
-**P1 总预估**: 61h (约 8 个工作日)
+### 后续增量 (P3+)
 
-**P1 验收标准**:
-- `/v3/dashboard/trade` 可正常对话，消息流式输出
-- S 系列链触发后，ChainTracker 实时更新步骤状态
-- Reflector 决策可视化正确展示 6 种决策类型
-- 交易参数/策略/API密钥 CRUD 全部可用
-- 15 个可复用模块全部迁移并可在 v3 中引用
-- `/v3/dashboard/three-screens` 三屏总览页可访问
-- Screen1 七维牛熊评分 + 方向锚正确渲染
-- Screen2 方向约束等待态正常工作，预设价位表完整
-- Screen3 执行流水线 A7→A4→Gate→A5→A6→A9 可视化
-- Pipeline 页面展示 Screen1→2→3 方向约束传递链路
-
-### P2 — 经典交易 + 基本面
-
-**目标**: 完成经典交易系统全链路 + 基本面分析面板
-
-| 任务编号 | 任务 | 预估时间 | 依赖 | 交付物 |
-|----------|------|----------|------|--------|
-| P2-1 | ClassicScreen 主框架 | 3h | P0 | 经典交易页面骨架 |
-| P2-2 | PhaseIndicator (C0-C8) | 2h | P2-1 | 阶段进度条 |
-| P2-3 | ClassicPhasePanel 通用组件 | 3h | P2-2 | 各阶段通用面板 |
-| P2-4 | C1 MacroScan 面板 | 3h | P2-3 | 宏观扫描可视化 |
-| P2-5 | C2 UniverseScan 面板 | 3h | P2-3 | 品种池扫描表格 |
-| P2-6 | C3 GateCheck 面板 | 2h | P2-3 | 门禁检查结果 |
-| P2-7 | C4 ArenaReview 面板 | 3h | P2-3 | 竞技场评审 UI |
-| P2-8 | C5 StrategySelect 面板 | 3h | P2-3 | 策略选择+对比 |
-| P2-9 | C6 SignalReview 面板 | 2h | P2-3 | 信号审查列表 |
-| P2-10 | C7 ExitMonitor 面板 | 3h | P2-3 | 离场监控实时追踪 |
-| P2-11 | C8 TrackingAudit 面板 | 2h | P2-3 | 追踪审计日志 |
-| P2-12 | GovernanceFlow 组件 | 4h | P2-1 | Draft→Gate→Approval→Apply→Audit 流程 UI |
-| P2-13 | FundamentalScreen 骨架 | 2h | P0 | 基本面总览 |
-| P2-14 | OnchainMetrics 面板 | 3h | P2-13 | 链上数据可视化 |
-| P2-15 | MacroDashboard 面板 | 3h | P2-13 | 宏观经济指标 |
-| P2-16 | SentimentHeatmap | 3h | P2-13 | 情绪热力图 (SVG) |
-| P2-17 | 基本面子页面 (10 个) | 6h | P2-13 | overview/flow/valuation/narrative/news/breadth/calendar/intermarket |
-
-**P2 总预估**: 52h (约 6-7 个工作日)
-
-**P2 验收标准**:
-- `/v3/dashboard/classic` 可完整展示 C0-C8 全链
-- 治理流程 5 阶段可正常流转
-- `/v3/dashboard/fundamental` 所有 11 个子页面可访问
-- 基本面数据可通过 API 正确渲染
-
-### P3 — SACG 高级可视化
-
-**目标**: 完成 SACG 四层完整可视化 + 记忆管理 + 治理 + 产物中台
-
-| 任务编号 | 任务 | 预估时间 | 依赖 | 交付物 |
-|----------|------|----------|------|--------|
-| P3-1 | MonitorScreen 骨架 | 2h | P0 | SACG 监控四层 Tab |
-| P3-2 | SACGVisualizer 总览 | 4h | P3-1 | 四层状态全局面板 |
-| P3-3 | DAGGraphView | 6h | P3-1 | DAG 图 SVG 渲染 (节点+边+动画) |
-| P3-4 | DAGGraphView 动态更新 | 3h | P3-3 | 节点状态实时更新动画 |
-| P3-5 | ReflectorPanel (完整) | 4h | P3-1 | 6 决策历史列表+详情 |
-| P3-6 | BACTimeline | 4h | P3-1 | B→A→C 压缩可视化时间线 |
-| P3-7 | HistoryPlayer | 4h | P3-6 | Play/Pause/Seek 回放控件 |
-| P3-8 | MemoryScreen 骨架 | 2h | P0 | 记忆系统总览 |
-| P3-9 | DZEChainView | 4h | P3-8 | D-Z-E 工程链可视化 |
-| P3-10 | MemoryTimeline | 3h | P3-8 | 记忆演进时间线 |
-| P3-11 | GovernanceScreen | 3h | P0 | 治理面板完整页面 |
-| P3-12 | ReportsScreen | 3h | P0 | 产物中台列表+详情 |
-| P3-13 | ArtifactFilter + 搜索 | 2h | P3-12 | 按链/层/时间/类型筛选 |
-| P3-14 | DashboardScreen 三屏概览 | 4h | P1, P2, P3-2 | 主控台三屏概览整合 |
-| P3-15 | CommandPalette | 3h | P0-2 | Cmd+K 快捷操作面板 |
-
-**P3 总预估**: 51h (约 6-7 个工作日)
-
-**P3 验收标准**:
-- `/v3/dashboard/monitor` 四层可视化完整可用
-- DAG 图可渲染节点+边，支持动态更新
-- BAC 压缩时间线可播放回放
-- `/v3/dashboard/memory` D-Z-E 链可视化可用
-- `/v3/dashboard/governance` 治理流程完整
-- `/v3/dashboard/reports` 产物筛选+详情可用
-- 主控台概览整合三屏交易系统状态 + SACG 监控数据
+| 任务 | 状态 | 交付物 |
+|------|------|--------|
+| Notebook (7个组件) | ✅ | `features/notebook/` |
+| 排行榜 (4个组件) | ✅ | `features/ranking/` |
+| 工作流 (3个组件) | ✅ | `features/workflow/` |
+| Token 监控 (2个组件) | ✅ | `features/token-monitor/` |
+| 编排面板 | ✅ | `features/orchestration/` |
+| 认知系统 API (7端点) | ✅ | `api/cognitive/` |
+| SACG 五训练循环 | ✅ | `src/lib/*-training-loop.ts` |
+| 用户记忆系统 | ✅ | `api/user-memory/` + `stores/user-memory-store.ts` |
+| 技能/文档索引 | ✅ | `api/skills/` + `api/docs/` |
+| 市场营销 (6个子页面) | ✅ | `dashboard/market/` |
 
 ---
 
 ## 附录
 
-### 附录 A：92 个 API 端点完整索引
+### 附录 A：96+ API 端点索引
 
-#### 1. 任务执行 (/api/task) — 5 端点
+#### 1. 认证 (/api/auth, /api/user, /api/register) — 5 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| POST | /api/task | 创建任务 (写 task 文件 + 触发执行) |
-| GET | /api/task | 查询任务状态 (支持 list/detail 两种模式) |
+| * | /api/auth/[...nextauth] | NextAuth 认证 |
+| POST | /api/user/signin | 用户登录 |
+| POST | /api/user/checkin | 用户签到 |
+| GET | /api/user/me | 获取当前用户 |
+| POST | /api/register | 用户注册 |
+
+#### 2. 任务执行 (/api/task) — 4 端点
+
+| 方法 | 路径 | 用途 |
+|------|------|------|
+| POST | /api/task | 创建任务 |
 | POST | /api/task/stream | SSE 流式任务追踪 |
-| POST | /api/task/confirm | 确认执行 (用户二次确认) |
+| POST | /api/task/confirm | 确认执行 |
 | GET | /api/task/result/[id] | 获取任务结果 |
 
-#### 2. 对话 (/api/chat) — 2 端点
+#### 3. 意图识别 (/api/intent) — 2 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| POST | /api/chat | 发送对话消息 (SSE 流式响应) |
-| GET | /api/chat | 获取会话历史 |
+| POST | /api/intent/evaluate | 意图评估 |
+| POST | /api/intent/steer | 意图引导 |
 
-#### 3. 市场数据 (/api/market) — 8 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| GET | /api/market/snapshot | 市场数据快照 (价格/费率/持仓) |
-| POST | /api/market/query | 市场数据查询 (自定义参数) |
-| GET | /api/market/route | 市场路由信息 |
-| GET | /api/market/segments | 市场细分数据 |
-| GET | /api/market/campaigns | 营销活动数据 |
-| GET | /api/market/content | 市场内容数据 |
-| GET | /api/market/distribution | 市场分布数据 |
-| GET | /api/market/effectiveness | 市场效果数据 |
-| GET | /api/market/audit | 市场审计数据 |
-
-#### 4. 交易 (/api/trade) — 1 端点
+#### 4. 认知系统 (/api/cognitive) — 7 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/trade/balance | 查询交易余额 (OKX API 代理) |
+| POST | /api/cognitive/recall | 检索经验 |
+| POST | /api/cognitive/record | 记录经验 |
+| POST | /api/cognitive/verify | 验证记忆 |
+| GET | /api/cognitive/stats | 记忆统计 |
+| GET | /api/cognitive/health | 健康检查 |
+| POST | /api/cognitive/unified | 统一查询 |
+| GET | /api/cognitive/knowledge | 知识检索 |
 
-#### 5. 配置 (/api/config) — 14 端点
+#### 5. 配置管理 (/api/config) — 12 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/config/api-keys | 获取 API 密钥列表 |
-| POST | /api/config/api-keys | 创建 API 密钥 (加密存储) |
-| PUT | /api/config/api-keys | 更新 API 密钥 |
-| DELETE | /api/config/api-keys | 删除 API 密钥 |
-| POST | /api/config/api-keys/test | 测试 API 密钥连通性 |
-| GET | /api/config/trading-params | 获取交易参数 |
-| PATCH | /api/config/trading-params | 更新交易参数 |
+| GET/POST/PUT/DELETE | /api/config/api-keys | API 密钥 CRUD |
+| POST | /api/config/api-keys/test | 测试 API 连接 |
+| GET/PUT | /api/config/trading-params | 交易参数 |
 | POST | /api/config/trading-params/pause | 暂停交易 |
 | POST | /api/config/trading-params/resume | 恢复交易 |
 | POST | /api/config/trading-params/reset-daily | 重置日亏损 |
-| GET | /api/config/strategies | 获取策略列表 |
-| POST | /api/config/strategies | 创建策略 |
-| PATCH | /api/config/strategies | 更新策略 |
-| DELETE | /api/config/strategies | 删除策略 |
-| POST | /api/config/strategies/parse | 策略自然语言解析 |
-| POST | /api/config/strategies/[id]/apply | 应用策略 (创建定时任务) |
+| GET/POST | /api/config/strategies | 策略列表/创建 |
+| POST | /api/config/strategies/parse | 解析策略 |
+| POST | /api/config/strategies/[id]/apply | 应用策略 |
 | POST | /api/config/strategies/[id]/pause | 暂停策略 |
-| GET | /api/config/channels | 获取通信渠道列表 |
-| POST | /api/config/channels | 创建通信渠道 |
-| PATCH | /api/config/channels | 更新通信渠道 |
-| DELETE | /api/config/channels | 删除通信渠道 |
-| POST | /api/config/channels/[id]/test | 测试通信渠道 |
+| GET/POST/PUT/DELETE | /api/config/channels | 通信渠道 CRUD |
+| POST | /api/config/channels/[id]/test | 测试渠道 |
 
-#### 6. 用户 (/api/user) — 4 端点
+#### 6. 经典系统 (/api/classic) — 3 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/user/me | 获取当前用户信息 |
-| POST | /api/user/signin | 用户登录 |
-| GET | /api/user/signin | 获取登录状态 |
-| POST | /api/user/checkin | 每日签到 (POST) |
-| GET | /api/user/checkin | 签到状态 (GET) |
+| GET/PUT | /api/classic/gate-thresholds | 门禁阈值 |
+| GET/POST | /api/classic/approvals | 审批管理 |
+| GET/PUT | /api/classic/pipeline-state | 管线状态 |
 
-#### 7. 研报 (/api/reports) — 1 端点
+#### 7. 治理 (/api/board) — 7 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/reports | 获取研报列表/详情 |
+| GET | /api/board/metrics | 治理指标 |
+| GET/POST | /api/board/proposals | 提案管理 |
+| GET/PUT/DELETE | /api/board/proposals/[id] | 提案详情 |
+| POST | /api/board/proposals/[id]/votes | 提案投票 |
+| GET | /api/board/review | 绩效评审 |
+| GET | /api/board/approval/pending | 待审批列表 |
+| GET | /api/board/approval/summary | 审批摘要 |
+| GET/PUT | /api/board/approval/[id] | 审批操作 |
 
-#### 8. 监控 (/api/monitor) — 3 端点
+#### 8. 用户记忆 (/api/user-memory) — 5 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/monitor/events | 获取监控事件列表 |
-| GET | /api/monitor/stats | 获取监控统计数据 |
+| GET/POST | /api/user-memory/preferences | 用户偏好 |
+| GET/POST | /api/user-memory/notes | 笔记列表/创建 |
+| GET/PUT/DELETE | /api/user-memory/notes/[id] | 笔记详情 |
+| POST | /api/user-memory/notes/[id]/promote | 笔记提升 |
+| GET | /api/user-memory/health | 健康检查 |
+
+#### 9. 监控 (/api/monitor) — 4 端点
+
+| 方法 | 路径 | 用途 |
+|------|------|------|
+| GET | /api/monitor/stats | 监控统计 |
 | GET | /api/monitor/stream | SSE 监控流 |
+| GET | /api/monitor/events | 监控事件 |
+| GET | /api/monitor/proactive | 主动监控 |
 
-#### 9. 意图 (/api/intent) — 2 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| GET | /api/intent/analyze | 意图分析 (GET 模式) |
-| POST | /api/intent/memory | 意图记忆写入 |
-| GET | /api/intent/memory | 意图记忆读取 |
-
-#### 10. 笔记本 (/api/notebook) — 8 端点
+#### 10. 市场数据 (/api/market, /api/data, /api/onchain, /api/price) — 15 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/notebook | 获取笔记本列表 |
-| POST | /api/notebook | 创建笔记本 |
-| PATCH | /api/notebook | 更新笔记本 |
-| GET | /api/notebook/state | 获取状态 |
-| PUT | /api/notebook/state | 更新状态 |
-| GET | /api/notebook/step | 获取步骤 |
-| POST | /api/notebook/step | 创建步骤 |
-| PATCH | /api/notebook/step | 更新步骤 |
-| GET | /api/notebook/tasks | 获取任务列表 |
-| POST | /api/notebook/tasks | 创建任务 |
-| PATCH | /api/notebook/tasks | 更新任务 |
-| POST | /api/notebook/sync | 同步笔记本 |
-| GET | /api/notebook/sync | 获取同步状态 |
+| GET | /api/market/yahoo | Yahoo 市场数据 |
+| GET | /api/market/global | 全球市场数据 |
+| GET | /api/market/segments | 市场细分 |
+| GET | /api/market/effectiveness | 市场效果 |
+| GET | /api/market/distribution | 市场分布 |
+| GET | /api/market/campaigns | 营销活动 |
+| GET | /api/market/audit | 市场审计 |
+| GET | /api/market/content | 市场内容 |
+| GET | /api/market/route | 市场路由 |
+| GET | /api/data/macro | 宏观数据 |
+| GET | /api/data/chain | 链上数据 |
+| GET | /api/data/market | 市场数据 |
+| GET | /api/onchain/btc | BTC 链上数据 |
+| GET | /api/onchain/panewslab | PanewLab 数据 |
+| GET | /api/onchain/bgeometrics | BGeometrics 数据 |
+| GET | /api/onchain/datacenter | 数据中心 |
+| GET | /api/price/[symbol] | 价格查询 |
 
-#### 11. 运维 (/api/ops) — 2 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| GET | /api/ops/queues | 获取任务队列信息 |
-| GET | /api/ops/decision-levels | 获取决策层级信息 |
-
-#### 12. 编排 (/api/orchestrate) — 2 端点
+#### 11. Notebook (/api/notebook) — 5 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| POST | /api/orchestrate | 触发编排执行 |
-| GET | /api/orchestrate | 获取编排状态 |
+| GET/POST | /api/notebook | Notebook 列表/创建 |
+| GET/POST | /api/notebook/tasks | 任务管理 |
+| POST | /api/notebook/step | 步骤操作 |
+| GET/PUT | /api/notebook/state | 状态管理 |
+| POST | /api/notebook/sync | 同步 |
 
-#### 13. 链路产物 (/api/chain) — 1 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| GET | /api/chain/artifacts | 获取链路产物列表 |
-
-#### 14. 治理 (/api/board) — 5 端点
+#### 12. 技能/文档 (/api/skills, /api/docs) — 3 端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/board/proposals | 获取策略提案列表 |
-| GET | /api/board/proposals/[id] | 获取提案详情 |
-| GET | /api/board/approval/pending | 获取待审批列表 |
-| GET | /api/board/approval/summary | 获取审批摘要 |
-| POST | /api/board/approval/[id] | 提交审批操作 |
-| GET | /api/board/review | 获取绩效评审 |
+| GET | /api/skills/index | 技能索引 |
+| GET | /api/docs/index | 文档索引 |
+| POST | /api/docs/sync | 文档同步 |
 
-#### 15. 基本面 (/api/fundamental) — 2 端点
+#### 13. 其他端点
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
-| GET | /api/fundamental/[...path] | 获取基本面数据 (通配路径) |
-| POST | /api/fundamental/[...path] | 提交基本面查询 |
+| GET | /api/positions | 持仓查询 |
+| GET/POST | /api/trade-orders | 交易订单 |
+| GET/POST | /api/artifacts | 产物列表 |
+| GET | /api/artifacts/[id] | 产物详情 |
+| GET | /api/artifact | 产物文件 |
+| GET | /api/chain/artifacts | 链路产物 |
+| GET/POST | /api/reports | 报告列表/生成 |
+| POST | /api/reports/generate | 生成报告 |
+| GET/POST | /api/briefings | 简报 |
+| GET | /api/briefings/[id] | 简报详情 |
+| GET/POST | /api/feed | 情报流 |
+| GET/POST | /api/mood-board | 情绪看板 |
+| GET/POST | /api/meta-labeling | 元标注 |
+| GET | /api/compression/stats | 图压缩统计 |
+| GET | /api/ops/decision-levels | 决策层级 |
+| GET | /api/ops/queues | 队列状态 |
+| POST | /api/recharge | 充值 |
+| GET/POST | /api/kyc | KYC |
+| GET/POST | /api/customer | 客户 |
 
-#### 16. 消息流 (/api/feed) — 1 端点
+### 附录 B：Store 索引
 
-| 方法 | 路径 | 用途 |
+| Store | 文件路径 | 职责 |
+|------|----------|------|
+| useSessionStore | `src/stores/session-store.ts` | 会话、消息、输入 |
+| useChainStore | `src/stores/chain-store.ts` | 链路追踪、DAG |
+| useTradingStore | `src/stores/trading-store.ts` | 交易模式、余额 |
+| useClassicStore | `src/stores/classic-store.ts` | 经典系统 C0-C8 |
+| useThreeScreensStore | `src/stores/three-screens-store.ts` | 三屏系统 |
+| useMonitorStore | `src/stores/monitor-store.ts` | SACG 监控 |
+| useMemoryStore | `src/stores/memory-store.ts` | DZE 记忆链 |
+| useUserMemoryStore | `src/stores/user-memory-store.ts` | 用户偏好记忆 |
+| useNotebookStore | `src/stores/notebook-store.ts` | Notebook |
+| useUIStore | `src/stores/ui-store.ts` | UI 状态 |
+| useApiConfigStore | `src/stores/api-config-store.ts` | API 配置 |
+| useAuthStore | `src/stores/auth-store.ts` | 认证 |
+
+### 附录 C：UI_SPEC 参考规范
+
+3.1 前端的 UI 设计规范同时参考以下两份 UI_SPEC:
+
+1. [3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md) (v2.3, 3.0 时代)
+2. [1-ARCHITECTURE/前端设计/UI_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/前端设计/UI_SPEC.md) (v2.3, 3.0 时代)
+
+> **注**: 两份 UI_SPEC 内容相同，描述 3.0 时代的三栏对话式界面。3.1 已远超此设计，但仍保留以下有效规范:
+> - 色彩系统 (§1.2): 基础色板 + 分析阶段色
+> - API 配置面板 (§4): 交易所/AI模型/数据源分类
+> - 通信渠道面板 (§5): Telegram/微信/企业微信/Email/Discord/Slack
+> - 交易设置面板 (§5.5): 交易金额/杠杆/亏损限制/门禁拦截
+> - 策略设置面板 (§5.6): 推荐策略/信号策略/运行中策略
+
+### 附录 D：关键文件索引
+
+| 文件 | 路径 | 说明 |
 |------|------|------|
-| GET | /api/feed | 获取消息流/产物 Feed |
-
-#### 17. 认证 (/api/auth) — 1 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| * | /api/auth/[...nextauth] | NextAuth.js 认证路由 (GET/POST) |
-
-#### 18. 产物文件 (/api/artifact) — 1 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| GET | /api/artifact | 获取产物文件列表/内容 |
-
-#### 19. 注册 (/api/register) — 1 端点
-
-| 方法 | 路径 | 用途 |
-|------|------|------|
-| POST | /api/register | 用户注册 |
-
-### 附录 B：52 个 OS 模块在前端的映射关系
-
-| 编号 | OS 模块 | SACG 层 | v3 前端映射 | 路由 |
-|------|---------|---------|-------------|------|
-| 1 | IntentRouter | S | SenseConfidenceGauge + ThreeLayerValueModel | /v3/dashboard/trade |
-| 2 | FallbackEngine | S | useSessionStore.lastIntent | 贯穿所有页面 |
-| 3 | IntentMemory | S | MemoryTimeline (意图记忆部分) | /v3/dashboard/memory |
-| 4 | SmartRouter | S | ChatInput (意图预提示) | /v3/dashboard/trade |
-| 5 | GraphPlanner | A | DAGGraphView | /v3/dashboard/monitor/arrange |
-| 6 | ChainOrchestrator | A | ChainTracker + PhaseIndicator | /v3/dashboard/trade |
-| 7 | DynamicChain Executor | C | ChainStepCard + ReflectorDecisionBadge | /v3/dashboard/trade |
-| 8 | ReflectEngine | C | ReflectorPanel + CrossValidationPanel | /v3/dashboard/monitor/compute |
-| 9 | GraphPlanner Runner | C | ChainTracker (动态更新) | /v3/dashboard/trade |
-| 10 | BAC Compressor | G | BACTimeline + HistoryPlayer | /v3/dashboard/monitor/graph |
-| 11 | Checkpoint Manager | G | HistoryPlayer (Checkpoint 跳转) | /v3/dashboard/monitor/graph |
-| 12 | TradingGate | C | BalanceCard (门禁状态) | /v3/dashboard/trade |
-| 13 | TradingParams Registry | C | TradingParamsEditor | /v3/dashboard/settings/trading-params |
-| 14 | StrategyEngine | C | StrategyManager | /v3/dashboard/settings/strategies |
-| 15 | StrategyLibrary | C | StrategyManager (模板列表) | /v3/dashboard/settings/strategies |
-| 16 | Backtester | C | 回测结果面板 | /v3/dashboard/trade/strategies/[id] |
-| 17 | CreditsManager | C | 积分面板 | /v3/dashboard/settings |
-| 18 | UserSystem | S | useAuthStore + UserProfileCard | 贯穿所有页面 |
-| 19 | AuthService | S | useAuthStore | 贯穿所有页面 |
-| 20 | ConfigStore | G | useApiConfigStore | /v3/dashboard/settings |
-| 21 | ArtifactAssessor | S | ArtifactFilter (产物评分) | /v3/dashboard/reports |
-| 22 | ChatEngine | S | ChatPanel + useSessionStore | /v3/dashboard/trade |
-| 23 | LLMBridge | C | StreamingIndicator (流式状态) | /v3/dashboard/trade |
-| 24 | ChainExecutor | C | ChainTracker (执行状态) | /v3/dashboard/trade |
-| 25 | SkillInvoker | C | ChainStepCard (Skill 子节点) | /v3/dashboard/trade |
-| 26 | ArtifactWriter | G | ArtifactDetail | /v3/dashboard/reports/[id] |
-| 27 | TaskManager | C | useChainStore (任务追踪) | /v3/dashboard/trade |
-| 28 | MonitorBus | G | useMonitorStore (事件总线) | /v3/dashboard/monitor |
-| 29 | TokenMonitor | C | TokenMonitorBadge | 贯穿所有页面 |
-| 30 | CostKeeper | C | 交易成本统计面板 | /v3/dashboard/trade |
-| 31 | SkipGate | C | ChainStepCard (SKIP 状态) | /v3/dashboard/trade |
-| 32 | CompressorAdapter | G | BACTimeline | /v3/dashboard/monitor/graph |
-| 33 | BridgeClient | C | 连接状态指示 | TopBar |
-| 34 | KnowledgeRAG | S | 知识源选择 (ai_skill: 2/6) | /v3/dashboard/trade |
-| 35 | Encryption | G | ApiKeyManager (密钥脱敏) | /v3/dashboard/settings/api-keys |
-| 36 | UID Generator | S | 后端工具，前端不直接映射 | — |
-| 37 | ReflectionGates | C | ReflectorPanel (决策逻辑) | /v3/dashboard/monitor/compute |
-| 38 | StrategyTaskOrder | C | StrategyManager (任务关联) | /v3/dashboard/settings/strategies |
-| 39 | StrategyLifecycle | C | StrategyManager (生命周期) | /v3/dashboard/settings/strategies |
-| 40 | StrategyArtifacts | G | ArtifactDetail (策略产物) | /v3/dashboard/reports/[id] |
-| 41 | MarketDataAdapter | C | MarketSnapshot | /v3/dashboard/trade |
-| 42 | ClassicSystemAPI | C | ClassicPhasePanel (全阶段) | /v3/dashboard/classic |
-| 43 | ClassicSystemBridge | C | ClassicScreen (桥接层) | /v3/dashboard/classic |
-| 44 | ClassicSystemClient | C | ClassicScreen (客户端层) | /v3/dashboard/classic |
-| 45 | GovernanceBoard | A | GovernanceFlow + GovernanceScreen | /v3/dashboard/governance |
-| 46 | NotebookStepController | C | NotebookPanel (步骤控制) | /v3/dashboard/memory |
-| 47 | OrchestrationPanel | A | DAGGraphView (编排可视化) | /v3/dashboard/monitor/arrange |
-| 48 | LLMBridge (Orchestration) | A | DAGGraphView (节点耗时) | /v3/dashboard/monitor/arrange |
-| 49 | MarketDataBridge | A | MarketSnapshot (数据源) | /v3/dashboard/trade |
-| 50 | SuperpowerLLMBridge | A | SenseConfidenceGauge (SuperWorker) | /v3/dashboard/monitor/sense |
-| 51 | SkillLLMBridgeAdapter | A | ChainStepCard (Skill 调用状态) | /v3/dashboard/trade |
-| 52 | GraphReflectionBridge | G | BACTimeline + HistoryPlayer | /v3/dashboard/monitor/graph |
-
-### 附录 C：可复用模块迁移清单
-
-| 模块 | 当前路径 | 迁移目标 | 迁移方式 | 难度 | 注意事项 |
-|------|----------|----------|----------|------|----------|
-| types/index.ts | src/types/ | 直接引用 | 无需复制，v3 直接 import | 低 | 保持向后兼容 |
-| intent/fallback-engine.ts | src/lib/intent/ | src/lib/v3/intent/ | 复制+微调 | 低 | 确认依赖路径 |
-| intent/intent-memory.ts | src/lib/intent/ | src/lib/v3/intent/ | 复制+微调 | 低 | 文件路径需适配 |
-| trading-mode.ts | src/lib/ | src/lib/v3/ | 复制 | 低 | 纯枚举定义 |
-| strategy/types.ts | src/lib/strategy/ | src/lib/v3/strategy/ | 复制 | 低 | 纯类型定义 |
-| reflection-gates.ts | src/lib/ | src/lib/v3/ | 复制+适配 | 低 | 部分函数需服务端调用，前端仅用决策逻辑 |
-| monitor-bus.ts | src/lib/ | src/lib/v3/ | 仅前端消费端 | 中 | 前端不 emit，仅接收 |
-| token-monitor.ts | src/lib/ | src/lib/v3/ | 复制 | 低 | 监控逻辑可复用 |
-| scheduler/cost-keeper.ts | src/lib/scheduler/ | src/lib/v3/scheduler/ | 复制 | 低 | Token 计费纯逻辑 |
-| scheduler/skip-gate.ts | src/lib/scheduler/ | src/lib/v3/scheduler/ | 复制 | 低 | 跳过决策纯逻辑 |
-| compressor-adapter/ | src/lib/ | src/lib/v3/ | 复制 | 低 | BAC 适配接口 |
-| bridge-client.ts | src/lib/ | src/lib/v3/ | 复制+适配 | 中 | HTTP 调用需走 API Client |
-| uid.ts | src/lib/ | src/lib/v3/ | 复制 | 低 | 纯函数 |
-| encryption.ts | src/lib/ | src/lib/v3/ | 复制 | 低 | AES 加密逻辑 |
-| intent/smart-router.ts | src/lib/intent/ | src/lib/v3/intent/ | 复制+重写 | 高 | LLM 调用需改为 API 调用 |
-| knowledge-rag.ts | src/lib/ | src/lib/v3/ | 重写 | 高 | 无文件系统，需改为 API 调用 |
-| auth.ts | src/lib/ | src/lib/v3/ | 适配 | 中 | 改用 NextAuth Session |
-
-### 附录 D：风险与依赖说明
-
-| 风险 | 严重度 | 概率 | 影响 | 缓解策略 |
-|------|--------|------|------|----------|
-| v2 dashboard/page.tsx 拆分遗漏 | 高 | 中 | 拆分后功能缺失 | 先做完整的功能清单对照表，逐项验证 |
-| SACG 四层可视化 SVG 复杂度超预期 | 中 | 高 | P3 延期 | 准备 CSS 降级方案，先用简单表格展示 |
-| 无 npm 安装限制导致无法引入必要工具 | 中 | 确定 | 开发效率降低 | 所有工具函数手写，SVG 手绘 |
-| SSE 连接稳定性 | 中 | 中 | 实时数据丢失 | 自动重连 + 指数退避 + 本地缓存 |
-| task-manager.ts 127KB 拆分引入回归 | 高 | 中 | 核心链路执行失败 | 拆分后运行全部现有测试 |
-| v3 路由与 v2 冲突 | 低 | 低 | 页面路由异常 | v3 路由全部在 `/v3/` 前缀下 |
-| Zustand Store 跨域数据同步 | 中 | 中 | 数据不一致 | 严格按领域划分，跨域通过事件通信 |
-| Tailwind v4 无配置文件限制 | 低 | 确定 | 自定义值受限 | 通过 CSS @theme 和 @utility 自定义 |
-| 基本面数据 API 响应格式不稳定 | 中 | 中 | 渲染异常 | API Client 做数据校验和降级 |
-| 经典系统 13 子标签页工作量超预期 | 高 | 高 | P2 延期 | 优先实现核心 C0-C5，C6-C8 可延后 |
-| 三屏交易系统数据联动复杂 | 中 | 中 | 数据不一致 | 使用共享 Zustand store 作为数据源 |
-| 移动端适配延后 | 低 | 确定 | 移动端体验差 | P0-P3 仅桌面端，移动端单独迭代 |
-
----
-
-> 文档版本: v3.0 | 总行数: (见文件实际行数) | 覆盖范围: 架构规划全量
-> 关联文档: ARCHITECTURE.md, UI_SPEC.md, UI_ROADMAP.md, CHAIN_ORCHESTRATOR.md, FRONTEND_WB_INTEGRATION.md
+| 综合技术文档 | `docs/v3-frontend-architecture.md` | 本文档 |
+| 项目配置 | `package.json` | 依赖和脚本 |
+| TypeScript 配置 | `tsconfig.json` | 类型检查配置 |
+| Next.js 配置 | `next.config.ts` | Next.js 配置 |
+| Prisma Schema | `prisma/schema.prisma` | 数据库模型 |
+| RootLayout | `src/app/layout.tsx` | 全局布局 |
+| DashboardLayout | `src/app/dashboard/layout.tsx` | 仪表盘布局 (含 Sidebar) |
+| ClassicLayout | `src/app/dashboard/classic/layout.tsx` | 经典系统布局 |
+| Store 索引 | `src/stores/index.ts` | 统一导出 |
+| API Client | `src/lib/v3/api/client.ts` | API 基类 |
+| API 索引 | `src/lib/v3/api/index.ts` | 统一导出 |
+| SSE Hook | `src/lib/use-sse.ts` | SSE 流式连接 |
+| SSE 分发器 | `src/lib/sse-dispatcher.ts` | SSE 事件分发 |
+| 任务管理器 | `src/lib/task-manager.ts` | 任务执行核心 |
+| 意图路由器 | `src/lib/intent-router.ts` | 意图识别路由 |
+| 规划引擎 | `src/lib/planner/` | 21个规划文件 |
+| SACG 架构文档 | `../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md` | 52 模块注册表 |
+| 三屏系统文档 | `../2-KNOWLEDGE/1-TRADING/三屏系统架构.md` | Screen1/2/3 职责 |

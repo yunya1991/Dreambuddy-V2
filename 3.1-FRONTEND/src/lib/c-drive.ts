@@ -31,6 +31,7 @@ import { callDshHandler } from './dsh-execution-engine';
 import type { CognitiveContext } from './cognitive-context-builder';
 import type { SkillExecutionPlan } from './skill-selector';
 import type { SkillResult } from './dsh-execution-engine';
+import { evaluateDataQuality, getMaxSupplementAttempts, type EffortLevel, type QualityGateResult } from './quality-gate';
 
 // ============================================================
 // 1. 类型定义（对齐 Python CDriveDecision.to_dict()）
@@ -193,7 +194,8 @@ export class CDriveCoordinator {
   async decideFromResults(
     results: SkillResult[],
     intent_type?: string,
-  ): Promise<CDriveDecision> {
+    supplementAttempts: number = 0,
+  ): Promise<CDriveDecision & { qualityGateResult?: QualityGateResult }> {
     if (results.length === 0) {
       return this._fallbackDecision({ node_id: 'none' } as CDriveRequest, 'empty_results');
     }
@@ -231,13 +233,84 @@ export class CDriveCoordinator {
     // 用第一个 skill_id 作为 node_id（C-Drive 的 SUPPLEMENT 路由会用 supplement_module）
     const primaryNodeId = results[0].skill_id;
 
-    return this.reflect({
+    // ── 数据质量评判门（SPEC v3: 在 reflect 之前评判内容质量）──
+    const effortLevel = this._resolveEffortLevel(intent_type);
+    const qualityGate = evaluateDataQuality(results, effortLevel);
+
+    // 质量门不通过且未超限 → 返回 SUPPLEMENT 决策
+    if (!qualityGate.passed && qualityGate.supplement_targets.length > 0) {
+      if (supplementAttempts < getMaxSupplementAttempts()) {
+        const targetModule = qualityGate.supplement_targets[0];
+        console.log(`[C-Drive] 质量门不通过，SUPPLEMENT → ${targetModule} (attempt ${supplementAttempts + 1}/${getMaxSupplementAttempts()})`);
+        return {
+          action: 'supplement',
+          reason: `质量门不通过: ${qualityGate.reason}，补充 ${targetModule}`,
+          confidence: avgConfidence,
+          suggestions: qualityGate.missing_dimensions,
+          bull_argument: null,
+          bear_argument: null,
+          bull_confidence: null,
+          bear_confidence: null,
+          jump_to: null,
+          supplement_module: targetModule,
+          jeval_noul: null,
+          steps_executed: ['quality_gate'],
+          effort_level: effortLevel,
+          debate_rounds: 0,
+          synthesized_cards: [],
+          enhancement_hints: [],
+          charts: [],
+          qualityGateResult: qualityGate,
+        };
+      } else {
+        // 超限降级：用现有数据继续，标注低数据质量
+        console.log(`[C-Drive] 质量门多次不通过，降级继续（标注数据不足）`);
+        return {
+          action: 'continue',
+          reason: `质量门超限降级: ${qualityGate.reason}`,
+          confidence: avgConfidence * 0.85,  // 置信度下调15%
+          suggestions: qualityGate.missing_dimensions,
+          bull_argument: null,
+          bear_argument: null,
+          bull_confidence: null,
+          bear_confidence: null,
+          jump_to: null,
+          supplement_module: null,
+          jeval_noul: null,
+          steps_executed: ['quality_gate', 'degraded_continue'],
+          effort_level: effortLevel,
+          debate_rounds: 0,
+          synthesized_cards: [],
+          enhancement_hints: [],
+          charts: [],
+          qualityGateResult: { ...qualityGate, low_data_quality: true },
+        };
+      }
+    }
+
+    // 质量门通过 → 调用 reflect
+    const decision = await this.reflect({
       node_id: primaryNodeId,
       confidence: avgConfidence,
       direction: consensusDirection,
       signals: allSignals,
       intent_type,
     });
+    return { ...decision, qualityGateResult: qualityGate };
+  }
+
+  /**
+   * 根据意图类型解析 effort_level
+   * - deep_analysis / strategy → deep（质量门阻断）
+   * - 其他分析类 → standard（质量门记录不阻断）
+   * - 简单查询 → light（跳过质量门）
+   */
+  private _resolveEffortLevel(intent_type?: string): EffortLevel {
+    if (!intent_type) return 'standard';
+    const t = intent_type.toLowerCase();
+    if (t.includes('deep') || t.includes('strategy') || t.includes('backtest')) return 'deep';
+    if (t.includes('signal') || t.includes('quote') || t.includes('price')) return 'light';
+    return 'standard';
   }
 
   /**

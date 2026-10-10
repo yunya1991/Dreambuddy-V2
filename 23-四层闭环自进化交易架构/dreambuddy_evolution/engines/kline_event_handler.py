@@ -318,10 +318,15 @@ class KlineEventHandler:
                     "timestamp": kline_data.get("timestamp"),
                 },
             }
-            state_path.write_text(
+            # 原子写入：先写临时文件再 os.replace，避免 data_server 读到半截 JSON
+            # （之前直接 write_text 导致约 16% 的读取竞态失败，前端表现为"一会儿有数据一会儿没有"）
+            import os as _os
+            tmp_path = state_path.with_suffix(".json.tmp")
+            tmp_path.write_text(
                 json.dumps(state, ensure_ascii=False, indent=2, default=str),
                 encoding="utf-8",
             )
+            _os.replace(tmp_path, state_path)
             logger.debug(
                 "[EventDriven] state written: %s signal=%s",
                 state["symbol"],
