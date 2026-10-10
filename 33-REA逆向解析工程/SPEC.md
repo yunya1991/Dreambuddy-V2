@@ -318,10 +318,10 @@ class GitHubApiAdapter:
 ### P1 — 增强能力（2-3天）
 
 - [x] Git 历史溯源（log/blame）
-- [ ] 关键算法还原（AST 模式匹配）
-- [ ] 依赖版本审计
+- [x] 关键算法还原（AST 模式匹配）
+- [x] 依赖版本审计
 - [x] DSH S33 节点接入
-- [ ] 集成测试（端到端分析 dreambuddy 自身模块）
+- [x] 集成测试（端到端分析 dreambuddy 自身模块）
 
 ### P2 — 扩展集成（3-5天）
 
