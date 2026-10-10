@@ -54,8 +54,17 @@ export ENABLE_BDSM_SHORT_TRIAL=1
 exec "$PYTHON" -u -m scripts.memory_l4.polling_trader \
   --no-guardian \
   --interval 300 \
+  --coins UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB,LINK,SNDK,SPCX \
   --confidence 0.7955 \
   --max-positions 5 \
   --position-pct 0.20 \
+  --enable-cbr-cycle-log \
+  --enable-elder-ray-c4 \
+  --enable-win-prob-factor \
+  --enable-three-layer-weighter \
+  --enable-elastic-gate-3l \
+  --enable-bcrm-continuity-obs \
+  --enable-btc-self-reflex-valve \
+  --enable-portfolio-risk-fuses \
   >> "$LOG_DIR/trading_screen.log" \
   2>> "$LOG_DIR/trading_screen_stderr.log"
