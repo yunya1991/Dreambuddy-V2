@@ -15715,6 +15715,8 @@ class PollingTrader:
         effective_leverage = self._compute_effective_leverage(
             leverage, leverage_factor, is_trial
         )
+        # 同步更新 leverage 变量，确保后续 set_leverage / 日志使用受限后的杠杆值
+        leverage = effective_leverage
 
         balance = self.okx_client.get_balance()
 
