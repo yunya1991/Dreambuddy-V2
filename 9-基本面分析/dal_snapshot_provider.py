@@ -384,12 +384,12 @@ class DalSnapshotProvider:
     # ------------------------------------------------------------------
     def collect_intermarket(self) -> Optional[Dict]:
         dxy = self._metric("DX-Y.NYB", "value", 0.0)
-        spx = self._metric("SPY", "price", 0.0) or self._metric("SPY", "value", 0.0)
+        spx = self._metric("^GSPC", "price", 0.0) or self._metric("^GSPC", "value", 0.0) or self._metric("SPY", "price", 0.0) or self._metric("SPY", "value", 0.0)
         gold = self._metric("GC=F", "value", 0.0) or self._metric("gold", "value", 0.0)
         us10y = self._metric("^TNX", "value", 0.0) or self._metric("^TNX", "close", 0.0)
         vix = self._metric("^VIX", "value", 0.0)
         btc = self._metric("BTC-USD", "value", 0.0)
-        ndx = self._metric("QQQ", "price", 0.0) or self._metric("QQQ", "value", 0.0)
+        ndx = self._metric("^IXIC", "price", 0.0) or self._metric("^IXIC", "value", 0.0) or self._metric("QQQ", "price", 0.0) or self._metric("QQQ", "value", 0.0)
         wti = self._metric("CL=F", "value", 0.0) or self._metric("CL=F", "price", 0.0)
         if dxy == 0.0 and spx == 0.0 and gold == 0.0:
             return None

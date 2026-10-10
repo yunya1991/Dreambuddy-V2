@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Yahoo Finance 公开行情，无需鉴权。服务端代理规避 CORS。
 // 支持多 symbol 批量查询，减少请求数: /api/market/yahoo?symbols=GC=F,^GSPC,^IXIC
-const YAHOO_BASE = 'https://query1.finance.yahoo.com';
+const YAHOO_BASE = 'https://query2.finance.yahoo.com';
 
 function normalizeSymbol(s: string): string {
   // 前端可用 _ 代替 = 、__ 代替 ^ ，避免 URL 特殊字符问题

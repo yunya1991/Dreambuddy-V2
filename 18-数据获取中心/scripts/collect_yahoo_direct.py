@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = REPO_ROOT / "18-数据获取中心" / "data_center.db"
 
 SYMBOLS = [
-    "^VIX", "DX-Y.NYB", "GC=F", "SPY", "QQQ", "^TNX", "CL=F", "BTC-USD",
+    "^VIX", "DX-Y.NYB", "GC=F", "^GSPC", "^IXIC", "^TNX", "CL=F", "BTC-USD",
 ]
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

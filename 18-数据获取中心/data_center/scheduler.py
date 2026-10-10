@@ -194,7 +194,7 @@ class CollectionScheduler:
                 interval_sec=3600,
             ))
         # ── finance/yfinance 跨市场标的（15min）──
-        for sym in ("^VIX", "DX-Y.NYB", "GC=F", "SPY", "QQQ", "^TNX", "CL=F", "BTC-USD"):
+        for sym in ("^VIX", "DX-Y.NYB", "GC=F", "^GSPC", "^IXIC", "^TNX", "CL=F", "BTC-USD"):
             tasks.append(CollectionTask(
                 name=f"yfinance_{sym.lower().replace('^','').replace('=','_').replace('-','_')}",
                 category="finance", source="yfinance",
