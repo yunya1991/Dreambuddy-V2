@@ -447,32 +447,49 @@ class DalSnapshotProvider:
         bottom_hit_ratio_pct = self._metric("cycle_signals", "bottom_hit_ratio_pct", 0.0)
         two_year_ma = self._metric("cycle_signals", "bottom_two-year-ma_value", 0.0)
         reserve_risk = self._metric("cycle_signals", "bottom_reserve-risk_value", 0.0)
-        if market_cap == 0.0:
-            return None
+        # P0 修复：market_cap=0 时不 return None（避免整个模块回退 legacy 导致字段集不兼容）
+        # 改为：尝试用 price * supply 估算；估算失败则相关字段标记 None，保持字段集一致
+        market_cap_missing = (market_cap == 0.0)
+        if market_cap_missing:
+            if btc_price > 0 and total_btc > 0:
+                market_cap = btc_price * total_btc
+                logger.info("[valuation] market_cap 缺失，用 btc_price*total_btc 估算: %.0f", market_cap)
+            else:
+                logger.warning("[valuation] market_cap 无法获取，相关字段标记为 None")
+
         # NVT = 市值 / 每日链上交易量(USD)
-        if output_volume_btc > 0 and btc_price > 0:
-            daily_volume_usd = output_volume_btc * btc_price
-        elif tx_count > 0:
-            avg_tx_usd = 100000.0
-            daily_volume_usd = tx_count * avg_tx_usd
-        else:
-            daily_volume_usd = 1.0
-        nvt_ratio = market_cap / daily_volume_usd if daily_volume_usd > 0 else 20.0
+        nvt_ratio = None
+        nvt_z_score = None
+        if market_cap > 0:
+            if output_volume_btc > 0 and btc_price > 0:
+                daily_volume_usd = output_volume_btc * btc_price
+            elif tx_count > 0:
+                avg_tx_usd = 100000.0
+                daily_volume_usd = tx_count * avg_tx_usd
+            else:
+                daily_volume_usd = 1.0
+            nvt_ratio = market_cap / daily_volume_usd if daily_volume_usd > 0 else None
+            if nvt_ratio is not None:
+                nvt_z_score = _clamp((nvt_ratio - 20.0) / 15.0, -3.0, 3.0)
         # MVRV：优先用 cycle_signals 真实值，否则用 btc_metrics 代理
         if not (0.5 < mvrv_ratio < 10):
             mvrv_ratio = 2.5
         # 已实现价格 = (市值 / MVRV) / 流通量 = 已实现市值 / 流通量
-        realized_cap = market_cap / mvrv_ratio if mvrv_ratio > 0 else 0.0
+        realized_cap = market_cap / mvrv_ratio if (market_cap > 0 and mvrv_ratio > 0) else 0.0
         realized_price = round(realized_cap / total_btc, 2) if total_btc > 0 else 0.0
-        nvt_z_score = _clamp((nvt_ratio - 20.0) / 15.0, -3.0, 3.0)
-        valuation_zone = "高估" if nvt_z_score > 1.5 else "低估" if nvt_z_score < -1.0 else "合理"
+        valuation_zone = (
+            "高估" if nvt_z_score is not None and nvt_z_score > 1.5
+            else "低估" if nvt_z_score is not None and nvt_z_score < -1.0
+            else "合理" if nvt_z_score is not None
+            else "数据不足"
+        )
         return {
             "metrics": {
                 "core": {
                     "mvrv_ratio": round(mvrv_ratio, 4),
-                    "nvt_ratio": round(nvt_ratio, 2),
-                    "nvt_z_score": round(nvt_z_score, 4),
-                    "market_cap_usd": round(market_cap, 0),
+                    "nvt_ratio": round(nvt_ratio, 2) if nvt_ratio is not None else None,
+                    "nvt_z_score": round(nvt_z_score, 4) if nvt_z_score is not None else None,
+                    "market_cap_usd": round(market_cap, 0) if market_cap > 0 else None,
                     "nupl": round(nupl, 4),
                     "puell_multiple": round(puell_multiple, 4),
                     "realized_price": realized_price,
@@ -489,10 +506,10 @@ class DalSnapshotProvider:
                 },
             },
             "events": [{
-                "title": f"估值区间：{valuation_zone}（NVT z={nvt_z_score:+.2f}）",
-                "content": f"MVRV {mvrv_ratio:.2f}，NUPL {nupl:.3f}，市值 {market_cap/1e12:.2f}T USD",
+                "title": f"估值区间：{valuation_zone}" + (f"（NVT z={nvt_z_score:+.2f}）" if nvt_z_score is not None else ""),
+                "content": f"MVRV {mvrv_ratio:.2f}，NUPL {nupl:.3f}" + (f"，市值 {market_cap/1e12:.2f}T USD" if market_cap > 0 else "，市值数据缺失"),
                 "category": "估值", "impact_score": 0.6,
-                "sentiment": round(-nvt_z_score * 0.3, 3),
+                "sentiment": round(-nvt_z_score * 0.3, 3) if nvt_z_score is not None else 0.0,
                 "source": "19-DAL", "published_at": _now_iso(),
             }],
             "timeseries": self._history("btc_basics", "market_cap_usd", days=30),

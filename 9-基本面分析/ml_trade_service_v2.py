@@ -89,9 +89,19 @@ def _make_collector(module: str, legacy_func):
                     if data is not None and isinstance(data, dict):
                         return data
             except Exception as exc:
-                print(f"[DAL] {module} 采集失败，回退 legacy: {exc}")
+                # P0 修复：回退时打 ERROR 日志，便于监控告警
+                print(f"[DAL][FALLBACK][ERROR] {module} 采集异常，回退 legacy: {exc}")
         # 2) 回退 legacy DataCollector
-        return legacy_func()
+        # P0 修复：显式标记回退事件，注入 _dal_fallback 供健康检查/前端识别
+        print(f"[DAL][FALLBACK][WARN] {module} 使用 legacy DataCollector（DAL 数据不可用）")
+        legacy_data = legacy_func()
+        if isinstance(legacy_data, dict):
+            legacy_data["_dal_fallback"] = True
+            meta = legacy_data.get("meta", {})
+            if isinstance(meta, dict):
+                meta["dal_fallback"] = True
+                legacy_data["meta"] = meta
+        return legacy_data
 
     return _collect
 
