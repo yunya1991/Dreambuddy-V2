@@ -29,8 +29,13 @@
 | 2 | 易经数据服务 | `11-易经推理系统/data_server_fixed.py` | 8765 | three-screens, bdsm | ✅ 已上线 |
 | 3 | 产物中台 | `7-产物中台/系统研究索引体系/` | 3456 | ranking | ✅ 已上线 |
 | 4 | 基本面数据服务 | `9-基本面分析/ml_trade_service_v2.py` | 9094 | fundamental | ✅ 已上线 |
+| 5 | M27 策略治理审批 | `27-策略治理审批系统/app.py` | 8094 | classic (pipeline/approvals/gate) | ✅ 已上线 |
+| 6 | M26 策略管理模块 | `26-策略管理模块/app.py` | 8093 | classic (strategy upsert) | ✅ 已上线 |
+| 7 | M28 信号触发模块 | `28-策略信号触发模块/app.py` | 8096 | signal-trigger | ✅ 已上线 |
 
 > **部署脚本**: `31-分布式计算部署/phase2/deploy.sh`（一键部署 8765 + 3456 + Nginx + 前端重构建）
+> **Hub(3467) 说明**: 网关中台为设计文档服务，无实现。ops/market/feed API routes 已添加 `mock:true` 降级返回 200。
+> **经典系统模块化**: 旧单体 8092 (ml_trade_service.py) 已拆分为 M25/M26/M27/M28，前端通过 classic-system-bridge.ts 调用 M27(8094)。
 
 ---
 
