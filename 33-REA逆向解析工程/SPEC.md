@@ -121,10 +121,13 @@ dreambuddy 开发过程中频繁遇到以下需求：
 │   ├── evidence.py                  # Evidence 数据结构（已实现）
 │   ├── analyzer_base.py             # 分析器基类（已实现）
 │   ├── python_analyzer.py           # Python AST 分析
-│   ├── ts_analyzer.py               # TS/JS AST 分析
+│   ├── ts_analyzer.py               # TS/JS AST 分析（已实现）
 │   ├── dependency_graph.py          # 依赖图构建+环检测
 │   ├── call_chain_tracer.py         # 调用链追踪
-│   └── git_history.py               # git 历史溯源
+│   ├── git_history.py               # git 历史溯源
+│   ├── algorithm_reducer.py         # 算法还原（已实现）
+│   ├── dependency_audit.py          # 依赖审计（已实现）
+│   └── coverage_analyzer.py         # 测试覆盖分析（已实现）
 ├── adapters/                        # 适配器层
 │   ├── __init__.py
 │   ├── rea_mcp_adapter.py           # morluto/rea MCP 集成
@@ -325,10 +328,10 @@ class GitHubApiAdapter:
 
 ### P2 — 扩展集成（3-5天）
 
-- [ ] morluto/rea MCP 适配器（二进制分析）
-- [ ] GitHub API 适配器（远程仓库）
-- [ ] TS/JS AST 分析器
-- [ ] 测试覆盖分析
+- [x] morluto/rea MCP 适配器（二进制分析）
+- [x] GitHub API 适配器（远程仓库）
+- [x] TS/JS AST 分析器
+- [x] 测试覆盖分析
 
 ### P3 — 优化与应用（持续）
 
@@ -364,6 +367,14 @@ class GitHubApiAdapter:
 1. Git 溯源：能输出文件的作者、首次/末次提交、变更次数
 2. DSH S33 节点可通过 IPC 调用，返回结构化 Evidence
 3. 端到端测试：分析 dreambuddy 自身 `dreambuddy_evolution` 模块，输出架构报告
+
+### P2 验收
+
+1. TS/JS 分析器：能解析 .ts/.js 文件，提取 import/class/function/export + Evidence
+2. GitHub API 适配器：能获取远程仓库元数据和目录树 + Evidence，网络错误降级为 unknown
+3. REA MCP 适配器：is_available() 检测 rea 安装，未安装时降级返回 + Evidence(level=unknown)
+4. 测试覆盖分析：能解析 coverage.xml，计算行/分支覆盖率，识别未覆盖行 + Evidence
+5. 全部新增测试 + 回归测试零失败（77/77）
 
 ---
 
