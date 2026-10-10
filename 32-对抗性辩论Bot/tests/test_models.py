@@ -16,6 +16,7 @@ import pytest
 
 from core.models import (
     Argument,
+    CrossExamination,
     Turn,
     Verdict,
     MarketingMaterial,
@@ -264,3 +265,61 @@ class TestDebateResult:
         assert d["topic"] == "t"
         assert d["status"] == "completed"
         assert isinstance(d["transcript"], list)
+
+
+# ─── CrossExamination (v2 新增) ────────────────────────────────────
+
+class TestCrossExamination:
+    """交叉质询记录（SPEC v2.0-rc3 第 4.2 节）。"""
+
+    def test_create_basic(self):
+        """CrossExamination 基本字段。"""
+        ce = CrossExamination(
+            questioner="bear",
+            respondent="bull",
+            questions=["数据来源是什么？", "如何解释波动？"],
+            answers=["来源是 CoinGecko", "波动是短期现象"],
+            raw="原始输出",
+        )
+        assert ce.questioner == "bear"
+        assert ce.respondent == "bull"
+        assert len(ce.questions) == 2
+        assert len(ce.answers) == 2
+        assert ce.raw == "原始输出"
+
+    def test_questions_answers_correspond(self):
+        """questions 和 answers 应一一对应。"""
+        ce = CrossExamination(
+            questioner="bull", respondent="bear",
+            questions=["Q1", "Q2", "Q3"],
+            answers=["A1", "A2", "A3"],
+            raw="",
+        )
+        assert len(ce.questions) == len(ce.answers) == 3
+
+    def test_turn_holds_cross_exam(self):
+        """Turn.content 可以是 CrossExamination。"""
+        ce = CrossExamination(
+            questioner="bear", respondent="bull",
+            questions=["Q1"], answers=["A1"], raw="",
+        )
+        turn = Turn(speaker="bear", round=2, content=ce)
+        assert turn.speaker == "bear"
+        assert isinstance(turn.content, CrossExamination)
+
+    def test_turn_content_can_be_argument_or_cross_exam_or_str(self):
+        """Turn.content 支持三种类型。"""
+        # Argument
+        arg = Argument(thesis="t", arguments=[], quote="", confidence=0.5, raw="")
+        t1 = Turn(speaker="bull", round=1, content=arg)
+        assert isinstance(t1.content, Argument)
+        # CrossExamination
+        ce = CrossExamination(
+            questioner="bull", respondent="bear",
+            questions=["Q"], answers=["A"], raw="",
+        )
+        t2 = Turn(speaker="bull", round=2, content=ce)
+        assert isinstance(t2.content, CrossExamination)
+        # str
+        t3 = Turn(speaker="inject", round=0, content="纯文本")
+        assert isinstance(t3.content, str)

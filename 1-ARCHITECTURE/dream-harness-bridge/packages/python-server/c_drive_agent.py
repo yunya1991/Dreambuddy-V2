@@ -202,6 +202,7 @@ class CDriveAgent:
         jev_judge_fn: Optional[Callable[[Any, Dict], Dict]] = None,
         cognitive_adapter: Optional[Any] = None,
         reflector: Optional[Any] = None,
+        config: Optional[Dict] = None,
     ):
         """初始化 C-Drive-Agent
 
@@ -213,11 +214,18 @@ class CDriveAgent:
             cognitive_adapter: 认知适配器, 需有 recall(context, top_k, min_quality).
                 None 时跳过 recall (FAIL-OPEN).
             reflector: DreamOS Reflector 实例 (可选, 当前预留).
+            config: 配置字典 (SPEC v2.0-rc3 第 6.7 节):
+                - debate_engine: "v1" | "v2" (默认 "v1")
         """
         self._llm_fn = llm_fn
         self._jev_fn = jev_judge_fn
         self._cognitive = cognitive_adapter
         self._reflector = reflector
+        # SPEC v2.0-rc3 第 6.7 节: feature flag + 回滚
+        cfg = config or {}
+        self._debate_engine_version = cfg.get("debate_engine", "v1")
+        self._debate_error_count = 0
+        self._debate_max_errors = cfg.get("debate_max_consecutive_errors", 3)
 
     # ── 主入口 ──────────────────────────────────────────
 
@@ -548,6 +556,7 @@ class CDriveAgent:
         HC-8: 并行调用, 置信度 < 0.65 时触发.
         无 llm_fn 时用规则提取 (FAIL-OPEN).
         D2: round_num=2 时进行更深入的第二轮辩论.
+        SPEC v2.0-rc3 第 6.7 节: feature flag v1/v2 + 回滚.
         """
         sigs = signals or []
         bull_signals = [s for s in sigs if s.get("direction") == "long"]
@@ -556,7 +565,58 @@ class CDriveAgent:
         if self._llm_fn is None:
             return self._rule_based_debate(bull_signals, bear_signals, round_num)
 
+        # SPEC v2.0-rc3 第 6.7 节: v2 feature flag
+        if self._debate_engine_version == "v2" and \
+                self._debate_error_count < self._debate_max_errors:
+            try:
+                return self._v2_debate(sigs, direction)
+            except Exception as e:
+                self._debate_error_count += 1
+                import logging
+                logging.getLogger("cdrive.debate").warning(
+                    "v2 辩论异常 #%d: %s, fallback to v1", self._debate_error_count, e)
+                if self._debate_error_count >= self._debate_max_errors:
+                    self._debate_engine_version = "v1"
+                    logging.getLogger("cdrive.debate").error(
+                        "v2 连续 %d 次异常, 切回 v1",
+                        self._debate_error_count)
+                # fallback to v1
+                return self._llm_based_debate(
+                    bull_signals, bear_signals, direction, round_num)
+
         return self._llm_based_debate(bull_signals, bear_signals, direction, round_num)
+
+    def _v2_debate(self, signals: List[Dict], direction: str) -> Dict[str, Any]:
+        """v2 辩论：调用 DebateEngine.run_fast()。
+
+        将 DebateEngine 的输出映射到 v1 兼容格式：
+        - bull_thesis → bull_argument
+        - bear_thesis → bear_argument
+        - bull/bear_confidence 保持不变
+        """
+        import asyncio
+        from debate_engine import DebateEngine
+
+        # 构建 topic（从 signals 提取关键信息）
+        sig_names = [s.get("name", "?") for s in signals[:3]]
+        topic = f"{'、'.join(sig_names)} 信号 {direction} 方向判断"
+
+        engine = DebateEngine(
+            llm_fn=self._llm_fn,
+            config={},
+            cognitive_adapter=self._cognitive,
+        )
+        result = asyncio.run(engine.run_fast(topic))
+
+        # v2 成功 → 重置错误计数
+        self._debate_error_count = 0
+
+        return {
+            "bull_argument": result.get("bull_thesis", ""),
+            "bear_argument": result.get("bear_thesis", ""),
+            "bull_confidence": result.get("bull_confidence", 0.5),
+            "bear_confidence": result.get("bear_confidence", 0.5),
+        }
 
     def _rule_based_debate(
         self,
@@ -946,6 +1006,87 @@ def handle_c_drive_agent(params: dict) -> dict:
             decision = _execute_supplement_and_synthesize(decision, params)
 
         return {"ok": True, "decision": decision.to_dict()}
+    except Exception as e:
+        stack = traceback.format_exc()
+        return {"ok": False, "error": str(e), "stack": stack}
+
+
+# ============================================================
+# 辩论 IPC (SPEC v2.0-rc3 第 6.3 节)
+# ============================================================
+
+def handle_debate(params: dict) -> dict:
+    """辩论 IPC 路由 (SPEC v2.0-rc3 第 6.3 节)
+
+    对外暴露 4 个辩论相关 IPC 接口，供 Trae 和 32-bot 调用：
+    - action=recall: 检索历史辩论记忆
+    - action=record: 存储辩论经验
+    - action=verify: 验证辩论预测
+    - action=run: C-Drive 自驱动辩论 (fast/deep)
+
+    FAIL-OPEN: 无 cognitive_adapter 时 recall 返回空列表，record/verify 跳过。
+    """
+    action = params.get("action")
+
+    try:
+        if action == "recall":
+            cog = _load_cognitive_adapter()
+            if cog is None:
+                return {"ok": True, "memories": []}
+            context = params.get("context", "")
+            top_k = params.get("top_k", 5)
+            result = cog.recall(
+                context=context, top_k=top_k, min_quality="C",
+            )
+            # MCP recall 返回 {"memories": [...]} 格式
+            if isinstance(result, dict) and "memories" in result:
+                return {"ok": True, "memories": result["memories"]}
+            if isinstance(result, list):
+                return {"ok": True, "memories": result}
+            return {"ok": True, "memories": []}
+
+        elif action == "record":
+            cog = _load_cognitive_adapter()
+            if cog is None:
+                return {"ok": True, "memory_id": None,
+                        "warning": "cognitive_adapter unavailable"}
+            content = params.get("content", "")
+            quality = params.get("quality", "B")
+            tags = params.get("tags", "debate")
+            mid = cog.record(
+                content=content, quality_level=quality, tags=tags,
+            )
+            return {"ok": True, "memory_id": mid}
+
+        elif action == "verify":
+            cog = _load_cognitive_adapter()
+            if cog is None:
+                return {"ok": True, "warning": "cognitive_adapter unavailable"}
+            memory_id = params.get("memory_id", "")
+            success = params.get("success", True)
+            cog.verify(memory_id=memory_id, success=success)
+            return {"ok": True}
+
+        elif action == "run":
+            topic = params.get("topic", "")
+            mode = params.get("mode", "fast")
+            background = params.get("background", "")
+            llm_fn = _make_synthesizer_llm_fn()
+            if llm_fn is None:
+                return {"ok": False, "error": "LLM not available for debate"}
+            cog = _load_cognitive_adapter()
+            from debate_engine import DebateEngine
+            engine = DebateEngine(llm_fn=llm_fn, config={}, cognitive_adapter=cog)
+            import asyncio as _asyncio
+            if mode == "deep":
+                result = _asyncio.run(engine.run_deep(topic, background))
+            else:
+                result = _asyncio.run(engine.run_fast(topic, background))
+            return {"ok": True, "result": result}
+
+        else:
+            return {"ok": False, "error": f"unknown action: {action}"}
+
     except Exception as e:
         stack = traceback.format_exc()
         return {"ok": False, "error": str(e), "stack": stack}

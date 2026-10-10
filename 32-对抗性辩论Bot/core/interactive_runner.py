@@ -47,12 +47,14 @@ class InteractiveRunner:
         chat_id: int,
         max_rounds: int = 2,
         judge_enabled: bool = True,
+        ipc_fn: Any | None = None,
     ):
         self.bot = telegram_dual_bot
         self.topic = topic
         self.chat_id = chat_id
         self.max_rounds = max_rounds
         self.judge_enabled = judge_enabled
+        self._ipc_fn = ipc_fn  # C-Drive IPC 调用函数 (SPEC v2.0-rc3 第 6.4 节)
 
         # 状态
         self.transcript: list[Turn] = []
@@ -60,6 +62,77 @@ class InteractiveRunner:
         self.verdict: Verdict | None = None
         self.material: MarketingMaterial | None = None
         self.quality_score: DebateQualityScore | None = None
+
+    # ── C-Drive IPC 方法 (SPEC v2.0-rc3 第 6.4 节) ──────────────
+
+    async def recall_memories(self, context: str, top_k: int = 5) -> list:
+        """通过 IPC 调 C-Drive recall 检索历史辩论记忆。
+
+        无 ipc_fn 时返回空列表（向后兼容 v1）。
+        """
+        if self._ipc_fn is None:
+            return []
+        try:
+            result = self._ipc_fn({
+                "action": "recall",
+                "context": context,
+                "top_k": top_k,
+            })
+            if isinstance(result, dict) and result.get("ok"):
+                return result.get("memories", [])
+            return []
+        except Exception as e:
+            logger.warning("IPC recall 失败(FAIL-OPEN): %s", e)
+            return []
+
+    async def record_argument(
+        self,
+        topic: str,
+        side: str,
+        thesis: str,
+        arguments: list[str],
+        quote: str = "",
+        confidence: float = 0.0,
+        persona: str = "",
+        round: int = 0,
+    ) -> str | None:
+        """通过 IPC 调 C-Drive record 存储辩论经验。
+
+        SPEC v2.0-rc3 第 6.4 节：record content 必须是结构化 JSON。
+        tags 双维度：辩论维度(debate,argument-pattern) + 交易维度(标的,方向)。
+
+        无 ipc_fn 时返回 None（向后兼容 v1）。
+        """
+        if self._ipc_fn is None:
+            return None
+        try:
+            import json as _json
+            content = _json.dumps({
+                "type": "argument",
+                "subtype": "argument-pattern",
+                "topic": topic,
+                "side": side,
+                "thesis": thesis,
+                "arguments": arguments,
+                "quote": quote,
+                "confidence": confidence,
+                "persona": persona,
+                "round": round,
+            }, ensure_ascii=False)
+            # 双维度 tags: 辩论维度 + 交易维度(从 topic 提取)
+            tags = f"debate,argument-pattern,{topic[:20]}"
+            result = self._ipc_fn({
+                "action": "record",
+                "content": content,
+                "quality": "B",
+                "tags": tags,
+            })
+            if isinstance(result, dict) and result.get("ok"):
+                return result.get("memory_id")
+            return None
+        except Exception as e:
+            logger.warning("IPC record 失败(FAIL-OPEN): %s", e)
+            return None
 
     async def send_bull(
         self,

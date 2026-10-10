@@ -13,7 +13,7 @@ import logging
 import re
 
 from core.agents import LLMClient, _extract_json
-from core.models import Argument, Turn, Verdict, MarketingMaterial
+from core.models import Argument, CrossExamination, Turn, Verdict, MarketingMaterial
 
 logger = logging.getLogger("debate.marketing")
 
@@ -198,3 +198,30 @@ class MarketingExtractor:
             copy = f"关于「{topic}」的辩论"
 
         return [copy], title
+
+    def _extract_cross_exam_highlights(self, transcript: list[Turn]) -> list[str]:
+        """从交叉质询中提取精彩 Q&A 作为营销素材。
+
+        SPEC v2.0-rc3 第 4.5 节。
+
+        策略：
+        1. 遍历 transcript 中 CrossExamination 类型的 Turn
+        2. 筛选"被问倒"的 Q&A（answer 短于 20 字 或 question 带犀利关键词）
+        3. 格式化为"反方质询正方：Q → A"的短文案
+        """
+        sharp_keywords = ["数据来源", "如何解释", "为什么", "矛盾"]
+        highlights = []
+        for turn in transcript:
+            if not isinstance(turn.content, CrossExamination):
+                continue
+            for q, a in zip(turn.content.questions, turn.content.answers):
+                # 犀利问题或简短回答（被问倒）→ 高传播价值
+                is_sharp = any(kw in q for kw in sharp_keywords)
+                is_stumped = len(a) < 20
+                if is_sharp or is_stumped:
+                    if turn.content.questioner == "bear":
+                        side = "反方质询正方"
+                    else:
+                        side = "正方质询反方"
+                    highlights.append(f"🔥 {side}\nQ: {q}\nA: {a}")
+        return highlights

@@ -37,16 +37,30 @@ class Argument:
 
 
 @dataclass
+class CrossExamination:
+    """交叉质询记录（SPEC v2.0-rc3 第 4.2 节）。
+
+    交叉质询不是 Argument，是独立的问答数据类型。
+    questioner 和 respondent 互为对方（bull/bear）。
+    """
+    questioner: str          # 提问方: 'bull' | 'bear'
+    respondent: str          # 回答方: 'bull' | 'bear'（与 questioner 相反）
+    questions: list[str]     # 提问列表（2-3 个）
+    answers: list[str]       # 回答列表（与 questions 一一对应）
+    raw: str                 # 原始 LLM 输出
+
+
+@dataclass
 class Turn:
     """单轮发言记录。
 
     speaker: 'bull' | 'bear' | 'judge' | 'inject'
     round: 第几轮（inject 记为 0）
-    content: 辩手为 Argument，inject 为纯文本
+    content: 辩手为 Argument，交叉质询为 CrossExamination，inject 为纯文本
     """
     speaker: str
     round: int
-    content: Union[Argument, str]
+    content: Union[Argument, CrossExamination, str]
     timestamp: datetime = field(default_factory=datetime.now)
 
 
