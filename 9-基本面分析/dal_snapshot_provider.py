@@ -389,7 +389,7 @@ class DalSnapshotProvider:
         us10y = self._metric("^TNX", "value", 0.0) or self._metric("^TNX", "close", 0.0)
         vix = self._metric("^VIX", "value", 0.0)
         btc = self._metric("BTC-USD", "value", 0.0)
-        ndx = self._metric("QQQ", "value", 0.0) or self._metric("QQQ", "close", 0.0)
+        ndx = self._metric("QQQ", "price", 0.0) or self._metric("QQQ", "value", 0.0)
         wti = self._metric("CL=F", "value", 0.0)
         if dxy == 0.0 and spx == 0.0 and gold == 0.0:
             return None
