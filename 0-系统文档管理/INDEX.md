@@ -148,6 +148,10 @@
 | 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.13 |
 | SPEC | [2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md](../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md) | v1.0（已完成） |
 | SPEC（做空疏通） | [23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md](../23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md) | v0.2（执行层集成完成 2026-10-09） |
+| REA设计增强任务 | [23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md](../23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md) | v1.0（T2.1-T2.3完成 2026-10-10） |
+| SPEC（金融逆向推导） | [23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md](../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) | v0.1（P0 ReverseDeriver完成 2026-10-10） |
+| Evidence-First增强 | [4-MEMORY/docs/Evidence-First增强任务清单.md](../4-MEMORY/docs/Evidence-First增强任务清单.md) | v1.0（T1.1-T1.4完成 2026-10-10） |
+| 33-REA逆向解析工程 | [33-REA逆向解析工程/SPEC.md](../33-REA逆向解析工程/SPEC.md) | v0.1（P0核心完成 2026-10-10） |
 
 ---
 
