@@ -1,0 +1,24 @@
+# config.yaml — 对抗性辩论 Bot 配置
+# SPEC 第四节：debate + telegram + topic_filter 三段配置
+
+debate:
+  max_rounds: 2
+  judge_enabled: true
+  pause_timeout_minutes: 30       # /pause 超时自动 stop
+  models:
+    debater: qwen-turbo           # 辩手用低成本模型
+    judge: qwen-plus              # 裁判综合
+    marketing: qwen-plus          # 营销素材生成
+    quality: qwen-plus            # 质量评估
+  budget:
+    monthly_limit_yuan: 50.0      # 月 token 预算上限
+
+telegram:
+  bull_token: "env:TG_BULL_TOKEN"
+  bear_token: "env:TG_BEAR_TOKEN"
+  judge_token: null               # 不启用裁判 bot 时为 null
+  allowed_chat_ids: []            # 群 ID 白名单（空 = 允许所有群）
+  message_interval_sec: 1.5       # 消息发送间隔，规避 rate limit
+
+topic_filter:
+  blacklist_keywords: []          # 敏感话题关键词黑名单
