@@ -21,15 +21,6 @@
       ]
     },
     {
-      "name": "data-troubleshoot",
-      "present_roles": [
-        "trae-entry"
-      ],
-      "missing_roles": [
-        "project-index"
-      ]
-    },
-    {
       "name": "nature-shared",
       "present_roles": [
         "trae-entry"
@@ -40,6 +31,15 @@
     },
     {
       "name": "knowledge-ingest",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-classic-methodology",
       "present_roles": [
         "project-index"
       ],

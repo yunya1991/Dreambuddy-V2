@@ -1,3 +1,13 @@
+---
+name: "debate-pro-side"
+description: "正方辩手辩论策略方法论。Invoke when 正方辩论策略、prima facie举证、正方persona构建。"
+version: "1.0.0"
+status: "active"
+category: "cognition"
+domain: "1-ARCHITECTURE"
+triggers: ["正方策略", "prima facie", "正方举证", "bull side", "正方辩手"]
+---
+
 # SKILL: debate-pro-side（正方辩手方法论）
 
 > **版本**: 1.0.0 | **来源**: 中式4v4赛制 + Oxford式 + Policy/LD制式综合调研

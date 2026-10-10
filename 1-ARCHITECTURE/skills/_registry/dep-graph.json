@@ -17,6 +17,11 @@
       "status": "active"
     },
     {
+      "id": "debate-con-side",
+      "category": "cognition",
+      "status": "active"
+    },
+    {
       "id": "dream-code-commit-sync-workflow",
       "category": "orchestration",
       "status": "active"
@@ -73,6 +78,11 @@
     },
     {
       "id": "dream-arch-research-orchestrator",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "debate-topic-selector",
       "category": "orchestration",
       "status": "active"
     },
@@ -157,8 +167,18 @@
       "status": "proposed"
     },
     {
+      "id": "debate-pro-side",
+      "category": "cognition",
+      "status": "active"
+    },
+    {
       "id": "nature-shared",
       "category": "tooling",
+      "status": "active"
+    },
+    {
+      "id": "debate-reflection-methodology",
+      "category": "cognition",
       "status": "active"
     },
     {
@@ -217,6 +237,11 @@
       "status": "active"
     },
     {
+      "id": "debate-adjudication-methodology",
+      "category": "cognition",
+      "status": "active"
+    },
+    {
       "id": "nature-figure",
       "category": "tooling",
       "status": "active"
@@ -229,6 +254,11 @@
     {
       "id": "dream-backtest-verify",
       "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "debate-con-side",
+      "category": "cognition",
       "status": "active"
     },
     {
@@ -282,6 +312,11 @@
       "status": "active"
     },
     {
+      "id": "debate-topic-selector",
+      "category": "orchestration",
+      "status": "active"
+    },
+    {
       "id": "evolution-case-ingest",
       "category": "uncategorized",
       "status": "active"
@@ -322,6 +357,11 @@
       "status": "active"
     },
     {
+      "id": "debate-classic-methodology",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
       "id": "dream-arch-gap-analysis-workflow",
       "category": "orchestration",
       "status": "active"
@@ -329,6 +369,21 @@
     {
       "id": "dream-feature-landing-workflow",
       "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "data-troubleshoot",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "debate-pro-side",
+      "category": "cognition",
+      "status": "active"
+    },
+    {
+      "id": "debate-reflection-methodology",
+      "category": "cognition",
       "status": "active"
     },
     {
@@ -364,6 +419,11 @@
     {
       "id": "dream-skill-index-governance",
       "category": "orchestration",
+      "status": "active"
+    },
+    {
+      "id": "debate-adjudication-methodology",
+      "category": "cognition",
       "status": "active"
     },
     {
@@ -1239,6 +1299,11 @@
       "resolved": true
     },
     {
+      "from": "debate-topic-selector",
+      "to": "dream-research-workflow",
+      "resolved": true
+    },
+    {
       "from": "dream-code-sync-orphan-scan-workflow",
       "to": "dream-doc-sync-workflow",
       "resolved": true
@@ -1741,6 +1806,11 @@
     {
       "from": "dream-arch-research-orchestrator",
       "to": "dream-eng-mgmt-workflow",
+      "resolved": true
+    },
+    {
+      "from": "debate-topic-selector",
+      "to": "dream-research-workflow",
       "resolved": true
     },
     {

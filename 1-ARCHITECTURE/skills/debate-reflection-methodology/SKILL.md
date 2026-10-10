@@ -1,3 +1,13 @@
+---
+name: "debate-reflection-methodology"
+description: "赛后反思5步循环方法论。Invoke when 辩论赛后反思、策略提取、gap分析、改进建议、Practice Loop。"
+version: "1.0.0"
+status: "active"
+category: "cognition"
+domain: "1-ARCHITECTURE"
+triggers: ["赛后反思", "策略提取", "gap分析", "改进建议", "Practice Loop", "反思循环"]
+---
+
 # SKILL: debate-reflection-methodology（赛后反思方法论）
 
 > **版本**: 1.0.0 | **来源**: SuperDebate Guide Ch.17 (Practice Loop) + DebateFlow (Post-Round Self-Evaluation) + Debate Ladder (Deliberate Practice)

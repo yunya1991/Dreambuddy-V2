@@ -1,3 +1,13 @@
+---
+name: "debate-adjudication-methodology"
+description: "裁判评审6维评分+RFD方法论。Invoke when 辩论裁判评审、6维评分、RFD裁决理由、InspireScore评分。"
+version: "1.0.0"
+status: "active"
+category: "cognition"
+domain: "1-ARCHITECTURE"
+triggers: ["裁判评审", "6维评分", "RFD", "裁决理由", "InspireScore"]
+---
+
 # SKILL: debate-adjudication-methodology（裁判评审方法论）
 
 > **版本**: 1.0.0 | **来源**: InspireScore (arXiv 2506.18102) + WSDC Judge Academy + debate.club AI Evaluation

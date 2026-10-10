@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "total_count": 206,
+  "total_count": 218,
   "skills": [
     {
       "name": "polling-trader-reload",
@@ -93,6 +93,40 @@
       "facets": {
         "domain": "architecture",
         "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-con-side",
+      "description": "反方辩手辩论策略方法论。Invoke when 反方辩论策略、推翻举证、refutation、反方persona构建。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/debate-con-side/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "反方策略",
+        "推翻举证",
+        "refutation",
+        "bear side",
+        "反方辩手"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "5e1bc7a3a338eedd8b5abb258396941644ff91a5a2f11673ab5d4a02a16263ef",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -629,6 +663,45 @@
       "facets": {
         "domain": "architecture",
         "task_type": "research",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-topic-selector",
+      "description": "辩论话题选题引擎：WebSearch热点+交易SKILL信号+用户审校。Invoke when 用户提到选题、话题选题、选题辩论、辩论话题、topic selection时自动调用。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/debate-topic-selector/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "选题",
+        "话题选题",
+        "选题辩论",
+        "辩论话题",
+        "topic selection",
+        "热点辩论"
+      ],
+      "depends_on": [
+        "dream-research-workflow"
+      ],
+      "provides": [
+        "debate-topic-candidates"
+      ],
+      "cognitive_links": [],
+      "content_hash": "36219f11cf90e9ebfab413ac69e1adc2d3915d03c71902f5c0f0fc3a7b0610b0",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -1255,7 +1328,7 @@
     },
     {
       "name": "data-troubleshoot",
-      "description": "排查基本面数据链路问题：前端显示异常值（0.000、错误标签、量级不对）时，系统化追踪 18-DB→backfill→19-DAL→API→前端 全链路。Invoke when frontend shows suspicious values (0.000, wrong sentiment labels, magnitude errors) or user reports incorrect fundamental data.",
+      "description": "排查基本面数据链路问题：前端显示异常值（0.000、错误标签、量级不对、字段缺失）时，系统化追踪 18-DB→backfill→19-DAL→快照→API→前端 全链路，含字段契约验证、数据质量检查、云端一致性核对。Invoke when frontend shows suspicious values (0.000, wrong labels, missing fields, magnitude errors) or user reports incorrect fundamental data.",
       "version": "0.0.0",
       "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/data-troubleshoot/SKILL.md",
       "location_role": "trae-entry",
@@ -1265,7 +1338,7 @@
       "depends_on": [],
       "provides": [],
       "cognitive_links": [],
-      "content_hash": "3ee95e3135494d2119681e242483d2dbf015e46f39cc2f26bd17ea618f482f96",
+      "content_hash": "5a8bf6bc86198c6d63f2434ff0f781bd8722ab4e2e731ef3dd1bd81d64567d0d",
       "parse_error": null,
       "override_fields": null,
       "facets": {
@@ -1369,6 +1442,40 @@
       "evolution_log": []
     },
     {
+      "name": "debate-pro-side",
+      "description": "正方辩手辩论策略方法论。Invoke when 正方辩论策略、prima facie举证、正方persona构建。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/debate-pro-side/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "正方策略",
+        "prima facie",
+        "正方举证",
+        "bull side",
+        "正方辩手"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "435dbbd14fbb25e7886047499663402c1794045c447b16b043312246229a875d",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "nature-shared",
       "description": "nature-skills 共享内容目录，提供通用样式模板和工具函数",
       "version": "1.0.0",
@@ -1388,6 +1495,41 @@
       "override_fields": null,
       "facets": {
         "domain": "tooling",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-reflection-methodology",
+      "description": "赛后反思5步循环方法论。Invoke when 辩论赛后反思、策略提取、gap分析、改进建议、Practice Loop。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/debate-reflection-methodology/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "赛后反思",
+        "策略提取",
+        "gap分析",
+        "改进建议",
+        "Practice Loop",
+        "反思循环"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "4c63762d0c1bd3af85dd6bc1b8cbe479732c4ba4149593683addc771b23812dc",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
         "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
@@ -1933,6 +2075,40 @@
       "evolution_log": []
     },
     {
+      "name": "debate-adjudication-methodology",
+      "description": "裁判评审6维评分+RFD方法论。Invoke when 辩论裁判评审、6维评分、RFD裁决理由、InspireScore评分。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/skills/debate-adjudication-methodology/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "裁判评审",
+        "6维评分",
+        "RFD",
+        "裁决理由",
+        "InspireScore"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "e6abada717e67ad9f207502e194feffd8aac81fed14660566dda6f336348fdbe",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "uncategorized",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "nature-figure",
       "description": "Nature/高影响力期刊投稿级科研图工作流，含多面板证据架构、子图对齐门、PDF碰撞审计",
       "version": "1.0.0",
@@ -2038,6 +2214,40 @@
       "facets": {
         "domain": "architecture",
         "task_type": "verification",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-con-side",
+      "description": "反方辩手辩论策略方法论。Invoke when 反方辩论策略、推翻举证、refutation、反方persona构建。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/debate-con-side/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "反方策略",
+        "推翻举证",
+        "refutation",
+        "bear side",
+        "反方辩手"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "5e1bc7a3a338eedd8b5abb258396941644ff91a5a2f11673ab5d4a02a16263ef",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -2509,6 +2719,45 @@
       "evolution_log": []
     },
     {
+      "name": "debate-topic-selector",
+      "description": "辩论话题选题引擎：WebSearch热点+交易SKILL信号+用户审校。Invoke when 用户提到选题、话题选题、选题辩论、辩论话题、topic selection时自动调用。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/debate-topic-selector/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "选题",
+        "话题选题",
+        "选题辩论",
+        "辩论话题",
+        "topic selection",
+        "热点辩论"
+      ],
+      "depends_on": [
+        "dream-research-workflow"
+      ],
+      "provides": [
+        "debate-topic-candidates"
+      ],
+      "cognitive_links": [],
+      "content_hash": "36219f11cf90e9ebfab413ac69e1adc2d3915d03c71902f5c0f0fc3a7b0610b0",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "evolution-case-ingest",
       "description": "为自进化系统案例库（washout/washout_reversal/pump_dump_reversal）新增闭环训练案例。Invoke when 用户要求为自进化系统增加训练案例、入库市场行情样本、或补充 CBR/KNN 案例库。",
       "version": "0.0.0",
@@ -2885,6 +3134,28 @@
       "evolution_log": []
     },
     {
+      "name": "debate-classic-methodology",
+      "description": "",
+      "version": "0.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/debate-classic-methodology/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "uncategorized",
+      "triggers": [],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "6777bfd709be472d4be7a78b87d1a1f3ed280f7b68961ef4e47e77b0da1978a4",
+      "parse_error": "no_frontmatter_or_invalid_yaml",
+      "override_fields": null,
+      "facets": {},
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
       "name": "dream-arch-gap-analysis-workflow",
       "description": "Orchestrates architecture gap analysis: recall → two-round audit → SPEC-A (gap list) → 3-dimension parallel Agent research (finance/AI multi-agent/GitHub) → integrate insights → SPEC-B (4-layer optimization + P0-P3 roadmap) → NotifyUser → hermes reflection. Invoke for 架构盘点/架构缺口/全局架构/SPEC-A/SPEC-B/架构现状/架构优化方案.",
       "version": "1.0.0",
@@ -2974,6 +3245,103 @@
       "facets": {
         "domain": "architecture",
         "task_type": "dev",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "data-troubleshoot",
+      "description": "排查基本面数据链路问题：前端显示异常值（0.000、错误标签、量级不对、字段缺失）时，系统化追踪 18-DB→backfill→19-DAL→快照→API→前端 全链路，含字段契约验证、数据质量检查、云端一致性核对。Invoke when frontend shows suspicious values (0.000, wrong labels, missing fields, magnitude errors) or user reports incorrect fundamental data.",
+      "version": "0.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/data-troubleshoot/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "uncategorized",
+      "triggers": [],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "5a8bf6bc86198c6d63f2434ff0f781bd8722ab4e2e731ef3dd1bd81d64567d0d",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-pro-side",
+      "description": "正方辩手辩论策略方法论。Invoke when 正方辩论策略、prima facie举证、正方persona构建。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/debate-pro-side/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "正方策略",
+        "prima facie",
+        "正方举证",
+        "bull side",
+        "正方辩手"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "435dbbd14fbb25e7886047499663402c1794045c447b16b043312246229a875d",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-reflection-methodology",
+      "description": "赛后反思5步循环方法论。Invoke when 辩论赛后反思、策略提取、gap分析、改进建议、Practice Loop。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/debate-reflection-methodology/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "赛后反思",
+        "策略提取",
+        "gap分析",
+        "改进建议",
+        "Practice Loop",
+        "反思循环"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "4c63762d0c1bd3af85dd6bc1b8cbe479732c4ba4149593683addc771b23812dc",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"
@@ -3336,6 +3704,40 @@
       "facets": {
         "domain": "architecture",
         "task_type": "governance",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": []
+    },
+    {
+      "name": "debate-adjudication-methodology",
+      "description": "裁判评审6维评分+RFD方法论。Invoke when 辩论裁判评审、6维评分、RFD裁决理由、InspireScore评分。",
+      "version": "1.0.0",
+      "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/debate-adjudication-methodology/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "cognition",
+      "triggers": [
+        "裁判评审",
+        "6维评分",
+        "RFD",
+        "裁决理由",
+        "InspireScore"
+      ],
+      "depends_on": [],
+      "provides": [],
+      "cognitive_links": [],
+      "content_hash": "e6abada717e67ad9f207502e194feffd8aac81fed14660566dda6f336348fdbe",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
         "potency": "unipotent",
         "resource_cost": "medium",
         "execution_mode": "auto"

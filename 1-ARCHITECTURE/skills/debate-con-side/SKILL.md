@@ -1,3 +1,13 @@
+---
+name: "debate-con-side"
+description: "反方辩手辩论策略方法论。Invoke when 反方辩论策略、推翻举证、refutation、反方persona构建。"
+version: "1.0.0"
+status: "active"
+category: "cognition"
+domain: "1-ARCHITECTURE"
+triggers: ["反方策略", "推翻举证", "refutation", "bear side", "反方辩手"]
+---
+
 # SKILL: debate-con-side（反方辩手方法论）
 
 > **版本**: 1.0.0 | **来源**: 中式4v4赛制 + Oxford式 + Policy/LD制式综合调研
