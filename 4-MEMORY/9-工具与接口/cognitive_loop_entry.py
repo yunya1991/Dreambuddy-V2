@@ -363,9 +363,13 @@ class CognitiveLoopEntry:
         domain: Optional[str] = None,
         voyager_scores: Optional[Dict[str, float]] = None,
         enable_voyager_auto: bool = True,
+        # Evidence-First 扩展（方向1-1）
+        level: str = "observation",
+        known_gaps: Optional[List[str]] = None,
+        observations: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """
-        记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分）。
+        记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分 + Evidence-First）。
 
         Args:
             content: 经验内容
@@ -374,12 +378,12 @@ class CognitiveLoopEntry:
             tags: 标签
             source: 来源（如 "trae", "a8_check", "code_review"）
             memory_type: 记忆类型
-            domain: 新增 Phase1：领域标签，如 "debug"/"backtest"/"strategy-research"/
-                "execution"/"cognitive-setup"（用于后续分组连续成功计数）
+            domain: 新增 Phase1：领域标签
             voyager_scores: 新增 Phase1：外部（Hermes/Evolution）提供的 5 维评分。
-                支持 5 维显式或省略 overall；overall 缺失时按权重汇总。
-            enable_voyager_auto: 新增 Phase1：当 voyager_scores 为 None 或缺某些维度时，
-                是否启用规则引擎打基础分（默认 True）。
+            enable_voyager_auto: 新增 Phase1：是否启用规则引擎打基础分。
+            level: Evidence 事实分级 (observation/derivation/inference/unknown)
+            known_gaps: 已知局限列表
+            observations: 支撑观察列表
 
         Returns:
             记忆ID
@@ -392,6 +396,9 @@ class CognitiveLoopEntry:
             tags=tags_list,
             source=source,
             memory_type=memory_type,
+            level=level,
+            known_gaps=known_gaps,
+            observations=observations,
         )
 
         # Phase1：VOYAGER 评分持久化 + 写入 bayesian 扩展字段（FAIL-OPEN 包裹）
@@ -412,13 +419,15 @@ class CognitiveLoopEntry:
     # 实践层：验证与更新
     # ============================================================
 
-    def verify(self, memory_id: str, success: bool = True) -> Dict[str, Any]:
+    def verify(self, memory_id: str, success: bool = True,
+               known_gaps_update: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         A8 校验验证 — 更新记忆置信度并可能触发蒸馏（Phase1 扩展：连续成功计数 → AUTO 草案）。
 
         Args:
             memory_id: 记忆ID
             success: 校验是否通过
+            known_gaps_update: 验证后更新的已知局限列表（仅 success=True 时生效）
 
         Returns:
             更新结果。Phase1 新增子键 "voyager"：
@@ -475,6 +484,9 @@ class CognitiveLoopEntry:
             try:
                 self._vm.update_quality(memory_id, new_quality, new_confidence)
                 self._vm.increment_verify(memory_id)
+                # Evidence-First: 验证成功后更新 known_gaps（局限可能缩小）
+                if success and known_gaps_update is not None:
+                    self._vm.update_known_gaps(memory_id, list(known_gaps_update))
             except Exception:
                 # 兜底：id 格式不被 SQLite 支持等 → 静默跳过，不影响返回
                 pass

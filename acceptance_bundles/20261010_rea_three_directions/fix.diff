@@ -1,0 +1,7 @@
+ .../scripts/memory_l4/polling_trader.py            | 22 ++++++-
+ .../dreambuddy_evolution/core/contradiction_identifier.py | 41 +++++++++++-
+ .../dreambuddy_evolution/engines/reflection_engine.py |  8 ++-
+ 4-MEMORY/9-工具与接口/cognitive_loop_entry.py      | 26 +++++---
+ 4-MEMORY/9-工具与接口/cognitive_mcp_server.py      | 49 ++++++++++++++-
+ 4-MEMORY/9-工具与接口/vector_memory_interface.py   | 72 ++++++++++++++++++++--
+ 6 files changed, 199 insertions(+), 19 deletions(-)

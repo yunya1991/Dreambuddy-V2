@@ -213,9 +213,19 @@ class PrimaryContradictionIdentifier:
         "synthesized": 0.10,
     }
 
-    def __init__(self, weight_learner: ContradictionWeightLearner | None = None):
-        """W6: 注入权重学习器（可选，None 时创建默认实例）."""
+    def __init__(self, weight_learner: ContradictionWeightLearner | None = None,
+                 selection_policy: str = "auto"):
+        """W6: 注入权重学习器（可选，None 时创建默认实例）.
+
+        Args:
+            selection_policy: "auto"(现有三步法) / "explicit"(ambiguous报错+显式选择)。
+                              非法值 FAIL-OPEN 回退 "auto"。
+        """
         self._weight_learner = weight_learner or ContradictionWeightLearner()
+        # REA 借鉴：Provider 确定性选择
+        valid_policies = {"auto", "explicit"}
+        self.selection_policy = selection_policy if selection_policy in valid_policies else "auto"
+        self._selected_path: str | None = None  # explicit 模式下会话内锁定的路径
 
     def identify(
         self,
@@ -246,6 +256,17 @@ class PrimaryContradictionIdentifier:
         try:
             if not isinstance(paths, (list, tuple)) or len(paths) < self.MIN_PATHS_FOR_ANALYSIS:
                 return self._neutral_default()
+
+            # REA 借鉴：Provider 确定性选择 — explicit 模式 ambiguous 检查
+            if self.selection_policy == "explicit" and self._selected_path is None:
+                candidates = self._get_candidates(paths)
+                if len(candidates) > 1:
+                    return {
+                        "status": "ambiguous",
+                        "candidates": candidates,
+                        "message": "多个路径可用，请显式选择后重试（调用 select_path_explicit）",
+                    }
+                self._selected_path = candidates[0] if candidates else None
 
             # W6: 延迟标注 — 用上次预测后的实际收益标注上一个样本
             self._label_previous_from_market(market_data)
@@ -411,6 +432,22 @@ class PrimaryContradictionIdentifier:
         except Exception as e:
             logger.debug("[W5] meta cognition verify FAIL-OPEN: %s", e)
             return primary
+
+    # ------------------------------------------------------------------
+    # REA 借鉴：Provider 确定性选择辅助方法
+    # ------------------------------------------------------------------
+    def _get_candidates(self, paths: list[dict]) -> list[str]:
+        """从 paths 提取候选路径名（去重）。"""
+        seen = []
+        for p in paths:
+            src = p.get("source") or p.get("name") or "unknown"
+            if src not in seen:
+                seen.append(src)
+        return seen
+
+    def select_path_explicit(self, path_name: str) -> None:
+        """显式选择路径，选择后会话内锁定（不自动切换）。"""
+        self._selected_path = path_name
 
     # ------------------------------------------------------------------
     # Step 1: 共振检测

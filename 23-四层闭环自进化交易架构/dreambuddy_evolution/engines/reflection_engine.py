@@ -45,8 +45,13 @@ class ReflectionEngine:
         cbr_sim: float,
         cbr_top1_outcome: str,
         cluster_id: str,
+        dimension_predictions: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """§1.6.3 A6: 开仓瞬间快照（事后反思基础）"""
+        """§1.6.3 A6: 开仓瞬间快照（事后反思基础）
+
+        方向3 扩展：增加 dimension_predictions（每维度方向预测），
+        供 ReverseDeriver 逆向推导使用。
+        """
         return {
             "symbol": symbol,
             "u_open": float(u_open),
@@ -57,6 +62,7 @@ class ReflectionEngine:
             "cbr_sim": float(cbr_sim),
             "cbr_top1_outcome": cbr_top1_outcome,
             "cluster_id": cluster_id,
+            "dimension_predictions": dimension_predictions or {},
         }
 
     def calculate_cs(

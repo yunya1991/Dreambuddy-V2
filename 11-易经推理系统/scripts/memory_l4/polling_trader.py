@@ -18091,17 +18091,29 @@ def main():
     #   3. 失败时打印已运行 PID 并 sys.exit(1)，硬约束（区别于 ProcessGuardian 软警告）
     #   4. ProcessGuardian 被 --no-guardian 绕过且仅 print 警告不退出，本锁独立强制
     #   5. 用 "a+" 打开（不截断），持锁后才 truncate+write；先读现有 PID 供 except 报告
+    #   6. REA 借鉴：Ownership 纪律 — pidfile 存 JSON {pid, pgid, start_time}，
+    #      PID+path≠ownership，用 pgid+start_time 建立真实 ownership（进程 reuse 后失效）
     # ================================================================
     _PIDFILE_LOCK_FP = None  # 保持引用防止 GC 释放 flock
     if not args.once:
         import fcntl
         import sys
+        import json as _json
+        import time as _time
         _PIDFILE_PATH = "/tmp/polling_trader.pid"
         # 先读现有 PID（不截断），用于 except 时报告
         _existing_pid_str = "(unknown)"
         try:
             with open(_PIDFILE_PATH, "r") as _f:
-                _existing_pid_str = _f.read().strip() or "(unknown)"
+                _raw = _f.read().strip()
+                # 兼容旧格式（纯 PID）和新格式（JSON）
+                if _raw.startswith("{"):
+                    try:
+                        _existing_pid_str = str(_json.loads(_raw).get("pid", "(unknown)"))
+                    except Exception:
+                        _existing_pid_str = _raw or "(unknown)"
+                else:
+                    _existing_pid_str = _raw or "(unknown)"
         except FileNotFoundError:
             pass
         try:
@@ -18109,7 +18121,13 @@ def main():
             fcntl.flock(_PIDFILE_LOCK_FP, fcntl.LOCK_EX | fcntl.LOCK_NB)
             _PIDFILE_LOCK_FP.seek(0)
             _PIDFILE_LOCK_FP.truncate()  # 持锁后才截断
-            _PIDFILE_LOCK_FP.write(str(os.getpid()))
+            # REA Ownership：记录 pid + pgid + start_time 建立真实 ownership
+            _ownership = _json.dumps({
+                "pid": os.getpid(),
+                "pgid": os.getpgrp(),
+                "start_time": _time.time(),
+            })
+            _PIDFILE_LOCK_FP.write(_ownership)
             _PIDFILE_LOCK_FP.flush()
         except (IOError, OSError):
             print(

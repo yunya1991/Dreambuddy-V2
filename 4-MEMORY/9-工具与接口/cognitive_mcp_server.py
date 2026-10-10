@@ -104,6 +104,26 @@ TOOL_DEFINITIONS = [
                     "description": "经验来源",
                     "default": "mcp",
                 },
+                "level": {
+                    "type": "string",
+                    "description": "Evidence事实分级 (observation/derivation/inference/unknown，默认observation)",
+                    "default": "observation",
+                    "enum": ["observation", "derivation", "inference", "unknown"],
+                },
+                "confidence_score": {
+                    "type": "number",
+                    "description": "连续置信度 0.0-1.0（不传则由 quality_level 映射）",
+                },
+                "known_gaps": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "已知局限列表",
+                },
+                "observations": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "description": "支撑观察列表",
+                },
             },
             "required": ["content"],
         },
@@ -122,6 +142,11 @@ TOOL_DEFINITIONS = [
                     "type": "boolean",
                     "description": "验证是否成功",
                     "default": True,
+                },
+                "known_gaps_update": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "验证后更新的已知局限列表（仅 success=True 时生效，验证后局限可能缩小）",
                 },
             },
             "required": ["memory_id"],
@@ -289,15 +314,32 @@ def _handle_record(args: Dict[str, Any]) -> str:
     quality_level = args.get("quality_level", "C")
     tags_str = args.get("tags", "")
     source = args.get("source", "mcp")
+    level = args.get("level", "observation")
+    known_gaps = args.get("known_gaps") or []
+    observations = args.get("observations") or []
+
+    # confidence_score 不传时从 quality_level 映射
+    confidence_score = args.get("confidence_score")
+    if confidence_score is None:
+        confidence_score = {
+            "S": 0.95, "A": 0.70, "B": 0.40, "C": 0.20, "D": 0.10,
+        }.get(quality_level, 0.3)
 
     tags = [t.strip() for t in tags_str.split(",")] if tags_str else []
+
+    # 硬约束闸门：tags 含"硬约束"时 known_gaps 必须非空（FAIL-OPEN 填充占位）
+    if "硬约束" in tags and not known_gaps:
+        known_gaps = ["硬约束记忆需补充具体 known_gaps（已知局限）"]
 
     memory_id = _get_cle().record(
         content=content,
         quality_level=quality_level,
-        confidence=0.3,
+        confidence=confidence_score,
         tags=tags,
         source=source,
+        level=level,
+        known_gaps=known_gaps,
+        observations=observations,
     )
 
     # TAG_HOOKS：查询 tags → triggered_skills（FAIL-OPEN）
@@ -313,8 +355,11 @@ def _handle_record(args: Dict[str, Any]) -> str:
 def _handle_verify(args: Dict[str, Any]) -> str:
     memory_id = args.get("memory_id", "")
     success = args.get("success", True)
+    known_gaps_update = args.get("known_gaps_update")
 
-    result = _get_cle().verify(memory_id, success=success)
+    result = _get_cle().verify(
+        memory_id, success=success, known_gaps_update=known_gaps_update,
+    )
 
     return json.dumps(result, ensure_ascii=False)
 

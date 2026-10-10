@@ -169,6 +169,9 @@ class SearchResult:
             "confidence": meta.get("confidence", 0.0),
             "verify_count": meta.get("verify_count", 0),
             "source": meta.get("source", ""),
+            "level": meta.get("level", "observation"),
+            "known_gaps": meta.get("known_gaps", []),
+            "observations": meta.get("observations", []),
             "tags": self.tags,
             "metadata": self.metadata,
         }
@@ -314,9 +317,15 @@ class VectorMemoryInterface:
                     source TEXT DEFAULT '',
                     created_at TEXT DEFAULT '',
                     updated_at TEXT DEFAULT '',
-                    verify_count INTEGER DEFAULT 0
+                    verify_count INTEGER DEFAULT 0,
+                    level TEXT DEFAULT 'observation',
+                    known_gaps TEXT DEFAULT '[]',
+                    observations TEXT DEFAULT '[]'
                 )
             """)
+
+            # --- 数据库迁移：为旧表补充 Evidence-First 字段（FAIL-OPEN）---
+            self._migrate_evidence_columns()
 
             # 索引
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_quality ON memories(quality_level)")
@@ -364,6 +373,24 @@ class VectorMemoryInterface:
 
             self.db.commit()
 
+    def _migrate_evidence_columns(self) -> None:
+        """为旧版 memories 表补充 Evidence-First 字段（level/known_gaps/observations）。
+
+        FAIL-OPEN：ALTER TABLE 失败时忽略，不阻塞初始化。
+        已存在字段的表，ALTER TABLE ADD COLUMN 会重复执行，用 try 包裹。
+        """
+        for col_name, col_def in [
+            ("level", "TEXT DEFAULT 'observation'"),
+            ("known_gaps", "TEXT DEFAULT '[]'"),
+            ("observations", "TEXT DEFAULT '[]'"),
+        ]:
+            try:
+                self.db.execute(
+                    f"ALTER TABLE memories ADD COLUMN {col_name} {col_def}"
+                )
+            except Exception:
+                pass  # 列已存在或其他错误，FAIL-OPEN
+
     # ============================================================
     # 添加记忆
     # ============================================================
@@ -378,6 +405,9 @@ class VectorMemoryInterface:
         source: str = "",
         memory_id: Optional[str] = None,
         verify_count: int = 0,
+        level: str = "observation",
+        known_gaps: Optional[List[str]] = None,
+        observations: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """
         添加一条记忆。
@@ -391,11 +421,20 @@ class VectorMemoryInterface:
             source: 来源
             memory_id: 指定ID，默认自动生成
             verify_count: 验证次数（默认 0，用于导入历史记忆）
+            level: Evidence 事实分级 (observation/derivation/inference/unknown)
+            known_gaps: 已知局限列表
+            observations: 支撑观察列表
 
         Returns:
             记忆ID
         """
         tags = tags or []
+        # Evidence-First: level 非法值 FAIL-OPEN 回退到 observation
+        valid_levels = {"observation", "derivation", "inference", "unknown"}
+        level = level if level in valid_levels else "observation"
+        known_gaps = known_gaps or []
+        observations = observations or []
+
         now = datetime.now(timezone.utc).isoformat()
         mem_id = memory_id or f"VM-{int(time.time()*1000)}-{hashlib.md5(content.encode()).hexdigest()[:8]}"
 
@@ -407,13 +446,16 @@ class VectorMemoryInterface:
         with self._db_lock:
             self.db.execute("""
                 INSERT OR REPLACE INTO memories
-                    (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [
                 mem_id, content, vector_bytes,
                 quality_level, confidence,
                 json.dumps(tags, ensure_ascii=False),
                 memory_type, source, now, now, int(verify_count or 0),
+                level,
+                json.dumps(known_gaps, ensure_ascii=False),
+                json.dumps(observations, ensure_ascii=False),
             ])
 
             # 插入 sqlite-vec 虚拟表
@@ -482,7 +524,7 @@ class VectorMemoryInterface:
         # 构建SQL (sqlite-vec 要求 KNN 查询必须带 LIMIT 或 k=? 约束)
         sql = """
             SELECT m.id, m.content, m.quality_level, m.tags, m.confidence,
-                   m.memory_type, m.source, m.verify_count, v.distance
+                   m.memory_type, m.source, m.verify_count, m.level, m.known_gaps, m.observations, v.distance
             FROM vec_memories v
             JOIN memories m ON m.id = v.memory_id
             WHERE v.embedding MATCH ? AND k = ?
@@ -531,6 +573,9 @@ class VectorMemoryInterface:
                     "confidence": row["confidence"],
                     "source": row["source"],
                     "verify_count": row["verify_count"],
+                    "level": row["level"],
+                    "known_gaps": json.loads(row["known_gaps"]) if row["known_gaps"] else [],
+                    "observations": json.loads(row["observations"]) if row["observations"] else [],
                 }
             ))
 
@@ -550,7 +595,7 @@ class VectorMemoryInterface:
         """numpy 引擎搜索（纯 Python 计算）"""
 
         # 构建查询
-        sql = "SELECT id, content, vector, quality_level, tags, confidence, memory_type, source, verify_count FROM memories"
+        sql = "SELECT id, content, vector, quality_level, tags, confidence, memory_type, source, verify_count, level, known_gaps, observations FROM memories"
         conditions = []
         params: list = []
 
@@ -602,6 +647,9 @@ class VectorMemoryInterface:
                     "confidence": row["confidence"],
                     "source": row["source"],
                     "verify_count": row["verify_count"],
+                    "level": row["level"],
+                    "known_gaps": json.loads(row["known_gaps"]) if row["known_gaps"] else [],
+                    "observations": json.loads(row["observations"]) if row["observations"] else [],
                 }
             ))
 
@@ -655,6 +703,17 @@ class VectorMemoryInterface:
             except Exception:
                 logger.exception("on_confidence_changed 蒸馏通知失败")  # 蒸馏失败不影响主流程
 
+        return cursor.rowcount > 0
+
+    def update_known_gaps(self, memory_id: str, known_gaps: List[str]) -> bool:
+        """更新记忆的 known_gaps（验证成功后局限可能缩小）。"""
+        with self._db_lock:
+            cursor = self.db.execute(
+                "UPDATE memories SET known_gaps=?, updated_at=? WHERE id=?",
+                [json.dumps(known_gaps, ensure_ascii=False),
+                 datetime.now(timezone.utc).isoformat(), memory_id],
+            )
+            self.db.commit()
         return cursor.rowcount > 0
 
     def increment_verify(self, memory_id: str) -> bool:
@@ -758,6 +817,9 @@ class VectorMemoryInterface:
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
             "verify_count": row["verify_count"],
+            "level": row["level"],
+            "known_gaps": json.loads(row["known_gaps"]) if row["known_gaps"] else [],
+            "observations": json.loads(row["observations"]) if row["observations"] else [],
         }
 
     def search_similar(self, content: str, top_k: int = 5, threshold: float = 0.3) -> List[SearchResult]:
