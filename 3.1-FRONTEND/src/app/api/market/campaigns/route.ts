@@ -78,7 +78,7 @@ export async function GET() {
     const json = await res.json();
     return NextResponse.json({ success: true, data: json.data ?? MOCK_DATA });
   } catch {
-    // Dev fallback: return mock data so the page renders without Hub.
-    return NextResponse.json({ success: true, data: MOCK_DATA });
+    // Hub unavailable — return mock data for frontend fallback
+    return NextResponse.json({ success: true, mock: true, data: [] }, { status: 200 });
   }
 }

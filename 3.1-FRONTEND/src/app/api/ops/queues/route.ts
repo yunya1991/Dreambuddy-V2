@@ -19,9 +19,21 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(await res.json());
   } catch (err) {
+    // Hub unavailable — return mock data for frontend fallback
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : "hub_unavailable" },
-      { status: 503 }
+      {
+        success: true,
+        mock: true,
+        total_tasks: 0,
+        pending_tasks: 0,
+        processing_tasks: 0,
+        completed_tasks: 0,
+        failed_tasks: 0,
+        avg_latency_ms: 0,
+        queue_depth_by_department: {},
+        items: [],
+      },
+      { status: 200 }
     );
   }
 }

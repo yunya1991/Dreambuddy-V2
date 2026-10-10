@@ -34,12 +34,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: items });
   } catch (err) {
+    // Hub unavailable — return mock data for frontend fallback
     return NextResponse.json(
-      {
-        success: false,
-        error: err instanceof Error ? err.message : "hub_unavailable",
-      },
-      { status: 503 }
+      { success: true, mock: true, data: [] },
+      { status: 200 }
     );
   }
 }

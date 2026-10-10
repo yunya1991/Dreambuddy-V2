@@ -16,9 +16,18 @@ export async function GET(_request: NextRequest) {
     }
     return NextResponse.json(await res.json());
   } catch (err) {
+    // Hub unavailable — return mock data for frontend fallback
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : "hub_unavailable" },
-      { status: 503 }
+      {
+        success: true,
+        mock: true,
+        levels: [
+          { level: "L1", label: "常规决策", description: "低风险常规操作", requires_board_approval: false, auto_threshold: 10000 },
+          { level: "L2", label: "重要决策", description: "中等风险操作", requires_board_approval: false, auto_threshold: 100000 },
+          { level: "L3", label: "重大决策", description: "高风险操作", requires_board_approval: true, auto_threshold: 1000000 },
+        ],
+      },
+      { status: 200 }
     );
   }
 }

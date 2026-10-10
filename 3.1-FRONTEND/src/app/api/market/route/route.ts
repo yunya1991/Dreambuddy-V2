@@ -22,9 +22,10 @@ export async function GET() {
     const json = await res.json();
     return NextResponse.json({ success: true, data: json.data ?? [] });
   } catch (err) {
+    // Hub unavailable — return mock data for frontend fallback
     return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : 'hub_unavailable' },
-      { status: 500 }
+      { success: true, mock: true, data: [] },
+      { status: 200 }
     );
   }
 }
