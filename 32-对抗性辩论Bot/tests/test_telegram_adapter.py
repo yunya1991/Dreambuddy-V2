@@ -32,19 +32,19 @@ class FakeResponse:
             raise RuntimeError(f"HTTP {self.status_code}")
 
 
-class FakeAsyncClient:
-    """模拟 httpx.AsyncClient，记录请求并返回预设响应。"""
+class FakeSyncClient:
+    """模拟 httpx.Client（sync），记录请求并返回预设响应。"""
 
     def __init__(self, responses: list[dict] | None = None):
         self._responses = responses or []
         self._idx = 0
         self.requests: list[dict] = []
 
-    async def post(self, url: str, json: dict = None, **kwargs):
+    def post(self, url: str, json: dict = None, **kwargs):
         self.requests.append({"method": "POST", "url": url, "json": json})
         return self._next_response()
 
-    async def get(self, url: str, params: dict = None, **kwargs):
+    def get(self, url: str, params: dict = None, **kwargs):
         self.requests.append({"method": "GET", "url": url, "params": params})
         return self._next_response()
 
@@ -55,16 +55,13 @@ class FakeAsyncClient:
             return FakeResponse(data)
         return FakeResponse({"ok": False, "description": "no more responses"})
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *args):
+    def close(self):
         pass
 
 
 def make_client(token="123:abc", responses=None):
     client = TelegramHTTPClient(token=token)
-    fake = FakeAsyncClient(responses)
+    fake = FakeSyncClient(responses)
     client._client = fake  # 注入 mock
     return client, fake
 

@@ -10,6 +10,7 @@ Telegram Bot API 端点：
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -27,6 +28,9 @@ class TelegramHTTPClient:
 
     实现 TelegramBotClient Protocol（async send_message），
     同时提供 get_updates / get_chat_member / is_admin 供 listener 使用。
+
+    注：使用 httpx.Client（sync）+ asyncio.to_thread 包装。
+    原因：透明代理环境下 httpx.AsyncClient 连接超时，sync 客户端正常。
     """
 
     def __init__(self, token: str, api_base: str = API_BASE,
@@ -34,25 +38,24 @@ class TelegramHTTPClient:
         self.token = token
         self.api_base = api_base
         self.timeout = timeout
-        self._client: httpx.AsyncClient | None = None
+        self._client: httpx.Client | None = None
 
     def _url(self, method: str) -> str:
         return f"{self.api_base}/bot{self.token}/{method}"
 
-    def _get_client(self) -> httpx.AsyncClient:
+    def _get_client(self) -> httpx.Client:
         if self._client is None:
-            self._client = httpx.AsyncClient(timeout=self.timeout)
+            self._client = httpx.Client(timeout=self.timeout)
         return self._client
 
-    async def _request(self, method: str, endpoint: str,
-                       **kwargs) -> dict:
-        """统一请求处理，校验 ok 字段。"""
+    def _sync_request(self, method: str, endpoint: str, **kwargs) -> dict:
+        """同步请求（在 to_thread 中调用）。"""
         client = self._get_client()
         url = self._url(endpoint)
         if method == "GET":
-            resp = await client.get(url, params=kwargs)
+            resp = client.get(url, params=kwargs)
         else:
-            resp = await client.post(url, json=kwargs)
+            resp = client.post(url, json=kwargs)
         resp.raise_for_status()
         data = resp.json()
         if not data.get("ok"):
@@ -61,6 +64,13 @@ class TelegramHTTPClient:
                 f"{data.get('description', 'unknown')}"
             )
         return data["result"]
+
+    async def _request(self, method: str, endpoint: str,
+                       **kwargs) -> dict:
+        """统一请求处理（async 包装 sync）。"""
+        return await asyncio.to_thread(
+            self._sync_request, method, endpoint, **kwargs,
+        )
 
     # ─── TelegramBotClient Protocol ───────────────────────────
 
@@ -109,7 +119,7 @@ class TelegramHTTPClient:
     async def close(self):
         """关闭 HTTP 客户端。"""
         if self._client is not None:
-            await self._client.aclose()
+            self._client.close()
             self._client = None
 
     async def __aenter__(self):
