@@ -53,6 +53,9 @@ HANDLER_ROUTES = {
     'portfolio':   ('portfolio_agent',    'handle_portfolio_agent'),
     # C-Drive 四步循环 (c_drive_agent.CDriveAgent)
     'c_drive':     ('c_drive_agent',      'handle_c_drive_agent'),
+    # C-Drive 辩论引擎 (c_drive_agent.handle_debate, SPEC v2.0-rc3 §6.3)
+    # recall/record/verify/run 四 action，供 32-bot/Trae 通过 IPC 调用
+    'debate':      ('c_drive_agent',      'handle_debate'),
     # LLM 综合器 (synthesizer_agent.SynthesizerAgent)
     'synthesizer': ('synthesizer_agent',  'handle_synthesizer_agent'),
     # orchestrator_v2（SPEC §5.2 阶段4: dream-tactical-executor SKILL, node_id=A_ORCH）

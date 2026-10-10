@@ -1,0 +1,19 @@
+=== 症状复测日志 (repro_after.log) ===
+验收对象: handle_debate MCP 导入失败修复
+复测时间: 2026-10-10 22:56
+原症状: record 返回 memory_id=None, recall 返回 memories=[] (FAIL-OPEN)
+预期行为: record 返回真实 memory_id, recall 返回匹配记忆
+
+--- observed= debate record (修复前 memory_id=None, 修复后应为真实ID) ---
+{"ok": true, "memory_id": "VM-1791644261893-19422dc6"}
+observed= record 返回真实 memory_id=VM-1791644261893-19422dc6 (NOT None) → 症状消失 ✅
+
+--- observed= debate recall (修复前 memories=[], 修复后应非空) ---
+{"ok": true, "memories": [{"id": "VM-1791644261893-19422dc6", "content": "[验收复测] handle_debate mcp导入修复后症状复测", "score": 0.5798, ...}]}
+observed= recall 返回 3 条记忆, top score 0.5798 (NOT empty) → 症状消失 ✅
+
+--- observed= debate verify (验证 verify action 也工作) ---
+{"ok": true}
+observed= verify 返回 ok=true → 正常 ✅
+
+exit=0

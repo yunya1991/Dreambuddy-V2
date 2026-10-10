@@ -1,0 +1,56 @@
+diff --git a/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py b/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
+index 67294724a9..c09fd74ff7 100644
+--- a/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
++++ b/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
+@@ -55,15 +55,45 @@ def _load_cognitive_adapter():
+         except ImportError:
+             return None
+ 
+-    # 注入真实 MCP 函数（如可用）
++    # 注入真实认知函数（通过 cognitive_mcp_server.TOOL_HANDLERS）
++    # 修复：mcp_cognitive 是 MCP server 进程，不能 from mcp_cognitive import。
++    # 改为导入 cognitive_mcp_server.TOOL_HANDLERS（4-MEMORY/9-工具与接口/），
++    # 创建签名适配 wrapper（keyword args → dict arg，JSON string → dict）。
+     try:
+-        from mcp_cognitive import recall, record, verify
++        import os as _os2
++        import sys as _sys2
++        import json as _json2
++        _here = _os2.path.dirname(_os2.path.abspath(__file__))
++        _repo_root = _os2.path.abspath(_os2.path.join(_here, "..", "..", "..", ".."))
++        _mcp_dir = _os2.path.join(_repo_root, "4-MEMORY", "9-工具与接口")
++        if _os2.path.isdir(_mcp_dir) and _mcp_dir not in _sys2.path:
++            _sys2.path.insert(0, _mcp_dir)
++        from cognitive_mcp_server import TOOL_HANDLERS
++
++        # 签名适配 wrapper:
++        # CognitiveLoopAdapter 调 keyword args (context=..., top_k=..., ...)
++        # TOOL_HANDLERS 调 dict arg ({"context": ..., "top_k": ...}), 返回 JSON string
++        def _recall_fn(context="", top_k=5, min_quality="C", **kw):
++            r = TOOL_HANDLERS["recall"](
++                {"context": context, "top_k": top_k, "min_quality": min_quality})
++            return _json2.loads(r) if isinstance(r, str) else r
++
++        def _record_fn(content="", tags="", quality_level="C", **kw):
++            r = TOOL_HANDLERS["record"](
++                {"content": content, "tags": tags, "quality_level": quality_level})
++            return _json2.loads(r) if isinstance(r, str) else r
++
++        def _verify_fn(memory_id="", success=True, **kw):
++            r = TOOL_HANDLERS["verify"](
++                {"memory_id": memory_id, "success": success})
++            return _json2.loads(r) if isinstance(r, str) else r
++
+         return CognitiveLoopAdapter(
+-            mcp_recall_fn=recall,
+-            mcp_record_fn=record,
+-            mcp_verify_fn=verify,
++            mcp_recall_fn=_recall_fn,
++            mcp_record_fn=_record_fn,
++            mcp_verify_fn=_verify_fn,
+         )
+-    except ImportError:
++    except Exception:
+         return CognitiveLoopAdapter()
+ 
+ 

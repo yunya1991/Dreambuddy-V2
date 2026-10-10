@@ -1,0 +1,20 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2
+configfile: pyproject.toml
+plugins: anyio-4.12.1, mock-3.15.1, cov-7.1.0, langsmith-0.9.3, asyncio-1.2.0, timeout-2.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 62 items
+
+1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_persona.py . [  1%]
+...................                                                      [ 32%]
+1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_debate_engine.py . [ 33%]
+...............                                                          [ 58%]
+1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_debate_ipc.py . [ 59%]
+.........                                                                [ 74%]
+1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_c_drive_debate_v2.py . [ 75%]
+....                                                                     [ 82%]
+4-MEMORY/9-工具与接口/tests/test_debate_memory.py ...........            [100%]
+
+============================== 62 passed in 0.09s ==============================
+exit=0
