@@ -209,6 +209,111 @@
       "path": "31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md",
       "added_at": "2026-10-10T03:22:20.483917+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T03:31:21.559500+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/specs/DATA_AND_COGNITIVE_READONLY_ACCESS_SPEC.md",
+      "added_at": "2026-10-10T03:31:21.559523+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3-FRONTEND/FRONTEND_SYSTEM.md",
+      "added_at": "2026-10-10T03:31:21.559525+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/README.md",
+      "added_at": "2026-10-10T03:31:21.559526+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "3.1-FRONTEND/docs/v3-frontend-architecture.md",
+      "added_at": "2026-10-10T03:31:21.559528+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "11-易经推理系统/docs/superpowers/specs/2026-10-10-trial-short-systematic-deviation-fix-spec.md",
+      "added_at": "2026-10-10T04:04:04.726887+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "32-对抗性辩论Bot/SPEC.md",
+      "added_at": "2026-10-10T07:34:51.949429+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md",
+      "added_at": "2026-10-10T14:59:09.113856+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md",
+      "added_at": "2026-10-10T14:59:09.113875+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-10T14:59:09.113877+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-10T14:59:09.113878+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/prompts/investigation_prompt.md",
+      "added_at": "2026-10-10T14:59:09.113881+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "4-MEMORY/docs/Evidence-First增强任务清单.md",
+      "added_at": "2026-10-10T14:59:09.113882+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261010_rea_three_directions/acceptance_report.md",
+      "added_at": "2026-10-10T14:59:09.113883+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T15:00:14.188003+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261010_rea_three_directions/wrapup_report.md",
+      "added_at": "2026-10-10T15:00:14.188019+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/20261010_fix_handle_debate_mcp_import/acceptance_report.md",
+      "added_at": "2026-10-10T15:01:25.544106+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-10T15:12:31.957808+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-10T15:22:30.704249+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-10T15:45:07.914913+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-10T16:00:30.513718+00:00",
+      "action": "sync_doc_index"
     }
   ],
   "processed": [
