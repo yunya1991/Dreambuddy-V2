@@ -106,7 +106,7 @@
 
 | 现有文档 | 关系 | 说明 |
 |---------|------|------|
-| [PROJECT_DOC_STANDARD.md](../PROJECT_DOC_STANDARD.md) | **迁移源** | 内容已迁移到 [1-规范体系/DOC_STANDARD.md](./1-规范体系/DOC_STANDARD.md)，根目录保留重定向链接 |
+| [1-规范体系/DOC_STANDARD.md](./1-规范体系/DOC_STANDARD.md) | **迁移源** | 原 PROJECT_DOC_STANDARD.md 内容已迁移到此，作为文档编写规范 |
 | [DEBT_INDEX.md](../DEBT_INDEX.md) | **分工** | DEBT_INDEX 管代码债，DOC 类债务细化到 [3-文档治理/DOC_DEBT_INDEX.md](./3-文档治理/DOC_DEBT_INDEX.md) |
 | [2-KNOWLEDGE/](../2-KNOWLEDGE/) | **互补** | 2-KNOWLEDGE 管交易/技术/理论领域知识，0号系统管文档本身 |
 | [1-ARCHITECTURE/](../1-ARCHITECTURE/) | **引用** | 0号系统在 [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) 中索引架构文档 |
@@ -131,4 +131,4 @@
 ---
 
 **维护者**: DreamBuddy v2
-**关联文档**: [PROJECT_DOC_STANDARD.md](../PROJECT_DOC_STANDARD.md) · [DEBT_INDEX.md](../DEBT_INDEX.md) · [README.md](../README.md)
+**关联文档**: [1-规范体系/DOC_STANDARD.md](./1-规范体系/DOC_STANDARD.md) · [DEBT_INDEX.md](../DEBT_INDEX.md) · [README.md](../README.md)

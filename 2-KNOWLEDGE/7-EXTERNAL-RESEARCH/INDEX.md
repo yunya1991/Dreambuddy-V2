@@ -89,18 +89,6 @@ AI: "检索到Kalman Filter实现方案。这段调研结论值得归档。
 | **9** | **2026-09-03** | [传统金融最小阻力理论-Livermore-Soros-Wyckoff](./finance/trading-psychology/2026-09-03-传统金融最小阻力理论-Livermore-Soros-Wyckoff.md) | finance/trading-psychology | #最小阻力 #利弗莫尔 #关键位 #走势流畅度 #索罗斯 #反身性 #Wyckoff #努力结果 |
 | **10** | **2026-09-03** | [进化学复杂科学-MEPP-Schluter-ESS-SOC](./technical/algorithms/2026-09-03-进化学复杂科学-MEPP-Schluter-ESS-SOC.md) | technical/algorithms | #ESS #进化稳定 #Schluter #G矩阵 #gmax演化线 #MEPP #最大熵产生 #SOC #自组织临界 #雪崩 |
 | **11** | **2026-09-03** | [GitHub最小阻力RL策略进化开源项目调研](./github/trading-systems/2026-09-03-GitHub最小阻力RL策略进化开源项目调研.md) | github/trading-systems | #RL #强化学习 #DQN #纯numpy #基因编码 #锦标赛选择 #AlmgrenChriss #双尺度冲击 #Eigenportfolio #PCA |
-- [2026-09-01] [恐贪指数与行为金融8大偏误情绪校准调研](7-EXTERNAL-RESEARCH/finance/risk-models/2026-09-01-恐贪指数与行为金融8大偏误情绪校准调研.md) — finance/risk-models | 标签: #对冲 #止损 #止盈 #仓位 #波动率
-- [2026-09-01] [恐贪指数与行为金融8大偏误情绪校准调研](7-EXTERNAL-RESEARCH/technical/architecture/2026-09-01-恐贪指数与行为金融8大偏误情绪校准调研.md) — technical/architecture | 标签: #架构 #rag #fail-open
-- [2026-09-01] [Medallion三层奖章架构与Tushare特征Silver门禁调研](7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md) — finance/market-structure | 标签: #订单簿 #流动性 #资金费率
-- [2026-09-01] [Medallion三层奖章架构与Tushare特征Silver门禁调研](7-EXTERNAL-RESEARCH/technical/algorithms/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md) — technical/algorithms | 标签: #索引 #检索 #排序 #过滤
-- [2026-09-01] [TDA持久同调Ising相变Kalman-PCA衍生算法调研](7-EXTERNAL-RESEARCH/finance/quant-methods/2026-09-01-tda持久同调ising相变kalman-pca衍生算法调研.md) — finance/quant-methods | 标签: #量化 #kalman #pca #回测 #贝叶斯
-- [2026-09-01] [TDA持久同调Ising相变Kalman-PCA衍生算法调研](7-EXTERNAL-RESEARCH/technical/algorithms/2026-09-01-tda持久同调ising相变kalman-pca衍生算法调研.md) — technical/algorithms | 标签: #算法 #过滤 #embedding
-- [2026-09-01] [恐贪指数与行为金融8大偏误情绪校准调研](7-EXTERNAL-RESEARCH/finance/risk-models/2026-09-01-恐贪指数与行为金融8大偏误情绪校准调研.md) — finance/risk-models | 标签: #对冲 #止损 #止盈 #仓位 #波动率
-- [2026-09-01] [恐贪指数与行为金融8大偏误情绪校准调研](7-EXTERNAL-RESEARCH/technical/architecture/2026-09-01-恐贪指数与行为金融8大偏误情绪校准调研.md) — technical/architecture | 标签: #架构 #rag #fail-open
-- [2026-09-01] [Medallion三层奖章架构与Tushare特征Silver门禁调研](7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md) — finance/market-structure | 标签: #订单簿 #流动性 #资金费率
-- [2026-09-01] [Medallion三层奖章架构与Tushare特征Silver门禁调研](7-EXTERNAL-RESEARCH/technical/algorithms/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md) — technical/algorithms | 标签: #索引 #检索 #排序 #过滤
-- [2026-09-01] [TDA持久同调Ising相变Kalman-PCA衍生算法调研](7-EXTERNAL-RESEARCH/finance/quant-methods/2026-09-01-tda持久同调ising相变kalman-pca衍生算法调研.md) — finance/quant-methods | 标签: #量化 #kalman #pca #回测 #贝叶斯
-- [2026-09-01] [TDA持久同调Ising相变Kalman-PCA衍生算法调研](7-EXTERNAL-RESEARCH/technical/algorithms/2026-09-01-tda持久同调ising相变kalman-pca衍生算法调研.md) — technical/algorithms | 标签: #算法 #过滤 #embedding
 
 ## 调研归档全景进度（12 子域填充率）
 

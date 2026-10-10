@@ -10,22 +10,26 @@
 ```
 2-KNOWLEDGE/
 ├── INDEX.md              ← 本文件
+├── 0-SCHEMA/             # 知识库Schema与质量标准
+│   ├── INDEX.md
+│   ├── 使用指南.md
+│   ├── 质量标准.md
+│   └── 跨域映射.md
 ├── 1-TRADING/            # 交易领域知识
 │   ├── INDEX.md
+│   ├── cases/            # 交易案例库（100+案例）
+│   ├── 经典模式/          # 经典技术形态与策略
 │   ├── V9-马丁基线.md
 │   ├── Screen1-七维牛熊评分.md
-│   ├── Screen2-日线入场信号.md
-│   ├── Screen3-监控与离场.md
-│   ├── A系列调度链.md
-│   ├── 三屏系统架构.md
-│   ├── 风控体系.md
-│   └── 交易参数速查.md
+│   ├── 硬约束总表.md
+│   └── ...
 ├── 2-TECHNICAL/          # 技术运维知识
 │   ├── INDEX.md
 │   ├── Hermes-架构.md
 │   ├── Cron-调度.md
-│   ├── 飞书集成指南.md
-│   └── 部署与维护.md
+│   ├── 数据管道.md
+│   ├── 部署与维护.md
+│   └── ...
 ├── 3-THEORY/             # 哲学/理论
 │   ├── INDEX.md
 │   ├── 第一性原理.md
@@ -36,42 +40,47 @@
 │   ├── 三段式门禁.md
 │   ├── 索引体系.md
 │   ├── OKR管理.md
-│   └── 审批工作流.md
-├── 5-CHAIN-DEVELOPMENT/  # 三链开发方法论
+│   ├── 审批工作流.md
+│   ├── plans/            # 实施计划
+│   └── checklists/       # 检查清单
+├── 5-CASE-STUDY/         # 交易案例研究
+│   └── 2026-07-15-顶部下跌交易案例-BTC-头肩顶.md
+├── 5-METHODOLOGY/        # 方法论（调研/规划/执行）
 │   ├── INDEX.md
 │   ├── D-调研方法论.md
 │   ├── Z-规划方法论.md
 │   ├── E-执行方法论.md
-│   └── 三链接力协议.md
+│   ├── 三链接力协议.md
+│   ├── 回测方法学.md
+│   └── 知识库管理框架.md
 ├── 6-PRODUCT-BUSINESS/   # 产品业务与系统工作流程
 │   ├── INDEX.md
 │   ├── 产品定位与边界.md
 │   ├── 核心目录架构.md
 │   ├── 系统工作流程总览.md
-│   ├── 模块间关系图.md
-│   ├── 交易执行链路.md
-│   └── 风控体系工作流.md
+│   └── ...
 ├── 7-EXTERNAL-RESEARCH/  # 外部资料素材库
 │   ├── INDEX.md
 │   ├── finance/          # 传统金融调研
-│   │   ├── quant-methods/    # 量化方法
-│   │   ├── risk-models/      # 风控模型
-│   │   ├── market-structure/ # 市场结构
-│   │   └── trading-psychology/ # 交易心理
 │   ├── github/           # GitHub开源调研
-│   │   ├── ml-frameworks/    # 机器学习框架
-│   │   ├── trading-systems/  # 交易系统
-│   │   ├── data-engineering/ # 数据工程
-│   │   └── infra-tools/      # 基础设施工具
-│   └── technical/         # 技术方案调研
-│       ├── architecture/     # 架构模式
-│       ├── algorithms/       # 算法实现
-│       └── testing/          # 测试方法
-└── 8-AI-COGNITION/       # AI沉淀资料库索引
-    ├── INDEX.md
-    ├── 认知系统架构.md
-    ├── 记忆类型映射.md
-    └── 检索指南.md
+│   └── technical/        # 技术方案调研
+├── 8-AI-COGNITION/       # AI沉淀资料库索引
+│   ├── INDEX.md
+│   ├── 认知系统架构.md
+│   ├── 记忆类型映射.md
+│   └── 检索指南.md
+├── 9-RAG-INFRA/          # RAG检索基础设施
+│   ├── INDEX.md
+│   ├── rag_engine/       # 混合检索+重排
+│   ├── vector_store/     # 向量存储
+│   ├── knowledge_graph/  # 知识图谱
+│   └── bridge/           # CBR↔向量桥接
+└── wiki/                 # Wiki编译器输出（concepts/entities/sources/syntheses）
+    ├── index.md
+    ├── concepts/
+    ├── entities/
+    ├── sources/
+    └── syntheses/
 ```
 
 ## 建设原则
@@ -86,11 +95,15 @@
 
 | 域 | 文件数 | 状态 |
 |:---|:---:|:---:|
-| 1-TRADING | 19 | ✅ 已完成 |
-| 2-TECHNICAL | 5 | ✅ 已完成 |
+| 0-SCHEMA | 4 | ✅ 已完成 |
+| 1-TRADING | 147（含 115 案例） | ✅ 已完成 |
+| 2-TECHNICAL | 10 | ✅ 已完成 |
 | 3-THEORY | 4 | ✅ 已完成 |
-| 4-OPERATIONS | 6 | ✅ 已完成 |
-| 5-CHAIN-DEVELOPMENT | 5 | ✅ 已完成 |
+| 4-OPERATIONS | 14 | ✅ 已完成 |
+| 5-CASE-STUDY | 1 | 🟡 起步 |
+| 5-METHODOLOGY | 8 | ✅ 已完成 |
 | 6-PRODUCT-BUSINESS | 7 | ✅ 已完成 |
-| 7-EXTERNAL-RESEARCH | 4+11目录 | ✅ 骨架完成，随开发自动积累 |
+| 7-EXTERNAL-RESEARCH | 26 | ✅ 骨架完成，随开发自动积累 |
 | 8-AI-COGNITION | 4 | ✅ 已完成 |
+| 9-RAG-INFRA | 7 | ✅ v2.0 |
+| wiki | 24 | ✅ 编译器自动维护 |

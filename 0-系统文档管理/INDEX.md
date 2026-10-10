@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.4 | **更新日期**: 2026-10-10
+> **版本**: v2.5 | **更新日期**: 2026-10-11
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 为准。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -167,6 +167,22 @@
 | AGENT协作工具 | [AGENT协作工具/](../AGENT协作工具/) | ⚠️ 仅SKILL.md | 多Agent开发协作辅助（非主线，后期明确接口） |
 | deploy/ | [deploy/INDEX.md](../deploy/INDEX.md) | ✅ INDEX.md | 部署配置体系：一键部署+Hermes预部署包+systemd服务 |
 | experiments/ | [experiments/](../experiments/) | ❌ 无文档 | AB 交易实验 |
+| 9-基本面分析 | [9-基本面分析/docs/](../9-基本面分析/docs/) | 🟡 docs/目录(待补标准文档) | 基本面7引擎数据采集与分析 |
+| 18-数据获取中心 | [18-数据获取中心/docs/](../18-数据获取中心/docs/) | ✅ 5文档齐全 | 多源数据采集中心（行情/新闻/链上） |
+| 19-数据访问层 | [19-数据访问层/docs/](../19-数据访问层/docs/) | ✅ 7文档(含SCHEMA_DESIGN) | DAL数据访问层，Silver/Gold层 |
+| 20-数据清洗中心 | [20-数据清洗中心/docs/](../20-数据清洗中心/docs/) | ✅ 6文档齐全 | Silver层数据清洗管道 |
+| 21-特征工程中心 | [21-特征工程中心/docs/](../21-特征工程中心/docs/) | ✅ 6文档齐全 | 特征工程与Gold层构建 |
+| 22-执行引擎中心 | [22-执行引擎中心/docs/README.md](../22-执行引擎中心/docs/README.md) | 🟡 仅README | TEE执行引擎核心 |
+| 24-图结构上下文压缩 | [24-图结构上下文压缩/docs/](../24-图结构上下文压缩/docs/) | ✅ 5文档齐全 | TypeScript图结构上下文压缩 |
+| 25-用户策略生成系统 | [25-用户策略生成系统/](../25-用户策略生成系统/) | ❌ 无文档 | 用户策略生成（app.py） |
+| 26-策略管理模块 | [26-策略管理模块/](../26-策略管理模块/) | ❌ 无文档 | 策略管理（app.py） |
+| 27-策略治理审批系统 | [27-策略治理审批系统/](../27-策略治理审批系统/) | ❌ 无文档 | 策略治理审批（app.py） |
+| 28-策略信号触发模块 | [28-策略信号触发模块/](../28-策略信号触发模块/) | ❌ 无文档 | 策略信号触发（app.py） |
+| 29-事件驱动策略系统 | [29-事件驱动策略系统/docs/](../29-事件驱动策略系统/docs/) | ✅ 6文档齐全 | 事件驱动策略引擎 |
+| 30-真实环境交互系统 | [30-真实环境交互系统/README.md](../30-真实环境交互系统/README.md) | 🟡 README+SKILL.md | Chrome自动化+BSK运行器 |
+| 31-分布式计算部署 | [31-分布式计算部署/docs/](../31-分布式计算部署/docs/) | 🟡 4文档 | 云端部署与分布式计算 |
+| 32-对抗性辩论Bot | [32-对抗性辩论Bot/SPEC.md](../32-对抗性辩论Bot/SPEC.md) | 🟡 SPEC v0.5 | 营销型对抗辩论内容生产引擎 |
+| 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | 🟡 README+SPEC v0.1 | Evidence-First工程逆向解析 |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
@@ -186,7 +202,7 @@
 | 交易策略 | [12-三屏趋势系统/docs/](../12-三屏趋势系统/docs/) · [14-V15经典马丁策略/docs/](../14-V15经典马丁策略/docs/) · [17-v4-wave-strategy/](../17-v4-wave-strategy/) |
 | 波浪策略 | [17-v4-wave-strategy/ewave_strategy_adapter.py](../17-v4-wave-strategy/ewave_strategy_adapter.py) · [17-v4-wave-strategy/backtest_results/](../17-v4-wave-strategy/backtest_results/) |
 | 人机协作 | [8-FEISHU/README.md](../8-FEISHU/README.md) · [6-TRADING/scripts/feishu_notify.py](../6-TRADING/scripts/feishu_notify.py) |
-| RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 · [.trae/documents/rag-hotpath-integration.md](../.trae/documents/rag-hotpath-integration.md) |
+| RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 |
 | 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
 | 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
 | 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 |
@@ -198,10 +214,10 @@
 | 层级 | 模块数 | 文档齐全 | 部分完整 | 缺失 | 覆盖率 |
 |------|--------|----------|----------|------|--------|
 | L2 子系统 | 8 | 8 | 0 | 0 | 100% |
-| L3 辅助模块 | 10 | 3 | 6 | 1 | 50% |
-| **合计** | **18** | **11** | **6** | **1** | **72% |
+| L3 辅助模块 | 28 | 11 | 10 | 7 | 57% |
+| **合计** | **36** | **19** | **10** | **7** | **67%** |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成；2026-09-10 更新：新增 23-四层闭环 L2 子系统 + 2-KNOWLEDGE/9-RAG-INFRA L3 模块。完整审计见 [3-文档治理/audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md)。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成；2026-10-11 全量对齐巡检：补录 9/18/19/20/21/22/24/25/26/27/28/29/30/31/32/33 共 16 个子系统到 L3 索引。完整审计见 [3-文档治理/audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md)。
 
 ---
 
