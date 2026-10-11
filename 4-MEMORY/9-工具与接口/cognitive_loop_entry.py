@@ -98,6 +98,9 @@ _TRD_TAGS: Set[str] = {"trading", "backtest", "execution", "strategy", "strategy
                        "strategy-synthesis", "pnl", "sharpe", "drawdown", "okx",
                        "polling", "polling_trader", "market", "trader"}
 
+# B3: recall SLA 延迟预算（SPEC §3.5：交易场景 recall ≤ 200ms，超限告警 FAIL-OPEN）
+RECALL_SLA_MS: float = 200.0
+
 
 def _voyager_ensure_dirs() -> None:
     for d in (VOYAGER_MEMORY_EXTRA_PATH.parent,
@@ -225,6 +228,14 @@ class CognitiveLoopEntry:
         self._memory_id = memory_id
         self._storage_path = storage_path
 
+        # B3: recall SLA 埋点统计（FAIL-OPEN，统计失败不阻塞 recall）
+        # 计数器：total=总 recall 次数；cache_hits=缓存命中次数；sla_breaches=超 200ms 次数
+        self._recall_stats: Dict[str, int] = {
+            "total": 0,
+            "cache_hits": 0,
+            "sla_breaches": 0,
+        }
+
         # P0-6: 启动健康检查（SPEC §3.2）——启动时跑一次全量 verify_integrity
         # FAIL-OPEN：验证失败或异常不阻塞初始化，仅记录 _startup_integrity_passed=False
         # 日常 _check_poe_trust 不再跑全量（P0-1），篡改检测由本启动检查 + P1 抽样重验承担
@@ -260,12 +271,24 @@ class CognitiveLoopEntry:
         Returns:
             记忆列表，按相似度降序
         """
+        # B3: SLA 延迟预算埋点起点（FAIL-OPEN，统计失败不阻塞 recall）
+        start_t = time.perf_counter()
+
         # ---------- P1-1: Hot path — recall_cache 查询 ----------
         cached_results: List[Dict[str, Any]] = []
         try:
             cached_results = self.recall_cache.query(context, top_k=top_k)
         except Exception:
             cached_results = []
+
+        # ---------- B3: cache hit/miss 埋点（FAIL-OPEN） ----------
+        # cached_results 非空 → 命中 recall_cache（hot path）
+        try:
+            self._recall_stats["total"] += 1
+            if cached_results:
+                self._recall_stats["cache_hits"] += 1
+        except Exception:
+            pass  # FAIL-OPEN：统计失败不阻塞 recall
 
         # ---------- Cold path — archival (SQLite) 查询 ----------
         archival_results: List[Dict[str, Any]] = []
@@ -397,7 +420,42 @@ class CognitiveLoopEntry:
             pass  # FAIL-OPEN
         # ---------- END P1-L1-2b ----------
 
+        # ---------- B3: SLA 延迟预算告警（FAIL-OPEN，不阻塞返回） ----------
+        # SPEC §3.5：交易场景 recall SLA ≤ 200ms，超限记录 warning + 计数
+        try:
+            latency_ms = (time.perf_counter() - start_t) * 1000.0
+            if latency_ms > RECALL_SLA_MS:
+                self._recall_stats["sla_breaches"] += 1
+                logger.warning(
+                    "recall SLA breach: %.1fms > %.0fms (context=%s)",
+                    latency_ms, RECALL_SLA_MS, context[:80],
+                )
+        except Exception:
+            pass  # FAIL-OPEN：埋点失败不影响 recall 结果
+        # ---------- END B3 ----------
+
         return dicts
+
+    def get_recall_stats(self) -> Dict[str, Any]:
+        """B3: 获取 recall SLA / 缓存命中率统计（SPEC §3.5）。
+
+        Returns:
+            dict 含：
+              - total: 总 recall 次数
+              - cache_hits: recall_cache 命中次数
+              - cache_hit_rate: 命中率 (cache_hits / total，total=0 时为 0.0)
+              - sla_breaches: 超过 200ms SLA 的次数
+        """
+        total = self._recall_stats.get("total", 0)
+        cache_hits = self._recall_stats.get("cache_hits", 0)
+        sla_breaches = self._recall_stats.get("sla_breaches", 0)
+        hit_rate = (cache_hits / total) if total > 0 else 0.0
+        return {
+            "total": total,
+            "cache_hits": cache_hits,
+            "cache_hit_rate": round(hit_rate, 4),
+            "sla_breaches": sla_breaches,
+        }
 
     def consolidate_recall_cache(self, min_access_threshold: int = 2) -> Dict[str, Any]:
         """P1-1: 整合 recall_cache — 淘汰低频访问项。
