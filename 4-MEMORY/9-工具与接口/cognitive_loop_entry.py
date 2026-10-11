@@ -187,6 +187,10 @@ class CognitiveLoopEntry:
         temporal_graph_path = _SCRIPT_DIR.parent / "data" / "temporal_graph.json"
         self.temporal_graph = TemporalMemoryGraph(graph_path=temporal_graph_path)
 
+        # P1-4: 初始化 ACT-R 激活模型（频率+衰减+相关度排序）
+        from actr_activation import ACTRActivation
+        self.actr = ACTRActivation()
+
         self._memory_id = memory_id
         self._storage_path = storage_path
 
@@ -298,6 +302,15 @@ class CognitiveLoopEntry:
             # 整体惩罚失败也不影响返回原始结果（FAIL-OPEN铁律）
             pass
         # ---------- END F3 ----------
+
+        # ---------- P1-4: ACT-R 激活排序 ----------
+        # 不只看 score，还考虑频率(verify_count)+时间衰减+上下文相关度
+        # FAIL-OPEN：异常时保持原排序
+        try:
+            dicts = self.actr.rank_by_activation(dicts, context=context)
+        except Exception:
+            pass  # FAIL-OPEN
+        # ---------- END P1-4 ----------
 
         # ---------- P1-3: 双时序知识图标记 ----------
         # 对 recall 结果添加 temporal_status（active/historical/superseded）
