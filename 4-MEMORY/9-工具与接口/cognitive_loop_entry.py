@@ -196,6 +196,12 @@ class CognitiveLoopEntry:
         causal_graph_path = _SCRIPT_DIR.parent / "data" / "causal_graph.json"
         self.causal_engine = CausalInferenceEngine(graph_path=causal_graph_path)
 
+        # P1-L1: 初始化 Evidence Ledger（集中化决策审计 trail，Merkle 树）
+        # SPEC §2.3.4 P0-3 + §3.3：33-REA → Ledger → record 闭环
+        from evidence_ledger import EvidenceLedger
+        evidence_ledger_path = _SCRIPT_DIR.parent / "data" / "evidence_ledger.db"
+        self.evidence_ledger = EvidenceLedger(db_path=evidence_ledger_path)
+
         self._memory_id = memory_id
         self._storage_path = storage_path
 
@@ -600,6 +606,22 @@ class CognitiveLoopEntry:
         except Exception as _e:
             logger.debug("VOYAGER record 附加持久化失败（FAIL-OPEN 忽略）: %s", _e)
 
+        # P1-L1: 追加 EvidenceEntry 到 Evidence Ledger（FAIL-OPEN）
+        # SPEC §2.3.4：每条 AI 产出的代码/决策必须带 Evidence Ledger receipt
+        try:
+            from evidence_ledger import EvidenceEntry
+            entry = EvidenceEntry(
+                subject="record",
+                relation="记录了",
+                object=memory_id,
+                source=f"cognitive_loop_entry.record:{memory_id}",
+                confidence=confidence,
+                level=level,
+            )
+            self.evidence_ledger.append(entry)
+        except Exception:
+            pass  # FAIL-OPEN：Ledger 写入失败不阻塞 record
+
         return memory_id
 
     # ============================================================
@@ -621,6 +643,10 @@ class CognitiveLoopEntry:
               {memory_id, domain, tags, voyager_overall, consecutive_positive_count,
                meets_draft_threshold, auto_draft_generated, draft_id, draft_path}
         """
+        # P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt
+        # SPEC §2.3.4：无 receipt 的产出不被信任（FAIL-OPEN：不阻塞 verify）
+        poe_trust, receipt_hash = self._check_poe_trust(memory_id)
+
         # 获取当前状态
         mem = self._vm.get(memory_id)
         bayesian_fallback_used = False
@@ -651,6 +677,9 @@ class CognitiveLoopEntry:
                             "meets_draft_threshold": False, "auto_draft_generated": False,
                             "draft_id": None, "draft_path": None,
                             "domain": None, "tags": [], "voyager_overall": round(approx, 4)},
+                # P1-L1-2: PoE 信任机制 — 无 receipt 不信任（FAIL-OPEN 不阻塞）
+                "poe_trust": poe_trust,
+                "receipt_hash": receipt_hash,
             }
 
         old_quality = mem.get("quality_level", "C")
@@ -766,7 +795,28 @@ class CognitiveLoopEntry:
             "distill_may_triggered": new_quality != old_quality and new_quality in ("S", "A", "B"),
             "voyager": voyager_report,
             "causal": causal_report,
+            # P1-L1-2: PoE 信任机制 — 有 receipt=True，无 receipt=False
+            "poe_trust": poe_trust,
+            "receipt_hash": receipt_hash,
         }
+
+    def _check_poe_trust(self, memory_id: str) -> tuple[bool, Optional[str]]:
+        """P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt。
+
+        SPEC §2.3.4：无 receipt 的产出不被信任。
+        FAIL-OPEN：查询失败返回 (False, None)，不阻塞 verify。
+
+        Returns:
+            (poe_trust, receipt_hash)：有 receipt 返回 (True, hash)，无则 (False, None)
+        """
+        try:
+            entries = self.evidence_ledger.query(subject="record")
+            for e in entries:
+                if e.object == memory_id:
+                    return (True, e.receipt_hash)
+            return (False, None)
+        except Exception:
+            return (False, None)  # FAIL-OPEN
 
     def upgrade(self, memory_id: str, new_quality: str, new_confidence: float) -> Dict[str, Any]:
         """

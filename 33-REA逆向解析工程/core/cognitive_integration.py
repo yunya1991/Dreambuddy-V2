@@ -97,6 +97,7 @@ def prepare_record_params(investigation: dict[str, Any]) -> dict[str, Any]:
             "content": str,
             "quality_level": "B",
             "tags": str (逗号分隔),
+            "evidence_entries": list[dict],  # P1-L1-3: 供 Agent 写入 Evidence Ledger
         }
     """
     content = prepare_memory_content(investigation)
@@ -118,11 +119,56 @@ def prepare_record_params(investigation: dict[str, Any]) -> dict[str, Any]:
     if feature:
         tags_list.append(f"feature:{feature[:20]}")
 
+    # P1-L1-3: 将 33-REA Evidence 转换为 EvidenceEntry dict 列表
+    # SPEC §3.3：33-REA 的每条分析结论直接写入 Evidence Ledger
+    evidence_entries = _convert_evidence_to_entries(investigation)
+
     return {
         "content": content,
         "quality_level": "B",
         "tags": ",".join(tags_list),
+        "evidence_entries": evidence_entries,
     }
+
+
+def _convert_evidence_to_entries(investigation: dict[str, Any]) -> list[dict[str, Any]]:
+    """将 33-REA Evidence 列表转换为 EvidenceEntry dict 列表。
+
+    每个 dict 可被 EvidenceEntry(**dict) 构造。
+    SPEC §3.3：33-REA 的每条分析结论直接写入 Evidence Ledger。
+
+    字段映射：
+      subject: "33-REA"（固定标识来源系统）
+      relation: evidence.content 提取的关系（或默认 "分析了"）
+      object: evidence.content（结论内容）
+      source: evidence.source 或 evidence.provenance
+      confidence: evidence.confidence
+      level: evidence.level.value
+    """
+    evidence_list = investigation.get("evidence", [])
+    target = investigation.get("target", "unknown")
+
+    entries: list[dict[str, Any]] = []
+    for e in evidence_list:
+        # 提取 level（可能是 Enum 或字符串）
+        level = e.level.value if hasattr(e.level, "value") else str(e.level)
+
+        # 提取 source（优先 provenance，其次 source）
+        source = getattr(e, "provenance", None) or getattr(e, "source", "") or "33-REA"
+
+        # content 作为 object（结论内容）
+        obj = getattr(e, "content", "") or str(e)
+
+        entries.append({
+            "subject": "33-REA",
+            "relation": "分析了",
+            "object": obj,
+            "source": f"33-REA:{source}",
+            "confidence": float(getattr(e, "confidence", 0.5)),
+            "level": level,
+        })
+
+    return entries
 
 
 class CognitiveIntegration:

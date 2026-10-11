@@ -419,12 +419,25 @@ def _handle_record(args: Dict[str, Any]) -> str:
     # 将记忆内容 RAG 向量化入知识库，避免新经验不入知识库
     knowledge_ingest_required = "knowledge-ingest" in tags
 
+    # P1-L1: 从 Evidence Ledger 获取 receipt_hash（FAIL-OPEN）
+    receipt_hash = None
+    try:
+        cle = _get_cle()
+        entries = cle.evidence_ledger.query(subject="record")
+        for e in entries:
+            if e.object == memory_id:
+                receipt_hash = e.receipt_hash
+                break
+    except Exception:
+        pass  # FAIL-OPEN
+
     return json.dumps({
         "memory_id": memory_id,
         "status": "recorded",
         "triggered_skills": triggered_skills,
         "skill_links": skill_links,
         "knowledge_ingest_required": knowledge_ingest_required,
+        "receipt_hash": receipt_hash,
     }, ensure_ascii=False)
 
 
