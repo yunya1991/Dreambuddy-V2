@@ -249,6 +249,45 @@ class CognitiveLoopEntry:
         except Exception:
             pass  # FAIL-OPEN
 
+        # P2-1: 初始化 IntentRouter（记忆路由器 — 三库加权召回）
+        # FAIL-OPEN：导入失败时路由器置 None，route() 委托时返回空 RecallResult
+        self._intent_router = None
+        try:
+            from intent_router import IntentRouter
+
+            # memory_recall_fn: 包装 self.recall (sort_mode=score 向后兼容)
+            def _memory_recall_fn(context: str, top_k: int):
+                return self.recall(context, top_k=top_k, sort_mode="score")
+
+            # skill_search_fn: 延迟导入 skill_indexer，FAIL-OPEN 返回空列表
+            # （SKILL 检索非核心，导入失败/异常均降级为空结果）
+            def _skill_search_fn(context: str, top_k: int):
+                try:
+                    from skill_indexer import scan_skills, _match_score
+                    entries = scan_skills()
+                    scored = [(e, _match_score(context, e)) for e in entries]
+                    scored.sort(key=lambda x: x[1], reverse=True)
+                    return [e for e, s in scored[:top_k] if s > 0]
+                except Exception:
+                    return []
+
+            # knowledge_rag_fn: 延迟导入 hybrid_retriever，FAIL-OPEN 返回空列表
+            def _knowledge_rag_fn(context: str, top_k: int):
+                try:
+                    from hybrid_retriever import search_with_feedback
+                    raw = search_with_feedback(context, top_k=top_k)
+                    if isinstance(raw, dict):
+                        return list(raw.get("results", []))
+                    return list(raw) if raw else []
+                except Exception:
+                    return []
+
+            self._intent_router = IntentRouter(
+                _memory_recall_fn, _skill_search_fn, _knowledge_rag_fn
+            )
+        except Exception:
+            self._intent_router = None  # FAIL-OPEN：路由器不可用
+
     # ============================================================
     # 认知层：检索
     # ============================================================
@@ -435,6 +474,36 @@ class CognitiveLoopEntry:
         # ---------- END B3 ----------
 
         return dicts
+
+    # ============================================================
+    # P2-1: 记忆路由器 — Intent-Engine → 三库加权召回
+    # ============================================================
+
+    def route(self, intent_result: dict, top_k: int = 5,
+              route_mode: str = "fast") -> "RecallResult":
+        """委托给 IntentRouter，实现三库加权召回。
+
+        SPEC §2.4.1 + §4.3 P2-1：将 intent_engine 从纯分类器升级为记忆路由器。
+        - fast-path（默认）：只查权重最高的单库（低延迟）
+        - full-path：三库加权召回（高召回率）
+        - FAIL-OPEN：路由器不可用时返回空 RecallResult
+
+        Args:
+            intent_result: intent_engine 产出的 dict
+                （含 type/confidence/keywords 等字段）
+            top_k: 每库返回结果上限
+            route_mode: "fast"（单库，默认）或 "full"（三库加权）
+
+        Returns:
+            RecallResult 含 memories/skills/knowledge/confidence
+        """
+        if self._intent_router is not None:
+            return self._intent_router.route(
+                intent_result, top_k=top_k, route_mode=route_mode
+            )
+        # FAIL-OPEN：路由器不可用 → 返回空 RecallResult
+        from cognitive_interfaces import RecallResult
+        return RecallResult()
 
     def get_recall_stats(self) -> Dict[str, Any]:
         """B3: 获取 recall SLA / 缓存命中率统计（SPEC §3.5）。
