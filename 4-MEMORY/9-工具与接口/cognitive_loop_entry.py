@@ -191,6 +191,11 @@ class CognitiveLoopEntry:
         from actr_activation import ACTRActivation
         self.actr = ACTRActivation()
 
+        # P1-7: 初始化因果推理引擎（pgmpy 可选依赖，do-calculus + 因果发现）
+        from causal_inference_engine import CausalInferenceEngine
+        causal_graph_path = _SCRIPT_DIR.parent / "data" / "causal_graph.json"
+        self.causal_engine = CausalInferenceEngine(graph_path=causal_graph_path)
+
         self._memory_id = memory_id
         self._storage_path = storage_path
 
@@ -721,6 +726,35 @@ class CognitiveLoopEntry:
         except Exception as _e:
             logger.debug("VOYAGER verify 附加流程失败（FAIL-OPEN 忽略）: %s", _e)
 
+        # P1-7: 因果影响评估（do-calculus + 反事实推理，FAIL-OPEN）
+        causal_report: Dict[str, Any] = {"fail_open": True}
+        try:
+            if self.causal_engine is not None:
+                # 获取相关记忆用于构建因果图
+                mem_content = mem.get("content", "") or ""
+                related_memories: list = []
+                if mem_content:
+                    try:
+                        search_results = self._vm.search(mem_content, top_k=10)
+                        related_memories = [
+                            r.to_dict() if hasattr(r, "to_dict") else dict(r)
+                            for r in search_results
+                        ]
+                    except Exception:
+                        pass
+                # 把被 verify 的记忆也加入
+                if mem and not any(r.get("id") == memory_id for r in related_memories):
+                    related_memories.insert(0, mem)
+                causal_report = self.causal_engine.assess_verify_impact(
+                    memory_id=memory_id,
+                    success=success,
+                    related_memories=related_memories,
+                )
+                causal_report["fail_open"] = False
+        except Exception as _e:
+            logger.debug("P1-7 因果影响评估失败（FAIL-OPEN）: %s", _e)
+            causal_report = {"fail_open": True, "error": str(_e)}
+
         return {
             "success": True,
             "memory_id": memory_id,
@@ -731,6 +765,7 @@ class CognitiveLoopEntry:
             "quality_changed": old_quality != new_quality,
             "distill_may_triggered": new_quality != old_quality and new_quality in ("S", "A", "B"),
             "voyager": voyager_report,
+            "causal": causal_report,
         }
 
     def upgrade(self, memory_id: str, new_quality: str, new_confidence: float) -> Dict[str, Any]:
