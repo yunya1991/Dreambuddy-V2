@@ -316,6 +316,84 @@ class CognitiveLoopEntry:
         except Exception as e:
             return {"evicted_count": 0, "remaining_count": 0, "evicted_ids": [], "error": str(e)}
 
+    def schedule_forgetting(
+        self,
+        dry_run: bool = True,
+        grace_period_days: int = 90,
+    ) -> Dict[str, Any]:
+        """P1-2: FSRS 幂律遗忘调度。
+
+        基于 FSRS (Free Spaced Repetition Scheduler) 幂律遗忘曲线，
+        对低质量低活跃记忆执行降权 + 审核队列。
+
+        B2 安全网:
+        - grace_period_days 内不降权（默认 90 天）
+        - 仅降权不归档（不删除记忆）
+        - 生成审核队列，不自动归档
+
+        调度规则:
+        - B 级以上：不降权
+        - C/D 级 + R <= 0.7：降权（confidence × 0.8）
+        - C/D 级 + R <= 0.4：加入审核队列
+
+        Args:
+            dry_run: True 只生成报告不修改；False 执行降权
+            grace_period_days: grace period 天数
+
+        Returns:
+            遗忘调度报告
+        """
+        try:
+            from fsrs_forgetting_scheduler import FSRSForgettingScheduler
+            scheduler = FSRSForgettingScheduler(grace_period_days=grace_period_days)
+
+            # 从 SQLite 加载所有记忆
+            memories: List[Dict[str, Any]] = []
+            try:
+                with self._vm._db_lock:
+                    rows = self._vm.db.execute(
+                        "SELECT id, content, quality_level, confidence, tags, "
+                        "verify_count, updated_at FROM memories"
+                    ).fetchall()
+                import json as _json
+                for row in rows:
+                    memories.append({
+                        "id": row[0],
+                        "content": row[1],
+                        "quality_level": row[2],
+                        "confidence": row[3],
+                        "tags": _json.loads(row[4]) if row[4] else [],
+                        "verify_count": row[5] or 0,
+                        "updated_at": row[6] or "",
+                    })
+            except Exception:
+                pass
+
+            report = scheduler.schedule(memories, dry_run=dry_run)
+
+            # 非 dry_run 时回写降权后的 confidence
+            if not dry_run and report.get("demoted_count", 0) > 0:
+                for mem in memories:
+                    if mem["id"] in report.get("demoted_ids", []):
+                        try:
+                            self._vm.update_quality(
+                                memory_id=mem["id"],
+                                quality_level=mem["quality_level"],
+                                confidence=mem["confidence"],
+                            )
+                        except Exception:
+                            pass  # FAIL-OPEN
+
+            return report
+        except Exception as e:
+            return {
+                "total_scanned": 0,
+                "demoted_count": 0,
+                "archived_count": 0,
+                "review_queue": [],
+                "error": str(e),
+            }
+
     # ============================================================
     # F9: 负反馈闭环 — 末位未采用记忆自动 verify(False)
     # ============================================================
