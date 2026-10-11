@@ -1072,6 +1072,7 @@ class NeuralSDEModel:
         transition: Optional[np.ndarray] = None,
         exogenous_snapshot: Optional[np.ndarray] = None,
         exogenous_factors: Optional[np.ndarray] = None,
+        head_multipliers: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Level 2: 手写 EM 离散积分（torchsde 不可用时, 路径依赖 + regime-conditional SDE）.
 
@@ -1082,6 +1083,7 @@ class NeuralSDEModel:
             transition: (n_regimes,) transition vector Q[current_regime], None 则 pad zeros
             exogenous_snapshot: (exogenous_dim,) P1 外生力量快照, None 则 pad zeros
             exogenous_factors: (N, factor_dim) P1+ 外生因子张量, None 则 FAIL-OPEN
+            head_multipliers: (n_heads,) Phase 5 每 head 衰减系数, None 则不衰减
 
         Euler-Maruyama:
           S_{t+1} = S_t + fθ(S_t, t, log_sig, regime, transition, exogenous)·dt
@@ -1122,12 +1124,21 @@ class NeuralSDEModel:
             exogenous_t = self._build_exogenous(exogenous_snapshot, n_paths)
             # P1+: 设置 exogenous_factors 上下文
             exogenous_factors_t = self._build_exogenous_factors(exogenous_factors, n_paths)
+            # Phase 5: 设置 head_multipliers 上下文
+            if head_multipliers is not None:
+                head_mult_t = self._torch.tensor(
+                    np.asarray(head_multipliers, dtype=np.float32).ravel(),
+                    device=self.device,
+                )
+            else:
+                head_mult_t = None
 
             self._current_log_sig = log_sig_t
             self._current_regime = regime_t
             self._current_transition = transition_t
             self._current_exogenous = exogenous_t
             self._current_exogenous_factors = exogenous_factors_t
+            self._current_head_multipliers = head_mult_t
 
             for t_step in range(horizon):
                 t_val = float(t_step)
@@ -1145,6 +1156,7 @@ class NeuralSDEModel:
             self._current_transition = None
             self._current_exogenous = None
             self._current_exogenous_factors = None
+            self._current_head_multipliers = None
 
         # NaN 检测
         if np.any(np.isnan(paths)) or np.any(np.isinf(paths)):
@@ -1165,6 +1177,7 @@ class NeuralSDEModel:
         transition: Optional[np.ndarray] = None,
         exogenous_snapshot: Optional[np.ndarray] = None,
         exogenous_factors: Optional[np.ndarray] = None,
+        head_multipliers: Optional[np.ndarray] = None,
     ) -> Optional[np.ndarray]:
         """统一预测入口 (路径依赖 + regime-conditional SDE,
         TDD-002/003/004/005 + T4 + P0.2 + P1 exogenous + P1+ Cross-Attention).
@@ -1184,6 +1197,9 @@ class NeuralSDEModel:
                     None → drift_net pad zeros (FAIL-OPEN, 兼容旧推理路径)
             exogenous_factors: 可选 (N, factor_dim) P1+ 外生因子张量;
                     None → cross-attention zero context (FAIL-OPEN)
+            head_multipliers: 可选 (n_heads,) Phase 5 每 head 衰减系数
+                    (来自 CrossValidationGate.head_adjustment_to_array());
+                    None → 不衰减 (FAIL-OPEN)
 
         Returns:
             shape (n_paths, horizon+1) numpy 数组, 或 None 表示不可用
@@ -1219,6 +1235,7 @@ class NeuralSDEModel:
                     log_sig=log_sig, regime=regime, transition=transition,
                     exogenous_snapshot=exogenous_snapshot,
                     exogenous_factors=exogenous_factors,
+                    head_multipliers=head_multipliers,
                 )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] torchsde 积分失败, 降级 EM: %s", e)
@@ -1229,6 +1246,7 @@ class NeuralSDEModel:
                 log_sig=log_sig, regime=regime, transition=transition,
                 exogenous_snapshot=exogenous_snapshot,
                 exogenous_factors=exogenous_factors,
+                head_multipliers=head_multipliers,
             )
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] EM 积分失败: %s", e)
