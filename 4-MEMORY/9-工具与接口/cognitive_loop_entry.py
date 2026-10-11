@@ -200,6 +200,51 @@ class CognitiveLoopEntry:
         temporal_graph_path = _SCRIPT_DIR.parent / "data" / "temporal_graph.json"
         self.temporal_graph = TemporalMemoryGraph(graph_path=temporal_graph_path)
 
+        # P3-8: 初始化 FIBO 语义本体（文件索引→语义图，类层级+多跳查询）
+        from fibo_ontology import FIBOOntology
+        fibo_path = _SCRIPT_DIR.parent / "data" / "fibo_ontology.json"
+        self.fibo_ontology = FIBOOntology(ontology_path=fibo_path)
+
+        # P2-4: 初始化 SKILL 自验证入库门（Voyager 式 verify-before-commit）
+        from skill_verification_gate import SkillVerificationGate
+        self.skill_gate = SkillVerificationGate()
+
+        # P2-5: 初始化 GraphRAG 社区检测（Leiden 风格社区 + 分层摘要）
+        from graphrag_community import GraphRAGCommunity
+        self.graphrag = GraphRAGCommunity()
+
+        # P2-6: 初始化 CodeQL 语义分析（AST → 语义级数据流 + 污点追踪）
+        from codeql_semantic import CodeQLSemanticAnalyzer
+        self.codeql = CodeQLSemanticAnalyzer()
+
+        # P3-1: 初始化 GWT 全局工作空间广播总线（跨子系统信息广播）
+        from workspace_bus import WorkspaceBus
+        self.workspace_bus = WorkspaceBus()
+
+        # P3-2: 初始化 HOT Self-Model 高阶自我监控（置信度校准+矛盾检测+错误监测）
+        from self_model import SelfModel
+        self.self_model = SelfModel()
+
+        # P3-4: 初始化预测误差门控 record（Friston 自由能 + 记忆再巩固边界）
+        from prediction_error_gate import PredictionErrorGate
+        self.prediction_error_gate = PredictionErrorGate()
+
+        # P3-5: 初始化 Alpha Decay 自动门禁（策略级半衰期衰减检测）
+        from alpha_decay_gate import AlphaDecayGate
+        self.alpha_decay_gate = AlphaDecayGate()
+
+        # P3-6: 初始化 Reflection Node（调度链末尾 LLM-judge 反思回环）
+        from reflection_node import ReflectionNode
+        self.reflection_node = ReflectionNode()
+
+        # P3-3: 初始化 FOK/JOL 元认知 Harness（执行前 FOK 预评估 + 执行后 JOL）
+        from fok_jol_harness import MetacogHarness
+        self.metacog_harness = MetacogHarness()
+
+        # P3-7: 初始化 Transactive Memory 索引（"谁擅长什么" agent profile）
+        from transactive_memory import TransactiveMemory
+        self.transactive_memory = TransactiveMemory()
+
         # P1-4: 初始化 ACT-R 激活模型（频率+衰减+相关度排序）
         from actr_activation import ACTRActivation
         self.actr = ACTRActivation()
