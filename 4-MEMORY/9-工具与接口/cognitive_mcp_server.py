@@ -202,6 +202,61 @@ def _reset_cle():
 
 
 # ============================================================
+# P0-1: skill_indexer hooks 接线（record_hook / verify_hook）
+# SPEC: SPEC-CognitiveSystem-Evolution.md §2.2.1 P0-1
+# 建立 skill ↔ memory 双向关联，FAIL-OPEN
+# ============================================================
+
+_skill_indexer_module = None
+_skill_indexer_loaded = False
+
+
+def _load_skill_indexer():
+    """延迟加载 skill_indexer 模块，FAIL-OPEN：不可用返回 None。
+
+    skill_indexer 位于 1-ARCHITECTURE/skills/dream-skill-index-governance/，
+    提供 record_hook / verify_hook / scan_skills / ALL_SKILL_ROOTS。
+    """
+    global _skill_indexer_loaded, _skill_indexer_module
+    if _skill_indexer_loaded:
+        return _skill_indexer_module
+    _skill_indexer_loaded = True
+    try:
+        si_dir = (
+            _SCRIPT_DIR.parents[1]
+            / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
+        )
+        if str(si_dir) not in sys.path:
+            sys.path.insert(0, str(si_dir))
+        import skill_indexer as _si  # type: ignore[import-not-found]
+        _skill_indexer_module = _si
+    except Exception:
+        _skill_indexer_module = None
+    return _skill_indexer_module
+
+
+def _find_skill_dir_by_name(skill_id: str):
+    """从 ALL_SKILL_ROOTS 查找 skill_id 对应的 SKILL 目录（含 SKILL.md）。
+
+    FAIL-OPEN：skill_indexer 不可用或未找到返回 None。
+    """
+    si = _load_skill_indexer()
+    if si is None:
+        return None
+    try:
+        roots = getattr(si, "ALL_SKILL_ROOTS", None)
+        if not roots:
+            return None
+        for root in roots:
+            cand = root / skill_id
+            if (cand / "SKILL.md").exists():
+                return cand
+    except Exception:
+        return None
+    return None
+
+
+# ============================================================
 # Tool Handlers
 # ============================================================
 
@@ -345,10 +400,25 @@ def _handle_record(args: Dict[str, Any]) -> str:
     # TAG_HOOKS：查询 tags → triggered_skills（FAIL-OPEN）
     triggered_skills = _resolve_triggered_skills(tags)
 
+    # P0-1：触发 record_hook，建立 skill↔memory 双向关联（FAIL-OPEN）
+    # 对每个 triggered_skill 查找 skill_dir 并调用 record_hook，
+    # 将 memory_id 写入 SKILL.md cognitive_links + apply_count++
+    skill_links: list = []
+    si = _load_skill_indexer()
+    if si is not None and triggered_skills:
+        for skill_id in triggered_skills:
+            try:
+                skill_dir = _find_skill_dir_by_name(skill_id)
+                hook_result = si.record_hook(skill_id, memory_id, skill_dir)
+                skill_links.append(hook_result)
+            except Exception:
+                pass  # FAIL-OPEN：单个 hook 失败不影响其他
+
     return json.dumps({
         "memory_id": memory_id,
         "status": "recorded",
         "triggered_skills": triggered_skills,
+        "skill_links": skill_links,
     }, ensure_ascii=False)
 
 
@@ -361,6 +431,30 @@ def _handle_verify(args: Dict[str, Any]) -> str:
         memory_id, success=success, known_gaps_update=known_gaps_update,
     )
 
+    # P0-1：触发 verify_hook，更新 confidence + shadow→active 升级（FAIL-OPEN）
+    # 扫描 SKILL entries，反查 cognitive_links 包含 memory_id 的 SKILL，
+    # 对每个关联 SKILL 调用 verify_hook。
+    skill_hooks: list = []
+    si = _load_skill_indexer()
+    if si is not None:
+        try:
+            roots = getattr(si, "ALL_SKILL_ROOTS", None)
+            if roots:
+                entries = si.scan_skills(roots)
+                for entry in entries:
+                    try:
+                        if memory_id in entry.cognitive_links:
+                            skill_dir = _find_skill_dir_by_name(entry.name)
+                            hook_result = si.verify_hook(
+                                entry.name, success, entries, skill_dir,
+                            )
+                            skill_hooks.append(hook_result)
+                    except Exception:
+                        pass  # FAIL-OPEN：单个 hook 失败不影响其他
+        except Exception:
+            pass  # FAIL-OPEN：扫描失败不影响 verify 主流程
+
+    result["skill_hooks"] = skill_hooks
     return json.dumps(result, ensure_ascii=False)
 
 
