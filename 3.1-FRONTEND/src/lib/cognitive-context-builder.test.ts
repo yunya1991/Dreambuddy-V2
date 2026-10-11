@@ -27,6 +27,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         skill_candidates: [],
         built_at: Date.now(),
         intent_type: 'simple_qa',
+        solution_cases: [],
+        cvg_result: null,
       };
       // imitation_context 应是可选的，不设置时为 undefined
       expect(ctx.imitation_context).toBeUndefined();
@@ -40,6 +42,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         skill_candidates: [],
         built_at: Date.now(),
         intent_type: 'simple_qa',
+        solution_cases: [],
+        cvg_result: null,
         imitation_context: {
           document_results: [
             { ref_id: 'doc-1', title: 'Test Doc', path: '/test.md', category: 'doc', description: '' },
@@ -68,6 +72,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         skill_candidates: [],
         built_at: Date.now(),
         intent_type: 'simple_qa',
+        solution_cases: [],
+        cvg_result: null,
       };
 
       const docResults = [
@@ -95,6 +101,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         skill_candidates: [],
         built_at: Date.now(),
         intent_type: 'simple_qa',
+        solution_cases: [],
+        cvg_result: null,
       };
 
       const researchReport = '# 调研报告\n\n某工具的配置方法...';
@@ -115,6 +123,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         skill_candidates: [],
         built_at: Date.now(),
         intent_type: 'simple_qa',
+        solution_cases: [],
+        cvg_result: null,
       };
 
       const docResults = [
@@ -137,6 +147,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         skill_candidates: [],
         built_at: Date.now(),
         intent_type: 'simple_qa',
+        solution_cases: [],
+        cvg_result: null,
       };
 
       const enriched = withImitationContext(baseCtx);
@@ -174,6 +186,8 @@ describe('SIE-SPEC §5.1 P1: imitation_context 字段 (cognitive-context-builder
         knowledge: [],
         references: [],
         skill_candidates: [],
+        solution_cases: [],
+        cvg_result: null,
         built_at: Date.now(),
         intent_type: 'simple_qa',
         // 即使有 imitation_context，但四系统为空时 isContextUsed 应返回 false

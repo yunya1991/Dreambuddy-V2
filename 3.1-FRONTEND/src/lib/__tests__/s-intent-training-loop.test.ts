@@ -53,11 +53,13 @@ describe('SPEC §4.2.1 P1-5: S层 IntentTrainingLoop', () => {
       expect(loop.shouldTrain()).toBe(true);
     });
 
-    it('clear 应清空桶', () => {
+    it('clear 应重置模型状态（v0.5: 不清空 buffer）', () => {
       const loop = new IntentTrainingLoop();
       loop.addTrainingData({ message: 'test', intent_type: 'test' });
       loop.clear();
-      expect(loop.bucketCount).toBe(0);
+      // v0.5: clear 只重置模型状态，不清空 buffer
+      expect(loop.bucketCount).toBe(1);
+      expect(loop.step).toBe(0);
     });
   });
 
@@ -84,15 +86,105 @@ describe('SPEC §4.2.1 P1-5: S层 IntentTrainingLoop', () => {
       expect(Object.keys(result.weights).length).toBeGreaterThan(0);
     });
 
-    it('train 后桶应清空', () => {
+    it('train 后 buffer 不清空（v0.5: 持续训练，不清空）', () => {
       const loop = new IntentTrainingLoop();
       for (let i = 0; i < 50; i++) {
         loop.addTrainingData({ message: `msg-${i}`, intent_type: `type-${i % 3}` });
       }
       loop.train();
-      expect(loop.bucketCount).toBe(0);
+      // v0.5: buffer 永不清空，只做衰减
+      expect(loop.bucketCount).toBe(50);
     });
 
+    it('train 后应返回 incrementalStep + bufferStats（v0.5）', () => {
+      const loop = new IntentTrainingLoop();
+      for (let i = 0; i < 50; i++) {
+        loop.addTrainingData({ message: `msg-${i}`, intent_type: 'test' });
+      }
+      const result = loop.train();
+      expect(result.incrementalStep).toBeGreaterThan(0);
+      expect(result.bufferStats).toBeDefined();
+      expect(result.bufferStats?.size).toBe(50);
+      expect(result.bufferStats?.capacity).toBe(200);
+    });
+  });
+
+  // ----------------------------------------------------------
+  // 3.5 v0.5: trainIncremental 增量训练
+  // ----------------------------------------------------------
+  describe('v0.5: trainIncremental 增量训练', () => {
+    it('trainIncremental 应增量更新模型，不清空 buffer', () => {
+      const loop = new IntentTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ message: `msg-${i}`, intent_type: `type-${i % 2}` }, 'B');
+      }
+      const batch = loop.replayBuffer.sample(3).map(e => e.data);
+      const result = loop.trainIncremental(batch);
+      expect(result.trained).toBe(true);
+      expect(result.incrementalStep).toBe(1);
+      expect(loop.bucketCount).toBe(3);
+      expect(loop.step).toBe(1);
+    });
+
+    it('trainIncremental 多次训练应递增 step', () => {
+      const loop = new IntentTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ message: `msg-${i}`, intent_type: 'test' }, 'B');
+      }
+      for (let i = 0; i < 3; i++) {
+        const batch = loop.replayBuffer.sample(3).map(e => e.data);
+        loop.trainIncremental(batch);
+      }
+      expect(loop.step).toBe(3);
+    });
+
+    it('trainIncremental 后模型状态应保留', () => {
+      const loop = new IntentTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ message: `检查代码${i}`, intent_type: 'code_inspection' }, 'B');
+      }
+      const batch = loop.replayBuffer.sample(3).map(e => e.data);
+      loop.trainIncremental(batch);
+      const snapshot = loop.getModelSnapshot();
+      expect(snapshot.step).toBe(1);
+      expect(snapshot.intentFreq['code_inspection']).toBeGreaterThan(0);
+      expect(snapshot.weights['code_inspection']).toBeGreaterThan(0);
+    });
+
+    it('getModelSnapshot / restoreModel 应可保存恢复', () => {
+      const loop = new IntentTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ message: `msg-${i}`, intent_type: 'test' }, 'B');
+      }
+      const batch = loop.replayBuffer.sample(3).map(e => e.data);
+      loop.trainIncremental(batch);
+
+      const snapshot = loop.getModelSnapshot();
+      const loop2 = new IntentTrainingLoop();
+      loop2.restoreModel(snapshot);
+
+      expect(loop2.step).toBe(1);
+      expect(loop2.getModelSnapshot().intentFreq).toEqual(snapshot.intentFreq);
+    });
+
+    it('addTrainingData 支持 quality 参数', () => {
+      const loop = new IntentTrainingLoop();
+      loop.addTrainingData({ message: 'S级', intent_type: 'test' }, 'S');
+      loop.addTrainingData({ message: 'C级', intent_type: 'test' }, 'C');
+      const stats = loop.getBufferStats();
+      expect(stats.qualityDistribution.S).toBe(1);
+      expect(stats.qualityDistribution.C).toBe(1);
+    });
+  });
+
+  // ----------------------------------------------------------
+  // 4. 训练质量验证
+  // ----------------------------------------------------------
+  describe('训练质量验证', () => {
     it('训练权重应反映 intent_type 频率分布', () => {
       const loop = new IntentTrainingLoop();
       // 40 条 code_inspection + 10 条 research

@@ -400,7 +400,7 @@ export class CognitiveContextBuilder {
       ctx.knowledge.length > 0 ||
       ctx.references.length > 0 ||
       ctx.skill_candidates.length > 0 ||
-      ctx.solution_cases.length > 0
+      (ctx.solution_cases?.length ?? 0) > 0
     );
   }
 }

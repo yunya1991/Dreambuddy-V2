@@ -256,8 +256,8 @@ describe('SPEC §10 Phase 2 P1-7: E2E 端到端测试', () => {
       expect(result.weights['research']).toBeGreaterThan(result.weights['bugfix']);
       expect(result.accuracy).toBeGreaterThanOrEqual(0);
 
-      // 桶清空
-      expect(loop.bucketCount).toBe(0);
+      // v0.5: buffer 不清空，只做衰减
+      expect(loop.bucketCount).toBeGreaterThan(0);
     });
   });
 
@@ -287,7 +287,7 @@ describe('SPEC §10 Phase 2 P1-7: E2E 端到端测试', () => {
       expect(result.edge_count).toBeGreaterThanOrEqual(0);
       expect(result.graph_coverage).toBeGreaterThanOrEqual(0);
       expect(result.graph_coverage).toBeLessThanOrEqual(1);
-      expect(loop.bucketCount).toBe(0);
+      expect(loop.bucketCount).toBeGreaterThan(0); // v0.5: 不清空
     });
   });
 

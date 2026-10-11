@@ -1,5 +1,6 @@
 /**
  * SPEC-20261009 §4.2.4 P1-6: G层 GraphStructureTrainingLoop 测试
+ * SPEC-20261011 v0.5: ReplayBuffer + trainIncremental
  *
  * TDD RED→GREEN
  *
@@ -9,6 +10,7 @@
  *   - addTrainingData / shouldTrain / train / clear
  *   - 训练结果包含 graph_coverage + node_count + edge_count + compression_ratio
  *   - FAIL-OPEN：空桶训练返回 not trained
+ *   - v0.5: trainIncremental + getModelSnapshot / restoreModel
  */
 
 import { GraphStructureTrainingLoop, type GraphTrainingData, type GraphTrainingResult } from '../g-graph-training-loop';
@@ -56,11 +58,13 @@ describe('SPEC §4.2.4 P1-6: G层 GraphStructureTrainingLoop', () => {
       expect(loop.shouldTrain()).toBe(true);
     });
 
-    it('clear 应清空桶', () => {
+    it('clear 只重置模型状态，不清空 buffer（v0.5）', () => {
       const loop = new GraphStructureTrainingLoop();
       loop.addTrainingData({ decisions: ['test'], rules: [] });
       loop.clear();
-      expect(loop.bucketCount).toBe(0);
+      // v0.5: clear 只重置模型状态，不清空 buffer
+      expect(loop.bucketCount).toBe(1);
+      expect(loop.step).toBe(0);
     });
   });
 
@@ -90,13 +94,26 @@ describe('SPEC §4.2.4 P1-6: G层 GraphStructureTrainingLoop', () => {
       expect(result.edge_count).toBeGreaterThanOrEqual(0);
     });
 
-    it('train 后桶应清空', () => {
+    it('train 后 buffer 不清空（v0.5: 持续训练，不清空）', () => {
       const loop = new GraphStructureTrainingLoop();
       for (let i = 0; i < 60; i++) {
         loop.addTrainingData({ decisions: [`决策-${i}`], rules: [`规则-${i}`] });
       }
       loop.train();
-      expect(loop.bucketCount).toBe(0);
+      // v0.5: buffer 永不清空，只做衰减
+      expect(loop.bucketCount).toBe(60);
+    });
+
+    it('train 后应返回 incrementalStep + bufferStats（v0.5）', () => {
+      const loop = new GraphStructureTrainingLoop();
+      for (let i = 0; i < 60; i++) {
+        loop.addTrainingData({ decisions: [`d-${i}`], rules: [`r-${i}`] });
+      }
+      const result = loop.train();
+      expect(result.incrementalStep).toBeGreaterThan(0);
+      expect(result.bufferStats).toBeDefined();
+      expect(result.bufferStats?.size).toBe(60);
+      expect(result.bufferStats?.capacity).toBe(500);
     });
 
     it('训练结果应包含 compression_ratio 字段', () => {
@@ -140,6 +157,78 @@ describe('SPEC §4.2.4 P1-6: G层 GraphStructureTrainingLoop', () => {
       const result = loop.train();
       // 3 个唯一决策 → 至少 3 个节点
       expect(result.node_count).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  // ----------------------------------------------------------
+  // 3.5 v0.5: trainIncremental 增量训练
+  // ----------------------------------------------------------
+  describe('v0.5: trainIncremental 增量训练', () => {
+    it('trainIncremental 应增量更新模型，不清空 buffer', () => {
+      const loop = new GraphStructureTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ decisions: [`决策-${i}`], rules: [`规则-${i}`] }, 'B');
+      }
+      const batch = loop.replayBuffer.sample(3).map(e => e.data);
+      const result = loop.trainIncremental(batch);
+      expect(result.trained).toBe(true);
+      expect(result.incrementalStep).toBe(1);
+      expect(loop.bucketCount).toBe(3);
+      expect(loop.step).toBe(1);
+    });
+
+    it('trainIncremental 多次训练应递增 step', () => {
+      const loop = new GraphStructureTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ decisions: [`决策-${i}`], rules: [`规则-${i}`] }, 'B');
+      }
+      for (let i = 0; i < 3; i++) {
+        const batch = loop.replayBuffer.sample(3).map(e => e.data);
+        loop.trainIncremental(batch);
+      }
+      expect(loop.step).toBe(3);
+    });
+
+    it('trainIncremental 后模型状态应保留', () => {
+      const loop = new GraphStructureTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ decisions: ['TDD', 'CI/CD'], rules: ['测试先行'] }, 'B');
+      }
+      const batch = loop.replayBuffer.sample(3).map(e => e.data);
+      loop.trainIncremental(batch);
+      const snapshot = loop.getModelSnapshot();
+      expect(snapshot.step).toBe(1);
+      expect(snapshot.nodes.length).toBeGreaterThan(0);
+      expect(snapshot.nodeWeights['TDD']).toBeGreaterThan(0);
+    });
+
+    it('getModelSnapshot / restoreModel 应可保存恢复', () => {
+      const loop = new GraphStructureTrainingLoop();
+      // v0.5 P1: 用 'B' 质量避免自动触发
+      for (let i = 0; i < 3; i++) {
+        loop.addTrainingData({ decisions: ['TDD', 'CI/CD'], rules: ['测试先行'] }, 'B');
+      }
+      const batch = loop.replayBuffer.sample(3).map(e => e.data);
+      loop.trainIncremental(batch);
+
+      const snapshot = loop.getModelSnapshot();
+      const loop2 = new GraphStructureTrainingLoop();
+      loop2.restoreModel(snapshot);
+
+      expect(loop2.step).toBe(1);
+      expect(loop2.getModelSnapshot().nodeWeights).toEqual(snapshot.nodeWeights);
+    });
+
+    it('addTrainingData 支持 quality 参数', () => {
+      const loop = new GraphStructureTrainingLoop();
+      loop.addTrainingData({ decisions: ['S级'], rules: [] }, 'S');
+      loop.addTrainingData({ decisions: ['C级'], rules: [] }, 'C');
+      const stats = loop.getBufferStats();
+      expect(stats.qualityDistribution.S).toBe(1);
+      expect(stats.qualityDistribution.C).toBe(1);
     });
   });
 
