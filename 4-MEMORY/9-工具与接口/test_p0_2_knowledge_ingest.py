@@ -15,6 +15,14 @@ from unittest.mock import patch
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _mock_find_skill_dir(monkeypatch):
+    """autouse: 避免 record_hook 写真实 SKILL.md（测试副作用隔离）。
+    测试内部的 with patch 会覆盖此默认 mock。
+    """
+    monkeypatch.setattr("cognitive_mcp_server._find_skill_dir_by_name", lambda *a, **kw: None)
+
+
 # ─────────────────────────────── RED: knowledge_ingest_required 标记 ───────────────────────────────
 
 def test_handle_record_knowledge_ingest_required_when_tag_present():

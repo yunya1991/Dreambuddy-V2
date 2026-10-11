@@ -18,6 +18,14 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _mock_find_skill_dir(monkeypatch):
+    """autouse: 避免 record_hook 写真实 SKILL.md（测试副作用隔离）。
+    测试内部的 with patch 会覆盖此默认 mock。
+    """
+    monkeypatch.setattr("cognitive_mcp_server._find_skill_dir_by_name", lambda *a, **kw: None)
+
+
 # ─────────────────────────────── RED: _handle_record ───────────────────────────────
 
 def test_handle_record_returns_skill_links_field():
