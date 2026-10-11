@@ -129,6 +129,7 @@ class CognitiveLoopEntry:
         storage_path: Optional[str] = None,
         memory_id: str = "AM-TRD-001",
         enable_distill: bool = True,
+        poe_enforcement: str = "soft",
     ):
         """
         初始化认知闭环入口。
@@ -137,6 +138,10 @@ class CognitiveLoopEntry:
             storage_path: SQLite 数据库路径。默认使用 4-MEMORY 下的持久化文件。
             memory_id: 应用记忆ID
             enable_distill: 是否启用动态蒸馏
+            poe_enforcement: PoE 信任机制 enforcement 模式
+                "soft" (默认): 无 receipt 不阻塞，但限制质量上限为 B + recall 降权
+                "strict": 无 receipt 的 verify 直接失败（硬阻塞）
+                "off": 不做 PoE 检查
         """
         from vector_memory_interface import VectorMemoryInterface
 
@@ -198,9 +203,14 @@ class CognitiveLoopEntry:
 
         # P1-L1: 初始化 Evidence Ledger（集中化决策审计 trail，Merkle 树）
         # SPEC §2.3.4 P0-3 + §3.3：33-REA → Ledger → record 闭环
+        # db_path 跟随 storage_path 同目录，避免测试间互相污染
         from evidence_ledger import EvidenceLedger
-        evidence_ledger_path = _SCRIPT_DIR.parent / "data" / "evidence_ledger.db"
+        evidence_ledger_path = Path(storage_path).parent / "evidence_ledger.db"
         self.evidence_ledger = EvidenceLedger(db_path=evidence_ledger_path)
+
+        # P1-L1-2b: PoE enforcement 模式（soft/strict/off）
+        self.poe_enforcement = poe_enforcement
+        self._poe_penalty = 0.5  # soft 模式 recall 降权因子
 
         self._memory_id = memory_id
         self._storage_path = storage_path
@@ -331,6 +341,34 @@ class CognitiveLoopEntry:
         except Exception:
             pass  # FAIL-OPEN
         # ---------- END P1-3 ----------
+
+        # ---------- P1-L1-2b: PoE recall 降权 ----------
+        # soft 模式：无 receipt 的记忆 score *= poe_penalty（默认 0.5）
+        # strict 模式：无 receipt 的记忆从结果中过滤
+        # off 模式：不检查
+        # FAIL-OPEN：异常时保持原结果
+        try:
+            if self.poe_enforcement != "off":
+                filtered: List[Dict[str, Any]] = []
+                for r in dicts:
+                    mid = r.get("id", "")
+                    if mid:
+                        has_receipt, _ = self._check_poe_trust(mid)
+                        if has_receipt:
+                            filtered.append(r)
+                        elif self.poe_enforcement == "soft":
+                            old_s = r.get("score", 0.0) or 0.0
+                            r["score"] = round(old_s * self._poe_penalty, 4)
+                            r["poe_penalized"] = True
+                            filtered.append(r)
+                        # strict 模式：无 receipt 的不加入 filtered（过滤掉）
+                    else:
+                        filtered.append(r)
+                dicts = filtered
+                dicts.sort(key=lambda x: x.get("score", 0.0) or 0.0, reverse=True)
+        except Exception:
+            pass  # FAIL-OPEN
+        # ---------- END P1-L1-2b ----------
 
         return dicts
 
@@ -644,8 +682,21 @@ class CognitiveLoopEntry:
                meets_draft_threshold, auto_draft_generated, draft_id, draft_path}
         """
         # P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt
-        # SPEC §2.3.4：无 receipt 的产出不被信任（FAIL-OPEN：不阻塞 verify）
+        # SPEC §2.3.4：无 receipt 的产出不被信任
         poe_trust, receipt_hash = self._check_poe_trust(memory_id)
+
+        # P1-L1-2b: PoE enforcement
+        # strict: 无 receipt → verify 直接失败（硬阻塞）
+        # soft: 无 receipt → 不阻塞，但限制质量上限为 B + recall 降权
+        # off: 不做 PoE 检查
+        poe_quality_cap = None
+        poe_blocked = False
+        if self.poe_enforcement == "strict" and not poe_trust:
+            poe_blocked = True
+        elif self.poe_enforcement == "soft" and not poe_trust:
+            poe_quality_cap = "B"
+        elif self.poe_enforcement == "off":
+            poe_quality_cap = None
 
         # 获取当前状态
         mem = self._vm.get(memory_id)
@@ -664,7 +715,7 @@ class CognitiveLoopEntry:
             except Exception:
                 approx = 0.25
             return {
-                "success": True,
+                "success": not poe_blocked,  # strict 模式无 receipt → False
                 "error": f"记忆不存在(FAIL-OPEN 近似兜底): {memory_id}",
                 "memory_id": memory_id,
                 "old_quality": "C",
@@ -677,9 +728,11 @@ class CognitiveLoopEntry:
                             "meets_draft_threshold": False, "auto_draft_generated": False,
                             "draft_id": None, "draft_path": None,
                             "domain": None, "tags": [], "voyager_overall": round(approx, 4)},
-                # P1-L1-2: PoE 信任机制 — 无 receipt 不信任（FAIL-OPEN 不阻塞）
+                # P1-L1-2b: PoE enforcement
                 "poe_trust": poe_trust,
                 "receipt_hash": receipt_hash,
+                "poe_quality_cap": poe_quality_cap,
+                "poe_blocked": poe_blocked,
             }
 
         old_quality = mem.get("quality_level", "C")
@@ -694,6 +747,15 @@ class CognitiveLoopEntry:
         # 计算新质量等级
         vc = int(mem.get("verify_count") or 0)
         new_quality = self._confidence_to_quality(new_confidence, vc + 1)
+
+        # P1-L1-2b: PoE soft 模式 — 无 receipt 时质量上限为 poe_quality_cap
+        # S > A > B > C > D，cap=B 时 A/S 被限制为 B
+        if poe_quality_cap is not None:
+            _rank = {"S": 4, "A": 3, "B": 2, "C": 1, "D": 0}
+            cap_rank = _rank.get(poe_quality_cap, 2)
+            new_rank = _rank.get(new_quality, 1)
+            if new_rank > cap_rank:
+                new_quality = poe_quality_cap
 
         # 更新（会自动触发蒸馏）—— 仅当不是 bayesian fallback 占位、真在 SQLite 中时才写
         if not bayesian_fallback_used:
@@ -785,7 +847,7 @@ class CognitiveLoopEntry:
             causal_report = {"fail_open": True, "error": str(_e)}
 
         return {
-            "success": True,
+            "success": not poe_blocked,  # strict 模式无 receipt → False
             "memory_id": memory_id,
             "old_quality": old_quality,
             "new_quality": new_quality,
@@ -795,21 +857,34 @@ class CognitiveLoopEntry:
             "distill_may_triggered": new_quality != old_quality and new_quality in ("S", "A", "B"),
             "voyager": voyager_report,
             "causal": causal_report,
-            # P1-L1-2: PoE 信任机制 — 有 receipt=True，无 receipt=False
+            # P1-L1-2b: PoE enforcement
             "poe_trust": poe_trust,
             "receipt_hash": receipt_hash,
+            "poe_quality_cap": poe_quality_cap,
+            "poe_blocked": poe_blocked,
         }
 
     def _check_poe_trust(self, memory_id: str) -> tuple[bool, Optional[str]]:
-        """P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt。
+        """P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt + 验 Merkle 完整性。
 
         SPEC §2.3.4：无 receipt 的产出不被信任。
-        FAIL-OPEN：查询失败返回 (False, None)，不阻塞 verify。
+        SPEC §2.3.4 PoE 增强：receipt 必须通过 Merkle 树完整性验证。
 
         Returns:
-            (poe_trust, receipt_hash)：有 receipt 返回 (True, hash)，无则 (False, None)
+            (poe_trust, receipt_hash)：
+                有 receipt 且 Merkle 完整 → (True, hash)
+                无 receipt 或 Merkle 篡改 → (False, None)
         """
         try:
+            # enforcement=off 时直接返回 (True, None) 跳过 PoE
+            if self.poe_enforcement == "off":
+                return (True, None)
+
+            # 先验 Merkle 树完整性（全量验证）
+            if not self.evidence_ledger.verify_integrity():
+                return (False, None)
+
+            # 查询是否有对应 receipt
             entries = self.evidence_ledger.query(subject="record")
             for e in entries:
                 if e.object == memory_id:
