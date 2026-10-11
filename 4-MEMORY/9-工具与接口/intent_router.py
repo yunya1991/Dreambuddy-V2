@@ -51,6 +51,17 @@ INTENT_WEIGHTS: Dict[str, Tuple[float, float, float]] = {
 # 三库名称 → 权重在 tuple 中的索引
 _DB_INDEX: Dict[str, int] = {"memory": 0, "skill": 1, "knowledge": 2}
 
+# ============================================================
+# P2-2: L2A 条件访问 — 自动路由决策常量
+# SPEC §2.4.2: 80% fast-path, 20% full-path
+# ============================================================
+
+AUTO_FAST_THRESHOLD: float = 0.7   # confidence >= 0.7 → fast
+AUTO_FULL_THRESHOLD: float = 0.4   # confidence < 0.4 → full
+# 中间区间 [0.4, 0.7): 按 intent 类型分流
+FAST_DEFAULT_TYPES: frozenset = frozenset({"code_question", "general", "knowledge_query"})
+FULL_DEFAULT_TYPES: frozenset = frozenset({"trading_decision", "bug_investigation", "skill_match"})
+
 
 class IntentRouter(CognitiveRouter):
     """记忆路由器 — 接收 intent_vector，路由到记忆/SKILL/知识三库，
@@ -73,6 +84,8 @@ class IntentRouter(CognitiveRouter):
         self._memory_recall = memory_recall_fn
         self._skill_search = skill_search_fn
         self._knowledge_rag = knowledge_rag_fn
+        # P2-2: 规则缓存 — key="{type}:{confidence_bucket}" → "fast"/"full"
+        self._route_cache: Dict[str, str] = {}
 
     def route(
         self,
@@ -92,12 +105,16 @@ class IntentRouter(CognitiveRouter):
             databases: 三库句柄 dict（ABC 契约参数，此处保留兼容，
                 实际查询函数在 __init__ 注入，默认 None）
             top_k: 每库返回结果上限
-            route_mode: "fast"（单库，默认）或 "full"（三库加权）
+            route_mode: "fast"（单库）/"full"（三库加权）/"auto"（L2A 自动决策）
 
         Returns:
             RecallResult 含三库召回结果 + 综合置信度
         """
-        intent_result: Dict[str, Any] = intent_vector or {}
+        # P2-2: L2A 自动路由 — route_mode="auto" 时自动决定 fast/full
+        if route_mode == "auto":
+            route_mode = self._auto_decide(intent_vector)
+
+        intent_result: Dict[str, Any] = intent_vector if isinstance(intent_vector, dict) else {}
         intent_type = intent_result.get("type", "general")
         intent_confidence = float(intent_result.get("confidence", 0.5))
 
@@ -183,3 +200,67 @@ class IntentRouter(CognitiveRouter):
             return list(result) if result else []
         except Exception:
             return []
+
+    # ============================================================
+    # P2-2: L2A 条件访问 — 自动路由决策
+    # ============================================================
+
+    def _auto_decide(self, intent_vector: Any) -> str:
+        """L2A 自动路由决策：根据 intent 置信度和类型决定 fast/full。
+
+        SPEC §2.4.2: 80% fast-path, 20% full-path。
+
+        决策级联：
+          1. 规则缓存命中 → 用缓存决策
+          2. confidence >= 0.7 → fast
+          3. confidence < 0.4 → full
+          4. 中间区间 → 按 intent 类型分流
+          5. 默认 → fast
+
+        Args:
+            intent_vector: intent_engine 产出的 dict 或其他类型
+
+        Returns:
+            "fast" 或 "full"
+        """
+        # 非 dict intent → 安全降级 fast
+        if not isinstance(intent_vector, dict):
+            return "fast"
+
+        # 缓存命中检查
+        cache_key = self._cache_key(intent_vector)
+        if cache_key in self._route_cache:
+            return self._route_cache[cache_key]
+
+        # 置信度 + 类型决策
+        confidence = float(intent_vector.get("confidence", 0.5))
+        intent_type = intent_vector.get("type", "general")
+
+        if confidence >= AUTO_FAST_THRESHOLD:
+            decision = "fast"
+        elif confidence < AUTO_FULL_THRESHOLD:
+            decision = "full"
+        elif intent_type in FAST_DEFAULT_TYPES:
+            decision = "fast"
+        elif intent_type in FULL_DEFAULT_TYPES:
+            decision = "full"
+        else:
+            decision = "fast"  # 默认 fast，确保 80% 目标
+
+        # 写入缓存
+        self._route_cache[cache_key] = decision
+        return decision
+
+    @staticmethod
+    def _cache_key(intent_result: Dict[str, Any]) -> str:
+        """构造规则缓存 key: "{intent_type}:{confidence_bucket}"。
+
+        confidence_bucket = round(confidence, 1)，将连续值离散化为 10 档。
+        """
+        intent_type = intent_result.get("type", "general")
+        confidence = round(float(intent_result.get("confidence", 0.5)), 1)
+        return f"{intent_type}:{confidence}"
+
+    def clear_route_cache(self) -> None:
+        """清空规则缓存（用于测试和重置）。"""
+        self._route_cache.clear()

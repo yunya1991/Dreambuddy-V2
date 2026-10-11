@@ -480,11 +480,12 @@ class CognitiveLoopEntry:
     # ============================================================
 
     def route(self, intent_result: dict, top_k: int = 5,
-              route_mode: str = "fast") -> "RecallResult":
+              route_mode: str = "auto") -> "RecallResult":
         """委托给 IntentRouter，实现三库加权召回。
 
-        SPEC §2.4.1 + §4.3 P2-1：将 intent_engine 从纯分类器升级为记忆路由器。
-        - fast-path（默认）：只查权重最高的单库（低延迟）
+        SPEC §2.4.1 + §2.4.2 + §4.3 P2-1/P2-2：
+        - auto（默认，L2A）：自动决策 fast/full（80% fast-path）
+        - fast-path：只查权重最高的单库（低延迟）
         - full-path：三库加权召回（高召回率）
         - FAIL-OPEN：路由器不可用时返回空 RecallResult
 
@@ -492,7 +493,7 @@ class CognitiveLoopEntry:
             intent_result: intent_engine 产出的 dict
                 （含 type/confidence/keywords 等字段）
             top_k: 每库返回结果上限
-            route_mode: "fast"（单库，默认）或 "full"（三库加权）
+            route_mode: "auto"（默认，L2A 自动决策）/"fast"（单库）/"full"（三库加权）
 
         Returns:
             RecallResult 含 memories/skills/knowledge/confidence
