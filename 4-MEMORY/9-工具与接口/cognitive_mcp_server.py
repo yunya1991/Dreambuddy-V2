@@ -414,11 +414,17 @@ def _handle_record(args: Dict[str, Any]) -> str:
             except Exception:
                 pass  # FAIL-OPEN：单个 hook 失败不影响其他
 
+    # P0-2：knowledge-ingest 硬标记（区别于 triggered_skills 软触发）
+    # tags 含 knowledge-ingest 时，Agent 层应执行 knowledge-ingest SKILL
+    # 将记忆内容 RAG 向量化入知识库，避免新经验不入知识库
+    knowledge_ingest_required = "knowledge-ingest" in tags
+
     return json.dumps({
         "memory_id": memory_id,
         "status": "recorded",
         "triggered_skills": triggered_skills,
         "skill_links": skill_links,
+        "knowledge_ingest_required": knowledge_ingest_required,
     }, ensure_ascii=False)
 
 
