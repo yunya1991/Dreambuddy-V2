@@ -177,6 +177,11 @@ class CognitiveLoopEntry:
         from working_memory_manager import WorkingMemoryManager
         self.working_memory = WorkingMemoryManager()
 
+        # P1-1: 初始化 Recall Memory 缓存层（三层记忆中间层）
+        from recall_memory_cache import RecallMemoryCache
+        recall_cache_path = _SCRIPT_DIR.parent / "data" / "recall_cache.json"
+        self.recall_cache = RecallMemoryCache(cache_path=recall_cache_path)
+
         self._memory_id = memory_id
         self._storage_path = storage_path
 
@@ -188,6 +193,11 @@ class CognitiveLoopEntry:
         """
         检索相关记忆（处理代码问题前调用）。
 
+        P1-1 三层调度（Letta/MemGPT 式）：
+          1. Hot path: 先查 recall_cache（关键词匹配）
+          2. Cold path: 不足 top_k 则查 archival（SQLite）
+          3. Promote: 将结果提升到 recall_cache + working_memory.recall_block
+
         Args:
             context: 问题描述或上下文
             top_k: 返回结果数
@@ -196,12 +206,59 @@ class CognitiveLoopEntry:
         Returns:
             记忆列表，按相似度降序
         """
-        results = self._vm.search(
-            context,
-            top_k=top_k,
-            quality_filter=min_quality,
-        )
-        dicts = [r.to_dict() for r in results]
+        # ---------- P1-1: Hot path — recall_cache 查询 ----------
+        cached_results: List[Dict[str, Any]] = []
+        try:
+            cached_results = self.recall_cache.query(context, top_k=top_k)
+        except Exception:
+            cached_results = []
+
+        # ---------- Cold path — archival (SQLite) 查询 ----------
+        archival_results: List[Dict[str, Any]] = []
+        try:
+            results = self._vm.search(
+                context,
+                top_k=top_k,
+                quality_filter=min_quality,
+            )
+            archival_results = [r.to_dict() for r in results]
+        except Exception:
+            archival_results = []
+
+        # ---------- 合并 + 去重（archival 优先，cache 补充） ----------
+        seen_ids = set()
+        dicts: List[Dict[str, Any]] = []
+        for r in archival_results + cached_results:
+            mid = r.get("id", "")
+            if mid and mid not in seen_ids:
+                seen_ids.add(mid)
+                dicts.append(r)
+        # 按 score 降序
+        dicts.sort(key=lambda x: x.get("score", 0.0) or 0.0, reverse=True)
+        dicts = dicts[:top_k]
+
+        # ---------- P1-1: Promote 到 recall_cache ----------
+        try:
+            for r in dicts:
+                mid = r.get("id", "")
+                if mid:
+                    self.recall_cache.promote(
+                        memory_id=mid,
+                        content=r.get("content", ""),
+                        score=r.get("score", 0.0),
+                        metadata={
+                            "quality_level": r.get("quality_level", "C"),
+                            "tags": r.get("tags", []),
+                        },
+                    )
+        except Exception:
+            pass  # FAIL-OPEN
+
+        # ---------- P1-1: Promote 到 working_memory.recall_block ----------
+        try:
+            self.working_memory.load_recall_results(dicts)
+        except Exception:
+            pass  # FAIL-OPEN
 
         # ---------- F3: cognitive-session 噪音权重惩罚 ----------
         # 条件：source=cognitive-session AND quality=C AND vc=0 AND [解决路径]+timeout/error
@@ -238,6 +295,26 @@ class CognitiveLoopEntry:
         # ---------- END F3 ----------
 
         return dicts
+
+    def consolidate_recall_cache(self, min_access_threshold: int = 2) -> Dict[str, Any]:
+        """P1-1: 整合 recall_cache — 淘汰低频访问项。
+
+        定期调用以保持 recall_cache 健康：
+        - access_count < min_access_threshold 的项被淘汰回 archival 层
+        - 持久化缓存到 JSON 文件
+
+        Args:
+            min_access_threshold: 访问次数低于此值的缓存项被淘汰
+
+        Returns:
+            整合报告：{evicted_count, remaining_count, evicted_ids}
+        """
+        try:
+            report = self.recall_cache.consolidate(min_access_threshold=min_access_threshold)
+            self.recall_cache.persist()
+            return report
+        except Exception as e:
+            return {"evicted_count": 0, "remaining_count": 0, "evicted_ids": [], "error": str(e)}
 
     # ============================================================
     # F9: 负反馈闭环 — 末位未采用记忆自动 verify(False)

@@ -151,6 +151,7 @@ class WorkingMemoryManager:
         "scratch": 1500,   # 草稿区：中等
         "process": 3000,   # 流程建议（元+应用双层），设计节 3.2
         "episodic": 800,   # 情景缓冲器（决策事件序列），Baddeley 2000
+        "recall": 2500,    # P1-1: recall_block，缓存最近 recall 结果摘要
     }
 
     def __init__(
@@ -182,6 +183,8 @@ class WorkingMemoryManager:
         self.process_block._readonly = True  # 只有 recall 注入能写，AI 自身不能改写
         # P1-1: 情景缓冲器（Baddeley 2000）——跨时间整合决策事件序列
         self.episodic_block = MemoryBlock("episodic", max_tokens=merged_budgets.get("episodic", 800))
+        # P1-1: recall_block —— 缓存最近 recall 结果，三层记忆 Working 层
+        self.recall_block = MemoryBlock("recall", max_tokens=merged_budgets.get("recall", 2500))
 
         # 检查点目录
         if checkpoint_dir is None:
@@ -323,6 +326,42 @@ class WorkingMemoryManager:
             self._auto_compress_if_needed(self.episodic_block)
 
     # ============================================================
+    # P1-1: Recall 结果提升（recall_block —— 三层记忆 Working 层）
+    # ============================================================
+
+    def load_recall_results(self, results: List[Dict[str, Any]]) -> None:
+        """P1-1: 将 recall 结果加载到 recall_block（Working Memory 层）。
+
+        recall 时自动调用：将检索到的记忆摘要写入 recall_block，
+        使 AI Agent 在当前任务上下文中可直接访问近期 recall 结果。
+        借鉴 Letta/MemGPT 的 core memory 注入机制。
+
+        Args:
+            results: recall() 返回的 dict 列表（每条含 id/content/score 等）
+        """
+        with self._lock:
+            if not results:
+                self.recall_block.set("markdown", "")
+                return
+            lines = [
+                f"### 最近 recall 结果（{len(results)} 条）",
+                "",
+            ]
+            for r in results:
+                mid = r.get("id", "?")
+                content = r.get("content", "")
+                # 截断过长内容
+                if len(content) > 200:
+                    content = content[:200] + "..."
+                score = r.get("score", 0.0)
+                ql = r.get("quality_level", "?")
+                lines.append(f"- **[{mid}]** (score={score:.2f}, Q={ql}) {content}")
+            markdown = "\n".join(lines)
+            self.recall_block.set("markdown", markdown)
+            self._log("load_recall_results", {"count": len(results)})
+            self._auto_compress_if_needed(self.recall_block)
+
+    # ============================================================
     # 上下文生成（注入到 System Prompt）
     # ============================================================
 
@@ -376,6 +415,14 @@ class WorkingMemoryManager:
                     lines.append(f"- {k}: {v[:100]}")
             lines.append("")
 
+        if self.recall_block.items:
+            lines.append("---")
+            lines.append("## 🔍 Recall 缓存（近期检索结果 · 三层记忆 Working 层）")
+            recall_md = self.recall_block.get("markdown", "")
+            if recall_md:
+                lines.append(recall_md)
+            lines.append("")
+
         # Token 使用情况
         total = self._total_tokens()
         lines.append(f"---")
@@ -395,6 +442,7 @@ class WorkingMemoryManager:
             "scratch": self.scratch_block.estimate_tokens(),
             "process": self.process_block.estimate_tokens(),
             "episodic": self.episodic_block.estimate_tokens(),
+            "recall": self.recall_block.estimate_tokens(),
             "total": self._total_tokens(),
         }
 
@@ -405,6 +453,7 @@ class WorkingMemoryManager:
             + self.scratch_block.estimate_tokens()
             + self.process_block.estimate_tokens()
             + self.episodic_block.estimate_tokens()
+            + self.recall_block.estimate_tokens()
         )
 
     def _auto_compress_if_needed(self, block: MemoryBlock) -> None:
@@ -458,6 +507,7 @@ class WorkingMemoryManager:
                 "context_block": self.context_block.to_dict(),
                 "scratch_block": self.scratch_block.to_dict(),
                 "episodic_block": self.episodic_block.to_dict(),
+                "recall_block": self.recall_block.to_dict(),
                 "operation_log": self._operation_log[-50:],  # 保留最近50条
                 "saved_at": datetime.now(timezone.utc).isoformat(),
             }
@@ -655,6 +705,7 @@ class WorkingMemoryManager:
             self.task_block.clear()
             self.context_block.clear()
             self.scratch_block.clear()
+            self.recall_block.clear()
             self._operation_log.clear()
             self.task_info = TaskInfo(
                 task_id=f"T-{datetime.now().strftime('%Y%m%d%H%M%S')}",
