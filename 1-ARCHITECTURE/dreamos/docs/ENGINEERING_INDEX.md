@@ -1,8 +1,8 @@
-# Dream OS 工程索引 v2.4.0
+# Dream OS 工程索引 v2.6.0
 
 > **文档层级**: L1 — 系统级 SSoT（单真源）
-> **版本**: v2.4.0
-> **更新日期**: 2026-07-21
+> **版本**: v2.6.0
+> **更新日期**: 2026-10-11
 > **维护者**: Dream OS Core Team
 > **关联文档**: [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md) | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)
 
@@ -86,14 +86,15 @@ Dream OS 具有双重身份，需要明确区分：
 | 指标 | 值 |
 |------|-----|
 | 内核版本 | v2.1.0 |
-| 核心代码文件 | ~50个 |
-| 内置节点数 | 22个（A系列10个 + C系列4个 + F系列5个 + G系列2个 + 1个初始化） |
+| 核心代码文件 | ~140个（含能力域根级模块 + 子包 + 测试） |
+| 内置节点数 | 30+（A系列10 + A3b + C系列原4 + C系列经典管线9 + F系列5 + G系列2 + BDSM/BCRM2/CMartinV15/SubsystemAdapter） |
 | 适配器类型 | 3种（Function / SKILL / API） |
 | 意图类型 | 6种标准 + 可扩展 |
 | 市场场景 | 36种（趋势×3 × 波动率×4 × 动量×3） |
 | 编排模式 | 5种（c_chain / c_f_chain / full_chain / f_chain / c_g_chain） |
 | 预算模式 | 3档（lean/standard/full） |
-| 测试覆盖率 | 5个测试套件（冒烟/感知层/ACG层/多场景/横切） |
+| 测试套件 | 6类（核心冒烟/根级扩展/节点级/回测/感知层/编排优化） |
+| 案例库子系统 | 2类（洗盘反转 + 拉盘砸盘反转） |
 
 ---
 
@@ -103,7 +104,17 @@ Dream OS 具有双重身份，需要明确区分：
 1-ARCHITECTURE/dreamos/
 ├── docs/                         # 系统文档（L1级SSoT）
 │   ├── ENGINEERING_INDEX.md      # 工程索引（本文档）
-│   └── TECHNICAL_DESIGN.md       # 技术设计文档
+│   ├── TECHNICAL_DESIGN.md       # 技术设计文档
+│   ├── API_SPEC.md               # API 规范
+│   ├── CHANGELOG.md              # 变更日志
+│   ├── TRADING_ORCHESTRATION_PLAN.md # 交易编排计划
+│   ├── PHASED_DIALOGUE_MODE.md   # 分阶段对话模式
+│   ├── DREAM_OS_KERNEL_DIAGNOSIS_A8_ONEIROLOGY_20260806.md
+│   └── proposals/                # 设计提案
+│       ├── DESIGN-20260919-DREAMOS-KERNEL-ENHANCEMENT.md
+│       ├── SPEC-20260919-SUBSYSTEM-UNIFIED-ORCHESTRATION.md
+│       ├── PROP-20260810-scheduler-paths.md
+│       └── PROP-20260810-cmartin-node.md
 │
 ├── core/                         # 操作系统内核层（SACG 四层）
 │   ├── __init__.py
@@ -113,12 +124,29 @@ Dream OS 具有双重身份，需要明确区分：
 │   │   ├── types.py              # 意图类型定义
 │   │   ├── token_budget.py       # Token预算管理（单周期）
 │   │   ├── scenario_classifier.py # 场景分类器
-│   │   └── recognizers/          # 识别器集合
+│   │   ├── capability_router.py  # 能力路由器（S层接入能力域）
+│   │   ├── complexity_classifier.py # 复杂度分类器
+│   │   ├── test_intent_recognition_capability.py
+│   │   ├── test_dialogue_state.py
+│   │   ├── recognizers/          # 识别器集合
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py           # 识别器基类
+│   │   │   ├── rule_based.py     # 规则识别器（零Token）
+│   │   │   ├── llm_based.py      # LLM识别器
+│   │   │   ├── dynamic.py        # 动态意图识别器
+│   │   │   └── test_llm_based_prompt.py
+│   │   ├── dialogue_intent/      # 对话意图子系统
+│   │   │   ├── __init__.py
+│   │   │   ├── classifier.py     # 对话意图分类器
+│   │   │   ├── taxonomy.py       # 意图分类体系
+│   │   │   ├── slots.py          # 槽位定义
+│   │   │   ├── multi_intent.py   # 多意图解析
+│   │   │   └── test_multi_intent.py
+│   │   └── evaluators/           # 意图评估器
 │   │       ├── __init__.py
-│   │       ├── base.py           # 识别器基类
-│   │       ├── rule_based.py     # 规则识别器（零Token）
-│   │       ├── llm_based.py      # LLM识别器
-│   │       └── dynamic.py        # 动态意图识别器
+│   │       ├── intent_evaluator_agent.py # 意图评估Agent
+│   │       ├── test_evaluator_escalation.py
+│   │       └── test_intent_evaluator_agent.py
 │   │
 │   ├── arrange/                  # A层 — 图编排（通用）
 │   │   ├── __init__.py
@@ -126,7 +154,11 @@ Dream OS 具有双重身份，需要明确区分：
 │   │   ├── types.py              # 编排类型定义
 │   │   ├── node_selector.py      # 节点选择器
 │   │   ├── budget_allocator.py   # 预算分配器
-│   │   └── execution_graph.py    # 执行图（顺序图/条件图）
+│   │   ├── execution_graph.py    # 执行图（顺序图/条件图）
+│   │   └── optimizers/           # 编排优化器
+│   │       ├── __init__.py
+│   │       ├── orchestration_optimizer_agent.py # 编排优化Agent
+│   │       └── test_orchestration_optimizer_agent.py
 │   │
 │   ├── compute/                  # C层 — 执行（通用）
 │   │   ├── __init__.py
@@ -134,7 +166,16 @@ Dream OS 具有双重身份，需要明确区分：
 │   │   ├── types.py              # 执行类型定义
 │   │   ├── node_runner.py        # 节点运行器
 │   │   ├── reflector.py          # 反射决策器
-│   │   └── aggregator.py         # 结果聚合器
+│   │   ├── aggregator.py         # 结果聚合器
+│   │   ├── trace_replay.py       # 执行轨迹回放
+│   │   ├── param_optimizer.py    # 参数优化器
+│   │   ├── hermes_reflector.py   # Hermes 反射器（反思闭环）
+│   │   ├── health_checker.py     # 健康检查器
+│   │   ├── circuit_breaker.py    # 熔断器
+│   │   ├── doc_sync_trigger.py   # 文档同步触发器
+│   │   ├── case_ingest_gate.py   # 案例入库门禁
+│   │   ├── auto_bugfix.py        # 自动Bug修复
+│   │   └── canary_registry.py    # 金丝雀注册表
 │   │
 │   ├── graph_store/              # G层 — 图存储（通用）
 │   │   ├── __init__.py
@@ -144,11 +185,24 @@ Dream OS 具有双重身份，需要明确区分：
 │   │   ├── compressor.py         # 上下文压缩器
 │   │   └── history.py            # 历史回放器
 │   │
+│   ├── capability/               # 能力域内核组件（CapabilityRegistry + Router）
+│   │   ├── __init__.py
+│   │   ├── registry.py           # CapabilityRegistry 能力域注册表
+│   │   └── router.py             # CapabilityRouter 能力域路由器
+│   │
+│   ├── artifact/                 # 产物存储内核组件
+│   │   ├── __init__.py
+│   │   └── store.py              # ArtifactStore 产物存储
+│   │
+│   ├── scheduler/                # 调度内核组件
+│   │   └── dynamic_evaluator.py  # 动态评估器
+│   │
 │   └── memory/                   # 记忆扩展模块（通用）
 │       ├── __init__.py
 │       ├── execution_feedback.py # 执行反馈收集器（驱动进化）
 │       ├── orchestration_memory.py # 编排记忆表（场景-编排映射）
-│       └── scenario_backtester.py # 场景回测器
+│       ├── scenario_backtester.py # 场景回测器
+│       └── evaluation_memory.py # 评估记忆
 │
 ├── registry/                     # 节点注册表（通用）
 │   ├── __init__.py
@@ -163,24 +217,122 @@ Dream OS 具有双重身份，需要明确区分：
 │   ├── base.py                   # 适配器基类 + AdapterRegistry
 │   ├── function_adapter.py       # 函数适配器
 │   ├── skill_adapter.py          # SKILL适配器
-│   └── api_adapter.py            # API适配器
+│   ├── api_adapter.py            # API适配器
+│   ├── test_skill_governance_loader.py
+│   ├── test_skill_dual_channel.py
+│   └── test_skill_adapter_boundary.py
 │
 ├── capabilities/                 # 能力域层（业务逻辑与内核物理分离）
 │   ├── __init__.py               # 能力域根包入口
 │   └── trading/                  # 交易能力域（旗舰内建能力）
 │       ├── __init__.py           # TradingCapability 能力域定义
 │       ├── evaluator.py          # **交易分析评估器**（核心组件）
-│       ├── nodes/                # 22个交易节点
+│       │                          # ── 交易能力域根级模块 ──
+│       ├── coin_selector.py      # 币种筛选器
+│       ├── cognitive_reviewer.py # 认知审查器
+│       ├── exchange_capabilities.py # 交易所能力封装
+│       ├── freqtrade_signal_adapter.py # Freqtrade 信号适配器
+│       ├── free_fundamental_provider.py # 免费基本面数据提供者
+│       ├── free_market_feed.py   # 免费行情数据源
+│       ├── fundamental_injector.py # 基本面注入器
+│       ├── hedge_executor.py     # 对冲执行器
+│       ├── hyperliquid_adapter.py # Hyperliquid 交易所适配器
+│       ├── loss_diagnoser.py     # 亏损诊断器
+│       ├── market_enrichment.py  # 行情增强器
+│       ├── multi_scenario_simulation.py # 多场景模拟
+│       ├── orchestrator_v2.py    # 编排器 v2
+│       ├── run_evaluation.py     # 评估运行入口
+│       ├── scenario_pattern_optimizer.py # 场景模式优化器
+│       ├── signal_router.py      # 信号路由器
+│       ├── signal_smoother.py    # 信号平滑器
+│       ├── stats_utils.py        # 统计工具
+│       ├── strategy_types.py     # 策略类型定义
+│       ├── v15_executor.py       # V15 执行器
+│       └── yijing_signal_generator.py # 易经信号生成器
+│       │
+│       ├── nodes/                # 交易节点（A/C/F/G 系列 + 扩展节点）
 │       │   ├── __init__.py       # 注册入口 register_all()
 │       │   ├── a0_contradiction.py
 │       │   ├── a1_deep_research.py
-│       │   ├── ...
-│       │   └── g2_governance.py
+│       │   ├── a2_comprehensive.py
+│       │   ├── a3_strategy.py
+│       │   ├── a3b_bull_bear_debate.py  # 多空辩论节点
+│       │   ├── a4_gate.py
+│       │   ├── a5_execution.py
+│       │   ├── a6_regime_monitor.py
+│       │   ├── a7_practice_gate.py
+│       │   ├── a8_unity.py
+│       │   ├── a9_exit_strategy.py
+│       │   ├── c1_tech_scan.py
+│       │   ├── c2_momentum.py
+│       │   ├── c3_volatility.py
+│       │   ├── c5_exit_system.py
+│       │   ├── c0_env_scan.py        # 环境扫描（C系列扩展）
+│       │   ├── c1_symbol_filter.py   # 标的筛选（C系列扩展）
+│       │   ├── c2_signal_detect.py   # 信号检测（C系列扩展）
+│       │   ├── c3_backtest_verify.py # 回测验证（C系列扩展）
+│       │   ├── c4_risk_assess.py     # 风险评估（C系列扩展）
+│       │   ├── c5_param_optimize.py  # 参数优化（C系列扩展）
+│       │   ├── c6_plan_generate.py   # 计划生成（C系列扩展）
+│       │   ├── c7_exec_monitor.py    # 执行监控（C系列扩展）
+│       │   ├── c8_perf_attribution.py # 绩效归因（C系列扩展）
+│       │   ├── bdsm_node.py          # BDSM 节点
+│       │   ├── bcrm2_node.py         # BCRM2 节点
+│       │   ├── c_martin_v15.py       # CMartin V15 节点
+│       │   ├── subsystem_adapter_nodes.py # 子系统适配节点
+│       │   ├── f1_news.py ~ f5_macro_analysis.py
+│       │   ├── g1_risk_control.py / g2_governance.py
+│       │   └── tests/            # 节点级测试
+│       │       ├── __init__.py
+│       │       ├── test_node_runner.py
+│       │       ├── test_node_registry.py
+│       │       ├── test_l3_self_repair.py
+│       │       ├── test_l4_self_iteration.py
+│       │       ├── test_health_checker.py
+│       │       ├── test_canary_registry.py
+│       │       ├── test_contract_api.py
+│       │       ├── test_classic_pipeline_e2e.py
+│       │       ├── test_classic_pipeline_real_e2e.py
+│       │       ├── test_c0_c8_skeleton.py
+│       │       ├── test_c0_env_scan_real.py ~ test_c8_perf_attribution_real.py
+│       │       └── test_a4_gate.py
+│       │
+│       ├── entry_strategy/       # 入场策略子包
+│       │   ├── __init__.py
+│       │   ├── entry_module_selector.py   # 入场模块选择器
+│       │   ├── entry_module_adapter.py    # 入场模块适配器
+│       │   └── entry_module_backtester.py # 入场模块回测器
+│       │
+│       ├── exit_strategy/        # 出场策略子包
+│       │   ├── stop_take_profit.py        # 止盈止损
+│       │   ├── exit_module_selector.py    # 出场模块选择器
+│       │   ├── exit_module_adapter.py     # 出场模块适配器
+│       │   └── exit_module_backtester.py  # 出场模块回测器
+│       │
+│       ├── evaluators/           # 评估器子包
+│       │   ├── __init__.py
+│       │   ├── l4_stats_adapter.py        # L4 统计适配器
+│       │   ├── dynamic_orchestrator.py    # 动态编排器
+│       │   └── backtest_fine_tuner.py     # 回测微调器
+│       │
+│       ├── observation/          # 观察子包
+│       │   ├── cross_account_observer.py      # 跨账户观察器
+│       │   ├── subsystem_capability_evaluator.py # 子系统能力评估器
+│       │   └── reports/         # 观察报告产物
+│       │
 │       ├── strategies/           # 策略配置（链路、阈值）
+│       ├── reports/              # 报告产物
 │       ├── execution/            # 实盘执行层
+│       │   ├── __init__.py
 │       │   └── auto_trader.py    # AutoTrader 自动化交易
 │       └── backtest/             # 回测引擎
-│           └── engine.py         # DreamOSBacktester
+│           ├── __init__.py
+│           ├── engine.py         # DreamOSBacktester
+│           ├── backtrader_adapter.py # Backtrader 适配器
+│           ├── backtest_reports/ # 回测报告产物
+│           └── tests/
+│               ├── __init__.py
+│               └── test_backtrader_adapter.py
 │
 ├── nodes/                        # ⚠️ 向后兼容层（已迁移到 capabilities/trading/nodes/）
 │   └── __init__.py               # 重新导出 capabilities.trading.nodes 的 API
@@ -191,7 +343,19 @@ Dream OS 具有双重身份，需要明确区分：
 │   ├── types.py                  # 进化类型定义
 │   ├── lesson_distiller.py       # 经验教训提炼器
 │   ├── gap_analyzer.py           # 知行差距分析器
-│   └── node_optimizer.py         # 节点优化建议器
+│   ├── node_optimizer.py         # 节点优化建议器
+│   ├── exploration_policy.py     # 探索策略（ε-greedy/UCB）
+│   │                              # ── Washout（洗盘反转）案例库 ──
+│   ├── washout_case_library.py          # 洗盘案例库
+│   ├── washout_reversal_case_library.py # 洗盘反转案例库
+│   ├── washout_reversal_genome.py       # 洗盘反转基因组
+│   ├── washout_classifier.py            # 洗盘分类器
+│   ├── washout_ending_detector.py      # 洗盘结束检测器
+│   ├── washout_bayesian_updater.py     # 洗盘贝叶斯更新器
+│   │                              # ── Pump-Dump（拉盘砸盘反转）案例库 ──
+│   ├── pump_dump_reversal_case_library.py # 拉盘砸盘反转案例库
+│   ├── pump_dump_reversal_genome.py        # 拉盘砸盘反转基因组
+│   └── pump_dump_ending_detector.py        # 拉盘砸盘结束检测器
 │
 ├── budget/                       # 预算管理（通用）
 │   ├── __init__.py
@@ -219,34 +383,91 @@ Dream OS 具有双重身份，需要明确区分：
 │   ├── auto_scheduler.py         # 自动调度器（交易专用）
 │   ├── auto_trader.py            # 自动交易器（交易专用）
 │   ├── bcrm2_scheduler.py        # BCRM2 调度器（交易专用）
+│   ├── dreamos_full_scheduler.py # 全量调度器
+│   ├── run_bcrm2_hourly.py       # BCRM2 每小时运行
+│   ├── dreamos_backtester.py     # DreamOS 回测器
+│   ├── run_dynamic_evaluator.py  # 动态评估器运行入口
+│   ├── daily_briefing.py         # 每日简报
+│   ├── mood_board.py             # 情绪面板
+│   ├── coin_pool_sync.py         # 币池同步
 │   ├── orchestration_commands.py # 编排命令
 │   ├── analyze_commands.py       # 分析命令
 │   ├── start_scheduler.py        # 启动调度器
 │   ├── evolution_test.py         # 进化测试
 │   ├── stress_test.py            # 压力测试（7场景 × 500轮）
 │   ├── multi_scenario_stress_test.py  # 多场景模拟压力测试（36场景全覆盖）
-│   └── scheduler_data/           # 调度器数据
-│       ├── scheduler_jobs.json
-│       └── scheduler_history.json
+│   ├── scheduler_data/           # 调度器数据
+│   │   ├── scheduler_jobs.json
+│   │   ├── scheduler_history.json
+│   │   ├── briefings/            # 简报产物
+│   │   └── mood_boards/          # 情绪面板产物
+│   └── backtest_reports/         # 回测报告产物
 │
 ├── shared/                       # 共享基础组件（通用）
 │   ├── __init__.py
 │   ├── state.py                  # State / NodeResult / NodeStatus
 │   ├── interfaces.py             # Node / Graph / Edge / Registry / Adapter 接口
+│   ├── capability.py             # Capability 能力域共享抽象
 │   ├── errors.py                 # 错误码 + OSError
 │   ├── llm_client.py             # LLM 客户端抽象
+│   ├── event_writer.py           # 事件写入器（产物事件流）
 │   └── utils.py                  # 工具函数集合
 │
 ├── config/                       # 配置
-│   └── nodes.yaml                # 节点配置
+│   ├── nodes.yaml                # 节点配置
+│   └── intent_routing.yaml       # 意图路由配置
 │
-├── dreamos-tests/                # 测试套件（兄弟目录）
+├── data/                         # 运行时数据
+│   ├── graph_store/              # G层检查点持久化（ckpt_*.json）
+│   ├── cognitive_lessons.json    # 认知经验沉淀
+│   └── automation_reports/       # 自动化报告脚本与产物
+│       ├── run_health_check.py   # 健康检查脚本
+│       ├── run_final_report.py    # 最终报告脚本
+│       ├── run_evolution.py       # 进化运行脚本
+│       ├── run_doc_memory_sync.py # 文档记忆同步脚本
+│       ├── run_auto_fix.py        # 自动修复脚本
+│       └── dreamos_*_20260807.*   # 报告产物
+│
+├── scheduler_data/               # 调度器产物（顶层）
+│   └── artifacts/                # 调度产物
+│       ├── briefing/             # 简报产物（briefing_*.json）
+│       ├── chart/                # 图表产物
+│       ├── report/               # 报告产物
+│       ├── insight_card/         # 洞察卡片产物
+│       ├── mood_board/           # 情绪面板产物
+│       └── bull_bear_debate/     # 多空辩论产物
+│
+├── logs/                         # 运行日志
+│   ├── scheduler.log             # 调度器日志
+│   ├── scheduler.lock            # 调度器锁文件
+│   ├── dreamos_launchd.log       # launchd 服务日志
+│   └── sacg_result_*.json        # SACG 执行结果
+│
+├── tests/                        # 测试套件（根级，扩展测试）
+│   ├── conftest.py               # pytest 配置
+│   ├── test_capability_registry_e2e.py  # 能力域注册 E2E
+│   ├── test_p0_reflector_recall.py      # 反射回滚 P0
+│   ├── test_hedge_strategy.py           # 对冲策略
+│   ├── test_yijing_signal_generator.py  # 易经信号
+│   ├── test_v15_executor.py             # V15 执行器
+│   ├── test_signal_router.py            # 信号路由
+│   ├── test_paper_full_chain.py          # 全链路模拟
+│   ├── test_orchestrator_v2.py           # 编排器 v2
+│   ├── test_phase7_closed_loop.py        # Phase7 闭环
+│   ├── test_p1_3_real_fill_guard.py      # 真实成交守卫
+│   ├── test_market_enrichment.py         # 行情增强
+│   ├── test_p2_position_reconciliation.py # 持仓对账
+│   ├── test_coin_selector.py            # 币种筛选
+│   └── test_cognitive_reviewer.py       # 认知审查
+│
+├── dreamos-tests/                # 原测试套件（兄弟目录，核心冒烟）
 │   ├── test_smoke.py             # 冒烟测试
 │   ├── test_sense_layer.py       # 感知层测试
 │   ├── test_acg_layers.py        # ACG层测试
 │   ├── test_multi_scenario.py    # 多场景测试
 │   └── test_cross_cutting.py     # 横切关注点测试
 │
+├── README.md                     # 子系统 README
 ├── __init__.py                   # 包入口（v2.0.0）
 └── com.dreambuddy.dreamos.plist  # launchd 配置
 ```
@@ -351,6 +572,15 @@ BudgetAllocator 分配预算
 | NodeRunner | `node_runner.py` | 节点运行器（执行单个节点，支持重试） |
 | Reflector | `reflector.py` | 反射决策器（每步后决定下一步动作） |
 | Aggregator | `aggregator.py` | 结果聚合器（多节点结果融合） |
+| TraceReplay | `trace_replay.py` | 执行轨迹回放（复盘/调试） |
+| ParamOptimizer | `param_optimizer.py` | 参数优化器（Ray Tune 等搜索） |
+| HermesReflector | `hermes_reflector.py` | Hermes 反射器（反思闭环驱动进化） |
+| HealthChecker | `health_checker.py` | 健康检查器（节点/子系统健康度） |
+| CircuitBreaker | `circuit_breaker.py` | 熔断器（异常累积时熔断降级） |
+| DocSyncTrigger | `doc_sync_trigger.py` | 文档同步触发器（变更后自动同步文档） |
+| CaseIngestGate | `case_ingest_gate.py` | 案例入库门禁（4 维价值评估） |
+| AutoBugfix | `auto_bugfix.py` | 自动 Bug 修复（症状→根因→修复） |
+| CanaryRegistry | `canary_registry.py` | 金丝雀注册表（灰度发布/回滚） |
 
 **反射决策动作**（`ReflectAction`）:
 - `CONTINUE` — 继续下一节点
@@ -459,13 +689,15 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 
 ---
 
-### 3.4 节点体系（22个内置交易节点）
+### 3.4 节点体系
 
 **主入口**: `capabilities/trading/nodes/__init__.py` → `register_all(registry)`
 
 **能力域入口**: `capabilities/trading/__init__.py` → `TradingCapability`
 
 **向后兼容**: `nodes/__init__.py` → 重新导出 `capabilities.trading.nodes` 的 API
+
+> 节点体系在原 A/C/F/G 四系列基础上大幅扩展：新增 C 系列经典管线节点（C0-C8）、子系统适配节点与专用节点。节点测试位于 `capabilities/trading/nodes/tests/`。
 
 #### 3.4.1 A系列 — 决策链（10个节点）
 
@@ -475,6 +707,7 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 | A1 | `capabilities/trading/nodes/a1_deep_research.py` | 深度调研 | 多维度深度调研，收集信息 |
 | A2 | `capabilities/trading/nodes/a2_comprehensive.py` | 综合分析 | 综合各维度信息，形成判断 |
 | A3 | `capabilities/trading/nodes/a3_strategy.py` | 策略制定 | 制定具体交易策略 |
+| A3b | `capabilities/trading/nodes/a3b_bull_bear_debate.py` | 多空辩论 | 多空双方逻辑辩论与举证 |
 | A4 | `capabilities/trading/nodes/a4_gate.py` | 决策门禁 | 风险收益评估，决定是否执行 |
 | A5 | `capabilities/trading/nodes/a5_execution.py` | 执行规划 | 制定详细执行计划 |
 | A6 | `capabilities/trading/nodes/a6_regime_monitor.py` | 市态监控 | 监控市场状态变化 |
@@ -482,7 +715,9 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 | A8 | `capabilities/trading/nodes/a8_unity.py` | 统一升华 | 理论实践统一，经验升华 |
 | A9 | `capabilities/trading/nodes/a9_exit_strategy.py` | 离场策略 | 制定离场策略 |
 
-#### 3.4.2 C系列 — 技术分析链（4个节点）
+#### 3.4.2 C系列 — 技术分析链
+
+C 系列包含原技术分析链（C1/C2/C3/C5）与经典管线扩展节点（C0-C8，命名与原节点不同，承担环境扫描→标的筛选→信号检测→回测验证→风险评估→参数优化→计划生成→执行监控→绩效归因的完整管线）。
 
 | 节点 | 文件 | 名称 | 职责 |
 |------|------|------|------|
@@ -490,6 +725,15 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 | C2 | `capabilities/trading/nodes/c2_momentum.py` | 动量分析 | 动量指标分析（RSI/MACD/KDJ等） |
 | C3 | `capabilities/trading/nodes/c3_volatility.py` | 波动率分析 | 波动率分析（ATR/Bollinger等） |
 | C5 | `capabilities/trading/nodes/c5_exit_system.py` | 离场系统 | 技术面离场决策 |
+| C0 | `capabilities/trading/nodes/c0_env_scan.py` | 环境扫描 | 经典管线：市场环境扫描 |
+| C1' | `capabilities/trading/nodes/c1_symbol_filter.py` | 标的筛选 | 经典管线：标的池筛选 |
+| C2' | `capabilities/trading/nodes/c2_signal_detect.py` | 信号检测 | 经典管线：交易信号检测 |
+| C3' | `capabilities/trading/nodes/c3_backtest_verify.py` | 回测验证 | 经典管线：策略回测验证 |
+| C4 | `capabilities/trading/nodes/c4_risk_assess.py` | 风险评估 | 经典管线：风险评估 |
+| C5' | `capabilities/trading/nodes/c5_param_optimize.py` | 参数优化 | 经典管线：参数优化 |
+| C6 | `capabilities/trading/nodes/c6_plan_generate.py` | 计划生成 | 经典管线：执行计划生成 |
+| C7 | `capabilities/trading/nodes/c7_exec_monitor.py` | 执行监控 | 经典管线：执行监控 |
+| C8 | `capabilities/trading/nodes/c8_perf_attribution.py` | 绩效归因 | 经典管线：绩效归因 |
 
 #### 3.4.3 F系列 — 基本面链（5个节点）
 
@@ -508,6 +752,15 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 | G1 | `capabilities/trading/nodes/g1_risk_control.py` | 风控 | 风险控制检查 |
 | G2 | `capabilities/trading/nodes/g2_governance.py` | 治理 | 合规治理审查 |
 
+#### 3.4.5 扩展节点 — 子系统适配与专用节点
+
+| 节点 | 文件 | 名称 | 职责 |
+|------|------|------|------|
+| BDSM | `capabilities/trading/nodes/bdsm_node.py` | BDSM 节点 | 波段择时专用节点 |
+| BCRM2 | `capabilities/trading/nodes/bcrm2_node.py` | BCRM2 节点 | BCRM2 推理专用节点 |
+| CMartinV15 | `capabilities/trading/nodes/c_martin_v15.py` | CMartin V15 | CMartin V15 策略节点 |
+| SubsystemAdapter | `capabilities/trading/nodes/subsystem_adapter_nodes.py` | 子系统适配节点 | 桥接外部子系统（11/13 等）为节点 |
+
 ---
 
 ### 3.5 自我进化引擎
@@ -521,6 +774,21 @@ node = reg.to_node({"type": "api", "url": "https://api.example.com"})
 | GapAnalyzer | `gap_analyzer.py` | 知行差距分析（预期 vs 实际） |
 | NodeOptimizer | `node_optimizer.py` | 节点优化建议器 |
 | ExecutionFeedbackCollector | `core/memory/execution_feedback.py` | 执行反馈收集器（驱动编排优化） |
+| ExplorationPolicy | `exploration_policy.py` | 探索策略（ε-greedy/UCB，平衡探索与利用） |
+
+**案例库子系统**（evolution/ 下的反模式案例库，支撑 CBR/KNN 案例推理）:
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| WashoutCaseLibrary | `washout_case_library.py` | 洗盘案例库 |
+| WashoutReversalCaseLibrary | `washout_reversal_case_library.py` | 洗盘反转案例库 |
+| WashoutReversalGenome | `washout_reversal_genome.py` | 洗盘反转基因组（因子定义） |
+| WashoutClassifier | `washout_classifier.py` | 洗盘分类器 |
+| WashoutEndingDetector | `washout_ending_detector.py` | 洗盘结束检测器 |
+| WashoutBayesianUpdater | `washout_bayesian_updater.py` | 洗盘贝叶斯更新器 |
+| PumpDumpReversalCaseLibrary | `pump_dump_reversal_case_library.py` | 拉盘砸盘反转案例库 |
+| PumpDumpReversalGenome | `pump_dump_reversal_genome.py` | 拉盘砸盘反转基因组 |
+| PumpDumpEndingDetector | `pump_dump_ending_detector.py` | 拉盘砸盘结束检测器 |
 
 **进化触发源**:
 1. **orchestration_optimization** — 执行反馈驱动的编排优化（主要触发源）
@@ -611,6 +879,13 @@ G层 (GraphStore) → 持久化 + 历史记录
 | auto_scheduler | `auto_scheduler.py` | 自动调度器 |
 | auto_trader | `auto_trader.py` | 自动交易器（完整自动化交易闭环） |
 | bcrm2_scheduler | `bcrm2_scheduler.py` | BCRM2 调度器 |
+| dreamos_full_scheduler | `dreamos_full_scheduler.py` | 全量调度器（整合多调度任务） |
+| run_bcrm2_hourly | `run_bcrm2_hourly.py` | BCRM2 每小时运行入口 |
+| dreamos_backtester | `dreamos_backtester.py` | DreamOS 回测器 |
+| run_dynamic_evaluator | `run_dynamic_evaluator.py` | 动态评估器运行入口 |
+| daily_briefing | `daily_briefing.py` | 每日简报生成 |
+| mood_board | `mood_board.py` | 情绪面板生成 |
+| coin_pool_sync | `coin_pool_sync.py` | 币池同步工具 |
 | evolution_test | `evolution_test.py` | 进化测试 |
 | stress_test | `stress_test.py` | 压力测试（7种场景 × 500轮） |
 | multi_scenario_stress_test | `multi_scenario_stress_test.py` | 多场景模拟压力测试（36场景全覆盖，5类测试指标） |
@@ -691,16 +966,93 @@ G层 (GraphStore) → 持久化 + 历史记录
 | NodeResult | `state.py` | 节点执行结果 |
 | NodeStatus | `state.py` | 节点状态枚举 |
 | interfaces | `interfaces.py` | 核心接口（Node/Graph/Edge/Registry/Adapter） |
+| Capability | `capability.py` | Capability 能力域共享抽象 |
 | ErrorCode | `errors.py` | 错误码枚举 |
 | OSError | `errors.py` | OS 异常类 |
 | LLMClient | `llm_client.py` | LLM 客户端抽象 |
+| EventWriter | `event_writer.py` | 事件写入器（产物事件流） |
 | utils | `utils.py` | 工具函数（Timer/safe_json/retry/chunk等） |
 
 ---
 
-### 3.10 测试体系
+### 3.10 交易能力域根级模块与子包
 
-**目录**: `dreamos-tests/`（兄弟目录）
+> `capabilities/trading/` 在原 `evaluator.py` + `nodes/` + `execution/` + `backtest/` 基础上新增大量根级模块与子包，覆盖数据接入、信号处理、执行、评估与观察。
+
+#### 3.10.1 根级模块（`capabilities/trading/`）
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| CoinSelector | `coin_selector.py` | 币种筛选器 |
+| CognitiveReviewer | `cognitive_reviewer.py` | 认知审查器 |
+| ExchangeCapabilities | `exchange_capabilities.py` | 交易所能力封装 |
+| FreqtradeSignalAdapter | `freqtrade_signal_adapter.py` | Freqtrade 信号适配器 |
+| FreeFundamentalProvider | `free_fundamental_provider.py` | 免费基本面数据提供者 |
+| FreeMarketFeed | `free_market_feed.py` | 免费行情数据源 |
+| FundamentalInjector | `fundamental_injector.py` | 基本面注入器 |
+| HedgeExecutor | `hedge_executor.py` | 对冲执行器 |
+| HyperliquidAdapter | `hyperliquid_adapter.py` | Hyperliquid 交易所适配器 |
+| LossDiagnoser | `loss_diagnoser.py` | 亏损诊断器 |
+| MarketEnrichment | `market_enrichment.py` | 行情增强器 |
+| MultiScenarioSimulation | `multi_scenario_simulation.py` | 多场景模拟 |
+| OrchestratorV2 | `orchestrator_v2.py` | 编排器 v2 |
+| RunEvaluation | `run_evaluation.py` | 评估运行入口 |
+| ScenarioPatternOptimizer | `scenario_pattern_optimizer.py` | 场景模式优化器 |
+| SignalRouter | `signal_router.py` | 信号路由器 |
+| SignalSmoother | `signal_smoother.py` | 信号平滑器 |
+| StatsUtils | `stats_utils.py` | 统计工具 |
+| StrategyTypes | `strategy_types.py` | 策略类型定义 |
+| V15Executor | `v15_executor.py` | V15 执行器 |
+| YijingSignalGenerator | `yijing_signal_generator.py` | 易经信号生成器 |
+
+#### 3.10.2 入场策略子包（`entry_strategy/`）
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| EntryModuleSelector | `entry_module_selector.py` | 入场模块选择器 |
+| EntryModuleAdapter | `entry_module_adapter.py` | 入场模块适配器 |
+| EntryModuleBacktester | `entry_module_backtester.py` | 入场模块回测器 |
+
+#### 3.10.3 出场策略子包（`exit_strategy/`）
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| StopTakeProfit | `stop_take_profit.py` | 止盈止损 |
+| ExitModuleSelector | `exit_module_selector.py` | 出场模块选择器 |
+| ExitModuleAdapter | `exit_module_adapter.py` | 出场模块适配器 |
+| ExitModuleBacktester | `exit_module_backtester.py` | 出场模块回测器 |
+
+#### 3.10.4 评估器子包（`evaluators/`）
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| L4StatsAdapter | `l4_stats_adapter.py` | L4 统计适配器 |
+| DynamicOrchestrator | `dynamic_orchestrator.py` | 动态编排器 |
+| BacktestFineTuner | `backtest_fine_tuner.py` | 回测微调器 |
+
+#### 3.10.5 观察子包（`observation/`）
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| CrossAccountObserver | `cross_account_observer.py` | 跨账户观察器 |
+| SubsystemCapabilityEvaluator | `subsystem_capability_evaluator.py` | 子系统能力评估器 |
+
+#### 3.10.6 内核能力域组件（`core/capability/`、`core/artifact/`、`core/scheduler/`）
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| CapabilityRegistry | `core/capability/registry.py` | 能力域注册表（能力域动态注册/路由） |
+| CapabilityRouter | `core/capability/router.py` | 能力域路由器 |
+| ArtifactStore | `core/artifact/store.py` | 产物存储（briefing/chart/report 等产物读写） |
+| DynamicEvaluator | `core/scheduler/dynamic_evaluator.py` | 动态评估器（调度内核） |
+
+---
+
+### 3.11 测试体系
+
+Dream OS 测试分布在三处：`dreamos-tests/`（核心冒烟）、`tests/`（根级扩展测试）、`capabilities/trading/nodes/tests/`（节点级测试）与 `capabilities/trading/backtest/tests/`（回测测试）。
+
+#### 3.11.1 核心测试套件（`dreamos-tests/`，兄弟目录）
 
 | 测试文件 | 测试范围 |
 |----------|----------|
@@ -710,10 +1062,75 @@ G层 (GraphStore) → 持久化 + 历史记录
 | `test_multi_scenario.py` | 多场景测试 — 多种意图场景端到端 |
 | `test_cross_cutting.py` | 横切关注点测试 — Registry/Evolution/Budget |
 
+#### 3.11.2 扩展测试套件（`tests/`，根级）
+
+| 测试文件 | 测试范围 |
+|----------|----------|
+| `conftest.py` | pytest 配置与 fixtures |
+| `test_capability_registry_e2e.py` | 能力域注册 E2E |
+| `test_p0_reflector_recall.py` | 反射回滚 P0 |
+| `test_hedge_strategy.py` | 对冲策略 |
+| `test_yijing_signal_generator.py` | 易经信号生成 |
+| `test_v15_executor.py` | V15 执行器 |
+| `test_signal_router.py` | 信号路由 |
+| `test_paper_full_chain.py` | 全链路模拟盘 |
+| `test_orchestrator_v2.py` | 编排器 v2 |
+| `test_phase7_closed_loop.py` | Phase7 闭环 |
+| `test_p1_3_real_fill_guard.py` | 真实成交守卫 |
+| `test_market_enrichment.py` | 行情增强 |
+| `test_p2_position_reconciliation.py` | 持仓对账 |
+| `test_coin_selector.py` | 币种筛选 |
+| `test_cognitive_reviewer.py` | 认知审查 |
+
+#### 3.11.3 节点级测试（`capabilities/trading/nodes/tests/`）
+
+| 测试文件 | 测试范围 |
+|----------|----------|
+| `test_node_runner.py` | 节点运行器 |
+| `test_node_registry.py` | 节点注册表 |
+| `test_l3_self_repair.py` | L3 自修复 |
+| `test_l4_self_iteration.py` | L4 自迭代 |
+| `test_health_checker.py` | 健康检查器 |
+| `test_canary_registry.py` | 金丝雀注册表 |
+| `test_contract_api.py` | 契约 API |
+| `test_classic_pipeline_e2e.py` | 经典管线 E2E |
+| `test_classic_pipeline_real_e2e.py` | 经典管线真实 E2E |
+| `test_c0_c8_skeleton.py` | C0-C8 骨架 |
+| `test_c0_env_scan_real.py` ~ `test_c8_perf_attribution_real.py` | C0-C8 各节点真实测试 |
+| `test_a4_gate.py` | A4 决策门禁 |
+
+#### 3.11.4 回测测试（`capabilities/trading/backtest/tests/`）
+
+| 测试文件 | 测试范围 |
+|----------|----------|
+| `test_backtrader_adapter.py` | Backtrader 适配器 |
+
+#### 3.11.5 感知层测试（`core/sense/`）
+
+| 测试文件 | 测试范围 |
+|----------|----------|
+| `core/sense/test_intent_recognition_capability.py` | 意图识别能力 |
+| `core/sense/test_dialogue_state.py` | 对话状态 |
+| `core/sense/recognizers/test_llm_based_prompt.py` | LLM 识别器 prompt |
+| `core/sense/dialogue_intent/test_multi_intent.py` | 多意图解析 |
+| `core/sense/evaluators/test_evaluator_escalation.py` | 评估器升级 |
+| `core/sense/evaluators/test_intent_evaluator_agent.py` | 意图评估 Agent |
+
+#### 3.11.6 编排优化测试（`core/arrange/optimizers/`）
+
+| 测试文件 | 测试范围 |
+|----------|----------|
+| `test_orchestration_optimizer_agent.py` | 编排优化 Agent |
+
 **运行方式**:
 ```bash
 cd 1-ARCHITECTURE
+# 核心冒烟
 python -m pytest dreamos-tests/ -v
+# 扩展测试
+python -m pytest dreamos/tests/ -v
+# 节点级测试
+python -m pytest dreamos/capabilities/trading/nodes/tests/ -v
 ```
 
 ---
@@ -885,6 +1302,12 @@ G层历史数据
 
 通过 YAML 配置节点元数据、依赖关系、优先级等，支持动态加载。
 
+### 6.4 意图路由配置
+
+**文件**: `config/intent_routing.yaml`
+
+配置意图到链路/节点集合的路由规则，支持场景条件分支。
+
 ---
 
 ## 7. 部署与运行
@@ -939,10 +1362,15 @@ launchctl list | grep dreambuddy
 
 | 类型 | 位置 |
 |------|------|
-| 运行日志 | 各应用自行管理（TradingAgent 可配置） |
+| 调度器日志 | `logs/scheduler.log` + `logs/scheduler.lock` |
+| launchd 服务日志 | `logs/dreamos_launchd.log` |
+| SACG 执行结果 | `logs/sacg_result_*.json` |
 | 调度历史 | `cli/scheduler_data/scheduler_history.json` |
 | G层历史 | GraphStore 内存 / 可配置持久化目录 |
-| 检查点 | 内存 / 可配置存储目录 |
+| 检查点持久化 | `data/graph_store/ckpt_*.json` |
+| 认知经验沉淀 | `data/cognitive_lessons.json` |
+| 调度产物 | `scheduler_data/artifacts/{briefing,chart,report,insight_card,mood_board,bull_bear_debate}/` |
+| 自动化报告 | `data/automation_reports/`（脚本 + 产物） |
 
 ---
 
@@ -971,7 +1399,7 @@ launchctl list | grep dreambuddy
 
 | ID | 描述 | 优先级 | 影响范围 |
 |----|------|--------|----------|
-| D01 | 节点实现多为骨架，缺少完整业务逻辑 | P0 | nodes/ 全部22个节点 |
+| D01 | 节点实现多为骨架，缺少完整业务逻辑 | P0 | capabilities/trading/nodes/ 全部30+节点 |
 | D02 | 缺少完整的端到端集成测试 | P1 | 测试体系 |
 | D03 | G层持久化存储未完全实现（内存为主） | P1 | graph_store/ |
 | D04 | 进化引擎沙箱验证未接入真实回测（简化版） | P1 | evolution/engine.py _sandbox_validate |
@@ -1009,21 +1437,53 @@ launchctl list | grep dreambuddy
 | OS内核入口 | `dreamos/__init__.py` |
 | S层入口 | `core/sense/intent_engine.py` |
 | 36场景分类 | `core/sense/scenario_classifier.py` |
+| 能力路由器 | `core/sense/capability_router.py` |
+| 对话意图子系统 | `core/sense/dialogue_intent/classifier.py` |
+| 意图评估Agent | `core/sense/evaluators/intent_evaluator_agent.py` |
 | A层入口 | `core/arrange/graph_planner.py` |
+| 编排优化Agent | `core/arrange/optimizers/orchestration_optimizer_agent.py` |
 | 编排记忆表 | `core/memory/orchestration_memory.py` |
+| 评估记忆 | `core/memory/evaluation_memory.py` |
 | C层入口 | `core/compute/graph_executor.py` |
+| Hermes反射器 | `core/compute/hermes_reflector.py` |
+| 健康检查器 | `core/compute/health_checker.py` |
+| 熔断器 | `core/compute/circuit_breaker.py` |
+| 自动Bug修复 | `core/compute/auto_bugfix.py` |
 | G层入口 | `core/graph_store/store.py` |
+| 能力域注册表 | `core/capability/registry.py` |
+| 产物存储 | `core/artifact/store.py` |
+| 动态评估器 | `core/scheduler/dynamic_evaluator.py` |
 | 执行反馈收集 | `core/memory/execution_feedback.py` |
 | 进化引擎 | `evolution/engine.py` |
+| 洗盘案例库 | `evolution/washout_case_library.py` |
+| 拉盘砸盘案例库 | `evolution/pump_dump_reversal_case_library.py` |
 | 节点列表 | `capabilities/trading/nodes/__init__.py` |
+| 经典管线C0-C8 | `capabilities/trading/nodes/c0_env_scan.py` ~ `c8_perf_attribution.py` |
 | 能力域入口 | `capabilities/trading/__init__.py` |
 | **交易分析评估器** | `capabilities/trading/evaluator.py` |
+| 币种筛选器 | `capabilities/trading/coin_selector.py` |
+| 信号路由器 | `capabilities/trading/signal_router.py` |
+| 编排器v2 | `capabilities/trading/orchestrator_v2.py` |
+| 入场策略子包 | `capabilities/trading/entry_strategy/` |
+| 出场策略子包 | `capabilities/trading/exit_strategy/` |
+| 评估器子包 | `capabilities/trading/evaluators/` |
+| 观察子包 | `capabilities/trading/observation/` |
 | 应用入口 | `apps/trading_agent/agent.py` |
 | 自动交易器 | `capabilities/trading/execution/auto_trader.py` |
 | 回测引擎 | `capabilities/trading/backtest/engine.py` |
+| Backtrader适配器 | `capabilities/trading/backtest/backtrader_adapter.py` |
 | 调度器 | `cli/scheduler.py` |
+| 全量调度器 | `cli/dreamos_full_scheduler.py` |
+| DreamOS回测器 | `cli/dreamos_backtester.py` |
+| 每日简报 | `cli/daily_briefing.py` |
+| 情绪面板 | `cli/mood_board.py` |
 | CLI入口 | `cli/app.py` |
-| 测试入口 | `dreamos-tests/test_smoke.py` |
+| 意图路由配置 | `config/intent_routing.yaml` |
+| 检查点持久化 | `data/graph_store/` |
+| 调度产物 | `scheduler_data/artifacts/` |
+| 核心测试入口 | `dreamos-tests/test_smoke.py` |
+| 扩展测试入口 | `tests/conftest.py` |
+| 节点级测试 | `capabilities/trading/nodes/tests/` |
 
 ---
 
@@ -1031,6 +1491,8 @@ launchctl list | grep dreambuddy
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.6 | 2026-10-11 | **全量目录扫描补全**：移除 v2.5 漂移告警占位符，基于 `find`/Glob 实际扫描结果全量补全索引。新增内容：(1) `core/compute/` 9 个执行增强模块（trace_replay/param_optimizer/hermes_reflector/health_checker/circuit_breaker/doc_sync_trigger/case_ingest_gate/auto_bugfix/canary_registry）；(2) `evolution/` 洗盘/拉盘砸盘案例库 9 文件 + exploration_policy；(3) 新目录 `core/artifact/`、`core/capability/`、`core/scheduler/`、`core/sense/{dialogue_intent,evaluators}/`、`core/arrange/optimizers/`、`capabilities/trading/{entry_strategy,exit_strategy,evaluators,observation,reports}/`、`data/`、`logs/`、`scheduler_data/`、`tests/`、`docs/proposals/`；(4) C 系列经典管线节点 C0-C8 + BDSM/BCRM2/CMartinV15/subsystem_adapter 扩展节点；(5) 21 个交易能力域根级模块；(6) 新增 §3.10（根级模块与子包）、§3.11（六类测试体系）、§6.4（意图路由配置）、§7.4（日志/产物位置）；(7) §10.2 文件入口从 18 条扩充到 49 条；(8) §3.9 共享组件补 capability.py/event_writer.py。版本 v2.5.0→v2.6.0。 |
+| v2.5 | 2026-10-11 | 添加索引漂移告警占位符（临时止损措施），标记 v2.4 基线后未登记的新增模块，等待全量补全 |
 | v2.4 | 2026-07-21 | **交易分析评估器（核心新增）**：新增 `TradingAnalysisEvaluator` 实现亏损原因分析（10类）、模块能力评估（5维）、模块回测、编排推荐；EvolutionEngine 整合评估器，新增 `analyze_trades()` / `evaluate_module_capabilities()` / `recommend_orchestration()` 方法；更新技术文档明确"分析评估→模块回测→节点编排"核心理念 |
 | v2.3 | 2026-07-21 | **物理分离，逻辑集成**：交易节点从 `nodes/` 迁移到 `capabilities/trading/nodes/`；新增 CapabilityRegistry + CapabilityRouter 内核组件；AutoTrader 和回测引擎迁移到 `capabilities/trading/execution/` 和 `backtest/`；更新所有文档路径和依赖关系图；旧 `nodes/` 保留为向后兼容层 |
 | v2.2 | 2026-07-21 | 完善系统定位：明确操作系统内核 vs 交易系统的双重身份；引入能力域层概念；更新系统边界为三层边界模型；明确内核层/交易能力域/应用层的职责边界；更新目录结构注释 |

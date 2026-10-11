@@ -1,9 +1,9 @@
 # DreamBuddy-V2 工程索引
 
-> **版本**: v3.0 | **更新日期**: 2026-07-31
+> **版本**: v3.1 | **更新日期**: 2026-10-11
 > **定位**: 项目工程入口索引，提供运行入口、核心链路、配置落地点的快速导航
 > **架构 SSoT**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](./1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 — 所有架构争议以此为准
-> **文档管理**: [0-系统文档管理/INDEX.md](./0-系统文档管理/INDEX.md) v2.0 — 全项目文档导航中枢
+> **文档管理**: [0-系统文档管理/INDEX.md](./0-系统文档管理/INDEX.md) v2.8 — 全项目文档导航中枢
 > **维护原则**: 工程入口变更时更新本文件；架构变更更新 SSoT；文档变更更新 0-系统文档管理
 
 ---
@@ -24,7 +24,7 @@
 | 层级 | 文档 | 权威范围 | 冲突时的优先级 |
 |------|------|----------|----------------|
 | L0 | **1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md v3.0** | 架构唯一事实源（SSoT）：三层架构、硬约束、模块边界、技术债全景 | **最高（架构层面）** |
-| L0 | 本文件（ENGINEERING_INDEX.md v3.0） | 全项目工程索引、运行入口、核心链路、配置落地点 | 最高（工程索引） |
+| L0 | 本文件（ENGINEERING_INDEX.md v3.1） | 全项目工程索引、运行入口、核心链路、配置落地点 | 最高（工程索引） |
 | L0 | DEBT_INDEX.md | 全项目技术债务清单与修复计划 | 最高（债务层面） |
 | L0 | 0-系统文档管理/ | 文档元层管理中枢（规范/地图/治理） | 最高（文档管理） |
 | L0 | 0-系统文档管理/1-规范体系/DOC_STANDARD.md | 文档编写规范 | 最高（文档规范） |
@@ -289,12 +289,52 @@ dreambuddy-v2/
 │   ├── start_monitor.sh         # 启动脚本
 │   └── README.md                # 系统文档
 │
-├── 16-调控系统/                  # 调控系统（早期阶段）
-│   ├── core/                    # 核心（a1_research_adapter, a3_strategy_adapter, skill_engine, unified_position_query）
-│   ├── scripts/                 # 脚本（phase0_exit_evaluator）
-│   ├── docs/                    # 文档（ENGINEERING_INDEX.md, TECHNICAL_DESIGN.md）
+├── 16-调控系统/                  # 调控系统（参数中心+资金调控层）
+│   ├── core/                    # 核心（a1_research_adapter, a3_strategy_adapter, skill_engine, unified_position_query, capital_control）
+│   ├── scripts/                 # 脚本（phase0_exit_evaluator, param_center）
+│   ├── docs/                    # 文档（ENGINEERING_INDEX.md v2.2, TECHNICAL_DESIGN.md）
 │   ├── artifacts/               # 产物（exit-evaluations/）
-│   └── tests/                   # 测试（空，待实现）
+│   └── tests/                   # 测试
+│
+├── 17-v4-wave-strategy/          # V4减半周期+艾略特波浪互斥融合趋势策略
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.0）
+│
+├── 18-数据获取中心/              # 数据获取中心（Data Acquisition Center）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.1）
+│
+├── 19-数据访问层/                # 数据访问层（Data Access Layer）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v3.0, TECHNICAL_DESIGN.md）
+│
+├── 20-数据清洗中心/              # 数据清洗中心（Data Cleansing Center）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.1）
+│
+├── 21-特征工程中心/              # 特征工程中心（Feature Engineering Center）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.0）
+│
+├── 22-执行引擎中心/              # 交易执行引擎（TEE）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.0）
+│
+├── 23-四层闭环自进化交易架构/    # 四层闭环自进化交易架构
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.5）
+│
+├── 24-图结构上下文压缩/          # 图结构上下文压缩（TypeScript，实验状态）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.0）
+│
+├── 25-用户策略生成系统/          # 用户策略生成系统
+├── 26-策略管理模块/              # 策略管理模块
+├── 27-策略治理审批系统/          # 策略治理审批系统
+├── 28-策略信号触发模块/          # 策略信号触发模块
+│
+├── 29-事件驱动策略系统/          # 事件驱动策略系统（FOMC/非农/CPI/PPI冲击响应）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v1.0）
+│
+├── 30-真实环境交互系统/          # 真实环境交互系统
+├── 31-分布式计算部署/            # 分布式计算部署（线上线下协同）
+│   └── docs/                    # 文档（ENGINEERING_INDEX.md v0.1）
+│
+├── 32-对抗性辩论Bot/             # 对抗性辩论Bot
+├── 33-REA逆向解析工程/           # REA逆向解析工程
+├── 34-前端应用训练系统/          # 前端应用训练系统
 │
 ├── ops/                         # 运维工具
 │   ├── master_daemon.py         # 主守护进程
@@ -574,6 +614,31 @@ dreambuddy-v2/
 | 步骤控制 | `scripts/step_controller.py` | 工作流步骤控制 |
 | 交易桥接 | `6-TRADING/bridge/run_server.py` | OKX API封装、实时数据服务 |
 
+### 3.4 数据/执行/策略基础设施（v3.1 新增）
+
+| 子系统 | 目录 | 版本 | 职责 |
+|--------|------|------|------|
+| V4波浪策略 | `17-v4-wave-strategy/` | EI v1.0 | V4减半周期+艾略特波浪互斥融合趋势策略 |
+| 数据获取中心 | `18-数据获取中心/` | EI v1.1 | 多源数据采集（OKX/链上/新闻/宏观） |
+| 数据访问层 | `19-数据访问层/` | EI v3.0 | 统一数据访问接口（136 tests GREEN） |
+| 数据清洗中心 | `20-数据清洗中心/` | EI v1.1 | 数据质量校验与清洗 |
+| 特征工程中心 | `21-特征工程中心/` | EI v1.0 | 因子生成与特征工程 |
+| 执行引擎中心(TEE) | `22-执行引擎中心/` | EI v1.0 | 订单路由、执行算法、滑点估计、熔断审计 |
+| 四层闭环自进化 | `23-四层闭环自进化交易架构/` | EI v1.5 | 自进化交易闭环架构 |
+| 图结构压缩(TS) | `24-图结构上下文压缩/` | EI v1.0 | TypeScript图结构上下文压缩（实验） |
+| 用户策略生成 | `25-用户策略生成系统/` | — | 用户策略生成系统 |
+| 策略管理模块 | `26-策略管理模块/` | — | 策略管理模块 |
+| 策略治理审批 | `27-策略治理审批系统/` | — | 策略治理与审批 |
+| 策略信号触发 | `28-策略信号触发模块/` | — | 策略信号触发 |
+| 事件驱动策略 | `29-事件驱动策略系统/` | EI v1.0 | FOMC/非农/CPI/PPI冲击响应子交易系统 |
+| 真实环境交互 | `30-真实环境交互系统/` | — | 真实环境交互系统 |
+| 分布式计算部署 | `31-分布式计算部署/` | EI v0.1 | 线上线下协同部署编排层 |
+| 对抗性辩论Bot | `32-对抗性辩论Bot/` | — | 对抗性辩论Bot |
+| REA逆向解析工程 | `33-REA逆向解析工程/` | — | REA逆向解析工程 |
+| 前端应用训练 | `34-前端应用训练系统/` | — | 前端应用训练系统 |
+
+> 注："—" 表示该子系统尚无 docs/ENGINEERING_INDEX.md 文件。
+
 ---
 
 ## 4. 系统间依赖关系
@@ -834,6 +899,16 @@ cd 10-经典指标系统 && python -m pytest test_*.py -v
 | 通用风控模块 | [docs/ENGINEERING_INDEX.md](./13-通用风控模块/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./13-通用风控模块/docs/TECHNICAL_DESIGN.md) | [core/engine.py](./13-通用风控模块/core/engine.py) |
 | 易经推理系统 | [docs/ENGINEERING_INDEX.md](./11-易经推理系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./11-易经推理系统/docs/TECHNICAL_DESIGN.md) | [scripts/memory_l4/polling_trader.py](./11-易经推理系统/scripts/memory_l4/polling_trader.py) |
 | 调控系统 | [docs/ENGINEERING_INDEX.md](./16-调控系统/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./16-调控系统/docs/TECHNICAL_DESIGN.md) | [core/skill_engine.py](./16-调控系统/core/skill_engine.py) |
+| V4波浪策略 | [docs/ENGINEERING_INDEX.md](./17-v4-wave-strategy/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./17-v4-wave-strategy/docs/TECHNICAL_DESIGN.md) | - |
+| 数据获取中心 | [docs/ENGINEERING_INDEX.md](./18-数据获取中心/docs/ENGINEERING_INDEX.md) | - | - |
+| 数据访问层 | [docs/ENGINEERING_INDEX.md](./19-数据访问层/docs/ENGINEERING_INDEX.md) | [docs/TECHNICAL_DESIGN.md](./19-数据访问层/docs/TECHNICAL_DESIGN.md) | - |
+| 数据清洗中心 | [docs/ENGINEERING_INDEX.md](./20-数据清洗中心/docs/ENGINEERING_INDEX.md) | - | - |
+| 特征工程中心 | [docs/ENGINEERING_INDEX.md](./21-特征工程中心/docs/ENGINEERING_INDEX.md) | - | - |
+| 执行引擎(TEE) | [docs/ENGINEERING_INDEX.md](./22-执行引擎中心/docs/ENGINEERING_INDEX.md) | - | - |
+| 四层闭环自进化 | [docs/ENGINEERING_INDEX.md](./23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) | - | - |
+| 图结构压缩(TS) | [docs/ENGINEERING_INDEX.md](./24-图结构上下文压缩/docs/ENGINEERING_INDEX.md) | - | - |
+| 事件驱动策略 | [docs/ENGINEERING_INDEX.md](./29-事件驱动策略系统/docs/ENGINEERING_INDEX.md) | - | - |
+| 分布式计算部署 | [docs/ENGINEERING_INDEX.md](./31-分布式计算部署/docs/ENGINEERING_INDEX.md) | - | - |
 | 架构设计 | [README.md](./1-ARCHITECTURE/README.md) | [SYSTEM_ARCHITECTURE_OVERVIEW.md](./1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | - |
 
 ### 10.2 按功能导航
@@ -864,6 +939,8 @@ cd 10-经典指标系统 && python -m pytest test_*.py -v
 
 | 日期 | 版本 | 变更内容 | 变更人 |
 |------|------|----------|--------|
+| 2026-10-11 | v3.1 | 索引审计更新：补录子系统17-34到目录树(§2.1)、新增§3.4数据/执行/策略基础设施表、§10.1快速导航补录11个子系统链接；0-系统文档管理引用版本v2.0→v2.8；16-调控系统描述更新（参数中心+资金调控层） | DreamBuddy v2 |
+| 2026-07-31 | v3.0 | 目录结构补录16-调控系统、SSoT层级表更新 | DreamBuddy v2 |
 | 2026-07-15 | v2.1 | 易经推理系统切换逐仓风控模式（isolated）；ENGINEERING_INDEX v2.2、TECHNICAL_DESIGN v2.2同步更新；核心引擎描述增加逐仓风控 | DreamBuddy v2 |
 | 2026-07-12 | v1.0 | 初始创建 | DreamBuddy v2 |
 | 2026-07-13 | v2.0 | 重建为文件级索引，增加SSoT层级、变更流程、入口锚点 | DreamBuddy v2 |

@@ -1,8 +1,33 @@
 # 文档体系版本日志 — RELEASE_NOTES
 
-> **版本**: v1.6 | **更新日期**: 2026-09-07
+> **版本**: v1.7 | **更新日期**: 2026-10-11
 > **定位**: 记录 0-系统文档管理 体系本身的版本变更
 > **关联**: [INDEX.md](../INDEX.md) · [DOC_DEBT_INDEX.md](./DOC_DEBT_INDEX.md)
+
+---
+
+## [v1.7] - 2026-10-11
+
+### 新增
+
+- **变更内容**: Jev 决策模型接入辩论系统四方案（C→B→A→D）全部落地，43 tests GREEN，158 回归 PASS
+- **影响范围**: `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/` · `.trae/documents/` · `0-系统文档管理/INDEX.md`
+- **验证方式**: pytest 11 个辩论相关测试文件 158 tests 全 PASS；4 个 jev 模块测试 43 GREEN
+- **触发原因**: 辩论三层架构用 LLM 做结构化决策存在评分一致性差/训练噪音/DPO 偏好信号弱三大痛点，引入 jev（noul/choice/score）作为决策层与 LLM 生成层互补
+
+#### 新增代码模块（4 个）
+- `debate_quality_gate.py` — 方案C 质量门控：jev noul 判断辩论是否达训练门槛，冷启动阈值 0.35/正常 0.55，已集成到 `run_post_debate_pipeline()` Layer 3 入口
+- `adjudication_validator.py` — 方案B 评审校验：jev noul 校验评分合理性（不覆盖），jev choice 校验胜方一致性（不一致取 jev）
+- `jev_score_supplement.py` — 方案A 补充评分：4 个 score 问题覆盖事实真实性+逻辑有效性，`0.6×LLM + 0.4×jev` 加权融合
+- `jev_preference_judge.py` — 方案D DPO 偏好：每轮一个 choice 问题判定策略偏好，输出 `PreferenceSample` 供 DPO 训练
+
+#### 新增/更新 SPEC 文档
+- [.trae/documents/debate-jev-integration-spec.md](../../.trae/documents/debate-jev-integration-spec.md) v1.0-rc1 → **v1.1**：四方案验收标准全部打勾，落地计划标注实际测试数，新增 §13 变更记录
+- [.trae/documents/debate-jev-integration-eng-mgmt.md](../../.trae/documents/debate-jev-integration-eng-mgmt.md)：M1-M4 里程碑全部标注 ✅ 已完成
+
+#### INDEX.md 同步登记
+- [INDEX.md](../INDEX.md) L3 辅助模块新增 2 行：辩论系统（dream-harness-bridge）+ Jev 决策模型接入辩论
+- 按主题索引新增「辩论系统」「Jev 决策模型」2 个主题行
 
 ---
 
@@ -281,5 +306,5 @@
 
 ---
 
-**文档版本**: v1.6（同步 11-易经推理系统 v4.3.1 战略层影子日志修复）
-**最后更新**: 2026-09-07
+**文档版本**: v1.7（同步 Jev 决策模型接入辩论系统四方案落地）
+**最后更新**: 2026-10-11

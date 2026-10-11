@@ -1,7 +1,7 @@
 # Experiments 工程索引
 
 > **路径**：`/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments`
-> **最后更新**：2026-07-17
+> **最后更新**：2026-10-11（新增 run_agent_b_cycle / dreamos_batch_analyze_direct / install_evolution_launchd + 6 测试脚本）
 > **用途**：DreamBuddy v2 交易实验工程的完整目录与文件索引
 
 ---
@@ -124,6 +124,20 @@ experiments/
 | [fundamental_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/fundamental_bridge.py) | 基本面数据桥接 |
 | [indicator_library.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/indicator_library.py) | 指标库 |
 | [ml_inference.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/ml_inference.py) | ML 推理 |
+| [run_agent_b_cycle.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/run_agent_b_cycle.py) | Agent B 单循环运行器（2026-10-11 新增） |
+| [dreamos_batch_analyze_direct.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/dreamos_batch_analyze_direct.py) | DreamOS 批量分析直连（2026-10-11 新增） |
+| [install_evolution_launchd.sh](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/install_evolution_launchd.sh) | 进化 launchd 安装脚本（2026-10-11 新增） |
+
+### 1.6.1 顶层测试脚本（2026-10-11 新增）
+
+| 文件 | 功能 |
+|------|------|
+| [test_trend_wallet.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_trend_wallet.py) | 趋势钱包测试 |
+| [test_stress_test.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_stress_test.py) | 压力测试 |
+| [test_node_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_node_registry.py) | 节点注册表测试 |
+| [test_module_interfaces.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_module_interfaces.py) | 模块接口测试 |
+| [test_modular.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_modular.py) | 模块化测试 |
+| [test_dynamic_intent_recognizer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_dynamic_intent_recognizer.py) | 动态意图识别测试 |
 
 ### 1.7 skills/ — SKILL 定义
 

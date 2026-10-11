@@ -430,6 +430,2636 @@
       "path": "6-图结构上下文压缩/docs/TECHNICAL_DESIGN.md",
       "added_at": "2026-10-10T16:52:12.251921+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-10T18:54:50.177793+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-10T18:54:50.177823+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-10T18:54:50.177825+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T11:25:09.761070+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761090+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761092+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761093+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761094+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761095+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761096+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761096+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761098+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T11:25:09.761102+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T11:25:09.761103+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761104+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761104+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761106+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761107+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761108+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T11:25:09.761109+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T11:28:41.272888+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272904+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272906+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272907+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272908+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272909+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272910+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272912+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272913+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T11:28:41.272914+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T11:28:41.272915+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272916+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272917+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272918+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272919+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272919+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T11:28:41.272921+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T11:33:37.716874+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716898+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716900+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716902+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716903+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716903+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716905+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716907+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716908+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T11:33:37.716909+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T11:33:37.716910+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716911+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716911+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716912+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716913+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716914+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T11:33:37.716915+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T11:43:18.461959+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461982+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461984+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461985+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461986+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461988+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461989+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461990+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461992+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T11:43:18.461996+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T11:43:18.461998+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.461999+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.462000+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.462001+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:43:18.462002+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T11:43:18.462002+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T11:43:18.462003+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T11:49:02.009255+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009279+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009281+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009283+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009284+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009285+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009288+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009290+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009290+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T11:49:02.009291+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T11:49:02.009292+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009293+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009294+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009294+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009295+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009296+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T11:49:02.009297+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T11:58:37.651376+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651393+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651395+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651396+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651397+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651399+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651400+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651401+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651402+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T11:58:37.651403+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T11:58:37.651404+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651405+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651408+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651409+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651410+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651411+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T11:58:37.651412+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T12:13:10.257026+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257706+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257721+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257724+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257741+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257744+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257746+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257749+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257752+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T12:13:10.257754+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T12:13:10.257758+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257760+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257763+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257765+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257767+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257769+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T12:13:10.257772+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T12:16:21.557103+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557123+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557125+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557127+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557130+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557131+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557132+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557133+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557134+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T12:16:21.557136+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T12:16:21.557137+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557138+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557139+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557140+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557140+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557141+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T12:16:21.557142+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T12:19:22.598037+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598050+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598052+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598054+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598055+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598057+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598058+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598059+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598060+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T12:19:22.598060+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T12:19:22.598062+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598063+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598064+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598065+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598067+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598068+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T12:19:22.598069+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T12:25:50.161513+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161553+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161555+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161558+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161559+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161562+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161563+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161564+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161565+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T12:25:50.161566+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T12:25:50.161567+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161571+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161572+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161573+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161573+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161574+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T12:25:50.161575+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T12:36:38.779307+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779325+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779328+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779330+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779331+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779332+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779333+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779334+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779334+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T12:36:38.779335+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T12:36:38.779336+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779337+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779338+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779339+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779341+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779341+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T12:36:38.779342+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T12:42:57.256273+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256300+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256302+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256303+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256304+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256307+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256308+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256309+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256311+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T12:42:57.256313+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T12:42:57.256315+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256316+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256318+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256319+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256320+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256321+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T12:42:57.256322+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T13:02:15.473401+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473416+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473419+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473420+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473421+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473423+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473424+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473426+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473429+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md",
+      "added_at": "2026-10-11T13:02:15.473429+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/HYPOTHESIS-VERIFICATION-PoE.md",
+      "added_at": "2026-10-11T13:02:15.473431+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/PEER-REVIEW-PoE.md",
+      "added_at": "2026-10-11T13:02:15.473432+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T13:02:15.473433+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC-工程实践复现器.md",
+      "added_at": "2026-10-11T13:02:15.473434+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/SPEC.md",
+      "added_at": "2026-10-11T13:02:15.473435+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/TASKS-工程实践复现器.md",
+      "added_at": "2026-10-11T13:02:15.473435+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/acceptance_bundles/20261011_poe_landing/acceptance_report.md",
+      "added_at": "2026-10-11T13:02:15.473436+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/acceptance_bundles/20261011_poe_landing/log_evidence.md",
+      "added_at": "2026-10-11T13:02:15.473438+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473439+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473441+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473442+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473443+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473443+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T13:02:15.473444+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T13:10:20.404412+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404426+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404429+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404430+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404432+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404433+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404435+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404436+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404437+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/README.md",
+      "added_at": "2026-10-11T13:10:20.404438+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404439+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404439+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404440+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404441+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404442+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T13:10:20.404444+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T13:31:12.662326+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662342+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662345+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662347+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662349+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662351+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662352+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662353+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662355+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/COLLABORATION-CONTRACT.md",
+      "added_at": "2026-10-11T13:31:12.662357+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662359+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662360+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662362+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662363+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662364+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T13:31:12.662364+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T13:50:13.353510+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353526+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353528+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353529+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353530+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353531+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353532+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353533+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353534+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/COLLABORATION-CONTRACT.md",
+      "added_at": "2026-10-11T13:50:13.353535+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353536+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353536+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353537+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353538+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353539+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T13:50:13.353540+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T13:56:18.541796+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541825+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541827+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541828+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541829+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541831+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541832+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541833+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541834+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/COLLABORATION-CONTRACT.md",
+      "added_at": "2026-10-11T13:56:18.541835+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541837+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541839+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541840+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541841+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541842+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T13:56:18.541844+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T14:04:54.555743+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555761+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555763+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555764+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555765+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555766+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555768+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555769+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555771+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555772+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555773+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555774+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555775+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555776+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T14:04:54.555777+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T14:27:47.815595+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815628+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815630+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815631+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815633+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815634+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815635+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815637+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815638+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815640+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815640+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815641+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815642+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815643+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T14:27:47.815644+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T14:28:24.983846+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983878+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983880+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983881+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983882+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983883+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983885+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983887+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983892+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983893+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983894+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983895+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983899+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983900+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T14:28:24.983901+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T14:48:36.178525+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178550+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178552+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178555+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178557+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178558+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178559+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178560+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178561+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178563+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178564+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178565+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178566+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178569+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T14:48:36.178571+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T15:07:04.100742+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100757+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100759+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100760+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100761+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100762+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100763+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100764+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100765+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100766+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100767+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100768+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100769+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100769+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T15:07:04.100770+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T15:22:34.394127+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394144+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394145+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394148+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394149+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394149+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394151+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394152+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394153+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394155+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394156+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394157+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394158+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394159+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T15:22:34.394159+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T15:25:21.931740+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931755+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931758+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931759+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931760+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931761+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931762+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931763+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931764+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931764+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931765+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931766+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931767+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931768+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T15:25:21.931770+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T16:58:48.963490+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963507+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963510+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963512+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963514+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963515+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963516+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963517+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963518+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/acceptance_bundles/20261012_checkpoint_persistence/acceptance_report.md",
+      "added_at": "2026-10-11T16:58:48.963519+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963520+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963521+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963522+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963524+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963525+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T16:58:48.963526+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:00:04.737214+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737229+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737231+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737232+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737234+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737236+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737237+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737239+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737240+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+      "added_at": "2026-10-11T17:00:04.737242+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737243+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737244+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737245+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737246+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737248+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:00:04.737250+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:03:22.228794+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228813+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228816+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228817+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228819+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228822+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228824+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228825+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228826+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228828+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228829+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228831+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228832+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228833+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:03:22.228833+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:03:29.874145+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874166+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874169+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874171+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874173+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874174+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874175+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874176+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874178+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874181+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874182+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874184+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874185+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874187+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:03:29.874188+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:03:35.596228+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596266+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596269+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596272+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596273+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596275+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596277+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596279+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596281+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596282+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596284+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596286+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596289+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/2026-10-12_cognitive-system/acceptance_report.md",
+      "added_at": "2026-10-11T17:03:35.596291+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596292+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:03:35.596293+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:04:56.581605+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581625+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581627+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581628+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581629+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581631+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581632+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581633+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581634+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581636+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/SPEC-CognitiveSystem-Evolution.md",
+      "added_at": "2026-10-11T17:04:56.581637+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581638+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581641+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581642+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581644+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581647+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:04:56.581648+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:07:01.545714+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545731+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545733+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545735+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545736+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545737+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545739+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545741+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545743+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545745+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545747+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545748+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545750+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "acceptance_bundles/2026-10-12_cognitive-system/wrapup_report.md",
+      "added_at": "2026-10-11T17:07:01.545751+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545752+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:07:01.545753+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:10:29.441329+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441369+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441372+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441375+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441377+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441379+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441383+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441387+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441389+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441392+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441394+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441396+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441398+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441400+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:10:29.441402+00:00",
+      "action": "sync_doc_index"
     }
   ]
 }

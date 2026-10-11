@@ -1,7 +1,7 @@
 # 19-数据访问层 工程索引
 
-> **版本**: v3.0 | **日期**: 2026-08-24
-> **状态**: P0→P3 全阶段交付完成（136 tests GREEN）
+> **版本**: v3.1 | **日期**: 2026-10-11
+> **状态**: P0→P3 全阶段交付完成（136 tests GREEN）+ 3 新 Protocol（knowledge/skill/cognitive_repo）
 > **定位**: 本子系统文件级入口索引（找文件、找运行入口、找配置）
 > **上一级索引**: 根目录 [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) v3.0（全项目工程入口）
 > **子系统 SSoT**: [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) v1.0
@@ -62,14 +62,17 @@
 │   ├── compat.py                          # 旧 TradeRecord 兼容导入（DeprecationWarning）
 │   ├── cron_runner.py                     # P3 Cron 三件套 CLI（backup/integrity/rotate/checkpoint）
 │   │
-│   ├── protocols/                         # 6 个 Repository Protocol（ABC）
+│   ├── protocols/                         # 9 个 Repository Protocol（ABC）
 │   │   ├── __init__.py
 │   │   ├── trade_repo.py                  # TradeRepository Protocol
 │   │   ├── position_repo.py               # PositionRepository Protocol
 │   │   ├── market_macro_repo.py           # MarketMacroRepository Protocol
 │   │   ├── risk_repo.py                   # RiskRepository Protocol
 │   │   ├── config_repo.py                 # ConfigRepository Protocol
-│   │   └── kg_repo.py                     # KnowledgeGraphRepository Protocol
+│   │   ├── kg_repo.py                     # KnowledgeGraphRepository Protocol
+│   │   ├── knowledge_repo.py              # KnowledgeRepository Protocol（2026-10-11 新增）
+│   │   ├── skill_repo.py                  # SkillRepository Protocol（2026-10-11 新增）
+│   │   └── cognitive_repo.py              # CognitiveRepository Protocol（2026-10-11 新增）
 │   │
 │   ├── implementations/                   # 2 种实现（按 DB_BACKEND 选）
 │   │   ├── json_legacy/                   # P0 现状薄适配（接入现有 JSON / 散库）

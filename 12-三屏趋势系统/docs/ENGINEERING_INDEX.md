@@ -1,10 +1,10 @@
 # 12-三屏趋势系统 · 工程索引
 
 > 模块路径: `12-三屏趋势系统/`
-> 版本: v4.0.0 (Phase 6 — 双线策略架构：V4+波浪互斥融合 主线 + V5.5 ML 副线)
+> 版本: v4.1.0 (Phase 6 — 双线策略架构：V4+波浪互斥融合 主线 + V5.5 ML 副线)
 > 语言: Python 3.x
 > 依赖: numpy, pandas, talib（可选，从10-经典指标系统导入）, lightgbm（ML可选）
-> 更新日期: 2026-07-19
+> 更新日期: 2026-10-11（新增 data_center_adapter / data_driven_screens / start_services）
 > **主线策略**: V4 + 波浪互斥融合 — BTC 年化 56.43%，夏普 1.41，回撤 -43.31%
 > **副线策略**: V5.5 ML 基线 — 实验状态，需重新设计特征工程
 > **策略线管理**: [docs/STRATEGY_LINES.md](docs/STRATEGY_LINES.md) — 主副线隔离规则
@@ -89,6 +89,9 @@
 ├── signals.py                          # 入场信号服务（Freqtrade 多策略）
 ├── exit_integration.py                 # 离场决策集成（ClassicExitSystem）
 ├── classic_bridge.py                   # 经典系统 HTTP 桥接
+├── data_center_adapter.py              # 数据中心适配器（2026-10-11 新增）
+├── data_driven_screens.py              # 数据驱动三屏服务（2026-10-11 新增）
+├── start_services.sh                   # 服务启动脚本（2026-10-11 新增）
 │
 ├── core/                               # 🔧 核心算法层
 │   ├── __init__.py                     #    核心包导出

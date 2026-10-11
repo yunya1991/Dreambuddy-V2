@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.6 | **更新日期**: 2026-10-11
+> **版本**: v2.8 | **更新日期**: 2026-10-11
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 为准。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -62,6 +62,7 @@
 | 前端系统 README | [3.1-FRONTEND/README.md](../3.1-FRONTEND/README.md) | 3.1 项目说明、快速开始、目录结构 | ✅ |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
+| ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ 新建 v1.0 |
 
 ---
 
@@ -151,7 +152,12 @@
 | REA设计增强任务 | [23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md](../23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md) | v1.0（T2.1-T2.3完成 2026-10-10） |
 | SPEC（金融逆向推导） | [23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md](../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) | v0.1（P0 ReverseDeriver完成 2026-10-10） |
 | Evidence-First增强 | [4-MEMORY/docs/Evidence-First增强任务清单.md](../4-MEMORY/docs/Evidence-First增强任务清单.md) | v1.0（T1.1-T1.4完成 2026-10-10） |
-| 33-REA逆向解析工程 | [33-REA逆向解析工程/SPEC.md](../33-REA逆向解析工程/SPEC.md) | v0.1（P0核心完成 2026-10-10） |
+| 33-REA逆向解析工程（核心SPEC） | [33-REA逆向解析工程/SPEC.md](../33-REA逆向解析工程/SPEC.md) | v0.1（P0核心完成 2026-10-10） |
+| ★ PoE 设计哲学 | [33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md](../33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md) | **v1.1**（AI 编码时代的工程证明协议，已通过同行评审） |
+| ★ PoE 假设验证 | [33-REA逆向解析工程/HYPOTHESIS-VERIFICATION-PoE.md](../33-REA逆向解析工程/HYPOTHESIS-VERIFICATION-PoE.md) | v1.1（w1权重+门禁阈值可证伪性验证，含统计合规性） |
+| ★ PoE 同行评审 | [33-REA逆向解析工程/PEER-REVIEW-PoE.md](../33-REA逆向解析工程/PEER-REVIEW-PoE.md) | v1.0（四角色评审+7模式阻断，决议：修改后接受） |
+| PoE 工程实践复现器 SPEC | [33-REA逆向解析工程/SPEC-工程实践复现器.md](../33-REA逆向解析工程/SPEC-工程实践复现器.md) | v0.3（设计决策还原+演化叙事+方法论抽象+AI审计） |
+| PoE 工程实践复现器 TASKS | [33-REA逆向解析工程/TASKS-工程实践复现器.md](../33-REA逆向解析工程/TASKS-工程实践复现器.md) | v1.0（8任务，依赖链已规划） |
 
 ---
 
@@ -182,11 +188,13 @@
 | 30-真实环境交互系统 | [30-真实环境交互系统/README.md](../30-真实环境交互系统/README.md) | 🟡 README+SKILL.md | Chrome自动化+BSK运行器 |
 | 31-分布式计算部署 | [31-分布式计算部署/docs/](../31-分布式计算部署/docs/) | ✅ 5文档齐全 | 云端部署与分布式计算 |
 | 32-对抗性辩论Bot | [32-对抗性辩论Bot/SPEC.md](../32-对抗性辩论Bot/SPEC.md) | 🟡 SPEC v0.5 | 营销型对抗辩论内容生产引擎 |
-| 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | 🟡 README+SPEC v0.1 | Evidence-First工程逆向解析 |
+| 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | ✅ 文档齐全（PoE设计哲学v1.1+假设验证v1.1+同行评审v1.0+SPEC v0.3+TASKS v1.0） | Evidence-First工程逆向解析 + PoE工程证明协议 |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
 | **2-KNOWLEDGE/9-RAG-INFRA** | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) | ✅ v2.0 | RAG三层融合+桥接模块+热路径集成 |
+| **辩论系统（dream-harness-bridge）** | [.trae/documents/debate-engine-v2-spec.md](../.trae/documents/debate-engine-v2-spec.md) · [.trae/documents/debate-adjudication-training-spec.md](../.trae/documents/debate-adjudication-training-spec.md) | ✅ v2.0 + v1.2 | 对抗性辩论引擎：6维评审+5步反思+Bayesian/Elo/CBR训练 |
+| **★ Jev 决策模型接入辩论** | [.trae/documents/debate-jev-integration-spec.md](../.trae/documents/debate-jev-integration-spec.md) **v1.1** | ✅ 已落地 | C质量门控+B评审校验+A补充评分+D DPO偏好，43 tests GREEN |
 
 ---
 
@@ -205,6 +213,8 @@
 | RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 |
 | 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
 | 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
+| 辩论系统 | [.trae/documents/debate-engine-v2-spec.md](../.trae/documents/debate-engine-v2-spec.md) v2.0 · [.trae/documents/debate-adjudication-training-spec.md](../.trae/documents/debate-adjudication-training-spec.md) v1.2 · **[jev集成SPEC v1.1](../.trae/documents/debate-jev-integration-spec.md)** |
+| Jev 决策模型 | [.trae/documents/debate-jev-integration-spec.md](../.trae/documents/debate-jev-integration-spec.md) v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |
 | 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 |
 
 ---

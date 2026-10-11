@@ -1,8 +1,9 @@
 # 工程索引 — V15 经典马丁策略
 
 > **定位：** 模块级工程索引（L2），对齐系统 `2-KNOWLEDGE/4-OPERATIONS/索引体系.md` 的 Z 轴三层规范
-> **版本：** v6.0 | **更新：** 2026-08-06 | **维护者：** DreamBuddy v2
+> **版本：** v6.2 | **更新：** 2026-10-11 | **维护者：** DreamBuddy v2
 > **v15-final 最终形态：** Phase B+（A+基线 + 子形态微调），Phase C（易经）默认关闭
+> **v6.2 补全：** 全量扫描 V15 目录，补录 40+ 新增文件（core 4 / lib 9 / tests 26 / root脚本 13 / ai_trainers 3 / scripts 14 / data / docs / reports / output）
 
 ---
 
@@ -38,7 +39,7 @@
 | 数据来源 | OKX API（实盘/模拟盘） |
 | 前端展示 | `experiments/ab-trading/monitor.html` 的"马丁策略" Tab（8765端口） |
 
-### 核心架构（15大模块，v6.0）
+### 核心架构（v6.2：15大模块 + AI增强 Phase D/E）
 
 | 模块 | 核心功能 | 关键算法/指标 |
 |------|----------|---------------|
@@ -71,14 +72,19 @@
 ├── config/
 │   ├── .env.common                公共配置（OKX密钥/资金参数/马丁基础参数）
 │   ├── .env.v15                   V15专属配置（币种池/风控阈值/超时离场）
-│   └── .env.v15ct                 V15CT配置（历史兼容）
+│   ├── .env.v15ct                 V15CT配置（历史兼容）
+│   └── .env.local                 本地覆盖配置（V15_EXECUTION=paper 等 override）
 ├── core/                          核心策略层
 │   ├── v15_signal.py              信号引擎 — 16层入场决策 + 16项技术指标 + SubMorph子形态分类
 │   ├── v15_signal_engine.py       信号引擎（新架构：入场判定+趋势强度+子形态）
 │   ├── v15_trader.py              自动交易器 — 轮询/开仓/加仓/止盈止损/超时离场 + V15_YIJING_ENABLED开关
 │   ├── v15_backtest.py            回测引擎 — 历史K线回测 + 绩效统计 + Phase A+/B+/C + 前向填充
 │   ├── v15_monitor.py             状态监控 + 可视化 + 每日摘要锁
-│   └── walk_forward_validator.py  Phase C 5段 walk-forward 验证框架（全段退化<5%通过）
+│   ├── walk_forward_validator.py  Phase C 5段 walk-forward 验证框架（全段退化<5%通过）
+│   ├── orchestrator.py            自主调度编排器 — 每15min cron 调用，决定是否触发贝叶斯优化/监控
+│   ├── auto_monitor.py           自动化监控与复盘 — 检查 Agent 运行状态 + 触发执行 + 蒸馏学习 + PR评论
+│   ├── ai_boundary_scaler.py     AI 边界伸缩计算器 — S_bt 回测稳健度得分 → K_bound 映射 [0.50,1.35]
+│   └── bounce_potential_evaluator.py # 反弹潜力评估器 — 7维（Fib/布林/回归/ATR/乖离/RSI/量）评分
 ├── lib/                           基础工具层
 │   ├── config_loader.py           配置加载器（支持 include 语法）
 │   ├── okx_client.py              OKX 交易客户端（实盘/模拟/REST API）
@@ -96,26 +102,134 @@
 │   ├── symbol_mapper.py           币种映射工具
 │   ├── yijing_bridge.py           Phase C 易经推理桥接（importlib跨目录加载，可被外部调用）
 │   ├── yijing_param_interpolator.py # Phase C risk/value 参数插值（clamp[0.75,1.25] + 中性区）
-│   └── coin_selector.py           Phase C 币种过滤（DANGER剔除 + net_value排序）
-├── tests/                         测试套件
+│   ├── coin_selector.py           Phase C 币种过滤（DANGER剔除 + net_value排序）
+│   ├── token_pool_loader.py       公共代币池加载器 — 读取 token_registry.json，8h自动刷新
+│   ├── v15_paper_client.py        V15 Paper 执行客户端 — Hyperliquid 数据 + 本地账本（paper模式）
+│   ├── hl_data_adapter.py         Hyperliquid 数据适配器 — 替换 OKX K线源（绕过封锁）
+│   ├── phase_d_gateway.py         Phase D 闸门 — BiLSTM 爆仓预警 + PatchTST 回撤预测（G-D1/D2/D3）
+│   ├── phase_d_models.py          Phase D 模型入口 — BiLSTMAttentionBust + PatchTSTForDrawdown（转发 ai_trainers/）
+│   ├── phase_e_gateway.py         Phase E 闸门 — PPO-LSTM 强化学习 5维动作 + 确定性风控盾
+│   ├── timing_gate.py             时机软评分门 — 波浪三浪结构 + Fibonacci 回撤/扩展，timing_score∈[0,1]
+│   ├── regime_manager.py          市场形态管理器 — 连续3日确认 + sticky_last 防穿越抖动
+│   └── v15_api_server.py          V15 HTTP API 服务 — /api/v15-ct/* + /api/capital/* 接口
+├── ai_trainers/                   AI 模型训练层（Phase D/E 模型定义 SSOT）
+│   ├── phase_d_models.py          Phase D 模型 SSOT — BiLSTMAttentionBust + PatchTSTForDrawdown（lib/phase_d_models.py 转发）
+│   ├── phase_e_models.py          Phase E 模型 — PPO policy 网络 + 推理接口
+│   └── v15_gym_env.py             V15 Gym 环境 — 包装 v15_backtest 为 Gymnasium 风格供 PPO 训练
+├── tests/                         测试套件（详见 §3.4）
+│   ├── conftest.py                pytest 配置 + 公共 fixture
+│   ├── __init__.py
 │   ├── test_v15_system.py         系统测试
 │   ├── test_v15_stress.py         多场景压力测试
-│   └── test_symbol_mapper.py      币种映射测试
+│   ├── v15_stress_test.py         压力测试（独立版）
+│   ├── test_v15_suite.py          全套件集成测试
+│   ├── test_symbol_mapper.py      币种映射测试
+│   ├── test_multi_scenario.py     多场景测试
+│   ├── test_short_selling.py      做空机制测试
+│   ├── test_donchian_atr.py       Donchian + ATR 指标测试
+│   ├── test_time_exit_signal.py   超时离场信号测试
+│   ├── test_fibonacci_fallback_sl.py # 斐波那契回退止损测试
+│   ├── test_auto_set_leverage.py  自动设置杠杆测试
+│   ├── test_sync_tp_sl_guard.py   OCO 止盈止损同步守护测试
+│   ├── test_py39_compat.py        Python 3.9 兼容性测试
+│   ├── test_v15_addon_grid_coin_guard.py # 加仓网格币种守卫测试
+│   ├── test_v15_budget_pool_dynamic.py   # 动态预算池测试
+│   ├── test_dual_baseline_framework.py   # 双基线框架测试
+│   ├── test_paper_client.py       Paper 执行客户端测试
+│   ├── test_ab_comparator.py      AB 影子比较器测试
+│   ├── test_incremental_trainer.py # 增量训练器测试
+│   ├── test_phase_d_trainers.py   Phase D 训练器测试
+│   ├── test_phase_d_roadmap.py    Phase D 路线图测试
+│   ├── test_phase_e_gateway.py    Phase E 闸门测试
+│   ├── test_phase_e_gym_models.py # Phase E Gym 模型测试
+│   ├── test_timing_gate_phase4.py # TimingGate Phase4 测试
+│   ├── test_direction_gate_phase1.py # DirectionGate Phase1 测试
+│   ├── test_direction_gate_phase2.py # DirectionGate Phase2 测试
+│   └── test_direction_gate_phase3.py # DirectionGate Phase3 测试
+├── scripts/                       工具脚本
+│   ├── debug_budget.py            预算调试脚本
+│   └── archive/                   归档对比脚本（不活跃，保留参考）
+│       ├── sync_v15_positions.py      同步 V15 持仓
+│       ├── compare_phase4_timing_backtest.py # Phase4 Timing 回测对比
+│       ├── compare_phase3_swing_backtest.py  # Phase3 摆动回测对比
+│       ├── validate_phase_c_walkforward.py   # Phase C walk-forward 验证
+│       ├── compare_subregime_backtest.py     # 子形态回测对比
+│       ├── compare_btc_windvane_short_only.py # BTC风向标做空对比
+│       ├── compare_btc_windvane_days.py     # BTC风向标天数对比
+│       ├── compare_btc_windvane_backtest.py # BTC风向标回测对比
+│       ├── compare_trailing_tp_backtest.py  # 移动止盈回测对比
+│       ├── compare_kelly_backtest.py        # 凯利公式回测对比
+│       ├── compare_atr_backtest.py          # ATR 回测对比
+│       ├── install_launchd.py               # launchd 安装脚本
+│       └── post_pr_comment.py              # PR 评论发布
 ├── data/
 │   ├── v15_state.json             交易状态持久化
 │   ├── v15_final_deployment.json  v15-final 最终部署快照（决策依据+激活配置+模块保留）
-│   ├── backtest_cache/            回测K线缓存
-│   ├── capital_manager/           资金管理引擎数据（优化历史/状态/报告）
+│   ├── orchestrator_state.json    编排器状态（上次运行时间/动作）
+│   ├── self_schedule.json         Agent 自主申请调度
+│   ├── ab_comparator_state.json   AB 影子比较器状态（SHADOW/LIVE/DISABLED 状态机）
+│   ├── regime_state.json          市场形态管理器状态（sticky regime）
+│   ├── ai_boundary_state.json     AI 边界伸缩状态（K_bound 当前值）
+│   ├── incremental_trainer_state.json # 增量训练器状态（模型版本管理）
+│   ├── trade_history.json         交易历史记录
+│   ├── account_baseline.json     账户基线快照
+│   ├── baseline_current.json     当前基线参数
+│   ├── v15_paper_ledger.json     V15 Paper 模拟盘账本
+│   ├── phase_a_result.json        Phase A 回测结果
+│   ├── phase_a_plus_result.json   Phase A+ 回测结果
+│   ├── phase_b_plus_result.json   Phase B+ 回测结果
+│   ├── phase_c_walkforward_result.json # Phase C walk-forward 结果
+│   ├── btc_windvane_backtest_result.json # BTC风向标回测结果
+│   ├── trailing_tp_backtest_result.json # 移动止盈回测结果
+│   ├── kelly_backtest_result.json # 凯利公式回测结果
+│   ├── backtest_cache/            回测K线缓存（按币种_周期_数量 命名）
+│   ├── capital_manager/           资金管理引擎数据（engine_state.json/优化历史/报告）
 │   ├── bayesian_opt/              贝叶斯优化数据（active_params.json/schedule_state.json/优化历史）
-│   ├── okx_client/                OKX客户端数据
+│   ├── automation_reports/        自动化报告（walk_forward/runtime/yijing_interpolation 等 .json+.md）
+│   ├── ai_benchmarks/             AI 基准测试报告（Phase D/E training_report + walk_forward_report）
+│   ├── ai_datasets/               AI 数据集（phase_d_meta.json）
+│   ├── phase_d_ds_v1/             Phase D 数据集 v1
+│   ├── phase_d_models_v1/         Phase D 模型 v1（training_report.json）
 │   └── yijing_cache/             Phase C 易经推理缓存（按币种/日期分片）
 ├── docs/                          技术文档
 │   ├── ENGINEERING_INDEX.md       本文件 — 工程索引
 │   ├── TECHNICAL_DESIGN.md        技术设计文档（架构/数据流/算法 + Phase A+/B+/C演进）
 │   ├── CONFIGURATION_GUIDE.md     配置管理规范（含V15_YIJING_ENABLED）
 │   ├── CHANGELOG.md                变更日志（含v6.0演进历程）
-│   └── API_SPEC.md                接口规格文档
-└── com.dreambuddy.v15_trader.plist  launchd 守护进程配置
+│   ├── API_SPEC.md                接口规格文档
+│   ├── README.md                   文档目录说明
+│   ├── AI_ENHANCEMENT_ROADMAP.md   AI 增强路线图（Phase D BiLSTM/PatchTST + Phase E PPO-LSTM）
+│   ├── dual_baseline_ab_framework.md # 双基线 AB 框架设计
+│   ├── test_suite_report.md        测试套件报告
+│   ├── test_junit.xml              JUnit XML 测试报告
+│   └── superpowers/specs/2026-09-01-v15-dynamic-budget-pool-design.md # 动态预算池设计 spec
+├── reports/                       报告输出
+│   └── phase4_timing_backtest.json # Phase4 TimingGate 回测报告
+├── output/                        优化输出
+│   ├── phase4_best_params.json    Phase4 最优参数集
+│   ├── phase4_best_params_v1.json  Phase4 最优参数 v1
+│   ├── phase4_bayes_trace.csv     贝叶斯优化 trace
+│   ├── phase4_bayes_trace_v1.csv  贝叶斯优化 trace v1
+│   ├── phase4_bo.log              贝叶斯优化日志
+│   ├── phase4_bo_v2.log           贝叶斯优化日志 v2
+│   └── phase4_bo_v3.log           贝叶斯优化日志 v3
+├── com.dreambuddy.v15_light_poll.plist   # launchd 轻量轮询守护进程
+├── com.dreambuddy.v15_orchestrator.plist # launchd 编排器守护进程（每15min）
+├── com.dreambuddy.v15_trader.plist       # launchd 交易器守护进程
+├── bayesian_optimize_timing.py    Phase4 TimingGate 贝叶斯参数优化器（8维连续空间）
+├── phase_d_dataset_generator.py   Phase D 数据集生成器
+├── phase_d_validate_iron2.py       Phase D 铁律2验证（S_bt < 1.00 禁止启用）
+├── phase_d_train_bilstm.py        Phase D BiLSTM 训练脚本
+├── phase_d_train_patchtst.py      Phase D PatchTST 训练脚本
+├── train_phase_d_models.py        Phase D 模型统一训练入口
+├── phase_e_train_ppo.py           Phase E PPO 训练脚本
+├── run_formal_training_pipeline.py 正式训练流水线（Phase D+E 全流程）
+├── ab_shadow_comparator.py        AB 影子比较器 — 双路径并行对比框架（SHADOW→LIVE/DISABLED）
+├── incremental_trainer.py         增量训练器 — 滚动窗口重训练 + 模型版本管理
+├── augment_and_retrain.py         数据增强再训练（SMOTE+Focal Loss）
+├── walk_forward_validate.py       Walk-forward 独立验证脚本
+├── diagnose_exit_reasons.py       离场原因诊断脚本
+└── phase3_swing_potential_backtest_report.json # Phase3 摆动潜力回测报告
 ```
 
 ### 2.2 V15-CT 实战代码（experiments/ab-trading/）— ⚠️ 已废弃
@@ -136,7 +250,7 @@ experiments/ab-trading/
 
 **当前运行版本：** master_daemon 每小时调用 `run.py poll_once`（独立V15系统）
 
-**代码统计：** V15独立运行系统 14 个核心文件，约 8000+ 行；V15-CT实验代码作为AB对照保留
+**代码统计：** V15独立运行系统 v6.2 共 90+ 个 Python 文件（core 11 + lib 22 + tests 28 + ai_trainers 3 + 根级脚本 13 + scripts 15），约 15000+ 行；V15-CT实验代码作为AB对照保留
 
 ---
 
@@ -153,6 +267,10 @@ experiments/ab-trading/
 | `v15_monitor.py` | ~10 | 状态监控 + 可视化 + 每日摘要锁 | `generate_daily_report()`, `render_status_html()`, `lock_daily_summary()` |
 | `walk_forward_validator.py` | ~8 | Phase C 5段 walk-forward 验证框架：全段退化<5%才通过 | `split_walk_forward()`, `validate_segment()`, `run_full_validation()`, `print_wf_report()` |
 | `direction_gate.py` | ~5 | 多空方向控制：MA128+BTC风向标三状态模型 | `DirectionGate`（类，含 `evaluate()`），`GateResult`（数据类），`MarketRegime`/`TradeDirection`（枚举） |
+| `orchestrator.py` | ~10 | 自主调度编排器：每15min cron 调用，决定是否触发贝叶斯优化/监控。常规心跳1H + 事件驱动 + Agent自主申请 + 紧急波动触发 | `main()`, `check_bayesian_optimization_trigger()`, `should_trigger_optimization()` |
+| `auto_monitor.py` | ~8 | 自动化监控与复盘：检查 Agent 运行状态 + 自动触发执行 + 蒸馏学习 + PR评论 | `main()`, `--distill-only`, `--check-only` |
+| `ai_boundary_scaler.py` | ~6 | AI 边界伸缩计算器：S_bt 回测稳健度得分（gross×0.4+calmar×0.3+wf×0.2+mdd×0.1）→ K_bound 映射 [0.50,1.35]，外层铁壳 | `compute_s_bt()`, `AIBoundaryScaler`（类） |
+| `bounce_potential_evaluator.py` | ~10 | 反弹潜力评估器：7维（Fib回撤/布林下轨/线性回归/ATR/乖离率/RSI超卖/量能恐慌）评分，适合马丁做多 | `evaluate_bounce_potential()`, `_calc_returns()`, `_calc_ma()` |
 
 ### 3.2 工具层（lib/）
 
@@ -175,6 +293,15 @@ experiments/ab-trading/
 | `yijing_bridge.py` | ~12 | **Phase C 易经推理桥接（模块化，可被外部调用）**：importlib跨目录加载YijingEngine，K线转8维归一化评分，批量/单次推理+缓存，risk_score连续化（卦象锚点+8维评分微调），前向填充 | `YijingBridge`（类），`batch_infer()`, `infer_once()`, `_compute_continuous_risk()`, `_build_8dim_scores()`, `forward_fill()` |
 | `yijing_param_interpolator.py` | ~6 | **Phase C 参数插值**：risk/value→TP/持仓/仓位插值，与子形态倍数叠加，clamp[0.75,1.25]，中性区（\|net_value\|<0.12）不调整 | `interpolate_params()`, `compute_yijing_multipliers()`, `_NEUTRAL_THRESHOLD` |
 | `coin_selector.py` | ~5 | **Phase C 币种过滤**：易经因子过滤（DANGER剔除），按net_value排序，优先TREND_FRIENDLY | `filter_coins_by_yijing()`, `rank_by_net_value()`, `classify_coin_risk_value()` |
+| `token_pool_loader.py` | ~5 | 公共代币池加载器：读取 token_registry.json，8h自动刷新内存；环境变量 override > registry > 硬编码默认 | `get_symbols()`, `_load_registry()` |
+| `v15_paper_client.py` | ~12 | V15 Paper 执行客户端：Hyperliquid 数据 + 本地账本（paper模式替换 OKXSimulatedClient）；市价单立即成交、限价单穿越成交、无真实下单通道 | `PaperClient`（类），`place_order()`, `get_positions()`, `get_kline()`, `place_stop_loss_take_profit()` |
+| `hl_data_adapter.py` | ~6 | Hyperliquid 数据适配器：包装 aster_spot 为 OKX 兼容接口（get_kline/get_ticker），V15_DATA_SOURCE=hyperliquid 时透明替换 | `get_kline()`, `get_ticker()`, `_map_bar_to_hl()` |
+| `phase_d_gateway.py` | ~8 | **Phase D 闸门**：BiLSTM 爆仓预警 + PatchTST 回撤预测三大闸门。G-D1 Skip Open / G-D2 Trim Addons / G-D3 Timing Relax；AI 只能否决或微调，不能强制开仓 | `PhaseDGateway`（类），`evaluate()`, `_apply_g_d1()`, `_apply_g_d2()`, `_apply_g_d3()` |
+| `phase_d_models.py` | ~3 | Phase D 模型入口（Thin Wrapper）：转发 ai_trainers/phase_d_models.py 的 BiLSTMAttentionBust + PatchTSTForDrawdown | `BiLSTMAttentionBust`, `PatchTSTForDrawdown`, `create_bilstm_model()`, `create_patchtst_model()` |
+| `phase_e_gateway.py` | ~8 | **Phase E 闸门**：PPO-LSTM 强化学习 5维动作（addon_pct/addon_size/tp_pct/base_position/max_addons）+ ACTION_BOUNDS clamp + DS1-DS6 确定性风控盾 | `PhaseEGateway`（类），`evaluate()`, `_clamp_action()`, `ACTION_BOUNDS` |
+| `timing_gate.py` | ~10 | 时机软评分门：波浪三浪结构 + Fibonacci 回撤/扩展，输出 timing_score∈[0,1]，仓位/杠杆按比例缩放 | `TimingGate`（类），`evaluate()`, `compute_timing_score()`, `BULLISH_3WAVE`/`BEARISH_3WAVE` |
+| `regime_manager.py` | ~6 | 市场形态管理器：在 DirectionGate 瞬时判断之上加连续3日确认 + sticky_last 防穿越抖动；Phase2 含减速检测+动态确认天数 | `RegimeManager`（类），`update()`, `load_state()`, `compute_confirmed_regimes()` |
+| `v15_api_server.py` | ~8 | V15 HTTP API 服务：/api/v15-ct/decision|status|backtest|decisions + /api/capital/allocation|signal-trigger，支持 monitor.html 调用 | `V15APIHandler`（类），`run_server()` |
 
 ### 3.3 入口层
 
@@ -186,6 +313,68 @@ experiments/ab-trading/
 | | `capital_engine` | 资金管理引擎（monthly/status/trend/check/api） |
 | | `test` | 运行全部测试套件 |
 | | `config` | 查看当前配置 |
+
+### 3.4 测试层（tests/）— v6.2 新增
+
+| 文件 | 职责 |
+|------|------|
+| `conftest.py` | pytest 配置 + 公共 fixture |
+| `__init__.py` | 包初始化 |
+| `test_v15_system.py` | V15 系统测试 |
+| `test_v15_stress.py` | 多场景压力测试 |
+| `v15_stress_test.py` | 压力测试（独立版） |
+| `test_v15_suite.py` | 全套件集成测试 |
+| `test_symbol_mapper.py` | 币种映射 + 马丁风控过滤测试 |
+| `test_multi_scenario.py` | 多场景测试 |
+| `test_short_selling.py` | 做空机制测试 |
+| `test_donchian_atr.py` | Donchian + ATR 指标测试 |
+| `test_time_exit_signal.py` | 超时离场信号测试 |
+| `test_fibonacci_fallback_sl.py` | 斐波那契回退止损测试 |
+| `test_auto_set_leverage.py` | 自动设置杠杆测试 |
+| `test_sync_tp_sl_guard.py` | OCO 止盈止损同步守护测试 |
+| `test_py39_compat.py` | Python 3.9 兼容性测试 |
+| `test_v15_addon_grid_coin_guard.py` | 加仓网格币种守卫测试 |
+| `test_v15_budget_pool_dynamic.py` | 动态预算池测试 |
+| `test_dual_baseline_framework.py` | 双基线框架测试 |
+| `test_paper_client.py` | Paper 执行客户端测试 |
+| `test_ab_comparator.py` | AB 影子比较器测试 |
+| `test_incremental_trainer.py` | 增量训练器测试 |
+| `test_phase_d_trainers.py` | Phase D 训练器测试 |
+| `test_phase_d_roadmap.py` | Phase D 路线图测试 |
+| `test_phase_e_gateway.py` | Phase E 闸门测试 |
+| `test_phase_e_gym_models.py` | Phase E Gym 模型测试 |
+| `test_timing_gate_phase4.py` | TimingGate Phase4 测试 |
+| `test_direction_gate_phase1.py` | DirectionGate Phase1 测试 |
+| `test_direction_gate_phase2.py` | DirectionGate Phase2 测试 |
+| `test_direction_gate_phase3.py` | DirectionGate Phase3 测试 |
+
+### 3.5 AI 训练层（ai_trainers/）— v6.2 新增
+
+| 文件 | 职责 | 关键类/函数 |
+|------|------|------------|
+| `phase_d_models.py` | Phase D 模型 SSOT：BiLSTM-Attention 爆仓预警 + PatchTST 回撤预测 | `BiLSTMAttentionBust`, `PatchTSTForDrawdown`, `create_bilstm_model()`, `create_patchtst_model()` |
+| `phase_e_models.py` | Phase E 模型：PPO policy 网络 + 推理接口 | `PPOPolicy`（类） |
+| `v15_gym_env.py` | V15 Gym 环境：包装 v15_backtest 为 Gymnasium 风格供 PPO 训练，34维状态/5维动作/事件驱动奖励 | `V15GymEnv`（类），`step()`, `reset()`, `_get_obs()`, `clamp_action()` |
+
+### 3.6 根级脚本 & 工具层 — v6.2 新增
+
+| 文件 | 职责 |
+|------|------|
+| `ab_shadow_comparator.py` | AB 影子比较器：双路径并行对比（baseline vs AI），SHADOW→LIVE/DISABLED 状态机，30d显著性驱动自动升降级 |
+| `incremental_trainer.py` | 增量训练器：滚动窗口重训练（DataCollector→WindowMgr→RetrainPipeline→ModelVersionMgr），AB比较器驱动自动promote/rollback |
+| `augment_and_retrain.py` | 数据增强再训练：SMOTE + Focal Loss 处理类别不平衡 |
+| `walk_forward_validate.py` | Walk-forward 独立验证脚本 |
+| `bayesian_optimize_timing.py` | Phase4 TimingGate 贝叶斯参数优化器：8维连续空间（threshold/lenient_unclear/retrace_mu/sigma 等） |
+| `phase_d_dataset_generator.py` | Phase D 数据集生成器：构建 BiLSTM/PatchTST 训练样本 |
+| `phase_d_validate_iron2.py` | Phase D 铁律2验证：S_bt < 1.00 时禁止启用 AI 边界 |
+| `phase_d_train_bilstm.py` | Phase D BiLSTM-Attention 训练脚本 |
+| `phase_d_train_patchtst.py` | Phase D PatchTST 训练脚本 |
+| `train_phase_d_models.py` | Phase D 模型统一训练入口 |
+| `phase_e_train_ppo.py` | Phase E PPO-LSTM 训练脚本 |
+| `run_formal_training_pipeline.py` | 正式训练流水线：Phase D + E 全流程编排 |
+| `diagnose_exit_reasons.py` | 离场原因诊断：分析 exit_reason 分布验证 ATR 效果 |
+| `scripts/debug_budget.py` | 预算调试脚本 |
+| `scripts/archive/` | 归档对比脚本（13个 compare_*/validate_*/install_*/post_pr 脚本，不活跃保留参考） |
 
 ---
 
@@ -466,7 +655,26 @@ python lib/bayesian_optimizer.py --with-rollback
 | 优化历史 | `data/bayesian_opt/v15_optimization_*.json` | 历次优化结果（按时间戳命名） |
 | 优化日志 | `logs/bayesian_opt.log` | 贝叶斯优化运行日志 |
 | **易经推理缓存** | `data/yijing_cache/` | Phase C 按币种/日期分片的推理结果（命中即跳过重复推理） |
+| 编排器状态 | `data/orchestrator_state.json` | 编排器上次运行时间 + 动作 |
+| Agent自主调度 | `data/self_schedule.json` | Agent 写入的提前运行申请 |
+| AB比较器状态 | `data/ab_comparator_state.json` | SHADOW/LIVE/DISABLED 状态机 + 决策 delta 统计 |
+| 市场形态状态 | `data/regime_state.json` | RegimeManager sticky regime 持久化 |
+| AI边界状态 | `data/ai_boundary_state.json` | K_bound 当前值 + S_bt 历史 |
+| 增量训练状态 | `data/incremental_trainer_state.json` | 模型版本管理（v1 live / v2 shadow…） |
+| 交易历史 | `data/trade_history.json` | 历史交易记录 |
+| 账户基线 | `data/account_baseline.json` | 账户快照基线 |
+| 当前基线参数 | `data/baseline_current.json` | 当前活跃基线参数 |
+| Paper账本 | `data/v15_paper_ledger.json` | V15 Paper 模拟盘订单/持仓/止盈止损账本 |
+| Phase回测结果 | `data/phase_{a,a_plus,b_plus,c_walkforward}_result.json` | Phase A/A+/B+/C 回测结果快照 |
+| BTC风向标回测 | `data/btc_windvane_{backtest,short_only,days}_result.json` | BTC风向标多维度回测结果 |
+| 移动止盈回测 | `data/trailing_tp_backtest_result.json` | 移动止盈回测结果 |
+| 凯利公式回测 | `data/kelly_backtest_result.json` | 凯利公式回测结果 |
+| 自动化报告 | `data/automation_reports/` | walk_forward/runtime/yijing_interpolation 等 .json+.md |
+| AI基准报告 | `data/ai_benchmarks/` | Phase D/E training_report + walk_forward_report |
+| AI数据集 | `data/ai_datasets/phase_d_meta.json` | Phase D 训练数据集元数据 |
+| Phase D数据集v1 | `data/phase_d_ds_v1/phase_d_meta.json` | Phase D 数据集 v1 元数据 |
+| Phase D模型v1 | `data/phase_d_models_v1/training_report.json` | Phase D 模型 v1 训练报告 |
 
 ---
 
-_最后更新：2026-08-06 | 维护者：DreamBuddy v2 | 版本：v6.0 v15-final_
+_最后更新：2026-10-11 | 维护者：DreamBuddy v2 | 版本：v6.2 v15-final（全量补全）_
