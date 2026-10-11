@@ -1,5 +1,41 @@
 {
-  "pending": [],
+  "pending": [
+    {
+      "path": "1-ARCHITECTURE/specs/DUAL_MODE_TRAINING_SPEC.md",
+      "added_at": "2026-10-11T23:36:42.985552+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/README.md",
+      "added_at": "2026-10-11T23:36:42.985562+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC-v0.5-continual-training.md",
+      "added_at": "2026-10-11T23:36:42.985565+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC.md",
+      "added_at": "2026-10-11T23:36:42.985566+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/docs/PASSIVE_TRAINING_DESIGN.md",
+      "added_at": "2026-10-11T23:36:42.985567+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/README.md",
+      "added_at": "2026-10-11T23:36:42.985568+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "35-广义认知系统协作模块/SPEC-Unified-PoE-Framework.md",
+      "added_at": "2026-10-11T23:36:42.985569+00:00",
+      "action": "sync_doc_index"
+    }
+  ],
   "processed": [
     {
       "path": "0-系统文档管理/zzz_test_doc.md",

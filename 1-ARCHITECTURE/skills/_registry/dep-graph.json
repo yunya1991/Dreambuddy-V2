@@ -2,78 +2,138 @@
   "schema_version": "1.0",
   "nodes": [
     {
-      "id": "polling-trader-reload",
-      "category": "tooling",
-      "status": "active"
-    },
-    {
-      "id": "dream-arch-collaboration-workflow",
-      "category": "orchestration",
-      "status": "active"
-    },
-    {
-      "id": "dream-backtest-verify",
-      "category": "orchestration",
-      "status": "active"
-    },
-    {
-      "id": "debate-con-side",
-      "category": "cognition",
-      "status": "active"
-    },
-    {
-      "id": "dream-code-commit-sync-workflow",
-      "category": "orchestration",
-      "status": "active"
-    },
-    {
-      "id": "dream-classic-pipeline-tdd-migration",
-      "category": "orchestration",
-      "status": "active"
-    },
-    {
-      "id": "dream-module-post-dev-verify-workflow",
-      "category": "orchestration",
-      "status": "active"
-    },
-    {
-      "id": "safe-service-restart",
-      "category": "tooling",
-      "status": "active"
-    },
-    {
       "id": "dream-science-peer-review",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-scattered-file-cleanup",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-orchestrator",
-      "category": "orchestration",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-statistics-check",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-hypothesis-verification",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "drawio",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-uncertainty-reasoning",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-cross-disciplinary",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-experiment-design",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-literature-review",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-framework-research",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-paper-writing",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "nature-figure",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "polling-trader-reload",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-arch-collaboration-workflow",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-backtest-verify",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "debate-con-side",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-code-commit-sync-workflow",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-classic-pipeline-tdd-migration",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-module-post-dev-verify-workflow",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "safe-service-restart",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-peer-review",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-scattered-file-cleanup",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "dream-science-orchestrator",
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-code-deploy-pipeline",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-eng-mgmt-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-qwen-eval-collab",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "wiki-ingest-trigger",
-      "category": "trigger",
+      "category": "uncategorized",
       "status": "active"
     },
     {
@@ -83,158 +143,158 @@
     },
     {
       "id": "dream-arch-research-orchestrator",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-topic-selector",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "evolution-case-ingest",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-code-sync-orphan-scan-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-subagent-tdd-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-completion-evolution-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-acceptance-verify",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-statistics-check",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-hypothesis-verification",
-      "category": "research",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dreambuddy-os",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-bugfix-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "skill-creator",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
-      "id": "debate-classic-methodology-—-oxford-式经典辩论赛制",
-      "category": "meta",
+      "id": "debate-classic-methodology",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "drawio",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-arch-gap-analysis-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-feature-landing-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "data-troubleshoot",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-uncertainty-reasoning",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-cross-disciplinary",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "debate-pro-side",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "nature-shared",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-reflection-methodology",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-experiment-design",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-tdd-dev-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-literature-review",
-      "category": "research",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-self-iteration-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-genome-factor-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-framework-research",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "tee-red-green-progress",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-research-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-paper-writing",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-doc-sync-workflow",
@@ -243,2275 +303,939 @@
     },
     {
       "id": "dream-skill-index-governance",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-adjudication-methodology",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "nature-figure",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-peer-review",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-orchestrator",
-      "category": "orchestration",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-statistics-check",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-hypothesis-verification",
-      "category": "research",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "drawio",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-uncertainty-reasoning",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-cross-disciplinary",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-experiment-design",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-literature-review",
-      "category": "research",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-framework-research",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-paper-writing",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "nature-figure",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "polling-trader-reload",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-arch-collaboration-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-backtest-verify",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-con-side",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-code-commit-sync-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-classic-pipeline-tdd-migration",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-module-post-dev-verify-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "safe-service-restart",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-peer-review",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-scattered-file-cleanup",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-orchestrator",
-      "category": "orchestration",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-code-deploy-pipeline",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-eng-mgmt-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-qwen-eval-collab",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "wiki-ingest-trigger",
-      "category": "trigger",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "knowledge-ingest",
-      "category": "knowledge",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-arch-research-orchestrator",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-topic-selector",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "evolution-case-ingest",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-code-sync-orphan-scan-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-subagent-tdd-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-completion-evolution-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-acceptance-verify",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-statistics-check",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-hypothesis-verification",
-      "category": "research",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dreambuddy-os",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-bugfix-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "skill-creator",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
-      "id": "debate-classic-methodology-—-oxford-式经典辩论赛制",
-      "category": "meta",
+      "id": "debate-classic-methodology",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "drawio",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-arch-gap-analysis-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-feature-landing-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "data-troubleshoot",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-uncertainty-reasoning",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-science-cross-disciplinary",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "debate-pro-side",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "nature-shared",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-reflection-methodology",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-experiment-design",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-tdd-dev-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-literature-review",
-      "category": "research",
-      "status": "shadow"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-self-iteration-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-genome-factor-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-framework-research",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "tee-red-green-progress",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-research-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-science-paper-writing",
-      "category": "research",
-      "status": "proposed"
+      "category": "uncategorized",
+      "status": "active"
     },
     {
       "id": "dream-doc-sync-workflow",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-skill-index-governance",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "debate-adjudication-methodology",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "nature-figure",
-      "category": "tooling",
-      "status": "active"
-    },
-    {
-      "id": "dream-science-peer-review",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-science-orchestrator",
-      "category": "orchestration",
-      "status": "shadow"
-    },
-    {
-      "id": "dream-science-statistics-check",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-science-hypothesis-verification",
-      "category": "research",
-      "status": "shadow"
-    },
-    {
-      "id": "drawio",
-      "category": "tooling",
-      "status": "active"
-    },
-    {
-      "id": "dream-science-uncertainty-reasoning",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-science-cross-disciplinary",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-science-experiment-design",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-science-literature-review",
-      "category": "research",
-      "status": "shadow"
-    },
-    {
-      "id": "dream-science-framework-research",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "dream-science-paper-writing",
-      "category": "research",
-      "status": "proposed"
-    },
-    {
-      "id": "nature-figure",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-oneirology",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-strategy-parser",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-strategy-research",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-systematic-trading",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-tactical-validator",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dual-agent-conflict-gate",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "system-maintenance",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-contradiction-theory",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-data-analysis",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-bayesian-opt",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-knowledge",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-risk-position-sizing",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "A7-practice-theory",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-screen2-second",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-tactical-executor",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "A8-theory-practice-verification",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-first-principles",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-exit-skill-v2",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-intelligence-monitor",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-screen3-third",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-strategy-designer",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-screen1-first",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-signal-scoring-spec",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "master-seminar",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-pretrade-gatekeeper",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-bailian-integration",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-regime-detector",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "learning-episode-writer",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-doc-sync-gate",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-attention-radar",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-backtest",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "asset-research",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-governance-manager",
-      "category": "core",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "learning-proposal-generator",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "learning-lesson-distiller",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "safe-main-merge",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-constitution",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "memory-manager",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "branch-lifecycle-automation",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-knowledge",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "code-review-merge-assistant",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "architecture-sync-guard",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "artifact-alignment-manager",
-      "category": "core",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "learning-episode-writer",
-      "category": "cognition",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-strategy-parser",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-strategy-research",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-tactical-validator",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-contradiction-theory",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-risk-position-sizing",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "A7-practice-theory",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-tactical-executor",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "A8-theory-practice-verification",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-first-principles",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-exit-skill-v2",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-intelligence-monitor",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-strategy-designer",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-signal-scoring-spec",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-pretrade-gatekeeper",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-regime-detector",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-execution-cost-model",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-oneirology",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-data-analysis",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-knowledge",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "master-seminar",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-bailian-integration",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-intelligence-analysis",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-archive-center",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-performance-review",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "boss-secretary",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "resource-efficiency-analyst",
-      "category": "support",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "ai-trading-compliance",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-hr-recruitment",
-      "category": "governance",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-product-hub-maintenance",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-cost-control",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dream-operation-director",
-      "category": "governance",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "auto-repair",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "find-skills",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "ontology",
-      "category": "research",
+      "category": "uncategorized",
       "status": "active"
     },
     {
-      "id": "markdown-new",
-      "category": "tooling",
+      "id": "markdown-convert",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "skill-creator",
-      "category": "tooling",
+      "category": "uncategorized",
+      "status": "active"
+    },
+    {
+      "id": "skill-creator",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "github",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "tavily",
-      "category": "tooling",
-      "status": "active"
-    },
-    {
-      "id": "skill-creator",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "using-git-worktrees",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "test-driven-development",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "systematic-debugging",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "using-superpowers",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "dispatching-parallel-agents",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "executing-plans",
-      "category": "meta",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "finishing-a-development-branch",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "brainstorming",
-      "category": "meta",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "writing-plans",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "requesting-code-review",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "receiving-code-review",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "writing-skills",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "verification-before-completion",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "subagent-driven-development",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "t1-strategy-synthesis",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "t2-trade-execution",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "t3-risk-gatekeeper",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "t0-market-cognition",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
-      "id": "meta-reflection",
-      "category": "cognition",
+      "id": "t5-meta-reflection",
+      "category": "uncategorized",
       "status": "active"
     },
     {
-      "id": "intelligence-radar",
-      "category": "orchestration",
+      "id": "t4-intelligence-radar",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "agent-collab-screen1",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "approval-timeout-check",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "agent-collab-gatec",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "trading-strategy-optimization",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "6-trading-screen1-framework",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "feishu-hermes-debug",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "screen1-trigger",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "feishu-gateway-setup",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "screen2-trigger",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "evolution-system-sync",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "a6-monitor-trigger",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "hermes-feishu-bot-debug",
-      "category": "tooling",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "screen3-trigger",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "process-d-trigger",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "agent-a-trading",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "screen-martin-trading",
-      "category": "trading",
+      "category": "uncategorized",
       "status": "active"
     },
     {
       "id": "agent-collab-supervisor",
-      "category": "orchestration",
+      "category": "uncategorized",
       "status": "active"
     },
     {
-      "id": "graph-context-compressor",
-      "category": "tooling",
+      "id": "graph-compressor",
+      "category": "uncategorized",
       "status": "active"
     }
   ],
-  "edges": [
-    {
-      "from": "dream-backtest-verify",
-      "to": "bcrm2.data_fetcher",
-      "resolved": false
-    },
-    {
-      "from": "dream-backtest-verify",
-      "to": "washout_trigger_gate",
-      "resolved": false
-    },
-    {
-      "from": "dream-backtest-verify",
-      "to": "washout_detector",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "git",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "tsc",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "dream-code-sync-orphan-scan-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "auto_sync_dispatcher.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "knowledge-ingest",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "dream-skill-index-governance",
-      "resolved": true
-    },
-    {
-      "from": "dream-module-post-dev-verify-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-module-post-dev-verify-workflow",
-      "to": "dream-code-sync-orphan-scan-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-uncertainty-reasoning",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-framework-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-peer-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "drawio",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "dream-code-commit-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "git",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "github-actions",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "update.sh",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "healthcheck.sh",
-      "resolved": false
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-strategy-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-operation-director",
-      "resolved": true
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-cost-control",
-      "resolved": true
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-task-creator",
-      "resolved": false
-    },
-    {
-      "from": "dream-qwen-eval-collab",
-      "to": "bsk",
-      "resolved": false
-    },
-    {
-      "from": "dream-qwen-eval-collab",
-      "to": "skill-creator",
-      "resolved": true
-    },
-    {
-      "from": "wiki-ingest-trigger",
-      "to": "cognitive_mcp_server.py",
-      "resolved": false
-    },
-    {
-      "from": "wiki-ingest-trigger",
-      "to": "wiki_compiler.py",
-      "resolved": false
-    },
-    {
-      "from": "wiki-ingest-trigger",
-      "to": "cordis-plugin-knowledge-wiki",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-qwen-eval-collab",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-science-peer-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-eng-mgmt-workflow",
-      "resolved": true
-    },
-    {
-      "from": "debate-topic-selector",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-sync-orphan-scan-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-sync-orphan-scan-workflow",
-      "to": "dream-scattered-file-cleanup",
-      "resolved": true
-    },
-    {
-      "from": "dream-subagent-tdd-workflow",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-subagent-tdd-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "dream-subagent-tdd-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-acceptance-verify",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-code-commit-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-skill-index-governance",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "mcp_cognitive",
-      "resolved": false
-    },
-    {
-      "from": "dream-acceptance-verify",
-      "to": "verification-before-completion",
-      "resolved": true
-    },
-    {
-      "from": "dream-acceptance-verify",
-      "to": "dream-bugfix-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-acceptance-verify",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dreambuddy-os",
-      "to": "A0-A9系列",
-      "resolved": false
-    },
-    {
-      "from": "dreambuddy-os",
-      "to": "graph-compressor",
-      "resolved": false
-    },
-    {
-      "from": "dreambuddy-os",
-      "to": "chain_guard",
-      "resolved": false
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "auto-repair",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "skill-creator",
-      "to": "dream-skill-index-governance",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "recall",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "record",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "verify",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Agent",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "WebSearch",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Glob",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Grep",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Read",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "skill-creator",
-      "resolved": true
-    },
-    {
-      "from": "dream-feature-landing-workflow",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-feature-landing-workflow",
-      "to": "dream-bugfix-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-uncertainty-reasoning",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-backtest",
-      "resolved": true
-    },
-    {
-      "from": "dream-tdd-dev-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-tdd-dev-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "dream-tdd-dev-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-literature-review",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-framework-research",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "tee-red-green-progress",
-      "to": "recall",
-      "resolved": false
-    },
-    {
-      "from": "tee-red-green-progress",
-      "to": "pytest",
-      "resolved": false
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "dream-strategy-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "tavily",
-      "resolved": true
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "deep-research-pro",
-      "resolved": false
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "baidu-scholar-search-skill",
-      "resolved": false
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "bsk",
-      "resolved": false
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "dream-skill-index-governance",
-      "to": "hermes-skill-governance",
-      "resolved": false
-    },
-    {
-      "from": "dream-skill-index-governance",
-      "to": "hermes-shadow-verification-gate",
-      "resolved": false
-    },
-    {
-      "from": "dream-skill-index-governance",
-      "to": "hermes-rollback-actuator",
-      "resolved": false
-    },
-    {
-      "from": "nature-figure",
-      "to": "nature-shared",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-uncertainty-reasoning",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-framework-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-peer-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "drawio",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-uncertainty-reasoning",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-backtest",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-literature-review",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-framework-research",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "nature-figure",
-      "to": "nature-shared",
-      "resolved": true
-    },
-    {
-      "from": "dream-backtest-verify",
-      "to": "bcrm2.data_fetcher",
-      "resolved": false
-    },
-    {
-      "from": "dream-backtest-verify",
-      "to": "washout_trigger_gate",
-      "resolved": false
-    },
-    {
-      "from": "dream-backtest-verify",
-      "to": "washout_detector",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "git",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "tsc",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "dream-code-sync-orphan-scan-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "auto_sync_dispatcher.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "knowledge-ingest",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-commit-sync-workflow",
-      "to": "dream-skill-index-governance",
-      "resolved": true
-    },
-    {
-      "from": "dream-module-post-dev-verify-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-module-post-dev-verify-workflow",
-      "to": "dream-code-sync-orphan-scan-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-uncertainty-reasoning",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-framework-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-peer-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "drawio",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "dream-code-commit-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "git",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "github-actions",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "update.sh",
-      "resolved": false
-    },
-    {
-      "from": "dream-code-deploy-pipeline",
-      "to": "healthcheck.sh",
-      "resolved": false
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-strategy-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-operation-director",
-      "resolved": true
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-cost-control",
-      "resolved": true
-    },
-    {
-      "from": "dream-eng-mgmt-workflow",
-      "to": "dream-task-creator",
-      "resolved": false
-    },
-    {
-      "from": "dream-qwen-eval-collab",
-      "to": "bsk",
-      "resolved": false
-    },
-    {
-      "from": "dream-qwen-eval-collab",
-      "to": "skill-creator",
-      "resolved": true
-    },
-    {
-      "from": "wiki-ingest-trigger",
-      "to": "cognitive_mcp_server.py",
-      "resolved": false
-    },
-    {
-      "from": "wiki-ingest-trigger",
-      "to": "wiki_compiler.py",
-      "resolved": false
-    },
-    {
-      "from": "wiki-ingest-trigger",
-      "to": "cordis-plugin-knowledge-wiki",
-      "resolved": false
-    },
-    {
-      "from": "knowledge-ingest",
-      "to": "build_index.py",
-      "resolved": false
-    },
-    {
-      "from": "knowledge-ingest",
-      "to": "cognitive_adapter.py",
-      "resolved": false
-    },
-    {
-      "from": "knowledge-ingest",
-      "to": "index_query_adapter.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-qwen-eval-collab",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-science-peer-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-research-orchestrator",
-      "to": "dream-eng-mgmt-workflow",
-      "resolved": true
-    },
-    {
-      "from": "debate-topic-selector",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-sync-orphan-scan-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-code-sync-orphan-scan-workflow",
-      "to": "dream-scattered-file-cleanup",
-      "resolved": true
-    },
-    {
-      "from": "dream-subagent-tdd-workflow",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-subagent-tdd-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "dream-subagent-tdd-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-acceptance-verify",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-code-commit-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-doc-sync-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "dream-skill-index-governance",
-      "resolved": true
-    },
-    {
-      "from": "dream-completion-evolution-workflow",
-      "to": "mcp_cognitive",
-      "resolved": false
-    },
-    {
-      "from": "dream-acceptance-verify",
-      "to": "verification-before-completion",
-      "resolved": true
-    },
-    {
-      "from": "dream-acceptance-verify",
-      "to": "dream-bugfix-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-acceptance-verify",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "auto-repair",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-bugfix-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "skill-creator",
-      "to": "dream-skill-index-governance",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "recall",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "record",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "verify",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Agent",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "WebSearch",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Glob",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Grep",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "Read",
-      "resolved": false
-    },
-    {
-      "from": "dream-arch-gap-analysis-workflow",
-      "to": "skill-creator",
-      "resolved": true
-    },
-    {
-      "from": "dream-feature-landing-workflow",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-feature-landing-workflow",
-      "to": "dream-bugfix-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-uncertainty-reasoning",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-backtest",
-      "resolved": true
-    },
-    {
-      "from": "dream-tdd-dev-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-tdd-dev-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "dream-tdd-dev-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-literature-review",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "dream-tdd-dev-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "tee-red-green-progress",
-      "resolved": true
-    },
-    {
-      "from": "dream-genome-factor-workflow",
-      "to": "test-driven-development",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-framework-research",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "tee-red-green-progress",
-      "to": "recall",
-      "resolved": false
-    },
-    {
-      "from": "tee-red-green-progress",
-      "to": "pytest",
-      "resolved": false
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "dream-contradiction-theory",
-      "resolved": true
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "dream-strategy-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "tavily",
-      "resolved": true
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "deep-research-pro",
-      "resolved": false
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "baidu-scholar-search-skill",
-      "resolved": false
-    },
-    {
-      "from": "dream-research-workflow",
-      "to": "bsk",
-      "resolved": false
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "dream-doc-sync-workflow",
-      "to": "doc_lint.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-doc-sync-workflow",
-      "to": "doc_coverage.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-doc-sync-workflow",
-      "to": "index_generator.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-doc-sync-workflow",
-      "to": "link_checker.py",
-      "resolved": false
-    },
-    {
-      "from": "dream-doc-sync-workflow",
-      "to": "index-ops",
-      "resolved": false
-    },
-    {
-      "from": "dream-skill-index-governance",
-      "to": "hermes-skill-governance",
-      "resolved": false
-    },
-    {
-      "from": "dream-skill-index-governance",
-      "to": "hermes-shadow-verification-gate",
-      "resolved": false
-    },
-    {
-      "from": "dream-skill-index-governance",
-      "to": "hermes-rollback-actuator",
-      "resolved": false
-    },
-    {
-      "from": "nature-figure",
-      "to": "nature-shared",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-uncertainty-reasoning",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-framework-research",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "dream-science-peer-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "drawio",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-orchestrator",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-uncertainty-reasoning",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-experiment-design",
-      "to": "dream-backtest",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-literature-review",
-      "to": "dream-research-workflow",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-framework-research",
-      "to": "dream-science-cross-disciplinary",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-literature-review",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-hypothesis-verification",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "dream-science-statistics-check",
-      "resolved": true
-    },
-    {
-      "from": "dream-science-paper-writing",
-      "to": "nature-figure",
-      "resolved": true
-    },
-    {
-      "from": "nature-figure",
-      "to": "nature-shared",
-      "resolved": true
-    }
-  ]
+  "edges": []
 }
