@@ -99,6 +99,7 @@ cognitive_links: [VM-1791537826150-c8b4d95a]
 | **3. 文档同步** | `dream-doc-sync-workflow` | 变更文档路径 | 索引更新 + 校验报告 | ✅ FAIL-OPEN |
 | **4. SKILL 治理** | `dream-skill-index-governance` | SKILL 变更 | 注册/版本/依赖检查 | ✅ FAIL-OPEN |
 | **5. 认知闭环** | `mcp_cognitive` (record/verify) | 全步骤结果 | 认知记忆 ID | ✅ FAIL-OPEN |
+| **5.5 被动训练触发** | `trigger_passive_training.py` + `mcp_cognitive` (record) | 收尾案例 + 认知结果 | 辅导上下文 + record_params(含hermes反思) | ✅ FAIL-OPEN |
 | **6. 最终报告** | 本 SKILL 内部 | 全步骤状态 | 收尾报告 + 红旗清单 | 输出 |
 
 ### 步骤 1：验收门禁（硬门禁·不可跳过）
@@ -215,6 +216,49 @@ verify(memory_id="VM-xxx", success=true)
 
 ---
 
+### 步骤 5.5：被动训练触发 — Trae 在线辅导（FAIL-OPEN）
+
+> **关联**: 34-前端应用训练系统 SPEC v0.2 §2.3
+> **设计模式**: 遵循 33-REA `cognitive_integration` 模式 — Python 脚本准备 record 参数，Trae(Agent) 执行 record 调用。
+
+**调度**：
+
+1. **准备收尾案例 JSON**（含 intent/actions/outcome/learned/code_path/acceptance_level/domain_tag）：
+```json
+{
+  "intent": "<任务描述>",
+  "actions": ["<步骤1>", "<步骤2>"],
+  "outcome": "success|partial|failure",
+  "learned": ["<经验1>"],
+  "outcome_text": "<结果描述>",
+  "code_path": "<变更文件路径>",
+  "feature": "<功能描述>",
+  "acceptance_level": "full|conditional|skip",
+  "domain_tag": "<域标签>"
+}
+```
+
+2. **执行触发脚本**：
+```bash
+python 34-前端应用训练系统/trigger_passive_training.py --case-data <case.json>
+```
+
+3. **读取输出 JSON**（含 status/evaluation/coaching_context/monitoring_checklist/record_params）
+
+4. **若 status=coaching_started**：
+   - 调用 `mcp_cognitive.record(content=output.record_params.content, quality_level="B", tags=output.record_params.tags)` — `hermes反思` tag 触发 `dream-self-iteration-workflow`
+   - 使用 `output.monitoring_checklist` 监控前端训练（v0.1 仅记录不纠正）
+   - 辅导完成后可调用 `coaching_loop.CoachingSession.to_report()` 记录辅导会话结果
+
+5. **若 status=skipped/deferred**：记录红旗 `passive-training-skipped`，继续
+
+**FAIL-OPEN 策略**：
+- 脚本执行失败 → 告警记录 `passive-training-failed` 红旗，不阻塞收尾
+- 33-REA 解析失败 → 脚本内部降级为纯文本四元组入库
+- 前端服务不可达 → 案例仍入 TDR 桶，等待主动训练批量处理
+
+---
+
 ### 步骤 6：最终报告（内部生成）
 
 > **借鉴 GitHub 生态**：CI/CD 完成后的 status summary + 红旗清单。
@@ -239,6 +283,7 @@ verify(memory_id="VM-xxx", success=true)
 | 3. 文档同步 | dream-doc-sync-workflow | ✅/⏭️ | <synced/skip> | <N> |
 | 4. SKILL 治理 | dream-skill-index-governance | ✅/⏭️ | <ok/skip> | <N> |
 | 5. 认知闭环 | mcp_cognitive | ✅ | <memory_id> | - |
+| 5.5 被动训练 | trigger_passive_training.py | ✅/⏭️ | <coaching_started/skipped> | <N> |
 
 ## 红旗清单
 - <如有红旗，逐条列出，含步骤+原因+建议>
@@ -272,7 +317,9 @@ verify(memory_id="VM-xxx", success=true)
     ↓                                     ↓
 [SKILL_GOV] → dream-skill-index-governance → [COGNITIVE]
     ↓                                               ↓
-[COGNITIVE] → mcp_cognitive(record/verify) → [REPORT]
+[COGNITIVE] → mcp_cognitive(record/verify) → [PASSIVE_TRAIN]
+    ↓                                               ↓
+[PASSIVE_TRAIN] → trigger_passive_training.py → [REPORT]
     ↓                                               ↓
 [REPORT] → 生成收尾报告 → [DONE]
 ```
@@ -285,6 +332,7 @@ verify(memory_id="VM-xxx", success=true)
 - `DOC_SYNC`: Step 3 文档同步（FAIL-OPEN）
 - `SKILL_GOV`: Step 4 SKILL 治理（FAIL-OPEN）
 - `COGNITIVE`: Step 5 认知闭环（FAIL-OPEN）
+- `PASSIVE_TRAIN`: Step 5.5 被动训练触发（FAIL-OPEN）
 - `REPORT`: Step 6 最终报告
 - `DONE`: 完成
 
@@ -305,6 +353,7 @@ verify(memory_id="VM-xxx", success=true)
 | Step 3 | 变更文档路径列表 | 更新后的 INDEX.md + 校验报告 + 覆盖率 |
 | Step 4 | SKILL 变更 | 注册/版本/依赖检查报告 |
 | Step 5 | 全步骤结果 | 认知记忆 ID |
+| Step 5.5 | 收尾案例 JSON + 认知结果 | 辅导上下文 + record_params(含hermes反思 tag) |
 | Step 6 | 全步骤状态 | wrapup_report.md |
 
 ---

@@ -61,17 +61,20 @@
 |:---|:---|:---:|
 | L1 | 0-SCHEMA | 4 |
 | L2 | 5-METHODOLOGY | 6 |
-| L3 | 1-TRADING | 19 |
-| L3 | 2-TECHNICAL | 5 |
+| L3 | 1-TRADING | 24 |
+| L3 | 2-TECHNICAL | 10 |
 | L3 | 3-THEORY | 4 |
 | L3 | 4-OPERATIONS | 5 |
+| L3 | 5-METHODOLOGY | 8 |
+| L3 | 5-CASE-STUDY | 2 |
 | L3 | 6-PRODUCT-BUSINESS | 7 |
-| L3 | 7-EXTERNAL-RESEARCH | 4+11目录 |
+| L3 | 7-EXTERNAL-RESEARCH | 4+13目录 |
 | L3 | 8-AI-COGNITION | 4 |
-| | **合计** | **48+** |
+| | **合计** | **73+** |
 
-> **注：** 合计48+个文件 = 4(L1) + 6(L2) + 23(L3原有) + 15(L3新增) + 根INDEX.md + _analysis/ 2个文件
+> **注：** 2026-10-11 全量核对：1-TRADING 24 / 2-TECHNICAL 10 / 5-METHODOLOGY 8 / 5-CASE-STUDY 2 / 6-PRODUCT-BUSINESS 7 / 7-EXTERNAL-RESEARCH 4+13目录（新增 trading-classics/）/ 8-AI-COGNITION 4
 > **2026-08-30增量重构：** 新增6-PRODUCT-BUSINESS(7) + 7-EXTERNAL-RESEARCH(4+11目录) + 8-AI-COGNITION(4)
+> **2026-10-11更新：** 1-TRADING 19→24(+5)，2-TECHNICAL 5→10(+5)，5-METHODOLOGY/5-CASE-STUDY 单列，7-EXTERNAL-RESEARCH 11→13目录(+trading-classics)
 
 ## 导航建议
 
@@ -92,4 +95,4 @@
 
 ---
 
-_最后更新：2026-08-30 | 来源：知识库三层架构 + 增量重构方案A_
+_最后更新：2026-10-11 | 来源：知识库三层架构 + 增量重构方案A + 全量对齐巡检_

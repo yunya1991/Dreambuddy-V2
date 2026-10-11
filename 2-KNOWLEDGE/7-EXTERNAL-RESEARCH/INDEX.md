@@ -50,7 +50,8 @@
 │   ├── quant-methods/    ← 量化方法（Kalman/PCA/IC等）
 │   ├── risk-models/      ← 风控模型
 │   ├── market-structure/ ← 市场结构
-│   └── trading-psychology/ ← 交易心理
+│   ├── trading-psychology/ ← 交易心理
+│   └── trading-classics/ ← 交易经典（金字塔网格对冲等，2026-09-10新增）
 ├── github/               ← GitHub开源调研
 │   ├── ml-frameworks/   ← 机器学习框架
 │   ├── trading-systems/ ← 交易系统
@@ -122,4 +123,4 @@ AI: "检索到Kalman Filter实现方案。这段调研结论值得归档。
 
 ---
 
-_最后更新：2026-09-01 | 来源：知识库增量重构方案A + 阶段2 W3 完成（8篇新增 / 9篇总归档 / 12子域92%起步率）_
+_最后更新：2026-10-11 | 来源：知识库增量重构方案A + 阶段2 W3 完成（8篇新增 / 9篇总归档 / 12子域92%起步率）+ 2026-09-10 trading-classics 新增_

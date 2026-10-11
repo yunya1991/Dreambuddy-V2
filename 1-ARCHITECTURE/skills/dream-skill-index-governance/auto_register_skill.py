@@ -205,8 +205,9 @@ def register_skills(
         report["status"] = "no_new_skills"
         return report
 
-    # 2. 逐个 validate
+    # 2. 逐个 validate + P2-4 自验证入库门（verify-before-commit）
     all_valid = True
+    report["gate_decisions"] = {}  # P2-4: gate 决策记录
     for skill_dir in unique_targets:
         skill_md = skill_dir / "SKILL.md"
         if not skill_md.exists():
@@ -226,6 +227,25 @@ def register_skills(
                 report["red_flags"].append(f"validate error [{skill_dir.name}]: {err}")
         for warn in result.get("warnings", []):
             report["red_flags"].append(f"validate warning [{skill_dir.name}]: {warn}")
+
+        # P2-4: 自验证入库门 — 决定 SKILL 初始生命周期状态
+        try:
+            from skill_verification_gate import SkillVerificationGate
+            gate = SkillVerificationGate(skill_indexer_module=sys.modules.get("skill_indexer"))
+            gate_result = gate.verify(skill_dir)
+            report["gate_decisions"][str(skill_dir)] = {
+                "skill_id": gate_result.skill_id,
+                "status": gate_result.status,
+                "confidence": gate_result.confidence,
+                "reasons": gate_result.reasons,
+            }
+            # rejected 的 SKILL 加入红旗（不影响 build，但标记需人工处理）
+            if gate_result.status == "rejected":
+                report["red_flags"].append(
+                    f"gate rejected [{skill_dir.name}]: {gate_result.reasons}"
+                )
+        except Exception:
+            pass  # FAIL-OPEN：gate 失败不阻塞注册流程
 
     # 3. 全量 build（重建 registry + 冲突/漂移报告）
     if not skip_build:

@@ -1,9 +1,9 @@
 ---
 name: dream-acceptance-verify
 description: "Bug修复/功能完成后的强制证据验收门禁：症状复测+日志证据+回归+影响面+边界五维验证，产出四文件验收包。AI宣称'完成/修复/通过'前必须调用，禁止靠感觉验收。"
-version: 1.0.0
+version: 1.1.0
 created: 2026-10-09
-updated: 2026-10-09
+updated: 2026-10-11
 license: Internal
 status: active
 category: orchestration
@@ -105,6 +105,7 @@ NO COMPLETION CLAIM WITHOUT 5-DIMENSION EVIDENCE
 | HC-6 | 改动范围必须核查 | git diff 不得超出修复方案声明的范围 |
 | HC-7 | 验收报告必须归档 | 四文件包缺一不可，否则验收无效 |
 | HC-8 | FAIL-OPEN 但必记录 | 验收不通过不强制阻塞 commit，但必须如实标记红旗 |
+| HC-9 | 功能验收日志追溯 SPEC | 功能验收时，日志证据必须追溯到技术文档(SPEC)中规划的功能定义，证明 SPEC→代码→运行→日志 完整链路。功能正常运行并产生预期日志/输出，才算功能验收完成 |
 
 ---
 
@@ -118,7 +119,8 @@ NO COMPLETION CLAIM WITHOUT 5-DIMENSION EVIDENCE
 │          │ 原 bug 症状是否消失 / 功能是否按预期工作 │
 ├──────────┼──────────────────────────────────────┤
 │ 维度 2   │ 日志证据（Log Evidence）★强制          │
-│          │ 日志中可 grep 到修复后的预期行为标记     │
+│          │ Bug修复: 日志中 grep 到修复后预期行为标记│
+│          │ 功能验收: SPEC规划功能运行→产生预期日志   │
 ├──────────┼──────────────────────────────────────┤
 │ 维度 3   │ 回归证据（Regression）                 │
 │          │ 相关测试套件全绿，exit code = 0        │
@@ -130,6 +132,10 @@ NO COMPLETION CLAIM WITHOUT 5-DIMENSION EVIDENCE
 │          │ 边界/负面场景未引入新问题               │
 └──────────┴──────────────────────────────────────┘
 ```
+
+> **维度 2 双场景说明**（v1.1.0 新增）：
+> - **Bug 修复验收**：代码修复路径必须在日志中留下可 grep 的标记，证明修复路径真的执行了。
+> - **功能验收**：技术文档(SPEC)规划的功能必须实际运行，并产生预期的日志/输出（含非空、非默认的 metrics），证明 SPEC→代码→运行→日志 完整链路。只有功能正常运行并产生对应日志，才算功能验收完成。
 
 ---
 
@@ -152,6 +158,8 @@ NO COMPLETION CLAIM WITHOUT 5-DIMENSION EVIDENCE
 ## 证据要求清单
 - [ ] 症状复测证据
 - [ ] 日志证据（强制）
+  - [ ] Bug修复场景: grep 修复标记
+  - [ ] 功能验收场景: SPEC→代码→运行→日志 追溯链（v1.1.0）
 - [ ] 回归证据
 - [ ] 影响面证据
 - [ ] 边界证据
@@ -196,7 +204,7 @@ echo "exit=$?"
 
 **核心原则**：代码路径必须在日志中留下可 grep 的标记，证明修复路径真的执行了。
 
-**处理**：
+**处理（Bug 修复场景）**：
 
 ```bash
 # 1. 定位日志文件
@@ -212,6 +220,29 @@ grep -n "<修复标记关键字>" <日志路径>
 # 4. 确认日志行包含预期值（非空、非默认、非错误）
 ```
 
+**处理（功能验收场景 — v1.1.0 新增）**：
+
+```bash
+# 1. 从 SPEC/技术文档提取规划的功能清单
+#    例：SPEC.md 中 §4.2.1 规划了 S层 IntentTrainingLoop
+#    功能定义: 桶满50条→触发train()→产出accuracy/weights
+#
+# 2. 逐一运行 SPEC 规划的功能
+python3 scripts/run_active_training_live.py --limit 100
+#    或：触发对应的 API/CLI/服务
+#
+# 3. 检查每个功能是否产生预期输出
+#    - trained=True/False（非 null/undefined）
+#    - metrics 非空、非默认值（如 accuracy=0.18, graph_coverage=1.0）
+#    - 输出结构符合 SPEC 定义的字段
+#
+# 4. 追溯链验证: SPEC→代码→运行→日志 四点一致
+#    SPEC §4.2.1 定义功能 X
+#    → 代码 s-intent-training-loop.ts 实现功能 X
+#    → 运行 POST /api/training/s action=train 触发功能 X
+#    → 日志/响应 {trained:true, accuracy:0.18, weights:{...}} 证明功能 X 执行
+```
+
 **日志标记要求**（借鉴 polling_trader.py 实践）：
 
 ```python
@@ -219,21 +250,63 @@ grep -n "<修复标记关键字>" <日志路径>
 logger.info("[ACCEPTANCE] <修复点> executed: key=%s value=%s", key, value)
 ```
 
+**功能验收的输出要求**（v1.1.0 新增）：
+
+```
+# 功能验收的"日志"不限于 log 文件，也包括：
+# - API 响应 JSON（含 trained/metrics 字段）
+# - CLI 输出 stdout
+# - 数据库写入记录
+# - 桶计数变化（before → after）
+#
+# 关键判据：输出必须包含非空、非默认的 metrics
+# 例：trained=true + accuracy=0.18 + weights={intent_type: 0.5, ...}
+# 反例：trained=true + accuracy=0 + weights={} （空 metrics = 未真正训练）
+```
+
 **判定**：
 
-| grep 结果 | 含义 | 处置 |
-|-----------|------|------|
-| 命中 + 值符合预期 | ✅ 日志证据通过 | 进入步骤 4 |
-| 命中但值异常 | 🚩 修复逻辑有问题 | 回到开发阶段 |
-| 0 命中 | 🚩 修复路径未执行 | 检查：路径是否被调用？日志级别是否开启？ |
-| 日志文件不存在 | 🚩 从未运行 | 必须先触发运行 |
+| 场景 | 结果 | 判定 | 处置 |
+|------|------|------|------|
+| Bug修复 | grep 命中 + 值符合预期 | ✅ 通过 | 进入步骤 4 |
+| Bug修复 | grep 命中但值异常 | 🚩 修复逻辑有问题 | 回到开发阶段 |
+| Bug修复 | 0 命中 | 🚩 修复路径未执行 | 检查路径/日志级别 |
+| 功能验收 | 运行 + 产出非空 metrics | ✅ 功能验收完成 | SPEC→代码→运行→日志 链路完整 |
+| 功能验收 | 运行但 metrics 为空/默认 | 🚩 功能未真正执行 | 检查：数据是否喂入？逻辑是否触发？ |
+| 功能验收 | 运行报错/异常 | 🚩 功能有 bug | 修复后重验 |
+| 功能验收 | 未运行（无输出） | 🚩 功能从未执行 | 必须先触发运行 |
 
 **反模式**（禁止）：
 - ✗ "代码逻辑看起来对" 替代日志证据
 - ✗ 用 print 而非 logger（print 不进日志文件，无法 grep）
 - ✗ 日志标记不含具体值（"修复完成" 不如 "修复完成: size=50" 可验证）
+- ✗ 功能验收时只检查"API 返回 200"而不检查 metrics 内容（v1.1.0 新增）
+- ✗ 功能验收时不追溯 SPEC 定义（"代码能跑" ≠ "SPEC 规划的功能已验收"）（v1.1.0 新增）
 
-**输出**：日志证据片段（grep 结果 + 上下文 3 行）
+**真实案例参考**（2026-10-11 SPL 5层训练循环验收）：
+
+```
+SPEC §4.2.1-4.2.5 规划了 5 层训练循环:
+  S层 IntentTrainingLoop → 桶满50 → train() → accuracy/weights
+  DSH ExecutionPathTrainingLoop → 桶满50 → train() → path_templates
+  C层 ReflectionTrainingLoop → 桶满50 → train() → decision_rules
+  G层 GraphStructureTrainingLoop → 桶满60 → train() → graph_coverage
+  LLM PromptOptimizationLoop → 桶满30 → train() → prompt_templates
+
+验收证据:
+  代码: 3.1-FRONTEND/src/lib/{s,dsh,c,g,llm}-*-training-loop.ts
+  运行: POST /api/training/{layer} action=train
+  日志/响应:
+    S:   trained=true, accuracy=0.18, weights={...} ✅
+    DSH: trained=true, path_templates=[{path:[...],count:35,...}] ✅
+    C:   trained=true, decision_rules={CONTINUE:1,REDO:0,...} ✅
+    G:   trained=true, graph_coverage=1.0, node_count=91 ✅
+    LLM: trained=true, prompt_templates=[{template:"...",count:N}] ✅
+
+结论: SPEC→代码→运行→日志 四点一致，5层训练循环功能验收完成
+```
+
+**输出**：日志证据片段（grep 结果 + 上下文 3 行）或功能验收输出快照
 
 ---
 
@@ -344,7 +417,7 @@ acceptance_bundles/20261009_fix_xxx/
 | 维度 | 状态 | 证据 | 备注 |
 |------|------|------|------|
 | 症状复测 | ✅/🚩/⚠️ | repro_after.log 第N行 observed=... | |
-| 日志证据 | ✅/🚩/⚠️ | grep 命中 <标记> 值=<value> | 强制项 |
+| 日志证据 | ✅/🚩/⚠️ | Bug修复: grep 命中 <标记> 值=<value> / 功能验收: SPEC→代码→运行→metrics 非空 | 强制项 |
 | 回归测试 | ✅/🚩/⚠️ | test.log exit=0, N passed | |
 | 影响面 | ✅/🚩/⚠️ | fix.diff 改动 M 文件 | |
 | 边界验证 | ✅/🚩/⚠️ | 3 场景全通过 | |
@@ -500,3 +573,4 @@ AI 验收：<日期>
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | 1.0.0 | 2026-10-09 | 初始版本，五维证据模型 + 6 步流程 + 四文件验收包 + 5 域调研。来源：用户痛点「AI 靠感觉工作、反复验收或遗忘验收」+ 工程实践调研（DZone/GSD/OSS Patch/UAT/independent-testing）+ 项目自身 polling_trader 日志实践 |
+| 1.1.0 | 2026-10-11 | 维度 2（日志证据）双场景拆分：Bug修复(grep修复标记) + 功能验收(SPEC→代码→运行→日志追溯链)。新增 HC-9 硬约束（功能验收日志必须追溯 SPEC）。新增功能验收判定矩阵(4 行)。新增 2 条反模式（只检查HTTP状态码/不追溯SPEC）。新增真实案例参考（SPL 5层训练循环验收）。来源：用户洞察「日志级别验收应对应技术文档规划功能，功能正常运行产生对应日志才算验收完成」+ SPL 主动训练真实验收案例（325条采集→548条喂入→5层 trained=true）|

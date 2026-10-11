@@ -1,5 +1,6 @@
 # 2-KNOWLEDGE — 交易系统知识库
 
+> **版本**: v1.1 | **更新日期**: 2026-10-11
 > **定位：** 从 Skills 蒸馏的跨领域系统知识，三层分层存储。
 > **源：** `~/.hermes/skills/` 中各 SKILL.md
 > **消费端：** 飞书知识库文档（https://icnic28nu1x5.feishu.cn/wiki/KOH4wSEcFid298kk7R8cuS7FnTh）
@@ -103,7 +104,7 @@
 | 5-CASE-STUDY | 1 | 🟡 起步 |
 | 5-METHODOLOGY | 8 | ✅ 已完成 |
 | 6-PRODUCT-BUSINESS | 7 | ✅ 已完成 |
-| 7-EXTERNAL-RESEARCH | 26 | ✅ 骨架完成，随开发自动积累 |
+| 7-EXTERNAL-RESEARCH | 23 | ✅ 骨架完成，随开发自动积累 |
 | 8-AI-COGNITION | 4 | ✅ 已完成 |
-| 9-RAG-INFRA | 7 | ✅ v2.0 |
+| 9-RAG-INFRA | 7 | ✅ v2.1 |
 | wiki | 24 | ✅ 编译器自动维护 |

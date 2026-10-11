@@ -1,0 +1,8 @@
+=== P1 Changes (git diff) ===
+
+Modified files:
+
+New files:
+-rw-r--r--@ 1 zhangjiangtao  staff   5105 Oct 11 15:31 scripts/p1_f3_acceptance.py
+-rw-r--r--@ 1 zhangjiangtao  staff    547 Oct 11 15:28 scripts/p1_test_case.json
+-rw-r--r--@ 1 zhangjiangtao  staff  15493 Oct 11 15:27 scripts/rea_applicability_verify.py

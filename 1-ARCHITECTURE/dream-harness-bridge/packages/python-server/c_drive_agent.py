@@ -1052,10 +1052,14 @@ def run_post_debate_pipeline(
     llm_fn: Optional[Callable[..., str]] = None,
     bull_persona: str = "",
     bear_persona: str = "",
+    jev_fn: Optional[Callable[..., dict]] = None,
+    debate_count: int = 0,
+    enable_quality_gate: bool = False,
 ) -> dict:
-    """辩论后三层管道: Layer1(评审) → Layer2(反思) → Layer3(训练)。
+    """辩论后三层管道: Layer1(评审) → Layer2(反思) → [质量门控] → Layer3(训练)。
 
     SPEC v1.2-rc1 §2.2: Verdict 之后异步执行，面向训练层。
+    SPEC debate-jev-integration §3: 可选质量门控(jev noul)过滤低质量辩论。
     HC1 FAIL-OPEN: 任一层异常不阻塞，降级用上一层结果。
     HC11 延迟预算: Layer1-3 总延迟 <10s（超时降级）。
 
@@ -1066,6 +1070,9 @@ def run_post_debate_pipeline(
         llm_fn: LLM 调用函数，None 时各层降级
         bull_persona: 正方 Persona 名称（Elo 更新用）
         bear_persona: 反方 Persona 名称（Elo 更新用）
+        jev_fn: jev 决策函数 (state, questions) -> dict，None 时质量门控降级
+        debate_count: 累计辩论场次（冷启动阈值判定用）
+        enable_quality_gate: 是否启用质量门控（默认 False）
 
     Returns:
         {"adjudication": dict, "reflection": dict, "training": dict}
@@ -1146,41 +1153,72 @@ def run_post_debate_pipeline(
             "persona_suggestions": {}, "memory_id": None, "timestamp": "",
         }
 
+    # Layer 3 前置: 质量门控 (方案C, SPEC debate-jev-integration §3)
+    quality_gated = False
+    gate_reason = ""
+    if enable_quality_gate:
+        try:
+            from debate_quality_gate import DebateQualityGate
+            gate = DebateQualityGate(jev_fn=jev_fn)
+            adj_obj_for_gate = result.get("_adj_obj")
+            gate_result = gate.gate(
+                topic=topic, transcript=transcript,
+                adjudication_result=adj_obj_for_gate,
+                debate_count=debate_count,
+            )
+            if not gate_result.passed and not gate_result.degraded:
+                quality_gated = True
+                gate_reason = gate_result.reason
+        except Exception as e:  # noqa: BLE001 FAIL-OPEN
+            import logging
+            logging.getLogger("cdrive.pipeline").warning(
+                "质量门控异常(FAIL-OPEN): %s", e)
+
     # Layer 3: 算法训练
-    try:
-        trainer = DebateTrainer(cognitive_adapter=cog)
-        adj_obj = result.get("_adj_obj")
-        refl_obj = result.get("_refl_obj")
-        if adj_obj is None:
-            from adjudicator import AdjudicationResult
-            adj_obj = AdjudicationResult(
-                topic=topic, bull_turn_scores=[], bear_turn_scores=[],
-                bull_total=18.0, bear_total=18.0, dimension_comparison={},
-                winner=verdict.get("winner", "draw"), rfd="",
-                key_clash_points=[], rebuttal_strength={}, evidence_depth={},
-                timestamp="",
-            )
-        if refl_obj is None:
-            from reflector import ReflectionReport
-            refl_obj = ReflectionReport(
-                topic=topic, review={}, strategy_analysis={},
-                persona_analysis={}, evidence_analysis={},
-                gaps={"evidence_gaps": [], "dropped_args": [], "unused_tactics": []},
-                recommendations=[], strategy_tags=[],
-                persona_suggestions={}, memory_id=None, timestamp="",
-            )
-        train_result = trainer.train(
-            adj_obj, refl_obj, bull_persona, bear_persona)
-        result["training"] = train_result
-    except Exception as e:  # noqa: BLE001 FAIL-OPEN
-        import logging
-        logging.getLogger("cdrive.pipeline").warning(
-            "Layer3 训练异常(FAIL-OPEN): %s", e)
+    if quality_gated:
+        # 低质量辩论 → 跳过训练
         result["training"] = {
             "bayesian_updated": False,
             "elo_updated": False,
             "cbr_ingested": False,
+            "quality_gated": True,
+            "gate_reason": gate_reason,
         }
+    else:
+        try:
+            trainer = DebateTrainer(cognitive_adapter=cog)
+            adj_obj = result.get("_adj_obj")
+            refl_obj = result.get("_refl_obj")
+            if adj_obj is None:
+                from adjudicator import AdjudicationResult
+                adj_obj = AdjudicationResult(
+                    topic=topic, bull_turn_scores=[], bear_turn_scores=[],
+                    bull_total=18.0, bear_total=18.0, dimension_comparison={},
+                    winner=verdict.get("winner", "draw"), rfd="",
+                    key_clash_points=[], rebuttal_strength={}, evidence_depth={},
+                    timestamp="",
+                )
+            if refl_obj is None:
+                from reflector import ReflectionReport
+                refl_obj = ReflectionReport(
+                    topic=topic, review={}, strategy_analysis={},
+                    persona_analysis={}, evidence_analysis={},
+                    gaps={"evidence_gaps": [], "dropped_args": [], "unused_tactics": []},
+                    recommendations=[], strategy_tags=[],
+                    persona_suggestions={}, memory_id=None, timestamp="",
+                )
+            train_result = trainer.train(
+                adj_obj, refl_obj, bull_persona, bear_persona)
+            result["training"] = train_result
+        except Exception as e:  # noqa: BLE001 FAIL-OPEN
+            import logging
+            logging.getLogger("cdrive.pipeline").warning(
+                "Layer3 训练异常(FAIL-OPEN): %s", e)
+            result["training"] = {
+                "bayesian_updated": False,
+                "elo_updated": False,
+                "cbr_ingested": False,
+            }
 
     # 清理内部对象
     result.pop("_adj_obj", None)

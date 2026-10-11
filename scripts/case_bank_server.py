@@ -346,8 +346,33 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
 # 工具注册表
 # ============================================================
 
+def fetch_since(since_ts: int = 0, limit: int = 100) -> dict:
+    """增量获取 created_at > since_ts 的案例（主动训练采集用）。
+
+    Args:
+        since_ts: 时间戳(ms)，只返回此时间之后的案例。0 表示全量
+        limit: 最大返回数量
+
+    Returns:
+        {"ok": True, "cases": [...], "count": N}
+    """
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM solution_cases WHERE created_at > ? ORDER BY created_at ASC LIMIT ?",
+            (since_ts, limit),
+        ).fetchall()
+        cases = [_row_to_dict(row) for row in rows]
+        return {"ok": True, "cases": cases, "count": len(cases)}
+    except Exception as e:
+        return {"ok": False, "error": f"fetch_since_failed: {type(e).__name__}: {e}"}
+    finally:
+        conn.close()
+
+
 TOOL_HANDLERS = {
     "store": lambda args: json.dumps(store_case(args), ensure_ascii=False),
     "retrieve": lambda args: json.dumps(retrieve_cases(args.get("query", ""), args.get("top_k", 5)), ensure_ascii=False),
     "stats": lambda _args: json.dumps(get_stats(), ensure_ascii=False),
+    "fetch_since": lambda args: json.dumps(fetch_since(args.get("since", 0), args.get("limit", 100)), ensure_ascii=False),
 }

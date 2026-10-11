@@ -10,12 +10,15 @@
 | 文件 | 说明 | 来源 Skill / 组件 |
 |:---|---|:---|
 | [Hermes-架构](./Hermes-架构.md) | Hermes Agent 核心架构：Gateway、Cron、Skill、Plugin | hermes-core, a-series-intraday-architecture |
+| [Hermes-Planner-P0](./Hermes-Planner-P0.md) | Hermes Planner P0 阶段规划与设计 | hermes-planner |
 | [Cron-调度](./Cron-调度.md) | A 系列 cron 任务链、Guard 机制、execution_loop 状态机 | hermes-cron-maintenance, a-series-intraday-architecture |
 | [飞书集成指南](./飞书集成指南.md) | lark-cli 用法、Base/OKR/审批/文档/IM 调用与陷阱 | feishu-integration, feishu-orchestrator, lark-shared |
 | [部署与维护](./部署与维护.md) | 腾讯云部署、GitHub 同步、环境变量、系统维护 | 运维实践沉淀 |
-| 数据源降级管道标准 | 定义标准化的数据采集降级策略 | 2026-06-13 | v1.0.0 | active |
+| [数据源降级管道标准](./数据源降级管道标准.md) | 标准化的数据采集降级策略（v1.0.0, active, 2026-06-13） | 数据管道体系 |
 | [数据管道](./数据管道.md) | 数据源清单/ETL流程/新鲜度标准/降级策略 | 数据管道体系 |
-| 预存问题修复7组25测试 | exit_engine timeout仲裁+kline事件驱动注入+resistance funding/oi符号修复(+→-)+event_window FOMC时区归一化+okx_market TTL缓存+重试3次+stale降级_last_good | 2026-10-09 |
+| [软件工程自检测自修复自迭代实践调研](./软件工程自检测自修复自迭代实践调研笔记_20260929.md) | 自检测/自修复/自迭代三阶段实践调研笔记 | 调研沉淀（2026-09-29） |
+| [金融交易系统可观测性实践调研](./金融交易系统可观测性实践调研.md) | 交易系统可观测性建设（指标/日志/追踪）调研 | 调研沉淀 |
+| [预存问题修复7组25测试](./预存问题修复7组25测试.md) | exit_engine timeout仲裁+kline事件驱动注入+resistance funding/oi符号修复(+→-)+event_window FOMC时区归一化+okx_market TTL缓存+重试3次+stale降级_last_good | 2026-10-09 |
 
 ## 关联域
 
@@ -29,4 +32,4 @@
 3. 末尾注明 `最后更新：YYYY-MM-DD`
 4. Skills 为权威源，KB 做跨域蒸馏和补充编排
 
-最后更新：2026-10-09 | 总文件数：7（含INDEX）
+最后更新：2026-10-11 | 总文件数：10（含INDEX）

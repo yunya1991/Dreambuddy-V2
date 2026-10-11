@@ -10,6 +10,7 @@
 | [risk-models/](./risk-models/) | 风控模型 | VaR、Kelly公式、动态仓位、组合熔断 |
 | [market-structure/](./market-structure/) | 市场结构 | 订单簿、流动性、CME缺口、减半周期 |
 | [trading-psychology/](./trading-psychology/) | 交易心理 | 恐贪指数、情绪周期、行为金融学 |
+| [trading-classics/](./trading-classics/) | 交易经典 | 金字塔网格对冲、源材料采集档案 |
 
 ## 已归档调研
 
@@ -33,6 +34,12 @@
 |------|----------|------|
 | [Kalman滤波量化实战调研](./quant-methods/2026-09-01-kalman滤波量化实战调研.md) | 2026-09-01 | pykalman+numpy双实现FAIL-OPEN；Q/R随波动率+价差动态调参；MSE降29.9%；6处真实代码坐标；3处反模式提醒 |
 
+### trading-classics（交易经典）
+| 文件 | 调研日期 | 摘要 |
+|------|----------|------|
+| [传统金融进阶策略调研-金字塔网格对冲](./trading-classics/2026-09-10-传统金融进阶策略调研-金字塔网格对冲.md) | 2026-09-10 | 金字塔网格+对冲策略调研 |
+| [源材料采集档案](./trading-classics/源材料采集档案.md) | 2026-09-10 | 调研源材料采集归档 |
+
 ---
 
-_最后更新：2026-09-01（W3 批量填充后）_
+_最后更新：2026-10-11（新增 trading-classics/ 子域）_

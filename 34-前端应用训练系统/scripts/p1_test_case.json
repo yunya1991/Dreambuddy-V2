@@ -1,0 +1,15 @@
+{
+  "intent": "P1验证: 33-REA→TDR数据管线端到端",
+  "actions": ["创建验证脚本", "校准ground_truth", "端到端跑通"],
+  "outcome_text": "pattern_recall=100%, chain_coverage=100%",
+  "outcome": "success",
+  "learned": ["algorithm_reducer适配层增强有效", "chain匹配需规范化前缀"],
+  "code_path": "adapters/rea_to_tdr_adapter.py",
+  "feature": "REA转TrainingCase",
+  "acceptance_level": "PASS",
+  "domain_tag": "前端训练",
+  "novelty": 0.7,
+  "significance": 0.8,
+  "anomaly": 0.0,
+  "reproducibility": 0.9
+}
