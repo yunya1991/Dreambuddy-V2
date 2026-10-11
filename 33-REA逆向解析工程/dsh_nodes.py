@@ -35,7 +35,14 @@ from core.dependency_graph import DependencyGraph
 from core.call_chain_tracer import CallChainTracer
 from core.python_analyzer import PythonAnalyzer
 from core.investigation_workflow import investigate
-from core.cognitive_integration import prepare_record_params
+from core.cognitive_integration import (
+    prepare_audit_record_params,
+    prepare_decision_record_params,
+    prepare_record_params,
+)
+from core.ai_audit import audit_ai_output
+from core.design_decision_recovery import recover_decisions
+from core.evolution_narrative import generate_narrative
 
 
 __all__ = [
@@ -43,6 +50,9 @@ __all__ = [
     "S33_rea_trace",
     "S33_rea_compare",
     "S33_rea_investigate",
+    "S33_rea_recover_decisions",
+    "S33_rea_narrative",
+    "S33_rea_audit",
     "DSH_NODE_REGISTRY",
     "dispatch",
 ]
@@ -415,6 +425,228 @@ def S33_rea_investigate(params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# S33_rea_recover_decisions - 设计决策还原（PoE Task 2）
+# ---------------------------------------------------------------------------
+
+def S33_rea_recover_decisions(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_recover_decisions 节点：设计决策还原（ADR 风格）。
+
+    Params:
+        target: 本地路径（目录或文件）（必填）
+        trace_id: 调用方传入的 trace_id（可选）
+
+    Returns (SubagentOutput):
+        ok=True:
+            result = {target, decisions, evidence, known_gaps, cognitive_record}
+    """
+    target = str(params.get("target") or "").strip()
+    if not target:
+        return _make_output(
+            "S33_rea_recover_decisions",
+            str(params.get("trace_id") or _gen_trace_id("s33dec")),
+            ok=False, result={}, error="missing_target",
+        )
+
+    trace_id = str(params.get("trace_id") or _gen_trace_id("s33dec"))
+
+    try:
+        decision_result = recover_decisions(target)
+
+        # 准备认知记忆参数
+        cognitive_record = prepare_decision_record_params(decision_result)
+
+        # 序列化 Evidence
+        evidence_list = []
+        known_gaps: list[str] = []
+        for e in decision_result.get("evidence", []):
+            if hasattr(e, "to_dict"):
+                evidence_list.append(e.to_dict())
+            else:
+                evidence_list.append(e)
+            # 提取 known_gaps
+            gaps = getattr(e, "known_gaps", []) if hasattr(e, "known_gaps") else []
+            known_gaps.extend(gaps)
+
+        return _make_output("S33_rea_recover_decisions", trace_id, ok=True, result={
+            "target": target,
+            "decisions": decision_result.get("decisions", []),
+            "evidence": evidence_list,
+            "known_gaps": known_gaps,
+            "cognitive_record": cognitive_record,
+            "trace_id": trace_id,
+        })
+    except Exception as e:
+        # FAIL-OPEN（TR-7.3）：返回含 unknown Evidence 的部分结果，不中断
+        from core.evidence import Evidence, EvidenceLevel
+        ev = Evidence(
+            result=f"设计决策还原失败: {e}",
+            level=EvidenceLevel.UNKNOWN,
+            provenance={"target": target, "analysis": "recover_decisions"},
+            confidence=0.0,
+            known_gaps=[f"节点异常: {type(e).__name__}: {e}"],
+        )
+        return _make_output("S33_rea_recover_decisions", trace_id, ok=True, result={
+            "target": target,
+            "decisions": [],
+            "evidence": [ev.to_dict()],
+            "known_gaps": [f"节点异常: {e}"],
+            "trace_id": trace_id,
+        })
+
+
+# ---------------------------------------------------------------------------
+# S33_rea_narrative - 演化叙事生成（PoE Task 3）
+# ---------------------------------------------------------------------------
+
+def S33_rea_narrative(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_narrative 节点：演化叙事生成。
+
+    Params:
+        target: git 仓库根路径（必填）
+        trace_id: 调用方传入的 trace_id（可选）
+
+    Returns (SubagentOutput):
+        ok=True:
+            result = {target, turning_points, tech_debt_timeline, evidence, known_gaps}
+    """
+    target = str(params.get("target") or "").strip()
+    if not target:
+        return _make_output(
+            "S33_rea_narrative",
+            str(params.get("trace_id") or _gen_trace_id("s33nar")),
+            ok=False, result={}, error="missing_target",
+        )
+
+    trace_id = str(params.get("trace_id") or _gen_trace_id("s33nar"))
+
+    try:
+        narrative_result = generate_narrative(target)
+
+        # 序列化 Evidence + 提取 known_gaps
+        evidence_list = []
+        known_gaps: list[str] = []
+        for e in narrative_result.get("evidence", []):
+            if hasattr(e, "to_dict"):
+                evidence_list.append(e.to_dict())
+            else:
+                evidence_list.append(e)
+            gaps = getattr(e, "known_gaps", []) if hasattr(e, "known_gaps") else []
+            known_gaps.extend(gaps)
+
+        return _make_output("S33_rea_narrative", trace_id, ok=True, result={
+            "target": target,
+            "turning_points": narrative_result.get("turning_points", []),
+            "tech_debt_timeline": narrative_result.get("tech_debt_timeline", []),
+            "evidence": evidence_list,
+            "known_gaps": known_gaps,
+            "trace_id": trace_id,
+        })
+    except Exception as e:
+        from core.evidence import Evidence, EvidenceLevel
+        ev = Evidence(
+            result=f"演化叙事生成失败: {e}",
+            level=EvidenceLevel.UNKNOWN,
+            provenance={"target": target, "analysis": "generate_narrative"},
+            confidence=0.0,
+            known_gaps=[f"节点异常: {type(e).__name__}: {e}"],
+        )
+        return _make_output("S33_rea_narrative", trace_id, ok=True, result={
+            "target": target,
+            "turning_points": [],
+            "tech_debt_timeline": [],
+            "evidence": [ev.to_dict()],
+            "known_gaps": [f"节点异常: {e}"],
+            "trace_id": trace_id,
+        })
+
+
+# ---------------------------------------------------------------------------
+# S33_rea_audit - AI 产出审计（PoE Task 5 — 核心门禁）
+# ---------------------------------------------------------------------------
+
+def S33_rea_audit(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_audit 节点：AI 产出审计（PoE 核心门禁）。
+
+    Params:
+        target: AI 产出代码目录或文件路径（必填）
+        ai_context: 可选 AI 上下文（agent_id/model/prompt_hash/timestamp）
+        trace_id: 调用方传入的 trace_id（可选）
+
+    Returns (SubagentOutput):
+        ok=True:
+            result = {
+                target, evidence_chain_score, poe_score, gate_decision,
+                cognitive_debt, evidence, known_gaps, cognitive_record
+            }
+        ok=False:
+            error: 错误描述
+    """
+    target = str(params.get("target") or "").strip()
+    if not target:
+        return _make_output(
+            "S33_rea_audit",
+            str(params.get("trace_id") or _gen_trace_id("s33aud")),
+            ok=False, result={}, error="missing_target",
+        )
+
+    trace_id = str(params.get("trace_id") or _gen_trace_id("s33aud"))
+    ai_context = params.get("ai_context")
+
+    try:
+        audit_result = audit_ai_output(target, ai_context=ai_context)
+
+        # 准备认知记忆参数
+        cognitive_record = prepare_audit_record_params(audit_result)
+
+        # 序列化 Evidence + 提取 known_gaps
+        evidence_list = []
+        known_gaps: list[str] = []
+        for e in audit_result.get("evidence", []):
+            if hasattr(e, "to_dict"):
+                evidence_list.append(e.to_dict())
+            else:
+                evidence_list.append(e)
+            gaps = getattr(e, "known_gaps", []) if hasattr(e, "known_gaps") else []
+            known_gaps.extend(gaps)
+
+        # FAIL-OPEN：审计失败时 audit_result 已含 unknown Evidence
+        return _make_output("S33_rea_audit", trace_id, ok=True, result={
+            "target": target,
+            "evidence_chain_score": audit_result.get("evidence_chain_score", 0.0),
+            "coverage_score": audit_result.get("coverage_score", 0.0),
+            "complexity_penalty": audit_result.get("complexity_penalty", 0.0),
+            "poe_score": audit_result.get("poe_score", 0.0),
+            "gate_decision": audit_result.get("gate_decision", "review"),
+            "cognitive_debt": audit_result.get("cognitive_debt", []),
+            "audit_layer_status": audit_result.get("audit_layer_status", {}),
+            "evidence": evidence_list,
+            "known_gaps": known_gaps,
+            "cognitive_record": cognitive_record,
+            "trace_id": trace_id,
+        })
+    except Exception as e:
+        # FAIL-OPEN（TR-7.3 + PoE §5.5）
+        from core.evidence import Evidence, EvidenceLevel
+        ev = Evidence(
+            result=f"AI 审计失败: {e}",
+            level=EvidenceLevel.UNKNOWN,
+            provenance={"target": target, "analysis": "ai_audit"},
+            confidence=0.0,
+            known_gaps=[f"节点异常: {type(e).__name__}: {e}"],
+        )
+        return _make_output("S33_rea_audit", trace_id, ok=True, result={
+            "target": target,
+            "evidence_chain_score": 0.0,
+            "poe_score": 0.0,
+            "gate_decision": "review",
+            "cognitive_debt": [],
+            "evidence": [ev.to_dict()],
+            "known_gaps": [f"节点异常: {e}"],
+            "trace_id": trace_id,
+        })
+
+
+# ---------------------------------------------------------------------------
 # DSH 节点注册表 - 供 DSH server.py 注册路由
 # ---------------------------------------------------------------------------
 
@@ -423,6 +655,9 @@ DSH_NODE_REGISTRY: Dict[str, Any] = {
     "s33_rea_trace": S33_rea_trace,
     "s33_rea_compare": S33_rea_compare,
     "s33_rea_investigate": S33_rea_investigate,
+    "s33_rea_recover_decisions": S33_rea_recover_decisions,
+    "s33_rea_narrative": S33_rea_narrative,
+    "s33_rea_audit": S33_rea_audit,
 }
 
 

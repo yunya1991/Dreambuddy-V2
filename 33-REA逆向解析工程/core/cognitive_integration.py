@@ -206,3 +206,164 @@ class CognitiveIntegration:
         if not locate.get("valid", True):
             return False
         return True
+
+
+# ==================================================================
+# PoE 扩展（Task 6）— 决策/方法论/审计的 record 参数生成
+# ==================================================================
+
+def prepare_decision_record_params(decision_result: dict[str, Any]) -> dict[str, Any]:
+    """将设计决策还原结果格式化为 record() 调用参数。
+
+    Args:
+        decision_result: recover_decisions() 返回结果，含 decisions 列表
+
+    Returns:
+        {content, quality_level, tags}
+    """
+    target = decision_result.get("target", "?")
+    decisions = decision_result.get("decisions", [])
+    evidence_list = decision_result.get("evidence", [])
+
+    lines: list[str] = []
+    lines.append(f"[REA 设计决策还原 {target}]")
+    lines.append(f"决策数: {len(decisions)}")
+    lines.append("")
+
+    for i, d in enumerate(decisions, 1):
+        decision_text = d.get("decision", "") if isinstance(d, dict) else str(d)
+        context_text = d.get("context", "") if isinstance(d, dict) else ""
+        consequences = d.get("consequences", []) if isinstance(d, dict) else []
+        alternatives = d.get("alternatives", []) if isinstance(d, dict) else []
+
+        lines.append(f"{i}. {decision_text}")
+        if context_text:
+            lines.append(f"   上下文: {context_text}")
+        if consequences:
+            lines.append(f"   影响: {'; '.join(consequences)}")
+        if alternatives:
+            for alt in alternatives:
+                alt_text = alt.get("result", "") if isinstance(alt, dict) else str(alt)
+                lines.append(f"   替代方案: {alt_text}")
+        lines.append("")
+
+    # Evidence 摘要
+    level_counts: dict[str, int] = {}
+    for e in evidence_list:
+        level = e.level.value if hasattr(e.level, "value") else str(e.level)
+        level_counts[level] = level_counts.get(level, 0) + 1
+    if level_counts:
+        lines.append(f"Evidence 统计: {len(evidence_list)} 条")
+        for level, count in sorted(level_counts.items()):
+            lines.append(f"  {level}: {count}")
+
+    tags = "rea-decision,33-REA,设计决策,PoE"
+    if target:
+        tags += f",target:{str(target)[-30:]}"
+
+    return {
+        "content": "\n".join(lines),
+        "quality_level": "B",
+        "tags": tags,
+    }
+
+
+def prepare_methodology_record_params(methodology_result: dict[str, Any]) -> dict[str, Any]:
+    """将方法论抽象结果格式化为 record() 调用参数。
+
+    Args:
+        methodology_result: abstract_methodology() 返回结果，含 methodologies 列表
+
+    Returns:
+        {content, quality_level, tags}
+    """
+    methodologies = methodology_result.get("methodologies", [])
+    evidence_list = methodology_result.get("evidence", [])
+
+    lines: list[str] = []
+    lines.append("[REA 方法论抽象结果]")
+    lines.append(f"方法论数: {len(methodologies)}")
+    lines.append("")
+
+    for i, m in enumerate(methodologies, 1):
+        problem = m.get("problem_pattern", "")
+        solution = m.get("solution_pattern", "")
+        applicability = m.get("applicability", [])
+        known_gaps = m.get("known_gaps", [])
+        source_projects = m.get("source_projects", [])
+
+        lines.append(f"{i}. 问题模式: {problem}")
+        lines.append(f"   解法模式: {solution}")
+        if applicability:
+            lines.append(f"   适用条件: {'; '.join(applicability)}")
+        if source_projects:
+            lines.append(f"   来源项目: {', '.join(source_projects)}")
+        if known_gaps:
+            lines.append(f"   已知局限: {'; '.join(known_gaps)}")
+        lines.append("")
+
+    if evidence_list:
+        lines.append(f"Evidence 统计: {len(evidence_list)} 条")
+
+    tags = "rea-methodology,33-REA,方法论,PoE"
+
+    return {
+        "content": "\n".join(lines),
+        "quality_level": "B",
+        "tags": tags,
+    }
+
+
+def prepare_audit_record_params(audit_result: dict[str, Any]) -> dict[str, Any]:
+    """将 AI 审计结果格式化为 record() 调用参数。
+
+    Args:
+        audit_result: audit_ai_output() 返回结果
+
+    Returns:
+        {content, quality_level, tags}
+    """
+    target = audit_result.get("target", "?")
+    evi_score = audit_result.get("evidence_chain_score", 0.0)
+    cov_score = audit_result.get("coverage_score", 0.0)
+    complexity = audit_result.get("complexity_penalty", 0.0)
+    poe_score = audit_result.get("poe_score", 0.0)
+    gate = audit_result.get("gate_decision", "review")
+    debts = audit_result.get("cognitive_debt", [])
+    audit_layer = audit_result.get("audit_layer_status", {})
+
+    lines: list[str] = []
+    lines.append(f"[PoE AI 产出审计 {target}]")
+    lines.append(f"门禁决策: {gate.upper()}")
+    lines.append(f"poe_score: {poe_score:.3f}")
+    lines.append(f"证据链完整度: {evi_score:.3f}")
+    lines.append(f"覆盖率: {cov_score:.3f}")
+    lines.append(f"复杂度惩罚: {complexity:.3f}")
+    if audit_layer:
+        lines.append(
+            f"证明链层: Decision={audit_layer.get('design_decision', False)}, "
+            f"Narrative={audit_layer.get('narrative', False)}, "
+            f"Methodology={audit_layer.get('methodology', False)}"
+        )
+    lines.append("")
+
+    # 债务摘要
+    lines.append(f"认知债务: {len(debts)} 条")
+    for i, d in enumerate(debts, 1):
+        dtype = d.get("type", "") if isinstance(d, dict) else ""
+        desc = d.get("description", "") if isinstance(d, dict) else str(d)
+        lines.append(f"  {i}. [{dtype}] {desc}")
+
+    # quality_level：pass→A，review→B，reject→C
+    quality_map = {"pass": "A", "review": "B", "reject": "C"}
+    quality_level = quality_map.get(gate, "B")
+
+    tags = "rea-audit,33-REA,PoE,ai-audit"
+    if gate:
+        tags += f",gate:{gate}"
+
+    return {
+        "content": "\n".join(lines),
+        "quality_level": quality_level,
+        "tags": tags,
+    }

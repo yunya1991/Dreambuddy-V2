@@ -1,0 +1,23 @@
+ M 33-REA逆向解析工程/README.md
+ M 33-REA逆向解析工程/SPEC.md
+ M 33-REA逆向解析工程/core/cognitive_integration.py
+ M 33-REA逆向解析工程/dsh_nodes.py
+?? 33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md
+?? 33-REA逆向解析工程/HYPOTHESIS-VERIFICATION-PoE.md
+?? 33-REA逆向解析工程/PEER-REVIEW-PoE.md
+?? 33-REA逆向解析工程/SPEC-工程实践复现器.md
+?? 33-REA逆向解析工程/TASKS-工程实践复现器.md
+?? 33-REA逆向解析工程/acceptance_bundles/
+?? 33-REA逆向解析工程/core/ai_audit.py
+?? 33-REA逆向解析工程/core/architecture_pattern_detector.py
+?? 33-REA逆向解析工程/core/design_decision_recovery.py
+?? 33-REA逆向解析工程/core/evolution_narrative.py
+?? 33-REA逆向解析工程/core/methodology_abstraction.py
+?? 33-REA逆向解析工程/tests/test_ai_audit.py
+?? 33-REA逆向解析工程/tests/test_architecture_pattern_detector.py
+?? 33-REA逆向解析工程/tests/test_cognitive_integration_poe.py
+?? 33-REA逆向解析工程/tests/test_design_decision_recovery.py
+?? 33-REA逆向解析工程/tests/test_dsh_nodes_poe.py
+?? 33-REA逆向解析工程/tests/test_evolution_narrative.py
+?? 33-REA逆向解析工程/tests/test_integration_poe.py
+?? 33-REA逆向解析工程/tests/test_methodology_abstraction.py

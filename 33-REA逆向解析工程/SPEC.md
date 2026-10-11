@@ -429,8 +429,8 @@ REA 的工程设计原则反向应用到 dreambuddy 现有系统。分布在两�
 
 | 子任务 | 落地文档 | 状态 |
 |---|---|---|
-| 1-1 Evidence-First 增强认知记忆 | [`4-MEMORY/docs/Evidence-First增强任务清单.md`](../../4-MEMORY/docs/Evidence-First增强任务清单.md) | 待实施 |
-| 1-2 Provider选择+Ownership+洋葱架构 | [`23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md`](../../23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md) | 待实施 |
+| 1-1 Evidence-First 增强认知记忆 | [`4-MEMORY/docs/Evidence-First增强任务清单.md`](../4-MEMORY/docs/Evidence-First增强任务清单.md) | 待实施 |
+| 1-2 Provider选择+Ownership+洋葱架构 | [`23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md`](../23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md) | 待实施 |
 
 **优先级**：方向1 先于 方向2 实施（先增强现有系统，再搭建新工程）。
 
@@ -440,7 +440,7 @@ REA 的"从结果反推输入"思维应用到交易优化，作为 23-自进化�
 
 | 子任务 | 落地文档 | 状态 |
 |---|---|---|
-| 3-1 ReverseDeriver + 精准奖惩 | [`23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md`](../../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) | 待实施 |
+| 3-1 ReverseDeriver + 精准奖惩 | [`23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md`](../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) | 待实施 |
 
 **优先级**：方向3 后于 方向2（需先有 33-REA 的 Evidence 结构作为统一证据格式）。
 
