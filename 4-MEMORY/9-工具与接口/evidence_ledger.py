@@ -43,6 +43,7 @@ class EvidenceEntry:
         level: 事实分级 (observation/derivation/inference/unknown)
         receipt_hash: 本条目的 Merkle 叶子哈希（append 时计算）
         prev_hash: 前一条目的 receipt_hash（链式兼容，首条为 "0"*64）
+        git_commit_hash: P1-5 链式溯源等价物（git commit hash，SPEC §2.1）
     """
 
     subject: str
@@ -55,6 +56,7 @@ class EvidenceEntry:
     timestamp: int = field(default_factory=lambda: time.time_ns())
     receipt_hash: str = ""  # append 时计算
     prev_hash: str = ""    # append 时填充
+    git_commit_hash: str = ""  # P1-5: 链式溯源等价物（git commit hash）
 
     def to_ledger_json(self) -> str:
         """序列化为用于哈希计算的 JSON（排除 receipt_hash 和 prev_hash）。"""
@@ -67,6 +69,7 @@ class EvidenceEntry:
             "source": self.source,
             "confidence": self.confidence,
             "level": self.level,
+            "git_commit_hash": self.git_commit_hash,
         }
         return json.dumps(data, sort_keys=True, ensure_ascii=False)
 
@@ -82,6 +85,7 @@ class EvidenceEntry:
             "level": self.level,
             "receipt_hash": self.receipt_hash,
             "prev_hash": self.prev_hash,
+            "git_commit_hash": self.git_commit_hash,
         }
 
 
@@ -168,18 +172,26 @@ class EvidenceLedger:
                     pass  # 内存或不支持 → FAIL-OPEN
             self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS evidence_entries (
-                    entry_id     TEXT PRIMARY KEY,
-                    subject      TEXT,
-                    relation     TEXT,
-                    object       TEXT,
-                    timestamp    INTEGER,
-                    source       TEXT,
-                    confidence   REAL,
-                    level        TEXT,
-                    receipt_hash TEXT,
-                    prev_hash    TEXT
+                    entry_id        TEXT PRIMARY KEY,
+                    subject         TEXT,
+                    relation        TEXT,
+                    object          TEXT,
+                    timestamp       INTEGER,
+                    source          TEXT,
+                    confidence      REAL,
+                    level           TEXT,
+                    receipt_hash    TEXT,
+                    prev_hash       TEXT,
+                    git_commit_hash TEXT DEFAULT ''
                 )
             """)
+            # P1-5: 对已存在的 DB 做 migration（ADD COLUMN IF NOT EXISTS 不被 SQLite 支持）
+            try:
+                self._conn.execute(
+                    "ALTER TABLE evidence_entries ADD COLUMN git_commit_hash TEXT DEFAULT ''"
+                )
+            except Exception:
+                pass  # 列已存在 → 静默
             # P0-1: 索引加速 _check_poe_trust 的 receipt 查询（替代全表扫描）
             self._conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_entries_subject_object "
@@ -190,6 +202,18 @@ class EvidenceLedger:
                 CREATE TABLE IF NOT EXISTS ledger_counters (
                     name        TEXT PRIMARY KEY,
                     value       INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            # P1-3: trust_state 表（6 信任失效条件跟踪，SPEC §2.3）
+            self._conn.execute("""
+                CREATE TABLE IF NOT EXISTS trust_state (
+                    memory_id           TEXT PRIMARY KEY,
+                    first_verified_at   INTEGER,
+                    git_commit_hash     TEXT DEFAULT '',
+                    dependency_fp       TEXT DEFAULT '',
+                    scope               TEXT DEFAULT '',
+                    verify_failures     INTEGER DEFAULT 0,
+                    last_reverify_status TEXT DEFAULT ''
                 )
             """)
             self._conn.commit()
@@ -231,8 +255,8 @@ class EvidenceLedger:
             self._conn.execute(
                 """INSERT INTO evidence_entries
                    (entry_id, subject, relation, object, timestamp,
-                    source, confidence, level, receipt_hash, prev_hash)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    source, confidence, level, receipt_hash, prev_hash, git_commit_hash)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     entry.entry_id,
                     entry.subject,
@@ -244,6 +268,7 @@ class EvidenceLedger:
                     entry.level,
                     entry.receipt_hash,
                     entry.prev_hash,
+                    entry.git_commit_hash,
                 ),
             )
             self._conn.commit()
@@ -258,7 +283,7 @@ class EvidenceLedger:
         try:
             cursor = self._conn.execute(
                 "SELECT entry_id, subject, relation, object, timestamp, "
-                "source, confidence, level, prev_hash "
+                "source, confidence, level, prev_hash, git_commit_hash "
                 "FROM evidence_entries ORDER BY timestamp ASC"
             )
             leaf_hashes: list[str] = []
@@ -273,6 +298,7 @@ class EvidenceLedger:
                     confidence=row[6],
                     level=row[7],
                     prev_hash=row[8],
+                    git_commit_hash=row[9],
                 )
                 leaf_hashes.append(_compute_leaf_hash(entry, entry.prev_hash))
             return _compute_merkle_root(leaf_hashes)
@@ -287,7 +313,7 @@ class EvidenceLedger:
         try:
             cursor = self._conn.execute(
                 "SELECT entry_id, subject, relation, object, timestamp, "
-                "source, confidence, level, receipt_hash, prev_hash "
+                "source, confidence, level, receipt_hash, prev_hash, git_commit_hash "
                 "FROM evidence_entries ORDER BY timestamp ASC"
             )
             rows = cursor.fetchall()
@@ -305,6 +331,7 @@ class EvidenceLedger:
                     level=row[7],
                     receipt_hash=row[8],
                     prev_hash=row[9],
+                    git_commit_hash=row[10] if len(row) > 10 else "",
                 )
                 # 验证 prev_hash 链
                 if entry.prev_hash != expected_prev:
@@ -330,7 +357,7 @@ class EvidenceLedger:
         try:
             sql = (
                 "SELECT entry_id, subject, relation, object, timestamp, "
-                "source, confidence, level, receipt_hash, prev_hash "
+                "source, confidence, level, receipt_hash, prev_hash, git_commit_hash "
                 "FROM evidence_entries WHERE 1=1"
             )
             params: list = []
@@ -356,6 +383,7 @@ class EvidenceLedger:
                     level=row[7],
                     receipt_hash=row[8],
                     prev_hash=row[9],
+                    git_commit_hash=row[10] if len(row) > 10 else "",
                 ))
             return results
         except Exception:
@@ -474,6 +502,179 @@ class EvidenceLedger:
             return row[0] if row else 0
         except Exception:
             return 0  # FAIL-OPEN
+
+    # ============================================================
+    # P1-3: 6 信任失效条件（SPEC §2.3 有界信任传递）
+    # ============================================================
+
+    # 超时阈值（ns 秒级）：代码类 1 天，文档类 30 天
+    _TIMEOUT_CODE_NS = 1 * 24 * 3600 * 10**9
+    _TIMEOUT_DOC_NS = 30 * 24 * 3600 * 10**9
+
+    def record_trust_state(
+        self,
+        memory_id: str,
+        git_commit_hash: str = "",
+        dependency_fp: str = "",
+        scope: str = "",
+    ) -> bool:
+        """P1-3: 记录信任状态（首次验证或重新验证时调用）。
+
+        SPEC §2.3：已通过重型 PoE 验证的产出，记录 trust_state 用于后续失效条件检查。
+
+        Args:
+            memory_id: 记忆/产出 ID
+            git_commit_hash: 验证时的 git commit hash（失效条件 1）
+            dependency_fp: 依赖指纹（失效条件 4）
+            scope: 验证 scope（失效条件 5，含 'code' 关键词=代码类，含 'doc'=文档类）
+
+        Returns:
+            True=记录成功，False=失败（FAIL-OPEN）
+        """
+        if self._conn is None or not memory_id:
+            return False
+        try:
+            now_ns = time.time_ns()
+            self._conn.execute(
+                """INSERT INTO trust_state
+                   (memory_id, first_verified_at, git_commit_hash,
+                    dependency_fp, scope, verify_failures, last_reverify_status)
+                   VALUES (?, ?, ?, ?, ?, 0, '')
+                   ON CONFLICT(memory_id) DO UPDATE SET
+                     first_verified_at = ?,
+                     git_commit_hash = ?,
+                     dependency_fp = ?,
+                     scope = ?,
+                     verify_failures = 0,
+                     last_reverify_status = ''""",
+                (memory_id, now_ns, git_commit_hash, dependency_fp, scope,
+                 now_ns, git_commit_hash, dependency_fp, scope),
+            )
+            self._conn.commit()
+            return True
+        except Exception:
+            return False  # FAIL-OPEN
+
+    def mark_verify_failure(self, memory_id: str) -> bool:
+        """P1-3 失效条件 2: 标记 verify 失败（verify_failures += 1）。"""
+        if self._conn is None or not memory_id:
+            return False
+        try:
+            self._conn.execute(
+                "UPDATE trust_state SET verify_failures = verify_failures + 1 "
+                "WHERE memory_id = ?",
+                (memory_id,),
+            )
+            self._conn.commit()
+            return True
+        except Exception:
+            return False  # FAIL-OPEN
+
+    def mark_sample_reverify_failure(self, memory_id: str) -> bool:
+        """P1-3 失效条件 6: 标记抽样重验失败（last_reverify_status='failed'）。"""
+        if self._conn is None or not memory_id:
+            return False
+        try:
+            self._conn.execute(
+                "UPDATE trust_state SET last_reverify_status = 'failed' "
+                "WHERE memory_id = ?",
+                (memory_id,),
+            )
+            self._conn.commit()
+            return True
+        except Exception:
+            return False  # FAIL-OPEN
+
+    def check_trust_validity(
+        self,
+        memory_id: str,
+        current_git_hash: str,
+        current_dependency_fp: str,
+        current_scope: str,
+    ) -> tuple[bool, str]:
+        """P1-3: 检查 6 信任失效条件。
+
+        SPEC §2.3 有界信任传递的 6 个失效条件：
+          1. 代码变更（git_commit_hash 不匹配）
+          2. verify 失败（verify_failures > 0）
+          3. 超时（按 scope 分级：代码 1 天 / 文档 30 天）
+          4. 依赖指纹变化（dependency_fp 不匹配）
+          5. scope 漂移（scope 不匹配）
+          6. 抽样重验失败（last_reverify_status == 'failed'）
+
+        Args:
+            memory_id: 记忆/产出 ID
+            current_git_hash: 当前 git commit hash
+            current_dependency_fp: 当前依赖指纹
+            current_scope: 当前请求 scope
+
+        Returns:
+            (is_valid, reason)：
+                (True, 'valid') = 所有条件满足
+                (False, 'no_trust_state') = 无 trust_state 记录
+                (False, 'code_change') = 失效条件 1
+                (False, 'verify_failed') = 失效条件 2
+                (False, 'timeout') = 失效条件 3
+                (False, 'dependency_changed') = 失效条件 4
+                (False, 'scope_drift') = 失效条件 5
+                (False, 'sample_reverify_failed') = 失效条件 6
+                (True, 'fail_open') = 异常时 FAIL-OPEN
+        """
+        if self._conn is None or not memory_id:
+            return (True, "fail_open")  # FAIL-OPEN
+        try:
+            cursor = self._conn.execute(
+                "SELECT first_verified_at, git_commit_hash, dependency_fp, "
+                "scope, verify_failures, last_reverify_status "
+                "FROM trust_state WHERE memory_id = ?",
+                (memory_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return (False, "no_trust_state")
+
+            first_verified_at, stored_hash, stored_dep_fp, \
+                stored_scope, verify_failures, last_reverify = (
+                    row[0], row[1], row[2], row[3], row[4], row[5],
+                )
+
+            # 失效条件 1: 代码变更（git_commit_hash 不匹配）
+            if stored_hash and current_git_hash and stored_hash != current_git_hash:
+                return (False, "code_change")
+
+            # 失效条件 2: verify 失败
+            if verify_failures and verify_failures > 0:
+                return (False, "verify_failed")
+
+            # 失效条件 3: 超时（按 scope 分级）
+            if first_verified_at:
+                now_ns = time.time_ns()
+                elapsed_ns = now_ns - first_verified_at
+                # scope 含 'doc' 关键词 → 30 天；其他 → 1 天
+                timeout_threshold = (
+                    self._TIMEOUT_DOC_NS
+                    if stored_scope and "doc" in stored_scope.lower()
+                    else self._TIMEOUT_CODE_NS
+                )
+                if elapsed_ns > timeout_threshold:
+                    return (False, "timeout")
+
+            # 失效条件 4: 依赖指纹变化
+            if stored_dep_fp and current_dependency_fp and \
+               stored_dep_fp != current_dependency_fp:
+                return (False, "dependency_changed")
+
+            # 失效条件 5: scope 漂移
+            if stored_scope and current_scope and stored_scope != current_scope:
+                return (False, "scope_drift")
+
+            # 失效条件 6: 抽样重验失败
+            if last_reverify == "failed":
+                return (False, "sample_reverify_failed")
+
+            return (True, "valid")
+        except Exception:
+            return (True, "fail_open")  # FAIL-OPEN
 
     def _tamper_for_test(self, index: int, **fields: str):
         """测试用：篡改指定索引的条目（破坏 receipt_hash 的正确性）。"""

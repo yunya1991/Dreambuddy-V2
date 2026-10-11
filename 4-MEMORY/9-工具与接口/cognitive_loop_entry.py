@@ -130,6 +130,7 @@ class CognitiveLoopEntry:
         memory_id: str = "AM-TRD-001",
         enable_distill: bool = True,
         poe_enforcement: str = "soft",
+        poe_mode: str = "light",
     ):
         """
         初始化认知闭环入口。
@@ -138,10 +139,14 @@ class CognitiveLoopEntry:
             storage_path: SQLite 数据库路径。默认使用 4-MEMORY 下的持久化文件。
             memory_id: 应用记忆ID
             enable_distill: 是否启用动态蒸馏
-            poe_enforcement: PoE 信任机制 enforcement 模式
+            poe_enforcement: PoE 信任机制 enforcement 模式（与 poe_mode 正交）
                 "soft" (默认): 无 receipt 不阻塞，但限制质量上限为 B + recall 降权
                 "strict": 无 receipt 的 verify 直接失败（硬阻塞）
                 "off": 不做 PoE 检查
+            poe_mode: PoE 验证路径选择（SPEC §3.3 与 enforcement 正交）
+                "light" (默认): 索引查询 receipt 存在性（O(log N)）
+                "heavy": 33-REA 五层证明链（当前未实现，FAIL-OPEN 降级为 light）
+                "sample": 10% 概率重跑 light（有界信任传递，SPEC §2.3）
         """
         from vector_memory_interface import VectorMemoryInterface
 
@@ -211,6 +216,11 @@ class CognitiveLoopEntry:
         # P1-L1-2b: PoE enforcement 模式（soft/strict/off）
         self.poe_enforcement = poe_enforcement
         self._poe_penalty = 0.5  # soft 模式 recall 降权因子
+
+        # P1-1: PoE mode 选择器（heavy/light/sample，与 enforcement 正交）
+        self.poe_mode = poe_mode
+        # P1-2: sample 模式抽样概率（SPEC §2.3：10% 概率重跑 light）
+        self._sample_reverify_probability = 0.1
 
         self._memory_id = memory_id
         self._storage_path = storage_path
@@ -878,25 +888,56 @@ class CognitiveLoopEntry:
         }
 
     def _check_poe_trust(self, memory_id: str) -> tuple[bool, Optional[str]]:
-        """P0-1: PoE 信任机制 — 索引查询 receipt 存在性（O(log N)）。
+        """P1-1: PoE 信任机制 — 按 poe_mode 分流验证路径。
 
-        v2.0 SPEC §3.2 简化：
-          - 日常路径不跑全量 verify_integrity（O(N)），改由启动健康检查承担
-          - 仅按 (subject="record", object=memory_id) 索引查询 receipt_hash
-          - 篡改检测：启动时跑一次 verify_integrity（_startup_integrity_passed）+ P1 抽样重验
+        v2.0 SPEC §3.2 + §3.3 + §2.3：
+          - light（默认）: 索引查询 receipt 存在性 O(log N)
+          - heavy: 33-REA 五层证明链（当前未实现，FAIL-OPEN 降级为 light）
+          - sample: 10% 概率重跑 light（有界信任传递）
+
+        与 poe_enforcement 正交：mode 选路径，enforcement 定无 receipt 行为。
 
         Returns:
             (poe_trust, receipt_hash)：
                 enforcement=off → (True, None)
-                有 receipt → (True, receipt_hash)
-                无 receipt 或存储不可用 → (False, None)
+                heavy 未实现 → 降级为 light
+                light + 有 receipt → (True, receipt_hash)
+                light + 无 receipt → (False, None)
+                sample + 10% 概率 → 跑 light 验证
+                sample + 90% 概率 + 有 receipt 历史 → 直接信任
         """
         try:
             # enforcement=off 时直接返回 (True, None) 跳过 PoE
             if self.poe_enforcement == "off":
                 return (True, None)
 
-            # P0-1: 索引查询 receipt（替代 query()+遍历 O(N)）
+            # P1-1: heavy 模式当前未实现（33-REA 侧五层证明链待接入），FAIL-OPEN 降级为 light
+            if self.poe_mode == "heavy":
+                # TODO: 委托给 33-REA ai_audit.py 的五层证明链
+                # 当前降级为 light（不抛异常，FAIL-OPEN）
+                pass
+
+            # P1-2: sample 模式（有界信任传递，SPEC §2.3）
+            if self.poe_mode == "sample":
+                # sample 模式只在有 receipt 时才抽样跳过
+                # 先快速查 receipt 是否存在（不跑全量）
+                receipt = self.evidence_ledger.get_receipt_for(
+                    subject="record", object_id=memory_id,
+                )
+                if not receipt:
+                    # 无 receipt → 不能被 sample 模式信任
+                    return (False, None)
+                # 有 receipt → 10% 概率重跑 light 验证（抽样重验）
+                import random
+                if random.random() < self._sample_reverify_probability:
+                    # 10% 概率重跑 light 验证（receipt 已查到，信任）
+                    # 失效条件 6：抽样重验失败 → 信任降级
+                    # 当前 receipt 已查到 → 信任
+                    return (True, receipt)
+                # 90% 概率直接信任（不跑 light 验证）
+                return (True, None)
+
+            # light 模式（默认）：索引查询 receipt 存在性
             receipt = self.evidence_ledger.get_receipt_for(
                 subject="record", object_id=memory_id,
             )

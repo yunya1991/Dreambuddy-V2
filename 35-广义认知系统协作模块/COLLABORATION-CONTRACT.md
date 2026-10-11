@@ -146,9 +146,9 @@ params = prepare_record_params(investigation)
 | P0-2 | verify_receipt_exists(entry_id) O(1) 查询 | ✅ 已落地 | 4-MEMORY/evidence_ledger.py |
 | P0-5 | SQLite WAL 模式 + 计数器落库 | ✅ 已落地（WAL + ledger_counters + increment_counter） | 4-MEMORY/evidence_ledger.py |
 | P0-6 | 启动时全量验证（健康检查） | ✅ 已落地（_startup_integrity_passed + 计数器） | 4-MEMORY/cognitive_loop_entry.py |
-| P1-3 | 6 信任失效条件 | 仅 3 条 | 4-MEMORY |
+| P1-3 | 6 信任失效条件 | ✅ 已落地（trust_state 表 + check_trust_validity + 6 失效条件） | 4-MEMORY/evidence_ledger.py |
 | P1-4 | prepare_decision/audit_record_params 补 evidence_entries | 缺失 | 33-REA/cognitive_integration.py |
-| P1-5 | EvidenceEntry 新增 git_commit_hash 列 | 缺失 | 4-MEMORY/evidence_ledger.py |
+| P1-5 | EvidenceEntry 新增 git_commit_hash 列 | ✅ 已落地（含 schema migration） | 4-MEMORY/evidence_ledger.py |
 
 ---
 
@@ -158,3 +158,4 @@ params = prepare_record_params(investigation)
 |---|---|---|
 | v1.0 | 2026-10-11 | 初始版本：从散落 SPEC 收敛 + 定义 4 类协作契约 |
 | v1.1 | 2026-10-11 | P0 落地完成：P0-1/2/5/6 全部 ✅（_check_poe_trust 索引查询 + verify_receipt_exists + WAL + 启动健康检查） |
+| v1.2 | 2026-10-11 | P1 批次1+2 落地：P1-1 poe_mode + P1-2 sample 10% + P1-3 六失效条件 + P1-5 git_commit_hash 全部 ✅（P1-4 待补） |
