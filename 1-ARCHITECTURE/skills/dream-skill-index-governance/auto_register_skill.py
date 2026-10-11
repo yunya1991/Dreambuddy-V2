@@ -41,6 +41,29 @@ from skill_indexer import (  # noqa: E402
 _REGISTRY_DIR = _HERE.parent / "_registry"
 _REPO_ROOT = _HERE.parents[2]  # .../dreambuddy-v2
 
+# ─────────────────────────────── 认知系统接入 ───────────────────────────────
+# P1-3: 注册成功后通过 record(tags="doc-sync") 触发 dream-doc-sync-workflow
+# FAIL-OPEN：认知系统不可用时主流程不中断
+_COGNITIVE_DIR = _REPO_ROOT / "4-MEMORY" / "9-工具与接口"
+_HAS_COGNITIVE = False
+if _COGNITIVE_DIR.exists() and str(_COGNITIVE_DIR) not in sys.path:
+    sys.path.insert(0, str(_COGNITIVE_DIR))
+try:
+    from cognitive_loop_entry import get_cle  # type: ignore[import-not-found]
+    _HAS_COGNITIVE = True
+except Exception:
+    _HAS_COGNITIVE = False
+
+
+def _get_cle_or_none():
+    """获取 CognitiveLoopEntry 单例，不可用返回 None（FAIL-OPEN）。"""
+    if not _HAS_COGNITIVE:
+        return None
+    try:
+        return get_cle()
+    except Exception:
+        return None
+
 
 # ─────────────────────────────── git 路径发现 ───────────────────────────────
 
@@ -154,6 +177,9 @@ def register_skills(
         "drift_involving_new": [],
         "red_flags": [],
         "status": "unknown",
+        # P1-3: doc-sync 触发信号
+        "triggered_skills": [],
+        "doc_sync_memory_id": None,
     }
 
     # 1. 确定待注册 SKILL 列表
@@ -241,6 +267,30 @@ def register_skills(
         report["status"] = "success"
     else:
         report["status"] = "validation_failed"
+
+    # 6. P1-3: 注册成功后追加 dream-doc-sync-workflow 触发
+    # 通过 record(tags="doc-sync") 入认知库，
+    # TAG_HOOKS 自动映射到 dream-doc-sync-workflow（cognitive_mcp_server.py）
+    # 仅在完全成功（status="success"）时触发，有红旗/验证失败时不触发
+    if report["status"] == "success" and unique_targets:
+        cle = _get_cle_or_none()
+        if cle is not None:
+            try:
+                skill_names = ", ".join(d.name for d in unique_targets)
+                memory_id = cle.record(
+                    content=(
+                        f"[auto-register] 注册新 SKILL: {skill_names} | "
+                        f"状态: {report['status']} | "
+                        f"红旗: {len(report['red_flags'])}"
+                    ),
+                    quality_level="B",
+                    tags=["doc-sync", "auto-register", "skill-governance", "认知闭环"],
+                    source="auto_register_skill",
+                )
+                report["doc_sync_memory_id"] = memory_id
+                report["triggered_skills"] = ["dream-doc-sync-workflow"]
+            except Exception:
+                pass  # FAIL-OPEN：record 失败不阻塞注册流程
 
     return report
 

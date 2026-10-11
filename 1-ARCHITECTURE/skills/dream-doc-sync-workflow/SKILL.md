@@ -1,9 +1,9 @@
 ---
 name: dream-doc-sync-workflow
-description: "Orchestrates 7-step doc index sync: change parse → 0-系统文档管理/INDEX update → 2-KNOWLEDGE index update → doc_lint+link_checker validate → doc_coverage → feishu base sync → cognitive record. Invoke when docs are added/deleted/modified, or cognitive record tags contain 'doc-sync'."
-version: 1.0.0
+description: "Orchestrates 8-step doc index sync: change parse → 0-系统文档管理/INDEX update → 2-KNOWLEDGE index update → doc_lint+link_checker validate → doc_coverage → feishu base sync → cognitive record → verify closure. Invoke when docs are added/deleted/modified, or cognitive record tags contain 'doc-sync'."
+version: 1.1.0
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-10-11
 license: Internal
 status: active
 category: orchestration
@@ -32,7 +32,7 @@ cognitive_links: [VM-1790001702811-24bffe86, VM-1790003285544-0df90409]
 
 # Dream Doc Sync Workflow — 文档索引同步工作流 SKILL
 
-> 把"文档变更 → 0-系统文档管理/INDEX.md 更新 → 2-KNOWLEDGE 知识库索引更新 → 校验 → 覆盖率 → 飞书 Base 同步 → 认知闭环"的 7 步文档索引同步流程固化为可复用编排。本 SKILL 是认知系统与文档管理体系之间的桥梁，让认知系统 `record` 的经验能自动驱动文档索引/知识库同步。
+> 把"文档变更 → 0-系统文档管理/INDEX.md 更新 → 2-KNOWLEDGE 知识库索引更新 → 校验 → 覆盖率 → 飞书 Base 同步 → 认知闭环 → verify 闭环"的 8 步文档索引同步流程固化为可复用编排。本 SKILL 是认知系统与文档管理体系之间的桥梁，让认知系统 `record` 的经验能自动驱动文档索引/知识库同步。
 
 > **双位置存储**：本 SKILL 同时存在于：
 > - `.trae/skills/dream-doc-sync-workflow/SKILL.md`（TRAE 调用入口）
@@ -62,7 +62,7 @@ cognitive_links: [VM-1790001702811-24bffe86, VM-1790003285544-0df90409]
 
 ---
 
-## 二、7 步标准流程
+## 二、8 步标准流程
 
 ### 步骤 1：变更解析（确定同步范围）
 
@@ -249,6 +249,43 @@ record(
 
 ---
 
+### 步骤 8：verify 闭环（P1-4）
+
+**输入**：步骤 7 record 返回的 `memory_id` + 触发本 SKILL 的原始记忆 ID
+
+**处理**：
+
+对触发本 SKILL 执行的原始记忆执行 `verify`，闭合"触发 → 执行 → 验证"环路：
+
+```
+# 认知事件模式（由 record tags="doc-sync" 触发本 SKILL）
+verify(
+  memory_id=<触发记忆ID>,  # 即步骤1 输入的认知事件中的 memory_id
+  success=True             # 文档同步完成即视为验证成功
+)
+```
+
+**触发记忆 ID 获取方式**：
+
+| 模式 | 触发记忆来源 | 处理 |
+|------|------------|------|
+| 认知事件模式 | 步骤 1 从认知事件解析的 `memory_id`（即 `record(tags="doc-sync")` 的那条记忆） | `verify(memory_id=触发记忆ID, success=True)` |
+| 主动调用模式 | 无触发记忆（用户直接调用本 SKILL） | 跳过 verify，标记 `no_trigger_memory` |
+| auto_register_skill 触发 | `auto_register_skill.register_skills()` report 中的 `doc_sync_memory_id` | `verify(memory_id=doc_sync_memory_id, success=True)` |
+
+**FAIL-OPEN**：
+- verify 失败不阻塞文档同步流程（文档已在步骤 2-6 完成同步）
+- 触发记忆 ID 无法获取时跳过，在步骤 7 的 record 中标记 `verify-skipped`
+
+**输出**：verify 结果（置信度更新 + SKILL lifecycle 升级）
+
+**闭环效果**：
+- 触发记忆的置信度从 B 级（≥0.40）通过 verify 升级
+- 关联 SKILL（如 auto_register_skill）的 cognitive_links 中 memory_id 被标记为 verified
+- verify_hook 触发 shadow→active 升级（若适用）
+
+---
+
 ## 三、输入输出契约
 
 | 阶段 | 输入 | 输出 |
@@ -260,6 +297,7 @@ record(
 | 步骤 5 | 校验通过的索引 | 覆盖率 JSON + 更新统计表 |
 | 步骤 6 | 覆盖率 JSON + 变更清单 | 飞书同步结果 |
 | 步骤 7 | 同步结果汇总 | 认知记忆 ID |
+| 步骤 8 | 触发记忆 ID（来自步骤 1 或 auto_register_skill report） | verify 结果（置信度升级） |
 
 ---
 
@@ -310,13 +348,23 @@ record(
 recall(context="文档同步 索引更新 知识库 <域关键词>", top_k=5, min_quality="C")
 ```
 
-**任务完成后**（步骤 7）：
+**任务完成后**（步骤 7 record + 步骤 8 verify）：
 
 ```
+# 步骤 7: record 记录同步结果
 record(content="[文档同步] <变更摘要> | 校验: 违规<V> 断链<B> | 覆盖率 <X%> | 飞书: <结果>",
        quality_level="B",
        tags="doc-sync,文档索引,知识库同步,认知闭环,<域标签>")
+
+# 步骤 8: verify 闭环 — 对触发记忆执行验证（P1-4）
+verify(memory_id=<触发记忆ID>, success=True)
 ```
+
+**verify 闭环说明**（P1-4 新增）：
+- 对触发本 SKILL 执行的原始记忆（`tags` 含 `doc-sync` 的那条 record）执行 `verify(success=True)`
+- 闭合"触发 → 执行 → 验证"环路，让触发记忆的置信度从 B 级升级
+- 触发记忆 ID 来源：认知事件模式从步骤 1 解析；auto_register_skill 从 report.doc_sync_memory_id
+- 主动调用模式无触发记忆时跳过 verify（标记 `verify-skipped`）
 
 ---
 
@@ -340,3 +388,4 @@ record(content="[文档同步] <变更摘要> | 校验: 违规<V> 断链<B> | �
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | 1.0.0 | 2026-09-24 | 初始版本，7 步流程 + 双触发模式 + 8 域路由 + FAIL-OPEN |
+| 1.1.0 | 2026-10-11 | P1-4: 新增步骤 8 verify 闭环，对触发记忆执行 verify(success=True)，闭合"触发→执行→验证"环路 |
