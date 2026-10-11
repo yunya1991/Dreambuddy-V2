@@ -26,7 +26,7 @@ jest.mock('child_process', () => ({
     try { params = JSON.parse(args[2] || '{}'); } catch { /* noop */ }
     _lastSpawnArgs = { adapter: args[0], module, params };
 
-    const child = new EventEmitter();
+    const child = new EventEmitter() as unknown as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; kill: jest.Mock };
     child.stdout = new EventEmitter();
     child.stderr = new EventEmitter();
     child.kill = jest.fn();
@@ -62,6 +62,8 @@ function makeContext(intentType: string): CognitiveContext {
     skill_candidates: [],
     built_at: Date.now(),
     intent_type: intentType,
+    solution_cases: [],
+    cvg_result: null,
   };
 }
 
@@ -79,6 +81,8 @@ function makeContextWithExperiences(intentType: string): CognitiveContext {
     skill_candidates: [],
     built_at: Date.now(),
     intent_type: intentType,
+    solution_cases: [],
+    cvg_result: null,
   };
 }
 
@@ -279,6 +283,7 @@ describe('DSHExecutionEngine', () => {
         order: ['DSH_TECHNICAL', 'DSH_SENTIMENT'],
         params: { symbol: 'BTC-USDT' },
         match_reasons: [],
+        imitation_required: false,
         context: makeContext('market_query'),
         selections: [],
       };
@@ -302,6 +307,7 @@ describe('DSHExecutionEngine', () => {
         order: [],
         params: {},
         match_reasons: [],
+        imitation_required: false,
         context: makeContext('market_query'),
         selections: [],
       };
@@ -324,6 +330,7 @@ describe('DSHExecutionEngine', () => {
         order: ['DSH_TECHNICAL', 'dream-backtest-verify'],
         params: {},
         match_reasons: [],
+        imitation_required: false,
         context: makeContext('deep_analysis'),
         selections: [],
       };

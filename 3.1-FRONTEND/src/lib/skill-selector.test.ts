@@ -14,6 +14,8 @@ function makeContext(intentType: string): CognitiveContext {
     skill_candidates: [],
     built_at: Date.now(),
     intent_type: intentType,
+    solution_cases: [],
+    cvg_result: null,
   };
 }
 

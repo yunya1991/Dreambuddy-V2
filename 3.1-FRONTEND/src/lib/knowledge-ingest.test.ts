@@ -15,7 +15,7 @@ jest.mock('child_process', () => ({
     const mock = _spawnResponses[idx] || { exitCode: 0 };
     _spawnCallCount++;
 
-    const child = new EventEmitter();
+    const child = new EventEmitter() as unknown as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; kill: jest.Mock };
     child.stdout = new EventEmitter();
     child.stderr = new EventEmitter();
     child.kill = jest.fn();

@@ -14,7 +14,7 @@ let _spawnCalls: string[] = [];
 jest.mock('child_process', () => ({
   spawn: jest.fn((_cmd: string, args: string[]) => {
     _spawnCalls.push(args.join(' '));
-    const child = new EventEmitter();
+    const child = new EventEmitter() as unknown as EventEmitter & { stdout: EventEmitter; stderr: EventEmitter; kill: jest.Mock };
     child.stdout = new EventEmitter();
     child.stderr = new EventEmitter();
     child.kill = jest.fn();
