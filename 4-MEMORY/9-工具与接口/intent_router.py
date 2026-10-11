@@ -62,6 +62,15 @@ AUTO_FULL_THRESHOLD: float = 0.4   # confidence < 0.4 → full
 FAST_DEFAULT_TYPES: frozenset = frozenset({"code_question", "general", "knowledge_query"})
 FULL_DEFAULT_TYPES: frozenset = frozenset({"trading_decision", "bug_investigation", "skill_match"})
 
+# ============================================================
+# P2-3: Agentic RAG 路由 — 智能检索决策常量
+# SPEC §2.4.3: 是否检索 + 检索什么 + 何时停止
+# ============================================================
+
+AGENTIC_STOP_THRESHOLD: float = 0.6      # 置信度达标即停
+AGENTIC_MIN_DB_WEIGHT: float = 0.15      # 权重低于此值的 DB 跳过
+AGENTIC_CACHE_CONFIDENCE: float = 0.85    # 置信度高于此值 + 缓存命中 → 跳过检索
+
 
 class IntentRouter(CognitiveRouter):
     """记忆路由器 — 接收 intent_vector，路由到记忆/SKILL/知识三库，
@@ -86,6 +95,8 @@ class IntentRouter(CognitiveRouter):
         self._knowledge_rag = knowledge_rag_fn
         # P2-2: 规则缓存 — key="{type}:{confidence_bucket}" → "fast"/"full"
         self._route_cache: Dict[str, str] = {}
+        # P2-3: 结果缓存 — key=intent_signature → RecallResult
+        self._result_cache: Dict[str, RecallResult] = {}
 
     def route(
         self,
@@ -113,6 +124,10 @@ class IntentRouter(CognitiveRouter):
         # P2-2: L2A 自动路由 — route_mode="auto" 时自动决定 fast/full
         if route_mode == "auto":
             route_mode = self._auto_decide(intent_vector)
+
+        # P2-3: Agentic RAG 路由 — 智能检索决策（三维：是否检索/检索什么/何时停止）
+        if route_mode == "agentic":
+            return self._route_agentic(intent_vector, top_k)
 
         intent_result: Dict[str, Any] = intent_vector if isinstance(intent_vector, dict) else {}
         intent_type = intent_result.get("type", "general")
@@ -264,3 +279,154 @@ class IntentRouter(CognitiveRouter):
     def clear_route_cache(self) -> None:
         """清空规则缓存（用于测试和重置）。"""
         self._route_cache.clear()
+
+    # ============================================================
+    # P2-3: Agentic RAG 路由 — 智能检索决策
+    # SPEC §2.4.3: 是否检索 + 检索什么 + 何时停止
+    # ============================================================
+
+    def _route_agentic(self, intent_vector: Any, top_k: int) -> RecallResult:
+        """Agentic RAG 路由 — 三维智能检索决策。
+
+        借鉴 arXiv:2501.09136，从 pipeline 转向 routing：
+          1. 是否检索 — 高置信度 + 缓存命中 → 跳过检索
+          2. 检索什么 — 按权重选择 DB 子集，跳过低权重 DB
+          3. 何时停止 — 逐库贪心查询，置信度达标即停
+
+        Args:
+            intent_vector: intent_engine 产出的 dict
+            top_k: 每库返回结果上限
+
+        Returns:
+            RecallResult 含三库召回结果 + 综合置信度
+        """
+        intent_result: Dict[str, Any] = intent_vector if isinstance(intent_vector, dict) else {}
+        intent_type = intent_result.get("type", "general")
+        intent_confidence = float(intent_result.get("confidence", 0.5))
+
+        # 1. 是否检索 — 高置信度 + 缓存命中 → 跳过
+        if not self._should_retrieve(intent_result):
+            key = self._intent_signature(intent_result)
+            cached = self._result_cache.get(key)
+            if cached is not None:
+                return cached
+            # 缓存未命中但高置信度 → 返回最小结果（不检索）
+            return RecallResult(confidence=intent_confidence)
+
+        # 2. 检索什么 — 按 DB 子集查询
+        db_order = self._select_databases(intent_type)
+
+        if not db_order:
+            return RecallResult(confidence=intent_confidence)
+
+        # 查询函数分发表
+        db_fns = {
+            "memory": self._memory_recall,
+            "skill": self._skill_search,
+            "knowledge": self._knowledge_rag,
+        }
+        weights_tuple = INTENT_WEIGHTS.get(intent_type, INTENT_WEIGHTS["general"])
+        db_weights = {
+            "memory": weights_tuple[0],
+            "skill": weights_tuple[1],
+            "knowledge": weights_tuple[2],
+        }
+        db_result_key = {"memory": "memories", "skill": "skills", "knowledge": "knowledge"}
+
+        total_weight = sum(db_weights[name] for name in db_order)
+
+        # 从 intent_result 派生查询 context
+        keywords = intent_result.get("keywords", [])
+        context = intent_result.get("context", "")
+        if not context:
+            context = " ".join(keywords) if keywords else str(intent_type)
+
+        # 3. 逐库贪心查询 + 何时停止
+        accumulated = {"memories": [], "skills": [], "knowledge": []}
+        hit_weight = 0.0
+
+        for db_name in db_order:
+            results = self._safe_call(db_fns[db_name], context, top_k)[:top_k]
+            accumulated[db_result_key[db_name]] = results
+
+            if results:
+                hit_weight += db_weights[db_name]
+
+            # 何时停止 — 置信度达标即停
+            if total_weight > 0:
+                current_conf = intent_confidence * (hit_weight / total_weight)
+                if current_conf >= AGENTIC_STOP_THRESHOLD:
+                    break
+
+        confidence = round(
+            intent_confidence * (hit_weight / total_weight), 4
+        ) if total_weight > 0 else 0.0
+
+        result = RecallResult(
+            memories=accumulated["memories"],
+            skills=accumulated["skills"],
+            knowledge=accumulated["knowledge"],
+            confidence=confidence,
+        )
+
+        # 缓存结果
+        key = self._intent_signature(intent_result)
+        self._result_cache[key] = result
+
+        return result
+
+    def _should_retrieve(self, intent_result: Dict[str, Any]) -> bool:
+        """是否检索 — 高置信度 + 缓存命中 → 跳过检索（SPEC §2.4.3 维度1）。
+
+        Args:
+            intent_result: intent_engine 产出的 dict
+
+        Returns:
+            True = 需要检索, False = 跳过检索（缓存命中）
+        """
+        confidence = float(intent_result.get("confidence", 0.5))
+        if confidence >= AGENTIC_CACHE_CONFIDENCE:
+            key = self._intent_signature(intent_result)
+            if key in self._result_cache:
+                return False  # 缓存命中，跳过检索
+        return True
+
+    @staticmethod
+    def _select_databases(intent_type: str) -> List[str]:
+        """检索什么 — 按权重选择 DB 子集（SPEC §2.4.3 维度2）。
+
+        过滤权重低于 AGENTIC_MIN_DB_WEIGHT 的 DB，按权重降序排列。
+
+        Args:
+            intent_type: intent 类型字符串
+
+        Returns:
+            DB 名称列表，按权重降序排列（如 ["knowledge", "skill"]）
+        """
+        weights_tuple = INTENT_WEIGHTS.get(intent_type, INTENT_WEIGHTS["general"])
+        db_weights = [
+            ("memory", weights_tuple[0]),
+            ("skill", weights_tuple[1]),
+            ("knowledge", weights_tuple[2]),
+        ]
+        filtered = [(name, w) for name, w in db_weights if w >= AGENTIC_MIN_DB_WEIGHT]
+        filtered.sort(key=lambda x: x[1], reverse=True)
+        return [name for name, _ in filtered]
+
+    @staticmethod
+    def _intent_signature(intent_result: Dict[str, Any]) -> str:
+        """构造 intent 签名用于结果缓存: "{type}:{keywords_sorted}"。
+
+        将 keywords 排序后拼接，确保相同 intent 产生相同签名。
+        """
+        intent_type = intent_result.get("type", "general")
+        keywords = intent_result.get("keywords", [])
+        if isinstance(keywords, list):
+            keywords_str = ",".join(sorted(str(k) for k in keywords))
+        else:
+            keywords_str = str(keywords)
+        return f"{intent_type}:{keywords_str}"
+
+    def clear_result_cache(self) -> None:
+        """清空结果缓存（用于测试和重置）。"""
+        self._result_cache.clear()
