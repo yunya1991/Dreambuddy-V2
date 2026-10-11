@@ -3060,6 +3060,81 @@
       "path": "experiments/INDEX.md",
       "added_at": "2026-10-11T17:10:29.441402+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/3-文档治理/RELEASE_NOTES.md",
+      "added_at": "2026-10-11T17:13:34.144539+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "0-系统文档管理/INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144566+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144568+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "1-ARCHITECTURE/工作索引/SKILL_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144569+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "10-经典指标系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144570+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "12-三屏趋势系统/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144571+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "14-V15经典马丁策略/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144577+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "16-调控系统/scripts/INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144579+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "19-数据访问层/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144580+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "7-产物中台/docs/ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144581+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ARCHIVE_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144583+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "DEBT_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144583+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "ENGINEERING_INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144585+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "deploy/INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144585+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "experiments/INDEX.md",
+      "added_at": "2026-10-11T17:13:34.144586+00:00",
+      "action": "sync_doc_index"
     }
   ]
 }

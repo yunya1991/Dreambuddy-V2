@@ -68,6 +68,9 @@ def classify_changes(files: list[str]) -> dict[str, list[str]]:
     for f in files:
         p = Path(f)
         name = p.name.lower()
+        # 跳过索引/元数据文件自身：它们不需要再入队"同步索引"，否则 commit 索引文件会触发循环入队
+        if _is_index_or_metadata(f, name):
+            continue
         if name == "skill.md":
             buckets["skill_index"].append(f)
         elif f.startswith("2-KNOWLEDGE/"):
@@ -77,6 +80,24 @@ def classify_changes(files: list[str]) -> dict[str, list[str]]:
         else:
             buckets["other"].append(f)
     return buckets
+
+
+def _is_index_or_metadata(filepath: str, name: str) -> bool:
+    """判断文件是否为索引/元数据文件自身，无需再入队 sync_doc_index。
+
+    索引文件（*INDEX*.md）、发布说明（RELEASE_NOTES.md）、验收报告（acceptance_bundles/）
+    等元数据文件的变更不需要再触发"同步文档索引"——它们本身就是索引/记录产物，
+    否则 commit 这些文件会导致 post-commit hook 循环入队。
+    """
+    # 索引文件：INDEX.md / ENGINEERING_INDEX.md / SKILL_INDEX.md / ARCHIVE_INDEX.md / DEBT_INDEX.md 等
+    if "index" in name and name.endswith(".md"):
+        return True
+    if name == "release_notes.md":
+        return True
+    # 验收报告目录下的报告文件
+    if "acceptance_bundles/" in filepath:
+        return True
+    return False
 
 
 # ─────────────────────────────── 变更检测 ───────────────────────────────
