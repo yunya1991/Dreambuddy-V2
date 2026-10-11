@@ -242,7 +242,8 @@ class CognitiveLoopEntry:
     # 认知层：检索
     # ============================================================
 
-    def recall(self, context: str, top_k: int = 5, min_quality: str = "C") -> List[Dict[str, Any]]:
+    def recall(self, context: str, top_k: int = 5, min_quality: str = "C",
+               sort_mode: str = "score") -> List[Dict[str, Any]]:
         """
         检索相关记忆（处理代码问题前调用）。
 
@@ -347,13 +348,16 @@ class CognitiveLoopEntry:
             pass
         # ---------- END F3 ----------
 
-        # ---------- P1-4: ACT-R 激活排序 ----------
+        # ---------- P1-4: ACT-R 激活排序（M4 兼容模式） ----------
+        # SPEC §3.5 M4：sort_mode="score" 默认向后兼容，sort_mode="act_r" 显式启用
         # 不只看 score，还考虑频率(verify_count)+时间衰减+上下文相关度
         # FAIL-OPEN：异常时保持原排序
-        try:
-            dicts = self.actr.rank_by_activation(dicts, context=context)
-        except Exception:
-            pass  # FAIL-OPEN
+        if sort_mode == "act_r":
+            try:
+                dicts = self.actr.rank_by_activation(dicts, context=context)
+            except Exception:
+                pass  # FAIL-OPEN
+        # sort_mode == "score"：保持 F3 后的 score 排序，不调用 ACT-R（向后兼容）
         # ---------- END P1-4 ----------
 
         # ---------- P1-3: 双时序知识图标记 ----------
