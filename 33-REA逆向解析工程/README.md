@@ -39,18 +39,20 @@ for e in result.evidence:
 | morluto/rea MCP 集成（二进制） | 待实现 |
 | GitHub API 集成 | 待实现 |
 
-### PoE 扩展层（设计完成，待实施）
+### PoE 扩展层（v1.0 已落地 — commit 16826f4eb1）
 
 | 能力 | 状态 |
 |---|---|
-| ★ PoE 审计门禁（poe_score 计算 + 三级门禁） | 设计完成（SPEC v0.3） |
-| 架构模式识别器（MVC/Event-Driven/Pipeline 等） | 待实施（Task 1） |
-| 设计决策还原（ADR 风格 + 替代方案推断） | 待实施（Task 2） |
-| 演化叙事生成（架构成长史 + 重构动机） | 待实施（Task 3） |
-| 方法论抽象层（跨项目聚类 + 通用解法蒸馏） | 待实施（Task 4） |
-| AI 产出审计闭环（证明链完整度 + 认知债务） | 待实施（Task 5） |
-| Agent 信用评分（任务难度加权 + slash 机制） | 设计完成 |
-| 创新性快速通道（experimental 标记） | 设计完成 |
+| ★ PoE 审计门禁（poe_score 计算 + 三级门禁） | ✅ 已完成（ai_audit.py, 9 tests） |
+| 架构模式识别器（MVC/Event-Driven/Pipeline 等） | ✅ 已完成（architecture_pattern_detector.py, 6 tests） |
+| 设计决策还原（ADR 风格 + 替代方案推断） | ✅ 已完成（design_decision_recovery.py, 6 tests） |
+| 演化叙事生成（架构成长史 + 重构动机） | ✅ 已完成（evolution_narrative.py, 6 tests） |
+| 方法论抽象层（跨项目聚类 + 通用解法蒸馏） | ✅ 已完成（methodology_abstraction.py, 6 tests） |
+| AI 产出审计闭环（证明链完整度 + 认知债务） | ✅ 已完成（ai_audit.py + cognitive_integration.py, 6+9 tests） |
+| DSH 3 新节点（audit/recover_decisions/narrative） | ✅ 已完成（dsh_nodes.py, 8 tests） |
+| 端到端集成测试 | ✅ 已完成（test_integration_poe.py, 5 tests） |
+| Agent 信用评分（任务难度加权 + slash 机制） | 设计完成（待后续迭代） |
+| 创新性快速通道（experimental 标记） | 设计完成（待后续迭代） |
 
 ## 目录结构
 
