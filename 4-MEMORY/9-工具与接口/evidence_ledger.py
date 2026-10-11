@@ -151,9 +151,21 @@ class EvidenceLedger:
         self._init_db()
 
     def _init_db(self):
-        """初始化数据库表。FAIL-OPEN：失败时不抛异常。"""
+        """初始化数据库表。FAIL-OPEN：失败时不抛异常。
+
+        P0-5（SPEC §3.2 并发安全）：
+          - SQLite WAL 模式（PRAGMA journal_mode=WAL）支持多进程并发读写
+          - ledger_counters 表（跨进程共享计数器，atomic UPDATE）
+          - 索引 idx_subject_object 加速 receipt 查询（替代全表扫描）
+        """
         try:
             self._conn = sqlite3.connect(self._db_path)
+            # P0-5: WAL 模式（内存 DB 不支持，FAIL-OPEN 跳过）
+            if self._db_path != ":memory:":
+                try:
+                    self._conn.execute("PRAGMA journal_mode=WAL")
+                except Exception:
+                    pass  # 内存或不支持 → FAIL-OPEN
             self._conn.execute("""
                 CREATE TABLE IF NOT EXISTS evidence_entries (
                     entry_id     TEXT PRIMARY KEY,
@@ -166,6 +178,18 @@ class EvidenceLedger:
                     level        TEXT,
                     receipt_hash TEXT,
                     prev_hash    TEXT
+                )
+            """)
+            # P0-1: 索引加速 _check_poe_trust 的 receipt 查询（替代全表扫描）
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_entries_subject_object "
+                "ON evidence_entries(subject, object)"
+            )
+            # P0-5: 计数器表（跨进程共享，atomic UPDATE）
+            self._conn.execute("""
+                CREATE TABLE IF NOT EXISTS ledger_counters (
+                    name        TEXT PRIMARY KEY,
+                    value       INTEGER NOT NULL DEFAULT 0
                 )
             """)
             self._conn.commit()
@@ -340,6 +364,116 @@ class EvidenceLedger:
     def query_all(self) -> list[EvidenceEntry]:
         """查询全部条目。"""
         return self.query()
+
+    # ============================================================
+    # P0-2: O(1) receipt 存在性查询（替代全量 verify_integrity）
+    # ============================================================
+
+    def verify_receipt_exists(self, entry_id: str) -> bool:
+        """P0-2: 检查指定 entry_id 的 receipt 是否存在（O(1) 索引查询）。
+
+        SPEC §3.2：日常路径只验 receipt 存在性，不跑全量验证。
+        用于有界信任传递场景（P1）+ _check_poe_trust 简化路径。
+
+        Args:
+            entry_id: EvidenceEntry.entry_id（el_<64hex>）
+
+        Returns:
+            True=存在 receipt，False=不存在或存储不可用
+        """
+        if self._conn is None or not entry_id:
+            return False
+        try:
+            cursor = self._conn.execute(
+                "SELECT 1 FROM evidence_entries WHERE entry_id = ? LIMIT 1",
+                (entry_id,),
+            )
+            return cursor.fetchone() is not None
+        except Exception:
+            return False  # FAIL-OPEN
+
+    def get_receipt_for(self, subject: str, object_id: str) -> str:
+        """P0-1: 按 (subject, object) 索引查询最新 receipt_hash（O(log N)）。
+
+        替代 _check_poe_trust 原有的 query() + 遍历逻辑（O(N) 全表扫描）。
+        SPEC §3.2：日常只验 receipt 存在性。
+
+        Args:
+            subject: EvidenceEntry.subject（如 "record"）
+            object_id: EvidenceEntry.object（如 memory_id）
+
+        Returns:
+            receipt_hash 非空字符串=存在；空字符串=不存在或存储不可用
+        """
+        if self._conn is None or not subject or not object_id:
+            return ""
+        try:
+            cursor = self._conn.execute(
+                "SELECT receipt_hash FROM evidence_entries "
+                "WHERE subject = ? AND object = ? "
+                "ORDER BY timestamp DESC LIMIT 1",
+                (subject, object_id),
+            )
+            row = cursor.fetchone()
+            return row[0] if row else ""
+        except Exception:
+            return ""  # FAIL-OPEN
+
+    # ============================================================
+    # P0-5: 计数器（跨进程共享，atomic UPDATE）
+    # ============================================================
+
+    def increment_counter(self, name: str) -> int:
+        """P0-5: 原子自增计数器并返回新值。
+
+        SPEC §3.2：计数器落库，跨进程共享，不用文件 flock。
+        使用 INSERT ... ON CONFLICT + UPDATE RETURNING 实现原子性。
+
+        Args:
+            name: 计数器名（如 "integrity_check_count"）
+
+        Returns:
+            自增后的新值；失败返回 0（FAIL-OPEN）
+        """
+        if self._conn is None or not name:
+            return 0
+        try:
+            # 原子 upsert + 自增（SQLite >= 3.24 支持 ON CONFLICT）
+            self._conn.execute(
+                "INSERT INTO ledger_counters(name, value) VALUES(?, 1) "
+                "ON CONFLICT(name) DO UPDATE SET value = value + 1",
+                (name,),
+            )
+            self._conn.commit()
+            cursor = self._conn.execute(
+                "SELECT value FROM ledger_counters WHERE name = ?",
+                (name,),
+            )
+            row = cursor.fetchone()
+            return row[0] if row else 0
+        except Exception:
+            return 0  # FAIL-OPEN
+
+    def get_counter(self, name: str) -> int:
+        """P0-5: 读取计数器当前值（跨进程可见）。
+
+        Args:
+            name: 计数器名
+
+        Returns:
+            当前值；不存在或存储不可用返回 0
+        """
+        if self._conn is None or not name:
+            return 0
+        try:
+            cursor = self._conn.execute(
+                "SELECT value FROM ledger_counters WHERE name = ?",
+                (name,),
+            )
+            row = cursor.fetchone()
+            return row[0] if row else 0
+        except Exception:
+            return 0  # FAIL-OPEN
 
     def _tamper_for_test(self, index: int, **fields: str):
         """测试用：篡改指定索引的条目（破坏 receipt_hash 的正确性）。"""

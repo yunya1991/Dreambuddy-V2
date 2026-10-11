@@ -215,6 +215,19 @@ class CognitiveLoopEntry:
         self._memory_id = memory_id
         self._storage_path = storage_path
 
+        # P0-6: 启动健康检查（SPEC §3.2）——启动时跑一次全量 verify_integrity
+        # FAIL-OPEN：验证失败或异常不阻塞初始化，仅记录 _startup_integrity_passed=False
+        # 日常 _check_poe_trust 不再跑全量（P0-1），篡改检测由本启动检查 + P1 抽样重验承担
+        try:
+            self._startup_integrity_passed = bool(self.evidence_ledger.verify_integrity())
+        except Exception:
+            self._startup_integrity_passed = False
+        # 记录启动健康检查次数（P0-5 计数器，跨进程共享）
+        try:
+            self.evidence_ledger.increment_counter("startup_health_check_count")
+        except Exception:
+            pass  # FAIL-OPEN
+
     # ============================================================
     # 认知层：检索
     # ============================================================
@@ -865,30 +878,30 @@ class CognitiveLoopEntry:
         }
 
     def _check_poe_trust(self, memory_id: str) -> tuple[bool, Optional[str]]:
-        """P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt + 验 Merkle 完整性。
+        """P0-1: PoE 信任机制 — 索引查询 receipt 存在性（O(log N)）。
 
-        SPEC §2.3.4：无 receipt 的产出不被信任。
-        SPEC §2.3.4 PoE 增强：receipt 必须通过 Merkle 树完整性验证。
+        v2.0 SPEC §3.2 简化：
+          - 日常路径不跑全量 verify_integrity（O(N)），改由启动健康检查承担
+          - 仅按 (subject="record", object=memory_id) 索引查询 receipt_hash
+          - 篡改检测：启动时跑一次 verify_integrity（_startup_integrity_passed）+ P1 抽样重验
 
         Returns:
             (poe_trust, receipt_hash)：
-                有 receipt 且 Merkle 完整 → (True, hash)
-                无 receipt 或 Merkle 篡改 → (False, None)
+                enforcement=off → (True, None)
+                有 receipt → (True, receipt_hash)
+                无 receipt 或存储不可用 → (False, None)
         """
         try:
             # enforcement=off 时直接返回 (True, None) 跳过 PoE
             if self.poe_enforcement == "off":
                 return (True, None)
 
-            # 先验 Merkle 树完整性（全量验证）
-            if not self.evidence_ledger.verify_integrity():
-                return (False, None)
-
-            # 查询是否有对应 receipt
-            entries = self.evidence_ledger.query(subject="record")
-            for e in entries:
-                if e.object == memory_id:
-                    return (True, e.receipt_hash)
+            # P0-1: 索引查询 receipt（替代 query()+遍历 O(N)）
+            receipt = self.evidence_ledger.get_receipt_for(
+                subject="record", object_id=memory_id,
+            )
+            if receipt:
+                return (True, receipt)
             return (False, None)
         except Exception:
             return (False, None)  # FAIL-OPEN

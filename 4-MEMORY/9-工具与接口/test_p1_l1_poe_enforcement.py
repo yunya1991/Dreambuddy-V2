@@ -27,17 +27,17 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 # ─────────────────────────────── 1. receipt 完整性验证 ───────────────────────────────
 
-def test_check_poe_trust_verifies_merkle_integrity(tmp_path):
-    """RED: _check_poe_trust 在 Ledger 被篡改后返回 False。
+def test_check_poe_trust_receipt_path_trusts_existing(tmp_path):
+    """P0 简化后：_check_poe_trust 日常路径只验 receipt 存在性，不跑全量。
 
-    不仅查条目存在性，还调 verify_integrity() 验 Merkle 树。
-    篡改后即使条目存在，poe_trust 也应为 False。
+    v2.0 SPEC §3.2：日常只验 receipt，全量验证由启动健康检查承担。
+    篡改检测迁移至 test_p0_poe_optimization.py 的 test_startup_health_check_detects_tamper。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         memory_id = cle.record(
-            content="测试 Merkle 完整性",
+            content="测试 receipt 路径信任",
             quality_level="C",
             source="test_poe",
         )
@@ -45,12 +45,6 @@ def test_check_poe_trust_verifies_merkle_integrity(tmp_path):
         trust, receipt = cle._check_poe_trust(memory_id)
         assert trust is True
         assert receipt
-
-        # 篡改 Ledger
-        cle.evidence_ledger._tamper_for_test(0, subject="HACKED")
-        # 篡改后：poe_trust 应为 False（完整性验证失败）
-        trust2, receipt2 = cle._check_poe_trust(memory_id)
-        assert trust2 is False
     finally:
         cle.close()
 
