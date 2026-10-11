@@ -182,6 +182,11 @@ class CognitiveLoopEntry:
         recall_cache_path = _SCRIPT_DIR.parent / "data" / "recall_cache.json"
         self.recall_cache = RecallMemoryCache(cache_path=recall_cache_path)
 
+        # P1-3: 初始化双时序知识图（valid_time + transaction_time + invalidated_by）
+        from temporal_memory_graph import TemporalMemoryGraph
+        temporal_graph_path = _SCRIPT_DIR.parent / "data" / "temporal_graph.json"
+        self.temporal_graph = TemporalMemoryGraph(graph_path=temporal_graph_path)
+
         self._memory_id = memory_id
         self._storage_path = storage_path
 
@@ -293,6 +298,15 @@ class CognitiveLoopEntry:
             # 整体惩罚失败也不影响返回原始结果（FAIL-OPEN铁律）
             pass
         # ---------- END F3 ----------
+
+        # ---------- P1-3: 双时序知识图标记 ----------
+        # 对 recall 结果添加 temporal_status（active/historical/superseded）
+        # 不删除记忆，只标记（FAIL-OPEN）
+        try:
+            self.temporal_graph.filter_recall_results(dicts)
+        except Exception:
+            pass  # FAIL-OPEN
+        # ---------- END P1-3 ----------
 
         return dicts
 
