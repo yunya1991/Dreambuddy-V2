@@ -261,10 +261,14 @@ def prepare_decision_record_params(decision_result: dict[str, Any]) -> dict[str,
     if target:
         tags += f",target:{str(target)[-30:]}"
 
+    # P1-4: 将决策 Evidence 转换为 EvidenceEntry dict 列表（与 prepare_record_params 一致）
+    evidence_entries = _convert_evidence_to_entries(decision_result)
+
     return {
         "content": "\n".join(lines),
         "quality_level": "B",
         "tags": tags,
+        "evidence_entries": evidence_entries,
     }
 
 
@@ -362,8 +366,12 @@ def prepare_audit_record_params(audit_result: dict[str, Any]) -> dict[str, Any]:
     if gate:
         tags += f",gate:{gate}"
 
+    # P1-4: 将审计 Evidence 转换为 EvidenceEntry dict 列表（与 prepare_record_params 一致）
+    evidence_entries = _convert_evidence_to_entries(audit_result)
+
     return {
         "content": "\n".join(lines),
         "quality_level": quality_level,
         "tags": tags,
+        "evidence_entries": evidence_entries,
     }
