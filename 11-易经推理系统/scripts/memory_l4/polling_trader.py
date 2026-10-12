@@ -11456,7 +11456,8 @@ class PollingTrader:
                 self._log("[EvolutionExitEngine] position_tracker 为 None，跳过", "DEBUG")
                 return
 
-            # 遍历 evolution 子池持仓
+            # 遍历 exit_engine 统一处理的子池持仓（evolution + bcrm + strategy + event_arbitrage）
+            _EXIT_ENGINE_TAGS = {"evolution", "bcrm", "strategy", "event_arbitrage"}
             _evo_positions = []
             _all_pos = tracker.all_open_positions()
             self._log(
@@ -11465,7 +11466,7 @@ class PollingTrader:
             )
             for rec in _all_pos:
                 _stag = str(getattr(rec, "source_tag", "") or "").lower()
-                if _stag == "evolution":
+                if _stag in _EXIT_ENGINE_TAGS:
                     _evo_positions.append(rec)
             if not _evo_positions:
                 # 诊断日志：仅每 10 轮打印一次，避免日志刷屏
@@ -11473,13 +11474,13 @@ class PollingTrader:
                 if _cycle % 10 == 0:
                     _tags = [str(getattr(r, "source_tag", "") or "") for r in _all_pos]
                     self._log(
-                        f"[EvolutionExitEngine] 无 evolution 持仓 (共{len(_all_pos)}仓 tags={_tags})",
+                        f"[EvolutionExitEngine] 无 exit_engine 持仓 (共{len(_all_pos)}仓 tags={_tags})",
                         "DEBUG",
                     )
                 return
 
             self._log(
-                f"[EvolutionExitEngine] 发现 {len(_evo_positions)} 个 evolution 持仓",
+                f"[EvolutionExitEngine] 发现 {len(_evo_positions)} 个 exit_engine 持仓",
                 "INFO",
             )
             for rec in _evo_positions:
@@ -11573,7 +11574,9 @@ class PollingTrader:
 
                     # ★ 断点4: probe→standard tier 升级（FAIL-OPEN）
                     #   持仓 ≥ 4H + 盈利 ≥ +2% 时，probe 升级为 standard（趋势加仓）
-                    try:
+                    # ★ probe→standard 升级仅对 evolution 持仓生效（BCRM/战略层无 tier 体系）
+                    if _stag == "evolution":
+                      try:
                         _upgraded_tier = self._maybe_upgrade_probe_to_standard(
                             symbol=coin_up,
                             tier=tier,
@@ -11589,7 +11592,7 @@ class PollingTrader:
                                 setattr(rec, "market_snapshot", snap)
                             except Exception:
                                 pass
-                    except Exception as _upg_e:
+                      except Exception as _upg_e:
                         self._log(
                             f"[EvolutionExitEngine] {coin_up} probe升级异常(FAIL-OPEN): {_upg_e}",
                             "WARN",
@@ -11671,6 +11674,7 @@ class PollingTrader:
 
                     context = {
                         "symbol": coin_up, "inst_id": inst_id, "pos_side": pos_side,
+                        "source_tag": _stag,  # ★ 统一离场门控：exit_engine 按 tag 区分规则
                         "entry_price": entry_price, "current_price": current_price,
                         "upl": upl, "upl_ratio": upl_ratio,
                         "position_age_sec": position_age_sec,

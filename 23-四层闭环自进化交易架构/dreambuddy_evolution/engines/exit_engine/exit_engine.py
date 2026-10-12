@@ -280,6 +280,10 @@ class EvolutionExitEngine:
         current_sl_px = float(ctx.get("current_sl_px", 0.0) or 0.0)
         current_tp_px = float(ctx.get("current_tp_px", 0.0) or 0.0)
 
+        # ★ 统一离场门控：source_tag 标识持仓来源，evolution 专属规则仅对 evolution 生效
+        source_tag = str(ctx.get("source_tag", "evolution")).lower()
+        _is_evolution = source_tag == "evolution"
+
         # 优化1: ATR 自适应止损（从 context 读取，缺失时用固定百分比兜底）
         atr_pct = float(ctx.get("atr_pct", 0.0) or 0.0)
 
@@ -336,14 +340,18 @@ class EvolutionExitEngine:
             )
 
         # ── 规则 2b：BCRM2.0 高置信度反向信号 → partial_close 减仓（非全平）
-        bcrm_reduce_decision = self._check_bcrm_reverse_signal(ctx)
-        if bcrm_reduce_decision is not None:
-            return bcrm_reduce_decision
+        #   ★ 仅 source_tag=evolution 时触发（BCRM/战略层持仓不走此规则）
+        if _is_evolution:
+            bcrm_reduce_decision = self._check_bcrm_reverse_signal(ctx)
+            if bcrm_reduce_decision is not None:
+                return bcrm_reduce_decision
 
         # ── 规则 2d：evolution 反向信号 → partial_close/force_close 减仓（PONS 案例修复）
-        evolution_reduce_decision = self._check_evolution_reverse_signal(ctx)
-        if evolution_reduce_decision is not None:
-            return evolution_reduce_decision
+        #   ★ 仅 source_tag=evolution 时触发
+        if _is_evolution:
+            evolution_reduce_decision = self._check_evolution_reverse_signal(ctx)
+            if evolution_reduce_decision is not None:
+                return evolution_reduce_decision
 
         # ── 规则 3a：tier=trend 超时 24h 无进展（|upl_ratio| < 0.01）→ force_close
         if tier == "trend" and position_age_sec > self.TREND_TIMEOUT_SEC:
