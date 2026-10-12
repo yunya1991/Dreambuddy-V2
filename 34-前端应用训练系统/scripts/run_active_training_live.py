@@ -27,6 +27,9 @@ for _p in [_THIS_DIR, _34_DIR, _ADAPTERS_DIR, _CORE_DIR, _SCRIPTS_ROOT]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from core.decision_deriver import derive_expected_decision_with_cdrive
+from core.debate_integration import enrich_case_with_debate
+
 
 def _curl_get(url: str, timeout: int = 10) -> dict:
     req = urllib.request.Request(url, method="GET")
@@ -217,11 +220,13 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
             "outcome": outcome,
         }
     elif layer == "C":
+        # P3: 复杂案例注入辩论元数据（FAIL-OPEN）
+        enrich_case_with_debate(case)
         return {
             "context_summary": case.intent,
             "action_taken": case.actions[0] if case.actions else "",
             "outcome": outcome,
-            "expected_decision": "CONTINUE",
+            "expected_decision": derive_expected_decision_with_cdrive(case),
         }
     elif layer == "G":
         return {

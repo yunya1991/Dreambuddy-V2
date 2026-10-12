@@ -111,6 +111,8 @@ export class ReflectionTrainingLoop {
   private checkpoint: ModelCheckpoint;
   private _microBatchSize: number;
   private _baselineSet = false;
+  /** v0.5.2: 累计 add 次数，用于满 buffer 后的微批触发（buffer.size 满后恒定，不能用 size%micro） */
+  private _addCount = 0;
 
   constructor(opts?: { bucketThreshold?: number }) {
     this.bucketThreshold = opts?.bucketThreshold ?? DEFAULT_BUCKET_THRESHOLD;
@@ -158,6 +160,7 @@ export class ReflectionTrainingLoop {
   addTrainingData(data: ReflectionTrainingData, quality?: QualityLevel): void {
     const q = quality || 'C';
     this.buffer.add(data, q);
+    this._addCount++;
     this._checkTriggers(q);
   }
 
@@ -185,7 +188,7 @@ export class ReflectionTrainingLoop {
     }
 
     // 微批触发: 每 N 条数据触发
-    if (this.buffer.size % this._microBatchSize === 0) {
+    if (this._addCount % this._microBatchSize === 0) {
       this._triggerTrain('micro-batch');
       return;
     }

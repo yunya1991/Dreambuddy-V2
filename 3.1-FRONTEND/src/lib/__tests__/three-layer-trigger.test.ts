@@ -12,7 +12,8 @@
  */
 
 import { IntentTrainingLoop } from '../s-intent-training-loop';
-import { LAYER_MICRO_BATCH } from '../replay-buffer';
+import { GraphStructureTrainingLoop } from '../g-graph-training-loop';
+import { LAYER_MICRO_BATCH, LAYER_CAPACITY } from '../replay-buffer';
 
 describe('SPEC v0.5 P1: 三层触发机制', () => {
   // ----------------------------------------------------------
@@ -131,7 +132,44 @@ describe('SPEC v0.5 P1: 三层触发机制', () => {
   });
 
   // ----------------------------------------------------------
-  // 5. 不崩溃测试
+  // 5. 满 buffer 触发（G 层 P0 bug 回归）
+  // ----------------------------------------------------------
+  describe('满 buffer 后仍应持续触发微批训练', () => {
+    it('G 层 buffer 满（cap=500, micro=15，500%15≠0）后加数据仍应触发训练', () => {
+      // 根因: 原触发条件 buffer.size % microBatchSize === 0，
+      // 环形 buffer 满后 size 恒定=capacity，若 capacity%microBatch≠0 则永不触发
+      const loop = new GraphStructureTrainingLoop();
+      const cap = LAYER_CAPACITY.G; // 500
+      const micro = LAYER_MICRO_BATCH.G; // 15
+      // 填到刚好满
+      for (let i = 0; i < cap; i++) {
+        loop.addTrainingData({ decisions: [`d${i}`], rules: [`r${i}`] });
+      }
+      const stepAtFull = loop.step;
+      // 再加 micro 条 → 应至少再触发 1 次（size 不变但 addCount 递增）
+      for (let i = 0; i < micro; i++) {
+        loop.addTrainingData({ decisions: [`extra${i}`], rules: [`er${i}`] });
+      }
+      expect(loop.step).toBeGreaterThan(stepAtFull);
+    });
+
+    it('G 层加 cap+micro 条数据后 step 应约等于 (cap+micro)/micro', () => {
+      const loop = new GraphStructureTrainingLoop();
+      const cap = LAYER_CAPACITY.G;
+      const micro = LAYER_MICRO_BATCH.G;
+      const total = cap + micro * 2;
+      for (let i = 0; i < total; i++) {
+        loop.addTrainingData({ decisions: [`d${i}`], rules: [`r${i}`] });
+      }
+      // 期望触发次数 ≈ total / micro（±1 冷启动舍入）
+      const expected = Math.floor(total / micro);
+      expect(loop.step).toBeGreaterThanOrEqual(expected - 1);
+      expect(loop.step).toBeLessThanOrEqual(expected + 1);
+    });
+  });
+
+  // ----------------------------------------------------------
+  // 6. 不崩溃测试
   // ----------------------------------------------------------
   describe('不崩溃', () => {
     it('混合质量数据不应崩溃', () => {

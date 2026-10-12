@@ -21,6 +21,7 @@ Spec §3.4 C-Drive-Agent 四步循环:
 from __future__ import annotations
 
 import importlib
+import os
 import re
 import traceback
 from concurrent.futures import ThreadPoolExecutor
@@ -257,6 +258,18 @@ class CDriveAgent:
         self._debate_error_count = 0
         self._debate_max_errors = cfg.get("debate_max_consecutive_errors", 3)
 
+        # SPEC §3.4: C-Drive v3 feature flag + 灰度部署
+        # CDRIVE_V3=true → 强制全量启用 v3 路由
+        # CDRIVE_V3_GRAY_PERCENT=N → 灰度 N% 的 node_id 走 v3
+        self._use_v3_router = os.environ.get(
+            "CDRIVE_V3", "false").lower() == "true"
+        try:
+            self._v3_gray_percent = int(
+                os.environ.get("CDRIVE_V3_GRAY_PERCENT", "0"))
+        except (ValueError, TypeError):
+            self._v3_gray_percent = 0
+        self._v3_router = None  # 延迟初始化 CDriveV3Router
+
     # ── 主入口 ──────────────────────────────────────────
 
     def run(
@@ -284,6 +297,11 @@ class CDriveAgent:
             CDriveDecision: 决策结果
         """
         steer = steer or {}
+
+        # SPEC §3.4: v3 feature flag + 灰度路由
+        if self._should_use_v3(node_id):
+            return self.run_v3(node_id, result, state, signals)
+
         confidence = float(getattr(result, "confidence", 0.5))
         # F7.4: 用户覆盖置信度
         if "override_confidence" in steer:
@@ -409,6 +427,140 @@ class CDriveAgent:
             self._index_signals_to_graph(signals, graph)
 
         return decision
+
+    # ── SPEC §3.4: v3 路由 ──────────────────────────────
+
+    def _should_use_v3(self, node_id: str) -> bool:
+        """判断是否走 v3 路由 (feature flag + 灰度)"""
+        if self._use_v3_router:
+            return True
+        if self._v3_gray_percent <= 0:
+            return False
+        if self._v3_gray_percent >= 100:
+            return True
+        import hashlib as _hl
+        h = _hl.md5(node_id.encode("utf-8")).hexdigest()
+        return int(h[:8], 16) % 100 < self._v3_gray_percent
+
+    def run_v3(
+        self,
+        node_id: str,
+        result: Any,
+        state: Any,
+        signals: Optional[List[Dict]] = None,
+    ) -> CDriveDecision:
+        """SPEC §3.4 v3 五步链路 (委托 CDriveV3Router)
+
+        Step 1: recall + 匹配度评估 (P5)
+        Step 2: 四层分级路由 (P5 route → Tier1-4)
+        Step 3: L4 jev 全局裁决 (P7)
+        Step 4: 决策输出
+        Step 5: 认知闭环 (P8)
+        """
+        # 延迟初始化 v3 router
+        if self._v3_router is None:
+            self._v3_router = self._init_v3_router()
+        if self._v3_router is None:
+            # v3 不可用 → 降级到 v1 run 逻辑
+            return self._run_v1_fallback(node_id, result, state, signals)
+
+        try:
+            v3_result = self._v3_router.run_v3(
+                node_id, result, state, signals)
+        except Exception:
+            # v3 异常 → 降级到 v1
+            return self._run_v1_fallback(node_id, result, state, signals)
+
+        # 转换 v3 结果 → CDriveDecision
+        action_map = {
+            "CONTINUE": CDriveAction.CONTINUE,
+            "REDO": CDriveAction.REDO,
+            "INSERT_BEFORE": CDriveAction.SUPPLEMENT,
+            "JUMP_TO": CDriveAction.JUMP,
+            "EARLY_TERMINATE": CDriveAction.CONTINUE,  # 降级为 CONTINUE
+        }
+        action = action_map.get(
+            v3_result.get("action", "CONTINUE"), CDriveAction.CONTINUE)
+        return CDriveDecision(
+            action=action,
+            reason=v3_result.get("reason", ""),
+            confidence=v3_result.get("confidence", 0.5),
+            steps_executed=v3_result.get("steps_executed", []),
+            effort_level=v3_result.get("effort_level", "standard"),
+        )
+
+    def _init_v3_router(self):
+        """延迟初始化 CDriveV3Router (跨目录导入)"""
+        try:
+            import os as _os
+            import sys as _sys
+            _here = _os.path.dirname(_os.path.abspath(__file__))
+            _repo_root = _os.path.abspath(
+                _os.path.join(_here, "..", "..", "..", ".."))
+            # c_drive_v3_router.py 用 `from core.xxx import`, 需把
+            # 34-前端应用训练系统/ (core 的父目录) 加到 sys.path
+            _train_dir = _os.path.join(_repo_root, "34-前端应用训练系统")
+            if _os.path.isdir(_train_dir) and _train_dir not in _sys.path:
+                _sys.path.insert(0, _train_dir)
+            from core.c_drive_v3_router import CDriveV3Router
+            return CDriveV3Router(
+                recall_fn=self._make_recall_fn(),
+                record_fn=self._make_record_fn(),
+                verify_fn=self._make_verify_fn(),
+                llm_fn=self._llm_fn,
+            )
+        except Exception:
+            return None
+
+    def _make_recall_fn(self):
+        """构造 recall 函数 (注入到 v3 router)"""
+        if self._cognitive is None:
+            return None
+        def _recall(context="", top_k=5, min_quality="C", **kw):
+            try:
+                return self._cognitive.recall(
+                    context=context, top_k=top_k, min_quality=min_quality)
+            except Exception:
+                return []
+        return _recall
+
+    def _make_record_fn(self):
+        """构造 record 函数"""
+        if self._cognitive is None:
+            return None
+        def _record(content="", tags="", quality_level="C", **kw):
+            try:
+                return self._cognitive.record(
+                    content=content, tags=tags, quality_level=quality_level)
+            except Exception:
+                return None
+        return _record
+
+    def _make_verify_fn(self):
+        """构造 verify 函数"""
+        if self._cognitive is None:
+            return None
+        def _verify(memory_id="", success=True, **kw):
+            try:
+                return self._cognitive.verify(
+                    memory_id=memory_id, success=success)
+            except Exception:
+                return None
+        return _verify
+
+    def _run_v1_fallback(self, node_id, result, state, signals):
+        """v3 不可用时降级到原始 run 逻辑 (去掉 v3 路由检查)"""
+        # 临时关闭 v3 flag 避免递归
+        old_flag = self._use_v3_router
+        old_gray = self._v3_gray_percent
+        self._use_v3_router = False
+        self._v3_gray_percent = 0
+        try:
+            # 重新调用 run() (会走原始 v1 逻辑)
+            return self.run(node_id, result, state, signals)
+        finally:
+            self._use_v3_router = old_flag
+            self._v3_gray_percent = old_gray
 
     # ── Step 1: recall (HC-3 FAIL-OPEN) ─────────────────
 

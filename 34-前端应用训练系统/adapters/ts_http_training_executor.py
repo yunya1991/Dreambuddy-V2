@@ -26,6 +26,8 @@ for _p in [_THIS_DIR, _34_DIR]:
 
 from interfaces.training_executor import TrainingExecutor, TrainingLayer, TrainingResult
 from interfaces.training_data_provider import TrainingCase
+from core.decision_deriver import derive_expected_decision_with_cdrive
+from core.debate_integration import enrich_case_with_debate
 
 # 前端服务地址
 _DEFAULT_BASE_URL = "http://localhost:3001"
@@ -234,11 +236,13 @@ class TSHTTPTrainingExecutor(TrainingExecutor):
                 "outcome": outcome,
             }
         elif layer == "C":
+            # P3: 复杂案例注入辩论元数据（FAIL-OPEN：引擎不可用时降级 P2/P1）
+            enrich_case_with_debate(case)
             return {
                 "context_summary": case.intent,
                 "action_taken": case.actions[0] if case.actions else "",
                 "outcome": outcome,
-                "expected_decision": "CONTINUE",
+                "expected_decision": derive_expected_decision_with_cdrive(case),
             }
         elif layer == "G":
             return {

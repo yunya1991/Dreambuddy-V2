@@ -1,0 +1,34 @@
+# 33-REA known_gaps 关键词 → C-Drive 反射决策映射
+#
+# 关键词匹配为正则表达式（re.search, IGNORECASE），按列表顺序匹配，第一个命中即返回。
+# 支持热更新：修改此文件后无需重启，下次调用 _load_keyword_map 重新读取。
+# 扩展方式：在 known_gaps_map 下追加新条目即可。
+
+known_gaps_map:
+  - pattern: "missing|缺失|未实现|absent|not.?implemented"
+    decision: "INSERT_BEFORE"
+    comment: "代码缺口需插入"
+
+  - pattern: "wrong|错误|bug|incorrect|flaw"
+    decision: "REDO"
+    comment: "实现有误需重做"
+
+  - pattern: "dead|无用|冗余|redundant|unused|orphan"
+    decision: "EARLY_TERMINATE"
+    comment: "无效路径应终止"
+
+  - pattern: "circular|循环依赖|cycle|cyclic"
+    decision: "REDO"
+    comment: "架构问题需重构"
+
+# call_chain 断裂标记
+call_chain_break_markers:
+  - "???"
+  - "unknown"
+  - "broken"
+  - "缺失"
+  - "断裂"
+
+# evidence_level → 决策映射
+evidence_level_map:
+  UNKNOWN: "EARLY_TERMINATE"
