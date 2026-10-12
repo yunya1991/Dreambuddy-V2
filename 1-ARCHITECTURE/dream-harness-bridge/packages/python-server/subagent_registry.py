@@ -176,7 +176,22 @@ class SubagentNode:
         Returns:
             SubagentOutput
         """
-        return self._subagent.execute(node_output)
+        result = self._subagent.execute(node_output)
+        # DSH trace: EN_DSH_TRACE=true 时输出 reasoning_chain 到 stderr（供 P2 采集器消费）
+        import os as _os, sys as _sys, json as _json, time as _time
+        if _os.environ.get("EN_DSH_TRACE", "false").lower() in {"1", "true", "on", "yes"}:
+            _line = _json.dumps({
+                "event": "dsh_subagent_trace",
+                "subagent_type": self.module,
+                "node_id": self.node_id,
+                "reasoning_chain": result.reasoning_chain,
+                "outcome": "success",
+                "confidence": getattr(result, "confidence", 0.0),
+                "timestamp": _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+            }, ensure_ascii=False) + "\n"
+            _sys.stderr.write(_line)
+            _sys.stderr.flush()
+        return result
 
     def to_dict(self) -> Dict[str, Any]:
         return {

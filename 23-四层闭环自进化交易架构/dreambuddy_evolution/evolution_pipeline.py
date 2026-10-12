@@ -30,43 +30,11 @@ logger = logging.getLogger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# 集中日志持久化：FileHandler + RotatingFileHandler，确保运行日志可追溯落盘
-_LOG_CONFIGURED = False
+# 集中日志持久化：委托给 PipelineLoggingContext（FAIL-OPEN）
+from dreambuddy_evolution.core.pipeline_logging_context import PipelineLoggingContext
 
-
-def _setup_logging() -> None:
-    """配置 dreambuddy_evolution 包的集中日志（FileHandler + 控制台）.
-
-    FAIL-OPEN: 日志配置失败不影响主流程。
-    日志文件: dreambuddy_evolution/logs/evolution_pipeline.log（轮转，单文件 10MB，保留 5 份）
-    """
-    global _LOG_CONFIGURED
-    if _LOG_CONFIGURED:
-        return
-    try:
-        from logging.handlers import RotatingFileHandler
-
-        log_dir = Path(__file__).resolve().parent / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "evolution_pipeline.log"
-
-        pkg_logger = logging.getLogger("dreambuddy_evolution")
-        if not any(isinstance(h, RotatingFileHandler) for h in pkg_logger.handlers):
-            fh = RotatingFileHandler(
-                str(log_file), maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"
-            )
-            fh.setLevel(logging.INFO)
-            fh.setFormatter(
-                logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-            )
-            pkg_logger.addHandler(fh)
-            pkg_logger.setLevel(logging.INFO)
-        _LOG_CONFIGURED = True
-    except Exception:  # noqa: BLE001
-        pass  # FAIL-OPEN: 日志配置失败不阻断
-
-
-_setup_logging()
+_logging_ctx = PipelineLoggingContext()
+_logging_ctx.configure()
 
 
 class EvolutionPipeline:
@@ -79,10 +47,10 @@ class EvolutionPipeline:
     # 单例引用 — 供 TradeSettlementBridge 等外部组件访问
     _instance: "EvolutionPipeline | None" = None
 
-    # 按维度独立维护的矛盾权重持久化路径
-    _WF_PERSIST_PATH = REPO_ROOT / "dreambuddy_evolution" / "data" / "weight_factors.json"
-
     def __init__(self, gene_root: Path | str | None = None, trader: Any = None):
+        self._logging = PipelineLoggingContext()
+        self._logging.configure()  # 幂等，模块级已配置
+
         self.gene_root = Path(gene_root) if gene_root else (
             REPO_ROOT / "dreambuddy_evolution" / "gene_data"
         )
@@ -96,9 +64,10 @@ class EvolutionPipeline:
         self.shadow_rl.load_from_disk()  # 启动加载历史样本
         self.bellman = BellmanVTracker(alpha=0.1, gamma=0.95)
 
-        # Fix 3: 按维度独立的矛盾权重字典 + 持久化
-        self._contradiction_weight_factors: dict[str, float] = {}
-        self._load_weight_factors()
+        # Fix 3: 按维度独立的矛盾权重字典 + 持久化（委托 WeightStore）
+        from dreambuddy_evolution.core.weight_store import WeightStore
+        self._weight_store = WeightStore(gene_root=self.gene_root)
+        self._contradiction_weight_factors: dict[str, float] = self._weight_store.load()
 
         # 注册单例 — 供 TradeSettlementBridge 访问
         EvolutionPipeline._instance = self
@@ -146,6 +115,19 @@ class EvolutionPipeline:
         self._strategy_synth: Any = None
         self._transfer_learner: Any = None
         self._counterfactual: Any = None
+
+        # 路径发现服务注入（委托模式，后续 Phase 逐步搬入实现）
+        from dreambuddy_evolution.core.path_discovery_service import PathDiscoveryService
+        self._path_discovery = PathDiscoveryService(pipeline=self)
+
+        # 编排器注入（Facade 模式，委托给 EvolutionOrchestrator）
+        from dreambuddy_evolution.core.evolution_orchestrator import EvolutionOrchestrator
+        self._orchestrator = EvolutionOrchestrator(
+            weight_store=self._weight_store,
+            path_discovery=self._path_discovery,
+            logging_ctx=self._logging,
+            pipeline=self
+        )
 
     # ============ AGI 阶段4: 统一增强入口 ============
 
@@ -373,40 +355,20 @@ class EvolutionPipeline:
                 self._causal_engine = False
         return self._causal_engine or None
 
-    # ============ Fix 3: 按维度独立的矛盾权重持久化 ============
+    # ============ Fix 3: 按维度独立的矛盾权重持久化（委托 WeightStore） ============
 
     def _load_weight_factors(self) -> None:
-        """从 JSON 加载按维度独立的矛盾权重。FAIL-OPEN: 文件不存在或解析失败 → 空 dict。"""
-        try:
-            if self._WF_PERSIST_PATH.exists():
-                import json
-                data = json.loads(self._WF_PERSIST_PATH.read_text(encoding="utf-8"))
-                self._contradiction_weight_factors = {
-                    str(k): max(0.3, min(1.5, float(v)))
-                    for k, v in data.items()
-                }
-                logger.debug("[WF] 加载 %d 个维度权重: %s",
-                             len(self._contradiction_weight_factors),
-                             list(self._contradiction_weight_factors.keys()))
-        except Exception as e:
-            logger.debug("[FO] _load_weight_factors crash: %s", e)
-            self._contradiction_weight_factors = {}
+        """从 JSON 加载按维度独立的矛盾权重。FAIL-OPEN: 委托 WeightStore.load()。"""
+        self._contradiction_weight_factors = self._weight_store.load()
 
     def _save_weight_factors(self) -> None:
-        """持久化矛盾权重到 JSON。FAIL-OPEN: 写入失败不阻断。"""
-        try:
-            import json
-            self._WF_PERSIST_PATH.parent.mkdir(parents=True, exist_ok=True)
-            self._WF_PERSIST_PATH.write_text(
-                json.dumps(self._contradiction_weight_factors, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-        except Exception as e:
-            logger.debug("[FO] _save_weight_factors crash: %s", e)
+        """持久化矛盾权重到 JSON。FAIL-OPEN: 委托 WeightStore.save()。"""
+        self._weight_store._weight_factors = self._contradiction_weight_factors
+        self._weight_store.save()
 
     def _get_wf_for_dim(self, dim: str) -> float:
-        """获取指定维度的权重因子，默认 1.0。"""
-        return self._contradiction_weight_factors.get(dim, 1.0)
+        """获取指定维度的权重因子，默认 1.0。委托 WeightStore.get()。"""
+        return self._weight_store.get(dim)
 
     def _get_contradiction_feedback(self) -> Any:
         """P3.5 懒初始化 ContradictionFeedback"""

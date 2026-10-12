@@ -202,10 +202,13 @@ def feed_to_training_layers(base_url: str, sources: dict) -> dict:
 
 
 def _convert_case_to_training_data(case, layer: str) -> dict:
-    """将 TrainingCase 转为层专属 TrainingData（与 TSHTTPTrainingExecutor 一致）。"""
-    outcome_map = {"success": "success", "failure": "failure",
-                    "partial": "partial", "unknown": "partial"}
-    outcome = outcome_map.get(case.metadata.get("outcome", "unknown"), "partial")
+    """将 TrainingCase 转为层专属 TrainingData（与 TSHTTPTrainingExecutor 一致）。
+
+    P1 修复: 从 quality/confidence 派生 outcome + 归一化 prompt_pattern。
+    """
+    from core.outcome_pattern_deriver import derive_outcome, normalize_prompt_pattern
+    outcome = derive_outcome(case)
+    prompt_pattern = normalize_prompt_pattern(case)
 
     if layer == "S":
         return {
@@ -238,7 +241,7 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
             "intent": case.intent,
             "learned": case.learned,
             "outcome": outcome,
-            "prompt_pattern": case.outcome_text or "",
+            "prompt_pattern": prompt_pattern,
         }
     return {"intent": case.intent, "learned": case.learned}
 

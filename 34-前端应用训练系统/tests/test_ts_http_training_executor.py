@@ -78,14 +78,20 @@ class TSHTTPTrainingExecutorTest(unittest.TestCase):
         self.assertEqual(data["rules"], ["rule1", "rule2"])
 
     def test_convert_llm_layer(self):
-        """LLM 层转换：{intent, learned, outcome, prompt_pattern}。"""
+        """LLM 层转换：{intent, learned, outcome, prompt_pattern}。
+
+        P1 修复: prompt_pattern 用 intent 归一化（非唯一 outcome_text），
+        outcome 由 quality/confidence 派生（S/A→success）。
+        """
         executor = TSHTTPTrainingExecutor(TrainingLayer.LLM)
         case = self._make_case()
         data = executor._convert_case_to_training_data(case)
         self.assertEqual(data["intent"], "test_intent")
         self.assertEqual(data["learned"], ["lesson1"])
+        # metadata.outcome="success" 显式优先
         self.assertEqual(data["outcome"], "success")
-        self.assertEqual(data["prompt_pattern"], "test outcome")
+        # P1: prompt_pattern 归一化为 intent（使相似 case 可聚类）
+        self.assertEqual(data["prompt_pattern"], "test_intent")
 
     def test_bucket_thresholds(self):
         """各层桶满阈值应正确。"""

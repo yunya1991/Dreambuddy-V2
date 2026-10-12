@@ -232,4 +232,142 @@ describe('SPEC §4.2.1 P1-5: S层 IntentTrainingLoop', () => {
       expect(loop.shouldTrain()).toBe(true);
     });
   });
+
+  // ----------------------------------------------------------
+  // 5. P2 修复: ruleArchive 归档机制（参照 C 层）
+  // ----------------------------------------------------------
+  describe('P2 ruleArchive 归档机制', () => {
+    it('trainIncremental 后低权重 intent 应被归档', () => {
+      // 构造场景: 主 intent 大量出现，次 intent 极少出现 → 次 intent 归一化权重 < 阈值 0.01
+      // 100:1 比例 → rare 归一化权重 ≈ 0.0099 < 0.01 → 归档
+      const loop = new IntentTrainingLoop();
+      const batch: TrainingData[] = [];
+      // 主 intent: 100 次
+      for (let i = 0; i < 100; i++) {
+        batch.push({ message: `主意图-${i}`, intent_type: 'dominant' });
+      }
+      // 次 intent: 1 次
+      batch.push({ message: '次意图', intent_type: 'rare' });
+      loop.trainIncremental(batch);
+      const model = loop.getModelSnapshot();
+      // rare 应在 archive 中（归一化权重 < 0.01）
+      expect(model.intentArchive).toContain('rare');
+      // rare 不应再出现在 weights 中
+      expect(model.weights).not.toHaveProperty('rare');
+    });
+
+    it('归档后再次训练 archive 应保留', () => {
+      const loop = new IntentTrainingLoop();
+      const batch1: TrainingData[] = [];
+      for (let i = 0; i < 100; i++) {
+        batch1.push({ message: `m-${i}`, intent_type: 'dom' });
+      }
+      batch1.push({ message: 'r', intent_type: 'rare1' });
+      loop.trainIncremental(batch1);
+      // 第二轮训练
+      const batch2: TrainingData[] = [];
+      for (let i = 0; i < 100; i++) {
+        batch2.push({ message: `m2-${i}`, intent_type: 'dom' });
+      }
+      loop.trainIncremental(batch2);
+      const model = loop.getModelSnapshot();
+      expect(model.intentArchive).toContain('rare1');
+    });
+
+    it('getModelSnapshot 应包含 intentArchive 字段', () => {
+      const loop = new IntentTrainingLoop();
+      const model = loop.getModelSnapshot();
+      expect(model).toHaveProperty('intentArchive');
+      expect(Array.isArray(model.intentArchive)).toBe(true);
+    });
+
+    it('restoreModel 应恢复 intentArchive', () => {
+      const loop = new IntentTrainingLoop();
+      const batch: TrainingData[] = [];
+      for (let i = 0; i < 100; i++) {
+        batch.push({ message: `m-${i}`, intent_type: 'dom' });
+      }
+      batch.push({ message: 'r', intent_type: 'rare' });
+      loop.trainIncremental(batch);
+      const snapshot = loop.getModelSnapshot();
+      // 新实例恢复
+      const loop2 = new IntentTrainingLoop();
+      loop2.restoreModel(snapshot);
+      const restored = loop2.getModelSnapshot();
+      expect(restored.intentArchive).toContain('rare');
+    });
+
+    it('clear 应清空 intentArchive', () => {
+      const loop = new IntentTrainingLoop();
+      const batch: TrainingData[] = [];
+      for (let i = 0; i < 100; i++) {
+        batch.push({ message: `m-${i}`, intent_type: 'dom' });
+      }
+      batch.push({ message: 'r', intent_type: 'rare' });
+      loop.trainIncremental(batch);
+      expect(loop.getModelSnapshot().intentArchive!.length).toBeGreaterThan(0);
+      loop.clear();
+      expect(loop.getModelSnapshot().intentArchive).toEqual([]);
+    });
+
+    it('归档阈值应为 0.01（S层比 C层 0.05 更严格）', () => {
+      // S 层权重本身较小，归档阈值更严格
+      // 通过导出常量验证
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mod = require('../s-intent-training-loop');
+      expect(mod.INTENT_ARCHIVE_THRESHOLD).toBe(0.01);
+    });
+  });
+
+  // ----------------------------------------------------------
+  // 6. 大认知系统正向意图识别增强（quality boost）
+  // ----------------------------------------------------------
+  describe('大认知系统正向意图 boost', () => {
+    it('TrainingData 应支持 quality 可选字段', () => {
+      const data: TrainingData = { message: 'test', intent_type: 't', quality: 'S' };
+      expect(data.quality).toBe('S');
+    });
+
+    it('quality=S 的 intent 权重应高于无 quality 的同频率 intent', () => {
+      // 同样频率，但一个有 quality=S boost，一个无
+      const loop = new IntentTrainingLoop();
+      const batch: TrainingData[] = [];
+      for (let i = 0; i < 10; i++) {
+        batch.push({ message: `boost-${i}`, intent_type: 'boosted', quality: 'S' });
+        batch.push({ message: `plain-${i}`, intent_type: 'plain' });
+      }
+      loop.trainIncremental(batch);
+      const model = loop.getModelSnapshot();
+      expect(model.weights['boosted']).toBeGreaterThan(model.weights['plain']);
+    });
+
+    it('quality=A 的 intent 也应有 boost（弱于 S）', () => {
+      const loop = new IntentTrainingLoop();
+      const batch: TrainingData[] = [];
+      for (let i = 0; i < 10; i++) {
+        batch.push({ message: `s-${i}`, intent_type: 's_level', quality: 'S' });
+        batch.push({ message: `a-${i}`, intent_type: 'a_level', quality: 'A' });
+        batch.push({ message: `p-${i}`, intent_type: 'plain' });
+      }
+      loop.trainIncremental(batch);
+      const model = loop.getModelSnapshot();
+      // S > A > plain
+      expect(model.weights['s_level']).toBeGreaterThan(model.weights['a_level']);
+      expect(model.weights['a_level']).toBeGreaterThan(model.weights['plain']);
+    });
+
+    it('无 quality 字段时不应 boost（向后兼容）', () => {
+      const loop = new IntentTrainingLoop();
+      const batch: TrainingData[] = [];
+      for (let i = 0; i < 10; i++) {
+        batch.push({ message: `a-${i}`, intent_type: 'typeA' });
+        batch.push({ message: `b-${i}`, intent_type: 'typeB' });
+      }
+      loop.trainIncremental(batch);
+      const model = loop.getModelSnapshot();
+      // 同频率无 boost → 权重应接近
+      const diff = Math.abs(model.weights['typeA'] - model.weights['typeB']);
+      expect(diff).toBeLessThan(0.01);
+    });
+  });
 });

@@ -302,7 +302,7 @@ function getApiKey(): string {
  *
  * 返回: 与输入顺序对应的向量数组
  */
-async function embedTexts(texts: string[]): Promise<number[][]> {
+export async function embedTexts(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) return [];
 
   const apiKey = getApiKey();
@@ -380,7 +380,7 @@ function delay(ms: number): Promise<void> {
 // 6. 向量运算 — 余弦相似度（纯数学，零依赖）
 // ============================================================
 
-function cosineSimilarity(a: number[], b: number[]): number {
+export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;
 
   let dot = 0;
@@ -404,7 +404,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
  * 当 embeddings API 不可用时，用字符级 n-gram 重叠率作为 fallback。
  * 这完全不依赖任何分词器，避免了 "用户明确说不要用 jieba 但回退到 jieba" 的问题。
  */
-function ngramSimilarity(query: string, text: string, n: number = 3): number {
+export function ngramSimilarity(query: string, text: string, n: number = 3): number {
   const getNgrams = (s: string): Set<string> => {
     const set = new Set<string>();
     const cleaned = s.toLowerCase().replace(/\s+/g, ' ');

@@ -98,6 +98,19 @@ def collect_from_all_providers(limit: int) -> dict:
         ("Skill", "skill_system_collector", "SkillSystemCollector"),
         ("Doc", "doc_knowledge_collector", "DocKnowledgeCollector"),
         ("REA", "rea_batch_collector", "REABatchCollector"),
+        ("Trae", "trae_session_collector", "TraeSessionCollector"),
+        ("Trading", "trading_log_collector", "TradingLogCollector"),
+        # DSH 层原生序列数据源 (SPEC-DSH-训练数据源 v0.2)
+        ("CleaningTrace", "cleaning_trace_collector", "CleaningTraceCollector"),
+        ("DalRoute", "dal_route_collector", "DalRouteCollector"),
+        ("DataFetchRoute", "data_fetch_route_collector", "DataFetchRouteCollector"),
+        ("DshSubagent", "dsh_subagent_collector", "DshSubagentCollector"),
+        # DSH 层 v0.4 新增采集器 (SPEC-DSH-训练数据源-v0.4)
+        ("TddTest", "tdd_test_collector", "TddTestCollector"),
+        ("CogSession", "cognitive_session_collector", "CognitiveSessionCollector"),
+        ("TraderLog", "polling_trader_log_collector", "PollingTraderLogCollector"),
+        ("ReaTest", "rea_test_collector", "REATestCollector"),
+        ("ShadowVal", "shadow_validation_collector", "ShadowValidationCollector"),
     ]
     for label, mod_name, cls_name in collectors:
         try:
@@ -116,30 +129,40 @@ def collect_from_all_providers(limit: int) -> dict:
 
 
 def _convert_case_to_training_data(case, layer: str) -> dict:
-    """将 TrainingCase 转为层专属 TrainingData（与 TSHTTPTrainingExecutor 一致）。"""
-    outcome_map = {"success": "success", "failure": "failure",
-                    "partial": "partial", "unknown": "partial"}
-    outcome = outcome_map.get(case.metadata.get("outcome", "unknown"), "partial")
+    """将 TrainingCase 转为层专属 TrainingData（与 TSHTTPTrainingExecutor 一致）。
+
+    P1 修复: 从 quality/confidence 派生 outcome + 归一化 prompt_pattern。
+    """
+    try:
+        from core.outcome_pattern_deriver import derive_outcome, normalize_prompt_pattern
+    except ModuleNotFoundError:
+        from outcome_pattern_deriver import derive_outcome, normalize_prompt_pattern
+    outcome = derive_outcome(case)
+    prompt_pattern = normalize_prompt_pattern(case)
     if layer == "S":
         return {"message": case.outcome_text or case.intent,
-                "intent_type": case.intent, "entities": []}
+                "intent_type": case.intent, "entities": [], "quality": case.quality}
     elif layer == "DSH":
-        return {"task": case.intent, "node_sequence": case.actions, "outcome": outcome}
+        return {"task": case.intent, "node_sequence": case.actions,
+                "outcome": outcome, "quality": case.quality}
     elif layer == "C":
         return {"context_summary": case.intent,
                 "action_taken": case.actions[0] if case.actions else "",
-                "outcome": outcome, "expected_decision": "CONTINUE"}
+                "outcome": outcome, "expected_decision": "CONTINUE",
+                "quality": case.quality}
     elif layer == "G":
-        return {"decisions": [case.intent], "rules": case.learned}
+        return {"decisions": [case.intent], "rules": case.learned,
+                "quality": case.quality}
     elif layer == "LLM":
         return {"intent": case.intent, "learned": case.learned,
-                "outcome": outcome, "prompt_pattern": case.outcome_text or ""}
-    return {"intent": case.intent, "learned": case.learned}
+                "outcome": outcome, "prompt_pattern": prompt_pattern,
+                "quality": case.quality}
+    return {"intent": case.intent, "learned": case.learned, "quality": case.quality}
 
 
 def _quality_from_case(case) -> str:
-    """从案例 metadata 推断 quality 等级 (S/A/B/C)。"""
-    q = (getattr(case, "metadata", {}) or {}).get("quality", "C")
+    """从案例 quality 字段推断等级 (S/A/B/C)。"""
+    q = getattr(case, "quality", None) or "C"
     if q in ("S", "A", "B", "C"):
         return q
     return "C"
@@ -159,6 +182,9 @@ def feed_continual(base_url: str, sources: dict) -> dict:
 
     stats = {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0}
              for layer in _LAYERS}
+
+    # P2: 收集 S 层 S/A/B 级样本用于语义原型更新
+    s_semantic_batch = []
 
     for source_name, cases in sources.items():
         for case in cases:
@@ -182,6 +208,27 @@ def feed_continual(base_url: str, sources: dict) -> dict:
                         stats[layer]["failed"] += 1
                 except Exception:
                     stats[layer]["failed"] += 1
+
+                # P2: 收集 S 层 S/A/B 级样本
+                if layer == "S" and quality in ("S", "A", "B"):
+                    s_semantic_batch.append(training_data)
+
+    # P2: 喂入完成后，对 S 层触发语义原型更新
+    if s_semantic_batch:
+        try:
+            resp = _curl_post(
+                f"{base_url}/api/training/s",
+                {"action": "updateSemantic", "data": {"batch": s_semantic_batch}},
+            )
+            sem_result = resp.get("data", {})
+            sem_updated = sem_result.get("updated", False)
+            sem_step = sem_result.get("semanticStep", 0)
+            sem_count = sem_result.get("prototypeCount", 0)
+            print(f"  语义原型: {'✓' if sem_updated else '✗'} "
+                  f"step={sem_step} prototypes={sem_count} "
+                  f"(from {len(s_semantic_batch)} S/A/B samples)")
+        except Exception as e:
+            print(f"  语义原型: 跳过 (API 调用失败: {e})")
 
     for layer in _LAYERS:
         s = stats[layer]
@@ -308,20 +355,28 @@ def verify_checkpoint_restore(base_url: str) -> dict:
     return result
 
 
-def main():
-    parser = argparse.ArgumentParser(description="持续训练脚本（v0.5 continual mode）")
-    parser.add_argument("--limit", type=int, default=30,
-                        help="每个数据源最大采集数（默认30，持续模式不需要大量数据）")
-    parser.add_argument("--frontend-url", default="http://localhost:3001",
-                        help="前端服务地址")
-    args = parser.parse_args()
-    base_url = args.frontend_url.rstrip("/")
+def collect_and_feed(base_url: str, limit: int) -> dict:
+    """采集 + 喂入（守护模式核心步骤，不含验证）。
 
+    Returns:
+        feed_stats dict
+    """
+    sources = collect_from_all_providers(limit)
+    total_cases = sum(len(v) for v in sources.values())
+    if total_cases == 0:
+        print("  ⚠️ 本轮无数据采集")
+        return {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0}
+                for layer in _LAYERS}
+    return feed_continual(base_url, sources)
+
+
+def run_once(base_url: str, limit: int) -> int:
+    """单次完整运行: 采集→喂入→验证→报告。"""
     print(f"╔══════════════════════════════════════════════════════════════╗")
     print(f"║  v0.5 持续训练（continual mode）— 数据到达即学习              ║")
     print(f"╚══════════════════════════════════════════════════════════════╝")
     print(f"  前端服务: {base_url}")
-    print(f"  采集上限: {args.limit}/数据源")
+    print(f"  采集上限: {limit}/数据源")
     print(f"  时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
     # 阶段 0: 记录初始状态
@@ -332,15 +387,8 @@ def main():
         print(f"    {layer:4s} | step={s['step']} | bucket={s['bucketCount']} | "
               f"avgW={s['avgWeight']:.3f}")
 
-    # 阶段 1: 采集
-    sources = collect_from_all_providers(args.limit)
-    total_cases = sum(len(v) for v in sources.values())
-    if total_cases == 0:
-        print("\n  ⚠️ 无数据采集，退出")
-        return 1
-
-    # 阶段 2: 持续喂入
-    feed_stats = feed_continual(base_url, sources)
+    # 阶段 1-2: 采集 + 喂入
+    feed_stats = collect_and_feed(base_url, limit)
 
     # 阶段 3: 验证持续训练
     continual_results = verify_continual_training(base_url, before, feed_stats)
@@ -385,6 +433,60 @@ def main():
 
     print(f"\n  {'✅ P3 验收全部通过' if all_pass else '⚠️ 部分验收未通过'}")
     return 0 if all_pass else 1
+
+
+def run_daemon(base_url: str, limit: int, interval: int) -> int:
+    """P2 修复: 守护模式 — 持续循环采集+喂入，实现真正的持续训练。
+
+    每轮: collect_and_feed → sleep(interval) → repeat
+    Ctrl+C 优雅退出。
+    """
+    print(f"╔══════════════════════════════════════════════════════════════╗")
+    print(f"║  v0.5 持续训练守护模式 — 每 {interval}s 采集+喂入              ║")
+    print(f"╚══════════════════════════════════════════════════════════════╝")
+    print(f"  前端服务: {base_url}")
+    print(f"  采集上限: {limit}/数据源")
+    print(f"  轮询间隔: {interval}s")
+    print(f"  启动时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  按 Ctrl+C 停止")
+
+    cycle = 0
+    try:
+        while True:
+            cycle += 1
+            print(f"\n{'─'*60}")
+            print(f"  轮次 #{cycle} | {time.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"{'─'*60}")
+            try:
+                feed_stats = collect_and_feed(base_url, limit)
+                total_added = sum(s["added"] for s in feed_stats.values())
+                total_fed = sum(s["fed"] for s in feed_stats.values())
+                print(f"  本轮: 喂入 {total_fed} | 成功 {total_added}")
+            except Exception as e:
+                print(f"  ⚠️ 本轮异常: {e}")
+            print(f"  休眠 {interval}s ...")
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        print(f"\n\n  ⏹️  守护进程停止 (共 {cycle} 轮)")
+        return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="持续训练脚本（v0.5 continual mode）")
+    parser.add_argument("--limit", type=int, default=30,
+                        help="每个数据源最大采集数（默认30）")
+    parser.add_argument("--frontend-url", default="http://localhost:3001",
+                        help="前端服务地址")
+    parser.add_argument("--daemon", action="store_true",
+                        help="P2: 守护模式，持续循环采集+喂入（Ctrl+C 停止）")
+    parser.add_argument("--interval", type=int, default=60,
+                        help="守护模式轮询间隔秒数（默认60）")
+    args = parser.parse_args()
+    base_url = args.frontend_url.rstrip("/")
+
+    if args.daemon:
+        return run_daemon(base_url, args.limit, args.interval)
+    return run_once(base_url, args.limit)
 
 
 if __name__ == "__main__":

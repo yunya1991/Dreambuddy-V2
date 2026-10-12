@@ -219,9 +219,10 @@ class TSHTTPTrainingExecutor(TrainingExecutor):
         LLM 层: {intent, learned, outcome, prompt_pattern}
         """
         layer = self._layer.value
-        outcome_map = {"success": "success", "failure": "failure",
-                        "partial": "partial", "unknown": "partial"}
-        outcome = outcome_map.get(case.metadata.get("outcome", "unknown"), "partial")
+        # P1 修复: 从 quality/confidence 派生 outcome + 归一化 prompt_pattern
+        from core.outcome_pattern_deriver import derive_outcome, normalize_prompt_pattern
+        outcome = derive_outcome(case)
+        prompt_pattern = normalize_prompt_pattern(case)
 
         if layer == "S":
             return {
@@ -254,7 +255,7 @@ class TSHTTPTrainingExecutor(TrainingExecutor):
                 "intent": case.intent,
                 "learned": case.learned,
                 "outcome": outcome,
-                "prompt_pattern": case.outcome_text or "",
+                "prompt_pattern": prompt_pattern,
             }
         else:
             return {"intent": case.intent, "learned": case.learned}

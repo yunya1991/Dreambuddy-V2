@@ -20,6 +20,7 @@ import {
   trainIncrementalLayer,
   checkpointLayer,
   restoreLayer,
+  updateSemanticPrototypes,
   type LayerName,
 } from '@/lib/training-loop-registry';
 
@@ -93,7 +94,8 @@ export async function POST(
           { status: 400 },
         );
       }
-      const added = addTrainingData(layer, body.data);
+      const { quality, ...trainingData } = body.data;
+      const added = addTrainingData(layer, trainingData, quality as string | undefined);
       return NextResponse.json({ success: true, data: { added } });
     }
 
@@ -146,6 +148,24 @@ export async function POST(
         return NextResponse.json({
           success: true,
           data: { restored: false, degraded: true },
+        });
+      }
+      return NextResponse.json({ success: true, data: result });
+    }
+
+    // v0.6: 语义原型更新（异步，调 DeepSeek API）
+    if (action === 'updateSemantic') {
+      if (!body.data || !Array.isArray(body.data.batch)) {
+        return NextResponse.json(
+          { success: false, error: 'missing_batch_data' },
+          { status: 400 },
+        );
+      }
+      const result = await updateSemanticPrototypes(layer, body.data.batch);
+      if (result === null) {
+        return NextResponse.json({
+          success: true,
+          data: { updated: false, degraded: true },
         });
       }
       return NextResponse.json({ success: true, data: result });

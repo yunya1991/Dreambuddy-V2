@@ -219,10 +219,17 @@ class DataCenter:
         """在 runner 前后埋点：记录 metric + 质量检查 + 告警。"""
         bundle = self.monitoring
         start_ns = time.perf_counter_ns()
+        # DSH trace 标志位（EN_DSH_TRACE=true 启用，供 34-前端应用训练系统 P1 采集器消费）
+        _en_dsh_trace = os.environ.get("EN_DSH_TRACE", "false").lower() in {"1", "true", "on", "yes"}
+        _dsh = {"runner_error": None, "silver_attempted": False,
+                "silver_gate_passed": None, "silver_error": None,
+                "dal_write_attempted": False} if _en_dsh_trace else None
         try:
             result = runner(params)
         except Exception as exc:
             # —— 异常分支 ——
+            if _dsh is not None:
+                _dsh["runner_error"] = type(exc).__name__
             duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
             if bundle is not None:
                 from data_center.monitoring.alerting import Alert, AlertLevel
@@ -245,6 +252,8 @@ class DataCenter:
                     ),
                     tags=["fetch_error", source, category, type(exc).__name__],
                 ))
+            if _dsh is not None:
+                self._emit_dsh_trace(category, source, _dsh, duration_ms, 0)
             raise
 
         # —— 正常分支 ——
@@ -255,6 +264,8 @@ class DataCenter:
         # SILVER_ALLOW_BRONZE_FALLBACK=true 时紧急回退到 Bronze（仅用于故障演练，默认关闭）
         _allow_bronze_fallback = os.environ.get("SILVER_ALLOW_BRONZE_FALLBACK", "false").lower() in {"1", "true", "on", "yes"}
         if _en_silver and result:
+            if _dsh is not None:
+                _dsh["silver_attempted"] = True
             _fail_open = os.environ.get("SILVER_FAIL_OPEN", "true").lower() not in {"0", "false", "off", "no"}
             try:
                 from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
@@ -269,6 +280,8 @@ class DataCenter:
                 _silver = _pipe.clean(result, source=source, category=category)
                 # Gate passed → 用 Silver DF 还原 records + 写入 DAL
                 if _silver.gate_passed:
+                    if _dsh is not None:
+                        _dsh["silver_gate_passed"] = True
                     from data_cleaning.adapters import cleaned_df_to_records as _to_recs
                     result = _to_recs(_silver.df, source=source, category=category,
                                        sub_category=result[0].sub_category if result else "")
@@ -276,11 +289,15 @@ class DataCenter:
                     try:
                         from data_cleaning.dal_sink import DalSink
                         _sub = result[0].sub_category if result else ""
+                        if _dsh is not None:
+                            _dsh["dal_write_attempted"] = True
                         DalSink().write_silver(_silver, source=source,
                                                category=category, sub_category=_sub)
                     except Exception:  # noqa: BLE001
                         pass  # DAL 写入失败不影响主链路
                 else:
+                    if _dsh is not None:
+                        _dsh["silver_gate_passed"] = False
                     # ★ 硬门禁拦截：QualityGate 未通过 → 丢弃原始 Bronze 数据，返回空列表
                     # 异常数据仅保留在 Bronze 层（sink_sqlite.records）用于审计，不进入交易热路径
                     import logging as _logging
@@ -307,9 +324,11 @@ class DataCenter:
                                 tags=["quality", _issue.code.value, source, category, "silver_gate_blocked"],
                             ))
                     result = [] if not _allow_bronze_fallback else result
-            except Exception:  # noqa: BLE001
+            except Exception as _silver_exc:  # noqa: BLE001
                 if not _fail_open:
                     raise
+                if _dsh is not None:
+                    _dsh["silver_error"] = type(_silver_exc).__name__
                 # fail-open: Silver 清洗链异常 → 同样拦截，返回空（不回退到Bronze脏数据）
                 import logging as _logging
                 _logging.getLogger(__name__).warning(
@@ -319,6 +338,9 @@ class DataCenter:
                 result = [] if not _allow_bronze_fallback else result
 
         duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
+        # DSH trace 输出（EN_DSH_TRACE=true 启用，供 P1 采集器消费）
+        if _dsh is not None:
+            self._emit_dsh_trace(category, source, _dsh, duration_ms, len(result))
         if bundle is not None:
             from data_center.monitoring.alerting import Alert, AlertLevel
             from data_center.monitoring.metrics import InvocationMetric
@@ -371,3 +393,48 @@ class DataCenter:
         与 QualityChecker 的 allow_empty_degraded_sources 一致。
         """
         return source in {"glassnode", "gdelt"}
+
+    @staticmethod
+    def _emit_dsh_trace(category: str, source: str, dsh: dict,
+                        duration_ms: float, result_count: int) -> None:
+        """EN_DSH_TRACE=true 时输出路由链路 JSON 行到 stderr（供 P1 采集器消费）。
+
+        node_sequence 组装:
+          基础: [dispatcher.fetch, registry.get, _fetch_monitored, collector.fetch]
+          runner_error → collector.error (failure)
+          silver_attempted → + silver.clean
+            silver_error → + silver.error (failure)
+            silver_gate_passed=True → + silver.gate_pass (+ dal.write_silver) (success)
+            silver_gate_passed=False → + silver.gate_block (failure)
+        """
+        import json as _json
+        nodes = ["dispatcher.fetch", "registry.get", "_fetch_monitored", "collector.fetch"]
+        if dsh.get("runner_error"):
+            nodes[-1] = "collector.error"
+            outcome = "failure"
+        elif dsh.get("silver_attempted"):
+            nodes.append("silver.clean")
+            if dsh.get("silver_error"):
+                nodes.append("silver.error")
+                outcome = "failure"
+            elif dsh.get("silver_gate_passed"):
+                nodes.append("silver.gate_pass")
+                if dsh.get("dal_write_attempted"):
+                    nodes.append("dal.write_silver")
+                outcome = "success"
+            else:
+                nodes.append("silver.gate_block")
+                outcome = "failure"
+        else:
+            outcome = "success"
+        _line = _json.dumps({
+            "event": "dsh_trace",
+            "category": category,
+            "source": source,
+            "node_sequence": nodes,
+            "outcome": outcome,
+            "duration_ms": round(duration_ms, 2),
+            "result_count": result_count,
+        }, ensure_ascii=False) + "\n"
+        sys.stderr.write(_line)
+        sys.stderr.flush()

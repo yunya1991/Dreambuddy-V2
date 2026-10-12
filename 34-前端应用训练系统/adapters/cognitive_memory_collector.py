@@ -115,11 +115,11 @@ class CognitiveMemoryCollector(TrainingDataProvider):
         except (json.JSONDecodeError, TypeError):
             tags = []
 
-        # 从 content 提取 intent（首行或前100字符）
-        first_line = content.split("\n")[0][:100] if content else "cognitive_memory"
+        # P1: 从 content 结构化前缀 [xxx] 或 tags 提取 intent_type
+        intent = CognitiveMemoryCollector._extract_intent(content, tags)
 
         return TrainingCase(
-            intent=first_line,
+            intent=intent,
             actions=[],
             outcome_text=content,
             learned=[content] if content else [],
@@ -137,3 +137,32 @@ class CognitiveMemoryCollector(TrainingDataProvider):
                 "level": row["level"] or "observation",
             },
         )
+
+    @staticmethod
+    def _extract_intent(content: str, tags: list) -> str:
+        """从 content 结构化前缀 [xxx] 或 tags 提取简短 intent_type。
+
+        策略:
+          1. 解析 content 首行的 [xxx] 标签，取第一个标签
+          2. 如无标签，用 tags[0] 作为 intent
+          3. 如都无，用 "cognitive_observation"
+          4. 长度截断 50 字符（P3 数据质量门控）
+        """
+        import re
+
+        # 尝试从 content 首行提取 [xxx] 标签
+        first_line = content.split("\n")[0] if content else ""
+        match = re.match(r"\[([^\]]+)\]", first_line)
+        if match:
+            intent = match.group(1).strip()
+        elif tags and len(tags) > 0:
+            # 用第一个 tag 作为 intent
+            intent = str(tags[0]).strip()
+        else:
+            intent = "cognitive_observation"
+
+        # P3: 长度门控 — intent_type 不超过 50 字符
+        if len(intent) > 50:
+            intent = intent[:50]
+
+        return intent

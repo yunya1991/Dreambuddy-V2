@@ -98,11 +98,18 @@ export function getAllStatus(): TrainingLoopStatus[] {
 /**
  * 向指定层添加训练数据。
  * data 字段结构按层不同，由调用方（Python 适配器）负责转换。
+ * quality 可选，不传时默认 'C'。
  */
-export function addTrainingData(layer: LayerName, data: Record<string, unknown>): boolean {
+export function addTrainingData(
+  layer: LayerName,
+  data: Record<string, unknown>,
+  quality?: string,
+): boolean {
   const loop = getInstances()[layer];
   if (!loop) return false;
-  (loop as { addTrainingData: (d: Record<string, unknown>) => void }).addTrainingData(data);
+  (loop as {
+    addTrainingData: (d: Record<string, unknown>, q?: string) => void;
+  }).addTrainingData(data, quality);
   return true;
 }
 
@@ -177,4 +184,26 @@ export function getModelSnapshot(layer: LayerName): Record<string, unknown> | nu
   if (!loop) return null;
   const l = loop as { getModelSnapshot: () => Record<string, unknown> };
   return l.getModelSnapshot();
+}
+
+/**
+ * v0.6: 语义原型更新（仅 S 层有效）
+ * 调 DeepSeek API 对 S/A/B 级样本做 embedding，更新语义原型向量。
+ * FAIL-OPEN: 非 S 层或 API 不可用时返回 null。
+ */
+export async function updateSemanticPrototypes(
+  layer: LayerName,
+  batch: Record<string, unknown>[],
+): Promise<Record<string, unknown> | null> {
+  if (layer !== 'S') return null;
+  const loop = getInstances()[layer];
+  if (!loop) return null;
+  const l = loop as IntentTrainingLoop;
+  await l.updateSemanticPrototypes(batch as Parameters<IntentTrainingLoop['updateSemanticPrototypes']>[0]);
+  const snap = l.getModelSnapshot();
+  return {
+    updated: true,
+    semanticStep: snap.semanticStep,
+    prototypeCount: Object.keys(snap.semanticPrototypes || {}).length,
+  };
 }
