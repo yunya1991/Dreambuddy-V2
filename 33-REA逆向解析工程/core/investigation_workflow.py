@@ -105,7 +105,7 @@ class InvestigationWorkflow:
         annotate = self._phase_annotate(result["phases"], target, feature)
         result["phases"]["annotate"] = annotate
 
-        # 聚合顶层
+        # 聚合顶层（按 evidence_id 去重，标注阶段已含前序阶段证据）
         all_evidence: list[Evidence] = []
         all_gaps: list[str] = []
         for phase_data in result["phases"].values():
@@ -113,7 +113,7 @@ class InvestigationWorkflow:
             for ev in phase_data.get("evidence", []):
                 all_gaps.extend(ev.known_gaps)
 
-        result["evidence"] = all_evidence
+        result["evidence"] = _dedupe_evidence(all_evidence)
         result["known_gaps"] = list(set(all_gaps))  # 去重
         result["summary"] = annotate.get("summary", "")
 
@@ -369,20 +369,21 @@ class InvestigationWorkflow:
         feature: str | None,
     ) -> dict[str, Any]:
         """标注阶段：聚合所有 Evidence，生成调查报告。"""
-        # 聚合 Evidence
+        # 聚合 Evidence（按 evidence_id 去重，保持首次出现顺序）
         all_evidence: list[Evidence] = []
         all_gaps: list[str] = []
         for phase_data in phases.values():
             all_evidence.extend(phase_data.get("evidence", []))
             for ev in phase_data.get("evidence", []):
                 all_gaps.extend(ev.known_gaps)
+        unique_evidence = _dedupe_evidence(all_evidence)
 
         # 去重 known_gaps
         unique_gaps = sorted(set(all_gaps))
 
         # 统计 Evidence 层级分布
         level_counts: dict[str, int] = {}
-        for e in all_evidence:
+        for e in unique_evidence:
             level = e.level.value if hasattr(e.level, "value") else str(e.level)
             level_counts[level] = level_counts.get(level, 0) + 1
 
@@ -407,13 +408,13 @@ class InvestigationWorkflow:
             f"{len(reduce.get('patterns', []))}模式)"
         )
         summary_parts.append(
-            f"证据({len(all_evidence)}条/{len(unique_gaps)}局限)"
+            f"证据({len(unique_evidence)}条/{len(unique_gaps)}局限)"
         )
 
         summary = " | ".join(summary_parts)
 
         return {
-            "evidence": all_evidence,
+            "evidence": unique_evidence,
             "known_gaps": unique_gaps,
             "level_distribution": level_counts,
             "summary": summary,
@@ -491,6 +492,17 @@ class InvestigationWorkflow:
                 entry_points.append(rel)
 
         return entry_points if entry_points else ["(未自动检测到入口)"]
+
+
+def _dedupe_evidence(evidence: list[Evidence]) -> list[Evidence]:
+    """按 evidence_id 去重，保持首次出现顺序。"""
+    seen_ids: set[str] = set()
+    unique: list[Evidence] = []
+    for ev in evidence:
+        if ev.evidence_id not in seen_ids:
+            seen_ids.add(ev.evidence_id)
+            unique.append(ev)
+    return unique
 
 
 # 模块级便捷函数
