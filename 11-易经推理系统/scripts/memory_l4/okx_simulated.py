@@ -586,6 +586,21 @@ class OKXSimulatedClient:
         if td_mode is None:
             td_mode = self.cfg.get("td_mode", "isolated")
 
+        # 构造订单 body（dry_run 与真实下单共用，避免真实路径 body 未定义）
+        body = {
+            "instId": inst_id,
+            "tdMode": td_mode,
+            "side": side,
+            "ordType": ord_type,
+            "posSide": pos_side,
+            "tag": "yijingsim",
+        }
+        if ord_type == "market":
+            body["sz"] = str(sz)
+        else:
+            body["px"] = str(px)
+            body["sz"] = str(sz)
+
         # dry_run 模式：纯本地模拟，不需要 OKX API 凭证
         if self.dry_run:
             ticker = self.get_ticker(inst_id)
@@ -603,19 +618,6 @@ class OKXSimulatedClient:
                 "reason": reason,
                 "ord_id": f"dry_run_{int(time.time()*1000)}",
             }
-            body = {
-                "instId": inst_id,
-                "tdMode": td_mode,
-                "side": side,
-                "ordType": ord_type,
-                "posSide": pos_side,
-                "tag": "yijingsim",
-            }
-            if ord_type == "market":
-                body["sz"] = str(sz)
-            else:
-                body["px"] = str(px)
-                body["sz"] = str(sz)
             self._audit_log(
                 "place_order_dry", body, {"code": "0", "msg": "dry_run", "data": [dry_result]}
             )
