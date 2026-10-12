@@ -1,0 +1,16 @@
+diff --git a/34-前端应用训练系统/scripts/run_continual_training.py b/34-前端应用训练系统/scripts/run_continual_training.py
+index 8cf326d9af..a9a0818071 100644
+--- a/34-前端应用训练系统/scripts/run_continual_training.py
++++ b/34-前端应用训练系统/scripts/run_continual_training.py
+@@ -111,6 +111,11 @@ def collect_from_all_providers(limit: int) -> dict:
+         ("TraderLog", "polling_trader_log_collector", "PollingTraderLogCollector"),
+         ("ReaTest", "rea_test_collector", "REATestCollector"),
+         ("ShadowVal", "shadow_validation_collector", "ShadowValidationCollector"),
++        # v0.5 6-TRADING 采集器族
++        ("ASeriesSession", "a_series_session_collector", "ASeriesSessionCollector"),
++        ("ASeriesTheory", "a_series_theory_collector", "ASeriesTheoryCollector"),
++        ("OneirologyDream", "oneirology_dream_collector", "OneirologyDreamCollector"),
++        ("MasterSeminar", "master_seminar_collector", "MasterSeminarCollector"),
+     ]
+     for label, mod_name, cls_name in collectors:
+         try:
