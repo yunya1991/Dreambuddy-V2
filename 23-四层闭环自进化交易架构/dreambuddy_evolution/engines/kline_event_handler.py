@@ -50,6 +50,7 @@ class KlineEventHandler:
         ripple_kwargs: dict | None = None,
         reflection_scanner: Any = None,
         project_root: str | None = None,
+        pipeline: Any = None,
     ):
         """
         mode: "MVP" = 松耦合(Lark人工), "Phase2" = 紧耦合(自动推断+小仓)
@@ -64,10 +65,13 @@ class KlineEventHandler:
         - reflection_scanner: ReflectionScanner 实例（反思学习第二条起点）
             None 时根据 project_root 自动创建
         - project_root: 项目根目录，用于定位 all_trades.jsonl
+        - pipeline: Phase 4 P0-2 DI 注入; IEvolutionPipeline 实例, 透传到 TradeSettlementBridge
+            None 时 bridge 走 EvolutionPipeline._instance fallback (过渡兼容)
         """
         self.mode = mode
         self._build_position_callback = build_position_callback
         self._bridge = settlement_bridge  # 延迟初始化
+        self._pipeline = pipeline  # Phase 4 P0-2: 透传到 _get_bridge
         self._reflection_scanner = reflection_scanner  # 反思学习起点
         self._project_root = project_root
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
@@ -540,7 +544,8 @@ class KlineEventHandler:
         """延迟初始化 TradeSettlementBridge（避免循环依赖 + 文件系统延迟）"""
         if self._bridge is None:
             from dreambuddy_evolution.engines.trade_settlement_bridge import TradeSettlementBridge
-            self._bridge = TradeSettlementBridge()
+            # Phase 4 P0-2: 透传 pipeline (DI 优先, _instance fallback)
+            self._bridge = TradeSettlementBridge(pipeline=self._pipeline)
         return self._bridge
 
     def _store_pre_trade_snapshot(self, symbol: str, action: str, d_star: str, ess_dir: str, ri: float, position_mult: float = 1.0) -> None:

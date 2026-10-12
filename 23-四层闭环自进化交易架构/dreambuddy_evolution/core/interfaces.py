@@ -20,7 +20,7 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 4
 """
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -81,3 +81,23 @@ class PathCandidate(Protocol):
     expected_return: float
     confidence: float
     resistance: float
+
+
+@runtime_checkable
+class IEvolutionPipeline(Protocol):
+    """自进化 Pipeline 窄接口 (Phase 4 P0-2 废单例 DI).
+
+    打破循环依赖: TradeSettlementBridge 依赖此抽象接口, 而非具体 EvolutionPipeline.
+    EvolutionPipeline 声明实现此接口 (Facade 模式).
+
+    蓝图: SPEC-自进化系统逆向解析改进 v0.3 §P0-2 + §10 DI 连锁
+    过渡兼容: _instance 保留作 fallback, 优先使用注入的 pipeline.
+    """
+
+    def run_symbol(self, symbol: str, market_data: dict, rv: Any = None) -> dict:
+        """运行单币种 pipeline (返回决策 dict)"""
+        ...
+
+    def get_feedback(self) -> dict:
+        """获取反馈快照 (供外部组件读取 pipeline 状态)"""
+        ...

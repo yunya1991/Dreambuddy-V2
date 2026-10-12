@@ -25,12 +25,20 @@ _SNAPSHOT_FILE = "evolution_snapshots.json"
 class TradeSettlementBridge:
     """紧耦合流平仓反思桥接器 — 连接交易结算事件与 ReflectionEngine"""
 
-    def __init__(self, snapshot_dir: str | None = None):
+    def __init__(
+        self,
+        snapshot_dir: str | None = None,
+        pipeline: Any = None,
+    ):
         """
         snapshot_dir: JSON 持久化目录（默认 gene_data/）
+        pipeline: Phase 4 P0-2 DI 注入; IEvolutionPipeline 实例 (或满足其契约的对象)
+                  None 时 fallback 到 EvolutionPipeline._instance (过渡兼容)
         """
         self._snapshot_dir = Path(snapshot_dir) if snapshot_dir else _DEFAULT_SNAPSHOT_DIR
         self._snapshot_path = self._snapshot_dir / _SNAPSHOT_FILE
+        # Phase 4 P0-2: DI 注入优先, _instance fallback (SPEC §10 过渡兼容)
+        self._pipeline = pipeline
 
     # ==================================================================
     # Snapshot 持久化
@@ -193,8 +201,11 @@ class TradeSettlementBridge:
         FAIL-OPEN: 任何异常不阻断交易。
         """
         try:
-            from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
-            pipe = EvolutionPipeline._instance
+            # Phase 4 P0-2: 优先使用注入的 pipeline, fallback 到 _instance (过渡兼容)
+            pipe = self._pipeline
+            if pipe is None:
+                from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+                pipe = EvolutionPipeline._instance
             if pipe is None or not hasattr(pipe, "shadow_rl"):
                 return
 
