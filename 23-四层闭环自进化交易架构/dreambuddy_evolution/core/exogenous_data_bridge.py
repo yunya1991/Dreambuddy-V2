@@ -26,9 +26,12 @@ P1 集成 (PLAN-exogenous-integration.md §三):
 """
 from __future__ import annotations
 
+import json
 import logging
+import math
 import os
 import sys
+from pathlib import Path
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -560,20 +563,28 @@ CROSS_ATTENTION_FACTOR_METRICS: list[tuple[str, str, str, str]] = [
 def build_factor_head_mask(
     metrics: Optional[list[tuple]] = None,
     mask_value: float = float("-inf"),
+    override_path: Optional[str] = None,
 ) -> torch.Tensor:
     """根据 CROSS_ATTENTION_FACTOR_METRICS 的维度元数据构建 factor_head_mask.
 
     每个矛盾维度对应一个 attention head，该 head 只关注所属维度的因子，
     其余因子被 mask 屏蔽。维度顺序按因子列表中首次出现的顺序排列。
 
+    P2-1b 接线: 若 override 文件存在（逆向推导微调产物 {dimension: multiplier}），
+    对应 head 行的允许值 0.0 → log(multiplier)（additive attention bias 抑制，
+    cross_attention.py L152: scores = scores + mask）。multiplier < 1 → 负偏置降权。
+
     Args:
         metrics: 因子列表，每项为 (sub_category, metric_name, factor_name, dimension)，
                  None 则使用 CROSS_ATTENTION_FACTOR_METRICS
         mask_value: 屏蔽值，默认 -inf（硬 mask）；传入大负值如 -1e9 则为软 mask
+        override_path: 微调 override JSON 路径；None → 默认 gene_data/
+                       factor_head_mask_override.json；文件缺失/损坏 → FAIL-OPEN 返回原 mask
 
     Returns:
         mask: torch.Tensor shape (n_dimensions, n_factors)
-              0.0 = 允许该 head 关注该因子
+              0.0 = 允许该 head 关注该因子（无偏置）
+              log(multiplier) = 允许但降权（负偏置）
               mask_value = 屏蔽该因子
     """
     if metrics is None:
@@ -596,7 +607,46 @@ def build_factor_head_mask(
         head_idx = dims.index(d)
         mask[head_idx, f_idx] = 0.0
 
+    # P2-1b: 应用逆向推导微调 override（FAIL-OPEN）
+    mask = _apply_mask_override(mask, dims, override_path)
     return mask
+
+
+def _default_mask_override_path() -> "Path":
+    return Path(__file__).resolve().parents[1] / "gene_data" / "factor_head_mask_override.json"
+
+
+def _apply_mask_override(
+    mask: "torch.Tensor",
+    dims: list[str],
+    override_path: Optional[str] = None,
+) -> "torch.Tensor":
+    """把 {dimension: multiplier} override 应用为 head 行允许值的 additive 负偏置.
+
+    FAIL-OPEN: 文件缺失/损坏/维度不匹配 → 返回原 mask，只记 debug。
+    """
+    try:
+        path = Path(override_path) if override_path else _default_mask_override_path()
+        if not path.exists():
+            return mask
+        override = json.loads(path.read_text())
+        if not isinstance(override, dict):
+            return mask
+        for dim, multiplier in override.items():
+            if dim not in dims:
+                continue
+            m = float(multiplier)
+            if not (0.1 <= m <= 1.0) or m == 1.0:
+                continue
+            bias = math.log(m)
+            head_idx = dims.index(dim)
+            row = mask[head_idx]
+            allow_mask = row > float("-inf")
+            row[allow_mask] = bias
+        return mask
+    except Exception as e:  # noqa: BLE001
+        logger.debug("[FO] _apply_mask_override fail: %s", e)
+        return mask
 
 
 def get_factor_dimensions() -> list[str]:

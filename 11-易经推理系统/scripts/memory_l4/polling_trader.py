@@ -3678,6 +3678,25 @@ class PollingTrader:
                         _fds.three_factor_short_signal = {}
                     _fds.three_factor_short_signal["crypto_usdt"] = _tfs_result
 
+                    # P2-1a: 对称接入做多三因子共振信号（three_factor_long 生产接线，
+                    # bdsm spec v2.0 §1.3 — 供 _bdsm_independent_open L2 加强层消费）
+                    try:
+                        from dreambuddy_evolution.engines.three_factor_long import (
+                            ThreeFactorLongDetector,
+                        )
+                        _tfl_detector = ThreeFactorLongDetector()
+                        _tfl_result = _tfl_detector.detect(
+                            pattern_factor=_pf,
+                            btc_regime=_br_val,
+                            etf_flow_norm=_etf_val,
+                        )
+                        if not hasattr(_fds, "three_factor_long_signal") or \
+                           not isinstance(getattr(_fds, "three_factor_long_signal", None), dict):
+                            _fds.three_factor_long_signal = {}
+                        _fds.three_factor_long_signal["crypto_usdt"] = _tfl_result
+                    except Exception:
+                        pass  # FAIL-OPEN: 不阻塞交易
+
                     # 路径B+D: 分层豁免 + 扩展因子协同（开关默认 False → 回退 AND 逻辑）
                     #   开关关闭时: layered_result = AND 逻辑（仅 3 因子全满足才豁免）
                     #   开关开启时: 分层豁免（2 因子试探）+ 扩展因子纳入分层计算
@@ -7224,21 +7243,62 @@ class PollingTrader:
                     )
                     continue
 
+                # P2-1a: 做多三层置信度递进判定（bdsm spec v2.0 §2.2/§3.3）
+                # R3 仓位递进暂不启用（_apply_bdsm_scaling 分批风控融合需单独设计），
+                # 本步接入信号层: direction_state 过滤 + 层级置信度提升 + 日志标注。
+                _tfl_level_result = None
+                try:
+                    from dreambuddy_evolution.engines.bdsm_signal_level import (
+                        BdsmSignalLevelClassifier,
+                    )
+                    _fds_cache = getattr(self, "_five_domain_state_cache", None)
+                    _dstate_map = getattr(_fds_cache, "direction_state", {}) or {}
+                    _dstate_val = (
+                        _dstate_map.get("crypto_usdt")
+                        if isinstance(_dstate_map, dict) else _dstate_map
+                    )
+                    _tfl_map = getattr(_fds_cache, "three_factor_long_signal", {}) or {}
+                    _tfl_sig = (
+                        _tfl_map.get("crypto_usdt")
+                        if isinstance(_tfl_map, dict) else _tfl_map
+                    )
+                    _ts_entry = coin_entry.get("trend_stop") or {}
+                    _ts_action = str(_ts_entry.get("action", "none") or "none").lower()
+                    _tfl_level_result = BdsmSignalLevelClassifier().classify_long(
+                        direction_state=_dstate_val,
+                        bds_score=bds,
+                        three_factor_signal=_tfl_sig,
+                        trend_action=_ts_action,
+                    )
+                except Exception:
+                    _tfl_level_result = None  # FAIL-OPEN: 判定异常 → 维持现状
+
+                _base_conf = max(0.40, min(0.95, bds))  # BDS 映射置信度
+                _level_tag = "L1"
+                if _tfl_level_result is not None:
+                    # R2 层级置信度递进: L1 +0 / L2 +0.10 / L3 +0.15（上限 0.95）
+                    _boost = {"L1": 0.0, "L2": 0.10, "L3": 0.15}.get(
+                        _tfl_level_result.level, 0.0
+                    )
+                    _base_conf = min(0.95, _base_conf + _boost)
+                    _level_tag = _tfl_level_result.level
+
                 # 构建 inference（复用 _open_position 的 FAIL-OPEN 兜底）
                 inference = {
                     "coin": coin_up,
                     "inst_id": inst_id,
                     "direction": "UP",  # 价值投资只做多
-                    "confidence": max(0.40, min(0.95, bds)),  # BDS 映射置信度
+                    "confidence": _base_conf,  # P2-1a: 层级递进置信度
                     "volatility": 0.03,
                     "price": current_price,
                     "hexagram": "BDSM价值建仓",
-                    "reason": f"BDSM独立开仓|CVS={cvs:.3f}|BDS={bds:.3f}|{info_tag}",
+                    "reason": f"BDSM独立开仓|CVS={cvs:.3f}|BDS={bds:.3f}|{info_tag}|level={_level_tag}",
                 }
 
                 self._log(
                     f"[{coin_up}] BDSM独立开仓触发 | CVS={cvs:.3f} BDS={bds:.3f} "
-                    f"batch={batch_notional:.2f}U price={current_price} | {info_tag}",
+                    f"batch={batch_notional:.2f}U price={current_price} "
+                    f"level={_level_tag} conf={_base_conf:.2f} | {info_tag}",
                     "INFO",
                 )
 

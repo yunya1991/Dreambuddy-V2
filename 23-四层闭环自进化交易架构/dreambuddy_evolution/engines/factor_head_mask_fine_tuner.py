@@ -8,6 +8,11 @@ SPEC §5.4: 用逆向推导的标注数据（哪个维度该赢）微调 factor_
 - correct_dim → 不变（避免过度调整）
 - 边界约束 [0.1, 1.0]
 - FAIL-OPEN：无效输入返回原 mask
+
+生产接线（P2-1b）: engines/reverse_cognitive_bridge.record_evidence(wrong_dims)
+→ gene_data/factor_head_mask_override.json →
+core/exogenous_data_bridge.build_factor_head_mask 应用 log(m) 负偏置
+（cross_attention additive bias 语义：0.0=无影响，负值=抑制）。
 """
 
 from __future__ import annotations

@@ -158,6 +158,26 @@ jobs:
           path: coverage.xml
         if: always()
 
+  engine-similarity:
+    name: Engine Similarity Check (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # P2-2 (SPEC-自进化系统逆向解析改进.md 维度C): 新引擎与现有引擎
+      # 加权 Jaccard 相似度 > 0.7 → 告警"建议并入现有引擎"（非阻塞）
+      - name: Run engine similarity check
+        run: |
+          python '33-REA逆向解析工程/scripts/engine_similarity_check.py' \
+            --target-dir '23-四层闭环自进化交易架构/dreambuddy_evolution/engines' \
+            --threshold 0.7
+        continue-on-error: true
+
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest

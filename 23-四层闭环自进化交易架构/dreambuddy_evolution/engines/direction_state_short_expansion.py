@@ -15,6 +15,8 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径C：
 
 安全侧 FAIL-OPEN: 异常/缺失/NaN → 不解锁（维持 SHORT_BAN）
 开关: enable_direction_state_short_expansion（默认 False → 回退到仅 SHORT_ONLY 解锁）
+
+生产接线: polling_trader.py 路径C 分支（DirectionStateShortExpansion 解锁判定）。
 """
 from __future__ import annotations
 

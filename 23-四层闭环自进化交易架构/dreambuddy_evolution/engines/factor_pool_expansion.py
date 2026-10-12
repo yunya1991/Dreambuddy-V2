@@ -20,6 +20,9 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径D：
   - enable_liquidation_heatmap_factor
 
 安全侧 FAIL-OPEN: 异常/缺失/NaN/inf → 因子不满足
+
+生产接线: three_factor_short.py detect_expanded_factors 委托评估 →
+polling_trader.py 检测阶段触发（路径D）。
 """
 from __future__ import annotations
 

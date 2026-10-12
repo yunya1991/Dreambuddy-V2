@@ -18,6 +18,8 @@ A.6 首次试探配额（打破冷启动死循环）:
 
 安全侧 FAIL-OPEN: 异常/缺失 → 入榜（保守，维持 SHORT_BAN 铁律）
 开关: enable_dynamic_short_blacklist（默认 False → 回退静态 {"ETH", "BTC"}）
+
+生产接线: polling_trader.py 初始化 DynamicShortBlacklist → is_blacklisted(sym) 过滤。
 """
 from __future__ import annotations
 

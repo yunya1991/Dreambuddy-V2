@@ -7,6 +7,9 @@
   3. etf_flow_norm > +0.1    (ETF 净流入)
 
 安全侧 FAIL-OPEN: 任一因子缺失/异常 → False（不升级到 L2 加强层）
+
+生产接线（P2-1a）: polling_trader.py 检测 → _fds.three_factor_long_signal →
+engines/bdsm_signal_level.BdsmSignalLevelClassifier.classify_long 做多三层判定。
 """
 from __future__ import annotations
 

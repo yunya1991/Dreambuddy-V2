@@ -15,6 +15,9 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径B：
 
 安全侧 FAIL-OPEN: 异常/缺失/NaN/inf → 不豁免（维持 SHORT_BAN 铁律）
 开关: enable_layered_short_exemption（默认 False → 回退 AND 逻辑：仅 3 因子全满足才豁免）
+
+生产接线: polling_trader.py 检测 → _fds.layered_short_exemption_result →
+路径B 消费分支（3因子全豁免/2因子试探）。
 """
 from __future__ import annotations
 

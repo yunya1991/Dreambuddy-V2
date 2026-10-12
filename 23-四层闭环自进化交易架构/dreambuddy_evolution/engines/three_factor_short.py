@@ -7,6 +7,9 @@ SPEC-AGI升级蓝图.md §4.4.3
   3. etf_flow_norm < -0.1     (ETF 净流出，stagnation 后强信号)
 
 安全侧 FAIL-OPEN: 任一因子缺失/异常 → False（维持 SHORT_BAN 铁律）
+
+生产接线: polling_trader.py 检测 → _fds.three_factor_short_signal → 做空 inference；
+本引擎 detect_expanded_factors 委托路径D（factor_pool_expansion）扩展因子评估。
 """
 from __future__ import annotations
 

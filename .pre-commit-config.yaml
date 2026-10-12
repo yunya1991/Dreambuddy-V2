@@ -65,7 +65,15 @@ repos:
 
       - id: debt-check
         name: check for new TODO/FIXME
-        entry: bash -c 'grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.py" . | grep -v "test_" | grep -v "__pycache__" | wc -l && echo "Reminder: Track new tech debt in DEBT_INDEX.md"'
+        entry: 'bash -c ''grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.py" . | grep -v "test_" | grep -v "__pycache__" | wc -l && echo "Reminder: Track new tech debt in DEBT_INDEX.md"'''
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
+
+      - id: engine-similarity
+        name: engine similarity check (advisory)
+        entry: python '33-REA逆向解析工程/scripts/engine_similarity_check.py' --threshold 0.7
         language: system
         types: [python]
         pass_filenames: false
