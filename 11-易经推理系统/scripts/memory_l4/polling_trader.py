@@ -907,7 +907,8 @@ class PollingTrader:
         # 用户决策 2026-09-11：分离上限 — Evolution probe 独立 4 单，BCRM is_trial 保持 2 单
         # 用户决策 2026-09-11：放大开仓容量 — evolution 5→10, probe 4→8（总名义 ~9200U < 可用 10305U）
         # 用户决策 2026-09-14：收敛自进化开仓容量 — evolution 10→3（控制总风险敞口）
-        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 3, "strategy": 3, "event_arbitrage": 2}
+        # 用户决策 2026-10-12：恢复 evolution 子池上限 3→5（释放探索币种开仓容量）
+        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 5, "strategy": 3, "event_arbitrage": 2}
         # 测试仓（试错仓）上限：BCRM 的 is_trial=True 最多 2 单
         self.MAX_TRIAL_POSITIONS: int = 2
         # Evolution probe tier 独立上限：2 单（跟随总上限收敛，probe 为 evolution 子集不得超过总上限）
@@ -10726,10 +10727,10 @@ class PollingTrader:
                 1 for p in self.position_tracker.all_open_positions()
                 if getattr(p, "source_tag", "") == "evolution"
             )
-            if _evo_count >= int(self.SUBPOOL_MAX_POSITIONS.get("evolution", 3)):
+            if _evo_count >= int(self.SUBPOOL_MAX_POSITIONS.get("evolution", 5)):
                 self._log(
                     f"[P2-S4b] {symbol} evolution 子池已满 {_evo_count}/"
-                    f"{self.SUBPOOL_MAX_POSITIONS.get('evolution', 3)}，跳过",
+                    f"{self.SUBPOOL_MAX_POSITIONS.get('evolution', 5)}，跳过",
                     "DEBUG",
                 )
                 return
