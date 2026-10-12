@@ -906,8 +906,8 @@ class EvolutionPipeline:
             _sources = [f"{p.get('source','?')}:{p.get('direction','?')}" for p in paths]
             logger.info("[PathDiscovery] %s 发现 %d 条路径: %s",
                         symbol, len(paths), ", ".join(_sources))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[FO] 路径调试日志 fail: %s", e)
 
     def _select_optimal_path(
         self,
@@ -957,8 +957,8 @@ class EvolutionPipeline:
         try:
             _sources = [f"{p.get('source','?')}:{p.get('direction','?')}" for p in paths]
             logger.info("[PathDiscovery] 发现 %d 条路径: %s", len(paths), ", ".join(_sources))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[FO] 路径调试日志 fail: %s", e)
 
         # === Phase 3.4: 主要矛盾识别（开关 + FAIL-OPEN）— 先于 HJB ===
         primary_contradiction = None
@@ -1102,8 +1102,8 @@ class EvolutionPipeline:
                             _gr = _gpa.evaluate(_factors_by_dim, _log_ret)
                             _g_dim = _gr.get("G_dim")
                             _g_conf = _gr.get("G_confidence", 0.0)
-                except Exception:
-                    pass  # FAIL-OPEN: Granger 失败则降级
+                except Exception as e:
+                    logger.debug("[FO] Granger 降级 fail: %s", e)  # FAIL-OPEN: 失败则降级
 
                 # structural_break: 复用 Phase 2 结果
                 _sb = getattr(self, "_last_structural_break", None)
@@ -1127,8 +1127,8 @@ class EvolutionPipeline:
                     try:
                         from dreambuddy_evolution.adapters.cognitive_bridge import CognitiveBridge
                         CognitiveBridge().record_quality_change(cv_result["quality_change"])
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("[FO] 质变认知记录 fail: %s", e)
 
                 # 保存 head_multipliers 供下一轮路径发现传入 NeuralSDE (跨轮传递)
                 try:
@@ -1459,8 +1459,8 @@ class EvolutionPipeline:
             if self._regime_gate is not None:
                 kline_data = market_data.get("kline_data", {})
                 regime = self._regime_gate.detect_regime(kline_data)
-        except Exception:
-            pass  # FAIL-OPEN
+        except Exception as e:
+            logger.debug("[FO] regime 检测 fail: %s", e)  # FAIL-OPEN
 
         # ============ 路径寻优 → 统计验证 ============
         self._select_optimal_path_debug(paths, symbol)  # 调试日志
@@ -1735,5 +1735,5 @@ class EvolutionPipeline:
             self._contradiction_weight_factors[_dim] = max(0.3, min(1.5, _new_wf))
             # 持久化到 weight_factors.json，避免重启后K线级学习结果丢失
             self._save_weight_factors()
-        except Exception:
-            pass  # FAIL-OPEN
+        except Exception as e:
+            logger.debug("[FO] 矛盾权重更新 fail: %s", e)  # FAIL-OPEN

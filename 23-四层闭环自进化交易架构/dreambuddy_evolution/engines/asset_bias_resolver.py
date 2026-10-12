@@ -147,8 +147,8 @@ class AssetBiasResolver:
                         confidence=0.4,
                         reason=f"30天相关性 {corr_30d:.2f} < 0.3 → BTC 独立走势",
                     )
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug("[FO] BTC相关性解析 fail: %s", e)
 
         is_pre_event = fomc_phase in _PRE_EVENT_PHASES
 
@@ -162,8 +162,8 @@ class AssetBiasResolver:
                             confidence=0.65,
                             reason="加息+负相关+Pre-event → BTC 承压",
                         )
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as e:
+                    logger.debug("[FO] BTC负相关判断 fail: %s", e)
             return AssetBias(
                 bias="neutral",
                 confidence=0.3,
@@ -194,8 +194,8 @@ class AssetBiasResolver:
                         confidence=0.5,
                         reason=f"AI周期 {ai_cycle_score:.2f} > 0.7 → 对冲利率压力",
                     )
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug("[FO] 半导体AI周期分数解析 fail: %s", e)
 
         if rate_expectation == "hike":
             return AssetBias(

@@ -46,8 +46,8 @@ def _safe_int(value: Any, default: int = 0) -> int:
         v = int(value)
         if math.isfinite(v):
             return v
-    except (TypeError, ValueError):
-        pass
+    except (TypeError, ValueError) as e:
+        logger.debug("[FO] _safe_int 解析 fail: %s", e)
     return default
 
 

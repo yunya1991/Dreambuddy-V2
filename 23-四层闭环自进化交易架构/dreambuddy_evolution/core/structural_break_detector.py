@@ -204,8 +204,8 @@ class StructuralBreakDetector:
                         "mean_diff": mean_diff,
                         "method": "welch_ttest",
                     }
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[FO] 结构断裂 welch 检验 fail: %s", e)
 
         # Fallback: 滚动相关系数的 z-score 变化
         try:

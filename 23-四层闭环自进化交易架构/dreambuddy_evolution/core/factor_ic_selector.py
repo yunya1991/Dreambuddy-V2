@@ -68,8 +68,8 @@ def _compute_rank_ic(factor: np.ndarray, forward_ret: np.ndarray) -> float:
         try:
             ic, _ = _scipy_spearmanr(f_clean, r_clean)
             return float(ic) if not np.isnan(ic) else 0.0
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[FO] scipy spearman fail: %s", e)
     # 降级：pandas rank 相关
     f_rank = pd.Series(f_clean).rank().values
     r_rank = pd.Series(r_clean).rank().values

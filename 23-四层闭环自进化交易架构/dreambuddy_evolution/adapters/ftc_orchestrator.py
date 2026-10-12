@@ -122,8 +122,9 @@ class ExplorationFactor:
             self.value = max(EPSILON_MIN, min(EPSILON_MAX, data.get("epsilon", EPSILON_INIT)))
             self._stagnation_count = data.get("stagnation_count", 0)
             self._prev_max_ess = data.get("prev_max_ess", 0.0)
-        except Exception:
-            pass  # 首次运行无文件
+        except Exception as e:
+            # 首次运行无持久化文件，降级为默认 ε 值
+            logger.debug("[FO] epsilon load fail: %s", e)
 
 
 class FTCOrchestrator:

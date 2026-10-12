@@ -40,8 +40,8 @@ def _get_sltp_floor_defaults() -> dict:
         from memory_l4.bcrm2.sl_tp_config import SLTPParams
         p = SLTPParams()
         return {"sl_floor": p.sl_floor, "tp_floor": p.tp_floor}
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("[FO] SLTP 配置读取 fail: %s", e)
     return {"sl_floor": 0.04, "tp_floor": 0.12}
 
 

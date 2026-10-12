@@ -8,11 +8,14 @@
 """
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 import numpy as np
 
 from dreambuddy_evolution.core.granger_causality_checker import GrangerCausalityChecker
+
+logger = logging.getLogger(__name__)
 
 VALID_DIMS = ("technical", "fundamental", "macro")
 
@@ -50,8 +53,8 @@ class GrangerPipelineAdapter:
             from dreambuddy_evolution.agi_config import get_switch as _gs_gc
             if not _gs_gc("enable_granger_causality", True):
                 return {"G_dim": None, "G_confidence": 0.0, "p_values": {}}
-        except Exception:
-            pass  # FAIL-OPEN
+        except Exception as e:
+            logger.debug("[FO] Granger 开关读取 fail: %s", e)  # FAIL-OPEN
 
         returns = np.asarray(returns, dtype=float)
         p_values: dict[str, float] = {}

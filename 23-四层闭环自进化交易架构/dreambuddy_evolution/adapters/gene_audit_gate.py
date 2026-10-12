@@ -126,5 +126,6 @@ class GeneAuditGate:
             }
             with open(self._audit_log, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except Exception:
-            pass  # 日志写入失败不影响审核
+        except Exception as e:
+            # 审核日志写入失败不影响审核结果
+            logger.debug("[FO] audit log write fail: %s", e)

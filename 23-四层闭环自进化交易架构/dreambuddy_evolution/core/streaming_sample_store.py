@@ -27,6 +27,8 @@ import numpy as np
 from pathlib import Path
 from typing import Any
 
+from dreambuddy_evolution.core.safe_call import safe_call
+
 logger = logging.getLogger(__name__)
 
 
@@ -280,8 +282,5 @@ class StreamingSampleStore:
     def close(self) -> None:
         """关闭连接."""
         if self._conn is not None:
-            try:
-                self._conn.close()
-            except Exception:
-                pass
+            safe_call(self._conn.close)  # FAIL-OPEN: 关闭失败不影响置空
             self._conn = None

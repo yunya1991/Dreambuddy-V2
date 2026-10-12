@@ -160,8 +160,8 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
                             "kind": "comb_invalid",
                             "error": f"{type(exc).__name__}: {exc!s:.300s}",
                         }, ensure_ascii=False) + "\n")
-                except Exception:  # pragma: no cover
-                    pass
+                except Exception as e:  # pragma: no cover
+                    logger.debug("[FO] bad_genes 日志写入 fail: %s", e)
     return {
         "root": str(root_p),
         "conditions": conditions,

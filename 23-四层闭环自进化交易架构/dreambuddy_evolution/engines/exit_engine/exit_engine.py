@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Dict, Optional
 
+from dreambuddy_evolution.core.safe_call import safe_call
 from dreambuddy_evolution.engines.exit_engine.exit_decision import ExitDecision
 from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
     ExitStrategyParams,
@@ -142,10 +143,8 @@ class EvolutionExitEngine:
         self._last_soft_vote_ts: Dict[str, float] = {}
 
     def _log(self, msg: str, level: str = "INFO") -> None:
-        try:
-            self._log_fn(msg, level)
-        except Exception:
-            pass
+        # FAIL-OPEN: 日志回调失败仅登记不阻断（safe_call L2 分层）
+        safe_call(self._log_fn, None, msg, level)
 
     # ================================================================ 基因创新闭环
     def post_close_evolution(

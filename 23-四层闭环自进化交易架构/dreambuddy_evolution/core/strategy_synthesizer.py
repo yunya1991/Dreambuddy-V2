@@ -28,6 +28,8 @@ from typing import Any, Optional
 
 import numpy as np
 
+from dreambuddy_evolution.core.safe_call import safe_call
+
 logger = logging.getLogger(__name__)
 
 # 尝试导入 torch（Decision Transformer 需要）
@@ -246,10 +248,7 @@ class StrategySynthesizer:
             return []
 
         # 避免 macOS OpenMP 线程崩溃（pthread_mutex_init failed）
-        try:
-            torch.set_num_threads(1)
-        except Exception:
-            pass
+        safe_call(torch.set_num_threads, None, 1)  # FAIL-OPEN: 设置失败不阻塞
 
         # 提取并对齐轨迹
         states_list, actions_list, rewards_list = [], [], []
@@ -572,8 +571,8 @@ class StrategySynthesizer:
                 if isinstance(pdef, dict) and pdef.get("value") is not None:
                     try:
                         param_values.append(float(pdef["value"]))
-                    except (TypeError, ValueError):
-                        pass
+                    except (TypeError, ValueError) as e:
+                        logger.debug("[FO] 策略合成参数解析 fail: %s", e)
 
             if not param_values:
                 return None

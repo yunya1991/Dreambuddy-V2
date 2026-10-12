@@ -42,8 +42,8 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         v = float(value)
         if math.isfinite(v):
             return v
-    except (TypeError, ValueError):
-        pass
+    except (TypeError, ValueError) as e:
+        logger.debug("[FO] _safe_float 解析 fail: %s", e)
     return default
 
 

@@ -8,6 +8,8 @@ import logging
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
+logger = logging.getLogger(__name__)
+
 
 class PipelineLoggingContext:
     """集中日志配置上下文。
@@ -43,8 +45,8 @@ class PipelineLoggingContext:
                 pkg_logger.addHandler(fh)
                 pkg_logger.setLevel(logging.INFO)
             self._configured = True
-        except Exception:  # noqa: BLE001
-            pass  # FAIL-OPEN: 日志配置失败不阻断
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[FO] 日志配置 fail: %s", e)  # FAIL-OPEN: 配置失败不阻断
 
     def get_logger(self, name: str = "dreambuddy_evolution") -> logging.Logger:
         """获取 logger"""

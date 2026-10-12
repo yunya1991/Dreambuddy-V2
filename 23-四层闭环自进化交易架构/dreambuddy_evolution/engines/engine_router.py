@@ -205,8 +205,8 @@ class EngineRouter:
         if self._subsystem_bridge and self._trader is not None:
             try:
                 self._subsystem_bridge.attach_trader(self._trader)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[FO] SubSystemBridge attach_trader fail: %s", e)
         return self._subsystem_bridge or None
 
     # ------------------------------------------------------------------

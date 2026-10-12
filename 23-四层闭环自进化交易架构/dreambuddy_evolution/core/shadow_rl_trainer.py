@@ -204,8 +204,8 @@ class ShadowRLTrainer:
                     _elites = _ee.get_elites()
                     if _elites:
                         return max(0.0, min(1.0, float(_elites[0].weights[0])))
-        except Exception:
-            pass  # FAIL-OPEN: 降级到随机扰动
+        except Exception as e:
+            logger.debug("[FO] 进化引擎变异 fail: %s", e)  # FAIL-OPEN: 降级到随机扰动
 
         magnitude = float(np.random.uniform(self.GMAX_MUTATION_LOW, self.GMAX_MUTATION_HIGH))
         direction = 1.0 if np.random.rand() >= 0.5 else -1.0

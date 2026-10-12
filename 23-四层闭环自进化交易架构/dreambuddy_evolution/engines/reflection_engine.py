@@ -275,8 +275,8 @@ class ReflectionEngine:
                     win_rate = float(stats.get("win_rate", 0.5))
                 elif hasattr(self._case_library, "win_rate"):
                     win_rate = float(self._case_library.win_rate)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[FO] 案例库胜率获取 fail: %s", e)
 
             # 确定调整因子
             if win_rate >= 0.6:

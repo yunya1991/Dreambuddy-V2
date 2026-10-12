@@ -523,8 +523,8 @@ class KlineEventHandler:
                                 _aligned = (_pct > 0 and _pc_dir == "long") or \
                                            (_pct < 0 and _pc_dir == "short")
                                 _pipeline._incremental_feedback(_last_pc, _aligned, _pct)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("[FO] 主矛盾增量反馈 fail: %s", e)
                     try:
                         _tl = _pipeline._get_transfer_learner()
                         if _tl is not None:

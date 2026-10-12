@@ -257,8 +257,9 @@ class GeneInnovationEngine:
                             ids.add(gid)
                     except Exception:
                         continue
-        except Exception:
-            pass
+        except Exception as e:
+            # FAIL-OPEN: 基因库目录扫描失败时返回已收集的部分 ID
+            logger.debug("[FO] load existing gene ids fail: %s", e)
         return ids
 
     def _infer_category(self, gene_id: str, anchor) -> str:
@@ -297,8 +298,9 @@ class GeneInnovationEngine:
             # 资金流入但不涨
             if capital_flow > 0.2 and abs(price_change) < 0.01:
                 return "capital_inflow_no_pump"
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as e:
+            # 类型容错 FAIL-OPEN: 信号字段类型异常时视为无可识别模式
+            logger.debug("[FO] ripple anomaly classify fail: %s", e)
         return None
 
     def _classify_reflection_pattern(self, pattern: str) -> Optional[str]:

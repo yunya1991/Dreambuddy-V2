@@ -24,6 +24,7 @@ import numpy as np
 # ---------------------------------------------------------------------------
 from dreambuddy_evolution.weights import FALLBACK_VALUES, WEIGHTS, WEIGHTS_VERSION
 from dreambuddy_evolution.agi_config import get_switch
+from dreambuddy_evolution.core.safe_call import safe_call
 
 BOUNDARIES: dict = WEIGHTS["BOUNDARIES"]  # 兼容式暴露（WEIGHTS 嵌套 dict 内的 BOUNDARIES 段）
 logger = logging.getLogger(__name__)
@@ -46,8 +47,8 @@ def _lark_send_alert(level: str, message: str, **kwargs: Any) -> None:
             if callable(fn):
                 fn(level, message, **kwargs)
                 return
-        except Exception:  # pragma: no cover
-            pass
+        except Exception as e:  # pragma: no cover
+            logger.debug("[FO] Lark 告警发送 fail: %s", e)
     logger.info("[LARK-FALLBACK:%s] %s", level, str(message)[:180])
 
 # Sentiment FO-1 ACTIVE 标志位（测试 TR-RV-06 可 monkeypatch 设置为 True 模拟 USE_FINBERT=0 降级）
@@ -506,10 +507,7 @@ class ResistanceVector:
         except Exception as outer_exc:  # noqa: BLE001 — FO-3 最终安全网（任何异常 5min≥3 → Lark CRITICAL）
             # ============= FO-3：全局最外层兜底（永不上抛调用方） =============
             self._fallback_6stack(f"FO-3 OUTER NET → {type(outer_exc).__name__}: {outer_exc}", 6)
-            try:
-                gc.collect()
-            except Exception:
-                pass
+            safe_call(gc.collect)  # FAIL-OPEN: gc 异常不阻断 FO-3 兜底
             sent = self._alert_rate_limit(str(symbol), "critical")
             # 1. 尝试 stale cache
             cached = _GLOBAL_FO3_STALE_CACHE.get(str(symbol))

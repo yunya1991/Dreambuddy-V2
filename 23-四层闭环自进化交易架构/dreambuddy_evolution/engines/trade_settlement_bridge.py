@@ -236,8 +236,8 @@ class TradeSettlementBridge:
                 reward=_reward,
                 next_state=None,
             )
-        except Exception:
-            pass  # FAIL-OPEN
+        except Exception as e:
+            logger.debug("[FO] 影子RL结算采样 fail: %s", e)  # FAIL-OPEN
 
     # ==================================================================
     # 辅助方法

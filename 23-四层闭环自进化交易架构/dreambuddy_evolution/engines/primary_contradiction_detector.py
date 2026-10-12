@@ -197,8 +197,8 @@ class PrimaryContradictionDetector:
                     # CPI 超预期幅度映射到 0.3-0.9
                     intensity = min(0.3 + abs(surprise) * 0.15, 0.9)
                     return "inflation_shock", round(intensity, 3)
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug("[FO] 通胀surprise计算 fail: %s", e)
 
         # 优先级 3: 信贷事件
         credit_growth = kline_data.get("credit_growth")
@@ -210,8 +210,8 @@ class PrimaryContradictionDetector:
                     # 信贷收缩强度
                     intensity = min(0.3 + abs(cg) * 0.1, 0.85)
                     return "credit_event", round(intensity, 3)
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug("[FO] 信贷growth解析 fail: %s", e)
 
         # 优先级 4: AI 资本开支周期
         ai_cycle_score = kline_data.get("ai_cycle_score")
@@ -220,8 +220,8 @@ class PrimaryContradictionDetector:
                 ai_score = float(ai_cycle_score)
                 if ai_score >= self.AI_CYCLE_HIGH_THRESHOLD:
                     return "ai_capex_cycle", round(ai_score * 0.85, 3)
-            except (TypeError, ValueError):
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug("[FO] AI周期分数解析 fail: %s", e)
 
         # 无主要矛盾
         return "unknown", 0.0
@@ -238,8 +238,8 @@ class PrimaryContradictionDetector:
                 try:
                     if abs(float(cpi_actual) - float(cpi_expected)) >= self.CPI_SURPRISE_THRESHOLD:
                         secondary.append("inflation_shock")
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as e:
+                    logger.debug("[FO] 次要通胀检查 fail: %s", e)
 
         # 检查信贷
         if primary != "credit_event":
@@ -248,8 +248,8 @@ class PrimaryContradictionDetector:
                 try:
                     if float(credit_growth) < self.CREDIT_CONTRACTION_THRESHOLD:
                         secondary.append("credit_event")
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as e:
+                    logger.debug("[FO] 次要信贷检查 fail: %s", e)
 
         # 检查 AI 周期
         if primary != "ai_capex_cycle":
@@ -258,7 +258,7 @@ class PrimaryContradictionDetector:
                 try:
                     if float(ai_cycle_score) >= self.AI_CYCLE_HIGH_THRESHOLD:
                         secondary.append("ai_capex_cycle")
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as e:
+                    logger.debug("[FO] 次要AI周期检查 fail: %s", e)
 
         return secondary

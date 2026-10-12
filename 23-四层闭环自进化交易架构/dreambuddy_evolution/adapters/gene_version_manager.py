@@ -130,8 +130,9 @@ class GeneVersionManager:
                 try:
                     manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
                     versions.append(manifest)
-                except Exception:
-                    pass
+                except Exception as e:
+                    # FAIL-OPEN: 单个 manifest 损坏时跳过该版本
+                    logger.debug("[FO] manifest parse fail: %s", e)
         return versions
 
     def get_latest_version(self) -> Optional[str]:

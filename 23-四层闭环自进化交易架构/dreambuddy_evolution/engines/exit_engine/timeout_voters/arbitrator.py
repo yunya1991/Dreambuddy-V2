@@ -19,6 +19,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from dreambuddy_evolution.core.safe_call import safe_call
 from dreambuddy_evolution.engines.exit_engine.exit_decision import ExitDecision
 from dreambuddy_evolution.engines.exit_engine.timeout_voters.base_voter import (
     TimeoutVoter,
@@ -351,7 +352,5 @@ class TimeoutVoteArbitrator:
             logger.warning("[FO] soft_vote load_from_disk crash: %s", e)
 
     def _log(self, msg: str, level: str = "INFO") -> None:
-        try:
-            self._log_fn(msg, level)
-        except Exception:
-            pass
+        # FAIL-OPEN: 日志回调失败仅登记不阻断（safe_call L2 分层）
+        safe_call(self._log_fn, None, msg, level)

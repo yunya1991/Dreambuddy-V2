@@ -200,8 +200,8 @@ class TradeIndexBuilder:
                             "source": source,
                             "type": "closed",
                         }
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[FO] 交易记录文件探测 fail: %s", e)
         return None
 
     def _try_discover_sqlite(self, file_path: Path, rel_path: str) -> dict[str, Any] | None:

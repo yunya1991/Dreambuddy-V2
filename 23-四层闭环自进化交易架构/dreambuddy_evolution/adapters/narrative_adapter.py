@@ -225,7 +225,8 @@ class NarrativeAdapter:
                 dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
                 age_s = time.time() - dt.timestamp()
                 return max(0.0, age_s / 3600.0)
-        except Exception:
-            pass
+        except Exception as e:
+            # FAIL-OPEN: 年龄计算失败时视为最新记录
+            logger.debug("[FO] narrative age calc fail: %s", e)
 
         return 0.0  # 无法计算年龄 → 假设最新

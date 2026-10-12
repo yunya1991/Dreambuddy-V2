@@ -172,8 +172,8 @@ class HJBPathSolver:
                     else:
                         # 逆向主要矛盾: 阻力升高（重心原则）
                         L = L * (1.0 + 0.5 * pc_strength)
-            except (TypeError, ValueError):
-                pass  # FAIL-OPEN: 调制异常不阻塞
+            except (TypeError, ValueError) as e:
+                logger.debug("[FO] HJB 矛盾调制 fail: %s", e)  # FAIL-OPEN: 调制异常不阻塞
 
         return float(max(0.001, L))  # HC-AGI-19: L >= 0.001
 
@@ -240,8 +240,8 @@ class HJBPathSolver:
                     # σ ↑ (0.5 × intensity)，上限 5× 原始
                     eff_vol = min(volatility * (1.0 + 0.5 * intensity), volatility * 5.0)
                 # unknown type → 回退标准GBM（eff_drift/eff_vol 不变）
-            except Exception:
-                pass  # FAIL-OPEN: 燃料偏移异常回退标准GBM
+            except Exception as e:
+                logger.debug("[FO] HJB 燃料偏移 fail: %s", e)  # FAIL-OPEN: 异常回退标准GBM
 
         mu_log = (eff_drift - 0.5 * eff_vol ** 2) * dt
         sigma_log = eff_vol * math.sqrt(dt)
@@ -325,8 +325,8 @@ class HJBPathSolver:
                             if sp_t == t and sp_primary is not None:
                                 current_primary = sp_primary
                                 break
-                    except (TypeError, ValueError):
-                        pass  # FAIL-OPEN: shift_points 格式错误→不切换
+                    except (TypeError, ValueError) as e:
+                        logger.debug("[FO] HJB shift_points 解析 fail: %s", e)  # FAIL-OPEN: 格式错误→不切换
 
                 for p_idx in range(n_p):
                     best_cost = math.inf

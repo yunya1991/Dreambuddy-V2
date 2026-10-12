@@ -21,6 +21,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from dreambuddy_evolution.core.safe_call import safe_call
+
 logger = logging.getLogger(__name__)
 
 # 动作枚举
@@ -289,10 +291,7 @@ class ShieldedPolicy:
         self.min_confidence = min_confidence
 
     def _log(self, msg: str, level: str = "INFO") -> None:
-        try:
-            self._log_fn(msg, level)
-        except Exception:
-            pass
+        safe_call(self._log_fn, None, msg, level)  # FAIL-OPEN: 日志回调异常不阻塞
 
     def act(self, state: np.ndarray) -> Tuple[str, Dict[str, Any]]:
         """无 shield 的纯 RL 推理（FAIL-OPEN）"""

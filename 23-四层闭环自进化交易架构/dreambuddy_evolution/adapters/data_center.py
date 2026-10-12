@@ -12,6 +12,8 @@ import sqlite3
 import time
 from typing import Any
 
+from ..core.safe_call import safe_call
+
 logger = logging.getLogger(__name__)
 
 # 查询超时 2s
@@ -105,10 +107,8 @@ class DataCenterAdapter:
             d = dict(row)
             for key in ("metrics", "timeseries"):
                 if key in d and isinstance(d[key], str):
-                    try:
-                        d[key] = json.loads(d[key])
-                    except Exception:
-                        pass
+                    # FAIL-OPEN: JSON 解析失败时 safe_call 返回 fallback（保留原字符串）
+                    d[key] = safe_call(json.loads, d[key], d[key])
             return d
 
         except sqlite3.OperationalError as e:
@@ -169,8 +169,9 @@ class DataCenterAdapter:
                 if k in m:
                     try:
                         out["fear_greed"] = float(m[k])
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                        logger.debug("[FO] fear_greed float convert fail: %s", e)
                     break
         return out
 
@@ -185,8 +186,9 @@ class DataCenterAdapter:
                 if k in m:
                     try:
                         out[k] = float(m[k])
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                        logger.debug("[FO] btc_onchain float convert fail: %s", e)
         # mempool
         rec2 = self._query_latest_record_by_source("mempool", "chain")
         if rec2:
@@ -195,8 +197,9 @@ class DataCenterAdapter:
                 if k in m2:
                     try:
                         out[k] = float(m2[k])
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                        logger.debug("[FO] mempool float convert fail: %s", e)
         return out
 
     def query_options(self) -> dict[str, float]:
@@ -213,8 +216,9 @@ class DataCenterAdapter:
                 if k in m:
                     try:
                         out[k] = float(m[k])
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                        logger.debug("[FO] cot float convert fail: %s", e)
         return out
 
     def query_coinglass_derivatives(self) -> dict[str, float]:
@@ -228,8 +232,9 @@ class DataCenterAdapter:
                     if isinstance(v, (int, float)):
                         try:
                             out[f"{sub}_{k}"] = float(v)
-                        except (ValueError, TypeError):
-                            pass
+                        except (ValueError, TypeError) as e:
+                            # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                            logger.debug("[FO] coinglass float convert fail: %s", e)
         return out
 
     # ================================================================
@@ -255,13 +260,15 @@ class DataCenterAdapter:
                 if k in m:
                     try:
                         entry[k] = float(m[k])
-                    except (ValueError, TypeError):
-                        pass
+                    except (ValueError, TypeError) as e:
+                        # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                        logger.debug("[FO] econ_calendar float convert fail: %s", e)
             if "cesi" in m:
                 try:
                     entry["cesi"] = float(m["cesi"])
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                    logger.debug("[FO] econ_calendar cesi convert fail: %s", e)
             if "release_date" in m:
                 entry["release_date"] = m["release_date"]
             entry["_record_timestamp"] = rec.get("timestamp", "")
@@ -289,8 +296,9 @@ class DataCenterAdapter:
             if k in m:
                 try:
                     out[k] = float(m[k])
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                    logger.debug("[FO] fedwatch float convert fail: %s", e)
         for k in ("meeting_date", "target_rate", "current_target", "trade_date"):
             if k in m:
                 out[k] = m[k]
@@ -469,8 +477,9 @@ class DataCenterAdapter:
             if isinstance(v, (int, float)):
                 try:
                     out[k] = float(v)
-                except (ValueError, TypeError):
-                    pass
+                except (ValueError, TypeError) as e:
+                    # 类型容错 FAIL-OPEN: 转换失败则跳过该字段
+                    logger.debug("[FO] metrics float convert fail: %s", e)
         return out
 
     def _query_latest_record_by_source(
@@ -502,10 +511,8 @@ class DataCenterAdapter:
             d = dict(row)
             for key in ("metrics", "timeseries"):
                 if key in d and isinstance(d[key], str):
-                    try:
-                        d[key] = json.loads(d[key])
-                    except Exception:
-                        pass
+                    # FAIL-OPEN: JSON 解析失败时 safe_call 返回 fallback（保留原字符串）
+                    d[key] = safe_call(json.loads, d[key], d[key])
             return d
         except Exception as e:
             logger.debug("[FO] query_latest_record_by_source fail: %s", e)

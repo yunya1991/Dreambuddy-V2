@@ -105,8 +105,8 @@ class ErrorRingBuffer:
             if self._file is not None:
                 self._file.close()
                 self._file = None
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[FO] ring buffer close fail: %s", e)
 
     def _read_header(self, mm: mmap.mmap) -> tuple[int, int]:
         """读取 header: (write_pos, entry_count)"""
@@ -252,8 +252,8 @@ def _caller_module_name(fn: Callable) -> str:
         fname = getattr(fn, "__code__", None)
         if fname and fname.co_filename:
             return Path(fname.co_filename).stem
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as e:  # noqa: BLE001
+        logger.debug("[FO] caller module resolve fail: %s", e)
     return "unknown"
 
 
@@ -301,9 +301,9 @@ def safe_call(fn: Callable, fallback: Any = None, *args: Any, **kwargs: Any) -> 
                 "fn_name": getattr(fn, "__name__", "<lambda>"),
             }
             get_ring_buffer().append(entry)
-        except Exception:  # noqa: BLE001
-            # 登记 failure 不破坏 FAIL-OPEN
-            pass
+        except Exception as e:  # noqa: BLE001
+            # 登记 failure 不破坏 FAIL-OPEN（可观测降级）
+            logger.debug("[FO] ring buffer 登记 fail: %s", e)
         return fallback
 
 

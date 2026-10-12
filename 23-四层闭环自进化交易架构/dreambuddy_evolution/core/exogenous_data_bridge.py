@@ -130,8 +130,8 @@ def build_exogenous_series(
             try:
                 slope = float(np.polyfit(x, y_arr, 1)[0])
                 data["monthly_trend_slope"] = slope
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("[FO] 月线斜率拟合 fail: %s", e)
 
         # 评估 9 维
         try:

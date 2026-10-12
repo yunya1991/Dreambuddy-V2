@@ -210,8 +210,9 @@ class DataPipelineAdapter:
         # 5. SubSystem bridge (scale_class 是静态方法，不需要 trader)
         try:
             kline_data["scale_class"] = SubSystemBridge.get_scale_class(symbol)
-        except Exception:
-            pass
+        except Exception as e:
+            # FAIL-OPEN: 计算失败时该字段缺失，下游走默认值
+            logger.debug("[FO] scale_class compute fail: %s", e)
 
         if self._subsystem is not None:
             try:
@@ -556,8 +557,9 @@ class DataPipelineAdapter:
                         if (now - rec_dt).total_seconds() < 48 * 3600:
                             event_type = et
                             break
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        # FAIL-OPEN: 时间戳解析失败则跳过该指标的时间判定
+                        logger.debug("[FO] econ record timestamp parse fail: %s", e)
 
         event_ctx["event_type"] = event_type
 

@@ -206,8 +206,8 @@ class DynamicShortBlacklist:
             if sym not in self._records:
                 self._records[sym] = deque(maxlen=self.ROLLING_WINDOW)
             self._records[sym].append((ts, float(pnl)))
-        except Exception:
-            pass  # FAIL-OPEN: 记录失败不影响交易
+        except Exception as e:
+            logger.debug("[FO] 交易记录更新 fail: %s", e)  # FAIL-OPEN: 记录失败不影响交易
 
     def can_probe(
         self,
@@ -278,8 +278,8 @@ class DynamicShortBlacklist:
             )
             rec["count"] += 1
             rec["last_probe_ts"] = time.time()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[FO] 试探标记更新 fail: %s", e)  # FAIL-OPEN
 
     # ------------------------------------------------------------------
     # 内部方法
