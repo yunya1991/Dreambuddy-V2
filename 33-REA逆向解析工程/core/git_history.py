@@ -72,14 +72,14 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
         ))
         return result
 
-    # 检查文件是否存在
+    # 检查文件是否存在（路径解析失败：显式标注 unknown，不静默返回空）
     if not os.path.isfile(target_path):
         result["evidence"].append(Evidence(
             result=f"文件不存在: {target_path}",
             provenance={"repo": repo_path, "target": target_path},
             confidence=1.0,
-            known_gaps=["文件不存在，无法分析 git 历史"],
-            level="observation",
+            known_gaps=[f"路径解析失败: 文件不存在: {target_path}"],
+            level="unknown",
         ))
         return result
 
@@ -94,6 +94,21 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
         ["log", "--follow", "--format=%an|%ai|%H", "--", rel_path],
         repo_path,
     )
+
+    # git log 执行失败：路径解析失败，显式标注 unknown 而非静默空（Provider 确定性）
+    if rc != 0:
+        result["evidence"].append(Evidence(
+            result=f"git log 执行失败: {log_err.strip()[:200]}",
+            provenance={
+                "repo": repo_path,
+                "target": target_path,
+                "rel_path": rel_path,
+            },
+            confidence=1.0,
+            known_gaps=[f"路径解析失败: git log 返回 rc={rc}: {log_err.strip()[:200]}"],
+            level="unknown",
+        ))
+        return result
 
     commits: list[dict[str, str]] = []
     if rc == 0 and log_out.strip():
