@@ -4,6 +4,41 @@
       "path": "35-广义认知系统协作模块/SPEC-CDrive-CognitiveSystem-Integration.md",
       "added_at": "2026-10-12T04:15:17.011561+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/reports/SPEC-自进化系统逆向解析改进.md",
+      "added_at": "2026-10-12T11:40:54.967759+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/reports/自进化系统SPEC深度调研报告.md",
+      "added_at": "2026-10-12T11:40:54.967779+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "33-REA逆向解析工程/reports/自进化系统逆向解析反思报告.md",
+      "added_at": "2026-10-12T11:40:54.967781+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC-DSH-训练数据源-v0.3-扩展.md",
+      "added_at": "2026-10-12T11:40:54.967782+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC-DSH-训练数据源-v0.4-TDD核心.md",
+      "added_at": "2026-10-12T11:40:54.967783+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC-DSH-训练数据源.md",
+      "added_at": "2026-10-12T11:40:54.967784+00:00",
+      "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC-v0.6-semantic-embedding.md",
+      "added_at": "2026-10-12T11:40:54.967785+00:00",
+      "action": "sync_doc_index"
     }
   ],
   "processed": [
