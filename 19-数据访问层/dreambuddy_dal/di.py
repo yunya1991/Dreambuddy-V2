@@ -24,6 +24,15 @@ import threading
 from pathlib import Path
 from typing import Callable, Optional, TypeVar
 
+# 加载 19-DAL .env（存在才加载，override=False 让显式 env 优先于文件值）
+_env_path = Path(__file__).resolve().parent.parent / ".env"
+if _env_path.exists():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(_env_path, override=False)
+    except ImportError:
+        pass
+
 from dreambuddy_dal.protocols import (
     ConfigRepository,
     KnowledgeGraphRepository,
