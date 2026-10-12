@@ -86,6 +86,16 @@ class MetaCognitionGate:
                 return self._reject("invalid_uncertainty")
             uncertainty = float(max(0.0, min(1.0, uncertainty_score)))
 
+            # 防御：base_confidence / position_size 必须是数值（防止 dict 绕过）
+            if not isinstance(base_confidence, (int, float)) or np.isnan(base_confidence):
+                return self._reject("invalid_base_confidence")
+            if not isinstance(position_size, (int, float)) or np.isnan(position_size):
+                return self._reject("invalid_position_size")
+            if strategy_sharpe is not None and (
+                not isinstance(strategy_sharpe, (int, float)) or np.isnan(strategy_sharpe)
+            ):
+                return self._reject("invalid_strategy_sharpe")
+
             # 分级
             if uncertainty >= self.uncertainty_critical:
                 level = "critical"

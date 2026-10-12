@@ -412,22 +412,23 @@ class PrimaryContradictionIdentifier:
             if not get_switch("enable_meta_cognition", False):
                 return primary
             original_conf = float(primary.get("confidence", 0.5))
-            context = {
-                "direction": primary.get("direction", "neutral"),
-                "dimension": primary.get("dimension", "unknown"),
-                "market_data": market_data or {},
-            }
-            mc_result = meta_cognition_gate.evaluate(original_conf, context)
+            # uncertainty = 1 - confidence（confidence 低 → 不确定性高）
+            unc_score = max(0.0, 1.0 - original_conf)
+            mc_result = meta_cognition_gate.evaluate(
+                uncertainty_score=unc_score,
+                base_confidence=original_conf,
+            )
             primary["meta_cognition"] = mc_result
             adjusted_conf = float(mc_result.get("adjusted_confidence", original_conf))
-            uncertainty = float(mc_result.get("uncertainty", 0.0))
-            # HC-AGI-06: uncertainty > 0.4 → 强制降仓位
-            if uncertainty > 0.4:
-                primary["confidence"] = max(0.0, adjusted_conf * 0.5)
-                primary["position_multiplier"] = 0.5
+            unc_level = mc_result.get("uncertainty_level", "low")
+            pos_mult = float(mc_result.get("position_multiplier", 1.0))
+            # HC-AGI-06: uncertainty_level high/critical → 强制降仓位
+            if unc_level in ("high", "critical"):
+                primary["confidence"] = max(0.0, adjusted_conf)
+                primary["position_multiplier"] = pos_mult
             else:
                 primary["confidence"] = adjusted_conf
-                primary["position_multiplier"] = 1.0
+                primary["position_multiplier"] = pos_mult
             return primary
         except Exception as e:
             logger.debug("[W5] meta cognition verify FAIL-OPEN: %s", e)
