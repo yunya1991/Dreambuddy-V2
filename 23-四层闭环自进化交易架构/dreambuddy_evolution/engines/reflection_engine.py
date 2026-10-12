@@ -4,9 +4,11 @@ ReflectionEngine (§1.6 调查·反思·实践 三公理)
 
 pre_trade_snapshot → CS 一致性得分 → 四维奖惩表 → ESS/gmax 更新
 """
+import json
 import math
 import logging
 import time
+from dataclasses import dataclass, field, asdict
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -315,3 +317,96 @@ class ReflectionEngine:
         except Exception as e:
             logger.debug("[FO] _maybe_auto_adjust_weight fail: %s", e)
             return result
+
+    # ------------------------------------------------------------------
+    # P3-3: 架构健康度反思（与交易反思并列的双能力）
+    # ------------------------------------------------------------------
+
+    def reflect_architecture(self, arch_debt_result: Any) -> "ArchitectureHealthReport":
+        """架构健康度反思：消费 ArchitectureDebtResult → 健康度报告。
+
+        整体健康分 = 1 - 平均债务评分（无债务维度时记 1.0 健康）。
+        健康分级：≥0.8 healthy / ≥0.5 warning / <0.5 critical。
+        """
+        try:
+            debt_dims = getattr(arch_debt_result, "debt_dimensions", {}) or {}
+            if debt_dims:
+                avg_debt = sum(debt_dims.values()) / len(debt_dims)
+                overall = max(0.0, 1.0 - avg_debt)
+            else:
+                overall = 1.0
+
+            return ArchitectureHealthReport(
+                overall_score=round(overall, 4),
+                dimension_scores=dict(debt_dims),
+                triggered_windows=list(
+                    getattr(arch_debt_result, "triggered_windows", []) or []
+                ),
+                refactor_plan=list(
+                    getattr(arch_debt_result, "refactor_plan", []) or []
+                ),
+                health_level=self._health_level(overall),
+                confidence=getattr(arch_debt_result, "confidence", 0.0),
+            )
+        except Exception as e:
+            logger.warning("[FO] reflect_architecture fail: %s", e)
+            return ArchitectureHealthReport(
+                overall_score=1.0,
+                health_level="healthy",
+                known_gaps=[f"架构反思失败: {e}"],
+            )
+
+    @staticmethod
+    def _health_level(score: float) -> str:
+        if score >= 0.8:
+            return "healthy"
+        if score >= 0.5:
+            return "warning"
+        return "critical"
+
+
+@dataclass
+class ArchitectureHealthReport:
+    """架构健康度报告（P3-3）。"""
+    overall_score: float = 1.0
+    dimension_scores: dict[str, float] = field(default_factory=dict)
+    triggered_windows: list[str] = field(default_factory=list)
+    refactor_plan: list[dict[str, Any]] = field(default_factory=list)
+    health_level: str = "healthy"
+    confidence: float = 0.0
+    known_gaps: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def save_json(self, path: str) -> None:
+        """持久化 JSON 报告。FAIL-OPEN：写失败不抛异常。"""
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.warning("[FO] ArchitectureHealthReport.save_json fail: %s", e)
+
+    def print_summary(self) -> None:
+        """控制台摘要输出。"""
+        icon = {"healthy": "✅", "warning": "⚠️", "critical": "🚨"}.get(
+            self.health_level, "❓"
+        )
+        print(f"{icon} 架构健康度: {self.overall_score:.2f} ({self.health_level})")
+        if self.dimension_scores:
+            print("  维度债务:")
+            for dim, score in sorted(
+                self.dimension_scores.items(), key=lambda x: -x[1]
+            ):
+                print(f"    - {dim}: {score:.2f}")
+        if self.triggered_windows:
+            print(f"  已触发 refactor 窗口: {len(self.triggered_windows)}")
+            for w in self.triggered_windows[:5]:
+                print(f"    - {w}")
+        if self.refactor_plan:
+            print("  重构建议:")
+            for p in self.refactor_plan[:5]:
+                print(
+                    f"    [{p.get('priority','?')}] {p.get('dimension','?')} "
+                    f"→ {p.get('action','?')} ({p.get('target','?')})"
+                )

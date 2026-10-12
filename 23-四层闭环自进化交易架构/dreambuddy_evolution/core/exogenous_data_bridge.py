@@ -624,9 +624,13 @@ def _apply_mask_override(
     """把 {dimension: multiplier} override 应用为 head 行允许值的 additive 负偏置.
 
     FAIL-OPEN: 文件缺失/损坏/维度不匹配 → 返回原 mask，只记 debug。
+    注意：override_path=None 时不应用 override（保持原 mask），
+    只有显式传入路径才读取 override 文件。
     """
+    if override_path is None:
+        return mask
     try:
-        path = Path(override_path) if override_path else _default_mask_override_path()
+        path = Path(override_path)
         if not path.exists():
             return mask
         override = json.loads(path.read_text())

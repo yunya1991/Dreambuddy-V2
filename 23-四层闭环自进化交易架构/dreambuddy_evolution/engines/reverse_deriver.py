@@ -272,3 +272,174 @@ class ReverseDeriver:
             known_gaps=[f"逆向推导失败: {reason}"],
             optimization_action="no_adjustment",
         )
+
+
+# ======================================================================
+# 架构域 ReverseDeriver（P3-1，独立于交易域）
+# SPEC: reports/SPEC-P3-1-架构级ReverseDeriver.md
+# 从 REA 架构 Evidence（文件行数/出度/豁口数/git演化类型）反推设计债务。
+# 与交易域 ReverseDeriver 接口隔离，仅共享 Evidence 数据结构概念。
+# ======================================================================
+
+import re  # noqa: E402  架构域解析需要
+
+
+@dataclass
+class ArchitectureDebtResult:
+    """架构债务推导结果。"""
+    debt_dimensions: dict[str, float] = field(default_factory=dict)
+    triggered_windows: list[str] = field(default_factory=list)
+    refactor_plan: list[dict[str, Any]] = field(default_factory=list)
+    confidence: float = 0.0
+    known_gaps: list[str] = field(default_factory=list)
+
+
+# 维度 → (analysis 关键词, 阈值, 解析正则, 债务评分函数)
+# 硬约束来源：SPEC-自进化系统逆向解析改进.md §5 H-1~H-6
+_DIMENSION_RULES = {
+    "file_size": {
+        "keywords": ("line_count", "size_audit"),
+        "threshold": 800,
+        "pattern": r"(\d+)\s*行",
+        "action": "拆分",
+    },
+    "out_degree": {
+        "keywords": ("out_degree", "dependency_graph"),
+        "threshold": 10,
+        "pattern": r"出度[:：]\s*(\d+)",
+        "action": "拆分",
+    },
+    "known_gaps": {
+        "keywords": ("known_gap_audit", "fail_open_audit"),
+        "threshold": 20,
+        "pattern": r"豁口[:：]\s*(\d+)",
+        "action": "补 known_gap 还款",
+    },
+    "git_evolution": {
+        "keywords": ("git_history",),
+        "threshold": 1.0,  # feat/(feat+refactor) 比值
+        "pattern": r"(\d+)\s*feat\s*/\s*(\d+)\s*refactor",
+        "action": "增加 refactor 提交",
+    },
+}
+
+
+class ArchitectureReverseDeriver:
+    """架构域逆向推导器：从架构 Evidence 反推设计债务，触发 refactor 窗口。
+
+    四维度（SPEC §4）：
+    1. 文件行数 → H-1: >800 触发 refactor
+    2. 出度 → H-2: >10 触发拆分
+    3. 豁口数 → H-3/H-4: 登记 + 30天 SLA
+    4. git 演化 → H-6: 禁止断裂修复（无 refactor 即债务）
+
+    与交易域 ReverseDeriver 接口隔离，不互相调用。
+    """
+
+    def derive_architecture_debt(
+        self, evidence_list: list[Any] | None
+    ) -> ArchitectureDebtResult:
+        """从架构 Evidence 列表推导设计债务。
+
+        Args:
+            evidence_list: REA 产出的架构 Evidence 列表（含 result/provenance）
+
+        Returns:
+            ArchitectureDebtResult（FAIL-OPEN：空/解析失败返回空结果+known_gaps）
+        """
+        result = ArchitectureDebtResult()
+        if not evidence_list:
+            result.known_gaps.append("无架构 Evidence 输入")
+            return result
+
+        dim_scores: dict[str, list[tuple[float, str]]] = {}
+
+        for ev in evidence_list:
+            try:
+                analysis = self._get_analysis(ev)
+                result_str = self._get_result(ev)
+                target = self._get_target(ev)
+                if not analysis or result_str is None:
+                    continue
+
+                dim, score = self._parse_dimension(analysis, result_str)
+                if dim is not None:
+                    dim_scores.setdefault(dim, []).append((score, target))
+            except Exception as e:
+                eid = getattr(ev, "evidence_id", "unknown")
+                result.known_gaps.append(f"Evidence {eid} 解析失败: {e}")
+
+        # 聚合：每维度取最大债务评分
+        for dim, entries in dim_scores.items():
+            max_score = max(s for s, _ in entries)
+            max_target = next(t for s, t in entries if s == max_score)
+            result.debt_dimensions[dim] = round(min(max_score, 1.0), 4)
+
+            if max_score >= 1.0:  # value >= threshold → 触发 refactor 窗口
+                window_id = f"refactor:{dim}:{max_target}"
+                result.triggered_windows.append(window_id)
+                priority = "P0" if max_score >= 1.0 else (
+                    "P1" if max_score >= 0.8 else "P2"
+                )
+                result.refactor_plan.append({
+                    "dimension": dim,
+                    "target": max_target,
+                    "score": result.debt_dimensions[dim],
+                    "action": _DIMENSION_RULES[dim]["action"],
+                    "priority": priority,
+                })
+
+        # refactor_plan 按 score 降序
+        result.refactor_plan.sort(key=lambda x: x["score"], reverse=True)
+
+        if result.debt_dimensions:
+            # 置信度：有数据的维度占比
+            result.confidence = round(
+                len(result.debt_dimensions) / len(_DIMENSION_RULES), 3
+            )
+
+        return result
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _get_analysis(ev: Any) -> str:
+        prov = getattr(ev, "provenance", None)
+        if isinstance(prov, dict):
+            return str(prov.get("analysis", ""))
+        return ""
+
+    @staticmethod
+    def _get_result(ev: Any) -> str:
+        res = getattr(ev, "result", None)
+        return str(res) if res is not None else ""
+
+    @staticmethod
+    def _get_target(ev: Any) -> str:
+        prov = getattr(ev, "provenance", None)
+        if isinstance(prov, dict):
+            return str(prov.get("file") or prov.get("target") or "unknown")
+        return "unknown"
+
+    def _parse_dimension(
+        self, analysis: str, result_str: str
+    ) -> tuple[str | None, float]:
+        """根据 analysis 关键词匹配维度，从 result_str 解析数值并算债务评分。"""
+        for dim, rule in _DIMENSION_RULES.items():
+            if any(kw in analysis for kw in rule["keywords"]):
+                if dim == "git_evolution":
+                    m = re.search(rule["pattern"], result_str)
+                    if not m:
+                        return None, 0.0
+                    feat = int(m.group(1))
+                    ref = int(m.group(2))
+                    total = feat + ref
+                    if total == 0:
+                        return None, 0.0
+                    return dim, feat / total
+                m = re.search(rule["pattern"], result_str)
+                if not m:
+                    return None, 0.0
+                value = float(m.group(1))
+                threshold = rule["threshold"]
+                return dim, value / threshold
+        return None, 0.0

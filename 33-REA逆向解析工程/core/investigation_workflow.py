@@ -17,7 +17,7 @@ from typing import Any
 from .analyzer_base import AnalyzeResult
 from .call_chain_tracer import CallChainTracer
 from .dependency_graph import DependencyGraph
-from .evidence import Evidence
+from .evidence import Evidence, reverse_evidence
 from .python_analyzer import PythonAnalyzer
 from .algorithm_reducer import reduce_algorithm
 
@@ -387,6 +387,15 @@ class InvestigationWorkflow:
             level = e.level.value if hasattr(e.level, "value") else str(e.level)
             level_counts[level] = level_counts.get(level, 0) + 1
 
+        # P3-2: 补充架构债务维度 Evidence（供 ArchitectureReverseDeriver 消费）
+        arch_evidence = self._collect_architecture_debt_evidence(
+            target, phases, unique_gaps
+        )
+        unique_evidence = _dedupe_evidence(unique_evidence + arch_evidence)
+        for ev in arch_evidence:
+            unique_gaps.extend(ev.known_gaps)
+        unique_gaps = sorted(set(unique_gaps))
+
         locate = phases.get("locate", {})
         trace = phases.get("trace", {})
         reduce = phases.get("reduce", {})
@@ -423,6 +432,103 @@ class InvestigationWorkflow:
     # ------------------------------------------------------------------
     # 辅助方法
     # ------------------------------------------------------------------
+    def _collect_architecture_debt_evidence(
+        self, target: str, phases: dict[str, Any], known_gaps: list[str]
+    ) -> list[Evidence]:
+        """P3-2: 采集架构债务四维度 Evidence（供 ArchitectureReverseDeriver 消费）。
+
+        维度：file_size / out_degree / known_gaps / git_evolution
+        与 engines/reverse_deriver.py _DIMENSION_RULES 的 analysis 关键词对齐。
+        """
+        evidence: list[Evidence] = []
+
+        # 1. 文件行数（扫描 .py 文件，报告行数最高的文件）
+        try:
+            if os.path.isdir(target):
+                max_file, max_lines = "", 0
+                for root, _, files in os.walk(target):
+                    if "__pycache__" in root:
+                        continue
+                    for f in files:
+                        if not f.endswith(".py") or f == "__init__.py":
+                            continue
+                        fp = os.path.join(root, f)
+                        try:
+                            with open(fp, encoding="utf-8", errors="replace") as fh:
+                                lines = sum(1 for _ in fh)
+                        except OSError:
+                            continue
+                        if lines > max_lines:
+                            max_lines = lines
+                            max_file = os.path.relpath(fp, target)
+                if max_file:
+                    evidence.append(reverse_evidence(
+                        result=f"文件 {max_file}: {max_lines} 行",
+                        provenance={"target": target, "analysis": "line_count"},
+                        confidence=1.0,
+                    ))
+        except Exception as e:
+            evidence.append(reverse_evidence(
+                result="文件行数统计失败",
+                provenance={"target": target, "analysis": "line_count"},
+                confidence=0.0,
+                known_gaps=[f"line_count fail: {e}"],
+            ))
+
+        # 2. 出度（从 dependency_graph evidence 估算：边数/节点数 = 平均出度）
+        try:
+            dep_ev = None
+            for ev in phases.get("trace", {}).get("evidence", []):
+                prov = getattr(ev, "provenance", {}) or {}
+                if prov.get("analysis") == "dependency_graph":
+                    dep_ev = ev
+                    break
+            if dep_ev is not None:
+                res = str(getattr(dep_ev, "result", ""))
+                import re as _re
+                m = _re.search(r"(\d+)\s*节点.*?(\d+)\s*边", res)
+                if m:
+                    nodes, edges = int(m.group(1)), int(m.group(2))
+                    avg_out = edges / nodes if nodes > 0 else 0
+                    evidence.append(reverse_evidence(
+                        result=f"出度: {avg_out:.1f}",
+                        provenance={"target": target, "analysis": "out_degree"},
+                        confidence=0.8,
+                    ))
+        except Exception:
+            pass
+
+        # 3. 豁口数（known_gaps 数量）
+        gap_count = len(known_gaps)
+        evidence.append(reverse_evidence(
+            result=f"豁口: {gap_count} 项",
+            provenance={"target": target, "analysis": "known_gap_audit"},
+            confidence=1.0,
+        ))
+
+        # 4. git 演化（feat/refactor 提交计数）
+        try:
+            import subprocess
+            git_dir = target if os.path.isdir(target) else os.path.dirname(target)
+            log = subprocess.run(
+                ["git", "log", "--oneline", "-n", "200", "--", target],
+                capture_output=True, text=True, cwd=git_dir, timeout=10,
+            )
+            if log.returncode == 0:
+                feat = sum(1 for l in log.stdout.splitlines()
+                           if "feat" in l.lower())
+                ref = sum(1 for l in log.stdout.splitlines()
+                          if "refactor" in l.lower())
+                evidence.append(reverse_evidence(
+                    result=f"演化: {feat} feat / {ref} refactor",
+                    provenance={"target": target, "analysis": "git_history"},
+                    confidence=0.9,
+                ))
+        except Exception:
+            pass
+
+        return evidence
+
     @staticmethod
     def _get_analyzer(language: str):
         """根据语言获取分析器实例。"""
