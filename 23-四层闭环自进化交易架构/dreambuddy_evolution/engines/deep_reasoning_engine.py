@@ -23,7 +23,6 @@ from typing import Any, Optional
 import numpy as np
 
 from dreambuddy_evolution.core.signature_engine import SignatureEngine
-from dreambuddy_evolution.core.path_integral import PathIntegralEngine
 from dreambuddy_evolution.engines.signature_computer import (
     SignatureComputer,
     _SIGNATORY_AVAILABLE,
@@ -34,6 +33,7 @@ from dreambuddy_evolution.engines.sde_solver import (
     _TIMESFM_AVAILABLE,
     _TORCH_AVAILABLE,
 )
+from dreambuddy_evolution.engines.monte_carlo_path_finder import MonteCarloPathFinder
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +50,11 @@ class DeepReasoningEngine:
         self._signature = SignatureComputer(signature_depth=signature_depth)
         # P1-1 拆分: SDE+TimesFM 动态建模委托给 SDESolver
         self._sde = SDESolver()
+        # P1-1 拆分: 蒙特卡洛路径搜索委托给 MonteCarloPathFinder
+        self._path_finder = MonteCarloPathFinder()
         # 保留实例变量向后兼容（backend_status / 旧测试引用）
         self._signature_engine = SignatureEngine(depth=signature_depth)
-        self._path_integral = PathIntegralEngine(n_paths=1000)
+        self._path_integral = self._path_finder._path_integral
         # Phase 2: 签名特征提取器（懒加载，前置签名特征接入）— 委托给 SignatureComputer
         self._timesfm_available = _TIMESFM_AVAILABLE
         self._timesfm_api = _TIMESFM_API
@@ -147,7 +149,7 @@ class DeepReasoningEngine:
         return self._sde._statistical_forecast(history, horizon)
 
     # ------------------------------------------------------------------
-    # 4. 蒙特卡洛多路径采样
+    # 4. 蒙特卡洛多路径采样 — P1-1 拆分后委托给 MonteCarloPathFinder
     # ------------------------------------------------------------------
     def monte_carlo_paths(
         self,
@@ -156,65 +158,22 @@ class DeepReasoningEngine:
         n_paths: int = 1000,
         volatility: float | None = None,
     ) -> list[np.ndarray]:
-        """蒙特卡洛采样 N 条可能路径（复用 PathIntegralEngine）."""
-        pi = self._path_integral
-        pi.n_paths = n_paths
-        vol = volatility if volatility is not None else 0.02
-        return pi.sample_paths(start_price=start_price, horizon=horizon, volatility=vol)
+        """蒙特卡洛采样 N 条可能路径 — 委托给 MonteCarloPathFinder."""
+        return self._path_finder.monte_carlo_paths(
+            start_price=start_price, horizon=horizon,
+            n_paths=n_paths, volatility=volatility,
+        )
 
     # ------------------------------------------------------------------
-    # 5. 路径阻力 & 最小阻力路径
+    # 5. 路径阻力 & 最小阻力路径 — P1-1 拆分后委托给 MonteCarloPathFinder
     # ------------------------------------------------------------------
     def compute_path_resistance(self, path: np.ndarray) -> float:
-        """计算路径阻力（交易成本 + 风险 + 不确定性）."""
-        return self._path_integral.compute_action(path)
+        """计算路径阻力 — 委托给 MonteCarloPathFinder."""
+        return self._path_finder.compute_path_resistance(path)
 
     def find_min_resistance_path(self, paths: list[np.ndarray]) -> dict[str, Any]:
-        """搜索最小阻力路径（最小作用量 = 最优交易路径）.
-
-        HC-AGI-17 降级链: HJB → 变分法 → argmin
-        """
-        # 1. 优先 HJB/变分法（开关控制 + FAIL-OPEN）
-        try:
-            from dreambuddy_evolution.agi_config import get_switch
-            if get_switch("enable_hjb_solver", True) or get_switch("enable_variational_opt", True):
-                from dreambuddy_evolution.core.hjb_solver import solve_optimal_path
-
-                start_price = float(paths[0][0]) if paths and len(paths[0]) > 0 else 100.0
-                horizon = max(len(p) for p in paths) - 1 if paths else 10
-                # 从 paths 估算 vol
-                all_returns = np.concatenate([
-                    np.diff(p) / np.maximum(p[:-1], 1e-9) for p in paths
-                ]) if paths else np.array([0.02])
-                vol = float(np.std(all_returns)) if len(all_returns) > 1 else 0.02
-
-                hjb_result = solve_optimal_path(
-                    start_price=start_price,
-                    horizon=horizon,
-                    volatility=vol,
-                    monte_carlo_paths=paths,
-                )
-                return {
-                    "best_index": -1,
-                    "best_resistance": hjb_result["total_cost"],
-                    "best_path": hjb_result["optimal_path"],
-                    "backend": hjb_result["backend"],
-                    "converged": hjb_result["converged"],
-                    "fallback_chain": hjb_result["fallback_chain"],
-                }
-        except Exception as e:  # noqa: BLE001
-            logger.warning("[FO-AGI-03] HJB/变分法降级到 argmin: %s", e)
-
-        # 2. 兜底: argmin
-        best_idx, best_resistance = self._path_integral.find_least_resistance_path(paths)
-        return {
-            "best_index": best_idx,
-            "best_resistance": float(best_resistance),
-            "best_path": paths[best_idx],
-            "backend": "argmin",
-            "converged": True,
-            "fallback_chain": ["argmin"],
-        }
+        """搜索最小阻力路径 — 委托给 MonteCarloPathFinder."""
+        return self._path_finder.find_min_resistance_path(paths)
 
     # ------------------------------------------------------------------
     # 完整推理流水线
