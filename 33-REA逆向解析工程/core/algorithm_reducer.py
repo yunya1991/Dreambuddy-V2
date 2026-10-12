@@ -7,6 +7,10 @@
 - 条件分支（if-elif-else 链）
 - 分治（函数调用自身处理子问题）
 - 动态规划（缓存 + 递归）
+- 梯度更新（param -= lr * grad 形态）
+- 相似性检索（cosine 相似度 + argsort top_k 形态）
+- 贝叶斯更新（posterior = likelihood * prior 形态）
+- 状态机（if state == X: state = Y 形态）
 
 每条结论带 Evidence（代码片段 + 推导逻辑 + known_gaps）。
 """
@@ -202,6 +206,38 @@ def _detect_patterns(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[
             "line": func.lineno,
         })
 
+    # 梯度更新检测：param -= lr * grad（或 param = param - lr * grad）
+    if _is_gradient_update(func):
+        patterns.append({
+            "type": "梯度更新 gradient_update",
+            "description": f"函数 {func.name} 使用梯度更新模式 (param -= lr * grad)",
+            "line": func.lineno,
+        })
+
+    # 相似性检索检测：相似度计算 + 排序取 top_k
+    if _is_similarity_search(func):
+        patterns.append({
+            "type": "相似性检索 similarity_search",
+            "description": f"函数 {func.name} 使用相似性检索模式 (similarity + top_k)",
+            "line": func.lineno,
+        })
+
+    # 贝叶斯更新检测：posterior = likelihood * prior
+    if _is_bayesian_update(func):
+        patterns.append({
+            "type": "贝叶斯更新 bayesian_update",
+            "description": f"函数 {func.name} 使用贝叶斯更新模式 (posterior ∝ likelihood × prior)",
+            "line": func.lineno,
+        })
+
+    # 状态机检测：if state == X: state = Y
+    if _is_state_machine(func):
+        patterns.append({
+            "type": "状态机 state_machine",
+            "description": f"函数 {func.name} 使用状态机模式 (state 转移)",
+            "line": func.lineno,
+        })
+
     return patterns
 
 
@@ -228,6 +264,20 @@ def _generate_pseudo_code(
         lines.append("  for each item in input:")
         lines.append("    update result")
         lines.append("  return result")
+    elif "梯度更新" in " ".join(pattern_types):
+        lines.append("  grad = compute_gradient(loss)")
+        lines.append("  param -= learning_rate * grad")
+    elif "相似性检索" in " ".join(pattern_types):
+        lines.append("  scores = similarity(query, keys)")
+        lines.append("  top_k = argsort(scores)[-k:]")
+        lines.append("  return top_k")
+    elif "贝叶斯更新" in " ".join(pattern_types):
+        lines.append("  posterior = likelihood * prior")
+        lines.append("  return posterior")
+    elif "状态机" in " ".join(pattern_types):
+        lines.append("  if state == X and event == e:")
+        lines.append("    state = next_state")
+        lines.append("  return state")
     else:
         # 通用伪代码
         for node in ast.walk(func):
@@ -286,3 +336,142 @@ def _call_name(node: ast.expr) -> str | None:
     if isinstance(node, ast.Attribute):
         return node.attr
     return None
+
+
+# ---------------------------------------------------------------------------
+# 领域算法模式检测（梯度更新/相似性检索/贝叶斯更新/状态机）
+# ---------------------------------------------------------------------------
+
+def _is_gradient_update(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """梯度更新形态：param -= lr * grad 或 param = param - lr * grad。"""
+    for node in ast.walk(func):
+        # 增量赋值形态: param -= lr * grad
+        if isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Sub):
+            if _contains_muldiv(node.value):
+                return True
+        # 普通赋值形态: param = param - lr * grad
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.BinOp)
+            and isinstance(node.value.op, ast.Sub)
+            and len(node.targets) == 1
+            and ast.dump(node.targets[0]) == ast.dump(node.value.left)
+            and _contains_muldiv(node.value.right)
+        ):
+            return True
+    return False
+
+
+def _contains_muldiv(node: ast.expr) -> bool:
+    """检查表达式子树中是否含乘/除运算（学习率 × 梯度形态）。"""
+    return any(
+        isinstance(child, ast.BinOp) and isinstance(child.op, (ast.Mult, ast.Div))
+        for child in ast.walk(node)
+    )
+
+
+# 相似度计算类调用名关键词 / 排序取 top_k 类调用名
+_SIMILARITY_CALL_KEYWORDS = ("cosine", "similar", "dot_product", "distance")
+_RANKING_CALL_NAMES = {"argsort", "argpartition", "argmax", "topk", "top_k", "nlargest"}
+
+
+def _is_similarity_search(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """相似性检索形态：相似度计算 + 排序/取 top_k。"""
+    has_similarity = False
+    has_ranking = False
+    has_topk_slice = False
+    for node in ast.walk(func):
+        if isinstance(node, ast.Call):
+            name = (_call_name(node.func) or "").lower()
+            if any(k in name for k in _SIMILARITY_CALL_KEYWORDS):
+                has_similarity = True
+            if name in _RANKING_CALL_NAMES:
+                has_ranking = True
+        if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Slice):
+            sl = node.slice
+            # [-k:] 形态（lower 为负号一元运算）
+            if isinstance(sl.lower, ast.UnaryOp) and isinstance(sl.lower.op, ast.USub):
+                has_topk_slice = True
+            # [:k] 形态（lower 为空）
+            elif sl.lower is None and sl.upper is not None:
+                has_topk_slice = True
+    return (has_similarity and has_ranking) or (has_ranking and has_topk_slice)
+
+
+# 贝叶斯语义关键词（prior/posterior/likelihood/belief/bayes）
+_BAYES_KEYWORDS = ("prior", "posterior", "likelihood", "belief", "bayes")
+
+
+def _is_bayesian_update(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """贝叶斯更新形态：posterior = likelihood * prior（含 *= 与归一化除法）。"""
+    for node in ast.walk(func):
+        if isinstance(node, ast.Assign):
+            # 赋值表达式子树中存在乘法且乘项带贝叶斯语义
+            if _has_bayes_keyword(_assign_target_names(node)) \
+                    and _mult_contains_bayes_terms(node.value):
+                return True
+        if isinstance(node, ast.AugAssign) and isinstance(node.op, ast.Mult):
+            # posterior *= likelihood
+            if _has_bayes_keyword(_assign_target_names(node)) \
+                    and _has_bayes_keyword(_expr_names(node.value)):
+                return True
+    return False
+
+
+def _mult_contains_bayes_terms(value: ast.expr) -> bool:
+    """在赋值表达式子树中查找乘法且乘项含贝叶斯语义名称。"""
+    for child in ast.walk(value):
+        if isinstance(child, ast.BinOp) and isinstance(child.op, ast.Mult):
+            if _has_bayes_keyword(_expr_names(child)):
+                return True
+    return False
+
+
+def _has_bayes_keyword(names: set[str]) -> bool:
+    return any(any(k in n.lower() for k in _BAYES_KEYWORDS) for n in names)
+
+
+# 状态变量命名关键词（state/phase/mode/status）
+_STATE_NAME_KEYWORDS = ("state", "phase", "mode", "status")
+
+
+def _is_state_machine(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """状态机形态：同一状态变量既有相等比较又有赋值转移。"""
+    has_state_compare = False
+    has_state_assign = False
+    for node in ast.walk(func):
+        # 状态比较: if state == "idle" / status in ("a", "b")
+        if isinstance(node, ast.Compare):
+            operands = [node.left] + list(node.comparators)
+            if any(
+                isinstance(o, ast.Name) and _is_state_name(o.id)
+                for o in operands
+            ):
+                has_state_compare = True
+        # 状态赋值: state = "running" 或 state = transition(state, event)
+        if isinstance(node, (ast.Assign, ast.AugAssign)):
+            if any(_is_state_name(n) for n in _assign_target_names(node)):
+                if isinstance(node, ast.Assign) and isinstance(
+                    node.value, (ast.Constant, ast.Call),
+                ):
+                    has_state_assign = True
+    return has_state_compare and has_state_assign
+
+
+def _is_state_name(name: str) -> bool:
+    return any(k in name.lower() for k in _STATE_NAME_KEYWORDS)
+
+
+def _expr_names(node: ast.expr) -> set[str]:
+    """提取表达式子树中的所有 Name 标识符。"""
+    return {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
+
+
+def _assign_target_names(node: ast.Assign | ast.AugAssign) -> set[str]:
+    """提取赋值目标中的所有 Name 标识符。"""
+    if isinstance(node, ast.Assign):
+        names: set[str] = set()
+        for t in node.targets:
+            names |= _expr_names(t)
+        return names
+    return _expr_names(node.target)
