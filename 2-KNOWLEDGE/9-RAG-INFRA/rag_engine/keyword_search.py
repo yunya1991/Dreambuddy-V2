@@ -35,6 +35,12 @@ try:
     _WHOOSH_AVAILABLE = True
 except ImportError:
     _WHOOSH_AVAILABLE = False
+    # Whoosh 不可用时定义占位基类，避免 class ChineseTokenizer(Tokenizer) 抛 NameError
+    class Tokenizer:  # type: ignore[no-redef]
+        pass
+    class Token:  # type: ignore[no-redef]
+        def __init__(self, **kwargs):
+            pass
 
 
 class ChineseTokenizer(Tokenizer):
@@ -58,8 +64,8 @@ class ChineseTokenizer(Tokenizer):
             yield t
 
 
-def _make_schema() -> "Schema":
-    """构造 Whoosh 索引 schema。"""
+def _make_schema():
+    """构造 Whoosh 索引 schema（仅 Whoosh 可用时调用）。"""
     return Schema(
         content=TEXT(analyzer=ChineseTokenizer(), stored=True),
         source_file=TEXT(stored=True),
