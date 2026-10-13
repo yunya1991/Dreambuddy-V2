@@ -99,6 +99,14 @@
 
 - 回滚：停用 LaunchAgent；`gene_data` 保留 `.bak`。
 
+**实施记录（回填 · 2026-10-13）**：
+
+- **认证方式变更**：`08-local-mirror.sh` 由 `.env` 的 `sshpass` 密码认证改为复用 Phase 4 建好的免密别名 `dreambuddy-remote`（`RSH="ssh -o BatchMode=yes"`）。原因：密码认证在连续 rsync 会话下偶发 `Permission denied`（rc=255），不适用于小时级定时作业。
+- **根因修正**：`--rsync-path=sudo -n -u luke -H rsync` 必须整体加引号（`"${RPATH}"`）；未加引号时 rsync 会把 `-n/-u/luke/-H` 当作自身选项解析，远端 rsync 命令被截断（`sudo: unrecognized option '--server'`），导致首轮镜像/合并全部失败。
+- **认知库首次镜像前的一次性上行合并**：本地 `cognitive_memory.db`（29542 行，其中 **502 行仅本地独有**）与远端（29040 行）分叉。经用户确认，先以 `INSERT OR IGNORE` 将本地独有 502 行一次性上行合并至远端权威库（29042→**29544**），再由远端快照下行镜像（本地→**29544**，与远端一致），避免直接镜像丢弃本地独有记忆。
+- **LaunchAgent**：`com.dreambuddy.dbsync` 已安装至 `~/Library/LaunchAgents/`（`StartInterval=3600`、`RunAtLoad=true`）；实测 `=== local-mirror done FAILED=0 ===`、`last exit code = 0`。
+- gene_data 双向 merge 以两侧各放标记文件验证：上行/下行后**两侧均含对方文件**、文件名计数一致（无 `--delete`，无丢失）。
+
 ---
 
 ## 阶段 6 — Phase 2 影子模式（**本轮不执行 / 移出范围**）
