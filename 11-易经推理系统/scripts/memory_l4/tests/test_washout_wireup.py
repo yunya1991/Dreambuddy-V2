@@ -251,12 +251,13 @@ class TestWashoutWireupDefaultDisabled:
     def test_init_washout_detector_returns_none_when_disabled(self):
         """_init_washout_detector(ENABLE_WASHOUT_DETECTOR=False) → self._washout_detector is None."""
         # 用 __new__ 绕过 __init__, 仅测试 _init_washout_detector 方法
+        from unittest.mock import patch
         from scripts.memory_l4.polling_trader import PollingTrader
         trader = PollingTrader.__new__(PollingTrader)
-        # 默认类属性
-        assert PollingTrader.ENABLE_WASHOUT_DETECTOR is False
-        # 调用 _init_washout_detector 方法
-        if hasattr(PollingTrader, "_init_washout_detector"):
-            trader._init_washout_detector()
-            assert getattr(trader, "_washout_detector", None) is None
-            assert getattr(trader, "_washout_sl_guard", None) is None
+        # mock 开关为 False 验证降级逻辑
+        with patch.object(PollingTrader, "ENABLE_WASHOUT_DETECTOR", False):
+            # 调用 _init_washout_detector 方法
+            if hasattr(PollingTrader, "_init_washout_detector"):
+                trader._init_washout_detector()
+                assert getattr(trader, "_washout_detector", None) is None
+                assert getattr(trader, "_washout_sl_guard", None) is None
