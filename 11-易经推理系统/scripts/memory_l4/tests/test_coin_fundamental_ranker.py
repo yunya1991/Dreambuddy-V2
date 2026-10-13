@@ -167,7 +167,7 @@ class TestClassifyAssetClass:
         assert classify_asset_class("XAGUSD") == "precious_metal"
 
     def test_classify_unknown_returns_none(self):
-        assert classify_asset_class("DOGE") is None
+        assert classify_asset_class("XYZNOPE") is None
         assert classify_asset_class("UNKNOWN123") is None
         assert classify_asset_class("") is None
 
@@ -287,7 +287,7 @@ class TestGetCoingeckoId:
         assert get_coingecko_id("NVDA") is None
 
     def test_unknown_returns_none(self):
-        assert get_coingecko_id("DOGE") is None
+        assert get_coingecko_id("XYZNOPE") is None
 
 
 class TestGetYfinanceSymbol:

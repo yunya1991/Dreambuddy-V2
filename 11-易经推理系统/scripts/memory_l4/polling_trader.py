@@ -908,7 +908,7 @@ class PollingTrader:
         # 用户决策 2026-09-11：放大开仓容量 — evolution 5→10, probe 4→8（总名义 ~9200U < 可用 10305U）
         # 用户决策 2026-09-14：收敛自进化开仓容量 — evolution 10→3（控制总风险敞口）
         # 用户决策 2026-10-12：恢复 evolution 子池上限 3→5（释放探索币种开仓容量）
-        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 5, "strategy": 3, "event_arbitrage": 2}
+        self.SUBPOOL_MAX_POSITIONS: Dict[str, int] = {"bdsm": 3, "bcrm": 5, "evolution": 5, "strategy": 3, "event_arbitrage": 2, "washout_entry": 2}
         # 测试仓（试错仓）上限：BCRM 的 is_trial=True 最多 2 单
         self.MAX_TRIAL_POSITIONS: int = 2
         # Evolution probe tier 独立上限：2 单（跟随总上限收敛，probe 为 evolution 子集不得超过总上限）
@@ -1230,6 +1230,9 @@ class PollingTrader:
             "liquidity_risk_s": 0.10,
         }
 
+        # ── W5 洗盘判定三层防御初始化（开关架构，默认关闭） ──
+        self._init_washout_detector()
+
         # ── 持仓与离场管理层：ExitManager 策略链（v4.4 新增） ──
         # Spec: docs/superpowers/specs/2026-08-20-exit-manager-design.md
         # 5 个 per-position 策略（RankedTp 由全局跨持仓循环处理）
@@ -1237,8 +1240,10 @@ class PollingTrader:
         from scripts.memory_l4.bcrm2.exit_strategies import (
             P3EarlyExitStrategy, SignalReverseStrategy,
             EvForceCloseStrategy, TimeoutProfitSwitchStrategy,
-            EvAdjustStrategy,
+            EvAdjustStrategy, WashoutHoldStrategy,
         )
+        from scripts.memory_l4.bcrm2.washout_detector import WashoutDetector
+        from scripts.memory_l4.bcrm2.washout_sl_guard import WashoutSLGuard
         _timeout_hours = 29.0
         try:
             _veto_sec = self.yijing_exit_system.config.veto_max_hold_sec
@@ -1276,6 +1281,10 @@ class PollingTrader:
             P3EarlyExitStrategy(
                 exit_confirm_required=self.EXIT_CONFIRM_REQUIRED,
                 protected_p3_min_loss_pct=self.PROTECTED_P3_MIN_LOSS_PCT,
+                washout_detector=getattr(self, "_washout_detector", None),
+            ),
+            WashoutHoldStrategy(
+                washout_detector=getattr(self, "_washout_detector", None),
             ),
             SignalReverseStrategy(
                 base_threshold=float(self.confidence_threshold),
@@ -4218,7 +4227,7 @@ class PollingTrader:
                     _lev_here = self._get_leverage()
                     _new_sl, _clamped, _old_pct, _cfl = self._enforce_sl_price_floor(
                         _sl_px, entry_px, pos_side, leverage=_lev_here,
-                        allow_tighten=False, coin=coin)
+                        allow_tighten=False, coin=coin, inst_id=inst_id)
                     if _clamped:
                         _msg_tail = ""
                         if _cfl.get("liq_conflict"):
@@ -4561,10 +4570,10 @@ class PollingTrader:
             # ── 双门禁：SL/TP分别校验，过近/致命→钳制 ─────────
             _new_sl, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
                 _sl_px, entry_px, pos_side, leverage=_lev_here,
-                allow_tighten=False, coin=coin)
+                allow_tighten=False, coin=coin, inst_id=inst_id)
             _new_tp, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
                 _tp_px, entry_px, pos_side, leverage=_lev_here,
-                allow_lower=False, coin=coin)
+                allow_lower=False, coin=coin, inst_id=inst_id)
 
             # ── 时间衰减 TP：持仓越久，TP 越靠近入场价（更容易止盈退出）──
             # 公式: tp_pct(t) = max(tp_decay_floor, current_tp - (current_tp - tp_decay_floor) * progress)
@@ -7604,7 +7613,7 @@ class PollingTrader:
                 try:
                     import sys as _sys_strat
                     from pathlib import Path as _Path_strat
-                    _proj_root_strat = _Path_strat(__file__).resolve().parents[4]
+                    _proj_root_strat = _Path_strat(__file__).resolve().parents[3]
                     _pc_dir_strat = _proj_root_strat / "16-调控系统" / "scripts"
                     if str(_pc_dir_strat) not in _sys_strat.path:
                         _sys_strat.path.insert(0, str(_pc_dir_strat))
@@ -8633,10 +8642,9 @@ class PollingTrader:
         return price_change_pct * leverage
 
     # ── SL/TP 硬门禁（间距% + 爆仓安全边际 双重约束） ──────────────
-    # ★ 2026-09-09 ATR放大：配合动态调节逻辑放宽初始间距
-    #   约束1【间距下限】：常规仓 SL≥8.0%价格间距 / TP≥12.0%，轻仓试错 SL≥8.0% / TP≥12.0%
-    #                     TIGHTEN/LOWER 收紧场景允许放宽到 常规×70%（SL≥5.6% / TP≥8.4%）
-    #                     绝对硬下限（最后保险）：SL≥5.0% / TP≥6.0%
+    #   约束1【间距下限】：常规仓 SL≥8.0%价格间距 / TP≥6.0%，轻仓试错 SL≥8.0% / TP≥6.0%
+    #                     TIGHTEN/LOWER 收紧场景允许放宽到 常规×70%（SL≥5.6% / TP≥4.2%）
+    #                     绝对硬下限（最后保险）：SL≥5.0% / TP≥3.0%
     #   约束2【爆仓安全】：SL/TP 与爆仓价之间必须有 ≥ LIQ_BUFFER_PCT 安全边际，禁止先爆仓
     #                     当约束1 vs 约束2冲突（高杠杆场景）：爆仓约束优先，同时强制告警
     MIN_SL_PCT_NORMAL = 0.080     # SL翻倍：4.0%→8.0%，3x杠杆适配防震荡扫损
@@ -8650,6 +8658,220 @@ class PollingTrader:
     LIQ_BUFFER_PCT    = 0.003     # 爆仓安全边际：SL 与爆仓价之间至少 0.3% 价格间距
     LIQ_HARD_WARN_L   = 25        # 超过该杠杆（约爆仓间距3.6%）就触发"建议降杠杆"告警
     LIQ_HARD_LIMIT_L  = 70        # 该杠杆以上爆仓间距≈1.0%<1.5%，两约束必然冲突
+
+    # ── W5 洗盘判定三层防御（开关架构，默认关闭=字节等价） ──
+    #   Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md
+    #   ENABLE_WASHOUT_DETECTOR=False 时：detector/sl_guard=None，P3/WashoutHold 降级 pass
+    ENABLE_WASHOUT_DETECTOR = True
+    WASHOUT_SOURCE_TAG = "washout_trial"  # 洗盘子池 source_tag
+    MAX_TRIAL_POSITIONS = 2               # is_trial 子池上限（BDSM/BCRM 试错仓共用）
+    # ── 洗盘反转基因组（HC-G5 默认关闭=字节等价） ──
+    ENABLE_WASHOUT_REVERSAL_GENOME = False
+    # ── 洗盘入场信号（W4 多因子增强后接入，默认关闭=字节等价） ──
+    #   回测验证: enhanced classifier 24h 胜率 92.9%，平均收益 +1.68%
+    #   仅当 WASHOUT + confidence ≥ 0.80 时生成 LONG 入场信号
+    ENABLE_WASHOUT_ENTRY_SIGNAL = True
+    WASHOUT_ENTRY_SOURCE_TAG = "washout_entry"  # 洗盘入场子池 source_tag
+    WASHOUT_ENTRY_MIN_CONFIDENCE = 0.80          # 入场最低置信度阈值
+
+    def _init_washout_detector(self):
+        """W5: 初始化洗盘判定三层防御组件（开关架构）。
+
+        ENABLE_WASHOUT_DETECTOR=False（默认）→ detector/sl_guard=None，
+        P3EarlyExit/WashoutHoldStrategy 降级 pass，链路字节等价（HC-22）。
+        FAIL-OPEN: 初始化异常不阻断，降级为 None。
+
+        W4 阶段: 注入 EnhancedWashoutClassifier + WashoutFeatureExtractor + WashoutMacroProvider。
+        """
+        self._washout_detector = None
+        self._washout_sl_guard = None
+        self._washout_macro_provider = None
+        if not getattr(self, "ENABLE_WASHOUT_DETECTOR", False):
+            return
+        try:
+            from scripts.memory_l4.bcrm2.washout_detector import WashoutDetector
+            from scripts.memory_l4.bcrm2.washout_sl_guard import WashoutSLGuard
+            from scripts.memory_l4.bcrm2.washout_features import WashoutFeatureExtractor
+            from scripts.memory_l4.bcrm2.washout_classifier import EnhancedWashoutClassifier
+            from scripts.memory_l4.bcrm2.washout_macro_provider import WashoutMacroProvider
+
+            # W4: 注入多因子 classifier + feature_extractor
+            ext = WashoutFeatureExtractor()
+            clf = EnhancedWashoutClassifier()
+
+            # W4: 从 19-DAL 创建 macro_data provider (FAIL-OPEN: repo=None→空字典)
+            repo = self._get_macro_repo_or_none()
+            provider = WashoutMacroProvider(repo=repo)
+
+            self._washout_detector = WashoutDetector(
+                enable=True,
+                classifier=clf,
+                feature_extractor=ext,
+            )
+            self._washout_macro_provider = provider
+            self._washout_sl_guard = WashoutSLGuard(washout_detector=self._washout_detector)
+        except Exception as _e:
+            self._log(f"[W5] washout detector 初始化失败（降级关闭）: {_e}", "WARN")
+            self._washout_detector = None
+            self._washout_sl_guard = None
+            self._washout_macro_provider = None
+
+    def _get_macro_repo_or_none(self):
+        """从 19-DAL 获取 MarketMacroRepository（FAIL-OPEN: 异常→None）。
+
+        供 WashoutMacroProvider 查询 OI/funding/CVD 数据。
+        DAL 不可用时返回 None，provider 降级返回空字典 {}。
+        """
+        try:
+            from dreambuddy_dal import get_market_macro_repo
+            return get_market_macro_repo()
+        except Exception as _e:
+            self._log(f"[W5] DAL macro repo 不可用（降级空字典）: {type(_e).__name__}", "DEBUG")
+            return None
+
+    def _washout_entry_signal_scan(self) -> None:
+        """W4: 洗盘入场信号扫描 — EnhancedWashoutClassifier 判定为 WASHOUT 时开多仓。
+
+        回测验证: enhanced classifier 24h 胜率 92.9%，平均收益 +1.68%（vs volume-only 40.6%）。
+        开关: ENABLE_WASHOUT_ENTRY_SIGNAL（默认 False，字节等价）。
+
+        触发条件:
+          1. ENABLE_WASHOUT_ENTRY_SIGNAL=True 且 washout_detector 可用
+          2. washout_detector.run() → WASHOUT + confidence ≥ WASHOUT_ENTRY_MIN_CONFIDENCE
+          3. 洗盘子池未满（< MAX_TRIAL_POSITIONS）
+          4. 当前无该币种持仓
+
+        FAIL-OPEN: 任何异常 → 跳过，不阻断主链路。
+        """
+        try:
+            if not getattr(self, "ENABLE_WASHOUT_ENTRY_SIGNAL", False):
+                return
+            wd = getattr(self, "_washout_detector", None)
+            if wd is None:
+                return
+
+            max_pos = int(
+                (getattr(self, "SUBPOOL_MAX_POSITIONS", {}) or {}).get(
+                    self.WASHOUT_ENTRY_SOURCE_TAG, 2
+                )
+            )
+            cur_count = self._count_trial_positions(self.WASHOUT_ENTRY_SOURCE_TAG)
+            if cur_count >= max_pos:
+                return
+
+            min_conf = float(getattr(self, "WASHOUT_ENTRY_MIN_CONFIDENCE", 0.80))
+            for coin in self.coins:
+                if cur_count >= max_pos:
+                    break
+                coin_up = str(coin).upper()
+                inst_id = f"{coin_up}-USDT-SWAP"
+
+                # 已有持仓 → 跳过
+                if self.position_tracker.has_open_position(inst_id):
+                    continue
+
+                # 获取 K 线数据
+                try:
+                    kline_resp = self.okx_client.get_kline(
+                        inst_id, bar=self.bar, limit=self.kline_limit
+                    )
+                    candles = (kline_resp.get("candles", [])
+                               if isinstance(kline_resp, dict) else kline_resp)
+                    if not candles or len(candles) < 100:
+                        continue
+                    df = self._kline_to_dataframe(candles)
+                except Exception:
+                    continue
+
+                # 获取 macro_data
+                macro_data = {}
+                provider = getattr(self, "_washout_macro_provider", None)
+                if provider is not None:
+                    macro_data = provider.get_macro_data(coin_up)
+
+                # 运行洗盘检测器
+                verdict = wd.run(coin_up, df, macro_data)
+                if verdict.label.value != "washout":
+                    continue
+                if verdict.confidence < min_conf:
+                    continue
+
+                # 获取当前价格
+                try:
+                    ticker = self.okx_client.get_ticker(inst_id)
+                    if not ticker.get("ok"):
+                        continue
+                    current_price = float(ticker.get("last", 0.0) or 0.0)
+                except Exception:
+                    continue
+                if current_price <= 0:
+                    continue
+
+                # 构建 inference 并开仓
+                inference = {
+                    "coin": coin_up,
+                    "inst_id": inst_id,
+                    "direction": "UP",  # 洗盘后回升 → 做多
+                    "confidence": verdict.confidence,
+                    "volatility": 0.03,
+                    "price": current_price,
+                    "hexagram": "洗盘入场",
+                    "reason": (
+                        f"WASHOUT入场|conf={verdict.confidence:.2f}"
+                        f"|vol_ratio={verdict.feature_snapshot.get('volume_ratio_20d', 0):.3f}"
+                        f"|oi_change={verdict.feature_snapshot.get('oi_change_rate_7d', 0):.4f}"
+                        f"|cvd_div={verdict.feature_snapshot.get('cvd_price_divergence', 0):.3f}"
+                    ),
+                    "washout_verdict": verdict,
+                    "source_tag": self.WASHOUT_ENTRY_SOURCE_TAG,
+                }
+
+                self._log(
+                    f"[{coin_up}] 洗盘入场信号触发 | conf={verdict.confidence:.2f} "
+                    f"price={current_price} | {verdict.reason}",
+                    "INFO",
+                )
+
+                try:
+                    self._open_position(inference, is_reverse=False, is_trial=True)
+                    cur_count += 1
+                except Exception as _oe:
+                    self._log(
+                        f"[{coin_up}] 洗盘入场开仓异常（FAIL-OPEN）: {_oe}",
+                        "ERROR",
+                    )
+        except Exception as _exc:
+            self._log(
+                f"[洗盘入场扫描] 顶层异常（FAIL-OPEN 跳过不阻断）: {_exc}",
+                "WARN",
+            )
+
+    def _apply_washout_sl_guard(self, coin: str, current_sl: float, mark_price: float,
+                                entry_price: float, pos_side: str, liq_price: float,
+                                original_sl: float, age_hours: float,
+                                last_adjust_ts: float, df=None, macro_data=None) -> float:
+        """W5 Layer 1: 调用 WashoutSLGuard 动态调节 SL。
+
+        开关关闭或 guard=None 时返回 current_sl（字节等价）。
+        FAIL-OPEN: 异常返回 current_sl。
+        """
+        guard = getattr(self, "_washout_sl_guard", None)
+        if guard is None:
+            return current_sl
+        try:
+            result = guard.adjust_sl(
+                coin=coin, df=df, macro_data=macro_data,
+                current_sl=current_sl, mark_price=mark_price,
+                entry_price=entry_price, pos_side=pos_side,
+                liq_price=liq_price, original_sl=original_sl,
+                age_hours=age_hours, last_adjust_ts=last_adjust_ts,
+            )
+            if result is not None and hasattr(result, "new_sl_px"):
+                return float(result.new_sl_px)
+            return current_sl
+        except Exception as _e:
+            self._log(f"[W5] WashoutSLGuard 调节异常（fail-open 保持原SL）: {_e}", "WARN")
+            return current_sl
 
     def _estimate_liq_price(self, entry_price: float, pos_side: str, leverage: float) -> float:
         """估算爆仓价（简化公式，带维持保证金率 LIQ_MMR_PCT）。
@@ -8668,6 +8890,50 @@ class PollingTrader:
         else:
             return entry_price * (1.0 + inv_L - self.LIQ_MMR_PCT)
 
+    def _get_asset_floor(self, inst_id: str = None, coin: str = "",
+                         is_trial: bool = False) -> tuple:
+        """从 16 调控系统参数中心查询资产差异化的 SL/TP floor。
+
+        统一 SL/TP floor 来源：开仓硬门禁、动态调整(tighten/relax)均调用此方法，
+        避免与开仓时的 param_center 值打架。
+
+        优先级：param_center.aggregated_params.json → sl_tp_config 静态表 → 类常量兜底
+
+        Args:
+            inst_id: 合约ID（如 "BTC-USDT-SWAP"），优先用于查询
+            coin: 币种名（inst_id 缺失时使用）
+            is_trial: 是否轻仓试错（影响兜底常量选择）
+
+        Returns:
+            (sl_floor, tp_floor)  价格间距百分比（如 0.04 = 4%）
+        """
+        symbol = ""
+        if inst_id:
+            symbol = str(inst_id).split("-")[0].upper()
+        elif coin:
+            symbol = str(coin).upper()
+        # 优先查询参数中心（资产差异化 + 动态调控）
+        if symbol:
+            try:
+                import sys as _sys_floor
+                from pathlib import Path as _Path_floor
+                _proj = _Path_floor(__file__).resolve().parents[3]
+                _pc_dir = _proj / "16-调控系统" / "scripts"
+                if str(_pc_dir) not in _sys_floor.path:
+                    _sys_floor.path.insert(0, str(_pc_dir))
+                from param_center.api import get_sltp_params as _pc_floor_get
+                _pc = _pc_floor_get(symbol, market_regime="chop")
+                sl_f = float(getattr(_pc, "sl_floor", 0.0) or 0.0)
+                tp_f = float(getattr(_pc, "tp_floor", 0.0) or 0.0)
+                if sl_f > 0 and tp_f > 0:
+                    return sl_f, tp_f
+            except Exception:
+                pass
+        # 兜底：类常量（与 sl_tp_config 默认值 4%/12% 对齐）
+        sl_f = self.MIN_SL_PCT_TRIAL if is_trial else self.MIN_SL_PCT_NORMAL
+        tp_f = self.MIN_TP_PCT_TRIAL if is_trial else self.MIN_TP_PCT_NORMAL
+        return sl_f, tp_f
+
     def _enforce_sl_price_floor(self,
                                  sl_px: float,
                                  entry_price: float,
@@ -8675,7 +8941,8 @@ class PollingTrader:
                                  leverage: float = None,
                                  is_trial: bool = False,
                                  allow_tighten: bool = False,
-                                 coin: str = "") -> tuple:
+                                 coin: str = "",
+                                 inst_id: str = None) -> tuple:
         """止损价格硬门禁：【间距下限约束】+【爆仓安全约束】双重钳制。
 
         - 约束1（间距下限）：保证不会被立即扫损（PUMP 0.586%案例的原始问题）
@@ -8694,8 +8961,8 @@ class PollingTrader:
             leverage = self._get_leverage()
         L = max(1.0, float(leverage))
 
-        # ── 约束1：间距下限 ──────────────────────────────────
-        base_min_sl = self.MIN_SL_PCT_TRIAL if is_trial else self.MIN_SL_PCT_NORMAL
+        # ── 约束1：间距下限（从 16 调控系统参数中心获取资产差异化 floor） ──
+        base_min_sl, _ = self._get_asset_floor(inst_id=inst_id, coin=coin, is_trial=is_trial)
         if allow_tighten:
             pct_floor = max(base_min_sl * self.TIGHTEN_SL_FLOOR_RATIO, self.ABS_HARD_SL_PCT)
         else:
@@ -8794,7 +9061,8 @@ class PollingTrader:
                                  leverage: float = None,
                                  is_trial: bool = False,
                                  allow_lower: bool = False,
-                                 coin: str = "") -> tuple:
+                                 coin: str = "",
+                                 inst_id: str = None) -> tuple:
         """止盈价格硬门禁：【间距下限约束】+【爆仓安全约束】的对称实现。
 
         TP相对SL风险较小（TP在盈利侧，不会爆仓），但仍需：
@@ -8808,8 +9076,8 @@ class PollingTrader:
         if leverage is None or leverage <= 0:
             leverage = self._get_leverage()
         L = max(1.0, float(leverage))
-        # ── 约束1：间距下限 ──────────────────────────────────
-        base_min_tp = self.MIN_TP_PCT_TRIAL if is_trial else self.MIN_TP_PCT_NORMAL
+        # ── 约束1：间距下限（从 16 调控系统参数中心获取资产差异化 floor） ──
+        _, base_min_tp = self._get_asset_floor(inst_id=inst_id, coin=coin, is_trial=is_trial)
         if allow_lower:
             pct_floor = max(base_min_tp * self.TIGHTEN_SL_FLOOR_RATIO, self.ABS_HARD_TP_PCT)
         else:
@@ -9293,10 +9561,11 @@ class PollingTrader:
         else:  # relax
             sl_k, tp_k = 1.3, 1.25     # 放宽：止损远30%、止盈提25%
         # ★ FIX Bug#2：原 ATR_FLOOR_ROI=0.015（订单ROI 1.5%）@10x = 仅 0.15% 价格间距，远小于约定
-        #   改为"价格间距%口径"的硬下限：tighten模式允许 SL≥1.05%（常规1.5%×0.7），relax模式 SL≥1.5%
-        #   先用 ROI 维度钳制，再在后面用真实价格二次硬门禁（双保险）
-        _tighten_floor_price_pct = (self.MIN_SL_PCT_NORMAL * self.TIGHTEN_SL_FLOOR_RATIO)  # 1.05%
-        _relax_floor_price_pct = self.MIN_SL_PCT_NORMAL  # 1.5%
+        #   改为"价格间距%口径"的硬下限：tighten模式允许 SL≥常规×0.7，relax模式 SL≥常规
+        #   floor 从 16 调控系统参数中心获取（资产差异化），与开仓时口径一致
+        _asset_sl_floor, _ = self._get_asset_floor(inst_id=inst_id, coin=coin)
+        _tighten_floor_price_pct = (_asset_sl_floor * self.TIGHTEN_SL_FLOOR_RATIO)
+        _relax_floor_price_pct = _asset_sl_floor
         _floor_price_pct = _tighten_floor_price_pct if mode == "tighten" else _relax_floor_price_pct
         ATR_FLOOR_ROI = self._price_change_to_roi(_floor_price_pct, leverage)  # 换算为订单ROI口径
         new_sl_roi = max(base_sl_roi * sl_k, ATR_FLOOR_ROI)
@@ -9308,10 +9577,10 @@ class PollingTrader:
         _allow_tighten = (mode == "tighten")
         new_sl_px, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
             new_sl_px, entry_price, pos_side, leverage=leverage,
-            allow_tighten=_allow_tighten, coin=coin)
+            allow_tighten=_allow_tighten, coin=coin, inst_id=inst_id)
         new_tp_px, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
             new_tp_px, entry_price, pos_side, leverage=leverage,
-            allow_lower=_allow_tighten, coin=coin)
+            allow_lower=_allow_tighten, coin=coin, inst_id=inst_id)
         if _sl_clamped or _tp_clamped:
             _tail = ""
             if _sl_cfl.get("liq_conflict") or _tp_cfl.get("liq_conflict"):
@@ -10535,7 +10804,7 @@ class PollingTrader:
                 try:
                     import sys as _sys
                     from pathlib import Path as _Path
-                    _proj_root = _Path(__file__).resolve().parents[4]
+                    _proj_root = _Path(__file__).resolve().parents[3]
                     _pc_dir = _proj_root / "16-调控系统" / "scripts"
                     if str(_pc_dir) not in _sys.path:
                         _sys.path.insert(0, str(_pc_dir))
@@ -10616,7 +10885,7 @@ class PollingTrader:
         try:
             _new_sl, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
                 _sl_px, entry_px, action, leverage=_lev,
-                is_trial=_is_trial, allow_tighten=False,
+                is_trial=_is_trial, allow_tighten=False, coin=symbol or "",
             )
             if _new_sl and _new_sl > 0:
                 _sl_px = _new_sl
@@ -10625,7 +10894,7 @@ class PollingTrader:
         try:
             _new_tp, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
                 _tp_px, entry_px, action, leverage=_lev,
-                is_trial=_is_trial, allow_lower=False,
+                is_trial=_is_trial, allow_lower=False, coin=symbol or "",
             )
             if _new_tp and _new_tp > 0:
                 _tp_px = _new_tp
@@ -10639,7 +10908,7 @@ class PollingTrader:
 
         return round(_sl_px, 6), round(_tp_px, 6), _sl_pct, _tp_pct
 
-    def _evolution_build_position(self, symbol, action, u_open, d_star, confidence, tier="standard", source_tag=None):
+    def _evolution_build_position(self, symbol, action, u_open, d_star, confidence, tier="standard", source_tag=None, cbr_sim=0.5):
         """P2-S4b: 紧耦合流自动建仓回调（三层仓位分级）
 
         被 KlineEventHandler 在 auto_execute=True 时调用：
@@ -10675,6 +10944,25 @@ class PollingTrader:
             except Exception as _ble:
                 self._log(
                     f"[P2-S4b] {symbol} 黑名单判定异常（fail-open放行）：{type(_ble).__name__}",
+                    "WARN",
+                )
+
+            # 0.5 ★ u_open/cbr_sim 耦合拦截（缺陷E+F P2）
+            #   高 u_open(>=1.0) + 低 cbr_sim(<0.4) 表示"基因组强烈想开但历史相似度不足"，
+            #   缺少耦合约束会导致低质量开仓。拦截此类矛盾信号。
+            #   FAIL-OPEN：检查异常不阻断，放行后续流程。
+            try:
+                if u_open >= 1.0 and cbr_sim < 0.4:
+                    self._log(
+                        f"[P2-S4b] [u_open/cbr_sim耦合拦截] {symbol} u_open={u_open} "
+                        f"cbr_sim={cbr_sim} 低于阈值0.4，拒绝开仓",
+                        "WARN",
+                    )
+                    return
+            except Exception as _cbr_e:
+                self._log(
+                    f"[P2-S4b] {symbol} u_open/cbr_sim 耦合检查异常（fail-open放行）："
+                    f"{type(_cbr_e).__name__}: {_cbr_e}",
                     "WARN",
                 )
 
@@ -11170,7 +11458,7 @@ class PollingTrader:
             try:
                 import sys as _sys_evo
                 from pathlib import Path as _Path_evo
-                _proj_root_evo = _Path_evo(__file__).resolve().parents[4]
+                _proj_root_evo = _Path_evo(__file__).resolve().parents[3]
                 _pc_dir_evo = _proj_root_evo / "16-调控系统" / "scripts"
                 if str(_pc_dir_evo) not in _sys_evo.path:
                     _sys_evo.path.insert(0, str(_pc_dir_evo))
@@ -14642,7 +14930,7 @@ class PollingTrader:
                 # ★ FIX：RAISE_TP 是放宽止盈，使用常规TP下限（不允许收紧）+ 爆仓安全约束
                 new_tp_price, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
                     new_tp_price, entry_price, pos_side, leverage=leverage,
-                    allow_lower=False, coin=coin)
+                    allow_lower=False, coin=coin, inst_id=inst_id)
                 if _tp_clamped:
                     _tail = "【爆仓约束优先】降杠杆≤20x" if _tp_cfl.get("liq_conflict") else ""
                     self._log(
@@ -14701,7 +14989,7 @@ class PollingTrader:
                 # ★ FIX：LOWER_SL 是放宽止损（SL值更小），双约束（间距下限+爆仓安全）
                 new_sl_price, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
                     new_sl_price, entry_price, pos_side, leverage=leverage,
-                    allow_tighten=False, coin=coin)
+                    allow_tighten=False, coin=coin, inst_id=inst_id)
                 if _sl_clamped:
                     _tail = "【爆仓约束优先】降杠杆≤20x" if _sl_cfl.get("liq_conflict") else ""
                     self._log(
@@ -14759,7 +15047,7 @@ class PollingTrader:
                 # ★ FIX：LOWER_TP 双约束（间距下限×0.7 + 爆仓安全约束）
                 new_tp_price, _tp_clamped, _tp_old_pct, _tp_cfl = self._enforce_tp_price_floor(
                     new_tp_price, entry_price, pos_side, leverage=leverage,
-                    allow_lower=True, coin=coin)
+                    allow_lower=True, coin=coin, inst_id=inst_id)
                 if _tp_clamped:
                     _tail = "【爆仓约束优先】降杠杆≤20x" if _tp_cfl.get("liq_conflict") else ""
                     self._log(
@@ -14820,7 +15108,7 @@ class PollingTrader:
                 #     - 高杠杆(≥70x)：爆仓间距<1.0%，两约束冲突，SL抬到"爆仓价+0.3%"并强制告警
                 new_sl_price, _sl_clamped, _sl_old_pct, _sl_cfl = self._enforce_sl_price_floor(
                     new_sl_price, entry_price, pos_side, leverage=leverage,
-                    allow_tighten=True, coin=coin)
+                    allow_tighten=True, coin=coin, inst_id=inst_id)
                 if _sl_clamped:
                     _tail = "【间距/爆仓冲突！已按爆仓安全优先】立即降杠杆到≤20x，否则无效止损" if _sl_cfl.get("liq_conflict") else ""
                     self._log(
@@ -15699,6 +15987,28 @@ class PollingTrader:
         volatility = inference.get("volatility", 0.03)
         # P3: 缓存当前波动率，供 _compute_p2_dynamic_sizing_factors 中波动率自适应使用
         self._last_volatility = volatility
+
+        # ★ W5: 洗盘判定（is_trial 子池专用）— 开仓前调用 WashoutDetector，
+        #   判定结果存入 inference["washout_verdict"]，开仓后写入 TradeRecord.washout_verdict，
+        #   供 Layer 1/2/3 消费。开关关闭或异常时 verdict=None（FAIL-OPEN）。
+        inference["washout_verdict"] = None
+        try:
+            _wd = getattr(self, "_washout_detector", None)
+            if _wd is not None and is_trial:
+                # W4: 从 DAL 获取 macro_data + 从 inference 获取 kline df
+                _provider = getattr(self, "_washout_macro_provider", None)
+                _macro_data = {}
+                if _provider is not None:
+                    _macro_data = _provider.get_macro_data(coin)
+                _kline_data = inference.get("kline_data") or []
+                _df = self._kline_to_dataframe(_kline_data) if _kline_data else None
+                _verdict = _wd.run(coin, _df, _macro_data)
+                inference["washout_verdict"] = _verdict
+        except Exception as _wde:
+            self._log(
+                f"[W5] {coin} washout detector 判定异常（fail-open）: {type(_wde).__name__}",
+                "DEBUG",
+            )
 
         # ★ RAG 热路径接入（FAIL-OPEN 只读，不干预决策）
         _rag_q = f"{coin} {direction} 风控 阈值 硬约束 SL TP 开仓"
@@ -17618,6 +17928,18 @@ class PollingTrader:
         except Exception as _strat_open_exc:
             self._log(
                 f"[策略独立开仓] 顶层异常（FAIL-OPEN 跳过不阻断）: {_strat_open_exc}",
+                "WARN",
+            )
+
+        # —— 洗盘入场信号扫描（W4 多因子增强，不依赖 BCRM2.0 推理）——
+        #   回测: enhanced classifier 24h 胜率 92.9%，平均收益 +1.68%
+        #   开关：ENABLE_WASHOUT_ENTRY_SIGNAL（默认 False，字节等价）
+        #   FAIL-OPEN：任何异常 → 跳过，不阻断主链路。
+        try:
+            self._washout_entry_signal_scan()
+        except Exception as _washout_entry_exc:
+            self._log(
+                f"[洗盘入场扫描] 顶层异常（FAIL-OPEN 跳过不阻断）: {_washout_entry_exc}",
                 "WARN",
             )
 

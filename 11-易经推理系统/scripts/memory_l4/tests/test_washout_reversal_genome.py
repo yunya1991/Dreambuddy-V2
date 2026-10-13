@@ -111,7 +111,7 @@ def _make_test_df(n: int = 30) -> pd.DataFrame:
     """构造简单测试用 DataFrame."""
     import numpy as np
     rng = np.random.RandomState(42)
-    idx = pd.date_range("2026-01-01", periods=n, freq="1H")
+    idx = pd.date_range("2026-01-01", periods=n, freq="1h")
     return pd.DataFrame({
         "open": rng.randn(n) + 100,
         "high": rng.randn(n) + 101,

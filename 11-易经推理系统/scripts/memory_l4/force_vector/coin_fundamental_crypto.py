@@ -1037,7 +1037,9 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
         #   E3 tvl_current/tvl_7d_ago     ← L1.active_addresses（按变量名复用）
         #   E4 fees_30d_avg/tvl           ← L1.miner_fees_30d/30 ÷ hashrate_THs（效率）
         l1_data = {}
-        if not protocol and coin_id:          # 是 L1 链，尝试 L1 链上指标
+        # 仅 L1 板块币种才走 L1 链上指标代理（BTC/ETH/SOL/BNB/ADA/ZEC/AVAX/NEAR）。
+        # DOGE/SHIB 等 Meme 币虽有 coingecko_id 但无 protocol，不应误走 L1 分支。
+        if not protocol and coin_id and _get_sector_of_coin(coin) == "L1":
             l1_data = _fetch_L1_chain_metrics(coin, db_path)
             if l1_data:
                 # 同构替换 fees/tvl：后续原计算流程不必分支

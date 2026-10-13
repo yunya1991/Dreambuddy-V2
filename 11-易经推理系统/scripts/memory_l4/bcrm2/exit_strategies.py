@@ -17,6 +17,11 @@ from typing import Any, Dict, List, Optional
 
 from .exit_manager import ExitContext, ExitDecision, ExitStrategy
 
+try:
+    from .washout_detector import WashoutLabel
+except Exception:  # FAIL-OPEN: washout 模块不可用时降级
+    WashoutLabel = None
+
 
 # ================================================================
 # P3EarlyExitStrategy (priority=10)
@@ -40,9 +45,11 @@ class P3EarlyExitStrategy(ExitStrategy):
         self,
         exit_confirm_required: int = 2,
         protected_p3_min_loss_pct: float = -0.08,
+        washout_detector: Optional[Any] = None,
     ):
         self.exit_confirm_required = exit_confirm_required
         self.protected_p3_min_loss_pct = protected_p3_min_loss_pct
+        self.washout_detector = washout_detector
         # 每币种累计确认计数
         self._confirm_counts: Dict[str, int] = {}
 
@@ -68,12 +75,104 @@ class P3EarlyExitStrategy(ExitStrategy):
                 reason=f"p3_early_exit_pending:{cnt}/{self.exit_confirm_required}",
             )
 
+        # ★ Layer 2: 洗盘感知抑制 (HC-20/HC-21)
+        #   仅当 verdict.label == WASHOUT 且 confidence >= 0.80 时抑制 P3 退出；
+        #   检查异常或 detector=None 时走原 P3 逻辑 (FAIL-OPEN)。
+        try:
+            if self.washout_detector is not None and WashoutLabel is not None:
+                verdict = self.washout_detector.run(ctx.coin)
+                if (
+                    verdict is not None
+                    and getattr(verdict, "label", None) == WashoutLabel.WASHOUT
+                    and float(getattr(verdict, "confidence", 0.0)) >= 0.80
+                ):
+                    self._confirm_counts.pop(ctx.coin, None)
+                    return ExitDecision(
+                        action="hold",
+                        reason="p3_early_exit_suppressed_by_washout",
+                    )
+        except Exception:
+            # HC-21: 洗盘检查异常 → FAIL-OPEN 走原 P3 逻辑
+            pass
+
         # 确认通过 → force_close
         self._confirm_counts.pop(ctx.coin, None)
         return ExitDecision(
             action="force_close",
             reason="p3_early_exit",
         )
+
+
+# ================================================================
+# WashoutHoldStrategy (priority=15) — Layer 3 洗盘持有防御
+# Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §7.3
+#   WASHOUT → hold（避免误止损出局）
+#   WEAKNESS + conf≥0.70 → force_close（真弱势加速离场）
+#   UNKNOWN / WEAKNESS低置信 → pass（让后续策略决策）
+# HC-22: detector=None → pass（开关关断时字节等价）
+# FAIL-OPEN: 异常 → pass
+# ================================================================
+class WashoutHoldStrategy(ExitStrategy):
+    """洗盘持有策略（Layer 3）。
+
+    三层防御中最后一道防线：
+      - washout 判定 → 持有不动（hold），给行情恢复时间
+      - 真弱势 + 高置信 → 强制离场（force_close）
+      - 不确定 → 放行（pass），由后续策略决策
+    """
+
+    name = "washout_hold"
+    priority = 15
+
+    # 真弱势加速离场的置信度门槛
+    WEAKNESS_FORCE_CLOSE_CONF = 0.70
+    # 洗盘放宽窗口最长 48h（HC-18）
+    WASHOUT_TIMEOUT_HOURS = 48.0
+
+    def __init__(self, washout_detector: Optional[Any] = None):
+        self.washout_detector = washout_detector
+
+    def evaluate(self, ctx: ExitContext) -> ExitDecision:
+        # HC-22: detector 为 None → pass（开关关断，链路字节等价）
+        if self.washout_detector is None:
+            return ExitDecision.pass_()
+
+        try:
+            verdict = self.washout_detector.run(ctx.coin)
+            if verdict is None:
+                return ExitDecision.pass_()
+
+            label = getattr(verdict, "label", None)
+            confidence = float(getattr(verdict, "confidence", 0.0))
+
+            # WASHOUT → 持有（避免洗盘出局）
+            if WashoutLabel is not None and label == WashoutLabel.WASHOUT:
+                age = float(getattr(ctx, "age_hours", 0.0) or 0.0)
+                if age > self.WASHOUT_TIMEOUT_HOURS:
+                    return ExitDecision(
+                        action="hold",
+                        reason=f"washout_hold_timeout_48h:{age:.1f}h",
+                    )
+                return ExitDecision(
+                    action="hold",
+                    reason="washout_hold",
+                )
+
+            # WEAKNESS + 高置信 → 加速离场
+            if WashoutLabel is not None and label == WashoutLabel.WEAKNESS:
+                if confidence >= self.WEAKNESS_FORCE_CLOSE_CONF:
+                    return ExitDecision(
+                        action="force_close",
+                        reason="washout_weakness_force_close",
+                    )
+                return ExitDecision.pass_()
+
+            # UNKNOWN → pass
+            return ExitDecision.pass_()
+
+        except Exception:
+            # FAIL-OPEN: 异常不阻断，放行后续策略
+            return ExitDecision.pass_()
 
 
 # ================================================================
@@ -465,4 +564,65 @@ class EvAdjustStrategy(ExitStrategy):
             )
 
         # T3 NORMAL: 按原计划持有
+        return ExitDecision.pass_()
+
+
+# ================================================================
+# TrailingStopStrategy (priority=70) — 移动止损（peak ratchet）
+#   盈利达 trailing_arm_pct 后启动 trailing，peak 只升不降；
+#   回落至 break_even_pct 以下或亏损区 → pass（交给 SL 兜底）。
+#   per-coin peak 隔离，reset_peak 支持平仓后重置。
+# ================================================================
+class TrailingStopStrategy(ExitStrategy):
+    """移动止损策略（peak ratchet 模式）。"""
+
+    name = "trailing_stop"
+    priority = 70
+
+    def __init__(
+        self,
+        break_even_pct: float = 0.02,
+        trailing_arm_pct: float = 0.04,
+        trailing_retrace_pct: float = 0.015,
+    ):
+        self.break_even_pct = break_even_pct
+        self.trailing_arm_pct = trailing_arm_pct
+        self.trailing_retrace_pct = trailing_retrace_pct
+        # per-coin peak upl（只升不降的 ratchet）
+        self._peak_upl: Dict[str, float] = {}
+
+    def reset_peak(self, coin: str) -> None:
+        """平仓后重置某币种 peak（重开仓不继承旧 peak）。"""
+        self._peak_upl.pop(coin, None)
+
+    def evaluate(self, ctx: ExitContext) -> ExitDecision:
+        coin = ctx.coin
+        upl = float(ctx.pos_info.get("upl_ratio", 0.0))
+
+        # 亏损区 → pass（交给 SL 兜底，trailing 不干预）
+        if upl <= 0:
+            return ExitDecision.pass_()
+
+        # peak ratchet：只升不降
+        prev_peak = self._peak_upl.get(coin, 0.0)
+        peak = max(prev_peak, upl)
+        self._peak_upl[coin] = peak
+
+        # 已 arm（peak 达到 trailing 门槛）且仍盈利 → trailing 模式
+        if peak >= self.trailing_arm_pct:
+            return ExitDecision(
+                action="adjust_sl_tp",
+                reason="trailing_stop",
+                params={"mode": "trailing", "peak": peak},
+            )
+
+        # 未 arm 但达到 break_even → 保本模式
+        if upl >= self.break_even_pct:
+            return ExitDecision(
+                action="adjust_sl_tp",
+                reason="break_even",
+                params={"mode": "break_even"},
+            )
+
+        # 盈利但未达 break_even → pass
         return ExitDecision.pass_()

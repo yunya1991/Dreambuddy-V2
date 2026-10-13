@@ -1,0 +1,23 @@
+{
+  "overall_score": 0.197,
+  "dimension_scores": {
+    "file_size": 1.0,
+    "known_gaps": 0.5,
+    "git_evolution": 0.9091
+  },
+  "triggered_windows": [
+    "refactor:file_size:/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution"
+  ],
+  "refactor_plan": [
+    {
+      "dimension": "file_size",
+      "target": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution",
+      "score": 1.0,
+      "action": "拆分",
+      "priority": "P0"
+    }
+  ],
+  "health_level": "critical",
+  "confidence": 0.75,
+  "known_gaps": []
+}

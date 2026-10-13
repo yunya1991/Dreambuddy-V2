@@ -16,7 +16,7 @@ import uuid
 import fcntl
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
 
@@ -82,6 +82,18 @@ class TradeRecord:
     #   "bcrm"  : 非 BDSM 池币种（≤5 仓），纯 BCRM 推理
     #   ""      : 未知/外部策略来源（计数时忽略不计入两子池）
     source_tag: str = ""
+    # — 仓位字段（2026-09-15 OKB PnL Bug 修复）—
+    #   position_qty: OKX 实际成交数量（张/币），用于精确 PnL 计算
+    #   position_usdt: 名义仓位价值（USDT），upl 计算优先使用
+    #   margin_usdt: 占用保证金（USDT）
+    #   leverage: 杠杆倍数
+    position_qty: float = 0.0
+    position_usdt: float = 0.0
+    margin_usdt: float = 0.0
+    leverage: int = 1
+    # — W5 洗盘判定三层防御 — 开仓时 WashoutDetector 输出快照（Layer 1/2/3 消费）
+    #   None 表示未启用洗盘判定或判定结果为 UNKNOWN
+    washout_verdict: Optional[Any] = None
 
 
 @dataclass
@@ -1093,8 +1105,8 @@ class PositionTracker:
     def __init__(self):
         self.positions_dir = memory_l4_dir() / "open_positions"
         self.positions_dir.mkdir(parents=True, exist_ok=True)
-        # PID 隔离：多实例并发写入 last_close_info.json 会互相覆盖，
-        # 每个进程使用独立的 last_close_info_{pid}.json 避免竞态
+        # 双写策略：PID 隔离文件避免多实例竞态；共享文件 last_close_info.json
+        # 作为跨重启的权威冷却期数据源（_save_last_close_info 同时写两者）
         self._pid = os.getpid()
         self.open_positions: Dict[str, TradeRecord] = {}
         # 统一冷静期：{inst_id: {pos_side, close_ts, exit_reason}}
@@ -1104,18 +1116,18 @@ class PositionTracker:
 
     # ── 统一冷静期：持久化 ────────────────────────────────────────────────
     def _last_close_file(self):
-        # PID 隔离文件名，避免多 polling_trader 实例互相覆盖冷却记录
+        # PID 隔离文件名，避免多 polling_trader 实例运行时互相覆盖冷却记录
         return self.positions_dir / f"last_close_info_{self._pid}.json"
 
     def _legacy_last_close_file(self):
-        # 旧版共享文件（兼容迁移）
+        # 共享文件：跨重启/跨进程的权威冷却期数据源（每次保存同步写入）
         return self.positions_dir / "last_close_info.json"
 
     def _load_last_close_info(self):
         """从磁盘加载最后平仓记录（用于跨重启保留冷却期）
 
-        优先加载 PID 隔离文件；若不存在，尝试从旧版共享文件迁移
-        （迁移后写入新文件，旧文件保留供其他实例使用）。
+        优先加载 PID 隔离文件；若不存在，从共享文件 last_close_info.json
+        加载（该文件由 _save_last_close_info 双写保证含最新平仓记录）。
         """
         f = self._last_close_file()
         if f.exists():
@@ -1125,23 +1137,40 @@ class PositionTracker:
                 return
             except Exception:
                 self.last_close_info = {}
-        # 迁移：从旧版共享文件加载（只读，不删除旧文件）
-        legacy = self._legacy_last_close_file()
-        if legacy.exists():
+        # 从共享文件加载（跨重启权威源）
+        shared = self._legacy_last_close_file()
+        if shared.exists():
             try:
-                with open(legacy, "r", encoding="utf-8") as fp:
+                with open(shared, "r", encoding="utf-8") as fp:
                     self.last_close_info = json.load(fp)
-                # 立即写入 PID 隔离文件，后续不再依赖共享文件
+                # 立即写入 PID 隔离文件，后续运行时不再依赖共享文件
                 self._save_last_close_info()
             except Exception:
                 self.last_close_info = {}
 
     def _save_last_close_info(self):
-        """保存最后平仓记录到磁盘（PID 隔离文件）"""
+        """保存最后平仓记录到磁盘
+
+        同时写入 PID 隔离文件（运行时无竞态）和共享文件（跨重启持久化）。
+        共享文件作为跨进程/跨重启的权威冷却期数据源，确保交易器重启后
+        新进程能读到上一进程的平仓冷却记录，避免"止盈→重启→立即开仓"
+        绕过 8h 冷静期。
+        """
+        payload = json.dumps(self.last_close_info, ensure_ascii=False, indent=2)
+        # 1) PID 隔离文件（运行时主用，避免多实例互相覆盖）
         f = self._last_close_file()
         try:
             with open(f, "w", encoding="utf-8") as fp:
-                json.dump(self.last_close_info, fp, ensure_ascii=False, indent=2)
+                fp.write(payload)
+        except Exception:
+            pass
+        # 2) 共享文件（跨重启持久化，原子写入防止半写损坏）
+        shared = self._legacy_last_close_file()
+        try:
+            tmp = shared.with_suffix(".json.tmp")
+            with open(tmp, "w", encoding="utf-8") as fp:
+                fp.write(payload)
+            os.replace(tmp, shared)
         except Exception:
             pass
 
@@ -1234,7 +1263,11 @@ class PositionTracker:
                       is_trial: bool = False,
                       score_consensus: float = 0.0,
                       gate_base_threshold: float = 0.40,
-                      source_tag: str = "") -> TradeRecord:
+                      source_tag: str = "",
+                      position_qty: float = 0.0,
+                      position_usdt: float = 0.0,
+                      margin_usdt: float = 0.0,
+                      leverage: int = 1) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
         rec = TradeRecord(
@@ -1261,6 +1294,10 @@ class PositionTracker:
             score_consensus=float(score_consensus),
             gate_base_threshold=float(gate_base_threshold),
             source_tag=source_tag,
+            position_qty=float(position_qty),
+            position_usdt=float(position_usdt),
+            margin_usdt=float(margin_usdt),
+            leverage=int(leverage),
         )
         self.open_positions[inst_id] = rec
         self._save_open_position(inst_id)

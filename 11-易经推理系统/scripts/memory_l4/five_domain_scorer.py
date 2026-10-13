@@ -227,6 +227,9 @@ class FiveDomainHeuristicScorer:
             "re_freeze_score": 58,  # 解冻后回落门槛：<58 才重新冻回（2分缓冲，避免反复切）
         }
         self._thaw_consecutive = {c: 0 for c in CLASSES}  # 连续达标日计数器
+        # ★ DAO veto 冻结态（每类资产独立）。True=该类资产被 DAO 维度冻结（禁止开仓）。
+        #   滞回带内不切换，由 score_and_decide 中的滞回逻辑维护。
+        self._dao_veto_frozen = {c: False for c in CLASSES}
 
     # =================================================================
     # 对外：score_and_decide —— 日级打分+决策 → 返回 FiveDomainState
@@ -387,12 +390,25 @@ class FiveDomainHeuristicScorer:
             state.five_scores[cls] = dict(s)
 
             # ===== 不等式0：维度否决旗标（影响 position_mult / forced_close / veto） =====
+            # ★ dao_jv_fou_jue 采用双阈值滞回（防 dao=39/40 抖动）：
+            #   冻结门槛 dao_freeze=38：dao<38 → 立即冻结
+            #   解冻门槛 dao_thaw=43：dao>43 → 立即解冻
+            #   滞回区间 [38,43]：维持上一轮 self._dao_veto_frozen[cls]
+            _dao_score = s["dao"]
+            if _dao_score < 38:
+                _dao_jv = True
+                self._dao_veto_frozen[cls] = True
+            elif _dao_score > 43:
+                _dao_jv = False
+                self._dao_veto_frozen[cls] = False
+            else:
+                _dao_jv = self._dao_veto_frozen.get(cls, False)
             veto = state.dimension_veto_flags[cls] = {
                 "dao_xiao_40":     (s["dao"]   < 40),
                 "jiang_xiao_40":   (s["jiang"] < 40),
                 "fa_xiao_40":      (s["fa"]    < 40),
                 "di_tian_shuang_cha": (s["di"] < 40 and s["tian"] < 40),
-                "dao_jv_fou_jue":  (s["dao"]   < 40),
+                "dao_jv_fou_jue":  _dao_jv,
             }
 
             # ===== 不等式1：war_state（Q1+Q6：是否允许交易+空仓等待）=====

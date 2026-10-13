@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 import scripts.memory_l4.trading_utils as tu
+from unittest.mock import patch
 from scripts.memory_l4.bcrm2.exit_manager import (
     ExitManager, ExitContext, ExitDecision,
 )
@@ -128,12 +129,13 @@ def test_s3_multi_coin():
                 horizons.append({"k_bar": k, "confidence": c,
                                  "direction": best_dir, "expected_roi_pct": 0.0})
             return {"horizons": horizons}
-        tu.RiskManager.predict_multi_horizon = staticmethod(_fake_pred)
-        r = t._recommend_exit_bars(
-            coin=coin, pos_side=pos_side, held_k_bar=held,
-            inference={"confidence": 0.8, "direction": "UP", "price": 100.0,
-                       "volatility": 0.03, "pentagon_scores": {}},
-        )
+        # 使用 patch 确保 predict_multi_horizon 在测试后恢复（避免测试隔离泄漏）
+        with patch.object(tu.RiskManager, "predict_multi_horizon", staticmethod(_fake_pred)):
+            r = t._recommend_exit_bars(
+                coin=coin, pos_side=pos_side, held_k_bar=held,
+                inference={"confidence": 0.8, "direction": "UP", "price": 100.0,
+                           "volatility": 0.03, "pentagon_scores": {}},
+            )
         return r["recommended_action"]
 
     cases = [

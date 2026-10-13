@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-12T11:40:51.497315+00:00",
+  "updated_at": "2026-10-13T10:57:33.512382+00:00",
   "scanner_version": "1.0",
   "total_coins": 9,
   "success_count": 9,
@@ -103,19 +103,21 @@
         ]
       },
       "4h": {
-        "signal": "SELL",
-        "confidence": 55,
+        "signal": "HOLD",
+        "confidence": 0,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "SELL",
-            "weight": 0.55
+            "signal": "HOLD",
+            "weight": 0.55,
+            "error": "no_signal"
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "BUY",
-            "weight": 0.45
+            "signal": "HOLD",
+            "weight": 0.45,
+            "error": "no_signal"
           }
         ]
       }
@@ -141,13 +143,13 @@
         ]
       },
       "4h": {
-        "signal": "BUY",
-        "confidence": 100,
+        "signal": "SELL",
+        "confidence": 55,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "BUY",
+            "signal": "SELL",
             "weight": 0.55
           },
           {
@@ -179,19 +181,20 @@
         ]
       },
       "4h": {
-        "signal": "BUY",
-        "confidence": 100,
+        "signal": "SELL",
+        "confidence": 55,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "BUY",
+            "signal": "SELL",
             "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "BUY",
-            "weight": 0.45
+            "signal": "HOLD",
+            "weight": 0.45,
+            "error": "no_signal"
           }
         ]
       }
@@ -296,19 +299,20 @@
         ]
       },
       "4h": {
-        "signal": "BUY",
-        "confidence": 100,
+        "signal": "SELL",
+        "confidence": 55,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "BUY",
+            "signal": "SELL",
             "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "BUY",
-            "weight": 0.45
+            "signal": "HOLD",
+            "weight": 0.45,
+            "error": "no_signal"
           }
         ]
       }
@@ -334,19 +338,21 @@
         ]
       },
       "4h": {
-        "signal": "BUY",
-        "confidence": 100,
+        "signal": "HOLD",
+        "confidence": 0,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "BUY",
-            "weight": 0.55
+            "signal": "HOLD",
+            "weight": 0.55,
+            "error": "no_signal"
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "BUY",
-            "weight": 0.45
+            "signal": "HOLD",
+            "weight": 0.45,
+            "error": "no_signal"
           }
         ]
       }

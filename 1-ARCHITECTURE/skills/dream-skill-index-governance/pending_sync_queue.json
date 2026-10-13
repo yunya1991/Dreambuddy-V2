@@ -39,6 +39,11 @@
       "path": "34-前端应用训练系统/SPEC-v0.6-semantic-embedding.md",
       "added_at": "2026-10-12T11:40:54.967785+00:00",
       "action": "sync_doc_index"
+    },
+    {
+      "path": "34-前端应用训练系统/SPEC-DSH-训练数据源-v0.5-6TRADING.md",
+      "added_at": "2026-10-12T15:27:57.863187+00:00",
+      "action": "sync_doc_index"
     }
   ],
   "processed": [

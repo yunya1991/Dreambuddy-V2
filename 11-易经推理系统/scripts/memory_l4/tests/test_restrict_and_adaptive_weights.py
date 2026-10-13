@@ -130,11 +130,11 @@ class TestRestrictStateMachine:
         assert state.war_state["crypto_usdt"] == "RESTRICT"
 
     def test_dao_veto_still_freeze(self):
-        """dao=38<40 → FREEZE（回归：道否决优先级不变）。"""
+        """dao=37<38 → FREEZE（回归：道否决优先级不变，滞回冻结门槛=38）。"""
         s = _make_scorer()
         _set_prev_ws(s, "crypto_usdt", "ALLOW")
         scores = _scores_all(60)
-        scores["crypto_usdt"]["dao"] = 38
+        scores["crypto_usdt"]["dao"] = 37
         state = s.score_and_decide(raw_scores_by_class=scores)
         assert state.war_state["crypto_usdt"] == "FREEZE"
 

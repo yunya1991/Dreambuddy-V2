@@ -218,12 +218,14 @@ def query_valuation_percentile(coin: str, db_path: Optional[str] = None) -> floa
         coin: 币种符号（BTC/ETH/...）
         db_path: 可选，18-DB 路径（fallback 用）；DAL 路径用 DEFAULT_DAL_DB_PATH
     """
-    # 优先 19-DAL
-    dal_pct = _query_via_dal(coin)
-    if dal_pct != _NEUTRAL_PERCENTILE:
-        return dal_pct
+    # 优先 19-DAL（仅当调用方未显式指定 db_path 时才查 DAL）
+    # 若显式传入 db_path，调用方意图是只查该数据源 → 跳过 DAL，直接走 18-DB
+    if db_path is None:
+        dal_pct = _query_via_dal(coin)
+        if dal_pct != _NEUTRAL_PERCENTILE:
+            return dal_pct
 
-    # DAL 中性 → fallback 18-DB
+    # DAL 中性 / 显式指定 db_path → fallback 18-DB
     db_pct = _query_via_18db(coin, db_path)
     if db_pct != _NEUTRAL_PERCENTILE:
         return db_pct

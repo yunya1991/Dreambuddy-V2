@@ -253,16 +253,16 @@ class TestPerClassIndependence:
         return scorer, scorer._apply_decision_rules(cls_overrides)
 
     def test_9_crypto_freezes_but_us_stock_allowed_independent(self):
-        """TDD #9：crypto dao=38(<40)→FREEZE；美股dao=85,total=88→ALLOW + cap=1.0 + breakout=True。"""
+        """TDD #9：crypto dao=37(<38滞回冻结门槛)→FREEZE；美股dao=85,total=88→ALLOW + cap=1.0 + breakout=True。"""
         overrides = {
-            "crypto_usdt":     {"dao": 38, "tian": 55, "di": 55, "jiang": 50, "fa": 70},
+            "crypto_usdt":     {"dao": 37, "tian": 55, "di": 55, "jiang": 50, "fa": 70},
             "us_stock":        {"dao": 85, "tian": 90, "di": 90, "jiang": 88, "fa": 80},
             "precious_metal":  {"dao": 50, "tian": 50, "di": 50, "jiang": 50, "fa": 70},
         }
         _scorer, state = self._build_scorer_with_override(overrides)
 
         assert state.war_state["crypto_usdt"] == "FREEZE", (
-            f"crypto 应该FREEZE（dao=38<40 veto），实际={state.war_state['crypto_usdt']}"
+            f"crypto 应该FREEZE（dao=37<38 veto），实际={state.war_state['crypto_usdt']}"
         )
         assert state.war_state["us_stock"] == "ALLOW", (
             f"美股 应该ALLOW（总分88），实际={state.war_state['us_stock']}"

@@ -83,6 +83,7 @@ class EvolutionEngine:
         self._feedback_collector = None  # 延迟初始化
         self._trading_evaluator = None   # 交易分析评估器（延迟初始化）
         self._evaluation_memory = None   # 评估记忆系统（延迟初始化）
+        self._washout_reversal_genome = None  # 洗盘反转基因组（延迟初始化，HC-G5 默认 enable=False）
 
     def get_feedback_collector(self):
         """获取执行反馈收集器（延迟初始化）"""
@@ -93,6 +94,21 @@ class EvolutionEngine:
             memory.load()
             self._feedback_collector = ExecutionFeedbackCollector(memory)
         return self._feedback_collector
+
+    def get_washout_reversal_genome(self):
+        """获取洗盘反转基因组（延迟初始化，HC-G5 默认 enable=False 降级）。
+
+        默认 enable=False → 基因组存在但不激活，链路字节等价。
+        导入异常 → 返回 None。
+        """
+        if self._washout_reversal_genome is None:
+            try:
+                from dreamos.evolution.washout_reversal_genome import WashoutReversalGenome
+                self._washout_reversal_genome = WashoutReversalGenome(enable=False)
+            except Exception as _e:
+                logger.warning(f"洗盘反转基因组初始化失败（降级为None）: {_e}")
+                self._washout_reversal_genome = None
+        return self._washout_reversal_genome
 
     def evolve(self,
                history: Optional[List[HistoryEntry]] = None,
@@ -124,6 +140,14 @@ class EvolutionEngine:
 
         # 5. 编排优化（新增：orchestration_optimization 触发源）
         orchestration_updates = self._check_orchestration_optimization()
+
+        # 6. 洗盘反转基因组进化（HC-G5：默认 enable=False 降级；FAIL-OPEN 异常不阻塞）
+        try:
+            _genome = self.get_washout_reversal_genome()
+            if _genome is not None and getattr(_genome, "enable", False):
+                _genome.evolve()
+        except Exception as _g_e:
+            logger.warning(f"洗盘反转基因组进化异常（fail-open不阻塞）: {_g_e}")
 
         return EvolutionReport(
             cycles_analyzed=len(entries),

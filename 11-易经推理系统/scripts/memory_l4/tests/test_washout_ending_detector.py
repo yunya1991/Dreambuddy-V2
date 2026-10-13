@@ -87,7 +87,7 @@ def _make_df(
         stabilize_close_above_prev: 最后 1 根收盘>前根收盘
     """
     rng = np.random.RandomState(seed)
-    idx = pd.date_range("2026-01-01", periods=n, freq="1H")
+    idx = pd.date_range("2026-01-01", periods=n, freq="1h")
 
     if rsi_oversold:
         # 连续下跌使 RSI<35

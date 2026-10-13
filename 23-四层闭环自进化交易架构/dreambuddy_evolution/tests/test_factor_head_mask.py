@@ -9,6 +9,10 @@ from __future__ import annotations
 import pytest
 import torch
 
+# 隔离运行时产物 factor_head_mask_override.json（P2-1b 逆向推导微调写入），
+# 保证本测试只验证"基础 mask 构建"逻辑，不受运行时 override 污染。
+_NONEXISTENT_OVERRIDE_PATH = "/tmp/_factor_head_mask_override_test_isolation_nonexistent.json"
+
 
 class TestBuildFactorHeadMask:
     """测试维度对齐 mask 构建。"""
@@ -26,7 +30,7 @@ class TestBuildFactorHeadMask:
             build_factor_head_mask,
         )
 
-        mask = build_factor_head_mask()
+        mask = build_factor_head_mask(override_path=_NONEXISTENT_OVERRIDE_PATH)
         n_factors = len(CROSS_ATTENTION_FACTOR_METRICS)
         # 维度数 = unique dimensions in order
         dims = []
@@ -43,7 +47,7 @@ class TestBuildFactorHeadMask:
             build_factor_head_mask,
         )
 
-        mask = build_factor_head_mask()
+        mask = build_factor_head_mask(override_path=_NONEXISTENT_OVERRIDE_PATH)
         # 只包含 0 和 -inf
         zeros = (mask == 0.0)
         neg_inf = torch.isneginf(mask)
@@ -56,7 +60,7 @@ class TestBuildFactorHeadMask:
             build_factor_head_mask,
         )
 
-        mask = build_factor_head_mask()
+        mask = build_factor_head_mask(override_path=_NONEXISTENT_OVERRIDE_PATH)
         n_factors = len(CROSS_ATTENTION_FACTOR_METRICS)
         for f in range(n_factors):
             n_unmasked = (mask[:, f] == 0.0).sum().item()
@@ -69,7 +73,7 @@ class TestBuildFactorHeadMask:
             build_factor_head_mask,
         )
 
-        mask = build_factor_head_mask()
+        mask = build_factor_head_mask(override_path=_NONEXISTENT_OVERRIDE_PATH)
         dims = []
         for entry in CROSS_ATTENTION_FACTOR_METRICS:
             d = entry[3] if len(entry) > 3 else None
