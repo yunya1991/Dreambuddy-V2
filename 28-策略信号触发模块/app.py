@@ -338,6 +338,31 @@ def webhook_events():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/api/v1/monitor/watchdog", methods=["POST"])
+def monitor_watchdog():
+    """运行策略性能监控 watchdog，自动触发降级回滚。
+
+    扫描近期成交事件，对胜率低于阈值或连续亏损的策略调用 M27 gate/rollback。
+    """
+    try:
+        from signal_trigger.monitor.watchdog import run_watchdog
+        result = run_watchdog()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/v1/monitor/strategy/<strategy_name>", methods=["GET"])
+def monitor_strategy_performance(strategy_name: str):
+    """查询指定策略的近期性能表现。"""
+    try:
+        from signal_trigger.monitor.watchdog import analyze_strategy_performance
+        result = analyze_strategy_performance(strategy_name)
+        return jsonify({"ok": True, **result})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 # ---------------------------------------------------------------------------
 # P3: 回测辅助 API（show-trades / download-data / plot-profit）
 # ---------------------------------------------------------------------------

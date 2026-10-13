@@ -383,6 +383,45 @@ def gate_evaluate():
     })
 
 
+@app.route("/api/v1/gate/rollback", methods=["POST"])
+def gate_rollback():
+    """策略自动降级回滚（由 M28 watchdog 触发）。
+
+    记录 rolled_back 审计事件，将策略生命周期标记为 rolled_back。
+    需 admin token。
+    """
+    if not _require_admin():
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    body = request.get_json(force=True) or {}
+    strategy_id = str(body.get("strategy_id") or "").strip()
+    reason = str(body.get("reason") or "auto_degradation").strip()
+    actor = str(body.get("actor") or "m28_watchdog").strip()
+    if not strategy_id:
+        return jsonify({"ok": False, "error": "strategy_id required"}), 400
+
+    trace_id = uuid.uuid4().hex
+    event = strategy_factory_audit(
+        trace_id=trace_id,
+        stage="execution",
+        action="rollback",
+        actor=actor,
+        result={
+            "strategy_id": strategy_id,
+            "reason": reason,
+            "rolled_back": True,
+        },
+        strategy_id=strategy_id,
+    )
+    return jsonify({
+        "ok": True,
+        "strategy_id": strategy_id,
+        "rolled_back": True,
+        "reason": reason,
+        "trace_id": trace_id,
+        "event": event,
+    })
+
+
 # ---------------------------------------------------------------------------
 # 配置 API
 # ---------------------------------------------------------------------------

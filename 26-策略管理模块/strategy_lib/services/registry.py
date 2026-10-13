@@ -187,6 +187,11 @@ def _strategy_registry_db_migrate_from_json() -> None:
         p = _strategy_registry_path()
         if not p.exists() or not p.is_file():
             return
+        # 仅在 SQLite 为空时迁移，避免每次 init 都用 JSON 覆盖已有数据
+        with contextlib.closing(_strategy_registry_db_conn()) as conn:
+            row = conn.execute("SELECT COUNT(*) AS c FROM registry_entries").fetchone()
+            if row and int(row[0]) > 0:
+                return
         reg = _strategy_registry_load_json_only()
         entries = reg.get("entries") if isinstance(reg.get("entries"), dict) else {}
         if not entries:
@@ -686,8 +691,33 @@ def _strategy_lifecycle_transition_ok(from_state: Any, to_state: Any) -> bool:
 # S3 后端（可选，fail-open 设计）
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# S3 后端 + 本地对象存储（默认启用本地，S3 可选）
+# ---------------------------------------------------------------------------
+
+def _local_object_store_dir() -> Path:
+    """本地对象存储根目录（默认 bundle 仓库，无需配置）。"""
+    d = _REGISTRY_DATA_DIR / "object_store"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _local_bundle_path(strategy_id: str, source_zip: str) -> Path:
+    """本地对象存储中 bundle 的路径（与 S3 key 结构一致）。"""
+    sid = str(strategy_id or "").strip().replace("/", "_")
+    z = str(source_zip or "").strip().replace("/", "_")
+    d = _local_object_store_dir() / "bundles" / sid
+    d.mkdir(parents=True, exist_ok=True)
+    return d / z
+
+
+def _local_registry_json_path() -> Path:
+    """本地对象存储中 registry.json 的路径。"""
+    return _local_object_store_dir() / "registry.json"
+
+
 def _strategy_registry_s3_config() -> Dict[str, Any]:
-    """读取 S3 配置。未配置时返回空 dict（S3 禁用）。"""
+    """读取 S3 配置。未配置时返回空 dict（S3 禁用，自动降级到本地对象存储）。"""
     cfg = _config_get() or {}
     s3_cfg = cfg.get("strategy_registry_s3") if isinstance(cfg.get("strategy_registry_s3"), dict) else {}
     bucket = str(s3_cfg.get("bucket") or "").strip()
@@ -704,7 +734,8 @@ def _strategy_registry_s3_config() -> Dict[str, Any]:
 
 
 def _strategy_registry_s3_enabled() -> bool:
-    return bool(_strategy_registry_s3_config())
+    """对象存储是否可用：S3 配置时用 S3，否则用本地对象存储（默认可用）。"""
+    return bool(_strategy_registry_s3_config()) or _local_object_store_dir().exists()
 
 
 def _s3_client():
@@ -736,53 +767,75 @@ def _s3_key(strategy_id: str, source_zip: str) -> str:
 
 
 def _strategy_bundle_upload_to_s3(strategy_id: str, source_zip: str, local_path: Path) -> bool:
-    """上传策略 bundle 到 S3。失败返回 False（不阻断本地流程）。"""
-    if not _strategy_registry_s3_enabled():
-        return False
+    """上传策略 bundle 到对象存储（S3 优先，未配置时用本地对象存储）。
+
+    失败返回 False（不阻断本地流程）。本地对象存储始终可用。
+    """
     if not local_path.exists() or not local_path.is_file():
         return False
-    s3 = _s3_client()
-    if s3 is None:
-        return False
-    cfg = _strategy_registry_s3_config()
+    # S3 已配置 → 走 S3
+    if _strategy_registry_s3_config():
+        s3 = _s3_client()
+        if s3 is None:
+            return False
+        cfg = _strategy_registry_s3_config()
+        try:
+            s3.upload_file(str(local_path), cfg["bucket"], _s3_key(strategy_id, source_zip))
+            return True
+        except Exception:
+            return False
+    # S3 未配置 → 本地对象存储（默认）
     try:
-        s3.upload_file(str(local_path), cfg["bucket"], _s3_key(strategy_id, source_zip))
+        import shutil
+        dest = _local_bundle_path(strategy_id, source_zip)
+        shutil.copy2(str(local_path), str(dest))
         return True
     except Exception:
         return False
 
 
 def _strategy_bundle_download_from_s3(strategy_id: str, source_zip: str) -> Optional[Path]:
-    """从 S3 下载策略 bundle 到本地缓存。失败返回 None。"""
-    if not _strategy_registry_s3_enabled():
-        return None
-    s3 = _s3_client()
-    if s3 is None:
-        return None
-    cfg = _strategy_registry_s3_config()
+    """从对象存储下载策略 bundle 到本地缓存（S3 优先，未配置时用本地对象存储）。
+
+    失败返回 None。
+    """
     bundles_dir = _strategy_bundles_dir()
     bundles_dir.mkdir(parents=True, exist_ok=True)
     local_path = bundles_dir / f"{str(strategy_id).replace('/', '_')}_{str(source_zip).replace('/', '_')}"
+    # S3 已配置 → 走 S3
+    if _strategy_registry_s3_config():
+        s3 = _s3_client()
+        if s3 is None:
+            return None
+        cfg = _strategy_registry_s3_config()
+        try:
+            s3.download_file(cfg["bucket"], _s3_key(strategy_id, source_zip), str(local_path))
+            return local_path
+        except Exception:
+            return None
+    # S3 未配置 → 本地对象存储
     try:
-        s3.download_file(cfg["bucket"], _s3_key(strategy_id, source_zip), str(local_path))
+        import shutil
+        src = _local_bundle_path(strategy_id, source_zip)
+        if not src.exists():
+            return None
+        shutil.copy2(str(src), str(local_path))
         return local_path
     except Exception:
         return None
 
 
 def _strategy_registry_sync_to_s3() -> Dict[str, Any]:
-    """将策略库元数据同步到 S3（registry.json + bundles）。
+    """将策略库元数据同步到对象存储（registry.json + bundles）。
+
+    S3 配置时同步到 S3，未配置时同步到本地对象存储（默认）。
 
     Returns:
         {"ok": bool, "synced_entries": int, "synced_bundles": int, "errors": [...]}
     """
     if not _strategy_registry_s3_enabled():
-        return {"ok": False, "error": "s3_not_configured", "synced_entries": 0, "synced_bundles": 0}
-    s3 = _s3_client()
-    if s3 is None:
-        return {"ok": False, "error": "s3_client_unavailable", "synced_entries": 0, "synced_bundles": 0}
+        return {"ok": False, "error": "object_store_unavailable", "synced_entries": 0, "synced_bundles": 0}
 
-    cfg = _strategy_registry_s3_config()
     reg = _strategy_registry_load()
     entries = reg.get("entries") if isinstance(reg.get("entries"), dict) else {}
     errors: List[str] = []
@@ -790,15 +843,30 @@ def _strategy_registry_sync_to_s3() -> Dict[str, Any]:
     synced_bundles = 0
 
     # 上传 registry.json
-    try:
-        import io
-        buf = io.BytesIO(json.dumps(reg, ensure_ascii=False).encode("utf-8"))
-        s3.upload_fileobj(buf, cfg["bucket"], f"{cfg['prefix']}registry.json")
-        synced_entries = len(entries)
-    except Exception as e:
-        errors.append(f"registry_json:{e}")
+    s3_configured = bool(_strategy_registry_s3_config())
+    if s3_configured:
+        s3 = _s3_client()
+        if s3 is None:
+            return {"ok": False, "error": "s3_client_unavailable", "synced_entries": 0, "synced_bundles": 0}
+        cfg = _strategy_registry_s3_config()
+        try:
+            import io
+            buf = io.BytesIO(json.dumps(reg, ensure_ascii=False).encode("utf-8"))
+            s3.upload_fileobj(buf, cfg["bucket"], f"{cfg['prefix']}registry.json")
+            synced_entries = len(entries)
+        except Exception as e:
+            errors.append(f"registry_json:{e}")
+    else:
+        # 本地对象存储
+        try:
+            _local_registry_json_path().write_text(
+                json.dumps(reg, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            synced_entries = len(entries)
+        except Exception as e:
+            errors.append(f"registry_json:{e}")
 
-    # 上传 bundles
+    # 上传 bundles（_strategy_bundle_upload_to_s3 已自动处理 S3/本地回退）
     bundles_dir = _strategy_bundles_dir()
     if bundles_dir.exists():
         for entry in entries.values():
@@ -824,20 +892,35 @@ def _strategy_registry_sync_to_s3() -> Dict[str, Any]:
 
 
 def _strategy_registry_sync_from_s3() -> Dict[str, Any]:
-    """从 S3 拉取策略库元数据并合并到本地。"""
+    """从对象存储拉取策略库元数据并合并到本地。
+
+    S3 配置时从 S3 拉取，未配置时从本地对象存储读取。
+    """
     if not _strategy_registry_s3_enabled():
-        return {"ok": False, "error": "s3_not_configured", "merged": 0}
-    s3 = _s3_client()
-    if s3 is None:
-        return {"ok": False, "error": "s3_client_unavailable", "merged": 0}
-    cfg = _strategy_registry_s3_config()
-    try:
-        import io
-        buf = io.BytesIO()
-        s3.download_fileobj(cfg["bucket"], f"{cfg['prefix']}registry.json", buf)
-        remote_reg = json.loads(buf.getvalue().decode("utf-8"))
-    except Exception as e:
-        return {"ok": False, "error": f"download_failed:{e}", "merged": 0}
+        return {"ok": False, "error": "object_store_unavailable", "merged": 0}
+
+    s3_configured = bool(_strategy_registry_s3_config())
+    if s3_configured:
+        s3 = _s3_client()
+        if s3 is None:
+            return {"ok": False, "error": "s3_client_unavailable", "merged": 0}
+        cfg = _strategy_registry_s3_config()
+        try:
+            import io
+            buf = io.BytesIO()
+            s3.download_fileobj(cfg["bucket"], f"{cfg['prefix']}registry.json", buf)
+            remote_reg = json.loads(buf.getvalue().decode("utf-8"))
+        except Exception as e:
+            return {"ok": False, "error": f"download_failed:{e}", "merged": 0}
+    else:
+        # 本地对象存储
+        local_path = _local_registry_json_path()
+        if not local_path.exists():
+            return {"ok": True, "merged": 0}
+        try:
+            remote_reg = json.loads(local_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            return {"ok": False, "error": f"read_local_failed:{e}", "merged": 0}
 
     local_reg = _strategy_registry_load()
     local_entries = local_reg.get("entries") if isinstance(local_reg.get("entries"), dict) else {}
@@ -896,4 +979,7 @@ __all__ = [
     "_strategy_bundle_download_from_s3",
     "_strategy_registry_sync_to_s3",
     "_strategy_registry_sync_from_s3",
+    "_local_object_store_dir",
+    "_local_bundle_path",
+    "_local_registry_json_path",
 ]

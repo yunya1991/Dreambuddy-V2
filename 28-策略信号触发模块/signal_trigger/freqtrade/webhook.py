@@ -30,8 +30,10 @@ from __future__ import annotations
 import json
 import os
 import time
+import urllib.request
+import urllib.error
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 # 28 模块数据根目录
 _MODULE_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -42,9 +44,82 @@ _WEBHOOK_DIR.mkdir(parents=True, exist_ok=True)
 # 事件日志文件
 _WEBHOOK_LOG = _WEBHOOK_DIR / "events.jsonl"
 
+# M26 策略管理模块地址（用于策略版本归因）
+_STRATEGY_LIB_BASE = os.environ.get("STRATEGY_LIB_BASE", "http://127.0.0.1:8093")
+
+# 归因缓存（策略名 -> 归因信息，60 秒）
+_ATTR_CACHE_TTL = 60.0
+_attr_cache: Dict[str, Any] = {"ts": 0.0, "data": {}}
+
 
 def _now_ms() -> int:
     return int(time.time() * 1000)
+
+
+def _http_get_json(url: str, timeout: float = 3.0) -> Optional[Dict[str, Any]]:
+    """发送 GET 请求并解析 JSON。失败返回 None（FAIL-OPEN）。"""
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status != 200:
+                return None
+            data = json.loads(resp.read().decode("utf-8"))
+            return data if isinstance(data, dict) else None
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError):
+        return None
+
+
+def _resolve_strategy_attribution(strategy_name: str) -> Dict[str, Any]:
+    """根据策略名从 M26 registry 解析策略版本归因信息。
+
+    Returns:
+        {"strategy_id": ..., "bundle_id": ..., "eval_policy_hash": ...}
+        查找失败时字段为 None（FAIL-OPEN）。
+    """
+    result: Dict[str, Any] = {
+        "strategy_id": None,
+        "bundle_id": None,
+        "eval_policy_hash": None,
+    }
+    if not strategy_name:
+        return result
+
+    # 缓存
+    now = time.time()
+    if now - _attr_cache["ts"] < _ATTR_CACHE_TTL:
+        cached = _attr_cache["data"].get(strategy_name)
+        if cached is not None:
+            return dict(cached)
+
+    url = f"{_STRATEGY_LIB_BASE}/api/v1/lib/strategies"
+    data = _http_get_json(url)
+    if not data or not data.get("ok"):
+        return result
+
+    entries = data.get("entries") or []
+    matched = None
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("strategy_id") == strategy_name:
+            matched = entry
+            break
+    if matched is None:
+        # 宽松匹配：strategy_id 包含 strategy_name
+        for entry in entries:
+            if isinstance(entry, dict) and strategy_name in str(entry.get("strategy_id") or ""):
+                matched = entry
+                break
+
+    if matched:
+        result["strategy_id"] = matched.get("strategy_id")
+        result["bundle_id"] = matched.get("bundle_id")
+        result["eval_policy_hash"] = matched.get("eval_policy_hash")
+
+    # 更新缓存
+    _attr_cache["data"][strategy_name] = dict(result)
+    _attr_cache["ts"] = now
+    return result
 
 
 def _append_event(event: Dict[str, Any]) -> None:
@@ -80,9 +155,11 @@ def parse_event(payload: Dict[str, Any]) -> Dict[str, Any]:
     action = str(payload.get("action") or "").strip().lower()
     price = payload.get("price")
     amount = payload.get("amount")
-    strategy = str(payload.get("strategy") or "").strip()
+    strategy = str(payload.get("strategy") or payload.get("strategy_name") or "").strip()
     tag = str(payload.get("tag") or payload.get("order_id") or "").strip()
     ts = payload.get("timestamp") or _now_ms()
+    profit = payload.get("profit")
+    pnl = payload.get("pnl") or payload.get("realized_profit")
 
     # 标准化事件类型
     if event_type in ("entry", "buy", "long", "enter_long"):
@@ -105,7 +182,9 @@ def parse_event(payload: Dict[str, Any]) -> Dict[str, Any]:
         "action": action,
         "price": (float(price) if price is not None else None),
         "amount": (float(amount) if amount is not None else None),
-        "strategy": strategy,
+        "profit": (float(profit) if profit is not None else None),
+        "pnl": (float(pnl) if pnl is not None else None),
+        "strategy_name": strategy,
         "tag": tag,
         "ts": int(ts) if ts is not None else _now_ms(),
         "raw": payload,
@@ -134,6 +213,10 @@ def route_event(event: Dict[str, Any]) -> Dict[str, Any]:
     if target is None:
         return {"ok": False, "error": f"unknown_event_type:{etype}"}
 
+    # 策略版本归因（FAIL-OPEN：M26 不可用时字段为 null）
+    strategy_name = str(event.get("strategy_name") or "")
+    attr = _resolve_strategy_attribution(strategy_name)
+
     # 记录到日志
     _append_event({
         "type": etype,
@@ -141,7 +224,12 @@ def route_event(event: Dict[str, Any]) -> Dict[str, Any]:
         "action": event.get("action"),
         "price": event.get("price"),
         "amount": event.get("amount"),
-        "strategy": event.get("strategy"),
+        "profit": event.get("profit"),
+        "pnl": event.get("pnl"),
+        "strategy_name": strategy_name,
+        "strategy_id": attr["strategy_id"],
+        "bundle_id": attr["bundle_id"],
+        "eval_policy_hash": attr["eval_policy_hash"],
         "tag": event.get("tag"),
         "ts": event.get("ts"),
         "route": target,

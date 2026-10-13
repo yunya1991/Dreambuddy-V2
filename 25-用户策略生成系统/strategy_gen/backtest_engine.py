@@ -50,6 +50,11 @@ _DEFAULT_FEE = 0.0015
 # 回测超时（秒）
 _BACKTEST_TIMEOUT = int(os.environ.get("FREQTRADE_BACKTEST_TIMEOUT", "600"))
 
+# M26 策略管理模块地址（回测结果回写 registry）
+_STRATEGY_LIB_BASE = os.environ.get("STRATEGY_LIB_BASE", "http://127.0.0.1:8093")
+# M26 admin token（upsert 策略元数据所需）
+_STRATEGY_LIB_ADMIN_TOKEN = os.environ.get("STRATEGY_LIB_ADMIN_TOKEN", "dev-admin-token-2026")
+
 
 # ---------------------------------------------------------------------------
 # 策略文件定位
@@ -311,6 +316,60 @@ def _extract_metrics_summary(result_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# 回测结果回写 M26 registry（P1: 回测结果与 registry entry 绑定）
+# ---------------------------------------------------------------------------
+
+def _publish_backtest_to_registry(
+    strategy_id: str,
+    source_zip: Optional[str],
+    metrics_summary: Dict[str, Any],
+    backtest_ts: int,
+) -> bool:
+    """将回测 metrics_summary 写入 M26 registry 的 backtest_spec 字段。
+
+    FAIL-OPEN：M26 不可用或 upsert 失败时返回 False，不阻断回测结果返回。
+
+    Args:
+        strategy_id: 策略 ID
+        source_zip: 策略来源 zip（None 时用 "*"）
+        metrics_summary: 回测指标摘要
+        backtest_ts: 回测时间戳（毫秒）
+
+    Returns:
+        True 表示成功写入 registry
+    """
+    import urllib.request
+    import urllib.error
+
+    try:
+        payload = {
+            "strategy_id": strategy_id,
+            "source_zip": source_zip or "*",
+            "backtest_spec": {
+                "metrics_summary": metrics_summary,
+                "backtest_ts": backtest_ts,
+                "trades": metrics_summary.get("trades", 0),
+            },
+        }
+        req = urllib.request.Request(
+            f"{_STRATEGY_LIB_BASE}/api/v1/lib/strategies/upsert",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Admin-Token": _STRATEGY_LIB_ADMIN_TOKEN,
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            if resp.status != 200:
+                return False
+            data = json.loads(resp.read().decode("utf-8"))
+            return bool(data.get("ok"))
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError, Exception):
+        return False
+
+
+# ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
 
@@ -415,6 +474,10 @@ def run_backtest(
 
     metrics_summary = _extract_metrics_summary(result_data)
     trades_count = metrics_summary.get("trades", 0)
+    backtest_ts = int(time.time() * 1000)
+
+    # P1: 回测结果回写 M26 registry（FAIL-OPEN，不阻断返回）
+    registry_ok = _publish_backtest_to_registry(strategy_id, source_zip, metrics_summary, backtest_ts)
 
     return {
         "ok": True,
@@ -422,7 +485,8 @@ def run_backtest(
         "metrics_summary": metrics_summary,
         "backtest_result_file": str(result_file),
         "trades_count": trades_count,
-        "backtest_ts": int(time.time() * 1000),
+        "backtest_ts": backtest_ts,
+        "registry_updated": registry_ok,
     }
 
 

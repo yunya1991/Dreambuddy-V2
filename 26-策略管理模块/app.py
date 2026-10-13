@@ -83,13 +83,25 @@ def health():
 
 @app.route("/api/v1/lib/strategies", methods=["GET"])
 def lib_list_strategies():
-    """列出所有中台策略"""
+    """列出所有中台策略
+
+    Query:
+        tier: 可选，逗号分隔的 tier 列表（如 A,B），只返回匹配项
+    """
     try:
+        tier_param = (request.args.get("tier") or "").strip()
+        tier_filter = set()
+        if tier_param:
+            tier_filter = {t.strip().upper() for t in tier_param.split(",") if t.strip()}
+
         data = reg._strategy_registry_load()
         entries = data.get("entries", {}) if isinstance(data, dict) else {}
         items = []
         for k, v in entries.items():
             if isinstance(v, dict):
+                entry_tier = (v.get("tier") or "").strip().upper()
+                if tier_filter and entry_tier not in tier_filter:
+                    continue
                 items.append({
                     "strategy_id": v.get("strategy_id"),
                     "source_zip": v.get("source_zip"),
@@ -163,6 +175,31 @@ def lib_upsert_strategy():
         entries[key] = entry
         reg._strategy_registry_save(data)
         return jsonify({"ok": True, "entry": entry})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/v1/lib/sync/product-hub", methods=["POST"])
+def lib_sync_product_hub():
+    """将 M26 registry 策略同步到 7-产物中台（需 admin token）。"""
+    if not _require_admin():
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    try:
+        from strategy_lib.services import product_hub_sync
+        result = product_hub_sync.sync_strategies_to_product_hub()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/v1/lib/sync/object-store", methods=["POST"])
+def lib_sync_object_store():
+    """将 registry 元数据 + bundles 同步到对象存储（S3 或本地，需 admin token）。"""
+    if not _require_admin():
+        return jsonify({"ok": False, "error": "forbidden"}), 403
+    try:
+        result = reg._strategy_registry_sync_to_s3()
+        return jsonify(result)
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
