@@ -34,8 +34,8 @@ chown "${DEPLOY_USER}:${DEPLOY_USER}" "${HUB_DIR}/.env"
 
 # 3. 安装依赖 + Prisma client 生成
 echo ">>> [2/4] 安装依赖 + prisma generate"
-sudo -u "${DEPLOY_USER}" npm install --no-audit --no-fund 2>&1 | tail -3
 cd "${HUB_DIR}"
+sudo -u "${DEPLOY_USER}" npm install --no-audit --no-fund 2>&1 | tail -3
 sudo -u "${DEPLOY_USER}" npx prisma generate 2>&1 | tail -5
 
 # 4. Build
