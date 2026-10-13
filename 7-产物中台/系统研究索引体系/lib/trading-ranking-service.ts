@@ -241,9 +241,9 @@ function toTradingRankingItem(record: {
     rank: record.rank,
     symbol: record.symbol,
     category: record.category as TradingRankingItem["category"],
-    score: record.score,
+    score: Number(record.score),
     signal: record.signal as TradingRankingItem["signal"],
-    confidence: record.confidence,
+    confidence: Number(record.confidence),
     decisionCard: record.decisionCard as DecisionCard,
     date: record.date.toISOString().slice(0, 10),
   };

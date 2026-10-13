@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -664,4 +664,41 @@ model RecommendationEngineLog {
 
   @@index([runDate, status])
   @@map("recommendation_engine_logs")
+}
+
+// ============================================
+// 交易榜单 (排名页数据源)
+// 对齐 migration 20260928234204_add_observability_tables
+// ============================================
+
+model TradingRanking {
+  id           String   @id @default(cuid())
+  date         DateTime
+  rank         Int
+  symbol       String
+  category     String
+  score        Decimal  @db.Decimal(10, 6)
+  signal       String
+  confidence   Decimal  @db.Decimal(10, 6)
+  decisionCard Json
+  createdAt    DateTime @default(now())
+
+  @@index([date])
+  @@index([category])
+  @@map("trading_rankings")
+}
+
+model RankingMonitor {
+  id              String    @id @default(cuid())
+  date            DateTime  @unique
+  satisfaction    Decimal?  @db.Decimal(10, 6)
+  conversionRate  Decimal?  @db.Decimal(10, 6)
+  abandonRate     Decimal?  @db.Decimal(10, 6)
+  pushReachRate   Decimal?  @db.Decimal(10, 6)
+  unsubscribeRate Decimal?  @db.Decimal(10, 6)
+  matu            Int?
+  kFactor         Decimal?  @db.Decimal(10, 6)
+  createdAt       DateTime  @default(now())
+
+  @@map("ranking_monitors")
 }

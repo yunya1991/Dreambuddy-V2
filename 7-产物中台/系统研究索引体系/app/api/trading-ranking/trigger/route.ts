@@ -4,25 +4,28 @@
 // POST /api/trading-ranking/trigger
 // 1. spawn python3 coin_fundamental_ranker.py → 输出 JSON 基本面信号
 // 2. 解析 JSON → 映射 TradingRankingItem + DecisionCard 7 模块
-// 3. saveRanking() 写入 Prisma SQLite
+// 3. saveRanking() 写入 Prisma (PostgreSQL)
 // 4. getRealtimeHub().publish('trading-ranking', ...) 推送实时事件
 // ============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
 import path from "path";
-import os from "os";
 import { saveRanking, type TradingRankingItem, type DecisionCard } from "@/lib/trading-ranking-service";
 import { getRealtimeHub } from "@/lib/realtime-hub";
 
 export const dynamic = "force-dynamic";
 
-// Python 评分脚本路径
+// 仓库根目录（本地 = <repo>；服务器通过 REPO_ROOT 注入 = /home/luke/dreambuddy）
+function getRepoRoot(): string {
+  return process.env.REPO_ROOT ?? path.resolve(process.cwd(), "..", "..");
+}
+
+// Python 评分脚本路径（可用 RANKER_SCRIPT_PATH 覆盖）
 function getRankerScriptPath(): string {
+  if (process.env.RANKER_SCRIPT_PATH) return process.env.RANKER_SCRIPT_PATH;
   return path.join(
-    os.homedir(),
-    "WorkBuddy",
-    "dreambuddy-v2",
+    getRepoRoot(),
     "11-易经推理系统",
     "scripts",
     "memory_l4",
@@ -346,7 +349,13 @@ async function runRankerAsync(runId: string, scriptPath: string, force: boolean)
       if (force) args.push("--force");
 
       const proc = spawn("python3", args, {
-        env: { ...process.env, PYTHONUNBUFFERED: "1" },
+        env: {
+          ...process.env,
+          PYTHONUNBUFFERED: "1",
+          // ranker 需 import 19-数据访问层 (dreambuddy_dal.*)；未显式设置时兜底注入
+          PYTHONPATH:
+            process.env.PYTHONPATH ?? path.join(getRepoRoot(), "19-数据访问层"),
+        },
       });
 
       proc.stdout.on("data", (data) => {
