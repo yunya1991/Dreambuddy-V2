@@ -106,9 +106,6 @@ function resolveSchedulerPath(): string {
   // 路径1: 3.1-FRONTEND/ → ../../4-MEMORY/9-工具与接口/cognitive_evolution_scheduler.py
   const candidate1 = path.resolve(cwd, '..', '..', '4-MEMORY', '9-工具与接口', 'cognitive_evolution_scheduler.py');
   if (fs.existsSync(candidate1)) return candidate1;
-  // 路径2: 绝对路径 fallback
-  const candidate2 = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_evolution_scheduler.py';
-  if (fs.existsSync(candidate2)) return candidate2;
   return candidate1;
 }
 

@@ -115,11 +115,6 @@ function resolveProjectRoot(): string {
   if (fs.existsSync(path.join(parent, '2-KNOWLEDGE'))) {
     return parent;
   }
-  // fallback: 绝对路径
-  const absRoot = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2';
-  if (fs.existsSync(path.join(absRoot, '2-KNOWLEDGE'))) {
-    return absRoot;
-  }
   return cwd;
 }
 
