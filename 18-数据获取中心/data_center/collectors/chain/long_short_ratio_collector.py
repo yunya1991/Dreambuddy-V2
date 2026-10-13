@@ -97,7 +97,7 @@ class LongShortRatioCollector(BaseCollector):
                 rec = DataRecord(
                     source=self.source,
                     category=self.category,
-                    sub_category=symbol,
+                    sub_category="long_short_ratio",
                     timestamp=ts_iso,
                     metrics={
                         "long_short_ratio": lsr,

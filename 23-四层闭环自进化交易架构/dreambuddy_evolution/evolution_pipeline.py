@@ -1424,6 +1424,50 @@ class EvolutionPipeline:
                     market_data["oi_prev"] = float(_rows[-2][2])
                 elif len(_rows) == 1:
                     market_data["oi_current"] = float(_rows[0][2])
+            # positions (long/short ratio from long_short_ratio)
+            if "okx_positions" not in market_data:
+                try:
+                    _l_rows = _repo.query_metric_by_time(
+                        "long_short_ratio", "long_account_pct",
+                        _now - timedelta(days=2), _now,
+                    )
+                    _s_rows = _repo.query_metric_by_time(
+                        "long_short_ratio", "short_account_pct",
+                        _now - timedelta(days=2), _now,
+                    )
+                    if _l_rows and _s_rows:
+                        market_data["okx_positions"] = {
+                            "long": float(_l_rows[-1][2]),
+                            "short": float(_s_rows[-1][2]),
+                        }
+                except Exception as _e:
+                    logger.debug("[W1] positions enrichment FAIL-OPEN: %s", _e)
+            # orderbook depth (ccxt fetch_order_book)
+            if "bids_depth" not in market_data or "asks_depth" not in market_data:
+                try:
+                    import ccxt as _ccxt
+                    _ex = _ccxt.okx()
+                    _swap = symbol.replace("/", "-") + "-SWAP" if "/" in symbol else symbol
+                    _ob = _ex.fetch_order_book(_swap, limit=10)
+                    _bids = sum(b[1] for b in _ob.get("bids", [])[:10])
+                    _asks = sum(a[1] for a in _ob.get("asks", [])[:10])
+                    market_data["bids_depth"] = _bids
+                    market_data["asks_depth"] = _asks
+                except Exception as _e:
+                    logger.debug("[W1] orderbook enrichment FAIL-OPEN: %s", _e)
+            # MAFIB: ma_200 + fib_0786 from close array
+            if "ma_200" not in market_data:
+                try:
+                    import numpy as _np
+                    _closes = _np.array(market_data.get("close", []), dtype=float)
+                    if _closes.size >= 200:
+                        market_data["ma_200"] = float(_np.mean(_closes[-200:]))
+                    if _closes.size >= 50:
+                        _hi = float(_np.max(_closes[-50:]))
+                        _lo = float(_np.min(_closes[-50:]))
+                        market_data["fib_retrace_0786"] = _hi - 0.786 * (_hi - _lo)
+                except Exception as _e:
+                    logger.debug("[W1] MAFIB enrichment FAIL-OPEN: %s", _e)
         except Exception as e:
             logger.debug("[W1] microstructure enrichment FAIL-OPEN: %s", e)
 
