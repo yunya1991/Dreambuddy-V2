@@ -5,6 +5,7 @@ import { SACGOverview } from '@/components/features/monitor/SACGOverview';
 import { DAGGraphView } from '@/components/features/monitor/DAGGraphView';
 import { BACTimeline } from '@/components/features/sacg/BACTimeline';
 import { HistoryPlayer } from '@/components/features/sacg/HistoryPlayer';
+import { useMonitorData } from '@/lib/use-monitor-data';
 
 const tabs = [
   { id: 'overview', label: 'SACG 总览' },
@@ -14,6 +15,9 @@ const tabs = [
 ];
 
 export default function MonitorPage() {
+  // 建立 /api/monitor/stream SSE 连接，驱动 SACG 四层事件流 + 吞吐量统计
+  useMonitorData();
+
   const [activeTab, setActiveTab] = useState('overview');
 
   return (

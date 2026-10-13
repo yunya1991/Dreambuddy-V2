@@ -17,10 +17,24 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const uid = searchParams.get('uid') || '';
 
+  let connId: string | null = null;
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+
+  const cleanup = () => {
+    if (heartbeat) {
+      clearInterval(heartbeat);
+      heartbeat = null;
+    }
+    if (connId) {
+      monitorBus.unregisterSSE(connId);
+      connId = null;
+    }
+  };
+
   const stream = new ReadableStream({
     start(controller) {
       // 注册 SSE 连接
-      const connId = monitorBus.registerSSE(uid, controller);
+      connId = monitorBus.registerSSE(uid, controller);
 
       if (!connId) {
         // 连接数超限，返回降级提示
@@ -51,30 +65,23 @@ export async function GET(request: NextRequest) {
       }
 
       // 心跳
-      const heartbeat = setInterval(() => {
+      heartbeat = setInterval(() => {
         try {
           controller.enqueue(`:heartbeat ${Date.now()}\n\n`);
         } catch {
-          clearInterval(heartbeat);
-          monitorBus.unregisterSSE(connId);
+          cleanup();
         }
       }, HEARTBEAT_INTERVAL_MS);
-
-      // 清理
-      const cleanup = () => {
-        clearInterval(heartbeat);
-        monitorBus.unregisterSSE(connId);
-      };
-
-      // 请求关闭时清理
-      // Note: Next.js API Route 不支持 req.on('close')，
-      // 依赖心跳检测和超时清理
     },
 
     cancel() {
-      // 流被消费者取消
+      // 客户端断开时清理心跳 + 注销 SSE 连接，避免连接数泄漏占满上限
+      cleanup();
     },
   });
+
+  // 客户端断开时通过 AbortSignal 兜底清理（Next.js App Router 支持 request.signal）
+  request.signal.addEventListener('abort', cleanup, { once: true });
 
   return new Response(stream, {
     headers: {
