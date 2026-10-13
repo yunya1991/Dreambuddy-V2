@@ -60,7 +60,7 @@ Environment="NODE_ENV=production"
 Environment="DATABASE_URL=${DB_URL}"
 Environment="REPO_ROOT=${REPO_DIR}"
 Environment="PYTHONPATH=${REPO_DIR}/19-数据访问层"
-ExecStart=/usr/bin/npm start -p 3456
+ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=5
 StandardOutput=append:${LOG_DIR}/out.log
@@ -76,14 +76,14 @@ systemctl restart product-hub
 
 sleep 6
 
-# 6. 验证
+# 6. 验证（失败不中断脚本）
 echo ""
 echo "=== 服务状态 ==="
-systemctl is-active product-hub
+systemctl is-active product-hub || true
 echo "=== 端口监听 ==="
 ss -tlnp | grep 3456 || echo "⚠️  3456 未监听"
 echo "=== API 测试 ==="
-curl -s -m 10 "http://127.0.0.1:3456/api/trading-ranking/today" 2>&1 | head -c 200
+curl -s -m 10 "http://127.0.0.1:3456/api/trading-ranking/today" 2>&1 | head -c 200 || true
 echo ""
 
 echo ""
