@@ -30,13 +30,10 @@ def _resolve_rag_infra_dir():
     """解析 2-KNOWLEDGE/9-RAG-INFRA 绝对路径。"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     candidate1 = os.path.normpath(os.path.join(
-        script_dir, '..', '2-KNOWLEDGE', '9-RAG-INFRA'
+        script_dir, '..', '..', '2-KNOWLEDGE', '9-RAG-INFRA'
     ))
     if os.path.exists(candidate1):
         return candidate1
-    candidate2 = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/9-RAG-INFRA'
-    if os.path.exists(candidate2):
-        return candidate2
     return candidate1
 
 

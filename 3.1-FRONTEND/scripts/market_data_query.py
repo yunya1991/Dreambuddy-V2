@@ -5,11 +5,16 @@ market_data_query.py — 从 19-数据访问层 mm_metrics 表查询市场指标
 只读读操作，返回 JSON
 """
 import json
+import os
 import sqlite3
 import sys
 from datetime import datetime, timezone, timedelta
 
-DB_PATH = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/data/dreambuddy_core.db"
+# 3.1-FRONTEND/scripts/ → ../../../ = 仓库根；可被 DREAMBUDDY_CORE_DB 覆盖
+DB_PATH = os.environ.get("DREAMBUDDY_CORE_DB") or os.path.normpath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', '..',
+    '19-数据访问层', 'data', 'dreambuddy_core.db'
+))
 
 
 def query_latest(sub_category: str, metric_names: list[str]) -> dict:

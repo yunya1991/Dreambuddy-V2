@@ -32,10 +32,6 @@ def _resolve_python_server_dir():
     ))
     if os.path.exists(candidate1):
         return candidate1
-    # 路径 2: 仓库根绝对路径（fallback）
-    candidate2 = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server'
-    if os.path.exists(candidate2):
-        return candidate2
     return candidate1  # 返回不存在的路径，让 import 报错
 
 
@@ -78,10 +74,6 @@ def _resolve_dreamos_root():
     root = os.path.normpath(os.path.join(script_dir, '..', '..'))
     if os.path.exists(os.path.join(root, '1-ARCHITECTURE', 'dreamos')):
         return root
-    # fallback: 绝对路径
-    abs_root = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2'
-    if os.path.exists(os.path.join(abs_root, '1-ARCHITECTURE', 'dreamos')):
-        return abs_root
     return root
 
 

@@ -38,9 +38,6 @@ def _resolve_project_root():
     candidate1 = os.path.normpath(os.path.join(script_dir, '..', '..'))
     if os.path.exists(os.path.join(candidate1, '4-MEMORY')):
         return candidate1
-    candidate2 = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2'
-    if os.path.exists(os.path.join(candidate2, '4-MEMORY')):
-        return candidate2
     return candidate1
 
 

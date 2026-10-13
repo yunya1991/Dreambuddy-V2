@@ -27,10 +27,6 @@ def _resolve_mcp_dir():
     candidate1 = os.path.normpath(os.path.join(script_dir, '..', '..', '4-MEMORY', '9-工具与接口'))
     if os.path.exists(candidate1):
         return candidate1
-    # 路径 2: 仓库根绝对路径（fallback）
-    candidate2 = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口'
-    if os.path.exists(candidate2):
-        return candidate2
     return candidate1  # 返回不存在的路径，让 import 报错
 
 

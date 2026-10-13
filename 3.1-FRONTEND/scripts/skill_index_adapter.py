@@ -31,13 +31,10 @@ def _resolve_skill_indexer_dir():
     """解析 1-ARCHITECTURE/skills/dream-skill-index-governance 绝对路径。"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     candidate1 = os.path.normpath(os.path.join(
-        script_dir, '..', '1-ARCHITECTURE', 'skills', 'dream-skill-index-governance'
+        script_dir, '..', '..', '1-ARCHITECTURE', 'skills', 'dream-skill-index-governance'
     ))
     if os.path.exists(candidate1):
         return candidate1
-    candidate2 = '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dream-skill-index-governance'
-    if os.path.exists(candidate2):
-        return candidate2
     return candidate1
 
 
