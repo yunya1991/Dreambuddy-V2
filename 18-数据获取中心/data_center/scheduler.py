@@ -408,6 +408,15 @@ class CollectionScheduler:
             params={"pages": ["oi", "funding", "liquidations", "long_short"]},
             interval_sec=300,
         ))
+        # ── chain/ccxt OKX OI（5min，OKX 合约持仓量）
+        #    coinglass stealthy 爬取不稳定时的兜底数据源
+        #    写入 sub_category=open_interest, metric_name=open_interest_value
+        tasks.append(CollectionTask(
+            name="ccxt_okx_oi",
+            category="chain", source="ccxt",
+            params={"symbol": "BTC/USDT", "exchange": "okx", "kind": "open_interest", "swap_symbol": "BTC/USDT:USDT"},
+            interval_sec=300,
+        ))
         # ── finance/etf_flow（2h，farside ETF 每日净流入/流出）
         #    每日更新，2h 轮询确保美股收盘后及时获取
         #    覆盖 AGI Phase4.3 ETF 资金流信号 + 五维 D7

@@ -1412,18 +1412,18 @@ class EvolutionPipeline:
                     _now - timedelta(hours=24), _now,
                 )
                 if _rows:
-                    market_data["funding_rate"] = _rows[-1][3]  # value
+                    market_data["funding_rate"] = _rows[-1][2]  # value = (source, name, value, ts)[2]
             # open_interest (current + previous)
             if "oi_current" not in market_data:
                 _rows = _repo.query_metric_by_time(
-                    "derivatives_spot", "fut_open_interest_usd",
+                    "open_interest", "open_interest_value",
                     _now - timedelta(days=2), _now,
                 )
                 if len(_rows) >= 2:
-                    market_data["oi_current"] = float(_rows[-1][3])
-                    market_data["oi_prev"] = float(_rows[-2][3])
+                    market_data["oi_current"] = float(_rows[-1][2])
+                    market_data["oi_prev"] = float(_rows[-2][2])
                 elif len(_rows) == 1:
-                    market_data["oi_current"] = float(_rows[0][3])
+                    market_data["oi_current"] = float(_rows[0][2])
         except Exception as e:
             logger.debug("[W1] microstructure enrichment FAIL-OPEN: %s", e)
 
