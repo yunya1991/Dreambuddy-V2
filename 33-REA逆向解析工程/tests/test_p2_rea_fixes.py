@@ -58,7 +58,11 @@ def test_investigate_top_level_evidence_no_duplicate_ids():
 
 
 def test_phase_annotate_dedup_keeps_first_occurrence():
-    """P2-3: _phase_annotate 聚合时按 evidence_id 去重且保持首次出现顺序。"""
+    """P2-3: _phase_annotate 聚合时按 evidence_id 去重且保持首次出现顺序。
+
+    P3-2 起 _phase_annotate 会额外追加"架构债务"维度 Evidence，
+    因此本用例只断言三条夹具证据被保留（子集），不再要求精确集合相等。
+    """
     shared = Evidence(result="共享证据", level="observation")
     only_a = Evidence(result="仅A证据", level="observation")
     only_b = Evidence(result="仅B证据", level="observation")
@@ -75,7 +79,10 @@ def test_phase_annotate_dedup_keeps_first_occurrence():
     assert len(ids) == len(set(ids)), "标注阶段 evidence 未去重"
     # 共享证据应只出现一次，且顺序为首次出现（locate 在前）
     assert ids[0] == shared.evidence_id
-    assert set(ids) == {shared.evidence_id, only_a.evidence_id, only_b.evidence_id}
+    # P3-2 追加的架构债务 Evidence 不计入夹具集合，故用子集断言
+    assert {shared.evidence_id, only_a.evidence_id, only_b.evidence_id}.issubset(
+        set(ids)
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -199,7 +199,7 @@ export async function updateSemanticPrototypes(
   const loop = getInstances()[layer];
   if (!loop) return null;
   const l = loop as IntentTrainingLoop;
-  await l.updateSemanticPrototypes(batch as Parameters<IntentTrainingLoop['updateSemanticPrototypes']>[0]);
+  await l.updateSemanticPrototypes(batch as unknown as Parameters<IntentTrainingLoop['updateSemanticPrototypes']>[0]);
   const snap = l.getModelSnapshot();
   return {
     updated: true,
