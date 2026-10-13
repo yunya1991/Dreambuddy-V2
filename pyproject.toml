@@ -43,6 +43,10 @@ trading = [
     "flask>=3.0",
     "flask-cors>=4.0",
 ]
+sde = [
+    "torch>=2.0",
+    "torchsde>=0.2.6",
+]
 
 [tool.black]
 line-length = 100

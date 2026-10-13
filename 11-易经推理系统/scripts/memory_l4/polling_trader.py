@@ -18477,6 +18477,13 @@ def main():
     )
     args = parser.parse_args()
 
+    # T3 可观测性：启动时记录 torch/SDE 后端可用性，消除隐性静默降级（FAIL-OPEN）
+    try:
+        from dreambuddy_evolution.engines.sde_solver import log_runtime_backends
+        log_runtime_backends()
+    except Exception as _e:  # noqa: BLE001
+        print(f"[runtime-backends] 探测失败(FAIL-OPEN): {_e}", flush=True)
+
     # ================================================================
     # 单例硬锁：fcntl.flock + PID 文件，根治多进程并发启动
     # 设计要点：

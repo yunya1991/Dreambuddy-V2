@@ -51,6 +51,13 @@ class EvolutionPipeline:
         self._logging = PipelineLoggingContext()
         self._logging.configure()  # 幂等，模块级已配置
 
+        # T3 可观测性：启动时记录 torch/SDE 后端可用性，消除隐性静默降级（FAIL-OPEN）
+        try:
+            from dreambuddy_evolution.engines.sde_solver import log_runtime_backends
+            log_runtime_backends()
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[FO] log_runtime_backends fail: %s", e)
+
         self.gene_root = Path(gene_root) if gene_root else (
             REPO_ROOT / "dreambuddy_evolution" / "gene_data"
         )

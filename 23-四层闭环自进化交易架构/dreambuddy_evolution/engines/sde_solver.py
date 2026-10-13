@@ -44,6 +44,14 @@ try:
 except Exception:  # noqa: BLE001
     _TORCH_AVAILABLE = False
 
+# 探测 torchsde（Level 1 加速；缺失则退化到手写 Euler-Maruyama）
+try:
+    import torchsde  # type: ignore  # noqa: F401
+    _TORCHSDE_AVAILABLE = True
+except Exception:  # noqa: BLE001
+    _TORCHSDE_AVAILABLE = False
+    logger.debug("[FO-AGI-03] torchsde 不可用，SDE Level 1 退化为 Euler-Maruyama")
+
 
 class SDESolver:
     """时序动态建模器 — 从 DeepReasoningEngine 拆出的内聚组件.
@@ -287,8 +295,34 @@ class SDESolver:
         """neural_sde + timesfm 后端可用性"""
         return {
             "neural_sde": self._torch_available,
+            "torchsde": _TORCHSDE_AVAILABLE,
             "timesfm": self._timesfm_available,
             "timesfm_api": self._timesfm_api,
             "neural_sde_trained": self._neural_sde_loaded,
             "neural_sde_backend": self._sde_backend_used,
         }
+
+
+def log_runtime_backends(logger_name: Optional[str] = None) -> dict[str, Any]:
+    """T3: 启动时记录 torch/SDE 后端可用性，消除隐性静默降级.
+
+    SPEC-本地远端双写分叉治理与torch可用性 §2.2③。
+    返回可观测信息 dict，供 callers / 测试断言；同时写一条 INFO 日志。
+    """
+    status = SDESolver().status()
+    info: dict[str, Any] = {
+        "torch_available": _TORCH_AVAILABLE,
+        "torchsde_available": _TORCHSDE_AVAILABLE,
+        "timesfm_available": _TIMESFM_AVAILABLE,
+        "sde_backend": status["neural_sde_backend"],
+        "degraded": (not _TORCH_AVAILABLE) or (not _TORCHSDE_AVAILABLE),
+    }
+    (logging.getLogger(logger_name) if logger_name else logger).info(
+        "[runtime-backends] torch=%s torchsde=%s timesfm=%s sde_backend=%s degraded=%s",
+        info["torch_available"],
+        info["torchsde_available"],
+        info["timesfm_available"],
+        info["sde_backend"],
+        info["degraded"],
+    )
+    return info
