@@ -184,6 +184,21 @@ def _get_cle() -> CognitiveLoopEntry:
     return get_cle()
 
 
+def _l4_snapshot() -> dict:
+    """安全获取 CLE 的 L4 状态快照（dict），mock/异常时返回 {}。
+
+    避免直接访问 _l4_state 在测试 mock 场景下返回 MagicMock 导致
+    json.dumps 序列化失败。FAIL-OPEN。
+    """
+    try:
+        state = _get_cle()._l4_state
+        if isinstance(state, dict):
+            return dict(state)
+    except Exception:
+        pass
+    return {}
+
+
 _skill_loader_instance = None
 
 
@@ -272,6 +287,17 @@ def _handle_recall(args: Dict[str, Any]) -> str:
         "memories": results,
         "count": len(results),
     }
+
+    # L4: 附带元认知信号（FOK 把握度 / JOL 学习评估 / 广播计数）
+    try:
+        l4 = _l4_snapshot()
+        response["l4"] = {
+            "fok": l4.get("fok"),
+            "jol": l4.get("jol"),
+            "broadcast_count": l4.get("broadcast_count", 0),
+        }
+    except Exception:
+        pass  # FAIL-OPEN
 
     if include_process:
         try:
@@ -372,6 +398,9 @@ def _handle_record(args: Dict[str, Any]) -> str:
     level = args.get("level", "observation")
     known_gaps = args.get("known_gaps") or []
     observations = args.get("observations") or []
+    # L4 预测误差门控参数（可选）
+    expected_outcome = args.get("expected_outcome")
+    actual_outcome = args.get("actual_outcome")
 
     # confidence_score 不传时从 quality_level 映射
     confidence_score = args.get("confidence_score")
@@ -395,6 +424,8 @@ def _handle_record(args: Dict[str, Any]) -> str:
         level=level,
         known_gaps=known_gaps,
         observations=observations,
+        expected_outcome=expected_outcome,
+        actual_outcome=actual_outcome,
     )
 
     # TAG_HOOKS：查询 tags → triggered_skills（FAIL-OPEN）
@@ -438,6 +469,8 @@ def _handle_record(args: Dict[str, Any]) -> str:
         "skill_links": skill_links,
         "knowledge_ingest_required": knowledge_ingest_required,
         "receipt_hash": receipt_hash,
+        # L4: 预测误差门控结果（高误差记忆可能已被升级为 B 级）
+        "l4": _l4_snapshot(),
     }, ensure_ascii=False)
 
 
@@ -474,6 +507,11 @@ def _handle_verify(args: Dict[str, Any]) -> str:
             pass  # FAIL-OPEN：扫描失败不影响 verify 主流程
 
     result["skill_hooks"] = skill_hooks
+    # L4: 反思裁决结果（verdict / lessons / should_record）
+    try:
+        result["l4"] = _l4_snapshot()
+    except Exception:
+        pass
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -487,12 +525,23 @@ def _handle_health(args: Dict[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=False)
 
 
+def _handle_l4_status(args: Dict[str, Any]) -> str:
+    """L4 元认知层状态聚合 — 供前端应用/训练系统查询。
+
+    返回 WorkspaceBus/SelfModel/PredictionErrorGate/ReflectionNode/MetacogHarness
+    的实时状态 + 最近一次 recall/record/verify 的 L4 输出。
+    """
+    result = _get_cle().get_l4_status()
+    return json.dumps(result, ensure_ascii=False)
+
+
 TOOL_HANDLERS = {
     "recall": _handle_recall,
     "record": _handle_record,
     "verify": _handle_verify,
     "stats": _handle_stats,
     "health": _handle_health,
+    "l4_status": _handle_l4_status,
 }
 
 

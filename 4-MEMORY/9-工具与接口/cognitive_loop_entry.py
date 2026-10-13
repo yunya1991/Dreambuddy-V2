@@ -247,6 +247,15 @@ class CognitiveLoopEntry:
         except Exception:
             pass  # FAIL-OPEN：订阅失败不阻塞初始化
 
+        # L4 状态聚合：捕获每次 recall/record/verify 的元认知输出，供前端/训练系统查询
+        self._l4_state: Dict[str, Any] = {
+            "fok": None,          # FOK 预评估结果
+            "jol": None,          # JOL 学习评估结果
+            "prediction_error": None,  # 预测误差门控结果
+            "reflection": None,   # 反思裁决结果
+            "broadcast_count": 0,  # WorkspaceBus 广播计数
+        }
+
         # P3-7: 初始化 Transactive Memory 索引（"谁擅长什么" agent profile）
         from transactive_memory import TransactiveMemory
         self.transactive_memory = TransactiveMemory()
@@ -368,6 +377,7 @@ class CognitiveLoopEntry:
         # FAIL-OPEN：FOK 失败不阻塞 recall
         try:
             fok = self.metacog_harness.pre_execute_fok(context, None, None)
+            self._l4_state["fok"] = fok
         except Exception:
             fok = None
 
@@ -533,8 +543,10 @@ class CognitiveLoopEntry:
             )
             self.workspace_bus.broadcast(wc)
             self.self_model.monitor(wc)
+            self._l4_state["broadcast_count"] += 1
             # JOL 学习评估：判断 recall 结果的"学到了什么"
             jol = self.metacog_harness.post_execute_jol({"success": bool(dicts)})
+            self._l4_state["jol"] = jol
         except Exception:
             pass  # FAIL-OPEN
         # ---------- END L4 recall ----------
@@ -608,6 +620,87 @@ class CognitiveLoopEntry:
             "cache_hit_rate": round(hit_rate, 4),
             "sla_breaches": sla_breaches,
         }
+
+    def get_l4_status(self) -> Dict[str, Any]:
+        """L4 元认知层状态聚合 — 供前端应用/训练系统查询。
+
+        汇总 5 个 L4 组件的实时状态 + 最近一次调用的输出，
+        让上层系统能消费 FOK/JOL/反思/预测误差/工作空间广播等元认知信号。
+
+        Returns:
+            {
+              "workspace_bus": {broadcasts, current_confidence, ignited, history_count},
+              "self_model": {last_calibration, last_action, pending_targets},
+              "prediction_error_gate": {pe_threshold, base_level_boundary, last_result},
+              "reflection_node": {pending_count, last_verdict, last_lessons},
+              "metacog_harness": {last_fok, last_jol},
+              "recent": {fok, jol, prediction_error, reflection, broadcast_count},
+            }
+        """
+        result: Dict[str, Any] = {}
+        try:
+            ws_stats = self.workspace_bus.stats()
+            ws_state = self.workspace_bus.get_workspace_state()
+            result["workspace_bus"] = {
+                "broadcasts": ws_stats.get("total_broadcasts", 0),
+                "ignited_count": ws_stats.get("ignited_count", 0),
+                "subscribers": ws_stats.get("subscribers", 0),
+                "current_confidence": ws_state.get("confidence", 0.0),
+                "ignited": ws_state.get("ignited", False),
+                "history_count": len(self.workspace_bus.get_history(limit=100)),
+            }
+        except Exception:
+            result["workspace_bus"] = {"error": "unavailable"}
+
+        try:
+            result["self_model"] = {
+                "calibration_threshold": getattr(self.self_model, "_calibration_threshold", None),
+                "last_action": "proceed",
+            }
+        except Exception:
+            result["self_model"] = {"error": "unavailable"}
+
+        try:
+            result["prediction_error_gate"] = {
+                "pe_threshold": getattr(self.prediction_error_gate, "_pe_threshold", None),
+                "base_level_boundary": getattr(self.prediction_error_gate, "_base_level_boundary", None),
+                "last_result": self._l4_state.get("prediction_error"),
+            }
+        except Exception:
+            result["prediction_error_gate"] = {"error": "unavailable"}
+
+        try:
+            pending = self.reflection_node.get_pending_reflections()
+            last_refl = self._l4_state.get("reflection") or {}
+            result["reflection_node"] = {
+                "pending_count": len(pending),
+                "last_verdict": last_refl.get("verdict"),
+                "last_lessons": last_refl.get("lessons", []),
+            }
+        except Exception:
+            result["reflection_node"] = {"error": "unavailable"}
+
+        try:
+            fok = self._l4_state.get("fok") or {}
+            jol = self._l4_state.get("jol") or {}
+            result["metacog_harness"] = {
+                "last_fok_score": fok.get("fok_score"),
+                "last_fok_action": fok.get("action"),
+                "last_jol_score": jol.get("jol_score"),
+                "last_jol_action": jol.get("action"),
+            }
+        except Exception:
+            result["metacog_harness"] = {"error": "unavailable"}
+
+        # 最近一次各路径的 L4 输出快照
+        result["recent"] = {
+            "fok": self._l4_state.get("fok"),
+            "jol": self._l4_state.get("jol"),
+            "prediction_error": self._l4_state.get("prediction_error"),
+            "reflection": self._l4_state.get("reflection"),
+            "broadcast_count": self._l4_state.get("broadcast_count", 0),
+        }
+        return result
 
     def consolidate_recall_cache(self, min_access_threshold: int = 2) -> Dict[str, Any]:
         """P1-1: 整合 recall_cache — 淘汰低频访问项。
@@ -912,12 +1005,19 @@ class CognitiveLoopEntry:
                     actual_outcome=actual_outcome,
                     extra_tags=",".join(tags_list) if tags_list else "",
                 )
+                self._l4_state["prediction_error"] = {
+                    "error": params.get("prediction_error"),
+                    "quality_level": params.get("quality_level"),
+                    "tags": params.get("tags"),
+                }
                 # 若门控建议升级质量且原等级更低，则覆盖（仅 B/C 场景）
                 if params["quality_level"] == "B" and quality_level in ("C", "D"):
                     try:
                         self._vm.update_quality(memory_id, "B", confidence)
                     except Exception:
                         pass
+            else:
+                self._l4_state["prediction_error"] = None
         except Exception:
             pass  # FAIL-OPEN
 
@@ -928,6 +1028,7 @@ class CognitiveLoopEntry:
                 confidence=confidence,
             )
             self.workspace_bus.broadcast(wc)
+            self._l4_state["broadcast_count"] += 1
         except Exception:
             pass  # FAIL-OPEN
         # ---------- END L4 record ----------
@@ -1126,6 +1227,7 @@ class CognitiveLoopEntry:
                 "success": success,
                 "error": None if success else "verify reported failure",
             })
+            self._l4_state["reflection"] = reflection
             from workspace_bus import WorkspaceContent
             wc = WorkspaceContent(
                 intent={"type": "verify", "memory_id": memory_id},
@@ -1134,6 +1236,7 @@ class CognitiveLoopEntry:
             )
             self.workspace_bus.broadcast(wc)
             self.self_model.monitor(wc)
+            self._l4_state["broadcast_count"] += 1
         except Exception:
             pass  # FAIL-OPEN
         # ---------- END L4 verify ----------
