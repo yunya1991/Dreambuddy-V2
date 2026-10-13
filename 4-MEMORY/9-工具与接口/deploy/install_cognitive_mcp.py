@@ -146,6 +146,30 @@ def build_mcp_config(python_path: str) -> Dict:
     }
 
 
+def build_remote_ssh_config(
+    ssh_alias: str,
+    remote_repo: str = "/home/luke/dreambuddy",
+    remote_venv: str = "/home/luke/venv-trading/bin/python",
+) -> Dict:
+    """生成「经 SSH 在远端运行 cognitive_mcp_server.py」的 MCP 配置块。
+
+    SPEC-本地远端双写分叉治理与torch可用性 §3.1：过渡期本地 MCP 改
+    SSH stdio 托管到远端，record/verify/recall 全部落远端权威库；本地退化为
+    只读快照。远端以 luke 身份运行（repo 属主 luke）。
+    """
+    server_dir = f"{remote_repo}/4-MEMORY/9-工具与接口"
+    return {
+        "command": "ssh",
+        "args": [
+            "-o", "BatchMode=yes",
+            ssh_alias,
+            f"sudo -n -u luke -H env PYTHONPATH={server_dir} "
+            f"{remote_venv} {server_dir}/cognitive_mcp_server.py",
+        ],
+        "env": {},
+    }
+
+
 def get_config_path(target: str, project: Optional[str]) -> Path:
     """获取目标工具的配置文件路径。"""
     cfg = TOOL_CONFIGS[target]
@@ -267,7 +291,8 @@ def verify_server(python_path: str) -> bool:
 # === 主流程 ===
 
 def deploy_target(target: str, python_path: str,
-                  project: Optional[str]) -> bool:
+                  project: Optional[str],
+                  remote_alias: Optional[str] = None) -> bool:
     """部署到单个目标工具。"""
     cfg = TOOL_CONFIGS[target]
     log(f"\n{'='*50}", "STEP")
@@ -275,7 +300,11 @@ def deploy_target(target: str, python_path: str,
     log(f"{'='*50}", "STEP")
 
     config_path = get_config_path(target, project)
-    new_server = build_mcp_config(python_path)
+    if remote_alias:
+        new_server = build_remote_ssh_config(remote_alias)
+        log(f"模式: SSH stdio 托管远端 (alias={remote_alias})", "INFO")
+    else:
+        new_server = build_mcp_config(python_path)
     log(f"配置文件: {config_path}", "INFO")
 
     if not write_config(target, config_path, new_server):
@@ -315,6 +344,8 @@ def main():
                         help="列出支持的工具")
     parser.add_argument("--verify-only", action="store_true",
                         help="仅验证 server 不写配置")
+    parser.add_argument("--remote-ssh", metavar="ALIAS",
+                        help="经 SSH 别名在远端运行 cognitive_mcp_server（远端权威库模式；跳过本地验证）")
     args = parser.parse_args()
 
     if args.list:
@@ -332,7 +363,9 @@ def main():
 
     # 步骤2：验证 server 可用
     log("\n步骤2：验证 server", "STEP")
-    if not verify_server(python_path):
+    if args.remote_ssh:
+        log(f"远端 SSH 模式 (alias={args.remote_ssh})，跳过本地 server 验证", "INFO")
+    elif not verify_server(python_path):
         log("server 验证失败，部署中止", "FAIL")
         sys.exit(1)
 
@@ -347,7 +380,7 @@ def main():
     failed = []
     for t in targets:
         try:
-            if deploy_target(t, python_path, args.project):
+            if deploy_target(t, python_path, args.project, args.remote_ssh):
                 success.append(t)
             else:
                 failed.append(t)
