@@ -49,11 +49,19 @@ else
 fi
 
 # 3. mcp 包（认知 MCP server 依赖）
-echo ">>> [3/4] 安装 mcp"
+echo ">>> [3/5] 安装 mcp"
 if "${PY}" -c "import mcp" 2>/dev/null; then
     echo "    mcp 已安装，跳过"
 else
     "${PY}" -m pip install --no-cache-dir mcp
+fi
+
+# 3b. sqlite-vec（向量检索加速，recall SLA ≤200ms 的关键依赖）
+echo ">>> [3b/5] 安装 sqlite-vec"
+if "${PY}" -c "import sqlite_vec" 2>/dev/null; then
+    echo "    sqlite-vec 已安装，跳过"
+else
+    "${PY}" -m pip install --no-cache-dir sqlite-vec
 fi
 
 # 4. 校验 SDE 后端 + mcp server 冒烟

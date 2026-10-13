@@ -241,6 +241,12 @@ class CognitiveLoopEntry:
         from fok_jol_harness import MetacogHarness
         self.metacog_harness = MetacogHarness()
 
+        # L4 接线：ReflectionNode 订阅 WorkspaceBus（反思回环自动消费广播）
+        try:
+            self.reflection_node.attach_to_workspace_bus(self.workspace_bus)
+        except Exception:
+            pass  # FAIL-OPEN：订阅失败不阻塞初始化
+
         # P3-7: 初始化 Transactive Memory 索引（"谁擅长什么" agent profile）
         from transactive_memory import TransactiveMemory
         self.transactive_memory = TransactiveMemory()
@@ -357,6 +363,13 @@ class CognitiveLoopEntry:
         """
         # B3: SLA 延迟预算埋点起点（FAIL-OPEN，统计失败不阻塞 recall）
         start_t = time.perf_counter()
+
+        # ---------- L4: FOK 预评估（执行前判断"能不能解决"） ----------
+        # FAIL-OPEN：FOK 失败不阻塞 recall
+        try:
+            fok = self.metacog_harness.pre_execute_fok(context, None, None)
+        except Exception:
+            fok = None
 
         # ---------- P1-1: Hot path — recall_cache 查询 ----------
         cached_results: List[Dict[str, Any]] = []
@@ -503,6 +516,28 @@ class CognitiveLoopEntry:
         except Exception:
             pass  # FAIL-OPEN
         # ---------- END P1-L1-2b ----------
+
+        # ---------- L4: GWT WorkspaceBus 广播 + HOT Self-Model 监控 ----------
+        # 把 recall 结果广播到全局工作空间，子系统可订阅消费；SelfModel 检测矛盾/错误
+        # FAIL-OPEN：任何 L4 异常不影响 recall 返回
+        try:
+            from workspace_bus import WorkspaceContent
+            avg_score = (
+                sum(r.get("score", 0.0) or 0.0 for r in dicts) / len(dicts)
+                if dicts else 0.0
+            )
+            wc = WorkspaceContent(
+                intent={"type": "recall", "query": context},
+                memory_recall=dicts,
+                confidence=max(0.0, min(1.0, avg_score)),
+            )
+            self.workspace_bus.broadcast(wc)
+            self.self_model.monitor(wc)
+            # JOL 学习评估：判断 recall 结果的"学到了什么"
+            jol = self.metacog_harness.post_execute_jol({"success": bool(dicts)})
+        except Exception:
+            pass  # FAIL-OPEN
+        # ---------- END L4 recall ----------
 
         # ---------- B3: SLA 延迟预算告警（FAIL-OPEN，不阻塞返回） ----------
         # SPEC §3.5：交易场景 recall SLA ≤ 200ms，超限记录 warning + 计数
@@ -800,6 +835,9 @@ class CognitiveLoopEntry:
         level: str = "observation",
         known_gaps: Optional[List[str]] = None,
         observations: Optional[List[Dict[str, Any]]] = None,
+        # L4 预测误差门控（Friston 自由能）：提供预期/实际结果时自动计算
+        expected_outcome: Optional[float] = None,
+        actual_outcome: Optional[float] = None,
     ) -> str:
         """
         记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分 + Evidence-First）。
@@ -861,6 +899,38 @@ class CognitiveLoopEntry:
             self.evidence_ledger.append(entry)
         except Exception:
             pass  # FAIL-OPEN：Ledger 写入失败不阻塞 record
+
+        # ---------- L4: 预测误差门控 + WorkspaceBus 广播 ----------
+        # 1) 若提供了 expected/actual outcome，用预测误差门控升级 quality_level
+        # 2) 把 record 事件广播到全局工作空间
+        # FAIL-OPEN：任何异常不影响 record 结果
+        try:
+            if expected_outcome is not None and actual_outcome is not None:
+                params = self.prediction_error_gate.prepare_record_params(
+                    content=content,
+                    expected_outcome=expected_outcome,
+                    actual_outcome=actual_outcome,
+                    extra_tags=",".join(tags_list) if tags_list else "",
+                )
+                # 若门控建议升级质量且原等级更低，则覆盖（仅 B/C 场景）
+                if params["quality_level"] == "B" and quality_level in ("C", "D"):
+                    try:
+                        self._vm.update_quality(memory_id, "B", confidence)
+                    except Exception:
+                        pass
+        except Exception:
+            pass  # FAIL-OPEN
+
+        try:
+            from workspace_bus import WorkspaceContent
+            wc = WorkspaceContent(
+                intent={"type": "record", "memory_id": memory_id},
+                confidence=confidence,
+            )
+            self.workspace_bus.broadcast(wc)
+        except Exception:
+            pass  # FAIL-OPEN
+        # ---------- END L4 record ----------
 
         return memory_id
 
@@ -1047,6 +1117,26 @@ class CognitiveLoopEntry:
         except Exception as _e:
             logger.debug("P1-7 因果影响评估失败（FAIL-OPEN）: %s", _e)
             causal_report = {"fail_open": True, "error": str(_e)}
+
+        # ---------- L4: ReflectionNode 反思 + WorkspaceBus 广播 + SelfModel 校准 ----------
+        # verify 是记忆质量的真实反馈，触发反思回环并广播到全局工作空间
+        # FAIL-OPEN：任何异常不影响 verify 返回
+        try:
+            reflection = self.reflection_node.reflect({
+                "success": success,
+                "error": None if success else "verify reported failure",
+            })
+            from workspace_bus import WorkspaceContent
+            wc = WorkspaceContent(
+                intent={"type": "verify", "memory_id": memory_id},
+                confidence=round(new_confidence, 4),
+                execution_result=reflection,
+            )
+            self.workspace_bus.broadcast(wc)
+            self.self_model.monitor(wc)
+        except Exception:
+            pass  # FAIL-OPEN
+        # ---------- END L4 verify ----------
 
         return {
             "success": not poe_blocked,  # strict 模式无 receipt → False

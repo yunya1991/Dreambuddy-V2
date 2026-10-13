@@ -42,6 +42,7 @@ trading = [
     "python-dotenv>=1.0",
     "flask>=3.0",
     "flask-cors>=4.0",
+    "sqlite-vec>=0.1.0",
 ]
 sde = [
     "torch>=2.0",
