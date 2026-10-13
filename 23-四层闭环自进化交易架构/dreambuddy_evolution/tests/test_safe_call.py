@@ -231,15 +231,15 @@ class TestCognitiveRecordSwitch:
         assert "enable_cognitive_record" in AGI_SWITCHES, \
             "agi_config 缺少 enable_cognitive_record 开关"
 
-    def test_TR_SC_15_switch_default_false(self):
-        """enable_cognitive_record 默认 False (Phase 3 解冻前关闭)"""
+    def test_TR_SC_15_switch_default_true(self):
+        """enable_cognitive_record 默认 True (2026-10-13 激活 L2 登记)"""
         from dreambuddy_evolution.agi_config import get_switch
         # 不被环境变量影响 (清空环境变量)
         import os
         old = os.environ.pop("ENABLE_COGNITIVE_RECORD", None)
         try:
-            assert get_switch("enable_cognitive_record") is False, \
-                "enable_cognitive_record 默认应为 False"
+            assert get_switch("enable_cognitive_record") is True, \
+                "enable_cognitive_record 默认应为 True"
         finally:
             if old is not None:
                 os.environ["ENABLE_COGNITIVE_RECORD"] = old

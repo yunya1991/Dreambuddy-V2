@@ -101,8 +101,8 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_liquidation_heatmap_factor": False,       # 路径D-3: 清算热力图因子 (需 POC)
     # --- Phase 3 P0-4 FAIL-OPEN 登记制 (SPEC-自进化系统逆向解析改进 v0.3) ---
     # safe_call 异常登记开关; False=仅 try/except 不登记 (L3 降级);
-    # True=登记到 ring buffer (L2). 解冻前默认关闭.
-    "enable_cognitive_record": False,
+    # True=登记到 ring buffer (L2). 2026-10-13 激活: 让降级可观测.
+    "enable_cognitive_record": True,
 }
 
 
