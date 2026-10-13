@@ -12,18 +12,11 @@
 set -uo pipefail
 
 ROOT="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2"
-ENV_FILE="${ROOT}/31-分布式计算部署/.env"
 LOG="${ROOT}/31-分布式计算部署/phase7/mirror.log"
 
-PW=$(awk -F'=' '/^SERVER_PASSWORD=/{sub(/^SERVER_PASSWORD=/,"");print}' "${ENV_FILE}")
-HOST=$(awk -F'=' '/^SERVER_HOST=/{print $2}' "${ENV_FILE}")
-if [ -z "${PW}" ] || [ -z "${HOST}" ]; then
-    echo "[$(date '+%F %T')] [ERROR] .env 缺少 SERVER_PASSWORD/SERVER_HOST" | tee -a "${LOG}"
-    exit 1
-fi
-
-SSH_OPTS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no"
-RSH="sshpass -p ${PW} ssh ${SSH_OPTS}"
+# 经 Phase4 建立的免密 SSH 别名（ubuntu 用户 + 专用 key），避免密码认证偶发失败。
+REMOTE="dreambuddy-remote"
+RSH="ssh -o BatchMode=yes"
 # 远端 rsync 以 luke 身份运行（读/写 repo 与快照目录）
 RPATH="--rsync-path=sudo -n -u luke -H rsync"
 
@@ -37,26 +30,32 @@ GENE_REMOTE="/home/luke/dreambuddy/23-四层闭环自进化交易架构/dreambud
 ts() { date '+%F %T'; }
 echo "[$(ts)] === local-mirror start ===" >> "${LOG}"
 
+FAILED=0
 # 1) 认知库：远端快照 → 本地只读镜像
-rsync -az ${RPATH} --no-perms --no-owner --no-group -e "${RSH}" \
-    "ubuntu@${HOST}:${SNAP_REMOTE}/cognitive_memory.db" \
+rsync -az "${RPATH}" --no-perms --no-owner --no-group -e "${RSH}" \
+    "${REMOTE}:${SNAP_REMOTE}/cognitive_memory.db" \
     "${LOCAL_MEM}/cognitive_memory.db" >> "${LOG}" 2>&1
-echo "[$(ts)] cognitive_memory.db mirror rc=$?" >> "${LOG}"
+RC=$?; [ "${RC}" -ne 0 ] && FAILED=1
+echo "[$(ts)] cognitive_memory.db mirror rc=${RC}" >> "${LOG}"
 
 # 2) 核心库：远端快照 → 本地只读镜像
-rsync -az ${RPATH} --no-perms --no-owner --no-group -e "${RSH}" \
-    "ubuntu@${HOST}:${SNAP_REMOTE}/dreambuddy_core.db" \
+rsync -az "${RPATH}" --no-perms --no-owner --no-group -e "${RSH}" \
+    "${REMOTE}:${SNAP_REMOTE}/dreambuddy_core.db" \
     "${LOCAL_DAL}/dreambuddy_core.db" >> "${LOG}" 2>&1
-echo "[$(ts)] dreambuddy_core.db mirror rc=$?" >> "${LOG}"
+RC=$?; [ "${RC}" -ne 0 ] && FAILED=1
+echo "[$(ts)] dreambuddy_core.db mirror rc=${RC}" >> "${LOG}"
 
 # 3) gene_data 双向 merge（不含 --delete）
 #   3a. 上行：本地新增 → 远端
-rsync -az ${RPATH} --no-perms --no-owner --no-group -e "${RSH}" \
-    "${GENE_LOCAL}/" "ubuntu@${HOST}:${GENE_REMOTE}/" >> "${LOG}" 2>&1
-echo "[$(ts)] gene_data up-merge rc=$?" >> "${LOG}"
+rsync -az "${RPATH}" --no-perms --no-owner --no-group -e "${RSH}" \
+    "${GENE_LOCAL}/" "${REMOTE}:${GENE_REMOTE}/" >> "${LOG}" 2>&1
+RC=$?; [ "${RC}" -ne 0 ] && FAILED=1
+echo "[$(ts)] gene_data up-merge rc=${RC}" >> "${LOG}"
 #   3b. 下行：远端 → 本地
-rsync -az ${RPATH} --no-perms --no-owner --no-group -e "${RSH}" \
-    "ubuntu@${HOST}:${GENE_REMOTE}/" "${GENE_LOCAL}/" >> "${LOG}" 2>&1
-echo "[$(ts)] gene_data down-merge rc=$?" >> "${LOG}"
+rsync -az "${RPATH}" --no-perms --no-owner --no-group -e "${RSH}" \
+    "${REMOTE}:${GENE_REMOTE}/" "${GENE_LOCAL}/" >> "${LOG}" 2>&1
+RC=$?; [ "${RC}" -ne 0 ] && FAILED=1
+echo "[$(ts)] gene_data down-merge rc=${RC}" >> "${LOG}"
 
-echo "[$(ts)] === local-mirror done ===" >> "${LOG}"
+echo "[$(ts)] === local-mirror done FAILED=${FAILED} ===" >> "${LOG}"
+exit "${FAILED}"
