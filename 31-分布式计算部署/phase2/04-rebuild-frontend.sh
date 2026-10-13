@@ -55,7 +55,8 @@ sudo -u "${DEPLOY_USER}" pnpm build 2>&1 | tail -5
 
 # 3. 重启前端
 echo ">>> [3/3] 重启前端 PM2 进程"
-pm2 restart dreambuddy-frontend 2>/dev/null || pm2 restart all
+# --update-env 确保 .env.cloud 中导出的 COGNITIVE_PYTHON 等变量注入进程
+pm2 restart dreambuddy-frontend --update-env 2>/dev/null || pm2 restart all --update-env
 
 sleep 3
 
