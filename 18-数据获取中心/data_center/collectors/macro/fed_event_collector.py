@@ -136,6 +136,31 @@ def _fetch_fedwatch_from_cme() -> dict:
     }
 
 
+def _get_current_fed_funds_rate() -> float:
+    """从 DAL (19-数据访问层) 读取当前联邦基金利率，作为 hike/cut/hold 分类基准。
+
+    读取失败时返回 0.0，调用方需自行兜底。
+    """
+    try:
+        from pathlib import Path
+        import sqlite3
+
+        _repo = Path(__file__).resolve().parents[4]
+        _dal = str(_repo / "19-数据访问层" / "data" / "dreambuddy_core.db")
+        conn = sqlite3.connect(_dal)
+        row = conn.execute(
+            "SELECT metric_value FROM mm_metrics "
+            "WHERE sub_category='FEDFUNDS' AND metric_name='value' "
+            "ORDER BY timestamp DESC LIMIT 1"
+        ).fetchone()
+        conn.close()
+        if row and row[0]:
+            return float(row[0])
+    except Exception as e:
+        logger.warning("[FedWatch] 从 DAL 读取 FEDFUNDS 失败: %s", e)
+    return 0.0
+
+
 def _fetch_fedwatch_from_investing() -> dict:
     """从 Investing.com Fed Rate Monitor 爬取下次会议概率。
 
@@ -164,11 +189,6 @@ def _fetch_fedwatch_from_investing() -> dict:
         first_table = tables[0]
         rows = first_table.find_all("tr")
 
-        # 解析概率：按利率区间分类
-        # 当前利率约 4.00-4.25（可从数据推断）
-        hike_prob = 0.0  # 利率上升的概率
-        cut_prob = 0.0   # 利率下降的概率
-        hold_prob = 0.0  # 利率不变的概率
         meeting_date = ""
         target_rate = ""
 
@@ -178,9 +198,7 @@ def _fetch_fedwatch_from_investing() -> dict:
         if date_match:
             meeting_date = date_match.group(1)
 
-        # �要知道当前利率水平来判断 hike/cut/hold
-        # 简化：最高利率区间 = hike，最低 = cut，中间 = hold
-        # 更准确：比较利率区间与当前利率
+        # 解析利率区间与概率
         rate_ranges = []
         for row in rows[1:]:  # 跳过表头
             cells = row.find_all("td")
@@ -194,26 +212,32 @@ def _fetch_fedwatch_from_investing() -> dict:
             logger.warning("[FedWatch] 未解析到利率区间数据")
             return {}
 
-        # 按利率区间排序，最低为 cut，最高为 hike，中间为 hold
-        # 当前利率约 4.00-4.25（FRED FEDFUNDS 显示约 4.00%）
-        current_rate_approx = 4.00  # 可动态调整
+        # 从 DAL 动态获取当前联邦基金利率下限，避免硬编码导致分类错位
+        # （历史 bug：硬编码 4.00 时，3.75-4.00 区间被误判为 cut，4.00-4.25 被误判为 hold）
+        current_lower = _get_current_fed_funds_rate()
+        if current_lower <= 0.0:
+            logger.warning("[FedWatch] DAL 无 FEDFUNDS 数据，无法分类，返回空")
+            return {}
 
+        # 复用与 cme-fedwatch 一致的分类逻辑：
+        #   rate_lower > current_lower → hike
+        #   rate_lower < current_lower → cut
+        #   rate_lower == current_lower → hold
+        probabilities = {}
         for rate_range, prob in rate_ranges:
-            # 解析利率区间的下限
-            m = re.search(r"([\d.]+)", rate_range)
-            if m:
-                rate_lower = float(m.group(1))
-                if rate_lower >= current_rate_approx + 0.25:
-                    hike_prob += prob
-                elif rate_lower <= current_rate_approx - 0.25:
-                    cut_prob += prob
-                else:
-                    hold_prob += prob
-                target_rate = rate_range
+            probabilities[rate_range] = prob * 100.0  # _classify_probabilities 期望百分比值
+
+        hike_prob, cut_prob, hold_prob = _classify_probabilities(
+            probabilities, current_lower
+        )
 
         if hike_prob == 0 and cut_prob == 0 and hold_prob == 0:
             logger.warning("[FedWatch] 概率全为 0")
             return {}
+
+        # target_rate 取概率最高的区间
+        if rate_ranges:
+            target_rate = max(rate_ranges, key=lambda x: x[1])[0]
 
         return {
             "hike_prob": round(hike_prob, 4),
