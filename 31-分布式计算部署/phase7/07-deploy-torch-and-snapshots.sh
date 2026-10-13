@@ -62,7 +62,7 @@ PYTHONPATH="${EVO_DIR}" "${PY}" -c "
 from dreambuddy_evolution.engines.sde_solver import SDESolver, log_runtime_backends
 st = SDESolver().status()
 print('    status:', st)
-assert st['torch'], 'torch 不可用'
+assert st['neural_sde'], 'torch 不可用'
 assert st['torchsde'], 'torchsde 不可用'
 log_runtime_backends()
 print('    ✓ torch/torchsde 校验通过')
