@@ -1240,7 +1240,7 @@ class PollingTrader:
         from scripts.memory_l4.bcrm2.exit_strategies import (
             P3EarlyExitStrategy, SignalReverseStrategy,
             EvForceCloseStrategy, TimeoutProfitSwitchStrategy,
-            EvAdjustStrategy, WashoutHoldStrategy,
+            EvAdjustStrategy, WashoutHoldStrategy, TrailingStopStrategy,
         )
         from scripts.memory_l4.bcrm2.washout_detector import WashoutDetector
         from scripts.memory_l4.bcrm2.washout_sl_guard import WashoutSLGuard
@@ -1300,6 +1300,11 @@ class PollingTrader:
             self._ev_force_close_strategy,
             TimeoutProfitSwitchStrategy(timeout_hours=_timeout_hours),
             self._ev_adjust_strategy,
+            TrailingStopStrategy(
+                break_even_pct=0.02,
+                trailing_arm_pct=0.04,
+                trailing_retrace_pct=0.015,
+            ),
         ])
         # ── 注入 storage 适配器，用于 exit_strategy_log 贡献值统计 ──
         try:
@@ -1310,8 +1315,8 @@ class PollingTrader:
         except Exception as _e:
             self._log(f"[ExitManager] storage 注入失败，贡献值统计降级关闭: {_e}", "WARN")
         self._log(
-            f"[ExitManager] 策略链初始化 | 5 策略 | "
-            f"P3(10)→SignalRev(20)→EvFC(30)→Timeout(40)→EvAdj(60) | "
+            f"[ExitManager] 策略链初始化 | 7 策略 | "
+            f"P3(10)→WashoutHold(15)→SignalRev(20)→EvFC(30)→Timeout(40)→EvAdj(60)→TrailingStop(70) | "
             f"timeout={_timeout_hours:.1f}h",
             "INFO",
         )
