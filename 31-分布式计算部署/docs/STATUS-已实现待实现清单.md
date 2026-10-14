@@ -135,6 +135,30 @@
 
 > 统一入口：本地 launchd 与云端 systemd 共用 `16-调控系统/scripts/run_trailing_stop_runner.sh`（内部自解析仓库路径 + 加载 `14-V15经典马丁策略/config/.env.local` 凭据 + 组装 PYTHONPATH），保证两端行为一致。
 
+### 2.11 云端监控面板对齐本地（Phase 10）— ✅ 已实现（2026-10-14）
+
+| 改动 | 职责 | 云端产物 | 状态 |
+|------|------|---------|------|
+| `phase10/10-deploy-panel-parity-units.sh` | ab-trading 生产者上云（复活 ab_monitor/ab_orchestrator） | `ab-monitor.service`+`.timer`(4h) / `ab-orchestrator.service`+`.timer`(4h) | ✅ active |
+| `data_server_fixed.py` 去硬编码（新增 `_REPO_ROOT` + 替换 15 处 macOS 绝对路径） | 两端同源面板 | yijing-data-server :8765（已重启加载新码） | ✅ |
+| `polling_trader.py` agi_snapshot 写盘去硬编码 | `/api/agi/*` 数据源 | `23-四层.../dreambuddy_evolution/data/agi_snapshot.jsonl` | ✅ 已产出（重启后） |
+| `experiments/ab-trading/scripts/run_agent_a.sh` 去硬编码（仓库根自推导 + `PYTHON_BIN`） | agent 生产者 | — | ✅ |
+| `ab-trading` 无凭据优雅降级（`core/exit_module.py` 同步容错 + `agent_b_runner.py` `get_account` 容错） | 云端无 `config/.env` 不再整轮崩溃 | — | ✅ |
+
+**关键事实（本轮取证）**：
+
+- 系统性根因：面板与生产者硬编码 macOS 绝对路径 → 云端解析不到 → 返回空/兜底值（页面 HTML 两端字节一致，MD5 `bb368478a8def5f867ebc1611cf8d6ff`，差异全部来自 API 数据）。
+- 云端生产者必须禁止实盘：`config/.env` 被 `.gitignore` 忽略（云端本就不存在）+ 单元显式 `Environment="AUTO_EXECUTE=false"`。
+- systemd 单元内 `auto_monitor.py` 以裸 `python3` 拉起 agent runner → 单元须把 venv bin 前置 PATH（云端 `/usr/bin/python3` 缺 `dotenv/requests`）。
+- 云端 git 仓库属主 `luke`、SSH 用户 `ubuntu` → 拉取需 `sudo -n -u luke -H git -C /home/luke/dreambuddy pull --ff-only`。
+
+**验收（D4：结构 + 关键字段一致）**：
+
+- 页面：外部 `http://43.160.201.117:8765/` → 200，MD5 与本地一致。
+- `/api/state`：两端 13 键一致（`logs_a`/`logs_b`/`total_equity`/`b_*`/`c_*`/`perp_*`/`spot_usdc`）；本地 `logs_a=logs_b=30`，云端 `1/1`（随 4h 周期增长，属机器相关数值差异）。
+- `/api/agi/snapshot`、`/api/agi/status`、`/api/nonlinear-path-metrics`、`/api/classic-executor`、`/api/bdsm/snapshot`、`/api/evolution-overview`：两端顶层键结构一致。
+- `fuses_state.json`：全仓无生产者（仅面板读取）→ 按决策保持现状（两端皆空即视为一致）。
+
 ---
 
 ## 三、待实现清单

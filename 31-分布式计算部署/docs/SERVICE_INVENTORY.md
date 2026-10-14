@@ -67,9 +67,9 @@
 
 `v15_light_poll`(300s)、`v15_orchestrator`(900s)、`yijing_data_server`、`dreambuddy.yijing.polling-trader`、`yijing_trading`(3600s)、`yijing_live_300s`、`yijing_monitor`(4h)、`datacenter`(keepalive)、`dc-scheduler`(keepalive)、`dreamos`、`ranking-trigger`(4h)
 
-### 组 B｜云端**部分未部署**（本地独有）— 2026-10-14 更新：`signal_scanner` / `memory_cleanup` 已补云端
+### 组 B｜云端**部分未部署**（本地独有）— 2026-10-14 更新：`signal_scanner` / `memory_cleanup` 已补云端，`ab_monitor` / `ab_orchestrator` 已复活并上云
 
-`trailing-stop-runner`(`--real`,300s)、`signal_scanner`(12-三屏,300s → ✅ **已补云端** `signal-scanner.service`)、`screen_monitor`/`screen_orchestrator`/`trend_executor`(experiments/ab-trading)、`ab_monitor`/`ab_orchestrator`(4h)、`agent-b-strategy-update`(02:00)、`memory_cleanup`(02:05 → ✅ **已补云端** `memory-cleanup.timer`)、`etl-worker`(7-产物中台 → ⏸ **暂缓**)、`ai.hermes.gateway`/`ai.hermes.dashboard`(→ ✅ **云端已启用**)、`com.l3.commandcenter.*`(5)
+`trailing-stop-runner`(`--real`,300s)、`signal_scanner`(12-三屏,300s → ✅ **已补云端** `signal-scanner.service`)、`screen_monitor`/`screen_orchestrator`/`trend_executor`(experiments/ab-trading)、`ab_monitor`/`ab_orchestrator`(4h → ✅ **已复活并上云** `ab-monitor`/`ab-orchestrator` service+timer)、`agent-b-strategy-update`(02:00)、`memory_cleanup`(02:05 → ✅ **已补云端** `memory-cleanup.timer`)、`etl-worker`(7-产物中台 → ⏸ **暂缓**)、`ai.hermes.gateway`/`ai.hermes.dashboard`(→ ✅ **云端已启用**)、`com.l3.commandcenter.*`(5)
 
 ### 组 C｜训练/自进化（保留本地）
 
@@ -118,7 +118,7 @@
 | **`trailing-stop-runner`(`--real`)** | ✅ **已补云端** `trailing-stop-runner.service`（2026-10-14，phase9；与本地 launchd 共用统一入口 `16-调控系统/scripts/run_trailing_stop_runner.sh`，`--real` 常驻 300s） |
 | `signal_scanner`(12-三屏) | ✅ **已补云端** `signal-scanner.service`（2026-10-14，每 300s；pool.json 实测刷新 9/9 币） |
 | `screen_monitor`/`screen_orchestrator`/`trend_executor`(ab-trading) | latent，建议废弃 |
-| `ab_monitor`/`ab_orchestrator` | latent，建议废弃 |
+| `ab_monitor`/`ab_orchestrator` | ✅ **已复活并上云**（2026-10-14 phase10）：`ab-monitor.service` + `.timer` / `ab-orchestrator.service` + `.timer`（4h 周期）；**更新先前"latent，建议废弃"结论**。云端 `AUTO_EXECUTE=false`（`config/.env` 被 .gitignore 忽略 → 天然缺失），禁止实盘 |
 | `agent-b-strategy-update` | latent，建议废弃 |
 | `etl-worker`(7-产物中台) | ✅ **已补云端**（2026-10-14，phase10）：建 `events/{dreamos,dsh,frontend,hub}` + venv 装 `psycopg2-binary 2.9.13` + 幂等建 observability 三表 + `etl-worker.service`（60s 轮询）；product-hub 加 drop-in 对齐 `WORKBUDDY_EVENTS_ROOT` |
 | `memory_cleanup`(02:05) | ✅ **已补云端** `memory-cleanup.timer`（每日 02:05；注：云端暂无 ab-trading 记忆文件，当前空转） |
@@ -172,6 +172,8 @@ lsof -nP -iTCP -sTCP:LISTEN
 | `signal_scanner` | 补云端 | `signal-scanner.service`（12-三屏，300s） | ✅ active，pool.json 实测刷新（9/9 币） |
 | `memory_cleanup` | 补云端 | `memory-cleanup.service` + `.timer`（02:05） | ✅ 部署并实测 exit 0（云端无记忆文件，暂空转） |
 | `etl-worker` | 补云端 | `etl-worker.service`（60s）+ `events/` 数据源 + observability 三表 | ✅ active；全链路实测：临时 fixtures → sessions/spans/dsh_calls 各 1 行落库（验收后已清理，计数归 0） |
+| `ab_monitor`/`ab_orchestrator`(+面板生产者) | 复活并上云（phase10） | `ab-monitor.service`+`.timer` / `ab-orchestrator.service`+`.timer`（4h）；单元内前置 venv PATH | ✅ timer active；首轮 agent_a/agent_b 已产 `logs/agent_a|b/*.json`，云端 `/api/state` `logs_a=logs_b=1` |
+| 云端监控面板(8765) 对齐本地 | 去硬编码 + 云端自产 + 放行 | `data_server_fixed.py`/`polling_trader.py`/`run_agent_a.sh` 去 macOS 硬编码；ufw 放行 8765 | ✅ 外部 `http://43.160.201.117:8765/` 200，页面 MD5 与本地一致；7 端点顶层键结构一致（详见 STATUS 2.11） |
 
 **代码落地**（GitHub 流水线：本地 commit/push → 云端 `git pull`）：
 - `12-三屏趋势系统/signal_pool/scanner.py` 去硬编码（相对推导 `10-经典指标系统`，macOS/Linux 通用）
