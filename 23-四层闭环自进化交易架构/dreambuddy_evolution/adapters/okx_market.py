@@ -27,6 +27,11 @@ class OKXMarketAdapter:
         self._last_good: dict[str, tuple[float, dict]] = {}
         self._ttl: float = 60.0
         self._max_retries: int = 3
+        # 多空比专用缓存（数据 1H 更新一次）：TTL 900s + stale 6h 降级
+        self._lsr_cache: dict[str, tuple[float, dict]] = {}
+        self._lsr_last_good: dict[str, tuple[float, dict]] = {}
+        self._lsr_ttl: float = 900.0
+        self._lsr_stale_ttl: float = 6 * 3600.0
 
     def fetch(self, symbol: str, inst_id: str, limit: int = 200) -> dict[str, Any]:
         """
@@ -203,10 +208,13 @@ class OKXMarketAdapter:
         return None
 
     def _fetch_long_short_ratio(self, inst_id: str) -> dict[str, float] | None:
-        """OKX 公开多空持仓比接口
-
+        """OKX 公开多空持仓比接口（TTL 缓存 + 50011 限频退避 + stale 降级）
         优先调用 okx_client.get_long_short_ratio()；若不存在则降级到 _get。
         """
+        # TTL 缓存命中 → 直接返回（数据 1H 更新一次，900s 缓存足够新鲜）
+        _cached = self._lsr_cache.get(inst_id)
+        if _cached is not None and time.time() - _cached[0] < self._lsr_ttl:
+            return _cached[1]
         try:
             # Level 1: 优先用 okx_client 命名方法（若有）
             get_lsr = getattr(self._client, "get_long_short_ratio", None)
@@ -215,7 +223,10 @@ class OKXMarketAdapter:
                 if resp and resp.get("ok"):
                     lr = resp.get("long_ratio", 0.5)
                     sr = resp.get("short_ratio", 1.0 - lr)
-                    return {"long": float(lr), "short": float(sr)}
+                    _out = {"long": float(lr), "short": float(sr)}
+                    self._lsr_cache[inst_id] = (time.time(), _out)
+                    self._lsr_last_good[inst_id] = (time.time(), _out)
+                    return _out
 
             # Level 2: 降级用 _get 直连 OKX API
             # 端点已迁移: /api/v5/public/long-short-ratio (404) →
@@ -223,26 +234,45 @@ class OKXMarketAdapter:
             # 参数: ccy (BTC-USDT-SWAP → BTC), 响应: data=[[ts, longShortRatio],...]
             _get = getattr(self._client, "_get", None)
             if _get is None:
-                return None
-
+                return self._lsr_stale(inst_id)
             ccy = inst_id.split("-")[0] if inst_id else ""
             if not ccy:
-                return None
-
-            r = _get("/api/v5/rubik/stat/contracts/long-short-account-ratio",
-                     {"ccy": ccy, "period": "1H"}, auth=False)
+                return self._lsr_stale(inst_id)
+            # 50011 限频退避重试（最多 2 次，间隔 1.5s）
+            r = None
+            for _attempt in range(2):
+                r = _get("/api/v5/rubik/stat/contracts/long-short-account-ratio",
+                         {"ccy": ccy, "period": "1H"}, auth=False)
+                if r and r.get("code") == "50011" and _attempt == 0:
+                    logger.warning("[FO] long-short-ratio rate-limited (50011) ccy=%s, backoff 1.5s", ccy)
+                    time.sleep(1.5)
+                    continue
+                break
             if not r or r.get("code") != "0" or not r.get("data"):
-                return None
+                logger.warning("[FO] long-short-ratio fetch fail ccy=%s: %s",
+                               ccy, (r or {}).get("msg", "no resp"))
+                return self._lsr_stale(inst_id)
 
             d = r["data"][0]  # [ts, longShortRatio]
             lsr = float(d[1])  # longShortRatio = longCount/shortCount
             long_ratio = lsr / (1.0 + lsr)
             short_ratio = 1.0 / (1.0 + lsr)
-            return {"long": long_ratio, "short": short_ratio}
-
+            _out = {"long": long_ratio, "short": short_ratio}
+            self._lsr_cache[inst_id] = (time.time(), _out)
+            self._lsr_last_good[inst_id] = (time.time(), _out)
+            return _out
         except Exception as e:
-            logger.debug("[FO] long-short-ratio not available: %s", e)
-            return None
+            logger.warning("[FO] long-short-ratio not available: %s", e)
+            return self._lsr_stale(inst_id)
+
+    def _lsr_stale(self, inst_id: str) -> dict[str, float] | None:
+        """stale 降级：限频/失败时返回 6h 内最近成功多空比（优于 0.5 中性兜底）"""
+        _entry = self._lsr_last_good.get(inst_id)
+        if _entry is not None and time.time() - _entry[0] < self._lsr_stale_ttl:
+            logger.warning("[FO] long-short-ratio stale fallback: %s (age %.0fs)",
+                           inst_id, time.time() - _entry[0])
+            return _entry[1]
+        return None
 
     # ---------------------------------------------------------- Open Interest
     def _fetch_open_interest(self, inst_id: str) -> dict[str, Any]:
