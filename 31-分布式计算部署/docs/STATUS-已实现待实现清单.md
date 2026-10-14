@@ -46,7 +46,7 @@
 | `phase1/03-deploy-frontend.sh` | Next.js 15 前端（PM2→systemd） | dreambuddy-frontend :3001 | ✅ active |
 | `phase1/04-deploy-v15.sh` | V15 API + capital API + systemd timer | v15-api :8771 / v15-capital-api :8770 | ✅ |
 | `phase1/05-nginx-ssl.sh` | Nginx 反代 + Let's Encrypt | nginx | ✅ |
-| `phase1/06-deploy-hermes.sh` | Hermes 飞书网关 | hermes-gateway / group-poller / hermes-dashboard :9119 | ✅ active |
+| `phase1/06-deploy-hermes.sh` | Hermes 飞书网关 | hermes-gateway / group-poller / hermes-dashboard :9119 | ✅ active（2026-10-14 已启用，:9119 监听） |
 | `phase1/healthcheck.sh` | 统一健康检查（10维度） | — | ✅ |
 | `phase1/update.sh` | 滚动更新脚本 | — | ✅ |
 | `phase1/logrotate-dreambuddy.conf` | 日志轮转 | — | ✅ |
@@ -120,8 +120,9 @@
 
 ### 2.9 云端全量运行清单（已核对 active，2026-10-14）
 
-- **systemd 服务**（19个）：dreambuddy-frontend(:3001) · yijing-data-server(:8765) · product-hub(:3456) · fundamental(:9094) · m25-strategy-generation(:8095) · m26-strategy-lib(:8093) · m27-governance(:8094) · m28-signal-trigger(:8096) · v15-api(:8771) · v15-capital-api(:8770) · yijing-polling-trader · datacenter-scheduler · cognitive-daemon · dreamos-scheduler · dreamos-dynamic-evaluator · hermes-gateway · group-poller · hermes-dashboard(:9119) · nginx
-- **timers**（9个）：v15-orchestrator · v15-poll-light · datacenter-backfill · dal-backup · dal-rotate · dal-integrity · yijing-monitor · ranking-trigger · dreambuddy-snapshot
+- **systemd 服务**（active 20个）：dreambuddy-frontend(:3001) · yijing-data-server(:8765) · product-hub(:3456) · fundamental(:9094) · m25-strategy-generation(:8095) · m26-strategy-lib(:8093) · m27-governance(:8094) · m28-signal-trigger(:8096) · v15-api(:8771) · v15-capital-api(:8770) · yijing-polling-trader · datacenter-scheduler · cognitive-daemon · dreamos-scheduler · dreamos-dynamic-evaluator · nginx · hermes-gateway · group-poller · hermes-dashboard(:9119) · signal-scanner
+- **systemd 服务**（inactive 0个）：hermes 三单元已于 2026-10-14 启用（enabled+active，:9119 监听）；组 B 的 signal_scanner / memory_cleanup 已补云端（`phase8/08-deploy-groupb-units.sh`）。memory-cleanup.service 为 oneshot，静息态 inactive 属正常
+- **timers**（11个）：v15-orchestrator · v15-poll-light · datacenter-backfill · dal-backup · dal-rotate · dal-integrity · yijing-monitor · ranking-trigger · dreambuddy-snapshot · dreambuddy-continual-training · memory-cleanup
 - **Docker**：dreambuddy-pg / dreambuddy-redis / dreambuddy-minio（healthy）
 - **PM2**：已清空（M25 迁 systemd）
 
@@ -170,6 +171,8 @@
 | N8 | **权重 delta 传输（轻量联邦）** | P1 | 1-2天 | MinIO 上传改传权重差异（类似 GradualDiff-Fed），降低通信量 |
 | N9 | **完整联邦学习（Flower/NVFlare）** | P2 | 3-5天 | FedAvg 多节点协作训练，仅传梯度/权重不传原始数据 |
 | N10 | **自进化模型同步机制** | P0 | 2天 | MinIO 模型仓库 + 云端热加载 + 灰度切换（SPEC Phase 4 原计划）。**独立可立即实施** |
+| **N13** | **MutationDetector 突变检测器** | **P0** | 1-2天 | 隔离单训下"突变"判据（z>3 / DSR≥0.95 或 t>3.0 / 样本下限）+ 冷却窗 + 二次确认，触发即时广播。详见 [RESEARCH-训练协同-隔离单训与突变广播同步.md](./RESEARCH-训练协同-隔离单训与突变广播同步.md) · [PLAN-训练协同-N13突变检测与N14广播总线.md](./PLAN-训练协同-N13突变检测与N14广播总线.md) |
+| **N14** | **广播总线 + 兜底心跳** | **P0** | 1天 | Redis Streams 广播（复用 O1）+ 固定周期兜底同步（**6h**）+ 择优+部分迁移 + last-known-good。**N13 的承载层** |
 
 ### 3.3 工程基建待实现
 
@@ -194,13 +197,15 @@
     │
     ├── 前端层 P0: N10（模型同步）─ 独立，可立即实施
     │       │
-    │       └── N8（权重delta）─ 依赖 N10
-    │               │
-    │               └── N9（联邦学习）─ 依赖 N8
+    │       ├── N8（权重delta）─ 依赖 N10
+    │       │       │
+    │       │       └── N9（联邦学习）─ 依赖 N8
+    │       │
+    │       └── N13（突变检测）+ N14（广播总线）─ 依赖 N8/N10；混合同步范式
     │
     └── O1+O2（任务队列+心跳）─ 独立，为跨节点打基础
             │
-            └── N4（跨节点竞赛）─ 依赖 O1
+            └── N4（跨节点竞赛）─ 依赖 O1；N14 复用 Redis Streams
 ```
 
 **推荐实施顺序**：
