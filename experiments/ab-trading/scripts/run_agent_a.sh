@@ -1,10 +1,12 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # Agent A 定时执行脚本
 # 用法：每4小时执行一次
+# 仓库根由脚本自身位置推导（本地 macOS / 云端 Linux 通用），不再硬编码绝对路径
 
 set -e
 
-REPO_DIR="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 WORK_DIR="$REPO_DIR/experiments/ab-trading"
 LOG_DIR="$WORK_DIR/logs/agent_a"
 ENV_FILE="$WORK_DIR/config/.env"
@@ -23,7 +25,7 @@ fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Agent A 开始执行" >> "$LOG_FILE"
 
-python3 agents/agent_a_runner.py >> "$LOG_FILE" 2>&1
+"${PYTHON_BIN:-python3}" agents/agent_a_runner.py >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 

@@ -19,6 +19,15 @@ from urllib.parse import urlparse, parse_qsl
 warnings.filterwarnings("ignore")
 os.environ["NO_PROXY"] = "localhost,127.0.0.1"
 
+# 仓库根目录：由本文件位置推导（本地 macOS / 云端 Linux 通用），
+# 替代历史硬编码的 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2 绝对路径。
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+# 四层闭环自进化 AGI 快照（/api/agi/snapshot、/api/agi/status、
+# /api/nonlinear-path-metrics 共用同一数据源）
+_AGI_SNAPSHOT_FILE = (
+    _REPO_ROOT / "23-四层闭环自进化交易架构" / "dreambuddy_evolution" / "data" / "agi_snapshot.jsonl"
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent / "experiments" / "ab-trading"
 LOG_A    = BASE_DIR / "logs" / "agent_a"
 LOG_B    = BASE_DIR / "logs" / "agent_b"
@@ -77,7 +86,7 @@ USER_C = "0x81cA2cf32b57a5790338c2b0d7Ca847abC18838a"  # Agent C 独立钱包（
 # 直接读取全局 os.environ["ASTER_USER"]，导致 Dream OS 和趋势策略查询返回
 # 相同持仓。正确做法是用 owner="trend" 关键字，读取 ASTER_USER_TREND 等分离变量。
 # dreamos/.env 已定义 ASTER_USER_TREND/SIGNER_TREND/PRIVATE_KEY_TREND，这里加载到进程环境。
-_DREAMOS_ENV_FILE = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/.env")
+_DREAMOS_ENV_FILE = _REPO_ROOT / "1-ARCHITECTURE" / "dreamos" / ".env"
 if _DREAMOS_ENV_FILE.exists():
     with open(_DREAMOS_ENV_FILE) as _f:
         for _line in _f:
@@ -315,7 +324,7 @@ def get_yijing_okx_state():
       total_equity / perp_avail / perp_positions (+ b/c 空列表保持兼容)
     """
     try:
-        V15_DIR = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略")
+        V15_DIR = _REPO_ROOT / "14-V15经典马丁策略"
         sys.path.insert(0, str(V15_DIR / "lib"))
         from okx_client import OKXSimulatedClient
         # 直接传 config dict，绕过 _load_config() 读 os.environ
@@ -847,9 +856,9 @@ def get_reports_state():
 
 
 # ── Dream OS 状态 ──────────────────────────────────────────────────────────
-ARCH_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE"
-PROJECT_ROOT = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2"
-CLASSIC_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统"
+ARCH_DIR = str(_REPO_ROOT / "1-ARCHITECTURE")
+PROJECT_ROOT = str(_REPO_ROOT)
+CLASSIC_DIR = str(_REPO_ROOT / "10-经典指标系统")
 # Dream OS 实盘账户 owner（Aster 平台）
 # 注意：必须显式指定，避免被 12-三屏趋势系统的 AsterExecutor 导入时污染全局 ASTER_USER
 DREAMOS_ASTER_OWNER_RAW = os.environ.get("DREAMOS_ASTER_OWNER", "").strip()
@@ -1621,7 +1630,7 @@ V15_INITIAL_CAPITAL = 150.0
 
 def _load_v15_baseline():
     """加载或创建V15马丁策略每日基准快照（从今天起以150为基准）"""
-    baseline_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/account_baseline.json")
+    baseline_file = _REPO_ROOT / "14-V15经典马丁策略" / "data" / "account_baseline.json"
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     baseline = None
     if baseline_file.exists():
@@ -1649,7 +1658,7 @@ def _load_v15_baseline():
 
 def _save_v15_baseline(baseline):
     try:
-        baseline_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/account_baseline.json")
+        baseline_file = _REPO_ROOT / "14-V15经典马丁策略" / "data" / "account_baseline.json"
         baseline_file.parent.mkdir(parents=True, exist_ok=True)
         with open(baseline_file, "w") as fp:
             json.dump(baseline, fp, indent=2, ensure_ascii=False)
@@ -1664,7 +1673,7 @@ def get_v15_account_overview():
     OKX 实时数据作为增强（若可用则填充 live_ok / avail_balance 等字段）。
     """
     baseline = _load_v15_baseline()
-    v15_state_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/v15_state.json")
+    v15_state_file = _REPO_ROOT / "14-V15经典马丁策略" / "data" / "v15_state.json"
 
     # ── 从 v15_state.json 读取核心数据 ──
     total_trades = 0
@@ -1735,7 +1744,7 @@ def get_v15_account_overview():
     current_okx_eq = None
 
     try:
-        V15_DIR = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略")
+        V15_DIR = _REPO_ROOT / "14-V15经典马丁策略"
         sys.path.insert(0, str(V15_DIR / "lib"))
         from capital_manager import get_account_balance, get_current_positions
         balance = get_account_balance()
@@ -2265,7 +2274,7 @@ def _start_bg_refresh():
 
 # ── 市场形态预测 / BCRM 2.0 参数输出 ──────────────────────────────────────────
 # 直接调用 bcrm2.ParameterMapper，避免 HTTP 依赖 8092 Flask 服务
-_BCRM2_L4_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4"
+_BCRM2_L4_DIR = str(_REPO_ROOT / "11-易经推理系统" / "scripts" / "memory_l4")
 if _BCRM2_L4_DIR not in sys.path:
     sys.path.insert(0, _BCRM2_L4_DIR)
 
@@ -3791,7 +3800,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/v15-ct/status":
             try:
                 # V15 马丁策略状态直接从 v15_state.json 读取（由 v15_trader.py 维护）
-                v15_state_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/data/v15_state.json")
+                v15_state_file = _REPO_ROOT / "14-V15经典马丁策略" / "data" / "v15_state.json"
                 total_trades = 0
                 total_wins = 0
                 win_rate = 0.0
@@ -4494,7 +4503,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 n = int(self._get_query_param("n") or "50")
                 symbol = self._get_query_param("symbol")
-                snap_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl")
+                snap_file = _AGI_SNAPSHOT_FILE
                 records = []
                 if snap_file.exists():
                     lines = snap_file.read_text(encoding="utf-8").splitlines()
@@ -4517,7 +4526,7 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/agi/status":
             try:
-                snap_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl")
+                snap_file = _AGI_SNAPSHOT_FILE
                 records = []
                 if snap_file.exists():
                     lines = snap_file.read_text(encoding="utf-8").splitlines()
@@ -4551,7 +4560,7 @@ class Handler(BaseHTTPRequestHandler):
         # ── 非线性多阶段最优路径指标 API（6机制） ──
         elif path == "/api/nonlinear-path-metrics":
             try:
-                snap_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data/agi_snapshot.jsonl")
+                snap_file = _AGI_SNAPSHOT_FILE
                 if not snap_file.exists():
                     self._json({"ok": False, "error": "no snapshot file", "metrics": {}})
                     return
@@ -4595,7 +4604,7 @@ class Handler(BaseHTTPRequestHandler):
                 # 从 polling_trader 的 fuses 状态文件读取
                 g05_state = {"status": "idle", "judges": {"dim_jumped": False, "mech_active": False, "no_bounce": False, "no_intervener": False}}
                 try:
-                    fuses_file = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/artifacts/fuses_state.json")
+                    fuses_file = _REPO_ROOT / "11-易经推理系统" / "scripts" / "artifacts" / "fuses_state.json"
                     if fuses_file.exists():
                         fuses_data = json.loads(fuses_file.read_text(encoding="utf-8"))
                         g05_state = fuses_data.get("g05", g05_state)

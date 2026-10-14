@@ -12480,7 +12480,7 @@ class PollingTrader:
                         except Exception:
                             pass
                         # 写入 JSONL（追加模式）
-                        _snap_dir = _agi_pl.Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/data")
+                        _snap_dir = _agi_pl.Path(__file__).resolve().parents[3] / "23-四层闭环自进化交易架构" / "dreambuddy_evolution" / "data"
                         _snap_dir.mkdir(parents=True, exist_ok=True)
                         _snap_path = _snap_dir / "agi_snapshot.jsonl"
                         with open(_snap_path, "a", encoding="utf-8") as _f:
