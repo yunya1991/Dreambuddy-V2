@@ -140,9 +140,14 @@ class TrailingExecutor:
 
         try:
             # 查询该持仓的详细信息（获取 size）
+            # 注意：fetch_all_positions() 的各系统持仓在 "by_system"/"systems" 键下，
+            # 顶层没有 "positions" 键 —— 需按键展平，否则永远匹配不到目标持仓。
             from unified_position_query import fetch_all_positions
             all_data = fetch_all_positions()
-            positions = all_data.get("positions", [])
+            by_sys_raw = all_data.get("by_system") or all_data.get("systems") or {}
+            positions = []
+            for _name, _sys_data in (by_sys_raw.items() if isinstance(by_sys_raw, dict) else []):
+                positions.extend((_sys_data.get("positions") if isinstance(_sys_data, dict) else None) or [])
 
             target_pos = None
             for p in positions:
