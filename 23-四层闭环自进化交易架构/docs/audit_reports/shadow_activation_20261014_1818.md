@@ -101,7 +101,7 @@ python -m dreambuddy_evolution.scripts.shadow_ate_eval --switch enable_causal_hi
 ## 5. 已知边界（诚实披露）
 
 1. **源B 为静态文件 → 恒态B → 单靠源B 永不触发**。门禁只保证「真实态A 出现即自动放量」，**不制造效应**。真正可走通的放量路径是源A（实时矛盾样本）累积出真实态A。
-2. **预存在失败（与本变更无关）**：`dreambuddy_evolution/tests/test_gene_governance.py::test_gene_audit_schema_validation` — `GeneAuditGate.validate_schema` 对「额外字段」未拒绝（v1.13 基因治理遗留），实际拒绝逻辑与测试断言不一致。已复现确认；**不属本次 Shadow 变更范围**，建议单独开单修复。
+2. **预存在失败（与本变更无关）——已于同日修复**：`dreambuddy_evolution/tests/test_gene_governance.py::test_gene_audit_schema_validation` —— 根因为**测试用例假设过时**（非实现缺陷）：`condition.json` 已声明 `additionalProperties: false` 且 `description` 为 L54 合法属性，测试却把 `description` 当作"额外字段"的反例。修复：反例改用 schema 未声明的 `unknown_extra_field`（不动 schema，避免影响线上基因库）。修复后 `test_gene_governance.py` 6 项全绿。
 3. `set_switch` 仅运行期生效（内存，不落盘）；跨进程/重启一致性由 `reconcile_from_disk()` 补齐。
 
 ---

@@ -64,8 +64,8 @@ def test_gene_audit_schema_validation():
     result = gate.validate_schema(valid_gene)
     assert result["passed"] is True
 
-    # 额外字段应失败
-    invalid_gene = {**valid_gene, "description": "extra field"}
+    # 未在 condition.json 声明的额外字段应失败（description 属 schema 合法属性，不可用作反例）
+    invalid_gene = {**valid_gene, "unknown_extra_field": "should be rejected"}
     result2 = gate.validate_schema(invalid_gene)
     assert result2["passed"] is False
 
