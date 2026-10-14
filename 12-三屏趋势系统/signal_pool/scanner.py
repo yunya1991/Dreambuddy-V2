@@ -25,9 +25,12 @@ import argparse
 from datetime import datetime, timezone
 from typing import Dict, List
 
-# 路径设置
+# 路径设置（相对推导，去硬编码：本地 macOS 与云端 Linux 通用）
 TREND_SYSTEM_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLASSIC_SYSTEM_PATH = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统"
+REPO_ROOT = os.path.dirname(TREND_SYSTEM_PATH)
+CLASSIC_SYSTEM_PATH = os.environ.get(
+    "CLASSIC_SYSTEM_PATH", os.path.join(REPO_ROOT, "10-经典指标系统")
+)
 
 if TREND_SYSTEM_PATH not in sys.path:
     sys.path.insert(0, TREND_SYSTEM_PATH)
