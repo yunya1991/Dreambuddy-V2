@@ -37,6 +37,7 @@
 | [RESEARCH-动态弹性调度-异构节点.md](./RESEARCH-动态弹性调度-异构节点.md) | **动态弹性调度评估**：中心调度+弹性池+分级抢占（混合 8.3/10）+ 4 维调研 + 决策草案 D-25~D-33（O1/O2/O5 扩编） |
 | [STATUS-已实现待实现清单.md](./STATUS-已实现待实现清单.md) | **完整清单：已实现 / 待实现 / 依赖关系 / 实施顺序** |
 | [SERVICE_INVENTORY.md](./SERVICE_INVENTORY.md) | 本地/云端服务盘点（P0 本地算力"全部转训练"改造输入依据） |
+| [REPORT-停本地服务影响面评估.md](./REPORT-停本地服务影响面评估.md) | **停本地服务影响面评估**：远端自足性核验（反向依赖 0 命中）+ 分层停服建议 + `etl-worker` 缺口已补齐闭环（2026-10-14） |
 | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) | 技术设计（架构、部署分阶段、关键决策、降级策略） |
 | [API_SPEC.md](./API_SPEC.md) | 接口规格（部署脚本、服务端口、健康检查、环境变量） |
 | [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) | 部署检查清单 |
