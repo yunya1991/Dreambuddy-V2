@@ -29,6 +29,7 @@ for _p in [_THIS_DIR, _34_DIR, _ADAPTERS_DIR, _CORE_DIR, _SCRIPTS_ROOT]:
 
 from core.decision_deriver import derive_expected_decision_with_cdrive
 from core.debate_integration import enrich_case_with_debate
+from core.outcome_pattern_deriver import resolve_layer_tags
 
 
 def _curl_get(url: str, timeout: int = 10) -> dict:
@@ -168,7 +169,7 @@ def feed_to_training_layers(base_url: str, sources: dict) -> dict:
     # 层 → 格式转换逻辑（从 TSHTTPTrainingExecutor._convert_case_to_training_data 复制）
     for source_name, cases in sources.items():
         for case in cases:
-            layer_tags = getattr(case, "layer_tags", [])
+            layer_tags = resolve_layer_tags(case)  # P2: 成功案例跨层回灌
             for layer in layers:
                 if layer not in layer_tags:
                     continue

@@ -35,6 +35,14 @@ for _p in [_THIS_DIR, _34_DIR, _ADAPTERS_DIR, _CORE_DIR, _SCRIPTS_ROOT]:
 
 _LAYERS = ["S", "DSH", "C", "G", "LLM"]
 
+# P2 修复: C 层决策派生 + 成功案例跨层回灌
+try:
+    from core.decision_deriver import derive_expected_decision_with_cdrive
+    from core.outcome_pattern_deriver import resolve_layer_tags
+except ModuleNotFoundError:
+    from decision_deriver import derive_expected_decision_with_cdrive
+    from outcome_pattern_deriver import resolve_layer_tags
+
 
 def _curl_get(url: str, timeout: int = 10) -> dict:
     req = urllib.request.Request(url, method="GET")
@@ -153,7 +161,8 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
     elif layer == "C":
         return {"context_summary": case.intent,
                 "action_taken": case.actions[0] if case.actions else "",
-                "outcome": outcome, "expected_decision": "CONTINUE",
+                "outcome": outcome,
+                "expected_decision": derive_expected_decision_with_cdrive(case),
                 "quality": case.quality}
     elif layer == "G":
         return {"decisions": [case.intent], "rules": case.learned,
@@ -185,7 +194,7 @@ def feed_continual(base_url: str, sources: dict) -> dict:
     print(f"  阶段 2: 持续喂入（数据到达即学习，不等桶满）")
     print(f"{'='*60}")
 
-    stats = {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0}
+    stats = {layer: {"fed": 0, "added": 0, "failed": 0, "s_level": 0, "backfilled": 0}
              for layer in _LAYERS}
 
     # P2: 收集 S 层 S/A/B 级样本用于语义原型更新
@@ -193,12 +202,16 @@ def feed_continual(base_url: str, sources: dict) -> dict:
 
     for source_name, cases in sources.items():
         for case in cases:
-            layer_tags = getattr(case, "layer_tags", [])
+            native_tags = list(getattr(case, "layer_tags", []) or [])
+            layer_tags = resolve_layer_tags(case)
+            backfilled_layers = [t for t in layer_tags if t not in native_tags]
             quality = _quality_from_case(case)
             for layer in layer_tags:
                 if layer not in _LAYERS:
                     continue
                 stats[layer]["fed"] += 1
+                if layer in backfilled_layers:
+                    stats[layer]["backfilled"] += 1
                 if quality == "S":
                     stats[layer]["s_level"] += 1
                 training_data = _convert_case_to_training_data(case, layer)
@@ -238,7 +251,7 @@ def feed_continual(base_url: str, sources: dict) -> dict:
     for layer in _LAYERS:
         s = stats[layer]
         print(f"  {layer:4s} | 喂入 {s['fed']:>4} | 成功 {s['added']:>4} | "
-              f"失败 {s['failed']:>4} | S级 {s['s_level']:>3}")
+              f"失败 {s['failed']:>4} | S级 {s['s_level']:>3} | 回灌 {s['backfilled']:>4}")
     return stats
 
 

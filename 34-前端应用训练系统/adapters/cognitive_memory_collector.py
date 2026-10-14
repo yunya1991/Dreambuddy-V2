@@ -16,7 +16,14 @@
   - tags → metadata["tags"] (JSON解析为list)
   - id → metadata["id"]
   - source = "cognitive" (采集器名称，非原始source)
-  - layer_tags = ["C"] (认知记忆属反思层)
+  - layer_tags = ["S", "C"] (认知记忆属反思层)
+
+TDD 阶段路由 (v0.5):
+  - RED (失败测试/未实现) → layer_tags=["C"] + metadata.outcome="failure"
+    （失败信号驱动 C 层产出纠正类决策 REDO/RETRY，缓解 C 决策单一）
+  - GREEN (测试通过/已实现) → layer_tags=["LLM","DSH"] + metadata.outcome="success"
+    （成功信号进 LLM success_count + DSH 执行路径）
+  - 未命中 → 保持默认 ["S","C"]，outcome 由 quality 派生
 """
 import json
 import os
@@ -38,6 +45,40 @@ _DEFAULT_DB_PATH = os.path.join(
 
 # 质量等级优先级（数字越大越好）
 _QUALITY_ORDER = {"S": 4, "A": 3, "B": 2, "C": 1, "D": 0}
+
+# TDD 阶段标记（大小写不敏感，用于 RED→C / GREEN→LLM+DSH 路由）
+# 说明: 不用裸 "GREEN"（误命中 72 条非 TDD 记录），只取 TDD 定向标记
+_TDD_RED_MARKERS = (
+    "TDD RED", "RED 测试", "RED测试", "RED 阶段", "红灯",
+    "未实现", "ModuleNotFoundError", "测试失败", "断言失败", "failing test",
+)
+_TDD_GREEN_MARKERS = (
+    "RED→GREEN", "RED->GREEN", "→GREEN", "TDD GREEN", "GREEN 阶段", "绿灯",
+    "测试全过", "全部通过", "已实现并通过", "通过测试",
+)
+
+
+def classify_tdd_phase(content: str) -> Optional[str]:
+    """从记忆正文识别 TDD 阶段。
+
+    优先 RED（失败信号对 C 层学习价值更高），其次 GREEN，均不命中返回 None。
+
+    Args:
+        content: 记忆正文
+
+    Returns:
+        "red" | "green" | None
+    """
+    if not content:
+        return None
+    text = content.upper()
+    for m in _TDD_RED_MARKERS:
+        if m.upper() in text:
+            return "red"
+    for m in _TDD_GREEN_MARKERS:
+        if m.upper() in text:
+            return "green"
+    return None
 
 
 class CognitiveMemoryCollector(TrainingDataProvider):
@@ -118,24 +159,42 @@ class CognitiveMemoryCollector(TrainingDataProvider):
         # P1: 从 content 结构化前缀 [xxx] 或 tags 提取 intent_type
         intent = CognitiveMemoryCollector._extract_intent(content, tags)
 
+        # TDD 阶段路由: RED→C(failure) / GREEN→LLM+DSH(success) / 未命中→S+C
+        tdd_phase = classify_tdd_phase(content)
+        if tdd_phase == "red":
+            layer_tags = ["C"]
+            derived_outcome = "failure"
+        elif tdd_phase == "green":
+            layer_tags = ["LLM", "DSH"]
+            derived_outcome = "success"
+        else:
+            layer_tags = ["S", "C"]
+            derived_outcome = None
+
+        metadata = {
+            "id": row["id"] or "",
+            "tags": tags,
+            "memory_type": row["memory_type"] or "",
+            "original_source": row["source"] or "",
+            "created_at": row["created_at"] or "",
+            "verify_count": row["verify_count"] or 0,
+            "level": row["level"] or "observation",
+        }
+        if tdd_phase:
+            metadata["tdd_phase"] = tdd_phase
+        if derived_outcome:
+            metadata["outcome"] = derived_outcome
+
         return TrainingCase(
             intent=intent,
             actions=[],
             outcome_text=content,
             learned=[content] if content else [],
-            layer_tags=["S", "C"],  # 认知记忆→S层(意图识别)+C层(反思)
+            layer_tags=layer_tags,
             quality=row["quality_level"] or "C",
             confidence=row["confidence"] or 0.0,
             source="cognitive",
-            metadata={
-                "id": row["id"] or "",
-                "tags": tags,
-                "memory_type": row["memory_type"] or "",
-                "original_source": row["source"] or "",
-                "created_at": row["created_at"] or "",
-                "verify_count": row["verify_count"] or 0,
-                "level": row["level"] or "observation",
-            },
+            metadata=metadata,
         )
 
     @staticmethod

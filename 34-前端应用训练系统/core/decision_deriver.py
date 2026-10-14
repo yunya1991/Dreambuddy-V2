@@ -226,6 +226,15 @@ def derive_expected_decision_with_cdrive(
     metadata = getattr(case, "metadata", None) or {}
     confidence = getattr(case, "confidence", 0.4)
 
+    # P2: TDD 阶段显式映射（优先于通用推导）
+    #   RED(测试失败/缺实现) → INSERT_BEFORE（需补充实现步骤）
+    #   GREEN(测试通过/已实现) → CONTINUE（决策序列有效）
+    tdd_phase = metadata.get("tdd_phase")
+    if tdd_phase == "red":
+        return INSERT_BEFORE
+    if tdd_phase == "green":
+        return CONTINUE
+
     # 提取 debate 元数据（由 33-REA 或辩论引擎注入）
     debate_meta = metadata.get("debate", {})
     bull_conf = debate_meta.get("bull_confidence")

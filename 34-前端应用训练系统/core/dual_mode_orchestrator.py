@@ -25,6 +25,12 @@ from interfaces.training_executor import TrainingExecutor, TrainingLayer
 from interfaces.case_evaluator import CaseEvaluator
 from interfaces.rea_parser import REAParser
 
+# P2 修复: 成功案例跨层回灌（outcome=success → 补 LLM/C/S）
+try:
+    from core.outcome_pattern_deriver import resolve_layer_tags
+except ModuleNotFoundError:
+    from outcome_pattern_deriver import resolve_layer_tags
+
 # P3: 资源管理 + 训练队列
 try:
     from resource_manager import ResourceManager, ACTIVE_QUOTA, PASSIVE_QUOTA
@@ -81,8 +87,9 @@ class DualModeTrainingOrchestrator:
         for provider in self._data_providers:
             cases = provider.fetch_cases(limit=limit)
             for case in cases:
+                resolved_tags = resolve_layer_tags(case)
                 for executor in self._training_executors:
-                    if executor.get_layer().value in case.layer_tags:
+                    if executor.get_layer().value in resolved_tags:
                         executor.add_case(case)
                         if executor.get_bucket_count() >= executor.get_bucket_threshold():
                             result = executor.train()
@@ -150,9 +157,9 @@ class DualModeTrainingOrchestrator:
 
             for executor in self._training_executors:
                 layer_val = executor.get_layer().value
-                # 找到该 executor 对应的训练案例
+                # 找到该 executor 对应的训练案例（成功案例跨层回灌）
                 layer_cases = [
-                    c for c in training_cases if layer_val in c.layer_tags
+                    c for c in training_cases if layer_val in resolve_layer_tags(c)
                 ]
                 if not layer_cases:
                     continue
