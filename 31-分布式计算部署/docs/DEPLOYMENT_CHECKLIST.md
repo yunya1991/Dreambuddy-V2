@@ -117,3 +117,25 @@
 - **timers**：v15-orchestrator · v15-poll-light · datacenter-backfill · dal-backup · dal-rotate · dal-integrity · yijing-monitor · ranking-trigger · dreambuddy-snapshot
 - **Docker**：dreambuddy-pg / dreambuddy-redis / dreambuddy-minio（healthy）
 - **PM2**：已清空（M25 迁 systemd）。
+
+---
+
+## 六、部署同步记录（2026-10-14 push → 云端落地）
+
+> 把 G1~G5 修复等 3 个本地 commit + `update.sh` 前端段修正推送到 origin/main，并在云端落地。
+
+**代码流**
+- push：`610fea04ba → 85495ce2cb`（G1~G5 修复 + 34 训练系统 + 收尾包）→ `85495ce2cb → ec21ee56e4`（update.sh PM2→systemd）
+- 云端 `git pull --ff-only`：`610fea04ba → ec21ee56e4`；脏文件先备份至 `/home/luke/backups/dirty-20261014_133148` 再丢弃冲突路径
+- 前端 `pnpm build` exit=0 → 重启 `dreambuddy-frontend.service`
+
+**本轮发现并修复**
+
+| 编号 | 现象 | 根因 | 修复 | 验证 |
+|---|---|---|---|---|
+| G1′ | `dreambuddy-frontend` 再次崩溃循环(:3001)，NRestarts≈786 | `:3001` 被 `tat_agent.service` cgroup 内的 stray `npm exec next start -p 3001` 占用（该单元 `KillMode=process` 不回收子进程） | 杀 stray 进程树 → `reset-failed` → rebuild → `start` | `active/running`、NR=0、:3001 属 `dreambuddy-frontend.service` cgroup、HTTP 307 |
+| G6 | `update.sh` 前端段仍用 PM2，与 systemd 化不一致（再运行会重造 stray→回归 G1） | G1/G5 迁移 systemd 时未同步更新脚本 | PM2 → `systemctl restart dreambuddy-frontend.service` | commit `ec21ee56e4` |
+
+**部署方式确认**：仓库未配置 GitHub webhook（`gh api repos/.../hooks` 为空），CI(`ci.yml`) 仅 lint/test 不部署 → 部署只能手动 SSH 执行。
+
+**健康检查（部署后）**：19 systemd 单元全 `active`/NR=0（product-hub 的 NR=1 为历史累计）；9 timers 全 `active`；11 个服务端口 owner 全部落在各自 `*.service` cgroup（无 stray）；Docker 三容器 healthy；PM2 空。
