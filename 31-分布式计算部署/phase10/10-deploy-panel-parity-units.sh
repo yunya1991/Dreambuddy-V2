@@ -152,8 +152,8 @@ echo -n "yijing-data-server:    "; systemctl is-active yijing-data-server.servic
 systemctl list-timers --all | grep -E "ab-monitor|ab-orchestrator" || true
 echo ""
 echo "=== 首轮手动触发（立即产出面板日志，不等 4h） ==="
-systemctl start ab-monitor.service || true
-echo "  已触发 ab-monitor.service（Type=oneshot，日志见 ${LOG_DIR}/ab-monitor.log）"
+systemctl start --no-block ab-monitor.service || true
+echo "  已触发 ab-monitor.service（Type=oneshot，异步运行，日志见 ${LOG_DIR}/ab-monitor.log）"
 echo ""
 echo "============================================"
 echo "  ✓ Phase 10 部署完成"
