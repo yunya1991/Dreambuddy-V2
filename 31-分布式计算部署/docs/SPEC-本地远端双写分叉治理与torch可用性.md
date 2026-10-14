@@ -23,9 +23,10 @@
 | # | 决策 | 说明 |
 |---|---|---|
 | D1 | **本地和远端都装上 torch** | 本地已具备（anaconda torch 2.11.0 + torchsde 0.2.6）；远端需补齐 |
-| D2 | **远端为权威写入方，本地为只读镜像** | 认知库与 gene_data 均以远端为准 |
-| D3 | **本地写入改落远端** | 本地开发工具（MCP 记忆）与服务不再写本地权威库 |
+| D2 | **认知库多节点聚合（非单写方）** | 本地写本地、远端写远端，同步作业按 `id` 双向聚合（上行 `INSERT OR IGNORE`，下行 `INSERT OR REPLACE` 按 `updated_at`），10min 周期 |
+| D3 | **本地 MCP 写本地认知库** | 本地开发工具（MCP 记忆）写本地 `cognitive_memory.db`，经聚合脚本上行到远端，不再 SSH stdio 托管到远端 |
 | D4 | **两阶段落地，Phase 2 本轮不执行** | Phase 1 过渡期本地先正常同步运行；Phase 2 影子模式**本轮不实施**，由用户自行观察一段时间后再决定是否切换 |
+| D5 | **分布式三层异构协同架构** | 认知层（广义认知最大化，多节点聚合）/ 子系统层（回测竞赛择优权重参数，Competition Mode）/ 前端层（协作训练，类大模型堆算力）—— 详见 `.trae/documents/distributed-core-logic-research-report.md` |
 
 ---
 
@@ -62,14 +63,19 @@
 
 **目标**：两侧保持一致 + 本地照常可用。
 
-**认知库（立即单写方）**
-- 本地 MCP 改「SSH stdio 托管到远端」：MCP 配置（由 `4-MEMORY/9-工具与接口/deploy/install_cognitive_mcp.py:137-146` 生成）的 `command` 改为经 SSH 在远端运行 `cognitive_mcp_server.py`：
-  - 以 `luke` 身份运行（远端已验证 `sudo -n -u luke -H` 免密可用；DB `/home/luke/dreambuddy/4-MEMORY/data/cognitive_memory.db` 属主 `luke:luke`）；
-  - `PYTHONPATH=/home/luke/dreambuddy/4-MEMORY/9-工具与接口`；
-  - 远端需补装 `mcp` 包（已验证缺失）。
-- 效果：`record/verify/recall` 全部落远端权威库；本地库退化为「定时远端→本地只读快照」。
-- 首次切换兜底（实施补充）：若本地库与远端行数不一致，先将**本地独有行一次性 `INSERT OR IGNORE` 上行合并**至远端权威库，再执行下行镜像，避免直接镜像丢弃本地独有记忆（本轮 502 行，29042→29544）。
-- 前置：配置本机 → 远端免密 SSH（独立 key + `~/.ssh/config` 别名）。
+**认知库（多节点聚合 v2 — 已实施）**
+- 本地 MCP **写本地** `cognitive_memory.db`，不再 SSH stdio 托管到远端。
+- 同步作业 `31-分布式计算部署/phase7/08-local-mirror.sh`（LaunchAgent `com.dreambuddy.dbsync`，10min 周期）实现双向聚合：
+  - **下行取数**：远端一致性快照 → 本地常驻副本（rsync 增量，仅传差异块）
+  - **上行汇总**：本地独有行（`id` 不在快照）→ 远端权威 live（`INSERT OR IGNORE by id`）
+  - **下行合并**：快照 → 本地（`INSERT OR REPLACE by id`，远端 `updated_at` 更新的覆盖同名行；本地独有行保留）
+- 远端快照 timer `dreambuddy-snapshot.timer`：每 10 分钟执行 `sqlite3 .backup` 产出快照。
+- 效果：本地写入即时持久（不依赖网络），10min 内聚合到远端；远端写入经下行合并到本地；无整文件 rsync 替换（保住本地 inode，避免 `database is locked`）。
+- 已知边界：`mcp_cognitive` 进程终止后 TRAE 不会自动重启，需用户重载 MCP 配置。
+
+**认知分层共享（P0 规划，待实施）**
+- 调研结论（详见 `.trae/documents/distributed-core-logic-research-report.md`）：广义认知全量共享 vs 子系统私有保留独立性，需分层避免策略同质化。
+- 方案：`memories` 表增加 `scope TEXT DEFAULT 'global'` 列；聚合脚本仅聚合 `scope='global'` 的行，`scope='subsystem'` 行不跨节点聚合。
 
 **gene_data（过渡期双向收敛）**
 - 本地照常写入；由于 `gene_data` 路径由代码位置推导（`evolution_pipeline.py:31-32` 等），过渡期不强行重定向。
@@ -88,7 +94,8 @@
 - 触发条件：用户确认「本地与远端稳定一致」后自行启动。
 
 ### 3.3 验收（Gate）
-- Phase 1：`record`/`verify` 后远端 `cognitive_memory.db` 行数增长、本地库不变（除快照拉取）；
+- Phase 1：`record`/`verify` 后本地 `cognitive_memory.db` 行数即时增长，10min 内上行聚合到远端（远端行数同步增长）；
+- Phase 1：下行合并不丢本地独有行（`INSERT OR REPLACE by id`，本地 `id` 不在快照中的行保留）；
 - Phase 1：一次同步周期后，本地与远端 gene_data 无新增丢失（merge 生效）；
 - Phase 2（**本轮不验收**）：本地 `gene_data` 在本地运行周期内不再增长；下行 `--delete` 后两侧一致。
 
@@ -117,14 +124,24 @@
 
 ## 6. 实施任务（供 writing-plans 展开）
 
-1. **T1** `pyproject.toml` 增 `sde` 可选依赖组。
-2. **T2** 远端安装 CPU torch + torchsde（幂等脚本 `31-分布式计算部署/phase7/`）。
-3. **T3** 可观测性：启动日志打印 torch/SDE 后端状态。
-4. **T4** 新增 SDE 后端测试（torch 可用 → `torchsde`）。
-5. **T5** 远端补装 `mcp` 包并冒烟导入认知 MCP server。
-6. **T6** 免密 SSH + Trae MCP 配置改 SSH stdio 托管（保留回退）。
-7. **T7** 远端快照 timer + 本地 LaunchAgent 镜像作业。
-8. **T8** 过渡期 gene_data 双向 merge 同步脚本。
-9. **T9**（Phase 2，**本轮不实施**）本地 gene_data 停写开关 + 纯下行 `--delete` 切换脚本；待用户观察确认后再启动。
+### 已完成
+- **T1** `pyproject.toml` 增 `sde` 可选依赖组。
+- **T2** 远端安装 CPU torch + torchsde（幂等脚本 `31-分布式计算部署/phase7/`）。
+- **T3** 可观测性：启动日志打印 torch/SDE 后端状态。
+- **T4** 新增 SDE 后端测试（torch 可用 → `torchsde`）。
+- **T7** 远端快照 timer（10min）+ 本地 LaunchAgent 镜像作业（10min）。
+- **T8** 认知库多节点聚合 v2（`08-local-mirror.sh` 按 id 双向聚合）+ gene_data 双向 merge。
+
+### 废弃（决策变更）
+- ~~**T5** 远端补装 `mcp` 包并冒烟导入认知 MCP server~~ — 改为本地写本地，不再 SSH 托管。
+- ~~**T6** 免密 SSH + Trae MCP 配置改 SSH stdio 托管~~ — 改为本地 MCP 写本地库。
+
+### 本轮新增（三层异构协同，详见调研报告）
+- **T10（P0）** 认知分层共享：`memories` 表增 `scope` 列 + 聚合脚本按 `scope` 过滤。
+- **T11（P0）** 子系统竞赛择优框架 `CompetitionOrchestrator`：复用 `EntryModuleSelector` 打分 + 3 级降级 + `BradleyTerryLearner` 在线权重。
+- **T12（P1）** 多重检验 FDR 控制模块，防止竞赛过拟合。
+- **T13（P1）** 前端协作训练轻量升级：MinIO 上传改传权重 delta（降低通信量）。
+- **T14（P2）** 完整联邦学习（Flower/NVFlare FedAvg）。
+- **T15（Phase 2，本轮不实施）** 本地 gene_data 停写开关 + 纯下行 `--delete` 切换脚本。
 
 > 每步完成后按「接口/证据级」验收；新增脚本与配置写回 `31-分布式计算部署/` 并 commit+push。

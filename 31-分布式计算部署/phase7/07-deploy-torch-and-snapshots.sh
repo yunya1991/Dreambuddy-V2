@@ -106,10 +106,10 @@ EOF
 
 cat > /etc/systemd/system/dreambuddy-snapshot.timer <<EOF
 [Unit]
-Description=Dreambuddy DB snapshot hourly
+Description=Dreambuddy DB snapshot every 10min
 
 [Timer]
-OnCalendar=*-*-* *:20:00
+OnCalendar=*-*-* *:0/10:00
 Persistent=true
 Unit=dreambuddy-snapshot.service
 
