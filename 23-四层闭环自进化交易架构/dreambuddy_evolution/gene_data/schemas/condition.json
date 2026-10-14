@@ -50,7 +50,11 @@
       }
     },
     "inverted": {"type": "boolean", "default": false, "description": "True = 反条件（表达式取反）"},
-    "weight":   {"type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0, "description": "条件投票权重"},
+    "weight":   {"type": "number", "minimum": 0.0, "maximum": 5.0, "default": 1.0, "description": "条件投票权重（可>1.0表示相对更重要）"},
+    "description": {"type": "string", "maxLength": 2048, "description": "条件基因人类可读描述"},
+    "direction": {"type": "string", "enum": ["long", "short", "both", "neutral"], "description": "条件触发方向"},
+    "direction_mode": {"type": "string", "description": "方向判定模式（如 dynamic/static）"},
+    "direction_rule": {"type": "string", "maxLength": 1024, "description": "方向判定规则说明"},
     "code_ref": {
       "type": "object",
       "required": ["file", "lines"],

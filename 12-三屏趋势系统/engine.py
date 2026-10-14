@@ -1558,12 +1558,14 @@ def compute_full_trading_signal(
         完整信号结构
     """
     try:
-        from data_center.compat.market_compat import fetch_candles, resample_candles
+        from data_center.compat.market_compat import fetch_candles, resample_candles, fetch_ticker
     except ImportError:
         try:
             from .data.market_data import fetch_candles, resample_candles
+            fetch_ticker = None
         except ImportError:
             from data.market_data import fetch_candles, resample_candles
+            fetch_ticker = None
     try:
         from .data.fundamental_data import fetch_fundamental_data
     except ImportError:
@@ -1579,7 +1581,17 @@ def compute_full_trading_signal(
     if not daily:
         return {"error": f"无法获取{spot_inst} K线数据"}
 
-    price = daily[-1]["c"]
+    # 实时价格：优先从 OKX ticker 获取，失败则回退到最后一根日K线收盘价
+    price = None
+    if fetch_ticker is not None:
+        try:
+            ticker = fetch_ticker(spot_inst)
+            if ticker and ticker.get("last"):
+                price = ticker["last"]
+        except Exception:
+            pass
+    if price is None:
+        price = daily[-1]["c"]
 
     daily_df = pd.DataFrame({
         "open": [c["o"] for c in daily],

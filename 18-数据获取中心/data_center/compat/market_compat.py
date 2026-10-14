@@ -39,6 +39,30 @@ def fetch_candles(inst_id: str, bar: str, limit: int) -> list[dict]:
         return []
 
 
+def fetch_ticker(inst_id: str) -> dict | None:
+    """获取实时 ticker 价格（兼容老 market_data 签名）。
+
+    Args:
+        inst_id: OKX 格式 "BTC-USDT" → 自动转 ccxt "BTC/USDT"
+    Returns:
+        {"last": float, "high": float, "low": float, "vol": float} 或 None
+    """
+    symbol = inst_id.replace("-", "/")
+    try:
+        exchange = ccxt.okx()
+        t = exchange.fetch_ticker(symbol)
+        if t and t.get("last"):
+            return {
+                "last": float(t["last"]),
+                "high": float(t.get("high") or 0),
+                "low": float(t.get("low") or 0),
+                "vol": float(t.get("quoteVolume") or t.get("baseVolume") or 0),
+            }
+    except Exception:
+        pass
+    return None
+
+
 def _infer_timeframe(candles: list[dict]) -> str:
     if len(candles) < 2:
         return "1h"

@@ -1,8 +1,8 @@
 # Dreambuddy V2 — 子系统部署待配置清单
 
-> **状态**：Phase 1+2 已上线（V15 + 易经轮询引擎 + 前端 + 数据层 + Nginx）
-> **目标**：推进6大子交易系统 + 前端功能接入云端
-> **更新日期**：2026-10-10
+> **状态**：全量已上线（V15 + 易经 + 前端 + 数据层 + 产物中台 + 数据管道 + 认知/编排 + Hermes + M25~M28）
+> **目标**：6大子交易系统 + 全量子系统在云端（43.160.201.117）全量运行，本地并行保留
+> **更新日期**：2026-10-14
 
 ---
 
@@ -32,10 +32,11 @@
 | 5 | M27 策略治理审批 | `27-策略治理审批系统/app.py` | 8094 | classic (pipeline/approvals/gate) | ✅ 已上线 |
 | 6 | M26 策略管理模块 | `26-策略管理模块/app.py` | 8093 | classic (strategy upsert) | ✅ 已上线 |
 | 7 | M28 信号触发模块 | `28-策略信号触发模块/app.py` | 8096 | signal-trigger | ✅ 已上线 |
+| 8 | M25 用户策略生成 | `25-用户策略生成系统/app.py` | 8095 | classic (strategy generation) | ✅ 已上线 |
 
 > **部署脚本**: `31-分布式计算部署/phase2/deploy.sh`（一键部署 8765 + 3456 + Nginx + 前端重构建）
 > **Hub(3467) 说明**: 网关中台为设计文档服务，无实现。ops/market/feed API routes 已添加 `mock:true` 降级返回 200。
-> **经典系统模块化**: 旧单体 8092 (ml_trade_service.py) 已拆分为 M25/M26/M27/M28，前端通过 classic-system-bridge.ts 调用 M27(8094)。
+> **经典系统模块化**: 旧单体 8092 (ml_trade_service.py) 已拆分为 M25/M26/M27/M28。前端通过 Next.js rewrites (`/api/m25`~`/api/m28`) 代理到本机端口，浏览器端不再直连 127.0.0.1。
 
 ---
 
@@ -91,3 +92,28 @@
 3. **多币种监控**：19个币种轮询，云端4C8G需评估性能
 4. **交易凭据安全**：OKX API Key 需加密存储，不能明文
 5. **飞书凭据**：已在本地 plist 中，需安全迁移到云端 .env
+
+---
+
+## 五、全量一致性修复记录（2026-10-14）
+
+> 背景：云端存储充足 → 决策「云端全量运行、本地并行保留」。本轮核查发现 5 处缺口（G1~G5），已全部修复并回读远端实况验证。
+
+| 缺口 | 现象 | 根因 | 修复 | 验证 |
+|---|---|---|---|---|
+| G1 | `dreambuddy-frontend` 崩溃循环(:3001) | 手工 `next start`（stray pid）占用 3001 | 停单元→kill stray 进程树→restart | `active`、cgroup=`dreambuddy-frontend.service`、HTTP 307、NRestarts=0 |
+| G2 | `yijing-data-server` 崩溃循环(:8765) | 手工 `nohup python3 data_server_fixed.py` 占用 8765 | 停单元→kill stray→restart | `active`、cgroup=`yijing-data-server.service`、HTTP 200 |
+| G3 | Hermes 三件套无 systemd 单元 | 远端缺 hermes 运行时与 lark-cli | venv 装 `hermes-agent==0.19.0`（镜像最新）+ 同步 config/.env/skills/memories/cron + `@larksuite/cli` + 注册三单元 | `hermes-gateway`/`group-poller`/`hermes-dashboard` 均 `active`，Feishu websocket 已连接，dashboard :9119 |
+| G4 | 远端代码落后 1 提交 | 本地 610fea04 未 pull；远端有未提交改动（内容与提交逐字节相同） | 备份→丢弃冲突路径→`pull --ff-only` | HEAD=`610fea04ba…`，`main...origin/main` 同步，3 文件 md5 与本地一致 |
+| G5 | M25 走 PM2，与 M26~M28 不一致 | PM2 残留 m25 | 新建 `m25-strategy-generation.service`(:8095)→`pm2 delete` | `active`、cgroup=`m25-strategy-generation.service`、`/health`=200、PM2 列表已空 |
+
+### 关键约定（云端）
+- **写操作必须** `sudo -u luke -H`（repo 属主 luke，ubuntu 直连 logs/ 会 PermissionError）；**sqlite 读**也须以 luke 身份。
+- Hermes 单元 `ExecStart` 指向 `/usr/local/bin/hermes`（已建软链 → `~/.hermes/.venv/bin/hermes`）；单元 `StandardOutput` 写 `*.out.log`，应用自身日志写 `gateway.log`，避免 systemd(root) 与 app(luke) 争抢同一日志文件。
+- SSH 偶发 `Permission denied` → 重试 1~2 次即可（认证并发限制）。
+
+### 当前云端运行清单（已核对 active）
+- **systemd 服务**：dreambuddy-frontend(:3001) · yijing-data-server(:8765) · product-hub(:3456) · fundamental(:9094) · m25-strategy-generation(:8095) · m26-strategy-lib(:8093) · m27-governance(:8094) · m28-signal-trigger(:8096) · v15-api(:8771) · v15-capital-api(:8770) · yijing-polling-trader · datacenter-scheduler · cognitive-daemon · dreamos-scheduler · dreamos-dynamic-evaluator · hermes-gateway · group-poller · hermes-dashboard(:9119) · nginx
+- **timers**：v15-orchestrator · v15-poll-light · datacenter-backfill · dal-backup · dal-rotate · dal-integrity · yijing-monitor · ranking-trigger · dreambuddy-snapshot
+- **Docker**：dreambuddy-pg / dreambuddy-redis / dreambuddy-minio（healthy）
+- **PM2**：已清空（M25 迁 systemd）。

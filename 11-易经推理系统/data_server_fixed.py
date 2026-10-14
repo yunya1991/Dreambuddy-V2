@@ -535,7 +535,7 @@ def get_trend_screen_state(symbol: str = "BTC"):
 # 9年回测验证：V4年化 53.34%，V4+波浪互斥融合年化 56.43%
 # 融合规则：同向叠加、异向以V4为主、V4空仓时波浪轻仓抄底（上限50%）
 # 物理增强：弱趋势(η<0.10)时启用物理置信度调节仓位
-V4_WAVE_BASE_DIR = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统"
+V4_WAVE_BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "12-三屏趋势系统")
 
 def get_v4_wave_strategy(symbol: str = "BTC"):
     try:
@@ -562,22 +562,30 @@ def get_v4_wave_strategy(symbol: str = "BTC"):
             columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
         )
         historical_close = float(daily_df["close"].iloc[-1])
-        # 优先用实时 OKX 价（从 /api/trend-screen 缓存复用，避免重复拉取），
-        # fallback 到历史文件最后一条收盘价。
-        # 之前用 historical_close 作为 current_price，导致 Screen2 显示
-        # 的是历史回测文件最后一天的价格（非实时），用户看到"不是真实数据"。
-        cached_trend = _cache_get(f"trend_screen_{symbol_upper}")
+        # 实时价格：优先直接从 OKX ticker 获取，其次从 /api/trend-screen 缓存复用，
+        # 最后 fallback 到历史文件最后一条收盘价。
         realtime_price = None
-        if (
-            cached_trend
-            and isinstance(cached_trend.get("data"), dict)
-            and cached_trend["data"].get("price")
-            and not cached_trend["data"].get("error")
-        ):
-            try:
-                realtime_price = float(cached_trend["data"]["price"])
-            except (TypeError, ValueError):
-                pass
+        # 1) 直接从 OKX ticker 获取实时价格
+        try:
+            from data_center.compat.market_compat import fetch_ticker
+            ticker = fetch_ticker(f"{symbol_upper}-USDT")
+            if ticker and ticker.get("last"):
+                realtime_price = ticker["last"]
+        except Exception:
+            pass
+        # 2) 从 trend-screen 缓存复用（避免重复拉取）
+        if not realtime_price:
+            cached_trend = _cache_get(f"trend_screen_{symbol_upper}")
+            if (
+                cached_trend
+                and isinstance(cached_trend.get("data"), dict)
+                and cached_trend["data"].get("price")
+                and not cached_trend["data"].get("error")
+            ):
+                try:
+                    realtime_price = float(cached_trend["data"]["price"])
+                except (TypeError, ValueError):
+                    pass
         current_price = realtime_price if realtime_price else historical_close
         data_days = len(daily_df)
 

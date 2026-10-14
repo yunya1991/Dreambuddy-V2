@@ -10769,7 +10769,7 @@
     ],
     "action_ids": [
       "AC-ATR-STOP-2N",
-      "AC-PYRAMID-UNIT-0.5N"
+      "AC-PYRAMID-UNIT-HALF-N"
     ],
     "condition_logic": "all",
     "ess": 0.0,

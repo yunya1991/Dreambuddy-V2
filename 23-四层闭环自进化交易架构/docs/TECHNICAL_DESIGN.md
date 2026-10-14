@@ -488,7 +488,10 @@ BTC 4H 1500 bar 回测（2026-01-04 至 2026-09-11，8 个月），总样本 310
 | 接入点B: `[RAG-PRE-EVO-OPEN]` | L8924 | ✅ 今日1次调用 |
 | 接入点C: `[RAG-PRE-EXIT]` | L9535 | ✅ 今日351次调用 |
 
-daemon PID=75911，12:11 PM 启动，今日 RAG 378 次调用零异常。
+> **部署模式说明**：自进化监控（`yijing_monitor`）为 **oneshot 脚本**，非持久 daemon。
+> - **本地（macOS）**：由 launchd 定时调度执行 `python3 -m scripts.memory_l4.yijing_monitor`
+> - **云端（Linux）**：由 `yijing-monitor.timer`（systemd）每 4 小时触发 `yijing-monitor.service`（Type=oneshot）
+> - 每次执行完成健康检查 → 自进化学习 → PR 评论 → 飞书汇总后退出
 
 ---
 

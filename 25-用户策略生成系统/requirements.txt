@@ -1,0 +1,9 @@
+# M25 用户策略生成系统依赖
+# 本地验证版本（Python 3.12）
+flask>=3.0.0
+numpy>=2.0.0
+pandas>=2.0.0
+freqtrade>=2025.11
+ta-lib>=0.6.0
+technical>=1.4.0
+ccxt>=4.5.0

@@ -88,6 +88,8 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
                 if gid:
                     seen_ids[gid] = str(file)
                 # TR-SG-09: parameters range low <= high 断言（每个参数都要过）
+                # 仅对数值范围做 low<=high 校验；字符串范围（如事件阶段 pre_event/post_event）
+                # 语义上是枚举集合而非有序区间，跳过字典序比较避免误判。
                 for pname, pdef in obj.get("parameters", {}).items():
                     rng = pdef.get("range", {})
                     lo, hi = rng.get("low"), rng.get("high")
@@ -98,9 +100,8 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
                         if lo_f > hi_f:
                             raise ValueError(f"parameters.{pname} range low={lo!r} > high={hi!r}")
                     except (ValueError, TypeError):
-                        # 非数值用字典序
-                        if str(lo) > str(hi):
-                            raise ValueError(f"parameters.{pname} range low={lo!r} > high={hi!r} (lexicographic)")
+                        # 非数值范围（字符串枚举等）不做 low<=high 校验
+                        pass
                 result.append(obj)
                 counts[count_key_valid] += 1
             except Exception as exc:  # noqa: BLE001 — FO-4 所有坏基因一律记日志并跳过

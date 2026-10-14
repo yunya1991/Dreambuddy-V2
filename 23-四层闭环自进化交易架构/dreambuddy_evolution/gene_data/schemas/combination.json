@@ -62,6 +62,8 @@
     },
     "tags":    {"type": "array", "items": {"type": "string", "maxLength": 32}, "default": []},
     "version": {"type": "string", "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"},
-    "notes":   {"type": "string", "maxLength": 2048}
+    "notes":   {"type": "string", "maxLength": 2048},
+    "last_updated": {"type": "string", "description": "组合最后更新时间"},
+    "trade_history": {"type": "array", "description": "组合交易历史记录"}
   }
 }

@@ -1,17 +1,20 @@
 /**
  * 4 模块统一 API 客户端
  *
- * M25 策略生成 → http://127.0.0.1:8095
- * M26 策略管理 → http://127.0.0.1:8093
- * M27 治理审批 → http://127.0.0.1:8094
- * M28 信号触发 → http://127.0.0.1:8096
+ * 默认使用相对路径 /api/m2X，由 Next.js rewrites 代理到本机端口：
+ *   M25 策略生成 → /api/m25 → 127.0.0.1:8095
+ *   M26 策略管理 → /api/m26 → 127.0.0.1:8093
+ *   M27 治理审批 → /api/m27 → 127.0.0.1:8094
+ *   M28 信号触发 → /api/m28 → 127.0.0.1:8096
+ *
+ * 生产环境可通过 NEXT_PUBLIC_M2X_URL 覆盖（如 Nginx 反代地址）。
  */
 
 const BASE_URLS = {
-  M25: process.env.NEXT_PUBLIC_M25_URL || 'http://127.0.0.1:8095',
-  M26: process.env.NEXT_PUBLIC_M26_URL || 'http://127.0.0.1:8093',
-  M27: process.env.NEXT_PUBLIC_M27_URL || 'http://127.0.0.1:8094',
-  M28: process.env.NEXT_PUBLIC_M28_URL || 'http://127.0.0.1:8096',
+  M25: process.env.NEXT_PUBLIC_M25_URL || '/api/m25',
+  M26: process.env.NEXT_PUBLIC_M26_URL || '/api/m26',
+  M27: process.env.NEXT_PUBLIC_M27_URL || '/api/m27',
+  M28: process.env.NEXT_PUBLIC_M28_URL || '/api/m28',
 } as const;
 
 export interface ApiResponse<T = any> {
