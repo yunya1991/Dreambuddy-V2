@@ -44,13 +44,13 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 # 1. events/ 数据源目录
-echo ">>> [1/5] 建 events/ 数据源目录"
+echo ">>> [1/6] 建 events/ 数据源目录"
 mkdir -p "${EVENTS_ROOT}"/{dreamos,dsh,frontend,hub}
 chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "${EVENTS_ROOT}"
 ls -la "${EVENTS_ROOT}"
 
 # 2. venv 补 psycopg2-binary
-echo ">>> [2/5] venv 补 psycopg2-binary"
+echo ">>> [2/6] venv 补 psycopg2-binary"
 if "${PY}" -c "import psycopg2" >/dev/null 2>&1; then
     echo "    psycopg2 已存在，跳过"
 else
@@ -59,14 +59,21 @@ else
 fi
 
 # 3. 幂等建 observability 三表
-echo ">>> [3/5] 幂等建 observability 三表"
+echo ">>> [3/6] 幂等建 observability 三表"
 docker exec -i "${PG_CONTAINER}" psql -U dreambuddy -d dreambuddy -v ON_ERROR_STOP=1 < "${SQL_FILE}"
 echo "    --- 表清单校验 ---"
 docker exec "${PG_CONTAINER}" psql -U dreambuddy -d dreambuddy -tAc \
     "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('dreamos_sessions','dreamos_spans','dsh_subagent_calls') ORDER BY tablename;"
 
+# 3.5 冒烟测试（单次 ETL，验证 DATABASE_URL/psycopg2/建表三件套连通）
+#    硬约束（phase9 同源约定）：禁止未经冒烟直接 enable 常驻单元
+echo ">>> [4/6] 冒烟测试：单次 ETL（--date \$(date +%F)）"
+EVENTS_ROOT="${EVENTS_ROOT}" DATABASE_URL="${DB_URL}" \
+    "${PY}" "${ETL_SCRIPT}" --date "$(date +%F)"
+echo "    冒烟通过（空 events 亦应输出 'Skipping .../ETL complete' 且无异常）"
+
 # 4. 写 etl-worker.service
-echo ">>> [4/5] 写 etl-worker.service"
+echo ">>> [5/6] 写 etl-worker.service"
 mkdir -p "${LOG_DIR}"
 chown -R "${DEPLOY_USER}:${DEPLOY_USER}" "${LOG_DIR}"
 cat > /etc/systemd/system/etl-worker.service <<EOF
@@ -96,7 +103,7 @@ WantedBy=multi-user.target
 EOF
 
 # 5. product-hub drop-in（JSONL fallback 路径对齐）
-echo ">>> [5/5] product-hub drop-in + 启用"
+echo ">>> [6/6] product-hub drop-in + 启用"
 mkdir -p /etc/systemd/system/product-hub.service.d
 cat > /etc/systemd/system/product-hub.service.d/events-root.conf <<EOF
 [Service]
