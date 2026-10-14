@@ -1,7 +1,44 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.13 | **更新日期**: 2026-10-07
+> **版本**: v1.14 | **更新日期**: 2026-10-14
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.14] - 2026-10-14 (A2：因果 ATE 历史样本接入 + 经济显著性三态门禁)
+
+### 核心成果
+
+`CausalEngine.estimate_ate` 从「恒 `insufficient_samples` 中性降级」变为**可估计、可复现、如实报告**；调制契约由 A1 恒定 ×0.95 改为**经济显著性三态门禁**（SPEC-A2 v5）。
+
+### 1. 新增 `core/causal_sample_store.py`（CausalSampleStore）
+
+- **双源独立估计、绝不混合**：源A（`contradiction_samples.json`，≥500 独用）优先；否则源B（`gene_data/shadow_rl_samples.jsonl`，X4 去 R_up 防共线，treatment=`R_up>median` 预注册）
+- 退化保护（treatment 单水平 / 类占比过低 → 返回空）；源B 单例内存缓存（mtime+size 失效）；全程 FAIL-OPEN
+
+### 2. `causal_engine.py`：ATE 统计口径强化
+
+- CI 改 **stationary block bootstrap**（块长 ⌈n^(1/3)⌉，seed42），因 causalml 仅 i.i.d. bootstrap（重叠样本失真）
+- 返回增补 `ci_method` / `effect_size`(Cohen's d) / `positivity` 诊断 / `trial_count` / `fdr_adjusted`
+
+### 3. `contradiction_identifier.py`：接入 + 三态门禁
+
+- `classify_ate_state`：态A（CI 不含 0 且 |ate|≥τ）→ 方向调制 ×1.15/×0.85；态B（CI⊆(−τ,+τ)）→ no-op；态C → no-op（回收旧恒定 ×0.95）
+- τ=SESOI（交易成本折算，默认 0.05，稳健性 {0.02,0.05,0.1}，预注册禁事后反推）
+- `label_previous` 标注即落盘；`_enhance_with_causal_ate` 新增历史样本输入 + ATE 结果 TTL 缓存
+
+### 4. 开关与硬约束
+
+| 开关 | 状态 |
+|------|------|
+| enable_causal_historical_samples | **False**（HC-AGI-07 默认关，Shadow 验证后开启）|
+
+- HC-AGI-08：`MIN_SAMPLES=500` 不下调；HC-AGI-02/FAIL-OPEN 不变
+
+### 5. 验收证据
+
+- 全量源B n=279,570 → `causalml_dml`，ate=0.001631，CI[−0.00185, 0.00512]，d=0.0227，ci_method=`block_bootstrap`；τ 三档均落**态B → no-op**
+- 报告：`docs/audit_reports/a2_ate_effectiveness_20261014_171700.md`
 
 ---
 

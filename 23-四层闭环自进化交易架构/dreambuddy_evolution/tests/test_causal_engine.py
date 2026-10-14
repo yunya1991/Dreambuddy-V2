@@ -127,6 +127,29 @@ class TestATE:
 
 
 # ------------------------------------------------------------------
+# 2b. A3: 样本不足告警去重（防热路径刷屏，保留 FAIL-OPEN 语义）
+# ------------------------------------------------------------------
+class TestInsufficientWarnDedup:
+    def test_insufficient_warning_logged_once(self, engine, caplog):
+        """重复调用只应产生 1 条 WARNING，后续降级 DEBUG."""
+        import logging
+        from dreambuddy_evolution.core import causal_engine as ce
+
+        ce._INSUFFICIENT_WARNED.discard("estimate_ate")
+        X = np.random.randn(100, 2)
+        t = np.random.randint(0, 2, 100)
+        y = np.random.randn(100)
+        with caplog.at_level(logging.WARNING):
+            for _ in range(5):
+                res = engine.estimate_ate(X, t, y)
+                assert res["method"] == "insufficient_samples"  # FAIL-OPEN 语义不变
+        warnings = [r for r in caplog.records
+                    if "ATE样本量不足" in r.getMessage()
+                    and r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+
+
+# ------------------------------------------------------------------
 # 3. CATE 异质性效应
 # ------------------------------------------------------------------
 class TestCATE:

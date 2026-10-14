@@ -38,6 +38,19 @@ _CAUSALML_MODELS = None  # 缓存 {LRS, BaseT, XGBT}
 # networkx 惰性导入标志
 _NX_AVAILABLE: bool | None = None
 
+# A3: 样本不足告警去重 — 同一 key 只告警一次，避免热路径刷屏
+# (路径数 << MIN_SAMPLES 时 estimate_ate/learn_dag 每次调用都会命中该分支)
+_INSUFFICIENT_WARNED: set[str] = set()
+
+
+def _warn_insufficient_once(key: str, msg: str, *args: Any) -> None:
+    """[HC-AGI-08] 样本不足告警去重：首次 WARNING，后续降级为 DEBUG."""
+    if key in _INSUFFICIENT_WARNED:
+        logger.debug(msg, *args)
+        return
+    _INSUFFICIENT_WARNED.add(key)
+    logger.warning(msg, *args)
+
 
 def _ensure_causalml():
     """惰性导入 causalml，避免模块加载时触发 cv2/OMP 段错误。
@@ -108,7 +121,9 @@ class CausalEngine:
         try:
             data = np.asarray(data, dtype=np.float64)
             if data.ndim != 2 or data.shape[0] < self.min_samples:
-                logger.warning("[HC-AGI-08] 因果引擎样本量不足(< %d)，返回空DAG", self.min_samples)
+                _warn_insufficient_once(
+                    "learn_dag", "[HC-AGI-08] 因果引擎样本量不足(< %d)，返回空DAG",
+                    self.min_samples)
                 return {"adj_matrix": np.zeros((data.shape[1], data.shape[1])),
                         "edges": [], "feature_names": feature_names or [],
                         "n_edges": 0, "method": "insufficient_samples"}
@@ -208,13 +223,22 @@ class CausalEngine:
             method: "dml"（双重机器学习）| "s"（S-learner）| "t"（T-learner）
         Returns:
             dict: {
-                "ate": float,           # 平均处理效应
+                "ate": float,           # 平均处理效应（点估计）
                 "lower_bound": float,   # 置信下界
                 "upper_bound": float,   # 置信上界
                 "method": str,
                 "significant": bool,    # 置信区间不含0
+                "ci_method": str,       # A2: "block_bootstrap"（自相关稳健，SPEC §2.5）
+                "effect_size": float,   # A2: Cohen's d = ate/std(y)
+                "positivity": dict,     # A2: 重叠/positivity 诊断（仅诊断不阻断）
+                "trial_count": int,     # A2: 预注册试错次数（评审 m6）
+                "fdr_adjusted": bool,   # A2: 是否做多重比较校正
             }
         FAIL-OPEN: 样本不足或异常 → ate=0, 不显著
+
+        A2 增强：CI 统一采用 stationary block bootstrap（块长≈⌈n^(1/3)⌉），
+        因 causalml 仅提供 i.i.d. bootstrap（对重叠时序样本失真，SPEC §2.5）。
+        点估计仍用 causalml（若可用），CI 用线性 ATE 代理的 block bootstrap 标准误。
         """
         try:
             X = np.asarray(X, dtype=np.float64)
@@ -222,85 +246,140 @@ class CausalEngine:
             y = np.asarray(y, dtype=np.float64)
 
             if len(y) < self.min_samples:
-                logger.warning("[HC-AGI-08] ATE样本量不足(< %d)，返回中性结果", self.min_samples)
+                _warn_insufficient_once(
+                    "estimate_ate", "[HC-AGI-08] ATE样本量不足(< %d)，返回中性结果",
+                    self.min_samples)
                 return {"ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-                        "method": "insufficient_samples", "significant": False}
+                        "method": "insufficient_samples", "significant": False,
+                        "ci_method": "asymptotic", "effect_size": 0.0,
+                        "positivity": None, "trial_count": 1, "fdr_adjusted": False}
 
+            # 1. 点估计：causalml 优先，否则线性降级
             if _ensure_causalml() and method in ("dml", "s", "t"):
-                return self._causalml_ate(X, treatment, y, method)
-            return self._linear_ate(X, treatment, y)
+                point = self._causalml_ate(X, treatment, y, method)
+            else:
+                point = self._linear_ate(X, treatment, y)
+            ate = float(point["ate"])
+            method_label = str(point["method"])
+
+            # 2. stationary block bootstrap CI（自相关稳健；SPEC §2.5）
+            se = self._block_bootstrap_se(X, treatment, y)
+            half = 1.96 * se
+            lb, ub = ate - half, ate + half
+
+            std_y = float(np.std(y))
+            effect_size = ate / std_y if std_y > 0 else 0.0
+            return {
+                "ate": ate,
+                "lower_bound": float(lb),
+                "upper_bound": float(ub),
+                "method": method_label,
+                "significant": not (lb <= 0 <= ub),
+                "ci_method": "block_bootstrap",
+                "effect_size": float(effect_size),
+                "positivity": self._positivity_diagnostics(X, treatment, y, ate),
+                "trial_count": 1,
+                "fdr_adjusted": False,
+            }
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] estimate_ate failed: %s", e)
             return {"ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-                    "method": "error", "significant": False}
+                    "method": "error", "significant": False,
+                    "ci_method": "asymptotic", "effect_size": 0.0,
+                    "positivity": None, "trial_count": 1, "fdr_adjusted": False}
 
     def _causalml_ate(self, X, treatment, y, method) -> dict:
-        """使用 causalml 估计 ATE"""
+        """使用 causalml 估计 ATE 点估计（CI 由 estimate_ate 统一 block bootstrap）."""
         try:
             if method == "dml":
                 from causalml.inference.meta import LRSRegressor
-                lr = LRSRegressor()
-                te, lb, ub = lr.estimate_ate(X, treatment, y)
+                te = LRSRegressor().estimate_ate(X, treatment, y)[0]
             elif method == "s":
                 from causalml.inference.meta import BaseSRegressor
                 from sklearn.linear_model import LinearRegression
-                s = BaseSRegressor(learner=LinearRegression())
-                te, lb, ub = s.estimate_ate(X, treatment, y)
+                te = BaseSRegressor(learner=LinearRegression()).estimate_ate(X, treatment, y)[0]
             else:  # t
                 from causalml.inference.meta import BaseTRegressor
                 from sklearn.linear_model import LinearRegression
-                t = BaseTRegressor(learner=LinearRegression())
-                te, lb, ub = t.estimate_ate(X, treatment, y)
+                te = BaseTRegressor(learner=LinearRegression()).estimate_ate(X, treatment, y)[0]
 
             ate = float(np.mean(te)) if hasattr(te, "__len__") else float(te)
-            lb = float(np.mean(lb)) if hasattr(lb, "__len__") else float(lb)
-            ub = float(np.mean(ub)) if hasattr(ub, "__len__") else float(ub)
-            return {
-                "ate": ate,
-                "lower_bound": lb,
-                "upper_bound": ub,
-                "method": f"causalml_{method}",
-                "significant": not (lb <= 0 <= ub),
-            }
+            return {"ate": ate, "method": f"causalml_{method}"}
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] causalml ATE failed, falling back to linear: %s", e)
             return self._linear_ate(X, treatment, y)
 
     def _linear_ate(self, X, treatment, y) -> dict:
-        """线性回归降级估计 ATE: y ~ treatment + X"""
+        """线性回归降级估计 ATE 点估计: y ~ treatment + X（CI 由 estimate_ate 统一处理）."""
         try:
-            from sklearn.linear_model import LinearRegression
-
-            # 构造设计矩阵: [treatment, X]
-            T = treatment.reshape(-1, 1)
+            T = treatment.reshape(-1, 1).astype(np.float64)
             X_design = np.hstack([T, X])
-            reg = LinearRegression()
-            reg.fit(X_design, y)
-            ate = float(reg.coef_[0])  # treatment 的系数
-
-            # 用 bootstrap 估计置信区间
-            n = len(y)
-            boot_ates = []
-            rng = np.random.RandomState(42)
-            for _ in range(200):
-                idx = rng.choice(n, n, replace=True)
-                reg_b = LinearRegression()
-                reg_b.fit(X_design[idx], y[idx])
-                boot_ates.append(float(reg_b.coef_[0]))
-            lb = float(np.percentile(boot_ates, 2.5))
-            ub = float(np.percentile(boot_ates, 97.5))
-
-            return {
-                "ate": ate,
-                "lower_bound": lb,
-                "upper_bound": ub,
-                "method": "linear_regression",
-                "significant": not (lb <= 0 <= ub),
-            }
+            coef, *_ = np.linalg.lstsq(X_design, y, rcond=None)
+            return {"ate": float(coef[0]), "method": "linear_regression"}
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] linear ATE failed: %s", e)
-            return {"ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-                    "method": "error", "significant": False}
+            return {"ate": 0.0, "method": "error"}
+
+    # -- A2: stationary block bootstrap（自相关稳健 CI）--------------------
+    @staticmethod
+    def _stationary_block_index(n: int, block_len: int, rng) -> np.ndarray:
+        """stationary block bootstrap 索引（circular 环绕，块长固定）."""
+        n_blocks = int(np.ceil(n / block_len))
+        starts = rng.integers(0, n, size=n_blocks)
+        offsets = np.arange(block_len)
+        idx = (starts[:, None] + offsets[None, :]).reshape(-1) % n
+        return idx[:n]
+
+    def _block_bootstrap_se(
+        self, X: np.ndarray, treatment: np.ndarray, y: np.ndarray,
+        n_boot: int = 200, seed: int = 42,
+    ) -> float:
+        """线性 ATE 代理的 stationary block bootstrap 标准误（SPEC §2.5）.
+
+        源B 时序重叠 → 不得用 i.i.d. 重采样；块长 ≈ ⌈n^(1/3)⌉。
+        """
+        n = int(len(y))
+        block_len = max(1, int(round(n ** (1.0 / 3.0))))
+        Xd = np.hstack([treatment.reshape(-1, 1).astype(np.float64), X])
+        rng = np.random.default_rng(seed)
+        stats = np.empty(n_boot, dtype=np.float64)
+        for i in range(n_boot):
+            idx = self._stationary_block_index(n, block_len, rng)
+            try:
+                coef, *_ = np.linalg.lstsq(Xd[idx], y[idx], rcond=None)
+                stats[i] = float(coef[0])
+            except Exception:  # noqa: BLE001
+                stats[i] = 0.0
+        if n_boot <= 1:
+            return 0.0
+        return float(np.std(stats, ddof=1))
+
+    def _positivity_diagnostics(
+        self, X: np.ndarray, treatment: np.ndarray, y: np.ndarray, ate: float,
+    ) -> Optional[dict]:
+        """重叠/positivity 诊断（仅诊断不阻断，SPEC §2.5）.
+
+        报告倾向得分尾部占比与 trimming（p∈[0.05,0.95]）前后 ATE 差。
+        """
+        try:
+            from sklearn.linear_model import LogisticRegression
+
+            ps = LogisticRegression(max_iter=200).fit(X, treatment).predict_proba(X)[:, 1]
+            n = int(len(y))
+            tail = float(np.mean((ps < 0.05) | (ps > 0.95)))
+            keep = (ps >= 0.05) & (ps <= 0.95)
+            Xd = np.hstack([treatment.reshape(-1, 1).astype(np.float64), X])
+            if int(keep.sum()) >= max(50, int(0.1 * n)):
+                coef, *_ = np.linalg.lstsq(Xd[keep], y[keep], rcond=None)
+                ate_trimmed = float(coef[0])
+            else:
+                ate_trimmed = float(ate)
+            return {"tail_ratio": tail, "n_tail": int(tail * n),
+                    "ate_trimmed": ate_trimmed, "trimmed_n": int(keep.sum())}
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[A2] positivity diagnostic FAIL-OPEN: %s", e)
+            return {"tail_ratio": None, "n_tail": None,
+                    "ate_trimmed": None, "trimmed_n": None}
 
     # ------------------------------------------------------------------
     # 3. 异质性处理效应（CATE）估计

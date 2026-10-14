@@ -59,6 +59,7 @@
 │   │   ├── shadow_rl_trainer.py        # L3 ShadowRL训练器（REINFORCE+Thompson）
 │   │   ├── bellman_tracker.py          # L4 Bellman V(s) 追踪器
 │   │   ├── causal_engine.py            # 因果推断引擎（Phase2 AGI）
+│   │   ├── causal_sample_store.py      # 因果 ATE 双源样本库（A2）
 │   │   ├── counterfactual_evaluator.py # 反事实评估器（Phase2 AGI）
 │   │   ├── signature_engine.py         # 签名方法引擎（Phase2.5 AGI）
 │   │   ├── path_integral.py            # 路径积分引擎（Phase2.5 AGI）
@@ -134,6 +135,7 @@
 | `shadow_rl_trainer.py` | `ShadowRLTrainer`, `SimplePolicy` | L3 RL训练器（REINFORCE+Thompson+gmax变异） | `train_policy()`, `mutate_gmax()`, `thompson_sample()`, `select_best_gene()` |
 | `bellman_tracker.py` | `BellmanVTracker` | L4 Bellman V(s) TD(0)更新 | `td_update()`, `get_ess_adjustment()` |
 | `causal_engine.py` | `CausalEngine` | 因果推断引擎（Phase2 AGI） | `estimate_ate()` |
+| `causal_sample_store.py` | `CausalSampleStore`, `build_ate_samples` | 因果 ATE 双源样本库（源A live/源B bootstrap，绝不混合；A2） | `build_ate_samples()` |
 | `counterfactual_evaluator.py` | `CounterfactualEvaluator` | 反事实评估器（Phase2 AGI） | `evaluate()` |
 | `signature_engine.py` | `SignatureEngine` | 签名方法引擎（Phase2.5 AGI） | `compute_signature()` |
 | `path_integral.py` | `PathIntegralEngine` | 路径积分引擎（Phase2.5 AGI） | `integrate()` |
@@ -263,6 +265,8 @@ L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 对齐决策 →
 | `test_p2_new_signals.py` | P2 新信号（颈线跌破等） |
 | `test_p3_adx_threshold.py` | P3 ADX阈值调整 |
 | `test_causal_engine.py` | 因果推断引擎 |
+| `test_causal_sample_store.py` | 因果 ATE 双源样本库（双源/优先级/退化/缓存/503 不变式） |
+| `test_contradiction_identifier.py` | 主矛盾识别 + 因果 ATE 三态门禁（v5 契约） |
 | `test_counterfactual_transfer.py` | 反事实评估+迁移 |
 | `test_signature_path_integral.py` | 签名方法+路径积分 |
 | `test_neural_sde_model.py` | Neural SDE 模型 |

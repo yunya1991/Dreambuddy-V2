@@ -33,6 +33,42 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# A2 经济显著性门禁（SPEC-A2 §6.2）：τ = SESOI，交易成本折算（≈5–10bps→reward 尺度），
+# 独立预注册、禁止事后反推；阈值稳健性三档。
+SESOI_TAU_DEFAULT = 0.05
+SESOI_TAU_ROBUSTNESS = (0.02, 0.05, 0.1)
+
+# A2: ATE 结果缓存 TTL（因果先验是全局量，热路径不必逐次重算；SPEC §2.4）
+ATE_CACHE_TTL = 3600.0
+
+
+def classify_ate_state(ate_result: dict | None, tau: float = SESOI_TAU_DEFAULT) -> str:
+    """A2 经济显著性三态门禁（SPEC §6.2）.
+
+    返回:
+      "A" 实质效应：CI 不含 0 且 |ate| ≥ τ → 允许方向调制
+      "B" 经济等价于零：CI ⊆ (−τ, +τ)（TOST 拒绝 |ate|≥τ）→ no-op
+      "C" 不确定/口径不符：其余（含 ci_method 非 block_bootstrap）→ no-op
+    """
+    if not isinstance(ate_result, dict):
+        return "C"
+    if str(ate_result.get("method", "")) in ("insufficient_samples", "error"):
+        return "C"
+    # 门禁只采信自相关稳健口径（SPEC §2.5）
+    if ate_result.get("ci_method") != "block_bootstrap":
+        return "C"
+    try:
+        ate = float(ate_result.get("ate", 0.0))
+        lb = float(ate_result["lower_bound"])
+        ub = float(ate_result["upper_bound"])
+    except (KeyError, TypeError, ValueError):
+        return "C"
+    if not (lb <= 0 <= ub) and abs(ate) >= tau:
+        return "A"
+    if ub < tau and lb > -tau:
+        return "B"
+    return "C"
+
 
 class ContradictionWeightLearner:
     """W6: 深度学习驱动矛盾权重 — 自动样本累积 + 延迟标注 + 阈值触发.
@@ -119,6 +155,8 @@ class ContradictionWeightLearner:
             if s.get("actual_return") is None:
                 s["actual_return"] = float(actual_return)
                 break
+        # A2: 标注即落盘（进程重启不丢；源A 因果样本依赖实际收益标签持久化）
+        self._save()
         # 有新标注 → 尝试学习
         self._try_learn()
 
@@ -226,6 +264,10 @@ class PrimaryContradictionIdentifier:
         valid_policies = {"auto", "explicit"}
         self.selection_policy = selection_policy if selection_policy in valid_policies else "auto"
         self._selected_path: str | None = None  # explicit 模式下会话内锁定的路径
+        # A2: 双源历史因果样本库（懒加载；测试可注入）
+        self._causal_sample_store = None
+        # A2: ATE 结果缓存 {key: (ts, result)}（SPEC §2.4）
+        self._ate_cache: dict = {}
 
     def identify(
         self,
@@ -354,10 +396,13 @@ class PrimaryContradictionIdentifier:
         market_data: dict | None,
         causal_engine,
     ) -> dict:
-        """W4: 用 CausalEngine ATE 因果效应增强矛盾力量评分.
+        """W4/A2: 用 CausalEngine ATE 因果效应增强矛盾力量评分.
 
-        当 ATE 显著且方向一致时提升 power，不显著时衰减。
-        FAIL-OPEN: causal_engine=None 或 ATE 估计失败 → 不调整。
+        A2 变更：输入优先取 CausalSampleStore 双源历史样本（开关默认关）；
+        调制契约改为经济显著性三态门禁（SPEC §6.2）——
+          态A（CI 不含 0 且 |ate|≥τ）→ 同向 ×1.15 / 反向 ×0.85；
+          态B（CI ⊆ (−τ,+τ)）/ 态C（不确定/口径不符）→ no-op（回收旧恒定 ×0.95）。
+        FAIL-OPEN: causal_engine=None / 开关关 / ATE 估计失败 → 不调整。
         """
         try:
             if causal_engine is None:
@@ -366,33 +411,79 @@ class PrimaryContradictionIdentifier:
             if not get_switch("enable_causal_engine", False):
                 return primary
             import numpy as np
-            # 构造简化 ATE 输入：用路径 confidence 作为 treatment，expected_return 作为 y
-            confidences = np.array([float(p.get("confidence", 0.5)) for p in paths])
-            returns = np.array([float(p.get("expected_return", 0.0)) for p in paths])
-            # treatment: 高 confidence vs 低 confidence (中位数分割)
-            median_conf = np.median(confidences) if len(confidences) > 0 else 0.5
-            treatment = (confidences > median_conf).astype(np.int32)
-            X = confidences.reshape(-1, 1)
-            ate_result = causal_engine.estimate_ate(X, treatment, returns, method="dml")
+
+            X = treatment = y = None
+            source_label = "live_paths"
+            # A2: 优先历史样本（开关默认关，遵 HC-AGI-07）
+            if get_switch("enable_causal_historical_samples", False):
+                try:
+                    store = self._causal_sample_store
+                    if store is None:
+                        from dreambuddy_evolution.core.causal_sample_store import (
+                            CausalSampleStore,
+                        )
+                        store = CausalSampleStore()
+                        self._causal_sample_store = store
+                    triplet = store.build_ate_samples()
+                    if triplet is not None:
+                        X = triplet["X"]
+                        treatment = triplet["treatment"]
+                        y = triplet["y"]
+                        source_label = str(triplet.get("source", "bootstrap"))
+                except Exception as e:  # noqa: BLE001
+                    logger.debug("[A2] historical samples FAIL-OPEN: %s", e)
+
+            # 退回 live paths 分支（A1 旧行为）
+            if X is None:
+                # 构造简化 ATE 输入：路径 confidence 作 treatment，expected_return 作 y
+                confidences = np.array([float(p.get("confidence", 0.5)) for p in paths])
+                returns = np.array([float(p.get("expected_return", 0.0)) for p in paths])
+                median_conf = np.median(confidences) if len(confidences) > 0 else 0.5
+                treatment = (confidences > median_conf).astype(np.int32)
+                X = confidences.reshape(-1, 1)
+                y = returns
+
+            # A2: ATE 结果 TTL 缓存（SPEC §2.4）
+            ate_result = self._cached_ate(
+                (source_label, int(len(y))),
+                lambda: causal_engine.estimate_ate(X, treatment, y, method="dml"),
+            )
             primary["causal_ate"] = ate_result
-            # 调整 strength：ATE 显著且同方向 → 增强，不显著 → 轻微衰减
+
+            # HC-AGI-08 + SPEC §6.2: 中性降级（样本不足/异常）与态B/态C 一律 no-op。
+            state = classify_ate_state(ate_result, SESOI_TAU_DEFAULT)
+            try:
+                ate_result["gate_state"] = state
+            except (TypeError, AttributeError):
+                pass
+            if state != "A":
+                return primary
+
             ate = float(ate_result.get("ate", 0.0))
-            significant = ate_result.get("significant", False)
             base_strength = float(primary.get("strength", 0.5))
-            if significant and abs(ate) > 1e-6:
-                # ATE 同方向 → 增强
-                direction = primary.get("direction", "neutral")
-                if (direction == "long" and ate > 0) or (direction == "short" and ate < 0):
-                    primary["strength"] = min(1.0, base_strength * 1.15)
-                else:
-                    primary["strength"] = max(0.0, base_strength * 0.85)
-            elif not significant:
-                # ATE 不显著 → 轻微衰减
-                primary["strength"] = max(0.0, base_strength * 0.95)
+            direction = primary.get("direction", "neutral")
+            if (direction == "long" and ate > 0) or (direction == "short" and ate < 0):
+                primary["strength"] = min(1.0, base_strength * 1.15)
+            else:
+                primary["strength"] = max(0.0, base_strength * 0.85)
             return primary
         except Exception as e:
             logger.debug("[W4] causal ATE enhancement FAIL-OPEN: %s", e)
             return primary
+
+    def _cached_ate(self, key, compute):
+        """A2: ATE 结果 TTL 缓存（因果先验为全局量，SPEC §2.4）."""
+        import time
+        now = time.time()
+        hit = self._ate_cache.get(key)
+        if hit is not None and (now - hit[0]) < ATE_CACHE_TTL:
+            return hit[1]
+        result = compute()
+        try:
+            self._ate_cache[key] = (now, result)
+        except TypeError:
+            pass
+        return result
 
     def _meta_cognition_verify(
         self,
