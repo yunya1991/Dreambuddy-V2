@@ -90,7 +90,7 @@ G0-1a 红线：trailing-stop-runner 云端等价部署   ← ✅已闭环（2026
 |---|---|---|---|---|---|
 | **G0-1a**（红线） | 云端部署 `trailing-stop-runner` 等价物（`--real` 移动止损） | 云端 `systemctl is-active trailing-stop-runner.service` + 日志 `ExitExecutor 初始化完成（mode=real` | 无（**最先做**） | 云端停用，本地继续跑 | ✅ **已落地**（2026-10-14，`phase9/09-deploy-trailing-stop-runner.sh`；与本地共用统一入口 `16-调控系统/scripts/run_trailing_stop_runner.sh`） |
 | **G0-1b** | 停用组 A 冗余：`v15_light_poll` · `v15_orchestrator` · `yijing_data_server` · `yijing.polling-trader` · `yijing_trading` · `yijing_live_300s` · `yijing_monitor` · `datacenter` · `dc-scheduler` · `dreamos` · `ranking-trigger` · `continual-training`（云端已有 30min 版）· `ft.dashboard.3001` · `ft.ml_trade_service.explore/pilot/prod/explorer` · `ft.strategy_gen.8095` · `ft.fundamental_research_sync` | `launchctl bootout gui/$(id -u) <label>` + plist **归档不删除**；`lsof -iTCP -sTCP:LISTEN` 确认端口释放 | **G0-1a 完成** | 归档目录还原 + `launchctl bootstrap` | 本地冗余清零 |
-| **G0-1c** | 组 B 逐项裁定：`signal_scanner`→✅**补云端** · `memory_cleanup`→✅**补云端** · `etl-worker`→⏸**暂缓** · `ai.hermes.*`→✅**启用** · `screen_*`/`trend_executor`/`ab_*`/`agent-b-strategy-update`→建议废弃 · `com.l3.commandcenter.*`→独立项目另行决策 | 已落地 `phase8/08-deploy-groupb-units.sh` | G0-1b | 按项回滚 | 组 B 裁定表 |
+| **G0-1c** | 组 B 逐项裁定：`signal_scanner`→✅**补云端** · `memory_cleanup`→✅**补云端** · `etl-worker`→✅**补云端**（2026-10-14，`phase10/10-deploy-etl-worker.sh`：`events/` 数据源 + `psycopg2-binary` + observability 三表 + `etl-worker.service` 60s；冒烟前置，全链路实测落库后清理） · `ai.hermes.*`→✅**启用** · `screen_*`/`trend_executor`/`ab_*`/`agent-b-strategy-update`→建议废弃 · `com.l3.commandcenter.*`→独立项目另行决策 | 已落地 `phase8/08-deploy-groupb-units.sh` + `phase10/10-deploy-etl-worker.sh` | G0-1b | 按项回滚 | 组 B 裁定表 |
 | **G0-3** | 认知聚合一致性：两端 `memories` 行数 + id 集合哈希比对；验证上行 `INSERT OR IGNORE` / 下行 `INSERT OR REPLACE` by id；本地停写后切**纯下行** | SQL 计数 + 哈希；`phase7/08-local-mirror.sh` 日志 | G0-1b | 恢复 `dbsync` 原双写 | 一致性报告（行数差 = 0 或差集清单） |
 | **G0-2** | hermes 三单元处置（二选一）：**废弃** = 云端 mask + 本地停 `ai.hermes.*`；**启用** = 云端 `systemctl enable --now hermes-gateway/group-poller/hermes-dashboard` + 验证 9119 | `systemctl is-active` 三单元 | G0-1c | 反向操作 | 处置裁定 + 状态 —— ✅ **已启用**（2026-10-14，:9119 监听） |
 | **G0-4** | E2E 下单链路一次验收：`datacenter-scheduler 采集 → 18→19 回填 → snapshot(10min) → yijing-polling-trader 推理 → 下单 → frontend 展示` | 日志时间戳链 + 前端可见 + 订单记录 | G0-1b | — | E2E 验收记录 |
@@ -102,7 +102,7 @@ G0-1a 红线：trailing-stop-runner 云端等价部署   ← ✅已闭环（2026
 |---|---|
 | `trailing-stop-runner` 云端等价（红线） | ✅ **已闭环**（2026-10-14 落地 `trailing-stop-runner.service`，统一入口与本地一致） |
 | 云端 `8094` / `8096` systemd unit 命名 | ✅ 复核：`m27-governance.service`(:8094) / `m28-signal-trigger.service`(:8096) |
-| 云端 ETL 是否内嵌 product-hub 或 cron | ✅ 复核：未内嵌、无 cron，且无 `events/` 数据源 → `etl-worker` **暂缓** |
+| 云端 ETL 是否内嵌 product-hub 或 cron | ✅ 已裁定：既不内嵌也无 cron → 独立补 `etl-worker.service`（2026-10-14 phase10 落地） |
 | 组 B `signal_scanner` / `memory_cleanup` 去留 | ✅ 裁定：均**补云端**（2026-10-14 已落地） |
 
 **阶段 0 完成判定**：§2.4 六条硬验收全绿 **且** 上表阻断项清零。

@@ -93,7 +93,7 @@
 | `ft.ml_trade_service.prod/8092` | **8092 未监听**（plist 存在但未起） | **8092 未监听** | **无需迁移**（本地亦无流量，可直接停/清理 plist） |
 | `ft.ml_trade_service.explorer/8092` | **8092 未监听** | 无 | **无需迁移**（同上，与 prod 重复端口） |
 | `ft.explore.ml_trade_service`(Explore) | 8093 监听 | 8093 = m26 | **覆盖**（并入上行 8093 结论） |
-| `etl-worker`(7-产物中台 prisma `etl_worker.py --daemon`) | 运行中 | **未见 etl 相关 unit**（`product-hub` 已在，ETL 未独立部署） | ❌ **未覆盖 → 需补齐或废弃** |
+| `etl-worker`(7-产物中台 prisma `etl_worker.py --daemon`) | 运行中 | ✅ `etl-worker.service`（2026-10-14 phase10 补齐，`--daemon --interval 60`） | ✅ **已覆盖** |
 
 **新增发现**：
 1. 云端已有 `dreambuddy-continual-training.service + .timer(30min)` —— **34 训练系统（前端应用训练）云端已在跑**；本地 `continual-training`(1800s) 与之重复。
@@ -120,7 +120,7 @@
 | `screen_monitor`/`screen_orchestrator`/`trend_executor`(ab-trading) | latent，建议废弃 |
 | `ab_monitor`/`ab_orchestrator` | latent，建议废弃 |
 | `agent-b-strategy-update` | latent，建议废弃 |
-| `etl-worker`(7-产物中台) | ⏸ **暂缓**：云端无 `events/` 数据源 + venv 缺 `psycopg2`（已复核：product-hub 未内嵌 ETL、无 cron） |
+| `etl-worker`(7-产物中台) | ✅ **已补云端**（2026-10-14，phase10）：建 `events/{dreamos,dsh,frontend,hub}` + venv 装 `psycopg2-binary 2.9.13` + 幂等建 observability 三表 + `etl-worker.service`（60s 轮询）；product-hub 加 drop-in 对齐 `WORKBUDDY_EVENTS_ROOT` |
 | `memory_cleanup`(02:05) | ✅ **已补云端** `memory-cleanup.timer`（每日 02:05；注：云端暂无 ab-trading 记忆文件，当前空转） |
 | `ai.hermes.gateway`/`ai.hermes.dashboard` | ✅ 云端**已启用**（三单元 enabled+active，:9119 监听） |
 | `com.l3.commandcenter.*`(5) | **独立项目**（L3 Command Center），不属本改造，单独决策 |
@@ -171,7 +171,7 @@ lsof -nP -iTCP -sTCP:LISTEN
 | hermes 三单元 | `enable --now` | hermes-gateway / group-poller / hermes-dashboard（:9119） | ✅ active（11:40 起） |
 | `signal_scanner` | 补云端 | `signal-scanner.service`（12-三屏，300s） | ✅ active，pool.json 实测刷新（9/9 币） |
 | `memory_cleanup` | 补云端 | `memory-cleanup.service` + `.timer`（02:05） | ✅ 部署并实测 exit 0（云端无记忆文件，暂空转） |
-| `etl-worker` | 暂缓 | — | ⏸ 待云端具备 `events/` 数据源后再上 |
+| `etl-worker` | 补云端 | `etl-worker.service`（60s）+ `events/` 数据源 + observability 三表 | ✅ active；全链路实测：临时 fixtures → sessions/spans/dsh_calls 各 1 行落库（验收后已清理，计数归 0） |
 
 **代码落地**（GitHub 流水线：本地 commit/push → 云端 `git pull`）：
 - `12-三屏趋势系统/signal_pool/scanner.py` 去硬编码（相对推导 `10-经典指标系统`，macOS/Linux 通用）
