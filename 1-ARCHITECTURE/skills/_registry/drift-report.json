@@ -1,5 +1,466 @@
 {
   "schema_version": "1.0",
-  "total_drifted": 0,
-  "drifted": []
+  "total_drifted": 51,
+  "drifted": [
+    {
+      "name": "polling-trader-reload",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-arch-research-orchestrator",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-research-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-framework-research",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-scattered-file-cleanup",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-genome-factor-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-skill-index-governance",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "nature-shared",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-uncertainty-reasoning",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-peer-review",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-reflection-methodology",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-cross-disciplinary",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-classic-methodology-—-oxford-式经典辩论赛制",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-doc-sync-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-module-post-dev-verify-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "nature-figure",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-code-commit-sync-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "data-troubleshoot",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-feature-landing-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-completion-evolution-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-subagent-tdd-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-qwen-eval-collab",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-eng-mgmt-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "knowledge-ingest",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-self-iteration-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-statistics-check",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-bugfix-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "safe-service-restart",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-code-sync-orphan-scan-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "tee-red-green-progress",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-paper-writing",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-experiment-design",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "drawio",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "evolution-case-ingest",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-orchestrator",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-code-deploy-pipeline",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-arch-gap-analysis-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-con-side",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-backtest-verify",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "skill-creator",
+      "present_roles": [
+        "project-index",
+        "unknown"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-arch-collaboration-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-topic-selector",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "wiki-ingest-trigger",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-tdd-dev-workflow",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-classic-pipeline-tdd-migration",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-pro-side",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-hypothesis-verification",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-science-literature-review",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dream-acceptance-verify",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "dreambuddy-os",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    },
+    {
+      "name": "debate-adjudication-methodology",
+      "present_roles": [
+        "project-index"
+      ],
+      "missing_roles": [
+        "trae-entry"
+      ]
+    }
+  ]
 }

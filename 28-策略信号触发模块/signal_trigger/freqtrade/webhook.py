@@ -235,6 +235,9 @@ def route_event(event: Dict[str, Any]) -> Dict[str, Any]:
         "route": target,
     })
 
+    # 36-通信系统层：开/平仓事件上报（FAIL-OPEN，失败不影响主流程）
+    _emit_to_signal_bus(etype, event, strategy_name)
+
     return {
         "ok": True,
         "event_type": etype,
@@ -288,3 +291,48 @@ def query_events(
             break
     events.reverse()
     return {"ok": True, "count": len(events), "events": events}
+
+
+def _emit_to_signal_bus(etype: str, event: Dict[str, Any], strategy_name: str) -> None:
+    """将开/平仓事件上报到 36-通信系统层（Signal Bus）。
+
+    FAIL-OPEN：上报失败仅记录，不影响 webhook 主流程。
+    仅上报 entry / exit 两类事件（开仓/平仓信号）。
+    """
+    if etype not in ("entry", "exit"):
+        return
+    signal_type = "trade_signal.open" if etype == "entry" else "trade_signal.close"
+    action = str(event.get("action") or "").lower()
+    direction = "SHORT" if action in ("sell", "short", "close") else "LONG"
+    envelope = {
+        "type": signal_type,
+        "severity": "info",
+        "source": "m28-freqtrade",
+        "ts": event.get("ts") or _now_ms(),
+        "payload": {
+            "symbol": event.get("pair") or "",
+            "direction": direction,
+            "entryPrice": event.get("price") if etype == "entry" else None,
+            "exitPrice": event.get("price") if etype == "exit" else None,
+            "strategyName": strategy_name,
+            "orderId": event.get("tag") or None,
+        },
+        "dedupKey": f"m28:{etype}:{event.get('tag') or ''}:{event.get('ts')}",
+    }
+    base = os.environ.get("SIGNAL_BUS_BASE", "http://127.0.0.1:3000")
+    token = os.environ.get("SIGNAL_BUS_TOKEN", "")
+    try:
+        req = urllib.request.Request(
+            f"{base}/api/signal-bus/emit",
+            data=json.dumps(envelope).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                **({"Authorization": f"Bearer {token}"} if token else {}),
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            if resp.status != 200:
+                _append_event({"type": "signal_bus_emit_failed", "status": resp.status, "ts": _now_ms()})
+    except Exception as exc:
+        _append_event({"type": "signal_bus_emit_failed", "error": str(exc), "ts": _now_ms()})

@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-14T10:23:15.534169+00:00",
+  "updated_at": "2026-10-14T15:28:32.843238+00:00",
   "scanner_version": "1.0",
   "total_coins": 9,
   "success_count": 9,
@@ -66,15 +66,14 @@
         ]
       },
       "4h": {
-        "signal": "HOLD",
-        "confidence": 0,
+        "signal": "SELL",
+        "confidence": 55,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "SELL",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
@@ -145,14 +144,15 @@
         ]
       },
       "4h": {
-        "signal": "SELL",
-        "confidence": 55,
+        "signal": "HOLD",
+        "confidence": 0,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "SELL",
-            "weight": 0.55
+            "signal": "HOLD",
+            "weight": 0.55,
+            "error": "no_signal"
           },
           {
             "strategy": "TrendConfirmationStrategy",
@@ -184,15 +184,14 @@
         ]
       },
       "4h": {
-        "signal": "HOLD",
-        "confidence": 0,
+        "signal": "SELL",
+        "confidence": 55,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "SELL",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
@@ -224,14 +223,15 @@
         ]
       },
       "4h": {
-        "signal": "SELL",
-        "confidence": 55,
+        "signal": "HOLD",
+        "confidence": 0,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "SELL",
-            "weight": 0.55
+            "signal": "HOLD",
+            "weight": 0.55,
+            "error": "no_signal"
           },
           {
             "strategy": "TrendConfirmationStrategy",

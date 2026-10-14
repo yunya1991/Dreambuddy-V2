@@ -1,239 +1,5 @@
 [
   {
-    "timestamp": "2026-08-21T23:04:33.774345",
-    "symbol": "ARB",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-21T23:04:01.924644",
-      "symbol": "ARB",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.576
-        },
-        {
-          "step": "decision",
-          "status": "rejected",
-          "reason": "\u7f6e\u4fe1\u5ea6\u4e0d\u8db3(0.58 < 0.62, \u65b9\u5411=SHORT)"
-        }
-      ],
-      "final_result": "CONFIDENCE_TOO_LOW"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:00:37.969938",
-    "symbol": "BTC",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:00:00.121715",
-      "symbol": "BTC",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.27
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:01:01.244071",
-    "symbol": "ETH",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:00:38.127789",
-      "symbol": "ETH",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.26639999999999997
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:01:17.580850",
-    "symbol": "SOL",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:01:01.304722",
-      "symbol": "SOL",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.27
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:01:40.490189",
-    "symbol": "AVAX",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:01:17.838310",
-      "symbol": "AVAX",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.3108
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:01:53.794806",
-    "symbol": "LINK",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:01:40.573261",
-      "symbol": "LINK",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.2706
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:02:09.007104",
-    "symbol": "DOT",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:01:53.863666",
-      "symbol": "DOT",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.3108
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:02:25.231423",
-    "symbol": "BNB",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:02:09.053243",
-      "symbol": "BNB",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.3102
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
-    "timestamp": "2026-08-22T00:02:50.477326",
-    "symbol": "OP",
-    "action": "scan",
-    "result": {
-      "timestamp": "2026-08-22T00:02:25.369950",
-      "symbol": "OP",
-      "steps": [
-        {
-          "step": "analysis",
-          "status": "running"
-        },
-        {
-          "step": "analysis",
-          "status": "completed",
-          "confidence": 0.2802
-        },
-        {
-          "step": "decision",
-          "status": "hold",
-          "reason": "\u65b9\u5411\u4e3aHOLD"
-        }
-      ],
-      "final_result": "HOLD"
-    }
-  },
-  {
     "timestamp": "2026-08-22T00:03:16.334205",
     "symbol": "ARB",
     "action": "scan",
@@ -29314,6 +29080,330 @@
           "step": "risk_check",
           "status": "failed",
           "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(38335800.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(5.4 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:14:28.064778",
+    "symbol": "BTC",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:10:01.171708",
+      "symbol": "BTC",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.646
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.646
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(100.0% > 5%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:17:06.141127",
+    "symbol": "ETH",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:14:28.111415",
+      "symbol": "ETH",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.626
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.626
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(23220000.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(13.5 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:18:49.265503",
+    "symbol": "SOL",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:17:06.188022",
+      "symbol": "SOL",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.626
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.626
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(22140000.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(10.8 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:21:02.440193",
+    "symbol": "AVAX",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:18:49.345193",
+      "symbol": "AVAX",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.647
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.647
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(38364000.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(6.9 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:22:07.806824",
+    "symbol": "LINK",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:21:02.487945",
+      "symbol": "LINK",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.647
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.647
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(24300000.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(9.0 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:23:36.656850",
+    "symbol": "DOT",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:22:07.840482",
+      "symbol": "DOT",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.658
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.658
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(20506800.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(7.4 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:27:11.514677",
+    "symbol": "BNB",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:23:36.702451",
+      "symbol": "BNB",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.626
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.626
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(14580000.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(10.8 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:28:40.495792",
+    "symbol": "OP",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:27:11.549150",
+      "symbol": "OP",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.64
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "LONG",
+          "confidence": 0.64
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(38399000.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(8.9 > \u8d26\u623730%)"
+        }
+      ],
+      "final_result": "RISK_REJECTED"
+    }
+  },
+  {
+    "timestamp": "2026-10-14T21:30:05.534123",
+    "symbol": "ARB",
+    "action": "scan",
+    "result": {
+      "timestamp": "2026-10-14T21:28:40.533010",
+      "symbol": "ARB",
+      "steps": [
+        {
+          "step": "analysis",
+          "status": "running"
+        },
+        {
+          "step": "analysis",
+          "status": "completed",
+          "confidence": 0.641
+        },
+        {
+          "step": "decision",
+          "status": "approved",
+          "direction": "SHORT",
+          "confidence": 0.641
+        },
+        {
+          "step": "risk_check",
+          "status": "running"
+        },
+        {
+          "step": "risk_check",
+          "status": "failed",
+          "reason": "\u5355\u7b14\u98ce\u9669\u8fc7\u9ad8(38428200.0% > 5%); \u4ed3\u4f4d\u8fc7\u5927(6.7 > \u8d26\u623730%)"
         }
       ],
       "final_result": "RISK_REJECTED"
