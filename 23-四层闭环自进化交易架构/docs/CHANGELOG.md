@@ -1,7 +1,51 @@
 # 23-四层闭环自进化交易架构 — 变更日志
 
-> **版本**: v1.14 | **更新日期**: 2026-10-14
+> **版本**: v1.15 | **更新日期**: 2026-10-14
 > **定位**: 模块级变更日志，对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md)
+
+---
+
+## [v1.15] - 2026-10-14 (Shadow 验证自动放量门禁)
+
+### 核心成果
+
+把「Shadow 验证 ≥7 天且正向 → 放量」从人工操作变为**自动、可审计、可回滚**：目标开关在影子期（False）每日评估 A2 门禁态，满足「≥7 个自然日且出现过态A」→ 自动 `set_switch(target, True)`。对应 SPEC/PLAN：`SPEC-Shadow验证自动放量门禁.md` / `PLAN-Shadow验证自动放量门禁.md`。
+
+### 1. 新增 `core/shadow_activation_gate.py`（ShadowActivationGate）
+
+- **状态唯一入口，O(1) 读文件、无 DML**；原子写（tempfile + os.replace）；缺失/损坏 → 空状态（FAIL-OPEN，不激活）
+- 门禁规则：`valid_days` = 去重有效观测日（`method ∉ {insufficient_samples, error}` 且 `n ≥ 500`）；`has_positive` = 出现态A；`eligible = valid_days ≥ 7 且 has_positive`
+- `maybe_activate`：惰性每日 ≤1 次 spawn 评估子进程（`last_eval_attempt_date` 守卫，失败也写）；满足条件 → `set_switch(True)` + `activated_at` + 认知 record（B 级）
+- `reconcile_from_disk`：启动恢复放量（补齐 `set_switch` 不落盘的缺口）
+
+### 2. 新增 `core/shadow_ate_evaluator.py` + `scripts/shadow_ate_eval.py`
+
+- `evaluate_and_record`（**含 DML**）在独立子进程运行，交易主链路零 DML 负担
+- 复用 `build_ate_samples` → `CausalEngine.estimate_ate` → `classify_ate_state` 产出当日证据
+
+### 3. 接线
+
+- `evolution_pipeline.EvolutionPipeline.__init__` → `reconcile_from_disk`（FAIL-OPEN）
+- `contradiction_identifier.PrimaryContradictionIdentifier.identify()` 头部 → `maybe_activate`（O(1)，先于路径分析，保证 <2 路径时也会尝试）
+
+### 4. 开关与硬约束
+
+| 开关 | 状态 |
+|------|------|
+| `enable_shadow_auto_activation` | **True**（治理设施；本身不改交易行为）|
+| `enable_causal_historical_samples` | 默认值保持 **False**（仅运行期放量，不改配置默认）|
+
+- HC-AGI-08：`min_n = 500` 不下调；HC-AGI-02 / FAIL-OPEN 不变；HC-AGI-07 满足条件才放量
+
+### 5. 验收证据
+
+- 新增测试 **19 项全绿**（`test_shadow_activation_gate.py` #1-#12 + spawn 正/反向；`test_shadow_ate_evaluator.py` #13-#14；`test_shadow_gate_wiring.py` 接线 2 项）
+- 对照：7 天态B → 不激活；6 天 + 第 7 天态A → 激活；状态文件损坏 → 不激活不抛；`activated_at` 已存在 → reconcile 放量
+
+### 6. 诚实边界
+
+- 源B 为静态文件 → 恒态B → **单靠源B 永不触发**；门禁只保证「真实态A 出现即自动放量」，**不制造效应**（SPEC §12.1）
+- 真正能走通的放量路径是源A（实时矛盾样本）累积出真实态A
 
 ---
 

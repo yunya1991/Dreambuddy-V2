@@ -27,6 +27,8 @@ agi_config — AGI 升级模块统一开关配置（HC-AGI-07）
   enable_funding_rate_factor       路径D-1: 资金费率因子（默认 False）
   enable_oi_price_divergence_factor 路径D-2: OI-Price 背离因子（默认 False）
   enable_liquidation_heatmap_factor 路径D-3: 清算热力图因子（需 POC，默认 False）
+  enable_causal_historical_samples  A2 双源历史样本（默认 False，Shadow 验证后放量）
+  enable_shadow_auto_activation     Shadow 自动放量门禁总开关（默认 True，治理设施）
 """
 from __future__ import annotations
 
@@ -101,6 +103,8 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_liquidation_heatmap_factor": False,       # 路径D-3: 清算热力图因子 (需 POC)
     # --- A2: ATE 历史样本接入（HC-AGI-07 默认关；Shadow 验证后开启）---
     "enable_causal_historical_samples": False,  # 源A/源B 双源历史样本 → estimate_ate 真实可估计
+    # --- Shadow 自动放量门禁（治理设施；默认 True，本身不改交易行为）---
+    "enable_shadow_auto_activation": True,      # Shadow 验证 ≥7 天且出现态A → 自动放量目标开关
     # --- Phase 3 P0-4 FAIL-OPEN 登记制 (SPEC-自进化系统逆向解析改进 v0.3) ---
     # safe_call 异常登记开关; False=仅 try/except 不登记 (L3 降级);
     # True=登记到 ring buffer (L2). 2026-10-13 激活: 让降级可观测.

@@ -268,6 +268,8 @@ class PrimaryContradictionIdentifier:
         self._causal_sample_store = None
         # A2: ATE 结果缓存 {key: (ts, result)}（SPEC §2.4）
         self._ate_cache: dict = {}
+        # Shadow 自动放量门禁（懒加载；O(1)；FAIL-OPEN）
+        self._shadow_gate = None
 
     def identify(
         self,
@@ -296,6 +298,18 @@ class PrimaryContradictionIdentifier:
         HC-AGI-23: < 2 路径返回 neutral
         """
         try:
+            # Shadow 自动放量门禁：惰性每日评估 + 满足条件放量（O(1)；FAIL-OPEN）
+            try:
+                if self._shadow_gate is None:
+                    from dreambuddy_evolution.core.shadow_activation_gate import (
+                        ShadowActivationGate,
+                    )
+                    self._shadow_gate = ShadowActivationGate(
+                        "enable_causal_historical_samples")
+                self._shadow_gate.maybe_activate()
+            except Exception as e:  # noqa: BLE001
+                logger.debug("[FO-AGI][ShadowGate] fail: %s", e)
+
             if not isinstance(paths, (list, tuple)) or len(paths) < self.MIN_PATHS_FOR_ANALYSIS:
                 return self._neutral_default()
 

@@ -87,6 +87,16 @@ class EvolutionPipeline:
             logger.debug("[FO] ShadowRLTrainer init fail: %s", e)
             self.shadow_rl_trainer = None
 
+        # Shadow 自动放量门禁：启动恢复（activated_at 已存在 → 放量）FAIL-OPEN
+        try:
+            from dreambuddy_evolution.core.shadow_activation_gate import ShadowActivationGate
+            self._shadow_activation_gate = ShadowActivationGate(
+                "enable_causal_historical_samples")
+            self._shadow_activation_gate.reconcile_from_disk()
+        except Exception as e:  # noqa: BLE001
+            logger.debug("[FO] shadow activation reconcile fail: %s", e)
+            self._shadow_activation_gate = None
+
         # RegimeGateSwitch 初始化（市场状态路由）
         try:
             from dreambuddy_evolution.engines.regime_gate import RegimeGateSwitch
