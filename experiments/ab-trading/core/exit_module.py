@@ -642,7 +642,11 @@ def sync_positions_from_exchange(
     if account_data is not None:
         acct = account_data
     else:
-        acct = client.get_account()
+        try:
+            acct = client.get_account()
+        except Exception:
+            # 账户查询失败（无凭据 / 网络异常）→ 跳过同步，保持内存持仓不变
+            return active_positions, []
     real_positions = acct.get("positions", {})
 
     closed_by_sync: List[Dict] = []

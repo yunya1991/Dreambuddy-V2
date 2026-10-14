@@ -1220,7 +1220,12 @@ def run():
 
     # Agent B 子账户：合约账户权益
     # 使用实际可用余额进行资金分配，不再用 BUDGET_USDC 做上限
-    acct = client.get_account()
+    try:
+        acct = client.get_account()
+    except Exception as e:
+        # 无凭据/查询异常（如云端无 config/.env）→ 退化虚拟账户，避免整轮崩溃
+        print(f"[Agent B] 模拟模式（账户查询异常）: {e}")
+        acct = {"ok": False, "positions": {}}
     if not acct["ok"]:
         # 模拟模式：无有效账户时使用虚拟资金
         sim_mode = True
@@ -1239,7 +1244,7 @@ def run():
     memory["active_positions"], l1_closed = run_exit_check(
         client, memory.get("active_positions", {}),
         agent_id="b", enable_trailing=True,
-        account_data=acct,
+        account_data=acct if not sim_mode else None,
     )
     if l1_closed:
         for ct in l1_closed:
