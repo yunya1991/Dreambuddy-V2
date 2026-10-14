@@ -15,6 +15,9 @@
 #     3) 两者均配 .timer（OnBootSec=5min + OnUnitActiveSec=4h，等价 launchd StartInterval=14400）
 #   安全: 云端显式 AUTO_EXECUTE=false —— 禁止云端实盘下单，云端仅产出面板所需日志
 #         （本地凭据 config/.env 被 .gitignore 忽略，云端本就不存在，此处再显式钉死）
+#   PATH: auto_monitor.py 内部用 subprocess.run(["python3", ...]) 拉起 agent runner，
+#         而云端 /usr/bin/python3 缺 dotenv/requests —— 必须把 venv bin 前置到 PATH，
+#         使裸 python3 解析到 ${DEPLOY_HOME}/venv-trading/bin/python3
 # ============================================================
 set -e
 
@@ -72,6 +75,7 @@ User=${DEPLOY_USER}
 Group=${DEPLOY_USER}
 WorkingDirectory=${AB_DIR}
 Environment="HOME=${DEPLOY_HOME}"
+Environment="PATH=${DEPLOY_HOME}/venv-trading/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="AUTO_EXECUTE=false"
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=${PY} auto_monitor.py
@@ -108,6 +112,7 @@ User=${DEPLOY_USER}
 Group=${DEPLOY_USER}
 WorkingDirectory=${AB_DIR}
 Environment="HOME=${DEPLOY_HOME}"
+Environment="PATH=${DEPLOY_HOME}/venv-trading/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="AUTO_EXECUTE=false"
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=${PY} orchestrator.py
