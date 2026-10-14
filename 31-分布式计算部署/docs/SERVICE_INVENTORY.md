@@ -115,7 +115,7 @@
 
 | 本地项 | 建议 |
 |---|---|
-| **`trailing-stop-runner`(`--real`)** | ⛔ **红线**：实盘移动止损，云端无等价 → **必须先云端部署，否则禁止停** |
+| **`trailing-stop-runner`(`--real`)** | ✅ **已补云端** `trailing-stop-runner.service`（2026-10-14，phase9；与本地 launchd 共用统一入口 `16-调控系统/scripts/run_trailing_stop_runner.sh`，`--real` 常驻 300s） |
 | `signal_scanner`(12-三屏) | ✅ **已补云端** `signal-scanner.service`（2026-10-14，每 300s；pool.json 实测刷新 9/9 币） |
 | `screen_monitor`/`screen_orchestrator`/`trend_executor`(ab-trading) | latent，建议废弃 |
 | `ab_monitor`/`ab_orchestrator` | latent，建议废弃 |
@@ -138,7 +138,7 @@
 ## 5. 红线与下一步
 
 **红线（停本地前必须闭环）**：
-1. `trailing-stop-runner`(`--real`) 云端等价部署 —— **P0 阻塞项**。
+1. ✅ `trailing-stop-runner`(`--real`) 云端等价部署 —— **已闭环**（2026-10-14，`trailing-stop-runner.service` active；本地 launchd 与云端 systemd 共用同一可移植入口脚本，行为一致）。
 
 **待复核（本轮 SSH 超时未取证）**：
 1. 云端 `8094` / `8096` 的 systemd unit 名（端口已确认监听，命名按部署文档为 M27/M28）。

@@ -5,26 +5,15 @@
     <key>Label</key>
     <string>com.dreambuddy.trailing-stop-runner</string>
 
+    <!-- 统一入口：与云端 systemd 共用同一可移植脚本（EXIT_MODE/PYTHONPATH/凭据由脚本接管） -->
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/env</string>
-        <string>python3</string>
-        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts/trailing_stop_runner.py</string>
-        <string>--real</string>
-        <string>--interval</string>
-        <string>300</string>
+        <string>/bin/bash</string>
+        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts/run_trailing_stop_runner.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统</string>
-
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>EXIT_MODE</key>
-        <string>real</string>
-        <key>PYTHONPATH</key>
-        <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/core:/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts</string>
-    </dict>
 
     <key>RunAtLoad</key>
     <true/>

@@ -120,11 +120,20 @@
 
 ### 2.9 云端全量运行清单（已核对 active，2026-10-14）
 
-- **systemd 服务**（active 20个）：dreambuddy-frontend(:3001) · yijing-data-server(:8765) · product-hub(:3456) · fundamental(:9094) · m25-strategy-generation(:8095) · m26-strategy-lib(:8093) · m27-governance(:8094) · m28-signal-trigger(:8096) · v15-api(:8771) · v15-capital-api(:8770) · yijing-polling-trader · datacenter-scheduler · cognitive-daemon · dreamos-scheduler · dreamos-dynamic-evaluator · nginx · hermes-gateway · group-poller · hermes-dashboard(:9119) · signal-scanner
+- **systemd 服务**（active 21个）：dreambuddy-frontend(:3001) · yijing-data-server(:8765) · product-hub(:3456) · fundamental(:9094) · m25-strategy-generation(:8095) · m26-strategy-lib(:8093) · m27-governance(:8094) · m28-signal-trigger(:8096) · v15-api(:8771) · v15-capital-api(:8770) · yijing-polling-trader · datacenter-scheduler · cognitive-daemon · dreamos-scheduler · dreamos-dynamic-evaluator · nginx · hermes-gateway · group-poller · hermes-dashboard(:9119) · signal-scanner · trailing-stop-runner(--real,300s)
 - **systemd 服务**（inactive 0个）：hermes 三单元已于 2026-10-14 启用（enabled+active，:9119 监听）；组 B 的 signal_scanner / memory_cleanup 已补云端（`phase8/08-deploy-groupb-units.sh`）。memory-cleanup.service 为 oneshot，静息态 inactive 属正常
 - **timers**（11个）：v15-orchestrator · v15-poll-light · datacenter-backfill · dal-backup · dal-rotate · dal-integrity · yijing-monitor · ranking-trigger · dreambuddy-snapshot · dreambuddy-continual-training · memory-cleanup
 - **Docker**：dreambuddy-pg / dreambuddy-redis / dreambuddy-minio（healthy）
 - **PM2**：已清空（M25 迁 systemd）
+
+### 2.10 分布式红线补齐（Phase 8/9）— ✅ 已实现
+
+| 脚本 | 职责 | 云端服务 | 状态 |
+|------|------|---------|------|
+| `phase8/08-deploy-groupb-units.sh` | 组 B 补云端（信号池扫描 300s / 记忆清理 02:05） | signal-scanner.service + memory-cleanup.timer | ✅ active |
+| `phase9/09-deploy-trailing-stop-runner.sh` | **红线 G0-1a**：实盘移动止损（--real） | trailing-stop-runner.service（300s） | ✅ active（2026-10-14） |
+
+> 统一入口：本地 launchd 与云端 systemd 共用 `16-调控系统/scripts/run_trailing_stop_runner.sh`（内部自解析仓库路径 + 加载 `14-V15经典马丁策略/config/.env.local` 凭据 + 组装 PYTHONPATH），保证两端行为一致。
 
 ---
 
