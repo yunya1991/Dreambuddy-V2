@@ -2,7 +2,7 @@
 # ============================================================
 # Dreambuddy V2 — Phase 1 代码更新脚本
 # 用法: bash update.sh [--skip-frontend] [--skip-v15] [--skip-deps]
-# 流程: git pull → 前端 pnpm install+build+pm2 restart → V15 无需重启(timer自动拉新代码)
+# 流程: git pull → 前端 pnpm install+build+systemd restart → V15 无需重启(timer自动拉新代码)
 # ============================================================
 set -e
 
@@ -122,19 +122,16 @@ EOF
     pnpm build
     echo "  ✓ 构建完成"
 
-    echo "  重启 PM2 前端进程..."
-    pm2 restart dreambuddy-frontend --update-env 2>/dev/null || {
-        echo "  ⚠ PM2 重启失败, 尝试重新启动..."
-        pm2 start "pnpm start" --name dreambuddy-frontend --cwd "${FRONTEND_DIR}" --env production
-    }
-    pm2 save
-    echo "  ✓ 前端已重启"
+    echo "  重启前端 systemd 单元 (PM2 已废弃)..."
+    systemctl restart dreambuddy-frontend.service 2>/dev/null && \
+        echo "  ✓ dreambuddy-frontend.service 已重启" || \
+        echo "  ⚠ dreambuddy-frontend.service 重启失败, 检查 journalctl -u dreambuddy-frontend"
 
     sleep 3
     if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001 | grep -q "200\|307\|308"; then
         echo "  ✓ 前端健康: HTTP OK"
     else
-        echo "  ⚠ 前端启动中, 检查: pm2 logs dreambuddy-frontend"
+        echo "  ⚠ 前端启动中, 检查: journalctl -u dreambuddy-frontend -n 50"
     fi
 else
     echo ""
@@ -191,7 +188,7 @@ echo "  最新提交: ${NEW_COMMIT}"
 echo ""
 echo "  验证:"
 echo "    bash healthcheck.sh"
-echo "    pm2 logs dreambuddy-frontend --lines 20"
+echo "    journalctl -u dreambuddy-frontend -n 50"
 echo "    systemctl status v15-api v15-capital-api"
 echo "    journalctl -u hermes-gateway -n 20"
 echo "============================================"
