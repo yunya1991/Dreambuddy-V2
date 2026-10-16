@@ -2,10 +2,10 @@
 
 > **版本**: v0.2 (2026-10-12)
 > **状态**: ✅ 复审通过 — 4 Major + 5 Minor 全部解决，7 模式阻断清单全通过，1 项复审新发 Minor（防震荡死代码）已当场修复
-> **关联系统**: C-Drive Agent + 广义大认知系统(L1-L4) + 33-REA逆向解析工程 + 34-前端应用训练系统 + 辩论引擎
+> **关联系统**: C-Drive Agent + 广义大认知系统(L1-L4 → 对接口径 C1-C4) + 33-REA逆向解析工程 + 34-前端应用训练系统 + 辩论引擎 + **前端 L0/L1/L2 架构（`34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md`，见 §7 对接细则）**
 > **前置条件**: SPEC-CognitiveSystem-Evolution.md P0-P3 24/24 已落地 + P1-P3 决策推导器已实现
 > **核心命题**: C-Drive 作为大认知系统的"执行手臂"，四层认知系统作为 C-Drive 的"思考大脑"，训练驱动持续进化
-> **适用边界**: 本 SPEC 适用于 C-Drive 反思层（"怎么做"决策），非交易策略层（"做不做"决策）。交易策略路由由 dreambuddy-os 调度层负责。
+> **适用边界**: 本 SPEC 适用于 C-Drive 反思层（"怎么做"决策），非交易策略层（"做不做"决策）。交易策略路由由 dreambuddy-os 调度层负责。**§7 为与前端 L1 路由器的对接细则（跨系统扩展，只定义信号产出/消费契约，不改 §0-§6 的 C-Drive 反思路由逻辑）。**
 > **评审历史**: v0.1 草案 → 同行评审（Devil's Advocate 最高评分 4，2 项让步）→ v0.2 修改 → 复审通过（4 Major + 5 Minor 全解决）
 
 ---
@@ -604,3 +604,128 @@ class CDriveAgent:
 | `35-广义认知系统协作模块/SPEC-CognitiveSystem-Evolution.md` | 广义大认知系统 SPEC |
 | `4-MEMORY/9-工具与接口/cognitive_mcp_server.py` | 认知系统 MCP 工具 |
 | `4-MEMORY/9-工具与接口/cognitive_loop_entry.py` | 认知闭环入口 |
+| `34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md` | 前端 L0/L1/L2 架构 SPEC（**§7 对接细则的消费方**，见其 §3.5 / §5 第 4 条） |
+
+---
+
+## 7. 对接细则 — 与前端 L1 路由器的置信度门控契约
+
+> **定位**: 本节是 §0-§6 的**跨系统扩展**，只定义「置信度门控信号」的**产出契约**（L0 认知系统 C3/C4）与**消费契约**（前端 L1 路由器），**不改动** C-Drive 自身的反思路由逻辑。
+> - **产出方**: 广义认知系统 **C3 路由层**（匹配度评分）+ **C4 元认知层**（预测误差门控）——即本 SPEC §2.2.1 / §2.4.1 已实现的同一套**零 token 确定性机制**；
+> - **消费方**: 前端 L1 路由器（`34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md` §5 第 4 条）——用该信号判决「**L1 直答 / 转 L2**」。
+> - **职责边界**: 门控**产出于 L0（认知系统），判决归路由器**——认知系统只给**信号**，不承担路由决策。
+
+### 7.1 为什么同一套机制能服务两个消费方
+
+| 消费者 | 消费同一信号 | 用途 |
+|---|---|---|
+| C-Drive 反思层（§0-§6） | match_score + case_density + prediction_error | 自身的**反思决策**：CONTINUE / REDO / INSERT_BEFORE / JUMP_TO / EARLY_TERMINATE |
+| 前端 L1 路由器（§7） | route_confidence（由三者归一） | **层路由决策**：L1 直答 / 转 L2 |
+
+> 二者**共用产出、分叉消费**：认知系统只算一次信号，C-Drive 与前端路由器各取所需，不重复计算、不产生第二套阈值。
+
+### 7.2 层名映射（认知内部 C 名 ↔ 本 SPEC 原名）
+
+| 认知内部层（对接口径） | 本 SPEC 原名 | 在门控中的职责 |
+|---|---|---|
+| **C3 路由层** | L3 路由层 | 产出 **match_score**（匹配度）+ **case_density**（案例密度）+ **intent_hint** |
+| **C4 元认知层** | L4 元认知层 | 产出 **prediction_error**（预测误差）+ **fok/jol** + **route_confidence**（归一置信度） |
+
+> 命名说明: 采用 C1-C4（Cognitive Layer 1-4）以与前端 L0/L1/L2 及交易矛盾维度 C1-C8 彻底隔离，见 `SPEC-v1.3-L0L1L2-architecture.md` §3.5。
+
+### 7.3 信号产出契约（C3 + C4 → 统一 JSON，零 token，确定性）
+
+**复用既有实现，不新增算法**:
+- **C3（= §2.2.1 `evaluate_match`）**: `match_score = max_score*0.6 + avg_score*0.4`；`case_density = len(memories)`。
+- **C4（= §2.4.1 `jev_gate` 的预测误差分支）**: `expected = match_score`；`actual = rea_confidence or debate_bull_confidence or 0.5`；`prediction_error = |expected - actual|`。
+
+**归一置信度（新增，仅一层确定性映射，不引入 LLM）**:
+```python
+def route_confidence(match_score: float, case_density: int, prediction_error: float) -> float:
+    """前端层消费的归一置信度（0~1）——由 C3/C4 既有输出直接映射"""
+    conf = match_score
+    if prediction_error > PREDICTION_ERROR_MAX:   # 0.3
+        conf -= 0.3                                # 预测与实际背离 → 降权
+    if case_density < CASE_DENSITY_MIN:            # 3
+        conf -= 0.2                                # 案例覆盖不足 → 降权
+    return max(0.0, min(1.0, conf))
+```
+
+**统一信号载荷（RouterConfidenceSignal）**:
+```json
+{
+  "match_score": 0.82,        // C3
+  "case_density": 6,          // C3
+  "intent_hint": "data_query",// C3: Intent-Engine 语义召回给出的意图候选
+  "prediction_error": 0.12,   // C4
+  "fok": true,                // C4: feeling-of-knowing
+  "jol": false,               // C4: judgment-of-learning
+  "route_confidence": 0.82,   // 归一置信度
+  "route_tier": "Tier1",      // C3 §2.2.2 分级
+  "produced_at": "ISO8601",
+  "schema_version": "1.0"
+}
+```
+
+### 7.4 消费契约（前端 L1 路由器的判决规则）
+
+| route_confidence | 判决 | 动作 |
+|---|---|---|
+| ≥ **0.7**（THRESHOLD_HIGH） | **高置信** | 直接 **L1** 零 token 秒答（用户问题被认知库明确覆盖） |
+| < **0.7** | **低置信** | 推给**路由器** → 转 **L2**；携带 `l1_intent_hint = intent_hint` 作为 L2 上下文 |
+
+**补充规则**:
+- `case_density < 3` 时即使 match_score 高**也不得直落 L1**——覆盖不足易误答，按 §7.3 降权后通常落入 L2；
+- `intent_hint` 非空时，L1 先按该意图走**注册表 canHandle** 兜底（对应 SPEC-v1.3 §5 第 3 条）；命中即 L1 直答（此时信号作**闸门**而非**路由源**）；
+- 转 L2 时 `intent_hint` 随请求透传（对应 SPEC-v1.3 §4.2-3「C-drive 与 L1 路由器交接协议」，即已落地的 `l1_intent_hint`）。
+
+### 7.5 与现有实现的衔接（不新建系统）
+
+| 事项 | 现状 | 本对接要求 |
+|---|---|---|
+| `evaluate_match`（C3） | §2.2.1 已实现 | 直接复用，输出即 `match_score / case_density` |
+| `jev_gate`（C4） | §2.4.1 已实现（纯规则） | 取其**预测误差分支**输出 `prediction_error`；C-Drive 侧仍走完整裁决（CONTINUE/REDO…） |
+| 前端路由器置信度门控 | SPEC-v1.3 §5 第 4 条，当前为**注册表侧静态置信度** | 由本 §7 信号**替换**静态值，落地 SPEC-v1.3 §6-待推进项 2「认知系统接口暴露」 |
+| `l1_intent_hint` 交接 | SPEC-v1.3 §6-待推进项 4 标注已落地 | 本 §7 明确其取值来源 = C3 `intent_hint` |
+
+**调用时序（前端层）**:
+```
+用户请求 → 路由器意图预测(S层+关键词兜底) → intent
+         → [调用 L0 认知] recall(context=message) → memories[]
+         → C3.evaluate_match(memories) → (match_score, case_density)
+         → C4.prediction_error(match_score, actual) → route_confidence
+         → 判决: ≥0.7 → L1 直答 ; <0.7 → 转 L2(附 l1_intent_hint)
+```
+
+### 7.6 FAIL-OPEN 降级契约（无大模型 / 认知不可用）
+
+> 与 SPEC-v1.3「无大模型渐进降级」一致：**认知信号缺失不得阻塞路由**。
+
+| 异常 | 降级行为 |
+|---|---|
+| recall 超时 / 返回空 | `match_score=0, case_density=0` → `route_confidence=0` → 按「未命中」转 L2（不阻塞） |
+| C4 元认知层不可用 | 退化为**纯 C3 匹配度**（`route_confidence = match_score`），省略预测误差降权 |
+| 认知系统整体不可用 | 退化为**注册表侧静态置信度**（SPEC-v1.3 §5 当前实现），路由功能保持可用 |
+| 任一字段缺失 | 按默认值补齐（`prediction_error=0.5` 视为未知→不降权；`case_density=0`），**绝不因信号缺失抛错** |
+
+### 7.7 阈值参数表（跨系统统一，禁止各自定义）
+
+| 参数 | 值 | 定义方 | 用途 |
+|---|---|---|---|
+| THRESHOLD_HIGH | **0.7** | 前端路由器 | route_confidence ≥ 此值 → L1 直答 |
+| CASE_DENSITY_MIN | **3** | 前端路由器（对齐 §2.2.2 Tier1 `density ≥ 3`） | 覆盖不足降权门槛 |
+| PREDICTION_ERROR_MAX | **0.3** | C4（复用 §2.4.1） | 预测误差超此值 → 降权 0.3 |
+| FAST_PATH | `match ≥ 0.8 且 density ≥ 5` | C4（复用 §2.4.1） | 高可信跳过完整裁决 |
+| Tier1 路由门限 | `match ≥ 0.7 且 density ≥ 3` | C3（§2.2.2） | 分级路由依据 |
+
+> **一致性硬约束**: 前端路由器**不得**自定义第二套置信度阈值；`THRESHOLD_HIGH` 取 0.7 对齐 C3 §2.2.2 Tier1 门限、`CASE_DENSITY_MIN` 取 3 对齐 Tier1 密度门限——保证「C-Drive 认为高可信」与「前端认为高置信」判定一致，避免同一问题两套结论。
+
+### 7.8 验收对齐（§5 验收标准的扩展项）
+
+| 验收项 | 指标 | 门禁 |
+|---|---|---|
+| 信号产出契约 | C3/C4 输出符合 §7.3 schema | 硬门禁 |
+| 跨消费一致性 | 同一 `memories` 输入下，C-Drive Tier 判定 与 前端 L1/L2 判决 使用同一 `match_score / case_density` | 硬门禁 |
+| FAIL-OPEN 降级 | 认知不可用时路由仍可用（转 L2） | 硬门禁 |
+| 静态置信度替换 | 前端 §5 第 4 条静态阈值 → C4 信号 | 硬门禁 |
+| 零 token | 信号产出全程零 LLM 调用 | 硬门禁 |

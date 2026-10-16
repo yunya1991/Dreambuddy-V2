@@ -1,7 +1,7 @@
 # L0 接口规范 — FoundationLayer fetchContext 数据访问抽象
 
-> 版本: v0.1 | 日期: 2026-10-16 | 依据: SPEC v1.1 §5 FoundationLayer 契约
-> 状态: 规范设计完成，执行器收敛为渐进式推进
+> 版本: v0.2 | 日期: 2026-10-16 | 依据: SPEC v1.1 §5 FoundationLayer 契约
+> 状态: 阶段二「包装收敛」已落地（2026-10-16，P1.1-P1.3）：`core/l0_foundation.py` 10 scope + 十意图 exec_* 全部收敛；阶段三（19 DAL 切换）待 DAL 成熟
 
 ## 1. 目标
 

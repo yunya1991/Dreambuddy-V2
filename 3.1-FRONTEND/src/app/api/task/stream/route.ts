@@ -11,9 +11,31 @@ import { emitMonitorEvent } from '@/lib/monitor-bus';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { execFile } from 'child_process';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/** P3b.1: L2 任务完成后认知 record_hook（fire-and-forget，FAIL-OPEN 不阻塞 SSE）。 */
+function settleL2ToCognitive(payload: Record<string, unknown>): void {
+  try {
+    const scriptPath = join(process.cwd(), 'scripts', 'l2_cognitive_settle.py');
+    execFile('python3', [scriptPath, JSON.stringify(payload)], { timeout: 10000 }, (err, stdout) => {
+      if (err) {
+        console.warn('[TaskStream] L2 认知沉淀降级:', err.message);
+        return;
+      }
+      // 实测验收：stdout 最后一行应含 memory_id
+      const lastLine = stdout.trim().split(/\r?\n/).pop() || '';
+      try {
+        const parsed = JSON.parse(lastLine);
+        if (parsed?.memory_id) {
+          console.log(`[TaskStream] L2 认知沉淀成功: ${parsed.memory_id}`);
+        }
+      } catch { /* 输出非 JSON，忽略 */ }
+    });
+  } catch { /* FAIL-OPEN */ }
+}
 
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
@@ -51,7 +73,7 @@ export async function POST(request: NextRequest) {
   (async () => {
     try {
       const body = await request.json();
-      const { message, thinking_mode, session_id, llm_model, intent_method, lang, trading_mode } = body;
+      const { message, thinking_mode, session_id, llm_model, intent_method, lang, trading_mode, l1_intent_hint } = body;
 
       if (!message || typeof message !== 'string') {
         sendEvent('error', { error: 'message is required and must be a string' });
@@ -127,6 +149,8 @@ export async function POST(request: NextRequest) {
         intent_method,
         lang: lang || 'zh',
         trading_mode: trading_mode || 'ai_skill',
+        // L2 交接协议：透传 L1 意图先验（落盘 task.metadata，供 S 层/C-drive 消费）
+        l1_intent_hint: typeof l1_intent_hint === 'string' ? l1_intent_hint : undefined,
         onProgress: (event) => {
           // 将Planner进度事件转发到SSE
           sendEvent('progress', event as unknown as Record<string, unknown>);
@@ -315,6 +339,18 @@ export async function POST(request: NextRequest) {
           trade_requires_confirmation: result.status === 'completed' && task.intent.type === 'execute_trade',
           chart_specs: result.chart_specs || [],
         });
+
+        // P3b.1: L2 执行案例沉淀认知系统（fire-and-forget；record_hook 接线）
+        if (result.status === 'completed') {
+          settleL2ToCognitive({
+            task_id: task.task_id,
+            intent: task.intent.type,
+            message: message.trim(),
+            answer_preview: (result.content || '').slice(0, 200),
+            quality_score: (chain_trace?.final as Record<string, unknown> | undefined)?.quality_score ?? 0.7,
+            l1_intent_hint: task.metadata?.l1_intent_hint || '',
+          });
+        }
       } else {
         sendEvent('done', {
           task_id: task.task_id,

@@ -2,7 +2,8 @@
 
 > **版本**: v0.2 (2026-10-11)
 > **状态**: ✅ 开发完成（2026-10-12 收尾验收五维全通过）— P0-P3 24/24 全落地：P0 接线修复 3 项 + P1 记忆层 7 项 + P2 路由层 6 项 + P3 元认知层 8 项。全量回归 pytest 250 passed / jest 100 passed / tsc 0 errors。验收包: `acceptance_bundles/2026-10-12_cognitive-system/`，落地 commits: b02855935b + afbea75f24 + 58230064b1（此前 P0/P1/P2-1~P2-3 已分批提交）
-> **前状态**: 评审后修改（3 Blocking 已修复，L4 降级为研究探索项）
+> **前状态**: 评审后修改（3 Blocking 已修复，C4 降级为研究探索项）
+> **命名（2026-10-16 更新）**: 认知系统内部四层统一命名为 **C1 基础 / C2 记忆 / C3 路由 / C4 元认知**（本文档原标注 L1-L4，已改名），与系统三层能力架构 **L0/L1/L2 区分**，避免同名异义（见 SSoT《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》§1.2）。
 > **评审**: 62/100 → 修改后接受（Devil's Advocate 6 角色评审）
 > **关联系统**: 认知系统(4-MEMORY) + SKILL管理 + 知识库(2-KNOWLEDGE) + 文档管理(0-系统文档管理) + 索引系统 + 33-REA逆向解析工程 + dreamos/core/sense 意图识别 + ReverseDeriver
 > **调研基础**: 四路并行深度调研（传统金融 + AI/深度学习 + 人类认知科学 + GitHub项目）
@@ -96,25 +97,25 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     L4: 元认知层 (Metacognition)                   │
+│                     C4: 元认知层 (Metacognition)                   │
 │   GWT Workspace Bus + HOT Self-Model + FOK/JOL 元认知 Harness      │
 │   预测误差门控 + Believability-weighted 决策                       │
 ├─────────────────────────────────────────────────────────────────┤
-│                     L3: 路由层 (Cognitive Router)                  │
+│                     C3: 路由层 (Cognitive Router)                  │
 │   Intent-Engine → Cross-Attention 三库加权召回                     │
 │   L2A 条件访问(80% fast-path) + Agentic RAG 路由决策               │
 ├─────────────────────────────────────────────────────────────────┤
-│                     L2: 记忆层 (Memory Architecture)               │
+│                     C2: 记忆层 (Memory Architecture)               │
 │   三层记忆(working/recall/archival) + 双时序知识图                 │
 │   ACT-R 激活模型 + FSRS 遗忘调度 + Evidence Ledger               │
 ├─────────────────────────────────────────────────────────────────┤
-│                     L1: 基础层 (Five Systems)                     │
+│                     C1: 基础层 (Five Systems)                     │
 │   认知系统 + SKILL管理 + 知识库 + 文档管理 + 索引系统               │
 │   + 33-REA Evidence-First + PoE 信任机制 + ReverseDeriver          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 L1 基础层：接线修复（P0/P1 差距）
+### 2.2 C1 基础层：接线修复（P0/P1 差距）
 
 **目标**: 将已实现但未接线的 hooks 接通，完成五系统闭环。
 
@@ -157,7 +158,7 @@ skill_indexer.verify_hook(
 
 ---
 
-### 2.3 L2 记忆层：架构升级
+### 2.3 C2 记忆层：架构升级
 
 #### 2.3.1 三层记忆模型（借鉴 Letta/MemGPT）
 
@@ -225,7 +226,7 @@ class EvidenceEntry:
 
 ---
 
-### 2.4 L3 路由层：Intent-Engine 升级
+### 2.4 C3 路由层：Intent-Engine 升级
 
 #### 2.4.1 从分类器到记忆路由器
 
@@ -265,7 +266,7 @@ recall(task_description, top_k=5,
 
 ---
 
-### 2.5 L4 元认知层：自我意识
+### 2.5 C4 元认知层：自我意识
 
 #### 2.5.1 GWT Workspace Bus（全局工作空间广播）
 
@@ -426,11 +427,11 @@ invalidated_by = None
 
 ### Major 修复
 
-#### M1: L4 元认知层降级为研究探索项
+#### M1: C4 元认知层降级为研究探索项
 
 **问题**: GWT/HOT/FOK/JOL 从意识理论直接跳到工程实现，操作性不足。
 
-**修复**: L4 从 P3 路线图中移除，降级为**研究探索项**，不纳入 P0-P3 承诺时间线。需先做可行性验证（spike）再决定是否升级为正式任务。
+**修复**: C4 从 P3 路线图中移除，降级为**研究探索项**，不纳入 P0-P3 承诺时间线。需先做可行性验证（spike）再决定是否升级为正式任务。
 
 #### M2: "80% fast-path" 测量计划
 
@@ -468,17 +469,17 @@ invalidated_by = None
 from abc import ABC, abstractmethod
 
 class CognitiveRouter(ABC):
-    """L3 路由层接口"""
+    """C3 路由层接口"""
     @abstractmethod
     def route(self, intent_vector, databases) -> RecallResult: ...
 
 class EvidenceSink(ABC):
-    """L2 Evidence Ledger 接口"""
+    """C2 Evidence Ledger 接口"""
     @abstractmethod
     def append(self, entry: EvidenceEntry) -> str: ...
 
 class MetacogMonitor(ABC):
-    """L4 元认知层接口（探索项）"""
+    """C4 元认知层接口（探索项）"""
     @abstractmethod
     def monitor(self, workspace_state) -> MonitorResult: ...
 ```
@@ -520,11 +521,11 @@ class MetacogMonitor(ABC):
 
 ### 4.4 P3: 研究探索项（时间待评估）
 
-> ⚠️ L4 元认知层降级为研究探索项（评审 M1 修复）。需先做可行性 spike 验证再决定是否升级为正式任务。
+> ⚠️ C4 元认知层降级为研究探索项（评审 M1 修复）。需先做可行性 spike 验证再决定是否升级为正式任务。
 
 | 序号 | 任务 | 依赖 | 预期效果 |
 |------|------|------|---------|
-| P3-1 | GWT Workspace Bus | L1-L3 完成 | 跨系统信息广播 |
+| P3-1 | GWT Workspace Bus | C1-C3 完成 | 跨系统信息广播 |
 | P3-2 | HOT Self-Model | P3-1 | 自我监控+错误检测 |
 | P3-3 | FOK/JOL 元认知 Harness | P3-1 | 任务前预评估 |
 | P3-4 | 预测误差门控 record | P3-2 | 情绪记忆增强 |
@@ -615,5 +616,5 @@ class MetacogMonitor(ABC):
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| v0.1 | 2026-10-11 | 初始草案。基于四路并行深度调研（传统金融+AI/DL+认知科学+GitHub）+ 五系统协同评估 + 33-REA Evidence-First + PoE 信任机制。四层进化架构（L1基础→L2记忆→L3路由→L4元认知）+ P0-P3 路线图。 |
+| v0.1 | 2026-10-11 | 初始草案。基于四路并行深度调研（传统金融+AI/DL+认知科学+GitHub）+ 五系统协同评估 + 33-REA Evidence-First + PoE 信任机制。四层进化架构（C1基础→C2记忆→C3路由→C4元认知）+ P0-P3 路线图。 |
 | v0.2 | 2026-10-11 | 评审后修改（62/100 修改后接受）。3 Blocking 修复：B1 记忆迁移方案、B2 FSRS 安全网（降权不归档+90天grace+人工闸门）、B3 延迟预算SLA≤200ms。6 Major 修复：M1 L4降级研究探索项、M2 fast-path测量计划、M3 Merkle树、M4 ACT-R兼容模式、M5时间线调整、M6 ABC接口契约。 |

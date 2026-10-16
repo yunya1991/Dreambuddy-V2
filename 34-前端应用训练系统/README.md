@@ -4,6 +4,8 @@
 > **版本**: v1.0 (P0-P4 全部完成)
 > **状态**: ✅ 实施完成（P0✅ P1✅ P2✅ P3✅ P4✅）
 > **关联**: SPL v0.4, 33-REA逆向解析工程, dream-completion-evolution-workflow
+> **架构 SPEC 指针**: 现行 L0/L1/L2 分层见 [SPEC-v1.3-L0L1L2-architecture.md](./SPEC-v1.3-L0L1L2-architecture.md)；L2 内部 SACG 编排见 [SPEC-v1.2-SACG-orchestration.md](./SPEC-v1.2-SACG-orchestration.md)；实施路径见 [PLAN-L0L1L2-implementation.md](./PLAN-L0L1L2-implementation.md)。口径以 SSoT《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》为准。
+> **注**: [SPEC-v1.0-L0L1L2-architecture.md](./SPEC-v1.0-L0L1L2-architecture.md) 已被 v1.3 取代，仅作历史留档，禁止作为实现依据。
 
 ---
 

@@ -1,0 +1,162 @@
+=== P3.5/P3.6 声明改动文件清单 ===
+P3.5: 34-前端应用训练系统/core/sacg_orchestrator.py (G段实质化, untracked新文件含P3.1-P3.5全部)
+P3.5: 34-前端应用训练系统/tests/test_g_layer_closure.py (新建, 14测试)
+P3.5/P3.6: 34-前端应用训练系统/PLAN-L0L1L2-implementation.md (P3.5/P3.6行登记)
+P3.6: 3.1-FRONTEND/docs/v3-frontend-architecture.md (§3.2更新)
+
+=== P3.6 文档 diff (git) ===
+diff --git a/3.1-FRONTEND/docs/v3-frontend-architecture.md b/3.1-FRONTEND/docs/v3-frontend-architecture.md
+index 13cffdf1de..23efb2d8f2 100644
+--- a/3.1-FRONTEND/docs/v3-frontend-architecture.md
++++ b/3.1-FRONTEND/docs/v3-frontend-architecture.md
+@@ -3,6 +3,7 @@
+ > 版本: v3.1 | 日期: 2026-10-10 | 状态: 已实现（P0-P3 全部完成）
+ > 定位: WorkBuddy OS SACG 四层架构前端实现
+ > 约束: 独立端口 3001 运行，与 3.0 前端（3-FRONTEND/dream-universal-gateway）隔离
++> **架构口径**: 遵循 SSoT《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》——本文档的 SACG 为**新 SACG**（S=认知驱动规划入口 / A=OKR 节点验收 / C=执行驱动 / G=压缩沉淀）。文中遗留的 `S(Sense)/A(Arrange)/C(Compute)/G(Graph)` 括注及组件名（SenseConfidenceGauge / SACGOverview / SACELayerBadge 等）为**前端既有代码命名，兼容保留、不重命名**，其架构语义一律以新 SACG 为准。
+ 
+ ---
+ 
+@@ -10,7 +11,7 @@
+ 
+ ### 1.1 项目定位
+ 
+-DreamBuddy v3.1 前端是 AI 驱动的加密货币交易平台的全量重构版本。它以 WorkBuddy OS 的 SACG (Sense-Arrange-Compute-Graph) 模型作为顶层设计约束，将前端架构从"以页面为中心的 God Component 模式"彻底转向"以 SACG 四层架构为骨架的领域驱动前端模式"。
++DreamBuddy v3.1 前端是 AI 驱动的加密货币交易平台的全量重构版本。它以 WorkBuddy OS 的**新 SACG（S=认知驱动规划入口 / A=OKR 节点验收 / C=执行驱动 / G=压缩沉淀）**模型作为顶层设计约束，将前端架构从"以页面为中心的 God Component 模式"彻底转向"以新 SACG 四层架构为骨架的领域驱动前端模式"。
+ 
+ 核心定位公式:
+ 
+@@ -295,49 +296,80 @@ src/app/
+ 
+ ### 3.2 SACG 前端映射
+ 
+-#### 四层架构 UI 表达模型
++> **口径说明（2026-10-16 P3.6 更新）**：SACG 架构语义以 SSoT v4.0 / SPEC-v1.2 的**新 SACG** 为准——**S=认知规划 / A=OKR验收 / C=执行驱动 / G=压缩沉淀**，已由 C-drive 全程调度在 `34-前端应用训练系统/core/sacg_orchestrator.py` 落地（P3.1 编排骨架 → P3.2/P3.2b S 层充分性状态机 → P3.3 A 层 OKR 节点 → P3.4 C 回传 A 验收 → P3.5 G 层四分流沉淀，732 测试全绿）。
++> 下表/下图中的 `S(Sense)/A(Arrange)/C(Compute)/G(Graph)` 括注仅为**前端既有代码命名**——组件名 SenseConfidenceGauge / SACGOverview / SACELayerBadge 等**不得改名**（保持前端一致性）；组件渲染的数据语义以新 SACG 为准。
++>
++> **C-drive 双语义边界**：`CDriveV3Router` = 节点级五步反思决策门（过程决策，毫秒级）；`SACGOrchestrator` = C-drive 全程调度者（S→A→C→G 编排）。前者是后者 C 段的委托决策门。
++
++#### 四层架构 UI 表达模型（新 SACG 语义）
+ 
+ ```
+ ┌─────────────────────────────────────────────────────────────────────┐
+-│                        SACG 四层前端映射总览                          │
++│                     SACG 四层前端映射总览（新语义）                    │
+ ├───────────┬─────────────────────────────────────────────────────────┤
+-│           │  S (Sense/感知) - 意图识别层                            │
++│           │  S (认知规划层) - 充分性状态机驱动规划入口                │
+ │  颜色     │  ┌─────────────────────────────────────────────┐       │
+-│  #8B5CF6  │  │ 意图置信度仪表盘 (0-1 gauge)                  │       │
+-│  紫色     │  │ 三层价值模型:                                  │       │
+-│           │  │   L1: Intent → Objective (收敛)              │       │
+-│           │  │   L2: OKRSet (展开)                           │       │
+-│           │  │   L3: ExecutionBlueprint (工程化)             │       │
++│  #8B5CF6  │  │ 意图置信度仪表盘 (0-1 gauge，route_confidence)│       │
++│  紫色     │  │ 充分性状态机: S0入口评估 → S1档案展开 → S2再评估│       │
++│           │  │   四态: SUFFICIENT_DIRECT / NEED_CLARIFY /   │       │
++│           │  │         NEED_RESEARCH / EARLY_TERMINATE     │       │
++│           │  │ 十意图档案深度: light → standard → deep      │       │
++│           │  │ 开工 Skill 触发 (kickoff_trigger async_stub)  │       │
++│           │  │ 澄清选项卡 (NEED_CLARIFY → ClarifyCard)      │       │
+ │           │  └─────────────────────────────────────────────┘       │
+ ├───────────┼─────────────────────────────────────────────────────────┤
+-│           │  A (Arrange/编排) - 图编排层                           │
++│           │  A (OKR验收层) - OKR 节点分解 + 对账式验收               │
+ │  颜色     │  ┌─────────────────────────────────────────────┐       │
+-│  #3B82F6  │  │ DAG 图可视化 (节点+边)                         │       │
+-│  蓝色     │  │ 节点状态: pending/active/done/skipped/failed  │       │
+-│           │  │ ACFTG 链展示 (纵轴=阶段, 横轴=链)              │       │
+-│           │  │ GraphPlanner 决策日志                           │       │
++│  #3B82F6  │  │ OKR 节点 DAG: node_id/objective/criteria/    │       │
++│  蓝色     │  │   verify(c_action/evidence_backed/gap_closed)│       │
++│           │  │ 节点验收三态: pass / degraded / fail          │       │
++│           │  │ 红旗清单 (fail 节点) + 差异分类               │       │
++│           │  │   (result_missing/extras/action_rejected)    │       │
++│           │  │ 金融调研四维验收: practice/theory/backtest/  │       │
++│           │  │   data_source（数据造假→fail 硬门）           │       │
+ │           │  └─────────────────────────────────────────────┘       │
+ ├───────────┼─────────────────────────────────────────────────────────┤
+-│           │  C (Compute/执行) - 模块执行层                         │
++│           │  C (执行驱动层) - C-drive 全程调度 + 节点决策门          │
+ │  颜色     │  ┌─────────────────────────────────────────────┐       │
+-│  #22C55E  │  │ 动态链执行追踪面板                              │       │
+-│  绿色     │  │ Reflector 6 决策可视化:                        │       │
++│  #22C55E  │  │ C-drive 调度视图: S→A→C→G 阶段进度 +          │       │
++│  绿色     │  │   层间异常隔离标记 (errors/degraded)          │       │
++│           │  │ Reflector 6 决策可视化（节点级过程决策）:      │       │
+ │           │  │   CONTINUE / REDO / INSERT_BEFORE             │       │
+ │           │  │   JUMP_TO / EARLY_TERMINATE / SKIP            │       │
+ │           │  │ 三链交叉验证投票面板                            │       │
+ │           │  └─────────────────────────────────────────────┘       │
+ ├───────────┼─────────────────────────────────────────────────────────┤
+-│           │  G (Graph/存储) - 图存储层                             │
++│           │  G (压缩沉淀层) - 图压缩 + 四分流沉淀                   │
+ │  颜色     │  ┌─────────────────────────────────────────────┐       │
+ │  #EF4444  │  │ BAC 三层压缩可视化:                            │       │
+ │  红色     │  │   Blueprint → Architecture → Chronicle      │       │
+-│           │  │ 压缩比率仪表盘                                 │       │
+-│           │  │ Checkpointing 时间线                           │       │
+-│           │  │ 历史回放播放器 (Play/Pause/Seek)               │       │
++│           │  │ 四分流沉淀面板（验收驱动, async_stub 描述符）:  │       │
++│           │  │   案例 case (verdict=pass) / 认知 cognitive   │       │
++│           │  │   流程 skill (red_flags) / 文档 doc (degraded)│       │
++│           │  │ Checkpointing 时间线 + 历史回放播放器          │       │
+ │           │  └─────────────────────────────────────────────┘       │
+ └───────────┴─────────────────────────────────────────────────────────┘
+ ```
+ 
++#### C-drive 全程调度可视化
++
++```
++┌─────────────────────────────────────────────────────────────────────┐
++│              C-drive 调度视图（SACGOrchestrator.handle 输出）         │
++├─────────────────────────────────────────────────────────────────────┤
++│  入口门控  │ route_confidence: L1_DIRECT(不编排) / L2_HANDOFF(编排)  │
++│  阶段进度  │ S ●──→ A ●──→ C ●──→ G ●   (stages: [S,A,C,G])        │
++│  调度产物  │ plan / nodes / node_results / acceptance / closure     │
++│  验收回传  │ C 段 node_results ──→ A 层 evaluate_nodes ──→          │
++│           │   acceptance{verdict, node_verdicts, red_flags}        │
++│  收尾沉淀  │ acceptance ──→ G 层四分流 closure{sediments, cognitive}│
++│  降级标记  │ degraded + errors[]（层间异常隔离，FAIL-OPEN 不抛错）   │
++│  短路形态  │ NEED_CLARIFY / EARLY_TERMINATE → 停在 S 层问用户       │
++└─────────────────────────────────────────────────────────────────────┘
++```
++
++> 数据来源：`SACGOrchestrator.handle()` 返回契约（`route / stages / route_signal / plan / nodes / node_results / acceptance / closure / action / sufficiency / clarification / kickoff_trigger / degraded / errors`）。前端监控页（`/dashboard/monitor`）消费该契约渲染上视图；sediments 为 async_stub 描述符，真实触发归会话级收尾 Skill。
++
+ #### SACG 组件实现映射
+ 
+ | SACG 层 | 组件 | 路径 | 功能 |
+@@ -841,6 +873,31 @@ src/lib/v3/api/
+ | POST | /api/cognitive/unified | 统一认知查询 |
+ | GET | /api/cognitive/knowledge | 知识检索 |
+ 
++#### 4.3.1 置信度门控信号对接（L0 认知 C3/C4 → L1 路由器）
++
++> 对齐文档: 本层路由架构见 `34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md` §3.5 / §5；信号产出契约见 `35-广义认知系统协作模块/SPEC-CDrive-CognitiveSystem-Integration.md` **§7 对接细则**。
++
++前端路由器在意图预测后，调用 L0 广义认知系统获取「**用户问题 ↔ 认知库**」匹配度，据此判决 **L1 直答 / 转 L2**（全程零 token，确定性）：
++
++| 环节 | 产出方 | 说明 |
++|---|---|---|
++| 匹配度评分 | 认知 **C3 路由层** | `match_score = max*0.6 + avg*0.4`；`case_density = len(memories)`（复用 CDrive SPEC §2.2.1） |
++| 预测误差门控 | 认知 **C4 元认知层** | `prediction_error = |match - actual|` + FOK/JOL（复用 CDrive SPEC §2.4.1） |
++| 归一置信度 | 前端路由器 | `route_confidence`（C3/C4 输出的一层确定性映射） |
++
++```ts
++// 消费契约（零 token，确定性）
++route_confidence >= 0.7                → L1 直答（零 token 秒回）
++route_confidence <  0.7                → 转 L2，透传 l1_intent_hint = intent_hint
++case_density < 3（即使 match 高）       → 不得直落 L1（覆盖不足易误答）
++```
++
++**阈值（跨系统统一，禁止自定义第二套）**: `THRESHOLD_HIGH = 0.7`、`CASE_DENSITY_MIN = 3`、`PREDICTION_ERROR_MAX = 0.3`。
++
++**FAIL-OPEN 降级**: recall 空 / 超时 → `route_confidence = 0` → 按未命中转 L2（不阻塞）；C4 不可用 → 退化为纯 C3 匹配度；认知系统整体不可用 → 退回**注册表侧静态置信度**（当前实现），路由功能保持可用。
++
++对接时序、统一 JSON 载荷、验收项等详见 CDrive SPEC §7。
+
+=== P3.5 测试文件行数 ===
+     276 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/tests/test_g_layer_closure.py
+     641 /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/core/sacg_orchestrator.py
+     917 total

@@ -156,6 +156,7 @@ class CDriveV3Router:
         result: Any,
         state: Any,
         signals: Optional[List[Dict]] = None,
+        l1_intent_hint: Optional[str] = None,
     ) -> Dict[str, Any]:
         """执行 v3 五步链路
 
@@ -164,12 +165,14 @@ class CDriveV3Router:
             result: 节点结果 (需有 confidence/direction 属性)
             state: 状态对象
             signals: 信号列表
+            l1_intent_hint: L1 路由器交接的意图先验（P3.2，可选）——
+                注入 recall context 深化检索相关性，并透传到返回 dict
 
         Returns:
             dict: {
                 action, reason, confidence, steps_executed,
                 match_score, case_density, tier, jev_decision,
-                effort_level, cognitive_result
+                effort_level, cognitive_result, l1_intent_hint
             }
         """
         steps: List[str] = []
@@ -178,11 +181,13 @@ class CDriveV3Router:
         sigs = signals or []
 
         # ── Step 1: recall + 匹配度评估 (P5) ──────────────
+        # P3.2: l1_intent_hint 作为先验注入检索上下文（缺省时保持原样，向后兼容）
+        hint_part = f" hint:{l1_intent_hint}" if l1_intent_hint else ""
         memories = []
         if self._recall_fn is not None:
             try:
                 memories = self._recall_fn(
-                    context=f"node:{node_id} dir:{direction}",
+                    context=f"node:{node_id} dir:{direction}{hint_part}",
                     top_k=5,
                     min_quality="C",
                 ) or []
@@ -309,4 +314,5 @@ class CDriveV3Router:
             "jev_final": jev_final,
             "cognitive_result": cognitive_result,
             "effort_level": effort_level,
+            "l1_intent_hint": l1_intent_hint,
         }

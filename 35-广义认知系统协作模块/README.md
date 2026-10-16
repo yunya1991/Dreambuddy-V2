@@ -18,12 +18,13 @@
 - **SSoT 不重叠**: `0-系统文档管理` 管文档元层（规范/地图/治理），`1-ARCHITECTURE` 管架构事实源，本模块管**协作设计**
 - **实现层不动**: `4-MEMORY/9-工具与接口/` 的代码（cognitive_loop_entry.py / evidence_ledger.py 等）保留原位，避免破坏 import 路径
 - **契约驱动**: 协作接口先在本模块定义契约，各子系统按契约实现
+- **命名统一**: 认知系统内部四层统一为 **C1 基础 / C2 记忆 / C3 路由 / C4 元认知**（`SPEC-CognitiveSystem-Evolution.md` 中的 L1-L4 已改名），与系统能力架构 L0/L1/L2 区分，避免同名异义（见 SSoT《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》§1.2）
 
 ## 文档清单
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
-| [SPEC-CognitiveSystem-Evolution.md](./SPEC-CognitiveSystem-Evolution.md) | 大认知系统进化蓝图：四层架构(L1基础→L4元认知) + 五系统接线 + PoE/因果/预测编码升级路线 | v0.2 评审后修改 |
+| [SPEC-CognitiveSystem-Evolution.md](./SPEC-CognitiveSystem-Evolution.md) | 大认知系统进化蓝图：四层架构(C1基础→C4元认知) + 五系统接线 + PoE/因果/预测编码升级路线 | v0.2 评审后修改 |
 | [SPEC-Unified-PoE-Framework.md](./SPEC-Unified-PoE-Framework.md) | 统一 PoE 框架：双模式(重型/轻量) + 有界信任传递 + 6 失效条件 + Evidence Index | v2.0 用户确认 |
 | [INDEX.md](./INDEX.md) | 模块内文档索引 + 与各子系统协作关系图 | v1.0 |
 | [COLLABORATION-CONTRACT.md](./COLLABORATION-CONTRACT.md) | 跨系统协作接口契约：record_hook/verify_hook/Evidence Ledger/PoE 信任链路 | v1.0 |

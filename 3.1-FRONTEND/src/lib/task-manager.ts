@@ -424,6 +424,8 @@ export interface TaskFile {
     user_agent?: string;
     llm_model?: string;
     intent_method?: string;
+    /** L1 路由器交接的意图先验（L2 交接协议，由 S 层/C-drive 深化消费） */
+    l1_intent_hint?: string;
   };
   /** 错误信息（任务失败/超时等场景写入，便于诊断） */
   error?: string;
@@ -571,6 +573,7 @@ export async function createTask(params: {
   llm_model?: string;
   intent_method?: string;
   trading_mode?: 'ai_skill' | 'classic';
+  l1_intent_hint?: string;
 }): Promise<TaskFile> {
   ensureDir(TASKS_DIR);
   ensureDir(RESULTS_DIR);
@@ -606,6 +609,7 @@ export async function createTask(params: {
       user_agent: 'DreamGateway/1.0',
       llm_model: params.llm_model,
       intent_method: intentResult.method,
+      ...(params.l1_intent_hint ? { l1_intent_hint: params.l1_intent_hint } : {}),
     },
   };
 
@@ -4029,6 +4033,7 @@ export async function createAndExecuteTask(params: {
   intent_method?: string;
   lang?: 'zh' | 'en';
   trading_mode?: 'ai_skill' | 'classic';
+  l1_intent_hint?: string;
   onProgress?: (event: PlannerProgressEvent) => void;
 }): Promise<{ task: TaskFile; result: ResultFile | null; needAsync: boolean }> {
   // 1. 创建任务文件 (now async due to intent recognition)

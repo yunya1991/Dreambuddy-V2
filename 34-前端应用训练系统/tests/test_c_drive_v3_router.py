@@ -655,3 +655,47 @@ class TestAcceptanceCriteria:
 
         # 至少 2 种不同决策
         assert len(decisions) >= 2
+
+
+class TestV3RouterL1Hint:
+    """P3.2: run_v3 消费 l1_intent_hint —— recall context 携带意图先验，深化 S/C 层召回。"""
+
+    def test_hint_injected_into_recall_context(self):
+        from core.c_drive_v3_router import CDriveV3Router
+
+        captured = {}
+
+        def mock_recall(context="", top_k=5, min_quality="C", **kw):
+            captured["context"] = context
+            return [{"score": 0.85, "content": "m"} for _ in range(5)]
+
+        router = CDriveV3Router(recall_fn=mock_recall)
+        router.run_v3("C1", _make_result(0.5), {}, [],
+                      l1_intent_hint="price_query")
+        assert "hint:price_query" in captured["context"]
+
+    def test_no_hint_keeps_legacy_context(self):
+        """不传 hint → context 保持原样（向后兼容）"""
+        from core.c_drive_v3_router import CDriveV3Router
+
+        captured = {}
+
+        def mock_recall(context="", top_k=5, min_quality="C", **kw):
+            captured["context"] = context
+            return [{"score": 0.85, "content": "m"} for _ in range(5)]
+
+        router = CDriveV3Router(recall_fn=mock_recall)
+        router.run_v3("C1", _make_result(0.5), {}, [])
+        assert "hint:" not in captured["context"]
+        assert "node:C1" in captured["context"]
+
+    def test_hint_echoed_in_result(self):
+        from core.c_drive_v3_router import CDriveV3Router
+
+        def mock_recall(context="", top_k=5, min_quality="C", **kw):
+            return [{"score": 0.85, "content": "m"} for _ in range(5)]
+
+        router = CDriveV3Router(recall_fn=mock_recall)
+        out = router.run_v3("C1", _make_result(0.5), {}, [],
+                            l1_intent_hint="event_analysis")
+        assert out.get("l1_intent_hint") == "event_analysis"

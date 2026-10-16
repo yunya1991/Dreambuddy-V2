@@ -7,6 +7,11 @@ import type { FinalSynthesisData } from '@/stores/session-store';
 import { V3Badge } from '@/components';
 import { createSSEConnection, type SSEConnection } from '@/lib/sse-client';
 import { createTaskStreamHandlers } from '@/lib/sse-dispatcher';
+import {
+  canHandleL1WithSignal,
+  fallbackIntent,
+  type RouteConfidenceSignal,
+} from '@/lib/l1-intent-registry';
 
 // 9 个子组件
 import { MessageItem } from './MessageItem';
@@ -147,27 +152,42 @@ export function ChatPanel() {
     setInputValue('');
 
     // 设置流式状态
-    // 三层路由器消费: UI 不感知层级与意图清单，只消费 handled 字段 (SPEC v1.0 §5)
+    // 三层路由器消费 (SPEC v1.0 §5 / PLAN P3):
+    //   /api/data/query 门控 — route_signal.decision=L1_DIRECT 且置信度 >=0.7 才零 token 直答；
+    //   否则转 /api/task/stream L2 SSE，并透传 l1_intent_hint 交接上下文。
+    //   信号缺失/非法（FAIL-OPEN）→ canHandleL1WithSignal 内部退回 v2 静态特征校验。
     (async () => {
+      // L1 意图预测结果声明在 try 外，保证 L2 交接时可透传 l1_intent_hint
+      let l1Intent: string | undefined;
       try {
+        // 前端注册表先验（8 个 fallbackPattern 意图；通用意图由后端补充识别）
+        const predictedIntent = fallbackIntent(content);
         const res = await fetch('/api/data/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: content }),
+          body: JSON.stringify({ message: content, intent: predictedIntent || '' }),
         });
-        let l1Intent: string | undefined;
         if (res.ok) {
           const json = await res.json();
           const d = json?.data;
           if (d?.intent && d.intent !== 'unknown') l1Intent = d.intent;
-          if (d && d.handled && d.answer) {
-            // L1 命中: 直接显示结果（零 token 秒回）
+          // 门控消费：合法 route_signal 以信号 decision/置信度为准，非法/缺失退回静态门控
+          const routeSignal: RouteConfidenceSignal | null = d?.route_signal ?? null;
+          const canL1 = !!l1Intent && canHandleL1WithSignal(l1Intent, content, routeSignal);
+          if (canL1 && d?.handled && d.answer) {
+            // L1 命中: 直接显示结果（零 token 秒回），消息附带门控信号元数据
             useSessionStore.getState().addMessage(sessionId, {
               id: `msg-${Date.now()}`,
               role: 'assistant',
               content: d.answer,
               timestamp: Date.now(),
-              metadata: { intent: d.intent, source: 'l1-router' },
+              metadata: {
+                intent: d.intent,
+                source: 'l1-router',
+                route_confidence: routeSignal?.route_confidence,
+                decision: routeSignal?.decision,
+                degraded: d.degraded === true || routeSignal?.degraded === true,
+              },
             });
             return;
           }

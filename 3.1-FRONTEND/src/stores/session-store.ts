@@ -1,5 +1,18 @@
 import { create } from 'zustand';
 
+/** 消息元数据（可选，HC-3 向后兼容）：L1 路由信号/来源等透传信息。
+ *  结构与 @/types ChatMessage.metadata 对齐（intent 可为路由意图字符串）。 */
+export interface ChatMessageMetadata {
+  intent?: string;
+  artifactRefs?: string[];
+  tokens?: number;
+  source?: string;
+  /** route_confidence 门控信号（镜像 RouteConfidenceSignal 关键字段） */
+  route_confidence?: number;
+  decision?: string;
+  degraded?: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'system' | 'user' | 'assistant';
@@ -7,6 +20,7 @@ export interface ChatMessage {
   timestamp: number;
   tokens?: number;
   artifacts?: Array<{ type: string; title: string; ref: string }>;
+  metadata?: ChatMessageMetadata;
 }
 
 export interface ChatSession {

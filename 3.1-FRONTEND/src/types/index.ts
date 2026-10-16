@@ -186,7 +186,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   metadata?: {
-    intent?: IntentResult;
+    /** 富意图结果，或 L1 路由意图标识字符串（如 data_query/price_query） */
+    intent?: IntentResult | string;
     artifactRefs?: string[];
     tokens?: number;
   };

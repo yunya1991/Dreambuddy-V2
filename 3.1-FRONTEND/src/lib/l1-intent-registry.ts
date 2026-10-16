@@ -1,5 +1,5 @@
 /**
- * L1 意图注册表 — 单一事实源 (SPEC v1.0 §5 三层路由器) v2
+ * L1 意图注册表 — 单一事实源 (SPEC v1.0 §5 三层路由器) v3
  * ==========================================
  * 所有 L1 可执行意图在此注册，路由器与执行链路从此处读取。
  * 新增 L1 意图只需在此注册一处。
@@ -7,6 +7,13 @@
  * v2: 通用意图（data_query/data_insight）增加 requiredPattern 执行前置校验——
  * 模型预测为通用意图时（权重高会吸收一切问法），消息需通过特征校验才执行，
  * 否则视为 L1 未命中走 L2（置信度门控的注册表实现，非数据类问法不再被误吞）。
+ *
+ * v3 (P2.2): 预留 route_confidence 置信度门控信号入口——
+ * Python 侧 34 系统 core/route_confidence.py（C3 匹配度 + C4 预测误差）产出
+ * RouteConfidenceSignal，经链路透传后由 canHandleL1WithSignal 消费：
+ * 有信号时以信号为准（route_confidence >= 0.7 且 decision=L1_DIRECT → L1 零 token 直答，
+ * 否则转 L2 并透传 l1_intent_hint）；信号缺失/非法时 FAIL-OPEN 退回 v2 静态校验兜底。
+ * 阈值跨系统唯一，禁止在此另立第二套（SSoT v4.0 §16.5）。
  */
 
 export interface L1IntentDef {
@@ -84,4 +91,72 @@ export function fallbackIntent(message: string): string {
     }
   }
   return '';
+}
+
+// ============================================================
+// v3 (P2.2): route_confidence 置信度门控信号（预留入口）
+// 镜像 Python 侧 34 系统 core/route_confidence.py RouteConfidenceResult.to_dict()
+// ============================================================
+
+/** L1 直答门限（跨系统唯一，= Python route_confidence.THRESHOLD_HIGH） */
+export const ROUTE_CONFIDENCE_THRESHOLD_HIGH = 0.7;
+
+export const ROUTE_DECISION_L1_DIRECT = 'L1_DIRECT';
+export const ROUTE_DECISION_L2_HANDOFF = 'L2_HANDOFF';
+
+export type RouteDecision =
+  | typeof ROUTE_DECISION_L1_DIRECT
+  | typeof ROUTE_DECISION_L2_HANDOFF;
+
+/**
+ * L1 路由置信度门控信号（C3 匹配度 + C4 预测误差）。
+ * 由 Python 侧 route_confidence.evaluate_route 产出，经 API/SSE 透传到前端。
+ */
+export interface RouteConfidenceSignal {
+  /** 门控置信度：match − 0.3(predErr>0.3) − 0.2(density<3)，范围 0~1 */
+  route_confidence: number;
+  decision: RouteDecision;
+  match_score: number;
+  case_density: number;
+  prediction_error: number | null;
+  /** match>=0.8 & density>=5（仅信号透传，门控决策仍以 route_confidence 为准） */
+  fast_path: boolean;
+  /** true = recall 空/C4 降级/静态兜底等 FAIL-OPEN 状态 */
+  degraded: boolean;
+  reasons?: string[];
+}
+
+/** 信号类型守卫（防御非法/半结构 payload，失败则走静态兜底）。 */
+export function isRouteConfidenceSignal(v: unknown): v is RouteConfidenceSignal {
+  if (typeof v !== 'object' || v === null) return false;
+  const s = v as Record<string, unknown>;
+  return (
+    typeof s.route_confidence === 'number' &&
+    Number.isFinite(s.route_confidence) &&
+    (s.decision === ROUTE_DECISION_L1_DIRECT ||
+      s.decision === ROUTE_DECISION_L2_HANDOFF)
+  );
+}
+
+/**
+ * L1.canHandle（置信度门控版）:
+ * - 信号合法：以信号为准 —— decision=L1_DIRECT 且 route_confidence>=0.7 才由 L1 执行，
+ *   否则转 L2（调用方透传 l1_intent_hint）；
+ * - 信号缺失/非法（FAIL-OPEN）：退回 v2 静态 canHandleL1（requiredPattern/fallbackPattern）；
+ * - 未注册意图恒为 false（信号不能放行 L1 不会执行的意图）。
+ */
+export function canHandleL1WithSignal(
+  intent: string,
+  message: string,
+  signal?: RouteConfidenceSignal | null,
+): boolean {
+  const def = L1_INTENT_REGISTRY.find((d) => d.intent === intent);
+  if (!def) return false;
+  if (isRouteConfidenceSignal(signal)) {
+    return (
+      signal.decision === ROUTE_DECISION_L1_DIRECT &&
+      signal.route_confidence >= ROUTE_CONFIDENCE_THRESHOLD_HIGH
+    );
+  }
+  return canHandleL1(intent, message);
 }
