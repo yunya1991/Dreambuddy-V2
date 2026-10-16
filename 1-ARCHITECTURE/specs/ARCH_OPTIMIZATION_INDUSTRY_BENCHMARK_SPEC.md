@@ -1,3 +1,6 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+> 注意：行业对标素材仍可参考，但其中 SACG（sense/arrange/compute/graph 四页等）架构口径为旧 SACG，已被 v4.0 新 SACG 取代。
+
 # 行业对标调研结论与架构优化方案 SPEC (SPEC-B)
 
 > **版本**: v1.0

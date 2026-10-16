@@ -1,8 +1,8 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.9 | **更新日期**: 2026-10-12
+> **版本**: v2.10 | **更新日期**: 2026-10-16
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
-> **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 为准。
+> **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
 
 ---
@@ -16,11 +16,11 @@
 └── 告诉你「文档债有哪些、怎么治」  （DOC_DEBT_INDEX / DOC_LIFECYCLE / QUALITY_AUDIT）
 
 1-ARCHITECTURE/                    ← 架构主入口（SSoT 所在地）
-└── SYSTEM_ARCHITECTURE_OVERVIEW.md v3.0  ← ★ 唯一架构事实源
-    ├── 三层架构（OS内核 + 能力层 + 应用层）
-    ├── 认知系统 + 记忆进化 + 双闭环对称
-    ├── 硬约束清单（违反即 bug）
-    └── 技术债 103 项全景 + 修复批次规划
+└── SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0  ← ★ 唯一架构事实源
+    ├── L0/L1/L2 三层能力架构 + L2 内部新 SACG（S认知规划/A OKR验收/C执行驱动/G压缩沉淀）
+    ├── 三大思维链 + 图结构压缩 BAC + 动态执行引擎
+    ├── 认知系统 C1-C4 + 记忆进化 + 置信度门控
+    └── 文档权威性与弃用指引（第16章）
 
 各子系统 10/11/12/13/14/16-xxx/    ← 子系统级 5 文档标准
     └── README / ENGINEERING_INDEX / TECHNICAL_DESIGN / API_SPEC / CHANGELOG
@@ -46,19 +46,19 @@
 
 | 文档 | 路径 | 职责 | 状态 |
 |------|------|------|------|
-| ★ **架构总览（SSoT）** | [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v3.0** | **架构唯一事实源**：三层架构 + SACG OS内核 + 认知系统 + 双闭环 + 硬约束 + 技术债全景 | ✅ 草稿待评审 |
-| （历史归档）旧模块化架构 | [1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) v1.1 | TS 视角早期设计，仅作迁移参考，**所有决策以 v3.0 为准** | 📦 归档参考 |
-| （历史归档）旧总览 | [1-ARCHITECTURE/README.md](../1-ARCHITECTURE/README.md) | 描述旧"六大核心系统"，与实际子系统目录 10-16 不匹配 | ⚠️ 待替换 |
+| ★ **架构总览（SSoT）** | [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** | **架构唯一事实源**：L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控 + 文档权威性指引 | ✅ 定稿 |
+| （历史归档）旧模块化架构 | [1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) v1.1 | TS 视角早期设计，仅作迁移参考，**所有决策以 v4.0 为准** | 📦 已归档（已加横幅） |
+| （历史归档）旧总览 | [1-ARCHITECTURE/README.md](../1-ARCHITECTURE/README.md) | 描述旧"六大核心系统"，与实际子系统目录 10-16 不匹配 | 📦 已被 v4.0 取代（已加横幅） |
 | 治理章程 | [2-GOVERNANCE/GOVERNANCE_CHARTER.md](../2-GOVERNANCE/GOVERNANCE_CHARTER.md) | 系统根本大法（宪法级） | ✅ |
 | 治理系统 | [2-GOVERNANCE/GOVERNANCE_SYSTEM.md](../2-GOVERNANCE/GOVERNANCE_SYSTEM.md) | 六部门 + 双中台 + 四层合规体系设计 | 🟡 部分 |
 | 合规规则 | [2-GOVERNANCE/COMPLIANCE_RULES.md](../2-GOVERNANCE/COMPLIANCE_RULES.md) | 合规检查清单 | 🟡 部分 |
 | 审计日志 | [2-GOVERNANCE/AUDIT_LOGS.md](../2-GOVERNANCE/AUDIT_LOGS.md) | 审计记录 | ⚠️ |
 | 知识库入口 | [2-KNOWLEDGE/INDEX.md](../2-KNOWLEDGE/INDEX.md) | 交易/技术/理论领域知识库 | ✅ |
-| 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 v3.0 §6, §10.2 |
+| 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 SSoT v4.0 第7章（认知 C1-C4） |
 | 业务管理 | [5-BUSINESS/BUSINESS_SYSTEM.md](../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营系统设计 | ⚠️ |
 | 交易中台 | [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) | A0-A9 交易流水线与 SKILL 引擎 | 🟡 |
 | 前端系统 (3.0) | [3-FRONTEND/FRONTEND_SYSTEM.md](../3-FRONTEND/FRONTEND_SYSTEM.md) v3.0 | 3.0 前端架构设计 (Dream Universal Gateway, Next.js 14, 端口3000) | 📦 归档参考 |
-| ★ **前端系统 (3.1)** | [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) **v3.1** | **3.1 前端技术文档**：SACG四层+56页面+100+组件+12Store+96+API+P0-P3已全部完成 | ✅ 已实现 |
+| ★ **前端系统 (3.1)** | [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) **v3.1** | **3.1 前端技术文档**：L0/L1/L2 意图路由 + 56页面+100+组件+12Store+96+API+P0-P3已全部完成（§3.2 旧 SACG 已更新指向 SSoT v4.0） | ✅ 已实现 |
 | 前端系统 README | [3.1-FRONTEND/README.md](../3.1-FRONTEND/README.md) | 3.1 项目说明、快速开始、目录结构 | ✅ |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
@@ -217,7 +217,7 @@
 | 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
 | 辩论系统 | [.trae/documents/debate-engine-v2-spec.md](../.trae/documents/debate-engine-v2-spec.md) v2.0 · [.trae/documents/debate-adjudication-training-spec.md](../.trae/documents/debate-adjudication-training-spec.md) v1.2 · **[jev集成SPEC v1.1](../.trae/documents/debate-jev-integration-spec.md)** |
 | Jev 决策模型 | [.trae/documents/debate-jev-integration-spec.md](../.trae/documents/debate-jev-integration-spec.md) v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |
-| 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0 |
+| 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.4 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.0 |
 
 ---
 

@@ -1,3 +1,6 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+> 注意：本整合方案以旧 SACG 四层（S 感知/A 编排/C 执行/G 存储）为核心；该项目尚未启动，若重启须按 v4.0 新 SACG + L0/L1/L2 重新评估。
+
 # dream-harness-bridge SPEC — 基于 DeepSeek Harness 的 DreamOS 分层嵌入整合项目
 
 > **版本**: v0.4 (边界守护理论补全版)

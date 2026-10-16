@@ -1,7 +1,7 @@
 # 全系统文档地图 — SYSTEM_MAP
 
-> **版本**: v2.2 | **更新日期**: 2026-09-07
-> **定位**: 按系统组织的全项目文档导航地图（对齐 SSoT v3.0）
+> **版本**: v2.3 | **更新日期**: 2026-10-16
+> **定位**: 按系统组织的全项目文档导航地图（对齐 SSoT v4.0）
 > **关联**: [INDEX.md](../INDEX.md) · [TOPIC_MAP.md](./TOPIC_MAP.md) · [ARCHITECTURE_MAP.md](./ARCHITECTURE_MAP.md)
 > **11号子系统七层交易决策栈（v4.5）**: L0 五计庙算→L1 前置层→L2 核心层→L3 后置校准层→L4 过滤层→L5 策略层→L6 持仓与离场层（方案 C v3.0 全量上线，8 开关默认 True）
 
@@ -66,8 +66,8 @@ DreamBuddy-V2/
 | 属性 | 值 |
 |------|-----|
 | 定位 | 整体架构文档+设计文档+索引 |
-| 主入口 | [README.md](../../1-ARCHITECTURE/README.md) ⚠️ 过时 |
-| 状态 | ✅ SSoT v3.0 已建立（[SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md)）；README 待重构（DD-002） |
+| 主入口 | ★ [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0**（唯一事实源）· [README.md](../../1-ARCHITECTURE/README.md) 📦 已归档 |
+| 状态 | ✅ SSoT **v4.0** 已定稿（L0/L1/L2 + 新 SACG + 认知 C1-C4 + 置信度门控）；旧架构文档已加「已归档」横幅（DD-002 已处理） |
 
 **关键文档**：
 - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md)

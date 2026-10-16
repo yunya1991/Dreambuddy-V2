@@ -1,3 +1,5 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+
 # DeepSeek Harness 调研 Spec — 与 DreamOS 的相似性研究与借鉴方向
 
 > **版本**: v0.1 (调研稿)

@@ -1,3 +1,6 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+> 注意：文中 SACG→DSH 映射采用旧 SACG（S感知/A编排/C执行/G存储）；C-Drive 四步循环思路被 v4.0 吸收为 C-drive，但分层口径以 v4.0 新 SACG 为准。
+
 # SPEC-20260929 — DreamOS 渐进式能力演进：S 层意图识别 + C 层 C-Drive-Agent 双核心训练路线
 
 **版本**: v3.0（v2.0 被拒后重构：纠正 C 层理解——C 层不是 Reflector/Aggregator，而是 DSH 架构下的 C-Drive-Agent 驱动力；明确两大训练核心）

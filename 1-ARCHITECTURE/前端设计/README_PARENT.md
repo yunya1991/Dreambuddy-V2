@@ -1,3 +1,5 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+
 # Dream Universal Gateway
 
 > 通用AI对话入口 — 意图识别+产物路由驱动的金融决策助手

@@ -1,3 +1,6 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+> 注意：本文档中的 SACG 为**旧 SACG（S=Sense/A=Arrange/C=Compute/G=Graph）**，已被 v4.0 新 SACG（S=认知规划/A=OKR验收/C=执行驱动/G=压缩沉淀）取代。
+
 # SACG → Harness 扩展点详细映射设计
 
 > **版本**: v0.1

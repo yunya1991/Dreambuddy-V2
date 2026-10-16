@@ -1,3 +1,6 @@
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+> 注意：本文前置阅读指向 SSoT v3.0、采用旧 SACG 口径；现行架构以 v4.0（L0/L1/L2 + 新 SACG）为准。
+
 # DreamOS × DeepSeek Harness 全栈对齐调研报告
 
 > **版本**: v0.1

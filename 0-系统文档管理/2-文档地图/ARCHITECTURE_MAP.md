@@ -1,8 +1,8 @@
 # 架构文档地图 — ARCHITECTURE_MAP
 
-> **版本**: v2.3 | **更新日期**: 2026-09-07
+> **版本**: v2.4 | **更新日期**: 2026-10-16
 > **定位（视角 B）**: **架构导航地图，不是架构内容本身**。告诉你「架构文档有哪些、到哪里找」。
-> **架构唯一事实源（SSoT）**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v3.0**。所有架构设计争议、硬约束、模块边界以该文档为准。
+> **架构唯一事实源（SSoT）**: ★ [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0**。所有架构设计争议、模块边界以该文档为准。**凡涉及系统分层 / SACG / 认知分层 / 意图路由的表述，一律以 v4.0 为准；被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。**
 > **关联**: [SYSTEM_MAP.md](./SYSTEM_MAP.md) · [TOPIC_MAP.md](./TOPIC_MAP.md) · [INDEX.md](../INDEX.md)
 > **11号子系统交易决策栈（v4.6.1 最新）**: 详见 [11-易经推理系统 TECHNICAL_DESIGN §2.2b](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md)，七层：五计庙算→前置层→核心层→后置校准层→弹性放行层→策略层→持仓与离场层
 
@@ -11,17 +11,23 @@
 ## 0. 视角 B 文档分工（重要！）
 
 ```
-★ 架构内容（你想了解系统怎么设计）→  打开 1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md v3.0
+★ 架构内容（你想了解系统怎么设计）→  打开 1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0
   │
-  ├─ 第1-4章：三层架构 + SACG OS内核 + 能力层 + 应用层（子系统映射）
-  ├─ 第5章：  三大思维链 + 三大核心闭环 + A0矛盾论
-  ├─ 第6章：  认知系统 + 记忆进化（开发闭环 ↔ 交易闭环对称）
-  ├─ 第7章：  公司中枢（六部门+双中台+双交易流+四层合规）
-  ├─ 第8章：  数据流 + MEP协议 + 双语言桥接 + 适配器路由
-  ├─ 第9章：  依赖DAG + 目录全景 + 部署拓扑 + 配置/存储映射
-  ├─ 第10章： 硬约束清单（违反即 bug）+ 禁止事项 Anti-patterns
-  ├─ 第11章： 技术债全景 103 项 × 8 分类 × 4 优先级 + 修复批次
-  └─ 第12章： 文档索引 + 版本历史 + 演进路线图 + 术语表
+  ├─ 第1章：  L0/L1/L2 三层能力架构 + L2 内部新 SACG（S认知规划→A OKR验收→C执行驱动→G压缩沉淀）
+  ├─ 第2章：  三大思维链（S链/C链/F链）
+  ├─ 第3章：  图结构压缩模型（BAC 三层：Blueprint/Architecture/Chronicle）
+  ├─ 第4章：  意图识别与链路规划（L1 意图注册表 + 路由器 + 置信度门控 → L2）
+  ├─ 第5章：  SKILL 模块化能力库（血肉层）
+  ├─ 第6章：  动态执行引擎（灵魂层）
+  ├─ 第7章：  记忆与自我进化系统（含认知 C1-C4）
+  ├─ 第8章：  DZE 开发链
+  ├─ 第9章：  开发协作网络（Dream-Agent）
+  ├─ 第10章： 完整运行流程（端到端）
+  ├─ 第11/12章：与传统模型差异 + 关键代码参考
+  ├─ 第13章： 实现进度总览
+  ├─ 第14章： 维护记录
+  ├─ 第15章： 系统维护 SKILL
+  └─ 第16章： 文档权威性与弃用指引（被取代/保留文档清单 + 指针）
 
 📋 文档导航（你想找某个文档在哪）→  停留在本页 ARCHITECTURE_MAP / SYSTEM_MAP
   └─ 本节提供按「层级 / 专题 / 子系统 / 生命周期」四种查找方式
@@ -29,23 +35,29 @@
 
 ---
 
-## 1. 架构速览（从 SSoT 提炼，详细以 v3.0 为准）
+## 1. 架构速览（从 SSoT 提炼，详细以 v4.0 为准）
 
-### 1.1 三层架构全景（SSoT §1.2）
+### 1.1 分层能力架构全景（SSoT §1.1/§1.3）
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│  应用层 🟢   TradingAgent · HTTP API · CLI · 6交易子系统前端 · IDE认知入口         │
+│  应用层 🟢   TradingAgent · HTTP API · CLI · 3.1-FRONTEND · 34-前端应用训练系统     │
 └──────────────────────────────────────┬───────────────────────────────────────────┘
                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│  能力层 🟡   A_domain AI交易(A0-A9) · C_domain 经典量化 · F_domain 基本面         │
-│             G_domain 通用工具 · T_domain 系统支撑  （共 35+ 模块化能力）           │
+│  L2 大模型驱动层 🔴  语义理解 · 复杂推理 · 内容生成 · 跨域综合                      │
+│      内部 SACG 编排（C-drive 贯穿调度）: S认知规划 → A OKR验收 → C执行驱动 → G沉淀   │
+│      驱动: DreamOS C层 + DSH 子Agent + 子Agent协作   |   token 成本                │
 └──────────────────────────────────────┬───────────────────────────────────────────┘
                                        ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│  OS内核 🔴   S感知层 · A编排层 · C执行层 · G图存储层  +  横切服务                   │
-│            (Registry / Evolution / Budget / Adapters / Errors)                   │
+│  L1 基础智能层 🟡  算法/规则/统计/意图识别（已落地 10 意图）+ 认知 C3匹配度/C4门控   │
+│      确定性 + 本地模型/向量检索   |   零 token，秒级                                │
+└──────────────────────────────────────┬───────────────────────────────────────────┘
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  L0 基础能力层 🟢  数据库系统 · 广义认知系统(C1-C4) · 逆向解析工程(REA)             │
+│      fetchContext(工作前供给) ⇄ settle(工作后沉淀)   |   独立双向层，不对外路由      │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -131,13 +143,13 @@ L6 离场  │  ExitManager 策略链 + 卦象主离场           │  → exit_
 
 | 优先级 | 文档 | 路径 | 状态 | 说明 |
 |--------|------|------|------|------|
-| ★★★ SSoT | **SYSTEM_ARCHITECTURE_OVERVIEW.md v3.0** | [1-ARCHITECTURE/](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | ✅ 草稿待评审 | **唯一事实源**。12 章全量覆盖：OS内核+能力层+应用层+认知系统+硬约束+技术债 |
-| ★★☆ 专题 | TRADING_MODULES_OVERVIEW.md | [1-ARCHITECTURE/](../../1-ARCHITECTURE/TRADING_MODULES_OVERVIEW.md) | 🟡 与 v3.0 对齐 | A/C/F 链模块细节 + 三环架构 + 核心模块清单 |
-| ★★☆ 专题 | THREE_CHAIN_DISPATCH_CHECKLIST.md | [1-ARCHITECTURE/](../../1-ARCHITECTURE/THREE_CHAIN_DISPATCH_CHECKLIST.md) | 🟡 与 v3.0 对齐 | 操作手册级：A0-A9 各阶段 SKILL + 核心方法论 |
-| ★★☆ 专题 | SUPERPOWERS_INTEGRATION_UPGRADE.md | [1-ARCHITECTURE/](../../1-ARCHITECTURE/SUPERPOWERS_INTEGRATION_UPGRADE.md) | 🟡 参考 | 超能力集成 + SACG 流程参考 |
-| 📦 归档 | WORKBUDDY_OS_MODULAR_ARCHITECTURE.md v1.1 | [1-ARCHITECTURE/](../../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) | 📦 仅迁移参考 | TS 视角早期设计（NodeRegistry/ModuleRegistry/错误码），决策以 v3.0 为准 |
-| 📦 归档 | 1-ARCHITECTURE/README.md | [1-ARCHITECTURE/README.md](../../1-ARCHITECTURE/README.md) | ⚠️ 过时待替换 | 旧"六大核心系统"描述，与 10-16 号子系统不匹配，将被 v3.0 替换 |
-| ★★☆ 专题 | 公司中枢设计 | [1-ARCHITECTURE/中台设计/COMPANY_CENTRAL_HUB.md](../../1-ARCHITECTURE/中台设计/COMPANY_CENTRAL_HUB.md) | 🟡 与 v3.0 §7 对齐 | 六部门矩阵 + 双中台 + 双交易流详细设计 |
+| ★★★ SSoT | **SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0** | [1-ARCHITECTURE/](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | ✅ 定稿 | **唯一事实源**。L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控 + 文档权威性指引 |
+| ★★☆ 专题 | TRADING_MODULES_OVERVIEW.md | [1-ARCHITECTURE/](../../1-ARCHITECTURE/TRADING_MODULES_OVERVIEW.md) | 🟡 以 v4.0 为准（待对齐） | A/C/F 链模块细节 + 三环架构 + 核心模块清单 |
+| ★★☆ 专题 | THREE_CHAIN_DISPATCH_CHECKLIST.md | [1-ARCHITECTURE/](../../1-ARCHITECTURE/THREE_CHAIN_DISPATCH_CHECKLIST.md) | 🟡 以 v4.0 为准（待对齐） | 操作手册级：A0-A9 各阶段 SKILL + 核心方法论 |
+| 📦 已归档 | SUPERPOWERS_INTEGRATION_UPGRADE.md | [1-ARCHITECTURE/](../../1-ARCHITECTURE/SUPERPOWERS_INTEGRATION_UPGRADE.md) | ⚠️ 已加「已归档」横幅 | 旧 SACG 流程参考，已被 v4.0 取代 |
+| 📦 归档 | WORKBUDDY_OS_MODULAR_ARCHITECTURE.md v1.1 | [1-ARCHITECTURE/](../../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) | 📦 已加「已归档」横幅 | TS 视角早期设计（NodeRegistry/ModuleRegistry/错误码），决策以 v4.0 为准 |
+| 📦 归档 | 1-ARCHITECTURE/README.md | [1-ARCHITECTURE/README.md](../../1-ARCHITECTURE/README.md) | ⚠️ 已被 v4.0 取代（已加横幅） | 旧"六大核心系统"描述，与 10-16 号子系统不匹配 |
+| ★★☆ 专题 | 公司中枢设计 | [1-ARCHITECTURE/中台设计/COMPANY_CENTRAL_HUB.md](../../1-ARCHITECTURE/中台设计/COMPANY_CENTRAL_HUB.md) | 🟡 现行有效（口径以 v4.0 为准） | 六部门矩阵 + 双中台 + 双交易流详细设计 |
 
 ### 2.2 子系统架构文档（对应 SSoT §4.2 应用层）
 
@@ -161,7 +173,7 @@ L6 离场  │  ExitManager 策略链 + 卦象主离场           │  → exit_
 | SKILL 索引 | [1-ARCHITECTURE/工作索引/SKILL_INDEX.md](../../1-ARCHITECTURE/工作索引/SKILL_INDEX.md)（规划中） | §3.4 模块元数据 + §5.2 A0-A9节点 |
 | 工具映射 | [1-ARCHITECTURE/工作索引/TOOL_MAPPING.md](../../1-ARCHITECTURE/工作索引/TOOL_MAPPING.md)（规划中） | §8.5 适配器路由 |
 | 部门矩阵 | [1-ARCHITECTURE/工作索引/DEPARTMENT_MATRIX.md](../../1-ARCHITECTURE/工作索引/DEPARTMENT_MATRIX.md) | §7.1 六部门模型 |
-| 前端架构 | [1-ARCHITECTURE/前端设计/FRONTEND_ARCHITECTURE.md](../../1-ARCHITECTURE/前端设计/FRONTEND_ARCHITECTURE.md) | §8.3 前后端分工 |
+| 前端架构 | ★ 现行：[3.1-FRONTEND/docs/v3-frontend-architecture.md](../../3.1-FRONTEND/docs/v3-frontend-architecture.md) v3.1 · 📦 已归档：[1-ARCHITECTURE/前端设计/](../../1-ARCHITECTURE/前端设计/)（18 篇旧 3.0 设计，已加横幅） | §1 分层 + §4 意图路由 |
 | 产物中台 | [1-ARCHITECTURE/中台设计/PRODUCT_HUB.md](../../1-ARCHITECTURE/中台设计/PRODUCT_HUB.md) | §9.5 持久化映射 |
 | 网关设计 | [1-ARCHITECTURE/中台设计/GATEWAY_HUB.md](../../1-ARCHITECTURE/中台设计/GATEWAY_HUB.md)（规划中） | §9.3 部署拓扑 + Phase 3 |
 | 记忆系统架构专题 | [4-MEMORY/0-元记忆/](../../4-MEMORY/0-元记忆/) | §6 认知系统 + §10.2 记忆硬约束 |
@@ -172,8 +184,8 @@ L6 离场  │  ExitManager 策略链 + 卦象主离场           │  → exit_
 
 | 债务项 | 说明 | 关联 ID | SSoT 定位 |
 |--------|------|---------|----------|
-| 1-ARCHITECTURE/README 过时 | 仍描述旧"六大核心系统"，与 10-16 号子系统不匹配 | DD-002 | 批次7：文档债 |
-| WORKBUDDY_OS_MODULAR 定位重叠 | 与 v3.0 重叠度 60%+，TS视角早期设计 | DD-003 | 批次7：v3.0 FINAL 后归档到 `archive/` |
+| 1-ARCHITECTURE/README 过时 | 仍描述旧"六大核心系统"，与 10-16 号子系统不匹配 | DD-002 | ✅ 2026-10-16：已加「已归档」横幅，指针转向 SSoT v4.0 |
+| WORKBUDDY_OS_MODULAR 定位重叠 | 与 SSoT 重叠度 60%+，TS视角早期设计 | DD-003 | ✅ 2026-10-16：已加「已归档」横幅 |
 | 16-调控系统 TECHNICAL_DESIGN 范围错位 | v1.0 仅覆盖离场评估子模块，缺失 SKILL 引擎 + 进化闭环 | D050 (P2) | 批次5：架构规范 |
 | 认知系统无独立 TECHNICAL_DESIGN | daemon/git hook/session/mcp server 四组件缺少子系统级文档 | DD-018 (P1) | 批次3：架构统一 |
 | 记忆系统接口契约文档缺口 | 7+2 接口 + 质量分级 S/A/B/C/D 缺少跨应用统一 SPEC | DD-017 (P1) | 批次3：架构统一 |
@@ -189,12 +201,12 @@ L6 离场  │  ExitManager 策略链 + 卦象主离场           │  → exit_
 | Phase 0 概念验证 | ✅ 完成 | 单策略原型 + S1-S5 思维链 + TS 版 Evolution 实验 | §12.5 |
 | Phase 1 工程化基础 | ✅ 完成 | 从单策略 → 六大子系统目录化；OS v1.1；核心交易链路跑通 | §12.5 |
 | Phase 1+ S1 文档统一 | ✅ 完成 | 6子系统文档全A级；0号系统建立；认知系统 daemon 上线 | §12.5 |
-| **Phase 2 当前：架构统一 + 资金安全** | **⏳ 进行中** | **① v3.0 架构文档评审与定稿 ② 批次1-3技术债修复（P0资金→安全→架构）③ 认知系统与记忆系统硬约束对齐** | §11.5 批次1-3 |
+| **Phase 2 当前：架构统一 + 资金安全** | **⏳ 进行中** | **① v4.0 架构文档定稿（2026-10-16 完成）② 批次1-3技术债修复（P0资金→安全→架构）③ 认知系统与记忆系统硬约束对齐** | §11.5 批次1-3 |
 | Phase 3 能力完整 | 🔴 待启动 | ML训练流水线；多账户风控；前端 Dashboard；16-GATEWAY 网关 | §12.5 Phase 3 |
 | Phase 4 产品化 | 🔴 更远期 | 市场化中台落地；六部门治理代码化；Studio 私有化部署 | §12.5 Phase 4 |
 
 ---
 
-**文档版本**: v2.1（新增 11-易经推理系统七层交易决策栈总览 + 子系统 TECHNICAL_DESIGN 版本对齐 v4.5）
-**最后更新**: 2026-08-24
-**下一步**: 等待 SSoT v3.0 草稿 review 确认后，同步更新 SYSTEM_MAP / TOPIC_MAP / DOC_DEBT_INDEX 关联项
+**文档版本**: v2.4（2026-10-16：SSoT 指针升级 v4.0「L0/L1/L2 + 新 SACG」；旧架构文档归档横幅；章节映射校正）
+**最后更新**: 2026-10-16
+**下一步**: 同步更新 SYSTEM_MAP / TOPIC_MAP / DOC_DEBT_INDEX 关联项（已随本次 v4.0 归档同步）
