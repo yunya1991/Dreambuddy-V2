@@ -79,14 +79,20 @@ class DeepReasoningEngine:
     # 后端状态
     # ------------------------------------------------------------------
     def backend_status(self) -> dict[str, Any]:
-        """报告各深度学习后端的可用状态."""
+        """报告各深度学习后端的可用状态.
+
+        S1 修复（SPEC-双链路可观测性与状态同步修复 §2.1）：
+        neural_sde_trained / neural_sde_backend 委托读取 SDESolver 的真实状态，
+        修复本引擎实例变量初始化为 unavailable 后从未更新导致的状态上报断链。
+        保留 self._sde_backend_used / self._neural_sde_loaded 仅为向后兼容。
+        """
         return {
             "timesfm": self._timesfm_available,
             "timesfm_api": self._timesfm_api,
             "signatory": self._signatory_available,
             "neural_sde": self._torch_available,
-            "neural_sde_trained": self._neural_sde_loaded,
-            "neural_sde_backend": self._sde_backend_used,
+            "neural_sde_trained": getattr(self._sde, "_neural_sde_loaded", self._neural_sde_loaded),
+            "neural_sde_backend": getattr(self._sde, "_sde_backend_used", self._sde_backend_used),
         }
 
     # ------------------------------------------------------------------

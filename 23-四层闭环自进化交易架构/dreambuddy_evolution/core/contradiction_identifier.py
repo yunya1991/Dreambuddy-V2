@@ -279,6 +279,7 @@ class PrimaryContradictionIdentifier:
         weight_factor: float | dict = 1.0,
         causal_engine=None,
         meta_cognition_gate=None,
+        dimension_forces: dict | None = None,
     ) -> dict:
         """识别主要矛盾.
 
@@ -293,6 +294,9 @@ class PrimaryContradictionIdentifier:
                            dict: 按维度独立的权重 {dimension: wf}（Fix 3）
             causal_engine: W4 CausalEngine 实例，用于因果 ATE 增强"力量对比"维度
             meta_cognition_gate: W5 MetaCognitionGate 实例，用于二阶校验 confidence
+            dimension_forces: T5 维度力量 {dim: {direction, strength}}，
+                             用于主矛盾裁决的维度间对立度调制（SPEC-各维度矛盾计算重建 T5）。
+                             None 或维度缺失 → 不调制（降级链 FAIL-OPEN）。
 
         HC-AGI-18: 异常 FAIL-OPEN
         HC-AGI-23: < 2 路径返回 neutral
@@ -347,6 +351,32 @@ class PrimaryContradictionIdentifier:
                 wf = max(0.3, min(1.5, float(weight_factor)))
             primary["strength"] = min(1.0, primary["strength"] * wf)
 
+            # T5: 维度力量裁决调制 — 主矛盾方向与该维度力量一致时增强，
+            #     对立时衰减；维度缺失/中性 → 不调制（降级链）。
+            #     调制系数 = 1 + 0.3 * sign * strength，范围 [0.7, 1.3]，
+            #     温和调制避免单源覆盖共振/因果证据。
+            try:
+                if isinstance(dimension_forces, dict) and dimension_forces:
+                    _df_dim = primary.get("dimension", "")
+                    _df_info = dimension_forces.get(_df_dim) or {}
+                    _df_dir = str(_df_info.get("direction", "neutral"))
+                    _df_str = float(_df_info.get("strength", 0.0) or 0.0)
+                    _my_dir = str(primary.get("direction", "neutral"))
+                    if _df_dir in ("long", "short") and _df_str >= 0.05 and _my_dir in ("long", "short"):
+                        _sign = 1.0 if _df_dir == _my_dir else -1.0
+                        _mod = 1.0 + 0.3 * _sign * _df_str
+                        _mod = max(0.7, min(1.3, _mod))
+                        _pre = float(primary.get("strength", 0.0) or 0.0)
+                        primary["strength"] = min(1.0, max(0.0, _pre * _mod))
+                        primary["dimension_force_mod"] = round(_mod, 3)
+                        logger.info(
+                            "[T5-DimForce] dim=%s my=%s df=%s:%.2f mod=%.3f strength=%.3f->%.3f",
+                            _df_dim, _my_dir, _df_dir, _df_str, _mod,
+                            _pre, primary["strength"],
+                        )
+            except Exception as _t5_e:  # noqa: BLE001  T5 FAIL-OPEN
+                logger.debug("[T5-DimForce] modulate fail: %s", _t5_e)
+
             # W4: CausalEngine ATE 增强 — 因果显著性调整力量评分
             primary = self._enhance_with_causal_ate(primary, paths, market_data, causal_engine)
 
@@ -369,7 +399,14 @@ class PrimaryContradictionIdentifier:
                 return
             # 优先用 close 序列的最近变动作为 actual_return
             closes = market_data.get("close") or market_data.get("closes")
-            if closes and isinstance(closes, (list, tuple)) and len(closes) >= 2:
+            # S4 修复（SPEC §2.3）：兼容 list / tuple / np.ndarray，
+            # 此前仅接受 list/tuple，numpy 数组被静默跳过导致样本零标注
+            if closes is not None and not isinstance(closes, (int, float)):
+                try:
+                    closes = [float(c) for c in closes]
+                except Exception:
+                    closes = None
+            if closes and isinstance(closes, list) and len(closes) >= 2:
                 prev_close = float(closes[-2])
                 curr_close = float(closes[-1])
                 if prev_close > 0:

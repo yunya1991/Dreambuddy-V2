@@ -252,7 +252,20 @@ def _first_iso(df: pd.DataFrame, ts_col: str) -> str:
 
 
 def _is_nan(v) -> bool:
+    # 数组/list/ndarray 等容器类型：pd.isna 会返回数组导致布尔歧义，
+    # 先按类型短路——容器本身不是 NaN 标量，返回 False 由调用方按类型处理
+    if isinstance(v, (list, tuple, set, dict)):
+        return False
     try:
-        return pd.isna(v)
+        r = pd.isna(v)
     except Exception:  # noqa: BLE001
         return False
+    if hasattr(r, "item"):
+        try:
+            return bool(r.item())
+        except Exception:  # noqa: BLE001
+            return False
+    if isinstance(r, bool):
+        return r
+    # pd.isna 返回了数组（如 numpy 数组元素）：视为非 NaN 标量
+    return False

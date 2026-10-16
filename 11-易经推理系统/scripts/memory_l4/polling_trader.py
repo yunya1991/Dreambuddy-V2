@@ -12461,6 +12461,24 @@ class PollingTrader:
                                         _agi_snap["neural_sde_trained"] = _bs.get("neural_sde_trained")
                         except Exception:
                             pass
+                        # S2 修复（SPEC-双链路可观测性与状态同步修复 §2.2）：
+                        # 透传主矛盾识别精简字段，链路一推理结果进入快照
+                        # 来源：EvolutionPipeline._last_primary_contradiction（每周期更新，
+                        # 结果字典顶层无此字段，避免读取恒空值）
+                        try:
+                            _kh2 = getattr(self, "_kline_handler", None)
+                            _ep2 = getattr(_kh2, "_evolution_pipeline", None) if _kh2 is not None else None
+                            if _ep2 is None and _kh2 is not None and hasattr(_kh2, "_get_evolution_pipeline"):
+                                _ep2 = _kh2._get_evolution_pipeline()
+                            _pc_snap = getattr(_ep2, "_last_primary_contradiction", None) or {}
+                            if _pc_snap:
+                                _agi_snap["primary_contradiction"] = {
+                                    "dimension": _pc_snap.get("dimension"),
+                                    "direction": _pc_snap.get("direction"),
+                                    "strength": _pc_snap.get("strength"),
+                                }
+                        except Exception:
+                            pass
                         try:
                             # 优先从 EvolutionPipeline 获取（启动时已加载），回退到 _evolution_shadow_rl
                             _srl = None
@@ -16386,6 +16404,19 @@ class PollingTrader:
 
         # 应用三项乘积到 position_usdt / position_pct（任一 != 1.0 才 log，避免刷屏）
         _combined_mult = _phase_c_final_pos_mult * _phase_c_winprob_mult * _phase_c_btc_lambda
+        # P1 修复（主矛盾→实质交易影响链路）：消费矛盾系统弹性约束仓位乘数
+        # 来源：EvolutionPipeline elastic_result.position_mult（主矛盾弹性约束，§7）
+        # FAIL-OPEN：读取失败/缺失/越界时保持 1.0 不干预
+        _elastic_pos_mult = 1.0
+        try:
+            _el_res = (getattr(self, "_last_kline_result_by_coin", {}).get(coin) or {}).get("elastic_result") or {}
+            _epm = float(_el_res.get("position_mult", 1.0))
+            if 0.0 < _epm <= 2.0:
+                _elastic_pos_mult = _epm
+        except Exception:
+            _elastic_pos_mult = 1.0
+        if abs(_elastic_pos_mult - 1.0) > 1e-9:
+            _combined_mult = _combined_mult * _elastic_pos_mult
         # F1 永不 BLOCK 通路：最终仓位受 F2 BLOCK 上限约束，防止 WinProb/BTCλ 叠加突破 0.10
         _f1_trial_mode = bool(inference.get("_f1_trial_mode", False))
         if _f1_trial_mode:
@@ -16407,6 +16438,7 @@ class PollingTrader:
             self._log(
                 f"[{coin}] PhaseC 仓位调控 | "
                 f"EG3L={_phase_c_final_pos_mult:.2f} WinProb={_phase_c_winprob_mult:.2f} "
+                f"Elastic={_elastic_pos_mult:.2f} "
                 f"BTCλ={_phase_c_btc_lambda:.2f} combined=×{_combined_mult:.3f} "
                 f"仓位 {_old_usdt:.2f}→{position_usdt:.2f}U{_phase_c_eg3l_detail}",
                 "INFO",

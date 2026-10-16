@@ -286,7 +286,10 @@ class EngineRouter:
                     logger.debug("[PathLayer] event-driven path injection fail (FAIL-OPEN): %s", e)
 
                 if hasattr(pipeline, "_select_optimal_path"):
-                    raw_optimal = pipeline._select_optimal_path(paths, r_vector)
+                    # S4 修复（SPEC-双链路可观测性与状态同步修复 §2.3）：
+                    # 补传 market_data。此前省略该参数致其默认为 None，
+                    # 矛盾识别器标注机制收到空数据，W6 样本永远无法被标注。
+                    raw_optimal = pipeline._select_optimal_path(paths, r_vector, market_data)
                     self._last_dimension_predictions = (
                         raw_optimal.get("dimension_predictions", {})
                         if isinstance(raw_optimal, dict) else {}

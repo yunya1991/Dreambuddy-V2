@@ -63,6 +63,20 @@ export function getTrainingLoop(layer: LayerName): unknown {
   return getInstances()[layer];
 }
 
+/** v0.7: 意图预测（S 层 predictIntent 暴露，供 data_query/data_insight 执行闭环调用） */
+export async function predictIntentLayer(
+  layer: LayerName,
+  message: string,
+): Promise<string> {
+  const loop = getInstances()[layer] as { predictIntent?: (m: string) => Promise<string> };
+  if (!loop || typeof loop.predictIntent !== 'function') return '';
+  try {
+    return await loop.predictIntent(message);
+  } catch {
+    return '';
+  }
+}
+
 export function getTrainingLoopStatus(layer: LayerName): TrainingLoopStatus | null {
   const loop = getInstances()[layer];
   if (!loop) return null;

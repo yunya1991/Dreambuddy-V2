@@ -85,6 +85,7 @@ AGI_SWITCHES: Dict[str, bool] = {
     # --- 交叉验证层 (矛盾Transformer §5.1) ---
     # 2026-10-07 激活: 5框架对比(F1夏普7.77)+消融实验(Q5贡献+0.22)验证通过
     "enable_cross_validation_gate": True,            # 交叉验证层总开关 (已激活)
+    "enable_dimension_force_v2": True,             # 维度力量评估 v2.0 (T4 影子期: 只记录日志不参与决策)
     "enable_granger_pipeline": True,                 # Granger 因果链 (从价格序列派生3维度因子)
     "enable_attention_aggregator": True,             # Attention 聚合 (A_dim从primary_contradiction获取)
     "enable_head_multipliers_adjustment": True,      # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)

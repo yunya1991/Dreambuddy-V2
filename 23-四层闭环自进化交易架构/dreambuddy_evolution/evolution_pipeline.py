@@ -982,11 +982,40 @@ class EvolutionPipeline:
         self._last_dimension_predictions = {}
         try:
             from dreambuddy_evolution.agi_config import get_switch
+            # T4（SPEC-各维度矛盾计算重建 §3）：维度力量评估 v2.0
+            # 影子期只记录日志，不参与决策；放量后作为主矛盾裁决输入
+            if get_switch("enable_dimension_force_v2", False):
+                try:
+                    from dreambuddy_evolution.core.dimension_force_evaluator import (
+                        DimensionForceEvaluator,
+                    )
+                    _dfe = getattr(self, "_dimension_force_evaluator", None)
+                    if _dfe is None:
+                        _dfe = DimensionForceEvaluator()
+                        self._dimension_force_evaluator = _dfe
+                    self._last_dimension_forces = _dfe.evaluate()
+                    logger.info("%s", _dfe.format_log(self._last_dimension_forces))
+                    # P1 双源交叉校验（本地基本面模块 sentiment vs 主源 z-score）
+                    # 影子期输出两源对比，观察收敛性；FAIL-OPEN 不影响主流程
+                    try:
+                        _xcheck = _dfe.cross_check_fundamental(self._last_dimension_forces)
+                        logger.info("%s", _dfe.format_cross_check_log(_xcheck))
+                    except Exception as _xc_e:  # FAIL-OPEN
+                        logger.debug("[DimensionForce] cross_check fail: %s", _xc_e)
+                except Exception as _dfe_e:  # FAIL-OPEN
+                    logger.debug("[DimensionForce] evaluate fail: %s", _dfe_e)
+                    self._last_dimension_forces = {}
             if get_switch("enable_contradiction_identifier", True):
                 from dreambuddy_evolution.core.contradiction_identifier import (
                     PrimaryContradictionIdentifier,
                 )
-                identifier = PrimaryContradictionIdentifier()
+                # S4 修复（SPEC-双链路可观测性与状态同步修复 §2.3）：
+                # 缓存识别器实例，样本跨周期积累。此前每周期新建实例，
+                # 样本数恒为 1（<100 不触发落盘阈值），W6 学习样本从未持久化。
+                identifier = getattr(self, "_contradiction_identifier", None)
+                if identifier is None:
+                    identifier = PrimaryContradictionIdentifier()
+                    self._contradiction_identifier = identifier
                 # Fix 3: 按维度独立取权重，传入 dict 供 identify 按维度调制
                 _wfs = getattr(self, "_contradiction_weight_factors", {})
                 primary_contradiction = identifier.identify(
@@ -994,6 +1023,8 @@ class EvolutionPipeline:
                     weight_factor=_wfs,
                     causal_engine=self._get_causal_engine(),
                     meta_cognition_gate=self._get_meta_cognition_gate(),
+                    # T5 实盘接入：维度力量参与主矛盾裁决（影子期数据已验证非空）
+                    dimension_forces=getattr(self, "_last_dimension_forces", {}) or {},
                 )
                 # 方向3: 从 paths 提取每维度方向预测，供 ReverseDeriver 逆向推导
                 try:
@@ -1004,6 +1035,16 @@ class EvolutionPipeline:
                 except Exception as _e:
                     logger.debug("[FO] extract_dimension_predictions fail: %s", _e)
                     self._last_dimension_predictions = {}
+                # S2 修复（SPEC-双链路可观测性与状态同步修复 §2.2）：
+                # 主矛盾识别结果每周期输出 INFO 日志，恢复链路一可观测性
+                if primary_contradiction is not None:
+                    logger.info(
+                        "[Contradiction] dim=%s dir=%s strength=%.3f tf=%s",
+                        primary_contradiction.get("dimension"),
+                        primary_contradiction.get("direction"),
+                        float(primary_contradiction.get("strength", 0.0) or 0.0),
+                        primary_contradiction.get("timeframe", "?"),
+                    )
         except Exception as e:  # noqa: BLE001  HC-AGI-18
             logger.debug("[FO-AGI-Pipeline][Contradiction] fail: %s", e)
 
@@ -1172,6 +1213,19 @@ class EvolutionPipeline:
                             )
                     except Exception as _e:
                         logger.debug("[FO-Phase2.5][GeneInnovation] fail: %s", _e)
+                # S3 修复（SPEC-双链路可观测性与状态同步修复 §2.4）：
+                # 交叉验证门禁周期性心跳日志（每 50 周期 1 条），确认双链路交汇在工作
+                try:
+                    self._cv_heartbeat_count = getattr(self, "_cv_heartbeat_count", 0) + 1
+                    if self._cv_heartbeat_count % 50 == 0:
+                        logger.info(
+                            "[CrossValidation] heartbeat #%d G_dim=%s A_dim=%s conf_mult=%.2f shift=%s",
+                            self._cv_heartbeat_count, _g_dim, _a_dim,
+                            float(cv_result.get("confidence_mult", 1.0)),
+                            bool(cv_result.get("shift_signal", False)),
+                        )
+                except Exception:
+                    pass
         except Exception as _e:  # noqa: BLE001
             logger.debug("[FO-Phase2.5][CrossValidation] fail: %s", _e)
             cv_result = {"confidence_mult": 1.0, "shift_signal": False,
@@ -1337,7 +1391,13 @@ class EvolutionPipeline:
         second = scored[1] if len(scored) > 1 else None
 
         # 统计验证
-        validated = best["score"] > 0.05
+        # P3 修复（主矛盾→实质交易影响链路）：验证阈值与交叉验证乘数联动。
+        # 分歧期间（conf_mult < 1.0）得分已被压低 ×conf_mult，若阈值不变则
+        # 得分贴近阈值的路径仍会开仓；此处阈值按 1/conf_mult 上浮补偿，
+        # 使分歧期间开仓标准实际收紧。一致期间（conf_mult ≥ 1.0）保持原阈值。
+        _cv_mult_v = float(cv_result.get("confidence_mult", 1.0))
+        _validate_threshold = 0.05 / _cv_mult_v if 0.0 < _cv_mult_v < 1.0 else 0.05
+        validated = best["score"] > _validate_threshold
         low_conviction = second is not None and (best["score"] - second["score"]) < 0.02
 
         # Phase 3.5: 存储识别结果供 get_feedback() 回流使用

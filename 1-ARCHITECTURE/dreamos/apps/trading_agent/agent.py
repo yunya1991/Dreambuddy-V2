@@ -566,13 +566,52 @@ class TradingAgent:
             logger.debug(f"场景分类失败: {e}")
             return None
 
+    def _recall_cognitive_prior(self, user_input: str) -> Optional[Dict]:
+        """P1 (SPEC v1.2.1): 从广义认知系统 recall 相关经验先验（FAIL-OPEN）。"""
+        try:
+            import sys as _sys
+            _cog_path = str(Path(__file__).resolve().parents[4] / "4-MEMORY" / "9-工具与接口")
+            if _cog_path not in _sys.path:
+                _sys.path.insert(0, _cog_path)
+            from cognitive_loop_entry import get_cle
+            _cle = get_cle()
+            _hits = _cle.recall(user_input or "交易意图", top_k=3)
+            if not _hits:
+                return None
+            return {
+                "cognitive_prior": [
+                    {
+                        "content": str(h.get("content", ""))[:200],
+                        "quality": h.get("quality_level", "C"),
+                        "confidence": h.get("confidence_score", h.get("confidence", 0.3)),
+                    }
+                    for h in _hits[:3]
+                ],
+                "source": "cognitive_system",
+            }
+        except Exception:
+            # FAIL-OPEN: 认知系统不可用 → 无先验，走原链路
+            return None
+
     def _sense(self, user_input: str, market_data: Dict,
                context: Dict) -> IntentResult:
-        """S 层：意图识别"""
+        """S 层：意图识别（P1 认知接入版）
+
+        - 认知先验: recall 相关经验作为 memory 注入（数据源的坑/历史教训）
+        - L1 先验: 消费 context.l1_intent_hint（L1 交接协议，不重复粗分类）
+        """
+        cognitive_prior = self._recall_cognitive_prior(user_input)
+        enriched_context = dict(context or {})
+        if cognitive_prior:
+            enriched_context["cognitive_prior"] = cognitive_prior
+        l1_hint = (context or {}).get("l1_intent_hint")
+        if l1_hint:
+            enriched_context["l1_intent_hint"] = l1_hint
         return self.intent_engine.recognize(
             user_message=user_input,
             market=market_data,
-            context=context,
+            memory=cognitive_prior,
+            context=enriched_context,
         )
 
     def _route_capability(self, intent_result: IntentResult) -> RoutingResult:

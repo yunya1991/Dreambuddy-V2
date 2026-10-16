@@ -124,6 +124,20 @@ def collect_from_all_providers(limit: int) -> dict:
         ("ASeriesTheory", "a_series_theory_collector", "ASeriesTheoryCollector"),
         ("OneirologyDream", "oneirology_dream_collector", "OneirologyDreamCollector"),
         ("MasterSeminar", "master_seminar_collector", "MasterSeminarCollector"),
+        # v0.7 数据查询/动态解读意图采集器 (SPEC-v0.7-data-query-intent)
+        ("DataQueryIntent", "data_query_intent_collector", "DataQueryIntentCollector"),
+        ("DataInsight", "data_insight_collector", "DataInsightCollector"),
+        # v0.8 自进化系统双链路采集器 (SPEC-v0.8-evolution-dual-intent)
+        ("Contradiction", "contradiction_collector", "ContradictionCollector"),
+        ("EvolutionPath", "evolution_path_collector", "EvolutionPathCollector"),
+        # v0.9 易经推理系统三类采集器 (SPEC-v0.9-yijing-triple-collector)
+        ("BCRM2Technical", "bcrm2_technical_collector", "BCRM2TechnicalCollector"),
+        ("BDSMFundamental", "bdsm_fundamental_collector", "BDSMFundamentalCollector"),
+        ("AssetClass", "asset_class_collector", "AssetClassCollector"),
+        # v1.0 金融事件分析采集器 (29-事件驱动策略系统)
+        ("EventAnalysis", "event_analysis_collector", "EventAnalysisCollector"),
+        # v1.1 调控风控采集器 (16-调控系统, SPEC v1.0 L1 优先扩展)
+        ("RiskControl", "risk_control_collector", "RiskControlCollector"),
     ]
     for label, mod_name, cls_name in collectors:
         try:
@@ -277,8 +291,10 @@ def verify_continual_training(base_url: str, before: dict, feed_stats: dict) -> 
         oldest_age = a.get("oldestAge", 0)
         step_delta = step_after - step_before
 
-        # 核心判定: step 增长 > 0 且 bucketCount 未达阈值 = 持续训练证据
-        continual_evidence = step_delta > 0 and bc_after < max(threshold, 50)
+        # 核心判定 (v0.5 语义): trainIncremental 增量训练不清空 buffer，
+        # 桶满后 bucketCount 恒等于 capacity（容量淘汰保持不变），
+        # 因此持续训练证据 = step 增长 > 0（数据到达即触发增量训练）
+        continual_evidence = step_delta > 0
         results[layer] = {
             "step_before": step_before,
             "step_after": step_after,

@@ -84,7 +84,7 @@ export function ChatPanel() {
   }, []);
 
   // 发送消息到 /api/task/stream
-  const sendToTaskStream = useCallback(async (userContent: string, sessionId: string) => {
+  const sendToTaskStream = useCallback(async (userContent: string, sessionId: string, l1IntentHint?: string) => {
     setError(null);
 
     // 重置链路状态
@@ -110,6 +110,8 @@ export function ChatPanel() {
         session_id: sessionId,
         lang: 'zh',
         trading_mode: 'ai_skill',
+        // 交接协议 (SPEC v1.1 §4.2-3): L1 意图预测结果作为 L2 上下文
+        ...(l1IntentHint ? { l1_intent_hint: l1IntentHint } : {}),
       },
       handlers,
       {
@@ -145,10 +147,38 @@ export function ChatPanel() {
     setInputValue('');
 
     // 设置流式状态
-    storeState.setStreaming(true, '');
-
-    // 通过 SSE 发送到后端
-    sendToTaskStream(content, sessionId);
+    // 三层路由器消费: UI 不感知层级与意图清单，只消费 handled 字段 (SPEC v1.0 §5)
+    (async () => {
+      try {
+        const res = await fetch('/api/data/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: content }),
+        });
+        let l1Intent: string | undefined;
+        if (res.ok) {
+          const json = await res.json();
+          const d = json?.data;
+          if (d?.intent && d.intent !== 'unknown') l1Intent = d.intent;
+          if (d && d.handled && d.answer) {
+            // L1 命中: 直接显示结果（零 token 秒回）
+            useSessionStore.getState().addMessage(sessionId, {
+              id: `msg-${Date.now()}`,
+              role: 'assistant',
+              content: d.answer,
+              timestamp: Date.now(),
+              metadata: { intent: d.intent, source: 'l1-router' },
+            });
+            return;
+          }
+        }
+      } catch {
+        // FAIL-OPEN: 路由器异常，降级到 L2 SSE 链路
+      }
+      // L1 未命中 → 走 L2 SSE 链路（交接协议: 携带 L1 意图预测上下文）
+      useSessionStore.getState().setStreaming(true, '');
+      sendToTaskStream(content, sessionId, l1Intent);
+    })();
   }, [inputValue, isStreaming, sendToTaskStream]);
 
   // 取消流式请求

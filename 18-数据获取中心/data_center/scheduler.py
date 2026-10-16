@@ -193,6 +193,17 @@ class CollectionScheduler:
                 params={"series": s},
                 interval_sec=3600,
             ))
+        # ── P2/C8：FRED 传统金融 7 系列（1h，yfinance 限流时的稳定备用源）──
+        #    VIXCLS 恐慌指数 / DGS10 美债10Y / DTWEXBGS 美元指数 /
+        #    SP500 标普 / NASDAQCOM 纳指 / DCOILWTICO WTI原油 / IR14260 黄金
+        #    覆盖 C8 宏观交叉维度全部依赖，FRED 官方源无限流风险
+        for s in ("VIXCLS", "DGS10", "DTWEXBGS", "SP500", "NASDAQCOM", "DCOILWTICO", "IR14260"):
+            tasks.append(CollectionTask(
+                name=f"fred_{s.lower()}",
+                category="macro", source="fred",
+                params={"series": s},
+                interval_sec=3600,
+            ))
         # ── finance/yfinance 跨市场标的（15min）──
         for sym in ("^VIX", "DX-Y.NYB", "GC=F", "^GSPC", "^IXIC", "^TNX", "CL=F", "BTC-USD"):
             tasks.append(CollectionTask(
