@@ -1,0 +1,12 @@
+[ACCEPTANCE] scenario=pass verdict=pass
+[ACCEPTANCE] sediments=[{"type": "case", "mode": "async_stub", "nodes": ["N1"]}]
+[ACCEPTANCE] cognitive={'memory_id': 'VM-accept-001', 'hermes_triggered': True, 'degraded': False} settled=True
+[ACCEPTANCE] scenario=fail verdict=fail red_flags=['N1']
+[ACCEPTANCE] sediments=[{"type": "skill", "mode": "async_stub", "red_flags": ["N1"]}]
+[ACCEPTANCE] verify_calls=[{'memory_id': 'VM-accept-001', 'success': False}]
+[ACCEPTANCE] scenario=degraded verdict=degraded
+[ACCEPTANCE] sediments=[{"type": "doc", "mode": "async_stub", "pending": ["N1"]}]
+[ACCEPTANCE] verify_calls=[{'memory_id': 'VM-accept-001', 'success': False}]
+[BOUNDARY] acceptance=None -> sediments=[] settled=True memory=VM-accept-001
+[BOUNDARY] malformed -> settled=True sediments_type=list
+[BOUNDARY] empty_nodes_pass -> sediments=[]
