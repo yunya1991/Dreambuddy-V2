@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,7 +23,7 @@ from pathlib import Path
 import requests
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = REPO_ROOT / "18-数据获取中心" / "data_center.db"
+sys.path.insert(0, str(REPO_ROOT / "18-数据获取中心"))
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
 
@@ -51,24 +50,19 @@ def _to_number(v, *, as_int: bool = False):
 
 
 def insert_record(source: str, sub_category: str, metrics: dict, raw: dict | None = None):
-    """插入一条 record 到 18 data_center.db。"""
-    conn = sqlite3.connect(str(DB_PATH))
+    """通过统一存储接口写入 records（跟随 DATA_CENTER_BACKEND 配置）。"""
     try:
-        conn.execute(
-            """INSERT INTO records (source, category, sub_category, timestamp, metrics, events, timeseries, raw)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (source, "chain", sub_category, _now_iso(),
-             json.dumps(metrics, ensure_ascii=False),
-             "[]", "[]",
-             json.dumps(raw or {}, ensure_ascii=False)),
-        )
-        conn.commit()
+        from data_center.core.contract import DataRecord
+        from data_center.storage.sink_postgres import get_sink
+        sink = get_sink()
+        sink.write([DataRecord(
+            source=source, category="chain", sub_category=sub_category,
+            timestamp=_now_iso(), metrics=metrics, events=[], timeseries=[],
+            raw=raw or {},
+        )])
         print(f"  [OK] {source}/{sub_category}: {len(metrics)} metrics")
     except Exception as e:
         print(f"  [FAIL] {source}/{sub_category}: {e}")
-    finally:
-        conn.close()
-
 
 # ======================================================================
 # 1. 资金费率 — Binance Futures 免费 API
@@ -168,18 +162,18 @@ def collect_utxo_age():
         data = r.json()
         utxo_count = int(data["values"][-1]["y"]) if data.get("values") else 0
 
-        # 从 18 DB 读取 profit-supply（panewslab cycle_signals）
-        conn = sqlite3.connect(str(DB_PATH))
+        # 从统一存储接口读取 profit-supply（panewslab cycle_signals）
+        profit_supply_pct = 50.0
         try:
-            row = conn.execute(
-                "SELECT metrics FROM records WHERE source='panewslab' AND sub_category='cycle_signals' ORDER BY timestamp DESC LIMIT 1"
-            ).fetchone()
-            profit_supply_pct = 50.0
-            if row:
-                m = json.loads(row[0])
-                profit_supply_pct = float(m.get("bottom_profit-supply_value", 50.0))
-        finally:
-            conn.close()
+            from data_center.storage.sink_postgres import get_sink
+            recs = get_sink().query_records(source="panewslab", limit=50)
+            for rec in recs:
+                if rec.sub_category == "cycle_signals":
+                    m = rec.metrics if isinstance(rec.metrics, dict) else {}
+                    profit_supply_pct = float(m.get("bottom_profit-supply_value", 50.0))
+                    break
+        except Exception:
+            pass  # FAIL-OPEN：读取失败用默认值
 
         # 派生 UTXO 年龄分布
         # profit-supply 越高 → 短期持有者(盈利)占比越高
@@ -207,20 +201,21 @@ def collect_utxo_age():
 def collect_social_volume():
     print("\n[5] 社交声量 (18 新闻记录计数)")
     try:
-        conn = sqlite3.connect(str(DB_PATH))
-        try:
-            # 统计最近 24h 的新闻记录数作为社交声量代理
-            row = conn.execute(
-                "SELECT COUNT(*) FROM records WHERE source IN ('cryptopanic','gdelt','rsshub','tavily','odaily_newsflash') AND timestamp >= datetime('now', '-1 day')"
-            ).fetchone()
-            news_count_24h = row[0] if row else 0
-            # 总记录数
-            row2 = conn.execute(
-                "SELECT COUNT(*) FROM records WHERE source IN ('cryptopanic','gdelt','rsshub','tavily','odaily_newsflash')"
-            ).fetchone()
-            total_news = row2[0] if row2 else 0
-        finally:
-            conn.close()
+        # 统一存储接口统计新闻记录数（按源分别查询）
+        from data_center.storage.sink_postgres import get_sink
+        sink = get_sink()
+        news_sources = ('cryptopanic', 'gdelt', 'rsshub', 'tavily', 'odaily_newsflash')
+        news_count_24h = 0
+        total_news = 0
+        for src in news_sources:
+            try:
+                # 24h 内记录数（window_sec 过滤）
+                recent = sink.query_records(source=src, window_sec=86400, limit=5000)
+                news_count_24h += len(recent)
+                # 总记录数
+                total_news += len(sink.query_records(source=src, limit=5000))
+            except Exception:
+                continue  # FAIL-OPEN：单源失败跳过
 
         # 社交声量 = 新闻数 * 放大系数（Alternative.me social volume 通常 5000-90000）
         social_volume = news_count_24h * 100
@@ -262,8 +257,7 @@ def collect_btc_basics():
 
 
 def main():
-    print(f"[collect_missing_data] DB = {DB_PATH}")
-    print(f"[collect_missing_data] exists = {DB_PATH.exists()}")
+    print("[collect_missing_data] 存储后端: 统一存储接口（跟随 DATA_CENTER_BACKEND 配置）")
 
     results = {}
     results["funding_rate"] = collect_funding_rate()

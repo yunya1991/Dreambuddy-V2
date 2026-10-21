@@ -4790,7 +4790,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 if __name__ == "__main__":
     print("正在初始化数据缓存...")
     _start_bg_refresh()
-    server = ThreadedHTTPServer(("0.0.0.0", PORT), Handler)
+    server = ThreadedHTTPServer(("127.0.0.1", PORT), Handler)
     print(f"监控服务已启动: http://localhost:{PORT}")
     print(f"  - /api/state         5s 刷新")
     print(f"  - /api/yijing       60s 刷新")

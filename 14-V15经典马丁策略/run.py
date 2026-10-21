@@ -189,7 +189,7 @@ def cmd_capital_engine(args):
         port = args.port or 8770
         CapitalManagerAPI.engine = engine
         from http.server import HTTPServer
-        server = HTTPServer(("0.0.0.0", port), CapitalManagerAPI)
+        server = HTTPServer(("127.0.0.1", port), CapitalManagerAPI)
         print(f"资金管理API服务启动: http://localhost:{port}")
         print(f"  GET  /status          - 资金管理状态")
         print(f"  GET  /params          - 当前最优参数")
@@ -277,7 +277,7 @@ def cmd_api(args):
     from v15_api_server import V15APIHandler
     from http.server import HTTPServer
 
-    server = HTTPServer(("0.0.0.0", port), V15APIHandler)
+    server = HTTPServer(("127.0.0.1", port), V15APIHandler)
     print(f"=" * 70)
     print(f"V15经典马丁策略 HTTP API服务启动: http://localhost:{port}")
     print(f"=" * 70)

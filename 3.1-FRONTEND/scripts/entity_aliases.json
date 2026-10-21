@@ -1,0 +1,22 @@
+{
+  "ETH": ["以太坊", "以太", "以太幣", "ethereum", "eth"],
+  "BTC": ["比特币", "比特幣", "bitcoin", "btc"],
+  "SOL": ["索拉纳", "solana", "sol"],
+  "XRP": ["瑞波", "ripple", "xrp"],
+  "DOGE": ["狗狗币", "dogecoin", "doge"],
+  "UNI": ["uniswap", "uni"],
+  "LINK": ["链环", "chainlink", "link"],
+  "BNB": ["币安币", "bnb"],
+  "OKB": ["okb"],
+  "HYPE": ["hype"],
+  "PUMP": ["pump"],
+  "XAU": ["黄金", "金", "gold", "xau"],
+  "XAG": ["白银", "银", "silver", "xag"],
+  "GOOGL": ["谷歌", "google", "googl"],
+  "NVDA": ["英伟达", "nvidia", "nvda"],
+  "AMZN": ["亚马逊", "amazon", "amzn"],
+  "MU": ["美光", "micron", "mu"],
+  "SKHYNIX": ["sk海力士", "海力士", "skhynix"],
+  "SNDK": ["闪迪", "sandisk", "sndk"],
+  "SPCX": ["spacex", "spcx"]
+}

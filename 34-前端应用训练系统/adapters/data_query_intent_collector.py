@@ -9,7 +9,7 @@ S 层应识别为 data_query 意图并路由到 18-数据获取中心直接取�
   - FAIL-OPEN: 数据库不可用/表缺失时返回空列表，不阻塞训练
 """
 import os
-import sqlite3
+import sys
 from typing import List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,8 +18,9 @@ _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
 from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
 
-# 18-数据获取中心 数据库
-_DB_PATH = os.path.join(_PROJECT_ROOT, "18-数据获取中心", "data_center.db")
+# 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "39-金融语义蒸馏系统", "scripts"))
+import dc_pg
 
 # 数据源 → 中文描述映射（问法模板中使用）
 _SOURCE_DESC = {
@@ -63,20 +64,15 @@ class DataQueryIntentCollector(TrainingDataProvider):
         return "B"
 
     def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
-        if not os.path.exists(_DB_PATH):
-            return []
-        try:
-            conn = sqlite3.connect(f"file:{_DB_PATH}?mode=ro", uri=True)
-            rows = conn.execute(
-                "SELECT source, category, sub_category, COUNT(*) FROM records "
-                "GROUP BY source, category, sub_category ORDER BY 4 DESC LIMIT 60"
-            ).fetchall()
-            conn.close()
-        except Exception:
-            return []
+        # PostgreSQL 分组统计（dc_pg 统一接口，FAIL-OPEN：异常返回空）
+        rows = dc_pg.fetch_source_groups(limit=60)
 
         cases: List[TrainingCase] = []
-        for i, (src, category, sub_cat, cnt) in enumerate(rows):
+        for i, group in enumerate(rows):
+            src = group["source"]
+            category = group["category"]
+            sub_cat = group["sub_category"]
+            cnt = group["count"]
             desc = _SOURCE_DESC.get(src, src)
             # 每个数据源目录生成 2 条问法样本，轮换模板保证多样性
             for t in range(2):

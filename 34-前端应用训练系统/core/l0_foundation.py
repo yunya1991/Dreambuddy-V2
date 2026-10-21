@@ -24,7 +24,7 @@ import glob
 import json
 import os
 import re
-import sqlite3
+import sys
 import urllib.request
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -37,7 +37,9 @@ _PROJECT_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 )
 
-_DB_PATH = ("18-数据获取中心", "data_center.db")
+# 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "39-金融语义蒸馏系统", "scripts"))
+import dc_pg
 _EVOLUTION_LOG = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
                   "logs", "evolution_pipeline.log")
 _EVOLUTION_SNAPSHOT = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
@@ -150,37 +152,22 @@ class L0Foundation:
 
     def _fetch_datacenter_record(self, params: Dict) -> Dict[str, Any]:
         src = params.get("source")
-        db_path = self._path(*_DB_PATH)
+        src_tag = "data_center_pg"
         if not src:
-            return _degraded(db_path, "invalid_params", "missing param: source")
-        if not os.path.exists(db_path):
-            return _degraded(db_path, "source_missing")
-        try:
-            conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            conn.row_factory = sqlite3.Row
-            row = conn.execute(
-                "SELECT source, category, sub_category, timestamp, metrics, events "
-                "FROM records WHERE source = ? ORDER BY id DESC LIMIT 1", (src,)
-            ).fetchone()
-            conn.close()
-        except Exception as e:
-            return _degraded(db_path, "read_error", e)
-        if not row:
-            return _envelope(None, db_path)
-        metrics: Any
-        try:
-            metrics = json.loads(row["metrics"]) if row["metrics"] else None
-        except Exception:
-            metrics = row["metrics"]
+            return _degraded(src_tag, "invalid_params", "missing param: source")
+        # PostgreSQL 查询（dc_pg 统一接口，FAIL-OPEN：异常/无记录返回 None）
+        row = dc_pg.fetch_latest_by_source(src, params.get("sub_category"))
+        if row is None:
+            return _envelope(None, src_tag)
         return _envelope(
             {
                 "source": row["source"],
                 "category": row["category"],
                 "sub_category": row["sub_category"],
                 "timestamp": row["timestamp"],
-                "metrics": metrics,
+                "metrics": row["metrics"],
             },
-            db_path,
+            src_tag,
         )
 
     # -------- scope: evolution.contradiction --------

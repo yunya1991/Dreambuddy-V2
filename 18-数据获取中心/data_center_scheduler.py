@@ -38,7 +38,7 @@ if _BACKFILL_DIR.exists() and str(_BACKFILL_DIR) not in sys.path:
 from data_center import DataCenter  # noqa: E402
 from data_center.monitoring.quality import QualityChecker  # noqa: E402
 from data_center.scheduler import CollectionScheduler  # noqa: E402
-from data_center.storage.sink_sqlite import SqliteSink  # noqa: E402
+from data_center.storage.sink_postgres import get_sink  # noqa: E402
 
 # ── 路径配置 ──────────────────────────────────────────────────────────────────
 DB_PATH = str(_BASE_DIR / "data_center.db")
@@ -63,7 +63,7 @@ def _setup_logging() -> None:
 def _build_scheduler() -> CollectionScheduler:
     """构造调度器：DataCenter + SqliteSink + QualityChecker + 默认任务清单。"""
     dc = DataCenter()
-    sink = SqliteSink(DB_PATH)
+    sink = get_sink(DB_PATH)
     quality = QualityChecker()
     sched = CollectionScheduler(
         dc=dc, sink=sink, quality=quality,

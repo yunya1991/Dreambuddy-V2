@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 import sys
 import time
 import urllib.request
@@ -18,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DB_PATH = REPO_ROOT / "18-数据获取中心" / "data_center.db"
+sys.path.insert(0, str(REPO_ROOT / "18-数据获取中心"))
 
 SYMBOLS = [
     "^VIX", "DX-Y.NYB", "GC=F", "^GSPC", "^IXIC", "^TNX", "CL=F", "BTC-USD",
@@ -61,30 +60,20 @@ def fetch_yahoo(symbol: str) -> dict | None:
         return None
 
 
-def insert_record(conn: sqlite3.Connection, symbol: str, data: dict) -> None:
-    """Insert into 18-layer records table (same schema as yfinance_collector)."""
+def insert_record(sink, symbol: str, data: dict) -> None:
+    """通过统一存储接口写入 records（跟随 DATA_CENTER_BACKEND 配置）。"""
+    from data_center.core.contract import DataRecord
     now_iso = datetime.now(timezone.utc).astimezone().isoformat()
-    metrics = json.dumps(data)
-    timeseries = json.dumps([{"date": data["date"], "close": data["price"]}])
-    raw = json.dumps({"symbol": symbol, "period": "5d", "source": "yahoo_query2"})
-    dedupe_key = f"yfinance|finance|{symbol}|{now_iso}"
-
-    conn.execute(
-        """
-        INSERT OR REPLACE INTO records
-            (dedupe_key, source, category, sub_category, timestamp,
-             metrics, events, timeseries, raw, schema_version)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (dedupe_key, "yfinance", "finance", symbol, now_iso,
-         metrics, "[]", timeseries, raw, "1.0"),
-    )
-    conn.commit()
-
-
+    sink.write([DataRecord(
+        source="yfinance", category="finance", sub_category=symbol,
+        timestamp=now_iso, metrics=data, events=[],
+        timeseries=[{"date": data["date"], "close": data["price"]}],
+        raw={"symbol": symbol, "period": "5d", "source": "yahoo_query2"},
+    )])
 def main() -> None:
-    print(f"[collect_yahoo_direct] DB: {DB_PATH}")
-    conn = sqlite3.connect(str(DB_PATH))
+    print("[collect_yahoo_direct] 存储后端: 统一存储接口（跟随 DATA_CENTER_BACKEND 配置）")
+    from data_center.storage.sink_postgres import get_sink
+    conn = get_sink()
 
     success = 0
     for sym in SYMBOLS:
@@ -97,7 +86,7 @@ def main() -> None:
         else:
             print(f"  {sym:12s}: FAILED")
 
-    conn.close()
+    pass  # sink 无需关闭
     print(f"\n[done] {success}/{len(SYMBOLS)} symbols collected")
     print("[next] Run: cd 19-数据访问层 && python scripts/backfill_18_records.py")
 

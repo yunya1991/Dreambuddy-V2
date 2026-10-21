@@ -570,7 +570,8 @@ class TradingAgent:
         """P1 (SPEC v1.2.1): 从广义认知系统 recall 相关经验先验（FAIL-OPEN）。"""
         try:
             import sys as _sys
-            _cog_path = str(Path(__file__).resolve().parents[4] / "4-MEMORY" / "9-工具与接口")
+            from pathlib import Path as _Path
+            _cog_path = str(_Path(__file__).resolve().parents[4] / "4-MEMORY" / "9-工具与接口")
             if _cog_path not in _sys.path:
                 _sys.path.insert(0, _cog_path)
             from cognitive_loop_entry import get_cle

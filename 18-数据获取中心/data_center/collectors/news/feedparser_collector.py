@@ -24,7 +24,7 @@ class FeedparserCollector(BaseCollector):
     category = "news"
 
     def fetch(self, params: dict) -> list[DataRecord]:
-        feed_url = params.get("feed_url")
+        feed_url = params.get("feed_url") or params.get("url")
         if not feed_url:
             return []
 

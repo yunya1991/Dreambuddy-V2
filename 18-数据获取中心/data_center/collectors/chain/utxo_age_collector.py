@@ -15,11 +15,8 @@ FAIL-OPEN 铁律: API 异常 → 返回空列表不阻塞。
 """
 from __future__ import annotations
 
-import json
 import logging
-import sqlite3
 from datetime import datetime, timezone
-from pathlib import Path
 
 import requests
 
@@ -27,9 +24,6 @@ from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 
 logger = logging.getLogger(__name__)
-
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_DB_PATH = _REPO_ROOT / "data_center.db"
 
 
 def _clamp(v, lo, hi):
@@ -76,24 +70,16 @@ class UTXOAgeDistributionCollector(BaseCollector):
 
     @staticmethod
     def _fetch_profit_supply() -> float:
-        """从本地 DB 读取 panewslab cycle_signals 的 profit-supply。"""
+        """通过统一存储接口读取 panewslab cycle_signals 的 profit-supply。"""
         try:
-            conn = sqlite3.connect(str(_DB_PATH))
-            try:
-                row = conn.execute(
-                    "SELECT metrics FROM records "
-                    "WHERE source='panewslab' AND sub_category='cycle_signals' "
-                    "ORDER BY timestamp DESC LIMIT 1"
-                ).fetchone()
-                if row:
-                    m = json.loads(row[0])
-                    return float(m.get("bottom_profit-supply_value", 50.0))
-            finally:
-                conn.close()
+            from data_center.storage.sink_postgres import get_sink
+            sink = get_sink()
+            for rec in sink.query_records(source="panewslab", limit=50):
+                if rec.sub_category == "cycle_signals":
+                    return float(rec.metrics.get("bottom_profit-supply_value", 50.0))
         except Exception:
             pass
         return 50.0
-
     def _build_records(self, utxo_count: int, profit_supply_pct: float) -> list[DataRecord]:
         # 派生: profit-supply 越高 → 短期持有者占比越高
         short_term = round(_clamp(profit_supply_pct * 0.55, 10, 70), 1)

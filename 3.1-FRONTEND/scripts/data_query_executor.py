@@ -24,20 +24,61 @@ _TRAINING_SYS_DIR = os.path.join(
 if _TRAINING_SYS_DIR not in sys.path:
     sys.path.insert(0, _TRAINING_SYS_DIR)
 from core.l0_foundation import get_l0
+# 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
+_DC_PG_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    "39-金融语义蒸馏系统", "scripts",
+)
+if _DC_PG_DIR not in sys.path:
+    sys.path.insert(0, _DC_PG_DIR)
+import dc_pg
+
+# SPEC v1.5: 实体别名表（SSoT，39-金融语义蒸馏系统接管维护）
+_ALIASES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entity_aliases.json")
+try:
+    with open(_ALIASES_PATH, "r", encoding="utf-8") as _f:
+        ENTITY_ALIASES = json.load(_f)
+except Exception:
+    ENTITY_ALIASES = {}  # FAIL-OPEN: 别名表缺失时仅字母代号解析
+
+
+def _resolve_symbol(message, candidates=None):
+    """SPEC v1.5 统一币种解析: 中文别名(最长匹配优先) → 字母代号 → None."""
+    if not message:
+        return None
+    # 1) 中文/英文别名匹配（最长优先，避免『以太坊』被『以太』截断）
+    _alias_pairs = []
+    for sym, aliases in ENTITY_ALIASES.items():
+        if candidates is not None and sym not in candidates:
+            continue
+        for a in aliases:
+            if a and a in message:
+                _alias_pairs.append((len(a), sym))
+    if _alias_pairs:
+        _alias_pairs.sort(reverse=True)
+        return _alias_pairs[0][1]
+    # 2) 字母代号匹配（限定候选集合内）
+    m = re.search(r"([A-Z]{2,10})", message.upper())
+    if m:
+        sym = m.group(1)
+        if candidates is None or sym in candidates:
+            return sym
+    return None
 
 # 数据源关键词 → source 映射（消息中出现关键词即命中）
 SOURCE_KEYWORDS = [
     ("defillama", ["defi tvl", "tvl", "defillama"]),
     ("fear_greed", ["恐惧贪婪", "fear greed", "fear_greed"]),
     ("fear_greed_enhanced", ["恐惧贪婪指数增强", "增强恐惧贪婪"]),
-    ("fred", ["fred", "美联储经济数据", "cpi", "非农"]),
+    ("fred", ["fred", "美联储经济数据", "cpi", "ppi", "通胀", "联邦基金利率", "货币供应", "工业产出", "美元指数", "美债", "美股", "标普", "纳指", "纳斯达克"]),
+    ("econ_calendar", ["非农", "nfp", "经济日历"]),
     ("coinglass", ["coinglass", "衍生品数据"]),
     ("deribit", ["deribit", "期权数据"]),
     ("long_short_ratio", ["多空比", "long short"]),
     ("stablecoin_transparency", ["稳定币", "stablecoin"]),
     ("blockchain_info", ["链上数据", "链上活跃"]),
+    ("yfinance", ["金融行情", "yfinance", "黄金", "原油"]),
     ("ccxt", ["交易所行情", "行情", "价格", "什么价", "ccxt"]),
-    ("yfinance", ["金融行情", "yfinance", "美股", "标普"]),
     ("gdelt", ["gdelt", "全球新闻事件"]),
     ("theblockbeats_dataview", ["律动", "blockbeats"]),
     ("odaily_newsflash", ["odaily", "快讯"]),
@@ -75,11 +116,101 @@ def resolve_source(message: str):
     return None
 
 
+# fred 源关键词 → FRED 序列精确映射（修复：CPI 等查询误返源下最新一条无关序列，如 IR14260）
+FRED_SERIES_KEYWORDS = [
+    ("CPIAUCSL", ["cpi", "消费者价格", "通胀指数", "物价指数"]),
+    ("PPIACO", ["ppi", "生产者价格"]),
+    ("FEDFUNDS", ["联邦基金利率", "fed funds"]),
+    ("M2NS", ["m2", "货币供应"]),
+    ("WALCL", ["资产负债表", "walcl"]),
+    ("INDPRO", ["工业产出", "工业生产"]),
+    ("VIXCLS", ["vix", "恐慌指数"]),
+    ("DGS10", ["美债", "10年", "十年期"]),
+    ("DTWEXBGS", ["美元指数"]),
+    ("SP500", ["标普", "美股", "美国股市"]),
+    ("NASDAQCOM", ["纳指", "纳斯达克"]),
+    ("DCOILWTICO", ["原油", "wti", "油价"]),
+]
+
+
+# 各数据源关键词 → 序列精确映射与默认序列（修复：多序列源误返最新一条无关记录）
+SERIES_KEYWORDS = {
+    "fred": FRED_SERIES_KEYWORDS,
+    "econ_calendar": [
+        ("nfp", ["非农", "nfp"]),
+        ("cpi", ["cpi", "消费者价格"]),
+        ("ppi", ["ppi", "生产者价格"]),
+    ],
+    "ccxt": [
+        ("BTC/USDT", ["btc", "比特币"]),
+    ],
+    "yfinance": [
+        ("^GSPC", ["标普", "美股", "美国股市"]),
+        ("^IXIC", ["纳指", "纳斯达克"]),
+        ("GC=F", ["黄金"]),
+        ("CL=F", ["原油", "油价"]),
+        ("BTC-USD", ["btc"]),
+    ],
+    "stablecoin_transparency": [
+        ("tether_current", ["usdt", "tether"]),
+        ("usdc_current", ["usdc"]),
+        ("stablecoins_top_10", ["稳定币", "stablecoin", "整体", "前十"]),
+    ],
+    "defillama": [
+        ("chains_summary", ["公链", "chains"]),
+        ("all_protocols", ["tvl", "defi", "协议", "锁仓"]),
+    ],
+}
+SERIES_DEFAULTS = {
+    "ccxt": "BTC/USDT",
+    "yfinance": "^GSPC",
+    "stablecoin_transparency": "stablecoins_top_10",
+    "defillama": "all_protocols",
+}
+
+
+def _resolve_series(src: str, message: str):
+    m = message.lower()
+    for series, kws in SERIES_KEYWORDS.get(src, []):
+        if any(kw in m for kw in kws):
+            return series
+    return SERIES_DEFAULTS.get(src)
+
+
+def _fetch_cpi_yoy():
+    """从 19-DAL mm_metrics 读取 CPI 同比百分比（actual/forecast/previous，最新发布口径）"""
+    import sqlite3 as _sq
+    try:
+        dal_db = os.path.normpath(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "..",
+            "19-数据访问层", "data", "dreambuddy_core.db"))
+        if not os.path.exists(dal_db):
+            return None
+        conn = _sq.connect(f"file:{dal_db}?mode=ro", uri=True)
+        out = {}
+        for name in ("actual", "forecast", "previous"):
+            row = conn.execute(
+                "SELECT metric_value FROM mm_metrics "
+                "WHERE sub_category='cpi' AND metric_name=? "
+                "ORDER BY timestamp DESC LIMIT 1", (name,),
+            ).fetchone()
+            if row and row[0] is not None:
+                out[name] = row[0]
+        conn.close()
+        return out if "actual" in out else None
+    except Exception:
+        return None
+
+
 def exec_data_query(message: str):
     src = resolve_source(message)
     if not src:
         return {"success": True, "answer": "未能识别要查询的数据源，请指明具体数据（如 DeFi TVL、恐惧贪婪指数、CPI 等）", "data": None}
-    ctx = get_l0().fetch_context("datacenter.record", {"source": src})
+    fetch_params = {"source": src}
+    series = _resolve_series(src, message)
+    if series:
+        fetch_params["sub_category"] = series
+    ctx = get_l0().fetch_context("datacenter.record", fetch_params)
     if ctx.get("degraded"):
         if ctx["meta"].get("reason") == "source_missing":
             return {"success": True, "degraded": True, "answer": "数据获取中心数据库暂不可用", "data": None}
@@ -88,9 +219,19 @@ def exec_data_query(message: str):
     if not row:
         return {"success": True, "answer": f"数据源 {src} 暂无记录", "data": None}
     metrics = row["metrics"]
+    answer = f"{src}/{row['sub_category']} 最新数据（{row['timestamp']}）：{json.dumps(metrics, ensure_ascii=False)[:300] if metrics else '无指标'}"
+    if fetch_params.get("sub_category") == "CPIAUCSL":
+        yoy = _fetch_cpi_yoy()
+        if yoy:
+            idx_val = metrics.get("value") if isinstance(metrics, dict) else None
+            answer = (
+                f"美国CPI同比 {yoy.get('actual')}%"
+                f"（预期 {yoy.get('forecast')}%，前值 {yoy.get('previous')}%）"
+                f"；CPI指数水平 CPIAUCSL={idx_val}（1982-84=100，{row['timestamp']}）"
+            )
     return {
         "success": True,
-        "answer": f"{src} 最新数据（{row['timestamp']}）：{json.dumps(metrics, ensure_ascii=False)[:300] if metrics else '无指标'}",
+        "answer": answer,
         "data": {
             "source": row["source"],
             "category": row["category"],
@@ -153,9 +294,11 @@ def exec_path_insight(message):
     snap = ctx["data"]
     if not snap:
         return {"success": True, "answer": "快照中暂无币种数据", "data": None}
-    # 从消息解析币种（大写字母数字组合，默认 BTC）
-    m = re.search(r"([A-Z]{2,10})", message.upper())
-    symbol = m.group(1) if m and m.group(1) in snap else "BTC"
+    # SPEC v1.5: 别名表统一解析（中文别名优先），无币种时澄清追问
+    symbol = _resolve_symbol(message, snap)
+    if symbol is None:
+        return {"success": True, "need_clarification": True,
+                "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）", "data": None}
     if symbol not in snap:
         # 取第一个有维度预测的币种
         for k, v in snap.items():
@@ -188,11 +331,8 @@ _YJ_ASSET_DESC = {"crypto_usdt": "加密货币", "us_stock": "美股", "precious
 
 
 def _extract_symbol(message, candidates):
-    """从消息中解析币种（在候选集合内匹配）。"""
-    m = re.search(r"([A-Z]{2,10})", message.upper())
-    if m and m.group(1) in candidates:
-        return m.group(1)
-    return None
+    """SPEC v1.5: 统一走别名表解析（在候选集合内匹配）。"""
+    return _resolve_symbol(message, candidates)
 
 
 def exec_technical_analysis(message):
@@ -207,7 +347,10 @@ def exec_technical_analysis(message):
     results = ctx["data"]
     if not results:
         return {"success": True, "answer": "BCRM2 汇总中暂无币种推理结果", "data": None}
-    symbol = _extract_symbol(message, results) or "BTC"
+    symbol = _extract_symbol(message, results)
+    if symbol is None:
+        return {"success": True, "need_clarification": True,
+                "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）", "data": None}
     if symbol not in results:
         symbol = next(iter(results))
     info = results[symbol] or {}
@@ -237,7 +380,10 @@ def exec_fundamental_valuation(message):
     avail = {k: v for k, v in coins.items() if isinstance(v, dict) and v.get("available")}
     if not avail:
         return {"success": True, "answer": "快照中暂无可用币种估值数据", "data": None}
-    symbol = _extract_symbol(message, avail) or "BTC"
+    symbol = _extract_symbol(message, avail)
+    if symbol is None:
+        return {"success": True, "need_clarification": True,
+                "answer": "请问您想查询哪个币种？（如：以太坊、BTC、黄金）", "data": None}
     if symbol not in avail:
         symbol = next(iter(avail))
     info = avail[symbol] or {}
@@ -362,10 +508,177 @@ def exec_risk_control(message):
     return {"success": True, "answer": answer, "data": {"positions": latest}}
 
 
+# ── L1 事件罗列服务 (39 SPEC v1.2 §9.7) ─────────────────────
+_EVENT_TYPE_KEYWORDS = {
+    "monetary_policy": ["货币政策", "降息", "加息", "利率", "美联储", "FOMC", "央行"],
+    "crypto_regulation": ["监管", "牌照", "ETF", "SEC", "稳定币监管", "反洗钱"],
+    "us_policy": ["美国政策", "白宫", "国会", "财政部", "制裁", "国债"],
+    "us_data": ["经济数据", "非农", "CPI", "PPI", "GDP", "失业率", "PMI"],
+    "geopolitics": ["地缘", "中东", "俄乌", "冲突", "军事"],
+    "market": ["行情", "涨跌", "市场"],
+    "project": ["项目", "融资", "上线", "合作"],
+}
+_EVENT_TYPE_DESC_L1 = {
+    "monetary_policy": "货币政策", "crypto_regulation": "加密监管",
+    "us_policy": "美国政策", "us_data": "美国经济数据",
+    "geopolitics": "地缘政治", "market": "行情动态", "project": "项目动态",
+}
+
+
+def _match_event_type(message):
+    """从用户消息匹配事件类型（多关键词命中取首个）。"""
+    for etype, kws in _EVENT_TYPE_KEYWORDS.items():
+        for kw in kws:
+            if kw in (message or ""):
+                return etype
+    return None
+
+
+def exec_event_listing(message):
+    """L1 事件罗列: 按事件类型过滤快讯记录，时间倒序罗列（标题/时间/关联代币/情绪）。"""
+    etype = _match_event_type(message)
+    # PostgreSQL 查询（dc_pg 统一接口，FAIL-OPEN：异常返回空）
+    rows = dc_pg.fetch_records("newsflash_%", limit=400, order_desc=True)
+    # 解析并过滤
+    items = []
+    seen = set()
+    for row in rows:
+        ts = row.get("timestamp", "") or ""
+        m = row.get("metrics") or {}
+        if isinstance(m, str):
+            try:
+                m = json.loads(m)
+            except Exception:
+                continue
+        if not isinstance(m, dict):
+            continue
+        row_type = m.get("od_event_type", "")
+        if etype and row_type != etype:
+            continue
+        title_hash = m.get("od_title_hash", "")
+        if title_hash in seen:
+            continue
+        seen.add(title_hash)
+        desc = re.sub(r"<[^>]+>", "", m.get("description", "")).strip()
+        if not desc:
+            continue
+        tickers = m.get("tickers_hit") or []
+        if isinstance(tickers, str):
+            try:
+                tickers = json.loads(tickers)
+            except Exception:
+                tickers = []
+        # 情绪（与 34 采集器同口径的简化规则）
+        pos = sum(1 for w in ("上涨", "突破", "新高", "利好", "批准", "融资") if w in desc)
+        neg = sum(1 for w in ("下跌", "暴跌", "利空", "制裁", "禁止", "黑客", "清算") if w in desc)
+        sentiment = "positive" if pos > neg else ("negative" if neg > pos else "neutral")
+        items.append({
+            "time": (ts or "")[:16],
+            "type": row_type,
+            "summary": desc[:100],
+            "tickers": tickers[:3],
+            "sentiment": sentiment,
+        })
+        if len(items) >= 10:
+            break
+    if not items:
+        return {"success": True, "answer": "近期未找到相关事件快讯", "data": []}
+    type_desc = _EVENT_TYPE_DESC_L1.get(etype, "全部") if etype else "全部"
+    lines = []
+    for i, it in enumerate(items, 1):
+        tick = f" | 关联: {','.join(it['tickers'])}" if it["tickers"] else ""
+        lines.append(f"{i}. [{it['time']}] {it['summary']}{tick}（情绪:{it['sentiment']}）")
+    answer = f"近期{type_desc}事件（按时间倒序，共 {len(items)} 条）：\n" + "\n".join(lines)
+    # 层间钩子 (SPEC v1.3 §9.7): 基于罗列内容动态生成 L2 引导
+    hint = None
+    if etype:
+        hint = (f"想了解{type_desc}事件的整体演变与量变趋势吗？"
+                f"可问：{type_desc}事件怎么演变")
+    else:
+        hint = "想深入了解某类事件线的演变吗？可问：加密监管事件怎么演变"
+    return {"success": True, "answer": answer, "next_layer_hint": hint,
+            "data": {"event_type": etype, "items": items}}
+
+
+# ── L2 事件线查询 (39 SPEC v1.2 §9.7): 消费 event_lines.json ──
+_EVENT_LINES_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "..", "39-金融语义蒸馏系统", "event_lines.json",
+)
+
+
+def exec_event_line_query(message):
+    """L2 事件线查询: 同主题事件聚合 + 时间标签 + 变化描述（观察性）。"""
+    try:
+        with open(_EVENT_LINES_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return {"success": True, "degraded": True,
+                "answer": "事件线数据暂不可用（尚未生成）", "data": None}
+    lines = data.get("lines", [])
+    if not lines:
+        return {"success": True, "answer": "暂无事件线数据", "data": []}
+    # 匹配主题（消息含主题关键词或主题名）
+    matched = None
+    for l in lines:
+        if l["topic"] in (message or ""):
+            matched = l
+            break
+    if matched is None:
+        for l in lines:
+            topic_kw = {
+                "美联储利率": ("美联储", "利率", "加息", "降息"),
+                "加密监管": ("监管", "SEC", "牌照"),
+                "代币解锁": ("解锁", "锁仓"),
+                "巨鲸动向": ("巨鲸", "大户"),
+                "地缘冲突": ("地缘", "中东", "俄乌"),
+                "ETF 动态": ("ETF",),
+            }
+            if any(k in (message or "") for k in topic_kw.get(l["topic"], ())):
+                matched = l
+                break
+    if matched:
+        l = matched
+        items = "\n".join(
+            f"  · [{it['time']}] {it['summary']}" for it in l["recent_items"])
+        answer = (
+            f"【{l['topic']}】事件线：共 {l['event_count']} 条事件，"
+            f"时间跨度 {l['span_hours']}h（{l['time_start']} ~ {l['time_end']}）\n"
+            f"变化观察：频次{l['freq_trend']}，{l['sentiment_trend']}"
+            f"（前半段情绪 {l['sentiment_early']} → 后半段 {l['sentiment_late']}）\n"
+            f"量变观察：{l.get('quantity_signal', '量变平稳')}"
+            f"（末窗口/均值 {l.get('quantity_intensity', 0)} 倍，z={l.get('quantity_z', 0)}，"
+            f"窗口分布 {l.get('quantity_distribution', [])}）\n"
+            f"关联标的：{','.join(l['top_tickers']) or '无'}\n"
+            f"近期事件：\n{items}"
+        )
+        # 层间钩子 (SPEC v1.3 §9.7): 信号驱动优先，量变信号时升级为精准提示
+        hint = None
+        qsig = l.get("quantity_signal", "")
+        if "加速积累" in qsig:
+            hint = (f"【{l['topic']}】量变正在加速积累，是否深入观察窗口分布与情绪变化？"
+                    f"（L3 多因子综合即将上线）")
+        elif "温和积累" in qsig or "消退" in qsig:
+            hint = f"想看【{l['topic']}】的量变窗口分布详情吗？可追问：{l['topic']}量变分布"
+        else:
+            hint = f"想结合市场指标看【{l['topic']}】的综合状态吗？（L3 上线后可用）"
+        return {"success": True, "answer": answer, "next_layer_hint": hint, "data": l}
+    # 未匹配主题：罗列全部事件线概览
+    overview = "\n".join(
+        f"  · {l['topic']}: {l['event_count']} 事件, 跨度 {l['span_hours']}h, "
+        f"频次{l['freq_trend']}, {l['sentiment_trend']}" for l in lines)
+    return {"success": True,
+            "answer": f"当前事件线概览（可追问具体主题如『加密监管事件怎么演变』）：\n{overview}",
+            "data": {"lines": [{"topic": l["topic"], "count": l["event_count"]} for l in lines]}}
+
+
 def exec_price_query(message):
     """价格查询: 经 L0 直连 OKX API 获取实时价格，失败降级回查 18 中心。"""
-    m = re.search(r"([A-Z]{2,10})", message.upper())
-    symbol = m.group(1) if m else "BTC"
+    # SPEC v1.5: 别名表统一解析，无币种时澄清追问（不再静默默认 BTC）
+    symbol = _resolve_symbol(message)
+    if symbol is None:
+        return {"success": True, "need_clarification": True,
+                "answer": "请问您想查询哪个币种的价格？（如：以太坊、BTC、黄金）", "data": None}
     inst_id = f"{symbol}-USDT"
     ctx = get_l0().fetch_context("market.ticker", {"symbol": symbol})
     t = None if ctx.get("degraded") else ctx["data"]
@@ -430,6 +743,10 @@ def main():
             result = exec_risk_control(message)
         elif intent == "price_query":
             result = exec_price_query(message)
+        elif intent == "event_listing":
+            result = exec_event_listing(message)
+        elif intent == "event_line_query":
+            result = exec_event_line_query(message)
         else:
             result = {"success": True, "answer": "该意图暂不支持执行闭环", "data": None}
     except Exception as e:

@@ -14,17 +14,12 @@ FAIL-OPEN 铁律: DB 异常 → 返回空列表不阻塞。
 from __future__ import annotations
 
 import logging
-import sqlite3
 from datetime import datetime, timezone
-from pathlib import Path
 
 from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 
 logger = logging.getLogger(__name__)
-
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_DB_PATH = _REPO_ROOT / "data_center.db"
 
 _NEWS_SOURCES = ("cryptopanic", "gdelt", "rsshub", "tavily", "odaily_newsflash",
                  "feedparser", "theblockbeats_dataview", "cointelegraph_cn")
@@ -78,21 +73,15 @@ class SocialVolumeCollector(BaseCollector):
 
     @staticmethod
     def _count_news() -> tuple[int, int]:
-        conn = sqlite3.connect(str(_DB_PATH))
+        """通过统一存储接口统计新闻记录数（跟随 DATA_CENTER_BACKEND 配置）。"""
         try:
-            placeholders = ",".join("?" for _ in _NEWS_SOURCES)
-            row = conn.execute(
-                f"SELECT COUNT(*) FROM records WHERE source IN ({placeholders}) "
-                f"AND timestamp >= datetime('now', '-1 day')",
-                _NEWS_SOURCES,
-            ).fetchone()
-            news_count_24h = row[0] if row else 0
-
-            row2 = conn.execute(
-                f"SELECT COUNT(*) FROM records WHERE source IN ({placeholders})",
-                _NEWS_SOURCES,
-            ).fetchone()
-            total_news = row2[0] if row2 else 0
+            from data_center.storage.sink_postgres import get_sink
+            sink = get_sink()
+            recs_24h = sink.query_records(window_sec=86400, limit=50000)
+            news_count_24h = sum(1 for r in recs_24h if r.source in _NEWS_SOURCES)
+            recs_all = sink.query_records(limit=100000)
+            total_news = sum(1 for r in recs_all if r.source in _NEWS_SOURCES)
             return news_count_24h, total_news
-        finally:
-            conn.close()
+        except Exception as e:
+            logger.debug("SocialVolumeCollector _count_news FAIL-OPEN: %s", e)
+            return 0, 0

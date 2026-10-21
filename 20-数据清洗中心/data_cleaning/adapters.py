@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable, List
 from uuid import uuid4
 
@@ -54,12 +54,32 @@ def records_to_cleaned_df(records: Iterable[DataRecord]) -> CleanedDF:
             if isinstance(rec.metrics, dict) and rec.metrics:
                 for _k, _v in rec.metrics.items():
                     if _k not in frag.columns:
-                        frag[_k] = _v
+                        # 长度+类型保护（FIX 2026-10-19）：
+                        #   - bool → "true"/"false" 字符串（契约仅允许 number/string，RSS guidislink 场景）
+                        #   - 标量直接赋值，容器/序列统一转 JSON 字符串
+                        #   - 避免 tuple/set 等序列与 frag 行数不匹配抛 ValueError（CoinTelegraph tags 场景）
+                        if isinstance(_v, bool):
+                            frag[_k] = "true" if _v else "false"
+                        elif _v is None or isinstance(_v, (str, int, float)):
+                            frag[_k] = _v
+                        else:
+                            try:
+                                frag[_k] = json.dumps(_v, ensure_ascii=False, default=str)
+                            except Exception:
+                                frag[_k] = str(_v)
             if isinstance(rec.raw, dict) and rec.raw:
                 for _k, _v in rec.raw.items():
                     if _k not in frag.columns:
-                        # list 类型转 JSON 字符串（tickers_hit 等），避免 pandas 列类型混乱
-                        frag[_k] = json.dumps(_v, ensure_ascii=False) if isinstance(_v, (list, dict)) else _v
+                        # 容器/序列统一转 JSON 字符串（tickers_hit/tags 等），长度+类型保护
+                        if isinstance(_v, bool):
+                            frag[_k] = "true" if _v else "false"
+                        elif _v is None or isinstance(_v, (str, int, float)):
+                            frag[_k] = _v
+                        else:
+                            try:
+                                frag[_k] = json.dumps(_v, ensure_ascii=False, default=str)
+                            except Exception:
+                                frag[_k] = str(_v)
         else:
             # macro 或 fallback：metrics 扁平 → 1行
             row = dict(rec.metrics) if isinstance(rec.metrics, dict) else {}
@@ -226,7 +246,7 @@ def cleaned_df_to_records(
                 records.append(DataRecord(
                     source=source, category=category, sub_category=grp_sub_category,
                     timestamp=_to_iso_str(row[timestamp_col]) if timestamp_col in grp_cols
-                    else datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                     metrics=metrics, events=[], timeseries=[], raw={},
                 ))
     return records
@@ -236,10 +256,18 @@ def cleaned_df_to_records(
 # 内部小工具
 # ---------------------------------------------------------------------------
 def _to_iso_str(v) -> str:
+    # FIX 2026-10-19: 时区缺陷——原实现把 naive 本地时间直接加 Z 后缀，
+    # 导致记录时间超前 8 小时（本地 UTC+8）。现统一转 UTC 后再格式化。
     if isinstance(v, pd.Timestamp):
-        return v.to_pydatetime().strftime("%Y-%m-%dT%H:%M:%SZ")
+        dt = v.to_pydatetime()
+        if dt.tzinfo is None:
+            dt = dt.astimezone()  # naive → 本地时区
+        return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     if isinstance(v, datetime):
-        return v.strftime("%Y-%m-%dT%H:%M:%SZ")
+        dt = v
+        if dt.tzinfo is None:
+            dt = dt.astimezone()  # naive → 本地时区
+        return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     if isinstance(v, str):
         return v
     return str(v)
@@ -247,7 +275,7 @@ def _to_iso_str(v) -> str:
 
 def _first_iso(df: pd.DataFrame, ts_col: str) -> str:
     if ts_col not in df.columns or df.empty:
-        return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     return _to_iso_str(df.iloc[0][ts_col])
 
 

@@ -64,6 +64,24 @@ def _is_numeric(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+def _pg_conn():
+    """连接 18 层 PostgreSQL 主库（方案 4 迁移后，替代 SQLite 源库）。"""
+    import os
+    import re
+    import psycopg2
+    pwd = os.environ.get("DATA_CENTER_PG_PASSWORD", "")
+    if not pwd:
+        env = Path("/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env")
+        if env.exists():
+            m = re.search(r"postgresql://[^:\s]+:([^@\s]+)@", env.read_text())
+            if m:
+                pwd = m.group(1)
+    return psycopg2.connect(
+        host="127.0.0.1", port=5432, user="dreambuddy",
+        password=pwd, dbname="data_center",
+    )
+
+
 def _iter_chart_metric_rows(src_db: str) -> Iterable[tuple]:
     """从 18 records 的 chart_{coin_id} timeseries 展平产出 mm_metrics 行。
 
@@ -75,14 +93,14 @@ def _iter_chart_metric_rows(src_db: str) -> Iterable[tuple]:
     生成唯一 timestamp = unix(date) + i 秒。这样 720 点全部保留，且同一天的点
     timestamp 接近（差几秒），不影响 query_valuation_percentile（取所有点）。
     """
-    conn = sqlite3.connect(src_db)
+    conn = _pg_conn()
     cur = conn.cursor()
     cur.execute(
         """
         SELECT sub_category, timeseries
         FROM records
         WHERE source='coingecko' AND category='coin'
-          AND sub_category LIKE 'chart_%'
+          AND sub_category LIKE 'chart_%%'
           AND timeseries IS NOT NULL AND timeseries != ''
         ORDER BY sub_category, timestamp DESC
         """

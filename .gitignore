@@ -220,3 +220,7 @@ DreamOS_intermediate.pptx
 39-金融语义蒸馏系统/source_credibility.json
 39-金融语义蒸馏系统/.*_state.json
 39-金融语义蒸馏系统/scripts/__pycache__/
+
+# 备份文件不纳入版本控制
+*.bak-*
+*.bak

@@ -10,12 +10,14 @@ GREEN 阶段：实现 10 scope 注册表 + 统一信封 {ok,data,source,timestam
 """
 import json
 import os
-import sqlite3
 import sys
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# 18 中心已迁移 PostgreSQL，测试需 mock 39 模块统一 PG 辅助模块
+sys.path.insert(0, os.path.join(
+    os.path.dirname(__file__), "..", "..", "39-金融语义蒸馏系统", "scripts"))
 
 
 ENVELOPE_KEYS = {"ok", "data", "source", "timestamp", "degraded", "meta"}
@@ -104,33 +106,29 @@ class TestEnvelopeContract:
 
 
 # ============================================================
-# 3. datacenter.record（18 中心 sqlite 只读）
+# 3. datacenter.record（18 中心 PostgreSQL，经 dc_pg 查询）
 # ============================================================
 
 class TestDatacenterRecord:
-    DB_REL = ("18-数据获取中心", "data_center.db")
+    """mock dc_pg.fetch_latest_by_source，不依赖真实 PostgreSQL。"""
 
-    def _build_db(self, tmp_path, rows):
-        db = _write(tmp_path, *self.DB_REL, content="")
-        conn = sqlite3.connect(str(db))
-        conn.execute(
-            "CREATE TABLE records (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "source TEXT, category TEXT, sub_category TEXT, timestamp TEXT, "
-            "metrics TEXT, events TEXT)"
-        )
-        for r in rows:
-            conn.execute(
-                "INSERT INTO records (source, category, sub_category, timestamp, metrics, events) "
-                "VALUES (?, ?, ?, ?, ?, ?)", r
-            )
-        conn.commit()
-        conn.close()
-        return db
+    def _mock_rows(self, monkeypatch, rows):
+        import dc_pg
 
-    def test_returns_latest_row_with_parsed_metrics(self, tmp_path):
-        self._build_db(tmp_path, [
-            ("fred", "macro", "cpi", "2026-10-15T00:00:00", json.dumps({"cpi": 3.0}), "[]"),
-            ("fred", "macro", "cpi", "2026-10-16T00:00:00", json.dumps({"cpi": 3.1}), "[]"),
+        def _fake_fetch(source, sub_category=None):
+            for r in rows:
+                if r["source"] == source and (
+                    sub_category is None or r.get("sub_category") == sub_category
+                ):
+                    return r
+            return None
+
+        monkeypatch.setattr(dc_pg, "fetch_latest_by_source", _fake_fetch)
+
+    def test_returns_latest_row_with_parsed_metrics(self, tmp_path, monkeypatch):
+        self._mock_rows(monkeypatch, [
+            {"source": "fred", "category": "macro", "sub_category": "cpi",
+             "timestamp": "2026-10-16T00:00:00", "metrics": {"cpi": 3.1}},
         ])
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
         assert env["ok"] is True and env["degraded"] is False
@@ -144,22 +142,29 @@ class TestDatacenterRecord:
         assert env["degraded"] is True
         assert env["meta"]["reason"] == "invalid_params"
 
-    def test_missing_db_degrades(self, tmp_path):
+    def test_pg_unreachable_returns_none_not_degraded(self, tmp_path, monkeypatch):
+        # FAIL-OPEN：PostgreSQL 不可达 → dc_pg 返回 None → 空数据信封，不降级
+        import dc_pg
+        monkeypatch.setattr(dc_pg, "fetch_latest_by_source",
+                           lambda s, sub_category=None: None)
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
-        assert env["degraded"] is True
-        assert env["meta"]["reason"] == "source_missing"
+        assert env["degraded"] is False
+        assert env["data"] is None
 
-    def test_no_matching_row_returns_none(self, tmp_path):
-        self._build_db(tmp_path, [
-            ("fred", "macro", "cpi", "2026-10-16", json.dumps({"cpi": 3.1}), "[]"),
+    def test_no_matching_row_returns_none(self, tmp_path, monkeypatch):
+        self._mock_rows(monkeypatch, [
+            {"source": "fred", "category": "macro", "sub_category": "cpi",
+             "timestamp": "2026-10-16", "metrics": {"cpi": 3.1}},
         ])
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "coinglass"})
         assert env["degraded"] is False
         assert env["data"] is None
 
-    def test_unparseable_metrics_falls_back_to_raw(self, tmp_path):
-        self._build_db(tmp_path, [
-            ("fred", "macro", "cpi", "2026-10-16", "not-json", "[]"),
+    def test_raw_string_metrics_passthrough(self, tmp_path, monkeypatch):
+        # dc_pg 对无法解析的 metrics 字符串原样透传
+        self._mock_rows(monkeypatch, [
+            {"source": "fred", "category": "macro", "sub_category": "cpi",
+             "timestamp": "2026-10-16", "metrics": "not-json"},
         ])
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
         assert env["data"]["metrics"] == "not-json"

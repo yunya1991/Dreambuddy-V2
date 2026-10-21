@@ -251,6 +251,20 @@ class PrimaryContradictionIdentifier:
         "synthesized": 0.10,
     }
 
+    # 路径来源 → 主矛盾周期映射 (可观测性修复: [Contradiction] 日志 tf 字段)
+    # 口径: bdsm/bcrm 为短期信号(时间紧迫性权重高), 趋势/网格/基因为中期,
+    #       战略/深度推理/合成为长期
+    SOURCE_TF_MAP = {
+        "bdsm": "short",
+        "bcrm": "short",
+        "trend_following": "medium",
+        "grid_trading": "medium",
+        "l2_gene": "medium",
+        "deep_reasoning": "long",
+        "synthesized": "long",
+        "strategic": "long",
+    }
+
     def __init__(self, weight_learner: ContradictionWeightLearner | None = None,
                  selection_policy: str = "auto"):
         """W6: 注入权重学习器（可选，None 时创建默认实例）.
@@ -758,8 +772,13 @@ class PrimaryContradictionIdentifier:
         # 矛盾维度识别：权重最高路径的来源 → 映射 C1-C8
         dimension = self._identify_dimension(paths)
 
+        # 可观测性修复: 主矛盾周期识别（主路径来源 → 周期口径, 缺失时 medium 兜底）
+        _primary_path = max(paths, key=lambda p: float(p.get("confidence", 0.0))) if paths else {}
+        timeframe = self.SOURCE_TF_MAP.get(_primary_path.get("source", ""), "medium")
+
         return {
             "dimension": dimension,
+            "timeframe": timeframe,
             "direction": dominance["direction"],
             "strength": float(enhanced),
             "confidence": float(dominance.get("confidence", 0.0)),
@@ -892,6 +911,7 @@ class PrimaryContradictionIdentifier:
         """HC-AGI-18: FAIL-OPEN neutral 兜底."""
         return {
             "dimension": "C3",
+            "timeframe": "medium",
             "direction": "neutral",
             "strength": 0.0,
             "confidence": 0.0,

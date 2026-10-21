@@ -616,6 +616,8 @@ class DalSnapshotProvider:
         # 按影响分类（高影响 = 情绪极值）
         high_impact = sum(1 for s in sentiments if abs(s - 0.5) > 0.3)
 
+        # 按影响分类（高影响 = 情绪极值）
+        high_impact = sum(1 for s in sentiments if abs(s - 0.5) > 0.3)
         return {
             "metrics": {
                 "core": {

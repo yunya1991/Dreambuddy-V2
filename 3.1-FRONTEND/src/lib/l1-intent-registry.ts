@@ -67,6 +67,16 @@ export const L1_INTENT_REGISTRY: L1IntentDef[] = [
     intent: 'price_query',
     fallbackPattern: /什么价|价格|现价|实时价|最新价|多少钱|现在.*价/,
   },
+  {
+    // L1 事件罗列 (39 SPEC v1.2 §9.7): 最近事件/快讯罗列整理
+    intent: 'event_listing',
+    fallbackPattern: /最近.*(事件|快讯|新闻|动态)|最新.*(事件|快讯|新闻)|.*(货币政策|监管|地缘|经济数据).*(事件|新闻|快讯)|发生了什么|.*新闻$|.*快讯$/,
+  },
+  {
+    // L2 事件线查询 (39 SPEC v1.2 §9.7): 事件演变/聚合观察
+    intent: 'event_line_query',
+    fallbackPattern: /(事件|快讯).*(演变|变化|趋势|进展|怎么样|如何)|.*(美联储|监管|巨鲸|解锁|ETF|地缘).*(最近|演变|变化|动态)/,
+  },
 ];
 
 /**

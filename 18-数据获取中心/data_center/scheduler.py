@@ -247,6 +247,14 @@ class CollectionScheduler:
             params={"url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
             interval_sec=1800,
         ))
+        # ── news/feedparser CoinTelegraph（10min，39 P-快讯替代源 2026-10-18）──
+        #    odaily API 失效（404）后的替代快讯源，实测 RSS 可用（200/53KB）
+        tasks.append(CollectionTask(
+            name="feedparser_cointelegraph",
+            category="news", source="feedparser",
+            params={"url": "https://cointelegraph.com/rss"},
+            interval_sec=600,
+        ))
         # ── news/rsshub（30min）──
         tasks.append(CollectionTask(
             name="rsshub_wallstreetcn",
@@ -326,14 +334,15 @@ class CollectionScheduler:
             params={},
             interval_sec=86400,
         ))
-        # ── news/odaily_newsflash 星球日报快讯（4h，与 panewslab route=all 对齐）
+        # ── news/odaily_newsflash 星球日报快讯（10min，39 SPEC v1.1 §9.2 P-快讯提频）
         #    Spec P0-2：政策维度主数据源，web-api 公开无反爬无鉴权，
-        #    首屏20条+增量checkHasNew去重。4h 更新足够覆盖日级战略决策。
+        #    首屏20条+增量checkHasNew去重。
+        #    2026-10-18 提频：4h → 10min，支撑 39 快讯语义训练（真实场景语义能力）。
         tasks.append(CollectionTask(
             name="odaily_newsflash_latest",
             category="news", source="odaily_newsflash",
             params={"route": "latest"},
-            interval_sec=14400,   # 4 小时
+            interval_sec=600,   # 10 分钟（39 P-快讯提频）
         ))
         # ── Phase A4：CoinFundamentalRanker 数据源（6h）──
         #    defillama protocols：全量 per-protocol TVL（Revenue Quality + TVL Growth 信号）

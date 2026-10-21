@@ -138,6 +138,10 @@ def collect_from_all_providers(limit: int) -> dict:
         ("EventAnalysis", "event_analysis_collector", "EventAnalysisCollector"),
         # v1.1 调控风控采集器 (16-调控系统, SPEC v1.0 L1 优先扩展)
         ("RiskControl", "risk_control_collector", "RiskControlCollector"),
+        # v1.2 语义蒸馏采集器 (39-金融语义蒸馏系统, SPEC v0.8 分层语义架构)
+        ("SemanticDistill", "semantic_distill_collector", "SemanticDistillCollector"),
+        # v1.3 快讯语义采集器 (39 SPEC v1.1 §9.2 P-快讯, 18 中心星球日报快讯)
+        ("NewsflashSemantic", "newsflash_semantic_collector", "NewsflashSemanticCollector"),
     ]
     for label, mod_name, cls_name in collectors:
         try:

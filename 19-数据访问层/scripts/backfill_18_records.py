@@ -60,13 +60,31 @@ def _is_numeric(v: Any) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+def _pg_conn():
+    """连接 18 层 PostgreSQL 主库（方案 4 迁移后，替代 SQLite 源库）。"""
+    import os
+    import re
+    import psycopg2
+    pwd = os.environ.get("DATA_CENTER_PG_PASSWORD", "")
+    if not pwd:
+        env = Path("/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env")
+        if env.exists():
+            m = re.search(r"postgresql://[^:\s]+:([^@\s]+)@", env.read_text())
+            if m:
+                pwd = m.group(1)
+    return psycopg2.connect(
+        host="127.0.0.1", port=5432, user="dreambuddy",
+        password=pwd, dbname="data_center",
+    )
+
+
 def _iter_metric_rows(src_db: str) -> Iterable[tuple]:
     """从 18 records 产出 (source, sub_category, metric_name, metric_value, unix_ts)。
 
     优先读 metrics 列；若 metrics 无数值，fallback 读 timeseries 列的 close 值
     （yfinance 等采集器把价格存在 timeseries 而非 metrics）。
     """
-    conn = sqlite3.connect(src_db)
+    conn = _pg_conn()
     cur = conn.cursor()
     cur.execute(
         """
@@ -74,7 +92,7 @@ def _iter_metric_rows(src_db: str) -> Iterable[tuple]:
         FROM records
         WHERE (metrics IS NOT NULL AND metrics != '')
            OR (timeseries IS NOT NULL AND timeseries != '')
-          AND sub_category NOT LIKE 'newsflash%'
+          AND sub_category NOT LIKE 'newsflash%%'
         """
     )
     for source, sub_category, ts_text, metrics_json, ts_json in cur:
