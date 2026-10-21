@@ -1,0 +1,68 @@
+{
+  "domain": "sector",
+  "count": 10,
+  "terms": [
+    {
+      "term": "DeFi",
+      "definition": "去中心化金融，链上借贷/交易/衍生品等金融协议总称",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "Layer2",
+      "definition": "以太坊二层扩容方案（Rollup 系），提升吞吐降低成本",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "RWA",
+      "definition": "真实世界资产代币化，将国债/房产等上链流通",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "AI+Crypto",
+      "definition": "人工智能与区块链结合的板块（算力/数据/AI Agent）",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "GameFi",
+      "definition": "游戏与金融结合的板块（Play-to-Earn 模式）",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "Meme",
+      "definition": "迷因币板块，社区驱动的文化型代币（DOGE/PEPE 等）",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "稳定币",
+      "definition": "锚定法币价值的代币（USDT/USDC），加密市场的基础货币",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "NFT",
+      "definition": "非同质化代币，数字资产确权与交易板块",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "跨链",
+      "definition": "快讯高频词（出现 19 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 19
+    },
+    {
+      "term": "公链",
+      "definition": "快讯高频词（出现 5 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 5
+    }
+  ]
+}

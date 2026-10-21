@@ -1,0 +1,75 @@
+{
+  "domain": "macro",
+  "count": 11,
+  "terms": [
+    {
+      "term": "利率决议",
+      "definition": "央行（美联储 FOMC）对基准利率的调整决定，市场最重磅事件",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "缩表",
+      "definition": "央行缩减资产负债表，回收市场流动性",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "量化宽松",
+      "definition": "央行购债向市场注入流动性",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "债务上限",
+      "definition": "美国政府债务法定上限，触及将引发违约风险与政治博弈",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "地缘政治风险",
+      "definition": "战争/制裁/冲突对风险资产的外溢冲击",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "风险偏好",
+      "definition": "市场对风险资产的配置意愿，宏观环境驱动（Risk-on/Risk-off）",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "流动性",
+      "definition": "市场资金充裕程度，决定资产估值水位",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "避险资产",
+      "definition": "市场恐慌时资金流入的资产（黄金/美元/国债）",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "通胀",
+      "definition": "快讯高频词（出现 24 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 24
+    },
+    {
+      "term": "加息",
+      "definition": "快讯高频词（出现 20 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 20
+    },
+    {
+      "term": "制裁",
+      "definition": "快讯高频词（出现 7 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 7
+    }
+  ]
+}

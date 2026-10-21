@@ -1,0 +1,654 @@
+{
+  "domain": "strategy",
+  "count": 108,
+  "terms": [
+    {
+      "term": "卦象映射",
+      "definition": "易经64卦 → 交易方向/置信度映射。卦象一致性检查确保推理结果的稳定性。",
+      "source": "2-KNOWLEDGE/1-TRADING/BCRM2推理引擎.md",
+      "quality": "A"
+    },
+    {
+      "term": "方案C 8个开关",
+      "definition": "BCRM2.0集成方案C的8个风控开关（SW-C1至SW-C8），全部默认启用：",
+      "source": "2-KNOWLEDGE/1-TRADING/BCRM2推理引擎.md",
+      "quality": "A"
+    },
+    {
+      "term": "双时间点案例闭包",
+      "definition": "CBR采用双时间点案例闭包机制：",
+      "source": "2-KNOWLEDGE/1-TRADING/CBR案例检索.md",
+      "quality": "A"
+    },
+    {
+      "term": "EV雷达7子分评估",
+      "definition": "EV雷达通过7个子分评估持仓质量，综合输出EV值：",
+      "source": "2-KNOWLEDGE/1-TRADING/EV雷达离场.md",
+      "quality": "A"
+    },
+    {
+      "term": "策略贡献统计",
+      "definition": "记录每个ExitStrategy的触发次数和贡献度，用于策略评估和参数调优。",
+      "source": "2-KNOWLEDGE/1-TRADING/EV雷达离场.md",
+      "quality": "A"
+    },
+    {
+      "term": "知识流",
+      "definition": "行情数据 → 指标计算 → 多维评分 → 方向判定 → 入场信号 → 仓位管理 → 执行 → 监控/离场",
+      "source": "2-KNOWLEDGE/1-TRADING/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "V4-2 Cron 注册",
+      "definition": "schedule.every().day.at(\"00:05\", \"UTC\").do(shadow_resistance_gene_mvp)  # 已在 scheduler.py L213 注册",
+      "source": "2-KNOWLEDGE/1-TRADING/L1阻力向量与L2策略基因MVP验证报告.md",
+      "quality": "A"
+    },
+    {
+      "term": "底部确认",
+      "definition": "_最后更新：2026-06-13 | 来源：screen1, dream-regime-detector_",
+      "source": "2-KNOWLEDGE/1-TRADING/Screen1-七维牛熊评分.md",
+      "quality": "A"
+    },
+    {
+      "term": "工作流",
+      "definition": "Screen1(方向) → Screen2(入场信号) → Screen3(持仓监控)",
+      "source": "2-KNOWLEDGE/1-TRADING/Screen2-日线入场信号.md",
+      "quality": "A"
+    },
+    {
+      "term": "执行流水线",
+      "definition": "Phase 0: 状态检查（持仓/预设新鲜度/连续Skip检测/Sleepwalk警报）",
+      "source": "2-KNOWLEDGE/1-TRADING/Screen3-监控与离场.md",
+      "quality": "A"
+    },
+    {
+      "term": "SCREEN3 推荐升级检测",
+      "definition": "连续2天相同的SCREEN3推荐（全SKIP或无操作）且无持仓变化 → **自动触发Sleepwalk警报**：",
+      "source": "2-KNOWLEDGE/1-TRADING/Screen3-监控与离场.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心理念",
+      "definition": "**\"V4定方向，波浪择时加仓\"** — V4减半周期确定大方向，波浪策略择时加仓，两者互斥融合。",
+      "source": "2-KNOWLEDGE/1-TRADING/V4波浪策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "独立性",
+      "definition": "V4+波浪策略**完全独立于三屏趋势系统**，不共享代码或数据。",
+      "source": "2-KNOWLEDGE/1-TRADING/V4波浪策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "输出结构",
+      "definition": "{",
+      "source": "2-KNOWLEDGE/1-TRADING/V4波浪策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "升版门槛",
+      "definition": "新策略（如 V10+）须在熊牛双周期同时满足：",
+      "source": "2-KNOWLEDGE/1-TRADING/V9-马丁基线.md",
+      "quality": "A"
+    },
+    {
+      "term": "规则约束",
+      "definition": "{% raw %}",
+      "source": "2-KNOWLEDGE/1-TRADING/V9-马丁基线.md",
+      "quality": "A"
+    },
+    {
+      "term": "市场快照",
+      "definition": "{",
+      "source": "2-KNOWLEDGE/1-TRADING/cases/case_20260910_044804_CRCL_USDT_SWAP.md",
+      "quality": "A"
+    },
+    {
+      "term": "数据流",
+      "definition": "Screen1输出 ──→ Screen2 ──→ Screen3 ──→ A9离场报告",
+      "source": "2-KNOWLEDGE/1-TRADING/三屏系统架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "总分计算",
+      "definition": "**加权公式：** `总分 = 道×30% + 天×15% + 地×25% + 将×15% + 法×15%`",
+      "source": "2-KNOWLEDGE/1-TRADING/五计庙算战略层.md",
+      "quality": "A"
+    },
+    {
+      "term": "资产类隔离",
+      "definition": "system_state包含_by_class嵌套键，三类资产独立计算：",
+      "source": "2-KNOWLEDGE/1-TRADING/五计庙算战略层.md",
+      "quality": "A"
+    },
+    {
+      "term": "加仓计算公式",
+      "definition": "entry_price_n = entry_price_0 × (1 - 0.08 × vol_mult)^n",
+      "source": "2-KNOWLEDGE/1-TRADING/交易参数速查.md",
+      "quality": "A"
+    },
+    {
+      "term": "止盈触发价",
+      "definition": "tp_price = current_entry_price × (1 + 0.04 × vol_mult)",
+      "source": "2-KNOWLEDGE/1-TRADING/交易参数速查.md",
+      "quality": "A"
+    },
+    {
+      "term": "风险预算计算",
+      "definition": "1. 风险单位定义：止损距离 = 2 × ATR(15m)",
+      "source": "2-KNOWLEDGE/1-TRADING/交易参数速查.md",
+      "quality": "A"
+    },
+    {
+      "term": "信号分类",
+      "definition": "方向锚定信号，决定做多/做空/观望的大方向：",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "主信号（Direction Anchor）",
+      "definition": "方向锚定信号，决定做多/做空/观望的大方向：",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "辅助信号（Confidence）",
+      "definition": "增强/减弱主信号的置信度，不翻转方向：",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "条件信号（Conditional）",
+      "definition": "仅在特定Regime下有效的信号：",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "信号组合逻辑",
+      "definition": "总分 = 主信号得分 × 权重系数 + Σ(辅助信号得分 × 权重)",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "加权求和",
+      "definition": "总分 = 主信号得分 × 权重系数 + Σ(辅助信号得分 × 权重)",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "动态阈值",
+      "definition": "不同Regime使用不同阈值（来源：Screen2-日线入场信号）：",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "Regime依赖阈值",
+      "definition": "不同Regime使用不同阈值（来源：Screen2-日线入场信号）：",
+      "source": "2-KNOWLEDGE/1-TRADING/信号生成体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "9模块架构",
+      "definition": "force_vector/",
+      "source": "2-KNOWLEDGE/1-TRADING/力向量系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "StrategicMapper映射",
+      "definition": "力向量输出 → 战略层字段：",
+      "source": "2-KNOWLEDGE/1-TRADING/力向量系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "与 L3/L4 现有\"认知进化系统\"的边界",
+      "definition": "现有 `4-MEMORY/9-工具与接口/` + `3-EVOLUTION/` 是**知识蒸馏层**（把成功经验从 D 升到 C→B→A），本架构的 L3/L4 是**交易决策进化层**（在交易策略参数上做 RL 增量）。两者通过 bayesian\\_memories.json 对接：ESS 更新写入 4-MEMORY，蒸馏后的高置信策略再回灌 CBR 的优先检索池。**不是替代，是两个独立维度的",
+      "source": "2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md",
+      "quality": "A"
+    },
+    {
+      "term": "门禁原则（严格执行）",
+      "definition": "1. **阶段不可跳过**：Phase N-1 验收失败，绝不进入 Phase N（避免下游接垃圾输入）",
+      "source": "2-KNOWLEDGE/1-TRADING/四层闭环进化架构-最小阻力路径总览.md",
+      "quality": "A"
+    },
+    {
+      "term": "输出契约",
+      "definition": "{",
+      "source": "2-KNOWLEDGE/1-TRADING/基本面7引擎.md",
+      "quality": "A"
+    },
+    {
+      "term": "注入方案B",
+      "definition": "7引擎注入采用方案B：**与pn/od乘法独立叠加**",
+      "source": "2-KNOWLEDGE/1-TRADING/基本面7引擎.md",
+      "quality": "A"
+    },
+    {
+      "term": "生产注入条件",
+      "definition": "1. 跑满7日观察期",
+      "source": "2-KNOWLEDGE/1-TRADING/基本面7引擎.md",
+      "quality": "A"
+    },
+    {
+      "term": "与战略层的集成",
+      "definition": "9-基本面分析(7引擎) ──注入──→ 11-易经推理系统",
+      "source": "2-KNOWLEDGE/1-TRADING/基本面7引擎.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心结论（先看这个）",
+      "definition": "本系统的投资交易模型不是单一算法，而是一套**七层工业化流水线**：",
+      "source": "2-KNOWLEDGE/1-TRADING/投资交易模型构建与实现指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心逻辑（一句话）",
+      "definition": "横盘箱体代表多空均衡，突破=一方胜出，跟随突破方交易；只做有成交量确认的突破，拒绝无量突破；阶梯式箱体形成=加仓信号，跌破箱体即止损。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "成交量分析（核心）",
+      "definition": "Darvas方法的核心是成交量，不是价格形态。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "触发条件（开仓）",
+      "definition": "1. 箱体已形成（5-10周期横盘+高度2%-12%）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "1R与仓位管理",
+      "definition": "1R = 入场价 - 箱底（做多）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "1R定义",
+      "definition": "1R = 入场价 - 箱底（做多）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "仓位计算公式",
+      "definition": "仓位 = (账户总额 × 风险百分比) ÷ 1R",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "阶梯式加仓（Staircase）",
+      "definition": "1. 突破箱体A上沿→建底仓",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "规则",
+      "definition": "1. 突破箱体A上沿→建底仓",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "失败形态（反向信号）",
+      "definition": "1. **无量突破**：突破时成交量未放大→假突破",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "加密货币适配",
+      "definition": "1. **永续合约资金费率**：做多时费率为负=强信号，费率为正需谨慎",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "Darvas成功要素",
+      "definition": "1. **机械执行**：不预测，只等突破信号",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/DarvasBox箱体突破.md",
+      "quality": "A"
+    },
+    {
+      "term": "三大高胜率Setup",
+      "definition": "1. 标记亚洲区间高/低",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/ICT-SmartMoney加密版.md",
+      "quality": "A"
+    },
+    {
+      "term": "做多完整条件",
+      "definition": "1. HTF结构向上（BOS确认）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/ICT-SmartMoney加密版.md",
+      "quality": "A"
+    },
+    {
+      "term": "做空完整条件",
+      "definition": "1. HTF结构向下",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/ICT-SmartMoney加密版.md",
+      "quality": "A"
+    },
+    {
+      "term": "Breaker Block（破坏块）",
+      "definition": "**定义**：被突破并**反转极性**的失败订单块(OB)。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/ICT-SmartMoney加密版.md",
+      "quality": "A"
+    },
+    {
+      "term": "Mitigation Block（缓解块）",
+      "definition": "**定义**：同样是失败的OB，但**没有流动性清扫**。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/ICT-SmartMoney加密版.md",
+      "quality": "A"
+    },
+    {
+      "term": "纪律规则",
+      "definition": "1. 只在Killzone交易",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/ICT-SmartMoney加密版.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键点（Pivotal Point）定义",
+      "definition": "**关键点不是一个价格，而是\"市场势力转变的瞬间/价格带\"**——买卖力量均衡被打破的分岐点。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键点的两种类型",
+      "definition": "**新趋势的起点**，市场方向完全改变。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "试探法加仓（Probing / Pyramiding）",
+      "definition": "Livermore从不一次性建仓，而是分批试探：",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "Top-Down 四步确认（必要条件）",
+      "definition": "1. **市场整体方向**（BTC/大盘趋势）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "离场规则",
+      "definition": "1. **量价背离+天量滞涨**：创新高但成交量萎缩，或天量收长上影",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "主升浪终点信号（三大危险征兆）",
+      "definition": "1. **量价背离+天量滞涨**：创新高但成交量萎缩，或天量收长上影",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "三大死罪（Livermore反复强调）",
+      "definition": "1. **希望式思考**：亏损时心存侥幸，不止损",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "经典教训",
+      "definition": "Livermore名言：",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Livermore关键点交易法.md",
+      "quality": "A"
+    },
+    {
+      "term": "VWAP 基础",
+      "definition": "VWAP = Σ(典型价 × 成交量) / Σ成交量",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/VWAP均值回归策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "计算公式",
+      "definition": "VWAP = Σ(典型价 × 成交量) / Σ成交量",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/VWAP均值回归策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "做多（超卖反弹）",
+      "definition": "1. 价格触及或刺穿**下带2或下带3**",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/VWAP均值回归策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "做空（超买回落）",
+      "definition": "1. 价格触及或刺穿**上带2或上带3**",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/VWAP均值回归策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "条件",
+      "definition": "1. 布林带（20期，**2.5σ**）宽度处于6个月**最低10%**（挤压）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/VWAP均值回归策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "Z-Score 量化入场",
+      "definition": "z_score = (价格 - N日均值) / N日标准差",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/VWAP均值回归策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "三条基本定律",
+      "definition": "1. **供需定律**：需求>供给→涨；供给>需求→跌（成交量验证）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "五阶段模型（A-E）",
+      "definition": "PS → SC → AR → ST → Spring → Test → SOS → LPS → Markup",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "吸筹（Accumulation）九事件序列",
+      "definition": "PS → SC → AR → ST → Spring → Test → SOS → LPS → Markup",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "派发（Distribution）九事件序列",
+      "definition": "PSY → BC → AR → UT → UTAD → Test → SOW → LPSY → Markdown",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "P&F点数图计数法（价格目标计算）",
+      "definition": "Wyckoff用**点数图(Point & Figure)**量化\"因果定律\"，计算突破后的目标价格。",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "水平计数法（核心公式）",
+      "definition": "垂直投影 = 横盘列数 × box size × 反转量(通常3)",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "九项买卖测试",
+      "definition": "1. 存在明确的抛售高潮(SC)",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "买入测试（吸筹确认）",
+      "definition": "1. 存在明确的抛售高潮(SC)",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "卖出测试（派发确认）",
+      "definition": "1. 存在明确的买入高潮(BC)",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/Wyckoff量价四阶段.md",
+      "quality": "A"
+    },
+    {
+      "term": "信号公式",
+      "definition": "signal = tanh( √(short_window) × (ret短期均值 - ret长期均值) / ret长期标准差 )",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "量能过滤",
+      "definition": "volume_zscore = √(short) × (vol短期均值 - vol长期均值) / vol长期标准差",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "信号构造",
+      "definition": "1. 对15+种加密货币计算N日收益率",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "动量做多",
+      "definition": "1. signal > 0（短期收益 > 长期均值）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "动量做空",
+      "definition": "1. signal < 0",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "反转做多",
+      "definition": "1. 该币在横截面排名**后20%**",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "反转做空",
+      "definition": "1. 该币在横截面排名**前20%**",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "加密货币适配（时间压缩）",
+      "definition": "加密货币波动率是股票的3倍+，365天交易，需压缩周期：",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "加密特有规则",
+      "definition": "1. **ATH重测规则**：不买第一次触碰前高，等突破→新高→回调→再收复（双重确认过滤诱多）",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "风险提示",
+      "definition": "1. 回测来自2018-2025年，包含完整牛熊周期，但未来市场结构可能变化",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/动量反转双策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "按可信度排序的可用规则清单",
+      "definition": "**趋势方向**",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/策略可信度分层索引.md",
+      "quality": "A"
+    },
+    {
+      "term": "A级（直接采用）",
+      "definition": "**趋势方向**",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/策略可信度分层索引.md",
+      "quality": "A"
+    },
+    {
+      "term": "RAG检索使用建议",
+      "definition": "1. **优先信任A级内容**：RAG返回的片段中，A级规则可直接作为决策参考",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/策略可信度分层索引.md",
+      "quality": "A"
+    },
+    {
+      "term": "趋势线规则",
+      "definition": "1. 上升趋势线：连接两个以上低点，向上倾斜",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/经典技术形态汇总.md",
+      "quality": "A"
+    },
+    {
+      "term": "失败形态（假突破）",
+      "definition": "1. **无量突破**：成交量未放大→假突破",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/经典技术形态汇总.md",
+      "quality": "A"
+    },
+    {
+      "term": "实战纪律",
+      "definition": "1. **等确认**：形态完成+突破确认再入场，不提前预判",
+      "source": "2-KNOWLEDGE/1-TRADING/经典模式/经典技术形态汇总.md",
+      "quality": "A"
+    },
+    {
+      "term": "五层决策链",
+      "definition": "1. **Layer 1：** A1/A2/A3战略方向融合",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "final_score映射",
+      "definition": "final_score由A1/A2/A3的战略方向、置信度、市场状态、趋势相位综合计算，映射为四态动作。",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "资金压力调整（Layer 5）",
+      "definition": "当phase2_enabled且资金压力HIGH时：",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "参数中心（Param Center）",
+      "definition": "> **来源：** 16-调控系统/scripts/param_center/",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "架构",
+      "definition": "scheduler.py (每小时)",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "资产差异化",
+      "definition": "聚合结果与静态 3D 表按 40:60 混合，确保不同资产类别参数差异化：",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "影子模式",
+      "definition": "参数中心推荐的 SL/TP 与子系统实际使用值的偏差记录在 `param_center_deviation.db`，用于后续校准。",
+      "source": "2-KNOWLEDGE/1-TRADING/调控系统.md",
+      "quality": "A"
+    },
+    {
+      "term": "三层架构",
+      "definition": "┌─────────────────────────────────────────────────┐",
+      "source": "2-KNOWLEDGE/1-TRADING/通用风控三层体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "与11-易经推理系统的集成",
+      "definition": "通用风控作为BCRM2.0推理后的最后一道防线：",
+      "source": "2-KNOWLEDGE/1-TRADING/通用风控三层体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "门禁优先级",
+      "definition": "战略门禁(P0) → 杠杆门禁(P0) → 评分门禁 → 执行风险门禁 → 账户层门禁 → 边缘计算",
+      "source": "2-KNOWLEDGE/1-TRADING/风控体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "日回撤限制（10%硬性）",
+      "definition": "**日回撤上限：10%** — 当日累计回撤超过10%后全天禁止新开仓。",
+      "source": "2-KNOWLEDGE/1-TRADING/风控体系.md",
+      "quality": "A"
+    },
+    {
+      "term": "风险预算控制",
+      "definition": "risk_per_trade_usdt = risk_cap × scores_scaling × dream_multiplier",
+      "source": "2-KNOWLEDGE/1-TRADING/风控体系.md",
+      "quality": "A"
+    }
+  ]
+}

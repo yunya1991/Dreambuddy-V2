@@ -1,0 +1,89 @@
+{
+  "domain": "tokenomics",
+  "count": 13,
+  "terms": [
+    {
+      "term": "代币解锁",
+      "definition": "锁仓代币到期释放流通，常对价格形成抛压",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "代币销毁",
+      "definition": "永久移除部分代币流通量，制造通缩效应",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "质押",
+      "definition": "锁定代币参与网络验证获取收益的机制",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "挖矿",
+      "definition": "通过算力/质押参与区块生产获取代币奖励",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "空投",
+      "definition": "项目向社区用户免费分发代币的营销/激励方式",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "回购",
+      "definition": "项目方用收入买回自家代币，减少流通量",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "通胀率",
+      "definition": "代币年增发比例，影响长期供给",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "流通量",
+      "definition": "市场上可自由交易的代币数量",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "销毁",
+      "definition": "快讯高频词（出现 32 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 32
+    },
+    {
+      "term": "铸造",
+      "definition": "快讯高频词（出现 18 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 18
+    },
+    {
+      "term": "解锁",
+      "definition": "快讯高频词（出现 12 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 12
+    },
+    {
+      "term": "锁仓",
+      "definition": "快讯高频词（出现 10 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 10
+    },
+    {
+      "term": "增发",
+      "definition": "快讯高频词（出现 7 次），定义待人工补充",
+      "source": "newsflash_mining",
+      "quality": "B",
+      "occurrences": 7
+    }
+  ]
+}

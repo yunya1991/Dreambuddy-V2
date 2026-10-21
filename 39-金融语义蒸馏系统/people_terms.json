@@ -1,0 +1,54 @@
+{
+  "domain": "people",
+  "count": 8,
+  "terms": [
+    {
+      "term": "巨鲸",
+      "definition": "持有大量加密资产的钱包地址主体，其链上转移常引发市场关注",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "分析师",
+      "definition": "对市场/项目发布研究观点的专业人士",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "创始人",
+      "definition": "加密项目/公司的创立者，其言论对项目影响重大",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "CZ（赵长鹏）",
+      "definition": "币安创始人，加密行业最具影响力人物之一",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "Vitalik（V神）",
+      "definition": "以太坊创始人，以太坊技术路线的核心决策者",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "Satoshi Nakamoto（中本聪）",
+      "definition": "比特币创始人，身份至今未知",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "Jerome Powell（鲍威尔）",
+      "definition": "美联储主席，美国货币政策的核心决策者",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "Warren Buffett（巴菲特）",
+      "definition": "伯克希尔董事长，价值投资代表人物",
+      "source": "curated-seed",
+      "quality": "A"
+    }
+  ]
+}

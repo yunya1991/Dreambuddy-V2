@@ -1,0 +1,264 @@
+{
+  "domain": "indicator",
+  "count": 43,
+  "terms": [
+    {
+      "term": "状态机（execution_loop）",
+      "definition": "SUCCESS_NEXT_STATE = {",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Cron-调度.md",
+      "quality": "A"
+    },
+    {
+      "term": "Guard 机制",
+      "definition": "受管理任务必须在 `jobs.json` 中有 execution_loop 字段：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Cron-调度.md",
+      "quality": "A"
+    },
+    {
+      "term": "A6 control_decision 路由",
+      "definition": "A6 的 10 种 action 供 scheduler 路由：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Cron-调度.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心概念",
+      "definition": "Gateway 是常驻后台进程，负责：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "Gateway（网关）",
+      "definition": "Gateway 是常驻后台进程，负责：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "Cron 调度器",
+      "definition": "调度器是 Gateway 内部的后台线程：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "Skill（技能）",
+      "definition": "Skill 是 Hermes 的可复用知识模块，存放于 `~/.hermes/skills/<category>/<name>/SKILL.md`：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "Plugin（插件）",
+      "definition": "Plugin 位于 `~/.hermes/plugins/`，提供自定义工具集。与 Skill 的区别：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "三层闭环架构",
+      "definition": "A 系列日内系统在 Hermes 调度器上实现了三层闭环：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键路径",
+      "definition": "~/.hermes/hermes-agent/cron/",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/Hermes-架构.md",
+      "quality": "A"
+    },
+    {
+      "term": "趋势行情数据（价格、涨跌、成交量）",
+      "definition": "P1: web_search(\"BTC price today site:coindesk.com OR site:coinmarketcap.com\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "新闻/宏观/地缘政治",
+      "definition": "P1: web_search(\"BTC bitcoin latest news 2026\") → Tavily结构化摘要",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "资金费率/链上数据（原OKX依赖）",
+      "definition": "P1: web_search(\"BTC funding rate perpetual\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "FGI恐慌指数",
+      "definition": "P1: web_search(\"fear and greed index crypto today\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "持仓/账户数据（原OKX CLI依赖）",
+      "definition": "无法降级 — 没有其他公开API可查询OKX账户。",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "获取行情数据（Tavily路径）",
+      "definition": "web_search(\"BTC USD price today 2026\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "获取日线/K线数据",
+      "definition": "web_extract(\"https://www.coindesk.com/price/bitcoin\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "获取宏观资产价格（原OKX跨资产监控）",
+      "definition": "web_search(\"gold price today XAU\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "获取市场情绪",
+      "definition": "web_search(\"crypto fear greed index\")",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据源降级管道标准.md",
+      "quality": "A"
+    },
+    {
+      "term": "ETL流程",
+      "definition": "数据采集由Hermes Gateway cron调度器统一管理（60秒tick），A系列任务按以下排程采集：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据管道.md",
+      "quality": "A"
+    },
+    {
+      "term": "数据降级策略（V15 4层数据源回退链）",
+      "definition": "系统当前网络受限，按以下fallback链降级：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/数据管道.md",
+      "quality": "A"
+    },
+    {
+      "term": "GitHub 同步",
+      "definition": "项目代码通过 GitHub 仓库同步维护：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/部署与维护.md",
+      "quality": "A"
+    },
+    {
+      "term": "环境变量管理",
+      "definition": "~/.hermes/.env           # Hermes 加载的环境变量",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/部署与维护.md",
+      "quality": "A"
+    },
+    {
+      "term": "进程管理",
+      "definition": "ps aux | grep hermes | grep -v grep",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/部署与维护.md",
+      "quality": "A"
+    },
+    {
+      "term": "日常维护检查清单",
+      "definition": "cronjob action='list'",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/部署与维护.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键发现（Bloomberg 侧）",
+      "definition": "1. **一致性优先**：所有用户看到\"同源实时数据\"，消灭前中后台数据不一致——可观测性的第一目标是*数据一致性可证明*。",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/金融交易系统可观测性实践调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键发现（FactSet 侧）",
+      "definition": "1. **管道可观测 = 流程门禁**：每个传输环节（传输、存储、处理、交付）都有校验点和保留策略。",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/金融交易系统可观测性实践调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "环境配置",
+      "definition": "lark-cli config init --new",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "飞书多维表格 (Base)",
+      "definition": "lark-cli base +base-get --base-token <token>",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "飞书 OKR",
+      "definition": "lark-cli okr +cycle-list",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "飞书审批",
+      "definition": "lark-cli api GET /open-apis/approval/v4/approvals/{approval_code} --format json",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "飞书云文档",
+      "definition": "lark-cli docs +create --api-version v2 --content '<title>标题</title><p>内容</p>'",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "飞书 IM",
+      "definition": "lark-cli im send --chat-id oc_xxx --msg-type text --content \"消息内容\"",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "认证分步流程",
+      "definition": "需要用户授权时：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "同步纪律",
+      "definition": "每次修改后需同步飞书四组件：",
+      "source": "2-KNOWLEDGE/2-TECHNICAL/飞书集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "7) 风险提示",
+      "definition": "最后追加一个“机器可读摘要JSON”，字段：",
+      "source": "10-经典指标系统/docs/archive/交易AI_Agent_技术文档_历史.md",
+      "quality": "A"
+    },
+    {
+      "term": "入场/出场 RISK Gate（硬门槛 + 冷却平仓）",
+      "definition": "目标：在不改变“策略决策系统（entry/exit）解耦”的前提下，引入一层可配置、可审计、可被贝叶斯优化的硬风控。",
+      "source": "10-经典指标系统/docs/archive/技术文档_历史.md",
+      "quality": "A"
+    },
+    {
+      "term": "SKILL 总—分架构（新增）",
+      "definition": "目标：",
+      "source": "10-经典指标系统/docs/基本面分析文档.md",
+      "quality": "A"
+    },
+    {
+      "term": "📦 已创建的文件",
+      "definition": "位置: `/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/`",
+      "source": "10-经典指标系统/docs/集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "🔧 集成步骤",
+      "definition": "在 `src/lib/strategy/steps/execute.ts` 文件末尾添加:",
+      "source": "10-经典指标系统/docs/集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "🎯 使用示例",
+      "definition": "import {",
+      "source": "10-经典指标系统/docs/集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "在自定义组件中使用",
+      "definition": "import {",
+      "source": "10-经典指标系统/docs/集成指南.md",
+      "quality": "A"
+    },
+    {
+      "term": "⚙️ 配置",
+      "definition": "环境变量:",
+      "source": "10-经典指标系统/docs/集成指南.md",
+      "quality": "A"
+    }
+  ]
+}

@@ -1,0 +1,1002 @@
+{
+  "domain": "finance",
+  "count": 166,
+  "terms": [
+    {
+      "term": "CPI",
+      "definition": "消费者价格指数，衡量通胀水平的核心宏观指标，影响美联储利率决策与加密市场风险偏好",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "非农就业数据",
+      "definition": "美国非农就业报告，反映就业市场强弱，是美联储政策的重要参考，公布时市场波动剧烈",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "美联储议息",
+      "definition": "美联储联邦公开市场委员会（FOMC）利率决议，直接影响美元流动性加密资产估值",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "PPI",
+      "definition": "生产者价格指数，衡量生产端通胀，是 CPI 的先行指标",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "GDP",
+      "definition": "国内生产总值，衡量经济总量与增长速度的宏观核心指标",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "PMI",
+      "definition": "采购经理指数，反映制造业/服务业景气度的先行指标，50 为荣枯线",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "恐惧贪婪指数",
+      "definition": "市场情绪综合指标（0-100），衡量市场恐慌与贪婪程度，用于逆向参考",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "资金费率",
+      "definition": "永续合约多空双方的费用交换机制，反映合约市场多空力量与杠杆情绪",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "TVL",
+      "definition": "总锁仓价值，衡量 DeFi 协议资金规模的核心指标",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "估值百分位",
+      "definition": "标的当前估值在历史分布中的位置，BDSM 基本面系统用于判断高估/低估",
+      "source": "curated-seed",
+      "quality": "A"
+    },
+    {
+      "term": "两种执行模式",
+      "definition": "每日早晨 8:00 自动生成简报（适合开盘前阅读）",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "即时生成命令",
+      "definition": "cd /Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/ops/nanoclaw/core_task1",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "基本用法",
+      "definition": "cd /Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/ops/nanoclaw/core_task1",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "高级选项",
+      "definition": "./smart_run.sh hours 4 -j",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "Python 脚本直接调用",
+      "definition": "python3 scripts/news_digest_v2.py --hours 4 --use-ollama --ollama-model qwen2.5:7b-instruct",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "日志查看",
+      "definition": "tail -50 logs/cron.log",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "1) 一键验收命令（灰度）",
+      "definition": "cd /Users/zhangjiangtao/ft_userdata/基本面分析_fundamental/ops/nanoclaw/core_task1",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "3) 回执字段检查（样例命令）",
+      "definition": "python3 - <<'PY'",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "6) 回执样例（字段口径）",
+      "definition": "{",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "环境变量（可选）",
+      "definition": "本地模型默认使用 `qwen2.5:7b-instruct`，可通过环境变量覆盖：",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "示例输出",
+      "definition": "=== 加密 + 宏观新闻简报（即时生成）===",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "锚点增量模式（新增）",
+      "definition": "支持“早餐锚点 + 日内增量修订”：",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "输出文件",
+      "definition": "路径：`narrative/outputs/narrative_registry_YYYYMMDD_HHMM.json`",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "叙事登记簿 (JSON)",
+      "definition": "路径：`narrative/outputs/narrative_registry_YYYYMMDD_HHMM.json`",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "叙事简报 (Markdown)",
+      "definition": "路径：`narrative/outputs/narrative_brief_YYYYMMDD_HHMM.md`",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "指标说明",
+      "definition": "计算公式：",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "叙事热度 (Heat Score)",
+      "definition": "计算公式：",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "与新闻分析 Skill 联动",
+      "definition": "叙事分析依赖于新闻分析生成的 event_ledger 数据：",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "融合信号公式",
+      "definition": "news_signal = weighted_sentiment_sum",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "文件结构",
+      "definition": "narrative/",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "命令行选项",
+      "definition": "用法: narrative_analyzer.py [选项]",
+      "source": "9-基本面分析/ops/nanoclaw/core_task1/narrative/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "输出契约",
+      "definition": "必须输出包含以下字段的 JSON：",
+      "source": "9-基本面分析/ops/nanoclaw/prompts/meta_evolution_prompt.md",
+      "quality": "A"
+    },
+    {
+      "term": "📈 三层信号分解",
+      "definition": "比特币 ETF 连续 5 日净流入，本周累计 1.2 B USD；稳定币总供给 +0.4 B，",
+      "source": "9-基本面分析/ops/ops/nanoclaw/core_task1/flow/outputs/flow_brief_20260621_075510.md",
+      "quality": "A"
+    },
+    {
+      "term": "🧠 叙事分解（Top 3）",
+      "definition": "信心: 0.82 | 证据: 8 条 | 情绪: +0.45",
+      "source": "9-基本面分析/ops/ops/nanoclaw/core_task1/narrative/outputs/narrative_brief_20260621_075510.md",
+      "quality": "A"
+    },
+    {
+      "term": "🔔 今日要点（12 条）",
+      "definition": "1. **Bitcoin 突破 65K 阻力位**，机构买家持续增持。",
+      "source": "9-基本面分析/ops/ops/nanoclaw/core_task1/outputs/brief_v3_20260621_075510.md",
+      "quality": "A"
+    },
+    {
+      "term": "🌍 基本面新闻精选",
+      "definition": "贝莱德 IBIT 连续第五日净流入，本周累计 1.2 B USD。机构买家在 64-65K 区域执行积极建仓策略。",
+      "source": "9-基本面分析/ops/ops/nanoclaw/core_task1/outputs/brief_v3_20260621_075510.md",
+      "quality": "A"
+    },
+    {
+      "term": "SKILL 总—分架构（新增）",
+      "definition": "目标：",
+      "source": "9-基本面分析/基本面研究文档.md",
+      "quality": "A"
+    },
+    {
+      "term": "Response (`data[]`)",
+      "definition": "**Topic Fields**:",
+      "source": "9-基本面分析/币安Skill/binance-skills-hub-main/skills/binance-web3/meme-rush/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "配置",
+      "definition": "cp config/.env.example config/.env",
+      "source": "18-数据获取中心/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "Python 库",
+      "definition": "from data_center import DataCenter, DataRecord",
+      "source": "18-数据获取中心/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "M5 大纲（监控告警）",
+      "definition": "> 目标：为 DataCenter 建立全局可观测性，覆盖调用统计、数据质量、告警通知三个维度，",
+      "source": "18-数据获取中心/docs/archive/IMPLEMENTATION_PLAN.md",
+      "quality": "A"
+    },
+    {
+      "term": "架构分层",
+      "definition": "┌───────────────────────────────────────────────────────┐",
+      "source": "18-数据获取中心/docs/archive/IMPLEMENTATION_PLAN.md",
+      "quality": "A"
+    },
+    {
+      "term": "依赖",
+      "definition": "**无新增外部依赖**：全部用 Python 标准库（logging、json、time、dataclasses、threading.Lock），避免引入 prometheus_client/opentelemetry 等重型依赖。",
+      "source": "18-数据获取中心/docs/archive/IMPLEMENTATION_PLAN.md",
+      "quality": "A"
+    },
+    {
+      "term": "归档模板",
+      "definition": "每个调研归档文件遵循统一模板：",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研结论",
+      "definition": "[3-5句精华结论，可直接引用]",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研路径",
+      "definition": "[关键引用链接 + 对比分析要点]",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "在DreamBuddy中的应用",
+      "definition": "[本调研如何影响了代码实现，引用相关文件路径]",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "关联知识",
+      "definition": "[指向2-KNOWLEDGE其他域的交叉引用]",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "归档触发机制",
+      "definition": "对话中AI主动检测到调研内容时，提示用户：",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研归档全景进度（12 子域填充率）",
+      "definition": "> 阶段 2 目标：从 1/12（8%）→ 6/12（50%）W2 已超额达标；**W3 结束后 10/12 子域有内容 = 83% 起步率，9/12 归档点填充 = 75%**。阶段 3 目标：补完最后 2 个空白子域（infra-tools + testing）→ 12/12 = 100%。",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "§1 调研结论（精华 5 句）",
+      "definition": "① **Medallion 三层分工边界与 DreamBuddy 存储路径映射**：Bronze 层承担「原始不可变落盘」职责，存储路径对应 `18-数据获取中心/data/raw/<source>/<symbol>/<date>.parquet`，保留 Tushare 原始字段名与单位（元/股、分），禁止任何字段修改或逻辑删除，仅做文件级 append；Silver 层对应 `21-特征工程中心",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "坐标 1 · 标准三级清洗链串联定义",
+      "definition": "[standard_chain.py L3-L4](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L3-L4)",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "坐标 2 · 清洗链 4 步构造器装配",
+      "definition": "[standard_chain.py L34-L45](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L34-L45)",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "坐标 5 · InfNaNImpute 缺失插补三级兜底",
+      "definition": "[cleaning_steps.py L19-L36](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/cleaning_steps.py#L19-L36)",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "坐标 10 · L1 兜底 5 类异常注入综合 TC",
+      "definition": "[test_l1_failopen.py L1-L11](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/tests/unit/test_l1_failopen.py#L1-L11) 与 [test_l1_failopen.py L172-L188](file:///Users/zhangjiangtao/WorkBudd",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "§5 关联知识 + P1 迭代建议",
+      "definition": "**关联 1 · FAIL-OPEN 兜底统一范式**：[FAIL-OPEN架构模式统一范式调研](../../technical/architecture/2026-09-01-FAIL-OPEN架构模式统一范式调研.md) 中 §3 L1-L3 契约（L1 永不阻塞 / L2 降级 + 告警 / L3 触发人工介入流程）与本调研 §1 结论④ 兜底铁律、§3 坐标 3/7/9/10 的异常捕获",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "跨域关联知识（≥3 条）",
+      "definition": "**关联 1 · FAIL-OPEN 兜底统一范式**：[FAIL-OPEN架构模式统一范式调研](../../technical/architecture/2026-09-01-FAIL-OPEN架构模式统一范式调研.md) 中 §3 L1-L3 契约（L1 永不阻塞 / L2 降级 + 告警 / L3 触发人工介入流程）与本调研 §1 结论④ 兜底铁律、§3 坐标 3/7/9/10 的异常捕获",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-medallion三层奖章架构与tushare特征silver门禁调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "在 DreamBuddy 中的应用",
+      "definition": "减半周期 → V4波浪策略 halving_top_exit_strategy._get_halving_phase() → 强制仓位",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-订单簿流动性与减半周期市场结构调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "直接消费路径（当前已集成）",
+      "definition": "减半周期 → V4波浪策略 halving_top_exit_strategy._get_halving_phase() → 强制仓位",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-订单簿流动性与减半周期市场结构调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "待增强点（2026-09 建议迭代 P1）",
+      "definition": "1. **CME Gap 检测器**：在 `screen_orchestrator.py` 加入每周一 00:05 UTC CME BTC futures gap 检测（取 CME Micro BTC 合约最新 close vs 周日 23:59 Hyperliquid spot），写入 Base「市场结构」表 + V4/Screen 消费",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/market-structure/2026-09-01-订单簿流动性与减半周期市场结构调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "§5 关联知识 + P1 迭代建议（≥3 跨域引用）",
+      "definition": "参见 [Kalman滤波量化实战调研](../quant-methods/2026-09-01-kalman滤波量化实战调研.md) §3 Q/R 随波动率动态调参：本调研 §4 表1 的 FGI 二维系数可进一步与 Kalman 观测噪声 R 对齐——当 CNN/crypto FGI 恐惧（0–25）或贪婪（75–100）极端档位触发时，Q 过程噪声额外 +0.05 增 / R 观测噪声额外 -",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/risk-models/2026-09-01-恐贪指数与行为金融8大偏误情绪校准调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "落地路径建议",
+      "definition": "分3阶段逐步实施：",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/risk-models/中信建投知识库管理体系调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "执行摘要",
+      "definition": "本报告系统调研了传统金融领域六类进阶交易策略在加密货币自动交易系统中的适配性。核心结论如下：",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/trading-classics/2026-09-10-传统金融进阶策略调研-金字塔网格对冲.md",
+      "quality": "A"
+    },
+    {
+      "term": "接入优先级建议",
+      "definition": "按\"高可信度 + 高适配性 + 与现有系统协同\"三维排序：",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/trading-classics/2026-09-10-传统金融进阶策略调研-金字塔网格对冲.md",
+      "quality": "A"
+    },
+    {
+      "term": "学术与经典来源引用",
+      "definition": "1. **Livermore, J. L.** (1940). *How to Trade in Stocks*. ——金字塔加仓（rising scale）原始阐述。",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/trading-classics/2026-09-10-传统金融进阶策略调研-金字塔网格对冲.md",
+      "quality": "A"
+    },
+    {
+      "term": "代码集成路径（如果走 P1 Jesse 回测改造）",
+      "definition": "research/backtest_engine/（新目录）",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/github/trading-systems/2026-09-01-开源量化框架对比freqtrade-jesse-vnpy调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "testing（测试方法）",
+      "definition": "_（暂无，随开发过程自动积累）_",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/INDEX.md",
+      "quality": "A"
+    },
+    {
+      "term": "长期规范（纳入 0-SCHEMA 开发规范）",
+      "definition": "**新模块 FAIL-OPEN 合规 = 上线门禁条件之一**：",
+      "source": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-09-01-FAIL-OPEN架构模式统一范式调研.md",
+      "quality": "A"
+    },
+    {
+      "term": "问题背景",
+      "definition": "认知系统的6步闭环（recall→理论→实践→A8→bayes→record）在设计上是完整的，但**缺少自动触发机制**：AI Agent（TRAE/Claude Code/Cursor）不会自动调用 `recall()` / `record()` / `verify()`，导致开发经验丢失。",
+      "source": "4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md",
+      "quality": "A"
+    },
+    {
+      "term": "三层架构",
+      "definition": "┌──────────────────────────────────────────────────────────┐",
+      "source": "4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md",
+      "quality": "A"
+    },
+    {
+      "term": "触发层工作流",
+      "definition": "git commit",
+      "source": "4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md",
+      "quality": "A"
+    },
+    {
+      "term": "GitHub调研结论",
+      "definition": "调研了mem0(~25k★)、Letta/MemGPT(~14k★)、Zep(~3k★)、A-MEM(~1k★)、cognee(~2k★)等项目，**全部是被动服务/库**，没有现成的通用自动触发层。自动接入层是行业空白，必须自建。",
+      "source": "4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md",
+      "quality": "A"
+    },
+    {
+      "term": "记忆演化路径",
+      "definition": "episodic（情景） → 反复验证 → semantic（语义） → 反复验证 → procedural（程序）",
+      "source": "4-MEMORY/0-元记忆/MEMORY_UNITS.md",
+      "quality": "A"
+    },
+    {
+      "term": "命令用法",
+      "definition": "命令行工具位置：`/usr/local/bin/cognitive`（需用 luke 用户的 venv Python 执行）",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/cognitive-cli/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "标准工作流",
+      "definition": "1. **任务开始**：先 recall 相关关键词，检查是否有历史经验可复用",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/cognitive-cli/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "When You're in Over Your Head",
+      "definition": "It is always OK to stop and say \"this is too hard for me.\" Bad work is worse than",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/subagent-driven-development/implementer-prompt.md",
+      "quality": "A"
+    },
+    {
+      "term": "What is a Skill?",
+      "definition": "A **skill** is a reference guide for proven techniques, patterns, or tools. Skills help future agents find and apply effective approaches.",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/writing-skills/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "❌ Narrative Example",
+      "definition": "\"In session 2025-10-03, we found empty projectDir caused...\"",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/writing-skills/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "❌ Multi-Language Dilution",
+      "definition": "example-js.js, example-py.py, example-go.go",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/writing-skills/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "❌ Code in Flowcharts",
+      "definition": "step1 [label=\"import fs\"];",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/writing-skills/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "❌ Generic Labels",
+      "definition": "helper1, helper2, step3, pattern4",
+      "source": "4-MEMORY/0-元记忆/superpowers/skills/writing-skills/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "三层脑风控映射（对齐 MacLean 三层脑理论）",
+      "definition": "> **理论**: MacLean 三层脑——爬行脑(本能/生存)→边缘系统(情感/记忆)→新皮质(理性/抽象)。现代修正：三层非严格进化叠加，情绪与理性是并行交互回路（Panksepp/Pessoa）。作为层级化控制隐喻仍有工程价值。",
+      "source": "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "事前门禁",
+      "definition": "在 T2 进入大仓执行前，逐项检查，任一 FAIL 即拦截：",
+      "source": "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "事中熔断",
+      "definition": "持仓期间持续监控四条件，任一触发即熔断：",
+      "source": "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "事后归因",
+      "definition": "从 episode 数据自动验证交易结果，不采信执行者自评分：",
+      "source": "4-MEMORY/0-元记忆/trading-cognition/skills/t3-risk-gatekeeper/SKILL.md",
+      "quality": "A"
+    },
+    {
+      "term": "后果",
+      "definition": "1. **改了 A 影响了 B**：不知道有依赖，改完发现别的地方坏了",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/ANTI_PATTERNS.md",
+      "quality": "A"
+    },
+    {
+      "term": "反例（正确做法）",
+      "definition": "参考 A1 调研方法论：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/ANTI_PATTERNS.md",
+      "quality": "A"
+    },
+    {
+      "term": "实践描述",
+      "definition": "做任何调研工作时，按照 A1 调研方法论的标准流程来：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/BEST_PRACTICES.md",
+      "quality": "A"
+    },
+    {
+      "term": "记录要素",
+      "definition": "每条技术债至少记录：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/BEST_PRACTICES.md",
+      "quality": "A"
+    },
+    {
+      "term": "描述",
+      "definition": "任何代码改动之前，先充分调研现状。搞清楚\"现在是什么样\"，再决定\"怎么改\"。",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "反面教材",
+      "definition": "上来就改的后果：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "正确做法",
+      "definition": "参考 A1 调研方法论：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "判断标准",
+      "definition": "调研到什么程度算够？",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "原因",
+      "definition": "1. **影响直接**：运行时缺陷直接导致功能失效、系统崩溃",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "为什么要先复现？",
+      "definition": "1. **确认 bug 真实存在**：可能是误报、环境问题、操作错误",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "复现步骤",
+      "definition": "1. 收集信息：错误信息、日志、触发条件、环境",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "正确做法（A8 方法论的思路）",
+      "definition": "1. **先读文档**：建立整体认知，知道\"应该是什么样\"",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "好处",
+      "definition": "1. **进度可见**：知道做了多少，还剩多少",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "例子",
+      "definition": "**不好的拆分**：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "回滚方案的要素",
+      "definition": "1. **触发条件**：什么情况下需要回滚？",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/PROCESS_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "什么是通用经验？",
+      "definition": "通用经验是从各子系统的具体经验中**蒸馏提炼**出来的、跨系统适用的共性经验。",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "经验分类",
+      "definition": "从技术踩坑中总结的教训。",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "上升路径",
+      "definition": "1. 应用记忆中产生新的案例/经验",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "从应用记忆到通用经验",
+      "definition": "1. 应用记忆中产生新的案例/经验",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "根因",
+      "definition": "`shlex.split(\"PYTHONPATH=. python script.py\")` 会解析成：",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "教训",
+      "definition": "猜测 label 为 `com.l3.phase2`，结果 `launchctl list | grep` 找不到。实际 label 是 `com.l3.commandcenter.phase2scheduler`，在 `install_l3_launchd.sh` 中定义。",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "崩溃循环的特征",
+      "definition": "1. PID 频繁变化（进程在反复重启）",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "排查步骤",
+      "definition": "1. 看 PID 是不是稳定（隔几秒看一次，变了就是在重启）",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "典型案例",
+      "definition": "L3 调度器：subprocess 调用失败 → 进程崩溃 → launchd KeepAlive 立即拉起 → 再崩溃 → 无限循环 → CPU 持续 99%",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "已知案例",
+      "definition": "1. **12-三屏趋势系统**：存在 `12-三屏趋势系统/` 和 `trend-system/` 两个并行目录，且 docs/ 下有旧版 ENGINEERING_INDEX",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "防范方法",
+      "definition": "1. 重命名/移动文件后，全局搜索旧路径引用",
+      "source": "4-MEMORY/1-开发记忆单元/episodic/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "共性根因",
+      "definition": "（有没有系统性的问题？）",
+      "source": "4-MEMORY/1-开发记忆单元/procedural/A8_THEORY_PRACTICE.md",
+      "quality": "A"
+    },
+    {
+      "term": "问题陈述",
+      "definition": "随着项目规模扩大，积累的经验和教训越来越多，但面临以下问题：",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ADR/ADR-001-memory-architecture.md",
+      "quality": "A"
+    },
+    {
+      "term": "已有基础",
+      "definition": "项目中已经有 4 处记忆相关实现：",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ADR/ADR-001-memory-architecture.md",
+      "quality": "A"
+    },
+    {
+      "term": "总记忆系统（Global Memory）",
+      "definition": "**定位**：全局索引 + 通用经验 + 原则方法论",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ADR/ADR-001-memory-architecture.md",
+      "quality": "A"
+    },
+    {
+      "term": "应用记忆系统（Application Memory）",
+      "definition": "**定位**：各子系统专属记忆，由子系统主动维护",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ADR/ADR-001-memory-architecture.md",
+      "quality": "A"
+    },
+    {
+      "term": "协作机制",
+      "definition": "应用记忆产生新经验",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ADR/ADR-001-memory-architecture.md",
+      "quality": "A"
+    },
+    {
+      "term": "系统分层架构",
+      "definition": "┌──────────────────────────────────────────────────────────────────┐",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ARCHITECTURE_CURRENT.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心数据流",
+      "definition": "行情数据 → 6-TRADING 数据层",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ARCHITECTURE_CURRENT.md",
+      "quality": "A"
+    },
+    {
+      "term": "记忆系统在架构中的位置",
+      "definition": "┌─────────────────────────────────────────────────┐",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ARCHITECTURE_CURRENT.md",
+      "quality": "A"
+    },
+    {
+      "term": "演进时间线",
+      "definition": "v1.0 早期原型",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/ARCHITECTURE_HISTORY.md",
+      "quality": "A"
+    },
+    {
+      "term": "架构记忆的价值",
+      "definition": "架构记忆回答三个问题：",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "架构决策记录（ADR）",
+      "definition": "ADR（Architecture Decision Record）是记录架构决策的轻量级文档。",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "什么是 ADR？",
+      "definition": "ADR（Architecture Decision Record）是记录架构决策的轻量级文档。",
+      "source": "4-MEMORY/1-开发记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "文档记忆是什么？",
+      "definition": "文档记忆是 0-系统文档管理 在总记忆系统中的**索引和状态镜像**。",
+      "source": "4-MEMORY/3-文档记忆单元/semantic/DOC_MEMORY_OVERVIEW.md",
+      "quality": "A"
+    },
+    {
+      "term": "文档索引",
+      "definition": "完整的文档索引见：[0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md)",
+      "source": "4-MEMORY/3-文档记忆单元/semantic/DOC_MEMORY_OVERVIEW.md",
+      "quality": "A"
+    },
+    {
+      "term": "文档技术债清单",
+      "definition": "完整的文档债务清单见：[0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md](../../0-系统文档管理/3-文档治理/DOC_DEBT_INDEX.md)",
+      "source": "4-MEMORY/3-文档记忆单元/semantic/DOC_MEMORY_OVERVIEW.md",
+      "quality": "A"
+    },
+    {
+      "term": "文档-代码对齐状态",
+      "definition": "> 用 A8 理论实践校验法定期检查文档与代码的一致性",
+      "source": "4-MEMORY/3-文档记忆单元/semantic/DOC_MEMORY_OVERVIEW.md",
+      "quality": "A"
+    },
+    {
+      "term": "文档质量审计",
+      "definition": "> 用 0-系统文档管理/3-文档治理/DOC_QUALITY_AUDIT.md 中的标准审计",
+      "source": "4-MEMORY/3-文档记忆单元/semantic/DOC_MEMORY_OVERVIEW.md",
+      "quality": "A"
+    },
+    {
+      "term": "什么是应用记忆索引？",
+      "definition": "应用记忆索引是总记忆系统的\"目录服务\"，记录所有应用记忆系统的元信息。",
+      "source": "4-MEMORY/4-信息记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "路由表",
+      "definition": "> 什么类型的查询应该路由到哪个应用记忆系统？",
+      "source": "4-MEMORY/4-信息记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "统一接口规范",
+      "definition": "所有应用记忆系统最终需要实现以下标准接口：",
+      "source": "4-MEMORY/4-信息记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "注册新的应用记忆",
+      "definition": "要注册新的应用记忆系统：",
+      "source": "4-MEMORY/4-信息记忆单元/semantic/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "典型案例（已归档到 Tier2）",
+      "definition": "> 详见 `archive/TECH_LESSONS_TL-006_20260728_212131.md`",
+      "source": "4-MEMORY/5-通用经验/TECH_LESSONS.md",
+      "quality": "A"
+    },
+    {
+      "term": "AM-TRD-001（交易应用记忆）",
+      "definition": "{",
+      "source": "4-MEMORY/6-应用记忆索引/HEALTH_STATUS.md",
+      "quality": "A"
+    },
+    {
+      "term": "AM-RSK-001（风控应用记忆）",
+      "definition": "{",
+      "source": "4-MEMORY/6-应用记忆索引/HEALTH_STATUS.md",
+      "quality": "A"
+    },
+    {
+      "term": "AM-OPS-001（运维应用记忆）",
+      "definition": "{",
+      "source": "4-MEMORY/6-应用记忆索引/HEALTH_STATUS.md",
+      "quality": "A"
+    },
+    {
+      "term": "通用经验 Top 10（A/B级）",
+      "definition": "1. \\[工程红线] Python3.9兼容：禁止 `zip(strict=...)` 与 `str | None` 联合语法（均需3.10+）；回退为手动校验重复 + `from typing import Optional, Union`。违反直接SyntaxError（近期真实触发2次）【VM-1788284984418-fd1389b1】",
+      "source": "4-MEMORY/CORE.md",
+      "quality": "A"
+    },
+    {
+      "term": "🏛️ 系统定位",
+      "definition": "底层记忆系统是Dream-MultiSkill的智能记忆中枢，核心功能：",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "📐 架构设计",
+      "definition": "┌─────────────────────────────────────────────────────────────┐",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "📁 记忆类型",
+      "definition": "**定位**: 跨session持久化的核心事实",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "规则内容",
+      "definition": "OKX CLI命令使用`okx`而非`okx-trade`",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "🔄 用户意图分析流程",
+      "definition": "用户输入",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "📊 存储结构",
+      "definition": "~/.workbuddy/",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "用户级记忆",
+      "definition": "~/.workbuddy/",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "工作区记忆",
+      "definition": "/Users/zhangjiangtao/WorkBuddy/{workspace}/",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "🎯 核心目标",
+      "definition": "1. **快速意图识别**: 用户一句话 → 精准调度SKILL",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "🔧 维护机制",
+      "definition": "触发条件:",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "记忆蒸馏",
+      "definition": "触发条件:",
+      "source": "4-MEMORY/MEMORY_SYSTEM.md",
+      "quality": "A"
+    },
+    {
+      "term": "这是什么？",
+      "definition": "4-MEMORY 是 DreamBuddy-V2 的 **AI 专属记忆系统**，它不是给人读的文档，而是给 **AI Agent** 在开发时读取的**结构化上下文索引**。",
+      "source": "4-MEMORY/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "文档权威性矩阵（2026-09-03 对齐）",
+      "definition": "> 4-MEMORY 下曾存在多份架构文档，部分已过时。本矩阵明确每份文档的状态，避免引用废弃内容。",
+      "source": "4-MEMORY/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "归档摘要",
+      "definition": "本次 2026-07-27 评估核心结论：",
+      "source": "4-MEMORY/_archive/_ARCHIVED_20260903_ARCHITECTURE_EVALUATION_V3.md",
+      "quality": "A"
+    },
+    {
+      "term": "条目标题",
+      "definition": "调用外部模块前，先确认函数/接口是否真实存在",
+      "source": "4-MEMORY/archive/TECH_LESSONS_TL-006_20260728_212131.md",
+      "quality": "A"
+    },
+    {
+      "term": "案例内容（从原文件移出）",
+      "definition": "**D048（P1运行时缺陷）**：`auto_exit_system.py` 调用 `a9_exit_decision.evaluate_position_for_exit()`，但这个函数根本不存在，实际只有 `a9_exit_decision_handler`。",
+      "source": "4-MEMORY/archive/TECH_LESSONS_TL-006_20260728_212131.md",
+      "quality": "A"
+    },
+    {
+      "term": "⚠️ 文档定位",
+      "definition": "本文件是 **dream-harness-bridge 新项目的起点 Spec**，不是实施 Spec。",
+      "source": "1-ARCHITECTURE/dream-harness-bridge/SPEC.md",
+      "quality": "A"
+    },
+    {
+      "term": "第二段（D2）— 三问分析",
+      "definition": "现象：DreamOS 算法驱动不足，LLM 价值未凸显",
+      "source": "1-ARCHITECTURE/dream-harness-bridge/SPEC_ALGORITHM_DRIVEN_TRAINING_LOOP.md",
+      "quality": "A"
+    },
+    {
+      "term": "零 · 现状基线（纠正前置误判）",
+      "definition": "经代码考古确认，自进化系统与三个外部子系统的接入关系是 **\"自进化系统消费三系统作为输入\"**，不是\"战略层调控自进化系统\"：",
+      "source": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "quality": "A"
+    },
+    {
+      "term": "零 · 问题总结",
+      "definition": "2026-09-16 美联储加息 25bp（2023 年以来首次），CME FedWatch 显示 93% 概率已定价。落地后 BTC 守住 $75K 支撑反冲高 $76K，纳指收复大部分失地仅跌 0.01%，费城半导体逆势 +0.63%，海力士深跌后收出下影线。此为经典\"利空出尽（Priced In）\"底部信号，但系统当前**无能力识别此类事件驱动机会**。",
+      "source": "23-四层闭环自进化交易架构/SPEC-美国宏观事件驱动交易策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "6机制联动依赖图",
+      "definition": "§15 层级primary ──→ §20 分层弹性约束 (timeframe)",
+      "source": "23-四层闭环自进化交易架构/SPEC-非线性多阶段最优路径理论调研框架.md",
+      "quality": "A"
+    },
+    {
+      "term": "后续条件",
+      "definition": "SPEC v0.2 接受后，进入实现队列需满足：",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC复审报告_自进化系统做空能力疏通探讨_v0.2.md",
+      "quality": "A"
+    },
+    {
+      "term": "置信度声明",
+      "definition": "本复审结论的置信度：**中高**。SPEC v0.2 的设计方向和论证逻辑合理，但\"条件做空正期望\"的最终验证依赖影子模式实盘数据——当前基于 15 笔有效样本的结论具有不确定性，需扩大样本后确认。",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC复审报告_自进化系统做空能力疏通探讨_v0.2.md",
+      "quality": "A"
+    },
+    {
+      "term": "为什么需要 PoE",
+      "definition": "区块链解决的是\"陌生人之间如何对账本达成共识\"——通过工作量证明/权益证明，让不可信的参与者也能协作。AI 编码时代的核心问题是同构的：**人类和系统如何信任 AI 生成的代码？**",
+      "source": "33-REA逆向解析工程/SPEC-工程实践复现器.md",
+      "quality": "A"
+    },
+    {
+      "term": "PoE 的五层证明链",
+      "definition": "1. **Evidence（证据层）**：每条结论带 provenance + level + confidence + known_gaps（REA 已有）",
+      "source": "33-REA逆向解析工程/SPEC-工程实践复现器.md",
+      "quality": "A"
+    },
+    {
+      "term": "与认知系统的协同",
+      "definition": "PoE 不是孤立机制，而是认知系统在工程维度的延伸：",
+      "source": "33-REA逆向解析工程/SPEC-工程实践复现器.md",
+      "quality": "A"
+    },
+    {
+      "term": "Background & Context",
+      "definition": "数学家抵制 OpenAI 的核心诉求是：**没有证明链的答案不配叫知识**。映射到软件工程：",
+      "source": "33-REA逆向解析工程/SPEC-工程实践复现器.md",
+      "quality": "A"
+    },
+    {
+      "term": "REA 现有能力已构成\"证明链\"的基础",
+      "definition": "33-REA 已实现的能力天然对应数学证明链的各环节：",
+      "source": "33-REA逆向解析工程/SPEC-工程实践复现器.md",
+      "quality": "A"
+    }
+  ]
+}

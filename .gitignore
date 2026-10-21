@@ -200,3 +200,23 @@ DreamOS_intermediate.pptx
 
 # macOS 元数据文件
 ._*
+
+# 39-金融语义蒸馏系统：运行时数据产出物（代码与文档保留版本控制）
+39-金融语义蒸馏系统/semantic_events.jsonl
+39-金融语义蒸馏系统/atomic_events.jsonl
+39-金融语义蒸馏系统/aggregate_events.jsonl
+39-金融语义蒸馏系统/contradiction_events.jsonl
+39-金融语义蒸馏系统/newsflash_weights.jsonl
+39-金融语义蒸馏系统/trade_cases.jsonl
+39-金融语义蒸馏系统/spacetime_events.jsonl
+39-金融语义蒸馏系统/term_semantic_map.json
+39-金融语义蒸馏系统/event_lines.json
+39-金融语义蒸馏系统/contradiction_semantics.json
+39-金融语义蒸馏系统/l3_synthesis.json
+39-金融语义蒸馏系统/case_statistics.json
+39-金融语义蒸馏系统/causal_candidates.json
+39-金融语义蒸馏系统/complex_semantics.json
+39-金融语义蒸馏系统/practical_semantics.json
+39-金融语义蒸馏系统/source_credibility.json
+39-金融语义蒸馏系统/.*_state.json
+39-金融语义蒸馏系统/scripts/__pycache__/

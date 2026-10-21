@@ -1,0 +1,360 @@
+{
+  "domain": "theory",
+  "count": 59,
+  "terms": [
+    {
+      "term": "硬约束",
+      "definition": "1. **策略知识不进 CS 公式**：CS = 0.4·cos(d*) + 0.3·cos(ESS) + 0.3·sign_match(CBR)",
+      "source": "23-四层闭环自进化交易架构/README.md",
+      "quality": "A"
+    },
+    {
+      "term": "RED（先写失败测试）",
+      "definition": "`TestCausalSampleStore`：",
+      "source": "23-四层闭环自进化交易架构/SPEC-A2-因果ATE历史样本接入.md",
+      "quality": "A"
+    },
+    {
+      "term": "零 · 现状基线（纠正前置误判）",
+      "definition": "经代码考古确认，自进化系统与三个外部子系统的接入关系是 **\"自进化系统消费三系统作为输入\"**，不是\"战略层调控自进化系统\"：",
+      "source": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "quality": "A"
+    },
+    {
+      "term": "整体结论 (2024-10-05)",
+      "definition": "**所有 P0/P1 方案均未改善 2024 OOS，GARCH (MAE=973) 全面胜出。**",
+      "source": "23-四层闭环自进化交易架构/SPEC-NeuralSDE-OOS泛化修复.md",
+      "quality": "A"
+    },
+    {
+      "term": "零 · ds4 七大维度深度调研（代码级）",
+      "definition": "**ds4 实现**（ds4.c 头部注释 + MODELS.md）：",
+      "source": "23-四层闭环自进化交易架构/SPEC-ds4架构借鉴与系统增强.md",
+      "quality": "A"
+    },
+    {
+      "term": "零 · 问题总结（上一轮评估结论）",
+      "definition": "_check_evolution_kline_signal()",
+      "source": "23-四层闭环自进化交易架构/SPEC-数据管线打通与能力落地.md",
+      "quality": "A"
+    },
+    {
+      "term": "零 · 问题总结",
+      "definition": "2026-09-16 美联储加息 25bp（2023 年以来首次），CME FedWatch 显示 93% 概率已定价。落地后 BTC 守住 $75K 支撑反冲高 $76K，纳指收复大部分失地仅跌 0.01%，费城半导体逆势 +0.63%，海力士深跌后收出下影线。此为经典\"利空出尽（Priced In）\"底部信号，但系统当前**无能力识别此类事件驱动机会**。",
+      "source": "23-四层闭环自进化交易架构/SPEC-美国宏观事件驱动交易策略.md",
+      "quality": "A"
+    },
+    {
+      "term": "6机制联动依赖图",
+      "definition": "§15 层级primary ──→ §20 分层弹性约束 (timeframe)",
+      "source": "23-四层闭环自进化交易架构/SPEC-非线性多阶段最优路径理论调研框架.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心成果",
+      "definition": "把「Shadow 验证 ≥7 天且正向 → 放量」从人工操作变为**自动、可审计、可回滚**：目标开关在影子期（False）每日评估 A2 门禁态，满足「≥7 个自然日且出现过态A」→ 自动 `set_switch(target, True)`。对应 SPEC/PLAN：`SPEC-Shadow验证自动放量门禁.md` / `PLAN-Shadow验证自动放量门禁.md`。",
+      "source": "23-四层闭环自进化交易架构/docs/CHANGELOG.md",
+      "quality": "A"
+    },
+    {
+      "term": "核心发现",
+      "definition": "Phase 3 审计发现与 Phase 4 完全相同的\"写入链路断裂\"反模式——模块已实现+测试全通过，但模块间数据流断裂，导致哲学逻辑链未完全闭合。",
+      "source": "23-四层闭环自进化交易架构/docs/CHANGELOG.md",
+      "quality": "A"
+    },
+    {
+      "term": "修复 — P2 CBR 系统扩展（形态案例接入）",
+      "definition": "删除新建的 `case_library.py`，改为扩展现有 CBR 系统（11-易经推理系统/scripts/memory_l4/），统一交易案例归属。",
+      "source": "23-四层闭环自进化交易架构/docs/CHANGELOG.md",
+      "quality": "A"
+    },
+    {
+      "term": "修复 — P3 AGI 模块懒初始化接入 pipeline",
+      "definition": "之前 10 个 AGI 模块（causal_engine/signature_engine/path_integral 等）已完整实现（508-808 行），但未接入 pipeline。新增 5 个懒初始化方法到 `evolution_pipeline.py`：",
+      "source": "23-四层闭环自进化交易架构/docs/CHANGELOG.md",
+      "quality": "A"
+    },
+    {
+      "term": "四系统统一关系",
+      "definition": "知识库(Markdown) → knowledge_to_gene → 基因库(JSON)",
+      "source": "23-四层闭环自进化交易架构/docs/CHANGELOG.md",
+      "quality": "A"
+    },
+    {
+      "term": "修复 — P0 已实现模块接入实盘链路",
+      "definition": "之前 RegimeGateSwitch、TrendFollowingEngine、GridTradingEngine、ShadowRLTrainer 四个模块都已实现且测试通过，但 `evolution_pipeline.py` 中没有 import 它们——策略引擎和学习闭环都是空转状态。",
+      "source": "23-四层闭环自进化交易架构/docs/CHANGELOG.md",
+      "quality": "A"
+    },
+    {
+      "term": "后续条件",
+      "definition": "SPEC v0.2 接受后，进入实现队列需满足：",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC复审报告_自进化系统做空能力疏通探讨_v0.2.md",
+      "quality": "A"
+    },
+    {
+      "term": "置信度声明",
+      "definition": "本复审结论的置信度：**中高**。SPEC v0.2 的设计方向和论证逻辑合理，但\"条件做空正期望\"的最终验证依赖影子模式实盘数据——当前基于 15 笔有效样本的结论具有不确定性，需扩大样本后确认。",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC复审报告_自进化系统做空能力疏通探讨_v0.2.md",
+      "quality": "A"
+    },
+    {
+      "term": "多重比较问题",
+      "definition": "5 个优化方案新增约 **8 个可调参数**（persistence_threshold 动态校准 + floor/ceiling/reversion_rate + TIME/SAMPLE_COOLDOWN + structural_break_threshold + 3 个权重）。回测调优时组合数爆炸，假阳性率上升。**文档未提及 Bonferroni/FDR 校正**——这是 Critical",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC评审报告_矛盾论Transformer融合方案_v0.7.md",
+      "quality": "A"
+    },
+    {
+      "term": "触发链路不确定性传播图",
+      "definition": "分歧（G_dim≠A_dim）—不确定性：Granger p-value、Attention 聚合噪声、维度映射歧义",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC评审报告_矛盾论Transformer融合方案_v0.7.md",
+      "quality": "A"
+    },
+    {
+      "term": "误差级联放大风险",
+      "definition": "**存在级联放大风险**，最严重的是 **head_multipliers 正反馈循环**：",
+      "source": "23-四层闭环自进化交易架构/docs/SPEC评审报告_矛盾论Transformer融合方案_v0.7.md",
+      "quality": "A"
+    },
+    {
+      "term": "环节⑤数值验证（端到端）",
+      "definition": "无矛盾  L(long) = 0.2400",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/audit_20260912_0806.md",
+      "quality": "A"
+    },
+    {
+      "term": "pytest 全量回归",
+      "definition": "命令: python -m pytest dreambuddy_evolution/tests/ --tb=no -q",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/audit_20260912_1605.md",
+      "quality": "A"
+    },
+    {
+      "term": "整体评价",
+      "definition": "**自进化系统哲学逻辑链 5 环节完整实现，硬约束 HC-AGI-18~23 全部通过，FAIL-OPEN 铁律被正确执行。** 无 P0/P1 级问题。系统可进入实盘小仓位测试。",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/audit_20260912_1605.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键代码位置",
+      "definition": "dreambuddy_evolution/core/shadow_rl.py:31-58   — record() + Phase3 自动激活",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260913_1200.md",
+      "quality": "A"
+    },
+    {
+      "term": "get_evolution_feedback() 返回字段",
+      "definition": "{",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260913_1200.md",
+      "quality": "A"
+    },
+    {
+      "term": "结论",
+      "definition": "自进化系统 7 大域 **无 P0 断裂、无 P1 问题**。矛盾论 5 环节哲学逻辑链完整闭环（路径发现 → 识别 → 趋势回流 → 验证闭环 → HJB 调制），L3/L4 双轨追踪正常运转，HJB/变分法三级降级链健壮，开关架构向后兼容。",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260913_1200.md",
+      "quality": "A"
+    },
+    {
+      "term": "开启开关（21）",
+      "definition": "`enable_agi_core`, `enable_shadow_rl_phase3`, `enable_signature_engine`, `enable_path_integral`, `enable_neural_sde`, `enable_timesfm_forecast`, `enable_deep_reasoning`, `enable_causal_engine`, `enabl",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260914_1207.md",
+      "quality": "A"
+    },
+    {
+      "term": "关闭开关（9）",
+      "definition": "`enable_microstructure_resistance`, `enable_rv_contradiction_modulation`, `enable_hjb_dominant`, `enable_exogenous_strength`, `enable_granger_causality`, `enable_structural_break_detection`, `enable_c",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260914_1207.md",
+      "quality": "A"
+    },
+    {
+      "term": "get_evolution_feedback 返回",
+      "definition": "feedback keys: ['l3_stats', 'l4_v_all', 'l4_ess_adjustments', 'contradiction_feedback']",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260915_0011.md",
+      "quality": "A"
+    },
+    {
+      "term": "审计结论",
+      "definition": "**自进化系统模型域运转健康，7 大域全绿。**",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260915_0011.md",
+      "quality": "A"
+    },
+    {
+      "term": "🔧 问题修复清单",
+      "definition": "无链路断裂或数据异常。",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260916_0600.md",
+      "quality": "A"
+    },
+    {
+      "term": "注意事项 (已确认非Bug)",
+      "definition": "1. **ShadowRL reward=0.0 占位**: Fix 1 设计决策（避免数据质量信号污染方向正确性）。真实 PnL reward 由 TradeSettlementBridge._record_real_pnl_reward 在平仓事件注入。**不修复**。",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260916_0600.md",
+      "quality": "A"
+    },
+    {
+      "term": "📈 架构亮点总结",
+      "definition": "1. **完整闭环**: 矛盾论5环节形成 \"识别→验证→权重更新→再识别\" 完整闭环，且 weight_factor 按维度独立持久化",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260916_0600.md",
+      "quality": "A"
+    },
+    {
+      "term": "🧪 测试建议",
+      "definition": "**无法运行 pytest**（环境中无 Python runtime）。建议手动运行：",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260916_0600.md",
+      "quality": "A"
+    },
+    {
+      "term": "📝 审计结论",
+      "definition": "**综合评级: HEALTHY 🟢**",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260916_0600.md",
+      "quality": "A"
+    },
+    {
+      "term": "定义回顾",
+      "definition": "> Silver/FeatureHub 异常 → 中性兜底 + 6层堆栈日志，绝不阻塞交易",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/sre_20260912_1415.md",
+      "quality": "A"
+    },
+    {
+      "term": "磁盘空间",
+      "definition": "/dev/disk3s1s1  228Gi  17Gi  47Gi  27%  /",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/sre_20260912_1415.md",
+      "quality": "A"
+    },
+    {
+      "term": "内存压力 🔴",
+      "definition": "vm.swapusage: total = 11264.00M  used = 10725.50M  free = 538.50M",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/sre_20260912_1415.md",
+      "quality": "A"
+    },
+    {
+      "term": "CPU 负载",
+      "definition": "load averages: 3.11 2.80 2.59",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/sre_20260912_1415.md",
+      "quality": "A"
+    },
+    {
+      "term": "状态文件（注意）",
+      "definition": "data/okx_positions.json:     MISSING",
+      "source": "23-四层闭环自进化交易架构/docs/audit_reports/sre_20260912_1415.md",
+      "quality": "A"
+    },
+    {
+      "term": "关键结论汇总",
+      "definition": "1. **零历史数据**：cognitive_memory.db（6931 条）与 bayesian_memories.json（799 条）中均无质变事件 divergence_count 实测记录，仅 3 条设计层讨论记忆。",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研项 1 核心发现",
+      "definition": "1. **零历史数据**：cognitive_memory.db（6931 条）与 bayesian_memories.json（799 条）中均无质变事件 divergence_count 实测记录，仅 3 条设计层讨论记忆。",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研项 2 核心发现",
+      "definition": "1. **CUSUM 实现缺失**：`statsmodels 0.15.0` 不含 `breaks_cusumolsresid`，全部 fallback 到 rolling_zscore，命中率 0%。",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研项 4 核心发现",
+      "definition": "1. **BTC 自相关 τ=1**：30m/1h/daily 三个周期收益率接近白噪声，\"persistence ≥ 2τ\"规则失效。",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md",
+      "quality": "A"
+    },
+    {
+      "term": "紧急行动项",
+      "definition": "1. **立即修复 CUSUM 依赖**（P0，影响 Q5 权重校准有效性）",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研项 3（相平面分析）",
+      "definition": "1. **$m^*=1.0$ 在 Consensus 状态渐近稳定**（特征导数 0.95<1），数学上是 OU 离散过程；但 §10.11.2 L1513 的\"EM 算法衰减率\"是错误类比，应改为 OU 过程依据",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研项 5（消融实验设计）",
+      "definition": "1. **5 个消融实验均采用配对设计**（同事件序列 A/B 回放），样本量需求降至独立设计的 1/2",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md",
+      "quality": "A"
+    },
+    {
+      "term": "调研项 6（多重比较校正方案）",
+      "definition": "1. **8 参数存在 3-4 组强相关簇**，Bonferroni 过度保守，**推荐 BH-FDR + walk-forward**",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md",
+      "quality": "A"
+    },
+    {
+      "term": "摘要",
+      "definition": "本报告对比 v0.7 \"Granger+Attention 交叉验证\"与 3 个替代方案（纯 Attention+Bayesian 在线学习 / 互信息 MI / Shapley value 归因）在因果推断、计算复杂度、在线可行性、可解释性、集成成本 5 维度的优劣。结论：**v0.7 在质变检测+自进化闭环目标下理论占优，但让步于在线更新（弱于 Bayesian）、非线性识别（弱于 MI）、归",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "综合结论",
+      "definition": "**理论层面：是（微弱优势）**",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "模式 4 阻断解除条件",
+      "definition": "模式 4\"框架锁定\"**已解除**，依据：",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "任务 1（理论对比）",
+      "definition": "1. v0.7 Granger+Attention 在加权总分 6.55 排名第 1，但仅以 0.05 分微弱优势领先替代方案 A（Bayesian online 6.50）",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "任务 2（实验设计）",
+      "definition": "1. 5 框架配对 walk-forward：6M 训练 + 1M 验证 + 3M 最终 OOS，共 ~15 月数据",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "任务 3（可证伪性声明）",
+      "definition": "1. 每个替代方案有 3 条采纳条件 + 3 条否决条件",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "评分影响",
+      "definition": "1. 评审 v1.1 模式 4\"框架锁定\"**已解除**",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md",
+      "quality": "A"
+    },
+    {
+      "term": "总体判定",
+      "definition": "**Q4 降级模式的\"单链路可靠\"假设**：",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md",
+      "quality": "A"
+    },
+    {
+      "term": "模式 6 原评分依据",
+      "definition": "> [SPEC 评审报告 §2 模式 6](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC评审报告_矛盾论Transformer融合方案_v0.7.md)：评分 4 分（≥4 分触发让步）——\"Q4 降级输出 primary_dim 隐含'单链路可靠'未论证\"",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md",
+      "quality": "A"
+    },
+    {
+      "term": "与原 4 项 P0 前置条件的关系",
+      "definition": "SPEC 评审报告 §11.4 的 4 项 P0 前置条件保持不变，本次调研**新增**第 5 项 P0：",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md",
+      "quality": "A"
+    },
+    {
+      "term": "数据缺口与下一步行动",
+      "definition": "1. **P0**：扩展 `contradiction_shift_accumulator.py::detect_shift()` 返回字段，增加 `consecutive_count` / `degraded_mode` / `primary_dim_degraded`",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md",
+      "quality": "A"
+    },
+    {
+      "term": "长期研究方向",
+      "definition": "1. **跨周期验证**：30m/1h/4h 三个周期的一致率是否一致？（任务 3 估算显示 30m 可更快决策）",
+      "source": "23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md",
+      "quality": "A"
+    }
+  ]
+}
