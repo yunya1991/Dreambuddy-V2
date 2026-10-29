@@ -151,4 +151,4 @@ if [[ $RC -ne 0 ]]; then
     echo "[错误] gh release create 失败（RC=$RC），tag=$TAG" >&2
     exit 1
 fi
-echo "[完成] 已发布 release $TAG（assets: model.pkl / meta.json / manifest.json）"
+echo "[完成] 已发布 release ${TAG}（assets: model.pkl / meta.json / manifest.json）"
