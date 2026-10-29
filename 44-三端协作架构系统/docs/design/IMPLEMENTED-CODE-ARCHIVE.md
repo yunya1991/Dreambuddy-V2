@@ -47,7 +47,7 @@
 
 | 项 | 内容 | 触发条件 |
 |---|---|---|
-| **P1-3 端到端 1 例** | 本地先训练出版本 → `publish_release.sh` 发 Release → 云端 `ingest_release.py` 拉取登记；需真实 model.pkl 与 GitHub Release 授权 | 本地辅训首次产出时 |
+| ~~P1-3 端到端 1 例~~ | **已完成（2026-10-30）**：v1 发布 `ml-v1`（GitHub asset digest == 本地 sha256 `2231ef7f…`）；接收端正向链路（临时注册表）checksum 一致 → 登记 state=none；对真实注册表重复 ingest 被守卫拒绝（exit 1，registry 未改动）；顺带修复 `$TAG（` unbound variable。**残余**：云端无 gh CLI/无 token，云端侧 ingest 待装 gh 或加 token-free 下载通道 | — |
 | **P2-3 云端真实演练** | `12-dr-drill.sh --cloud --yes` 会真实 reset + 重启，需本人明确授权且在低波动窗口（G4） | 季度或重大变更后 |
 | **D1/D4/D5/D7/D8 定期执行** | 建议 crontab/timer：D1 每次部署后+每周、D4/D8 每周、D5 每次训练后、D7 每月 | 周期 |
 | **D7 发现的小项（P1 级，需走门禁链修复）** | 云端多个 `.env` 权限为 644/664（`.env.production`、`10-经典指标系统/.env`、`12-三屏趋势系统/.env`、`11-易经推理系统/.env`），应统一 `chmod 600`；SSH `permitrootlogin without-password` 建议改 `no` | 下次部署窗口 |
