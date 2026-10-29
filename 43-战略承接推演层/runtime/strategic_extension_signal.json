@@ -1,13 +1,13 @@
 {
-  "signal_id": "sig_20261029_ecf63cf7",
+  "signal_id": "sig_20261029_7a12da2b",
   "source": "strategic_extension",
-  "ts": "2026-10-29T10:18:01.874959+00:00",
+  "ts": "2026-10-29T18:48:01.569628+00:00",
   "symbol": "BTC/USDT",
   "direction": "neutral",
   "confidence": 0.52,
   "horizon": "days",
   "risk_exposure_hint": 0.1,
-  "expires_at": "2026-10-30T10:18:01.874959+00:00",
+  "expires_at": "2026-10-30T18:48:01.569628+00:00",
   "shadow": true,
   "payload": {
     "per_asset_class": {
@@ -194,17 +194,9 @@
         "fundamental": "基本面分析：系统质量（智信仁勇严）+ 链上基本面（NVT/MVRV/SOPR/活跃地址）"
       },
       "sentiment_channel": {
-        "market_sentiment_score": 52,
-        "available": true,
-        "source": "fear_greed_enhanced",
-        "ts": "2026-10-29T10:00:00Z",
-        "fg_value": 52.5,
-        "components": {
-          "funding": 50.0,
-          "volatility": 69.0,
-          "capital_flow": 10.0,
-          "momentum": 81.0
-        }
+        "market_sentiment_score": 50,
+        "available": false,
+        "note": "PG: F&G PostgreSQL 加载失败（fail-open）: connection to server at \"127.0.0.1\", port 5432 failed: fe_sendauth: no password supplied\n | SQLite: F&G SQLite 加载失败（fail-open）: no such table: records"
       }
     },
     "bridge_switch": false,

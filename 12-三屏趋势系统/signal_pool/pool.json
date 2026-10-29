@@ -1,51 +1,11 @@
 {
-  "updated_at": "2026-10-29T10:40:27.438570+00:00",
+  "updated_at": "2026-10-29T19:03:09.031344+00:00",
   "scanner_version": "1.0",
   "total_coins": 9,
   "success_count": 9,
   "fail_count": 0,
   "signals": {
     "BTC": {
-      "1h": {
-        "signal": "HOLD",
-        "confidence": 0,
-        "strategy": "Freqtrade_Vote",
-        "details": [
-          {
-            "strategy": "RegimeHybridStrategy",
-            "signal": "HOLD",
-            "weight": 0.6,
-            "error": "strategy_run_failed:Invalid frequency: 4H. Failed to parse with error message: ValueError(\"Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?\")"
-          },
-          {
-            "strategy": "Bot2StrategyTrend",
-            "signal": "HOLD",
-            "weight": 0.4,
-            "error": "no_signal"
-          }
-        ]
-      },
-      "4h": {
-        "signal": "HOLD",
-        "confidence": 0,
-        "strategy": "Freqtrade_Vote",
-        "details": [
-          {
-            "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
-          },
-          {
-            "strategy": "TrendConfirmationStrategy",
-            "signal": "HOLD",
-            "weight": 0.45,
-            "error": "no_signal"
-          }
-        ]
-      }
-    },
-    "ETH": {
       "1h": {
         "signal": "HOLD",
         "confidence": 0,
@@ -73,6 +33,44 @@
           {
             "strategy": "MultiGroupStrategy",
             "signal": "SELL",
+            "weight": 0.55
+          },
+          {
+            "strategy": "TrendConfirmationStrategy",
+            "signal": "BUY",
+            "weight": 0.45
+          }
+        ]
+      }
+    },
+    "ETH": {
+      "1h": {
+        "signal": "HOLD",
+        "confidence": 0,
+        "strategy": "Freqtrade_Vote",
+        "details": [
+          {
+            "strategy": "RegimeHybridStrategy",
+            "signal": "HOLD",
+            "weight": 0.6,
+            "error": "strategy_run_failed:Invalid frequency: 4H. Failed to parse with error message: ValueError(\"Invalid frequency: H. Failed to parse with error message: KeyError('H'). Did you mean h?\")"
+          },
+          {
+            "strategy": "Bot2StrategyTrend",
+            "signal": "HOLD",
+            "weight": 0.4,
+            "error": "no_signal"
+          }
+        ]
+      },
+      "4h": {
+        "signal": "BUY",
+        "confidence": 100,
+        "strategy": "Freqtrade_Vote",
+        "details": [
+          {
+            "strategy": "MultiGroupStrategy",
+            "signal": "BUY",
             "weight": 0.55
           },
           {
@@ -104,21 +102,19 @@
         ]
       },
       "4h": {
-        "signal": "HOLD",
-        "confidence": 0,
+        "signal": "BUY",
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "HOLD",
-            "weight": 0.45,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.45
           }
         ]
       }
@@ -145,14 +141,13 @@
       },
       "4h": {
         "signal": "BUY",
-        "confidence": 45,
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
@@ -184,14 +179,13 @@
       },
       "4h": {
         "signal": "BUY",
-        "confidence": 45,
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
@@ -222,13 +216,13 @@
         ]
       },
       "4h": {
-        "signal": "SELL",
-        "confidence": 55,
+        "signal": "BUY",
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "SELL",
+            "signal": "BUY",
             "weight": 0.55
           },
           {
@@ -260,21 +254,19 @@
         ]
       },
       "4h": {
-        "signal": "HOLD",
-        "confidence": 0,
+        "signal": "BUY",
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "HOLD",
-            "weight": 0.45,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.45
           }
         ]
       }
@@ -301,14 +293,13 @@
       },
       "4h": {
         "signal": "BUY",
-        "confidence": 45,
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
@@ -339,21 +330,19 @@
         ]
       },
       "4h": {
-        "signal": "HOLD",
-        "confidence": 0,
+        "signal": "BUY",
+        "confidence": 100,
         "strategy": "Freqtrade_Vote",
         "details": [
           {
             "strategy": "MultiGroupStrategy",
-            "signal": "HOLD",
-            "weight": 0.55,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.55
           },
           {
             "strategy": "TrendConfirmationStrategy",
-            "signal": "HOLD",
-            "weight": 0.45,
-            "error": "no_signal"
+            "signal": "BUY",
+            "weight": 0.45
           }
         ]
       }
