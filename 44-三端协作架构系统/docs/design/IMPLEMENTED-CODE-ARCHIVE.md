@@ -51,6 +51,7 @@
 | **P2-3 云端真实演练** | `12-dr-drill.sh --cloud --yes` 会真实 reset + 重启，需本人明确授权且在低波动窗口（G4） | 季度或重大变更后 |
 | **D1/D4/D5/D7/D8 定期执行** | 建议 crontab/timer：D1 每次部署后+每周、D4/D8 每周、D5 每次训练后、D7 每月 | 周期 |
 | **D7 发现的小项（P1 级，需走门禁链修复）** | 云端多个 `.env` 权限为 644/664（`.env.production`、`10-经典指标系统/.env`、`12-三屏趋势系统/.env`、`11-易经推理系统/.env`），应统一 `chmod 600`；SSH `permitrootlogin without-password` 建议改 `no`；云端 gh token 为个人全 scope token（admin:enterprise 等），建议后续换 fine-grained PAT 仅 repo scope | 下次部署窗口 |
+| **采集源残余（P2）** | ① ~~theblockbeats 云端不可达~~ **已修复（1863f8e761）**：`DC_DISABLED_SOURCES` 环境级禁用，云端 drop-in 已配；② ~~coingecko 429~~ **已修复**：scheduler 启动错峰（90s 线性铺开）+ 源级节流 8s/次，云端实测 metrics status=ok、间隔 8-9s、零 429。残余观察项：yfinance crumb 429（有优雅降级，继续无 crumb 运行） | 每日 D3 巡检确认 |
 
 > 说明：评审通道只读，上表 D7 问题不在评审时直接改云端，须经门禁链（本地改脚本 → G2 → 部署）修复。
 
