@@ -54,12 +54,14 @@
 
 | 云端路径 | 大小 | sha256 |
 |---|---|---|
-| `docs/tech/SPEC-three-tier-collab-management.md` | 20,770 B | `6f4c9b379acd1d8c75ae38cd7d1066c7fbe3376e660e92187b7876640f9b6156` |
+| `docs/tech/SPEC-three-tier-collab-management.md` | 22,885 B | `98c815166cda628c58b93408830d9c9ebbf4f4e3ddfd12f31794f23d2711ce89` |
 | `docs/tech/three-tier-collab-qwen-research.md` | 13,059 B | `df3f4a66c922cf730bc531aff92ff5202bd215ca9246772ce2a5f2c9c738dd68` |
-| `docs/tech/dream-three-tier-collab-SKILL.md` | 9,613 B | `30cd9ab6bc5a3938add73be988646a0327046e3076aa71705447fb5ffe13144e` |
-| `review/pending/SPEC-three-tier-collab-management.md`（评审副本） | 20,770 B | 同上 |
+| `docs/design/dream-three-tier-collab-SKILL.md` | 9,846 B | `64e1008e64efeda17968f6546dd8b158d4ee38e814e272c20d28a38b8ca4e162` |
+| `review/pending/SPEC-three-tier-collab-management.md`（评审副本） | 22,885 B | 同上 |
 
 与本地文件逐一对齐（sha256 一致 3/3）。**云端评审执行体尚未落地**（`cloud/scripts` 为空、无 review 相关 timer）。
+
+**云端评审反馈（2026-10-30）**：结论"有条件通过"。必改 M1（D5 报告时效）、M2（G4 参数来源/周期）、M3（budget-baseline 落盘）、M4（脚本缺失）与建议 S2（hotfix 留痕）、S3（SSH 前置检查）已回写 SPEC 与 SKILL；M4 因三个脚本已入库而关闭；S1（yijing-polling-trader 静默悬案）保留为 D3 待办。闭环表见 SPEC §一之六。
 
 ## 五、归档说明
 

@@ -71,14 +71,28 @@
 | **D2 运行健康** | 22 服务 active 状态、13 timer 触发记录、端口监听完整性 | `systemctl list-units/list-timers`、`ss -tlnp`（只读） | 每日 | 健康快照 |
 | **D3 日志质量** | 关键服务 error/warn 趋势；**静默服务识别**（如 yijing-polling-trader 日志停留 2026-10-17 的已知悬案） | `37-一键启动脚本/cloud-logs.sh errors` / `-f` | 每日 | 异常清单 |
 | **D4 数据链路** | 18-DB→19-DAL→快照→API→前端 字段契约、量级、缺失 | `data-troubleshoot` SKILL | 每周 + 前端异常时 | 链路诊断报告 |
-| **D5 模型质量** | walk_forward 指标趋势、overfit_gap 恶化、生产漂移 | `ml/models/registry.json` 评审 + 交易胜率 | 每次训练后 | 模型评审意见（喂 G7） |
+| **D5 模型质量** | walk_forward 指标趋势、overfit_gap 恶化、生产漂移 | `ml/models/registry.json` 评审 + 交易胜率 | 每次训练后 | 模型评审意见（喂 G7，有效期 24h） |
 | **D6 风控行为** | 实盘交易记录合规性、trailing-stop 触发、熔断有效性 | 交易日志只读评审 | 每日 | 风控日报 |
 | **D7 安全面** | 端口暴露面、凭据落盘位置、ufw 规则、GitHub 权限 | 只读审计命令 | 每月 | 安全审计报告 |
 | **D8 成本/资源总量** | 云端 CPU/内存/磁盘水位（4C8G 是否触顶）、腾讯云账单、LLM token 与外部数据 API 费用、GitHub Actions 用量、未来按需 GPU 租用预算 | `free -h` / `df -h` / `top`（只读）、云账单、GitHub Actions usage | 每周（水位）+ 每月（账单） | 资源/成本月报 |
 
 **评审节奏**：D2/D3/D6 每日（可脚本化汇总成一页）；D1/D5 事件驱动；D4/D8水位 每周；D7/D8账单 每月。
-**评审产出统一入口**：`.trae/documents/review-reports/YYYY-MM-DD-<维度>.md`，问题分级后进门禁链。其中 **D5 评审意见是 §4.2 promote 决策的显式输入**——执行 promote 脚本前必须引用当次 D5 评审报告路径，无报告不 promote。
+**评审产出统一入口**：`.trae/documents/review-reports/YYYY-MM-DD-<维度>.md`，问题分级后进门禁链。其中 **D5 评审意见是 §4.2 promote 决策的显式输入**——执行 promote 脚本前必须引用当次 D5 评审报告路径，无报告不 promote。**报告有效期**：promote 时刻距报告生成 ≤24 小时，且报告时间必须晚于该版本的 `eval_gate.evaluated_at`；超期或 eval 重跑后须重新出报告（过期报告一律视为"无报告"）。
 **资源红线**：云端内存水位 >85% 或磁盘 >80% 即登记 P1 问题；月度总成本超预算基线 20% 即触发架构优化评审。**预算基线定义**：默认取近 3 个月滚动平均账单（含云服务器 + LLM token + 外部数据 API + GitHub Actions 超额），首次 D8 月报时由本人确认并落盘 `.trae/documents/review-reports/budget-baseline.md`，此后每季度复核一次。
+
+### 一之六、评审意见闭环（2026-10-30 云端评审）
+
+云端产出 `44-三端协作架构系统/review/feedback/2026-10-30-doc-review.md`，结论「有条件通过」，必改 4 项 / 建议 3 项，处置如下：
+
+| 编号 | 评审意见 | 处置 | 状态 |
+|---|---|---|---|
+| M1 | D5 报告需定义时效，防止过期报告绕过"无报告不 promote" | §一之五 明确有效期 24h 且须晚于 `eval_gate.evaluated_at` | ✅ 已对齐 |
+| M2 | G4 阈值需注明数据来源、计算周期与评审归属 | §二 增补「G4 参数来源与周期」，阈值变更归 D6 | ✅ 已对齐 |
+| M3 | `budget-baseline.md` 未落盘，D8 月报前必须完成 | 纳入 P0-0 验收标准 | ✅ 已对齐 |
+| M4 | SKILL 引用的 cloud-review.sh / g4-volatility-gate.py / precommit_secret_scan.py 当时不存在 | 三者均已实现并入库（提交 `568c01582c`/`db3cbcf1d2`） | ✅ 已关闭 |
+| S1 | yijing-polling-trader 日志停留 2026-10-17 悬案 | 列入 D3 首批排查项，不阻塞 P0 | ⏳ 待办 |
+| S2 | hotfix「本人显式确认」缺留痕渠道 | §二 固定为 `--g4-hotfix "原因"` + `hotfix-log.jsonl` | ✅ 已对齐 |
+| S3 | D1 评审命令依赖 SSH 别名 | SKILL 增补前置检查（`ssh dreambuddy-remote true`） | ✅ 已对齐 |
 
 ---
 
@@ -94,13 +108,14 @@
 | G1 | 设计门 | 本地 | design doc 存在且经 `dream-science-peer-review` 评审 | 无 doc → 禁止开 PR（重大变更） | 🆕 |
 | G2 | Pre-commit | 本地 | lint、secret 扫描、commit message | 阻止 commit | 🆕 复用 `ci.yml` 的 ruff/black |
 | G3 | PR CI | GitHub | 单测+集成+依赖扫描+**drift-guard** | PR 标记 failed，禁止 merge | ✅ 已有 |
-| G4 | 部署窗口门 | GitHub/云端 | 波动率分位 ≤90%、无 P0 告警、云端健康 | 不满足 → 进 pending 队列 | 🆕 |
+| G4 | 部署窗口门 | GitHub/云端 | ATR20 日线分位 ≤90%、\|资金费率\| ≤0.001、无 P0 告警、云端健康 | 不满足 → 推迟至下个部署窗口（exit 4） | 🆕 `g4-volatility-gate.py` |
 | G5 | 部署验证 | 云端 | systemd 启动 + 端口监听 + 版本号比对 | 失败 → **自动回滚上一 tag** | ✅ `phase*` 脚本 |
 | G6 | 健康检查 | 云端 | API 30s 响应、PG/Redis 连通 | 连续 3 次失败 → 回滚 + 告警 | 🆕 watchdog |
 | G7 | 模型 Eval 门 | 云端 | 新模型 vs Production 指标对比（walk_forward 为主） | 不达标 → 保持 staging | 🆕 |
 
 **原则**：G5/G6 自动回滚（无需人工）；G3 失败必须本地修，**禁止 force merge**；G4 是 7×24 场景下替代"非交易时段"的唯一有效门禁。
-**G4 紧急豁免**：P0 故障的 hotfix 修复（hotfix 分支 + 本人显式确认）可豁免 G4 直接部署，部署后 24h 内补审并记入 review-reports；非 hotfix 变更一律不得豁免。
+**G4 参数来源与周期**：ATR20 取 18-DB 日线（1D）最近 21 根 K 线算 ATR(20)，分位窗口 90 日、日频更新；资金费率取交易所 funding rate 当期值（8h 结算）。阈值变更**必须**经 D6 风控行为评审并留报告，不得由部署脚本自行调整。
+**G4 紧急豁免**：P0 故障的 hotfix（hotfix 分支 + 本人显式确认）可豁免 G4 直接部署；确认渠道固定为 `update.sh --g4-hotfix "<原因>"`（原因文本必填），脚本自动写 `.trae/documents/review-reports/hotfix-log.jsonl` 并生成 24h 补审记录；无参数/口头确认一律不视为豁免，非 hotfix 变更不得豁免。
 
 ---
 
@@ -237,7 +252,7 @@
 
 | # | 任务 | 验收标准 | 依赖 | 风险 |
 |---|---|---|---|---|
-| P0-0 | **云端评审日检脚本化**（D2/D3/D6 汇总一页） | `37-一键启动脚本/` 新增 `cloud-review.sh`：一次执行输出运行健康+日志异常+风控行为三段摘要；首次运行自动创建 `.trae/documents/review-reports/` 目录 | — | 只读查询，零风险 |
+| P0-0 | **云端评审日检脚本化**（D2/D3/D6 汇总一页） | `37-一键启动脚本/cloud-review.sh`：一次执行输出运行健康+日志异常+风控行为三段摘要；首次运行自动创建 `.trae/documents/review-reports/`；并落盘 `budget-baseline.md`（近 3 个月滚动均值，本人确认） | — | 只读查询，零风险 |
 | P0-1 | registry schema 1.1 扩展（role/tier 字段） | 185 SKILL 全部补 role；校验脚本通过 | — | 批量误标 → 先用 category 规则推断 |
 | P0-2 | 模型 registry 加 `state` 字段 + promote/eval 脚本 | v1 迁为 `production`；新模型走 none→staging→production | P0-1 | 现有训练脚本硬编码 `current_version`，需兼容 |
 | P0-3 | G2 pre-commit hook（复用 ci.yml 的 ruff/black） | 本地 commit 触发 lint+secret 扫描 | — | 大仓库 lint 慢 → 只查 staged |
