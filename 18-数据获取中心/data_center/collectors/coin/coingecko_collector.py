@@ -11,6 +11,7 @@ API 端点（HTTPS GET 无需 Key，10-30 req/min）：
 fail-open：网络不通 / HTTP 非 200（非 429） → 返回空列表，不抛异常。
 429 限流 → 抛 RateLimitError（由调度器退避重试）。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -20,7 +21,6 @@ import requests
 from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 from data_center.core.errors import RateLimitError
-
 
 _BASE = "https://api.coingecko.com/api/v3"
 
@@ -59,7 +59,13 @@ class CoinGeckoCollector(BaseCollector):
     # ------------------------------------------------------------------
     @staticmethod
     def _get(url: str, timeout: int = 20):
-        resp = requests.get(url, timeout=timeout)
+        # Demo/Pro API key（环境变量 COINGECKO_API_KEY）：机房共享 IP 匿名档配额不稳，
+        # 带 key 后走独立配额，可根除 429。未配置则保持匿名行为不变。
+        import os
+
+        key = os.environ.get("COINGECKO_API_KEY", "").strip()
+        headers = {"x-cg-demo-api-key": key} if key else {}
+        resp = requests.get(url, timeout=timeout, headers=headers or None)
         if resp.status_code == 429:
             raise RateLimitError(f"CoinGecko 429 限流: {url}")
         if not resp.ok:
