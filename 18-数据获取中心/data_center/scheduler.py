@@ -18,15 +18,15 @@
   sched.start()  # 后台线程
   sched.stop()   # 退出
 """
+
 from __future__ import annotations
 
+import os
 import threading
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
 from typing import Optional
 
-from data_center.core.contract import DataRecord
 from data_center.monitoring.alerting import Alert, AlertLevel, AlertRouter
 from data_center.monitoring.metrics import InvocationMetric
 from data_center.monitoring.quality import QualityChecker
@@ -67,6 +67,11 @@ class CollectionScheduler:
         self._stop_flag = threading.Event()
         self._last_run: dict[str, float] = {}  # task.name -> last ts
         self._last_backfill: float = 0.0
+        self._src_last: dict[str, float] = {}  # source -> last ts（源级节流）
+
+    # 源级最小间隔（秒）：同一 source 的相邻两次采集至少间隔这么久。
+    # coingecko 匿名档 ~5-15 req/min，30 个 chart 任务需 8s 间隔才能排空不触发 429。
+    SRC_MIN_GAP: dict[str, float] = {"coingecko": 8.0}
 
     # ------------------------------------------------------------------
     # 单次采集
@@ -78,8 +83,10 @@ class CollectionScheduler:
             records = self.dc.fetch(task.category, source=task.source, **task.params)
             duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
             metric = InvocationMetric.new_ok(
-                source=task.source, category=task.category,
-                duration_ms=duration_ms, records_count=len(records),
+                source=task.source,
+                category=task.category,
+                duration_ms=duration_ms,
+                records_count=len(records),
             )
             # records 落库
             if records:
@@ -88,7 +95,9 @@ class CollectionScheduler:
             self.sink.write_metric(metric)
             # quality 检查 + 落库
             issues = self.quality.check_all(
-                records, source=task.source, category=task.category,
+                records,
+                source=task.source,
+                category=task.category,
             )
             if issues:
                 self.sink.write_quality(metric, issues)
@@ -96,8 +105,10 @@ class CollectionScheduler:
         except Exception as exc:
             duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
             metric = InvocationMetric.new_error(
-                source=task.source, category=task.category,
-                duration_ms=duration_ms, exc=exc,
+                source=task.source,
+                category=task.category,
+                duration_ms=duration_ms,
+                exc=exc,
             )
             # metric 落库
             self.sink.write_metric(metric)
@@ -135,19 +146,34 @@ class CollectionScheduler:
             self._thread = None
 
     def _run_loop(self) -> None:
-        """主循环：每秒检查各 task 是否到期；每 backfill_interval_sec 执行 18→19 回填。"""
+        """主循环：每秒检查各 task 是否到期；每 backfill_interval_sec 执行 18→19 回填。
+
+        启动错峰：`_last_run` 按任务序号线性错开（同 source 任务不再同一秒并发），
+        避免 coingecko 30 个 chart 任务启动瞬间齐发触发 429。
+        错峰宽度 = DC_START_STAGGER_SEC（默认 90s）内均匀分布，不影响稳态间隔。
+        """
         now = time.time()
-        for task in self.tasks:
-            self._last_run[task.name] = 0.0  # 初始 0，启动后立即跑一次
+        stagger = float(os.environ.get("DC_START_STAGGER_SEC", "90"))
+        n = max(len(self.tasks), 1)
+        for i, task in enumerate(self.tasks):
+            # 首跑时刻 = now - interval + offset；offset 从 interval 线性降到 0
+            # 即任务 i 在启动后 (i/n)*stagger 秒才首次到期，随后按自身 interval 运行
+            offset = stagger * (n - 1 - i) / n
+            self._last_run[task.name] = now - task.interval_sec + offset
         while not self._stop_flag.is_set():
             now = time.time()
             for task in self.tasks:
                 if now - self._last_run.get(task.name, 0.0) >= task.interval_sec:
+                    gap = self.SRC_MIN_GAP.get(task.source)
+                    if gap and now - self._src_last.get(task.source, 0.0) < gap:
+                        continue  # 源级节流：本 tick 跳过，task 保持到期状态下一 tick 再试
                     try:
                         self.collect_once(task)
                     except Exception:
                         pass  # collect_once 内部已处理异常，这里防兜底
                     self._last_run[task.name] = time.time()
+                    if gap:
+                        self._src_last[task.source] = time.time()
             # 周期性 18→19 DAL 回填
             if now - self._last_backfill >= self.backfill_interval_sec:
                 try:
@@ -162,9 +188,11 @@ class CollectionScheduler:
         """执行 18 data_center.db → 19-DAL mm_metrics 回填。"""
         import logging
         from pathlib import Path
+
         _logger = logging.getLogger("dc.scheduler.backfill")
         try:
             from backfill_18_records import backfill  # type: ignore
+
             _repo = Path(__file__).resolve().parents[2]
             _src = str(_repo / "18-数据获取中心" / "data_center.db")
             _dst = str(_repo / "19-数据访问层" / "data" / "dreambuddy_core.db")
@@ -179,423 +207,602 @@ class CollectionScheduler:
     @staticmethod
     def default_tasks() -> list[CollectionTask]:
         """默认采集任务清单，频率分级：
-          - macro/fred 6 系列：1h
-          - finance/yfinance (^VIX)：15min
-          - chain/ccxt/defillama/etherscan：5min
-          - news/gdelt/feedparser/rsshub/tavily：30min
+        - macro/fred 6 系列：1h
+        - finance/yfinance (^VIX)：15min
+        - chain/ccxt/defillama/etherscan：5min
+        - news/gdelt/feedparser/rsshub/tavily：30min
         """
         tasks: list[CollectionTask] = []
         # ── macro/fred 6 系列（1h）──
         for s in ("FEDFUNDS", "M2NS", "WALCL", "CPIAUCSL", "PPIACO", "INDPRO"):
-            tasks.append(CollectionTask(
-                name=f"fred_{s.lower()}",
-                category="macro", source="fred",
-                params={"series": s},
-                interval_sec=3600,
-            ))
+            tasks.append(
+                CollectionTask(
+                    name=f"fred_{s.lower()}",
+                    category="macro",
+                    source="fred",
+                    params={"series": s},
+                    interval_sec=3600,
+                )
+            )
         # ── P2/C8：FRED 传统金融 7 系列（1h，yfinance 限流时的稳定备用源）──
         #    VIXCLS 恐慌指数 / DGS10 美债10Y / DTWEXBGS 美元指数 /
         #    SP500 标普 / NASDAQCOM 纳指 / DCOILWTICO WTI原油 / IR14260 黄金
         #    覆盖 C8 宏观交叉维度全部依赖，FRED 官方源无限流风险
         for s in ("VIXCLS", "DGS10", "DTWEXBGS", "SP500", "NASDAQCOM", "DCOILWTICO", "IR14260"):
-            tasks.append(CollectionTask(
-                name=f"fred_{s.lower()}",
-                category="macro", source="fred",
-                params={"series": s},
-                interval_sec=3600,
-            ))
+            tasks.append(
+                CollectionTask(
+                    name=f"fred_{s.lower()}",
+                    category="macro",
+                    source="fred",
+                    params={"series": s},
+                    interval_sec=3600,
+                )
+            )
         # ── finance/yfinance 跨市场标的（15min）──
         for sym in ("^VIX", "DX-Y.NYB", "GC=F", "^GSPC", "^IXIC", "^TNX", "CL=F", "BTC-USD"):
-            tasks.append(CollectionTask(
-                name=f"yfinance_{sym.lower().replace('^','').replace('=','_').replace('-','_')}",
-                category="finance", source="yfinance",
-                params={"symbol": sym},
-                interval_sec=900,
-            ))
+            tasks.append(
+                CollectionTask(
+                    name=f"yfinance_{sym.lower().replace('^','').replace('=','_').replace('-','_')}",
+                    category="finance",
+                    source="yfinance",
+                    params={"symbol": sym},
+                    interval_sec=900,
+                )
+            )
         # ── chain/ccxt BTC ticker（5min）──
-        tasks.append(CollectionTask(
-            name="ccxt_btc",
-            category="chain", source="ccxt",
-            params={"symbol": "BTC/USDT"},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="ccxt_btc",
+                category="chain",
+                source="ccxt",
+                params={"symbol": "BTC/USDT"},
+                interval_sec=300,
+            )
+        )
         # ── chain/defillama TVL（5min）──
-        tasks.append(CollectionTask(
-            name="defillama_tvl",
-            category="chain", source="defillama",
-            params={"route": "chains"},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="defillama_tvl",
+                category="chain",
+                source="defillama",
+                params={"route": "chains"},
+                interval_sec=300,
+            )
+        )
         # ── chain/etherscan gas（5min）──
-        tasks.append(CollectionTask(
-            name="etherscan_gas",
-            category="chain", source="etherscan",
-            params={"kind": "gas"},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="etherscan_gas",
+                category="chain",
+                source="etherscan",
+                params={"kind": "gas"},
+                interval_sec=300,
+            )
+        )
         # ── news/gdelt（30min）──
-        tasks.append(CollectionTask(
-            name="gdelt_btc",
-            category="news", source="gdelt",
-            params={"query": "bitcoin crypto"},
-            interval_sec=1800,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="gdelt_btc",
+                category="news",
+                source="gdelt",
+                params={"query": "bitcoin crypto"},
+                interval_sec=1800,
+            )
+        )
         # ── news/feedparser（30min）──
-        tasks.append(CollectionTask(
-            name="feedparser_coindesk",
-            category="news", source="feedparser",
-            params={"url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
-            interval_sec=1800,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="feedparser_coindesk",
+                category="news",
+                source="feedparser",
+                params={"url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
+                interval_sec=1800,
+            )
+        )
         # ── news/feedparser CoinTelegraph（10min，39 P-快讯替代源 2026-10-18）──
         #    odaily API 失效（404）后的替代快讯源，实测 RSS 可用（200/53KB）
-        tasks.append(CollectionTask(
-            name="feedparser_cointelegraph",
-            category="news", source="feedparser",
-            params={"url": "https://cointelegraph.com/rss"},
-            interval_sec=600,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="feedparser_cointelegraph",
+                category="news",
+                source="feedparser",
+                params={"url": "https://cointelegraph.com/rss"},
+                interval_sec=600,
+            )
+        )
         # ── news/rsshub（30min）──
-        tasks.append(CollectionTask(
-            name="rsshub_wallstreetcn",
-            category="news", source="rsshub",
-            params={"route": "wallstreetcn/news/global"},
-            interval_sec=1800,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="rsshub_wallstreetcn",
+                category="news",
+                source="rsshub",
+                params={"route": "wallstreetcn/news/global"},
+                interval_sec=1800,
+            )
+        )
         # ── news/tavily（30min，需 key）──
-        tasks.append(CollectionTask(
-            name="tavily_policy",
-            category="news", source="tavily",
-            params={"query": "Fed monetary policy", "max_results": 5},
-            interval_sec=1800,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="tavily_policy",
+                category="news",
+                source="tavily",
+                params={"query": "Fed monetary policy", "max_results": 5},
+                interval_sec=1800,
+            )
+        )
         # ── news/theblockbeats_dataview（30min，Playwright 渲染 ~27s + 结构化解析）
         #    产出 26 条 DataRecord：道(M2/DXY/美债)、天(脉动指数+6个流动性信号)、
         #    将(Bitfinex多单+4个衍生品信号)、地(USDC/USDT溢价+Top10链上净流入)
         #    频率 30min 足以覆盖情绪/净流入/溢价的更新节奏；
         #    若需要更快可下调到 900s(15min)，但要考虑律动服务器响应慢。
-        tasks.append(CollectionTask(
-            name="theblockbeats_dataview",
-            category="news", source="theblockbeats_dataview",
-            params={},
-            interval_sec=1800,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="theblockbeats_dataview",
+                category="news",
+                source="theblockbeats_dataview",
+                params={},
+                interval_sec=1800,
+            )
+        )
         # ── chain/panewslab route=all（4h，~17 次 HTTP，8 大板块 200+ metrics）
         #    panewslab 是易经战略层 D1~D10/T1/T4 proxy 的核心补充源：
         #    市场总览 / 周期判断 / ETF+机构 / 稳定币+RWA / 衍生品 / 交易所 /
         #    链上资金(treasury BTC+巨鲸+DeFi广度) / 美股+宏观 SP500/NASDAQ/VIX/10Y/DXY/DFF
         #    4h 更新频率足够覆盖日级战略决策（持仓/仓位），并避免 17 HTTP/次被限流。
-        tasks.append(CollectionTask(
-            name="panewslab_all",
-            category="chain", source="panewslab",
-            params={"route": "all"},
-            interval_sec=14400,  # 4 小时
-        ))
+        tasks.append(
+            CollectionTask(
+                name="panewslab_all",
+                category="chain",
+                source="panewslab",
+                params={"route": "all"},
+                interval_sec=14400,  # 4 小时
+            )
+        )
         # ── chain/stablecoin_transparency（Tether+USDC 官网真实供应量 + DeFiLlama 归档）
         #    用户要求"直接在官网抓取"，我们用官网__NEXT_DATA__+DeFiLlama官方透明度日档两级fallback。
         #    latest_snapshot 1h 更新 / top_n 4h（地维度稳定币双寡头份额观测）/ USDT&USDC 历史（1年初始化+周级刷新）
-        tasks.append(CollectionTask(
-            name="stablecoin_latest",
-            category="chain", source="stablecoin_transparency",
-            params={"route": "latest_snapshot"},
-            interval_sec=3600,   # 1 小时
-        ))
-        tasks.append(CollectionTask(
-            name="stablecoins_top10",
-            category="chain", source="stablecoin_transparency",
-            params={"route": "top_n", "n": 10},
-            interval_sec=14400,  # 4 小时
-        ))
-        tasks.append(CollectionTask(
-            name="stablecoin_hist_usdt_1y",
-            category="chain", source="stablecoin_transparency",
-            params={"route": "historical", "symbol": "USDT", "days": 365},
-            interval_sec=604800,  # 7 天（周级刷新，初始化首跑会填充365天timeseries）
-        ))
-        tasks.append(CollectionTask(
-            name="stablecoin_hist_usdc_1y",
-            category="chain", source="stablecoin_transparency",
-            params={"route": "historical", "symbol": "USDC", "days": 365},
-            interval_sec=604800,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="stablecoin_latest",
+                category="chain",
+                source="stablecoin_transparency",
+                params={"route": "latest_snapshot"},
+                interval_sec=3600,  # 1 小时
+            )
+        )
+        tasks.append(
+            CollectionTask(
+                name="stablecoins_top10",
+                category="chain",
+                source="stablecoin_transparency",
+                params={"route": "top_n", "n": 10},
+                interval_sec=14400,  # 4 小时
+            )
+        )
+        tasks.append(
+            CollectionTask(
+                name="stablecoin_hist_usdt_1y",
+                category="chain",
+                source="stablecoin_transparency",
+                params={"route": "historical", "symbol": "USDT", "days": 365},
+                interval_sec=604800,  # 7 天（周级刷新，初始化首跑会填充365天timeseries）
+            )
+        )
+        tasks.append(
+            CollectionTask(
+                name="stablecoin_hist_usdc_1y",
+                category="chain",
+                source="stablecoin_transparency",
+                params={"route": "historical", "symbol": "USDC", "days": 365},
+                interval_sec=604800,
+            )
+        )
         # ── P0 扩窗 · 一次性初始化 backfill（≥60 天真五维回测窗）
         #    Panewslab/BlockBeats 仅抓当日快照，但 timeseries 携带 30/90 天趋势点；
         #    我们用更大 interval=24h(一次性) 的 backfill 任务先运行一次把 timeseries 宽度落到 Silver，
         #    stablecoin 历史同上拉满 365d，FRED/Macro 已按 series 自带全量历史。
-        tasks.append(CollectionTask(
-            name="panewslab_all_init_backfill",
-            category="chain", source="panewslab",
-            params={"route": "all"},
-            interval_sec=86400,   # 24h 仅每日补一次，主要靠运行时落库的首条backfill拉到30/90天series
-        ))
-        tasks.append(CollectionTask(
-            name="theblockbeats_dataview_init_backfill",
-            category="news", source="theblockbeats_dataview",
-            params={},
-            interval_sec=86400,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="panewslab_all_init_backfill",
+                category="chain",
+                source="panewslab",
+                params={"route": "all"},
+                interval_sec=86400,  # 24h 仅每日补一次，主要靠运行时落库的首条backfill拉到30/90天series
+            )
+        )
+        tasks.append(
+            CollectionTask(
+                name="theblockbeats_dataview_init_backfill",
+                category="news",
+                source="theblockbeats_dataview",
+                params={},
+                interval_sec=86400,
+            )
+        )
         # ── news/odaily_newsflash 星球日报快讯（10min，39 SPEC v1.1 §9.2 P-快讯提频）
         #    Spec P0-2：政策维度主数据源，web-api 公开无反爬无鉴权，
         #    首屏20条+增量checkHasNew去重。
         #    2026-10-18 提频：4h → 10min，支撑 39 快讯语义训练（真实场景语义能力）。
-        tasks.append(CollectionTask(
-            name="odaily_newsflash_latest",
-            category="news", source="odaily_newsflash",
-            params={"route": "latest"},
-            interval_sec=600,   # 10 分钟（39 P-快讯提频）
-        ))
+        tasks.append(
+            CollectionTask(
+                name="odaily_newsflash_latest",
+                category="news",
+                source="odaily_newsflash",
+                params={"route": "latest"},
+                interval_sec=600,  # 10 分钟（39 P-快讯提频）
+            )
+        )
         # ── Phase A4：CoinFundamentalRanker 数据源（6h）──
         #    defillama protocols：全量 per-protocol TVL（Revenue Quality + TVL Growth 信号）
-        tasks.append(CollectionTask(
-            name="defillama_protocols",
-            category="chain", source="defillama",
-            params={"route": "protocols"},
-            interval_sec=21600,  # 6h
-        ))
+        tasks.append(
+            CollectionTask(
+                name="defillama_protocols",
+                category="chain",
+                source="defillama",
+                params={"route": "protocols"},
+                interval_sec=21600,  # 6h
+            )
+        )
         #    CoinGecko coin_info：核心币种 market_cap / supply（MC/Fees Mean Reversion 信号）
         for coin_id in ("bitcoin", "ethereum", "uniswap", "chainlink"):
-            tasks.append(CollectionTask(
-                name=f"coingecko_info_{coin_id}",
-                category="coin", source="coingecko",
-                params={"route": "coin_info", "coin_id": coin_id},
-                interval_sec=21600,  # 6h
-            ))
+            tasks.append(
+                CollectionTask(
+                    name=f"coingecko_info_{coin_id}",
+                    category="coin",
+                    source="coingecko",
+                    params={"route": "coin_info", "coin_id": coin_id},
+                    interval_sec=21600,  # 6h
+                )
+            )
         #    CoinGecko coin_chart：SECTOR_MAP 全部 30 币的 30 天 market_cap 时序
         #    （query_valuation_percentile 纵向百分位 / sector_waterline 水位线依赖）
         #    CoinGecko 公共 API 限流 ~15 req/min，12h 间隔避免触发 429
         for coin_id in (
             # DEX
-            "uniswap", "curve-dao-token", "1inch", "pancakeswap-token", "sushi",
+            "uniswap",
+            "curve-dao-token",
+            "1inch",
+            "pancakeswap-token",
+            "sushi",
             # Lending
-            "aave", "compound-governance-token", "maker", "lido-dao",
+            "aave",
+            "compound-governance-token",
+            "maker",
+            "lido-dao",
             # L1
-            "bitcoin", "ethereum", "solana", "binancecoin", "cardano", "zcash",
-            "avalanche-2", "near",
+            "bitcoin",
+            "ethereum",
+            "solana",
+            "binancecoin",
+            "cardano",
+            "zcash",
+            "avalanche-2",
+            "near",
             # L2
-            "optimism", "arbitrum", "matic-network", "blockstack",
+            "optimism",
+            "arbitrum",
+            "matic-network",
+            "blockstack",
             # Meme
-            "pump-fun", "dogecoin", "shiba-inu", "pepe", "dogwifhat",
+            "pump-fun",
+            "dogecoin",
+            "shiba-inu",
+            "pepe",
+            "dogwifhat",
             # Perp DEX
-            "hyperliquid", "gmx", "gains-network", "dydx",
+            "hyperliquid",
+            "gmx",
+            "gains-network",
+            "dydx",
         ):
-            tasks.append(CollectionTask(
-                name=f"coingecko_chart_{coin_id}",
-                category="coin", source="coingecko",
-                params={"route": "coin_chart", "coin_id": coin_id, "days": 30},
-                interval_sec=43200,  # 12h（每日 2 次，刷新 30d K 线 latest point）
-            ))
+            tasks.append(
+                CollectionTask(
+                    name=f"coingecko_chart_{coin_id}",
+                    category="coin",
+                    source="coingecko",
+                    params={"route": "coin_chart", "coin_id": coin_id, "days": 30},
+                    interval_sec=43200,  # 12h（每日 2 次，刷新 30d K 线 latest point）
+                )
+            )
         #    yfinance stock_info：核心美股 PE / margins / ROE（Earnings Stability + PE Mean Reversion 信号）
         for symbol in ("NVDA", "AAPL", "MSFT", "TSLA", "GOOGL", "META"):
-            tasks.append(CollectionTask(
-                name=f"yfinance_stock_info_{symbol.lower()}",
-                category="finance", source="yfinance",
-                params={"route": "stock_info", "symbol": symbol},
-                interval_sec=21600,  # 6h
-            ))
+            tasks.append(
+                CollectionTask(
+                    name=f"yfinance_stock_info_{symbol.lower()}",
+                    category="finance",
+                    source="yfinance",
+                    params={"route": "stock_info", "symbol": symbol},
+                    interval_sec=21600,  # 6h
+                )
+            )
         # ── 🆕 P0 数据源补全 ──────────────────────────────────────────
         #    覆盖 AGI 蓝图 L1 感知层核心缺口：情绪/资金流/衍生品/链上
         # ── chain/fear_greed（1h，alternative.me F&G 指数）
         #    每日更新1次但1h轮询确保及时获取，覆盖天维度情绪因子
-        tasks.append(CollectionTask(
-            name="fear_greed_latest",
-            category="chain", source="fear_greed",
-            params={"limit": 30},
-            interval_sec=3600,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="fear_greed_latest",
+                category="chain",
+                source="fear_greed",
+                params={"limit": 30},
+                interval_sec=3600,
+            )
+        )
         # ── chain/mempool（5min，mempool.space BTC 链上基础数据）
         #    区块高度/Mempool状态/难度调整/矿池统计，覆盖地维度 D9 扩展
-        tasks.append(CollectionTask(
-            name="mempool_overview",
-            category="chain", source="mempool",
-            params={"kind": "overview"},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="mempool_overview",
+                category="chain",
+                source="mempool",
+                params={"kind": "overview"},
+                interval_sec=300,
+            )
+        )
         # ── chain/bgeometrics（4h，BTC 链上深度指标）
         #    free tier 8次/小时 15次/天 → 每次取 top 3 (MVRV/SOPR/NUPL)
         #    覆盖 AGI L1 数据层 + BDSM E5/E6/E7 信号
-        tasks.append(CollectionTask(
-            name="bgeometrics_top3",
-            category="chain", source="bgeometrics",
-            params={"metrics": "all"},
-            interval_sec=14400,  # 4h (free tier rate limit 友好)
-        ))
+        tasks.append(
+            CollectionTask(
+                name="bgeometrics_top3",
+                category="chain",
+                source="bgeometrics",
+                params={"metrics": "all"},
+                interval_sec=14400,  # 4h (free tier rate limit 友好)
+            )
+        )
         # ── chain/coinglass（5min，衍生品聚合数据）
         #    OI/Funding/清算/多空比，覆盖 AGI L1 感知层衍生品缺口
         #    stealthy mode 爬取，5min 适配高频衍生品数据
-        tasks.append(CollectionTask(
-            name="coinglass_oi",
-            category="chain", source="coinglass",
-            params={"pages": ["oi", "funding", "liquidations", "long_short"]},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="coinglass_oi",
+                category="chain",
+                source="coinglass",
+                params={"pages": ["oi", "funding", "liquidations", "long_short"]},
+                interval_sec=300,
+            )
+        )
         # ── chain/ccxt OKX OI（5min，OKX 合约持仓量）
         #    coinglass stealthy 爬取不稳定时的兜底数据源
         #    写入 sub_category=open_interest, metric_name=open_interest_value
-        tasks.append(CollectionTask(
-            name="ccxt_okx_oi",
-            category="chain", source="ccxt",
-            params={"symbol": "BTC/USDT", "exchange": "okx", "kind": "open_interest", "swap_symbol": "BTC/USDT:USDT"},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="ccxt_okx_oi",
+                category="chain",
+                source="ccxt",
+                params={
+                    "symbol": "BTC/USDT",
+                    "exchange": "okx",
+                    "kind": "open_interest",
+                    "swap_symbol": "BTC/USDT:USDT",
+                },
+                interval_sec=300,
+            )
+        )
         # ── finance/etf_flow（2h，farside ETF 每日净流入/流出）
         #    每日更新，2h 轮询确保美股收盘后及时获取
         #    覆盖 AGI Phase4.3 ETF 资金流信号 + 五维 D7
         #    stealthy mode 绕过 Cloudflare，频率不宜过高
-        tasks.append(CollectionTask(
-            name="etf_flow_daily",
-            category="finance", source="etf_flow",
-            params={},
-            interval_sec=7200,  # 2h
-        ))
+        tasks.append(
+            CollectionTask(
+                name="etf_flow_daily",
+                category="finance",
+                source="etf_flow",
+                params={},
+                interval_sec=7200,  # 2h
+            )
+        )
         # ── 🆕 P1 数据源补全 ──────────────────────────────────────────
         #    补齐期权/机构持仓/稳定币深度/增强情绪/ETH链上
         # ── chain/deribit（15min，期权数据）
         #    Max Pain/DVOL/Put-Call Ratio，覆盖 AGI L1 感知层期权缺口
-        tasks.append(CollectionTask(
-            name="deribit_btc_options",
-            category="chain", source="deribit",
-            params={"currency": "BTC", "kind": "option"},
-            interval_sec=900,  # 15min
-        ))
+        tasks.append(
+            CollectionTask(
+                name="deribit_btc_options",
+                category="chain",
+                source="deribit",
+                params={"currency": "BTC", "kind": "option"},
+                interval_sec=900,  # 15min
+            )
+        )
         # ── finance/cftc_cot（24h，COT 持仓周报）
         #    机构/非商业持仓定位，每周二更新但每日轮询确保及时
-        tasks.append(CollectionTask(
-            name="cftc_cot_bitcoin",
-            category="finance", source="cftc_cot",
-            params={"market": "bitcoin"},
-            interval_sec=86400,  # 24h
-        ))
+        tasks.append(
+            CollectionTask(
+                name="cftc_cot_bitcoin",
+                category="finance",
+                source="cftc_cot",
+                params={"market": "bitcoin"},
+                interval_sec=86400,  # 24h
+            )
+        )
         # ── chain/defillama stablecoins（1h，稳定币总供应）
         #    覆盖五维 D7 稳定币市值 + AGI L1 流动性 proxy
-        tasks.append(CollectionTask(
-            name="defillama_stablecoins",
-            category="chain", source="defillama",
-            params={"route": "stablecoins"},
-            interval_sec=3600,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="defillama_stablecoins",
+                category="chain",
+                source="defillama",
+                params={"route": "stablecoins"},
+                interval_sec=3600,
+            )
+        )
         # ── chain/fear_greed_enhanced（1h，增强 F&G 含链上组件）
         #    与 alternative.me F&G 交叉验证
-        tasks.append(CollectionTask(
-            name="fear_greed_enhanced_latest",
-            category="chain", source="fear_greed_enhanced",
-            params={"action": "crypto"},
-            interval_sec=3600,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="fear_greed_enhanced_latest",
+                category="chain",
+                source="fear_greed_enhanced",
+                params={"action": "crypto"},
+                interval_sec=3600,
+            )
+        )
         # ── chain/blockscout（5min，ETH 链上基础数据）
         #    区块号/总供应量/Gas，与 etherscan 互补
-        tasks.append(CollectionTask(
-            name="blockscout_overview",
-            category="chain", source="blockscout",
-            params={"kind": "overview"},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="blockscout_overview",
+                category="chain",
+                source="blockscout",
+                params={"kind": "overview"},
+                interval_sec=300,
+            )
+        )
         # ── 🆕 P2 数据源补全 ──────────────────────────────────────────
         #    补齐零售情绪/排名交叉验证/新闻情绪/ETF备份/BTC链上备份
         # ── chain/google_trends（6h，搜索热度）
         #    "buy bitcoin"搜索热度，零售FOMO/恐慌指标（F&G组成因子10%）
-        tasks.append(CollectionTask(
-            name="google_trends_btc",
-            category="chain", source="google_trends",
-            params={"keyword": "buy bitcoin"},
-            interval_sec=21600,  # 6h
-        ))
+        tasks.append(
+            CollectionTask(
+                name="google_trends_btc",
+                category="chain",
+                source="google_trends",
+                params={"keyword": "buy bitcoin"},
+                interval_sec=21600,  # 6h
+            )
+        )
         # ── chain/blockchain_info（5min，BTC链上基础数据备份）
         #    总流通量/难度/哈希率/24h交易数/市值，与mempool.space互补
-        tasks.append(CollectionTask(
-            name="blockchain_info_basics",
-            category="chain", source="blockchain_info",
-            params={},
-            interval_sec=300,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="blockchain_info_basics",
+                category="chain",
+                source="blockchain_info",
+                params={},
+                interval_sec=300,
+            )
+        )
         # ── coin/coinmarketcap（6h，币种排名+CMC F&G）
         #    与CoinGecko交叉验证排名，CMC F&G与alternative.me F&G交叉验证
-        tasks.append(CollectionTask(
-            name="cmc_listings",
-            category="coin", source="coinmarketcap",
-            params={"route": "listings", "limit": 20},
-            interval_sec=21600,  # 6h
-        ))
+        tasks.append(
+            CollectionTask(
+                name="cmc_listings",
+                category="coin",
+                source="coinmarketcap",
+                params={"route": "listings", "limit": 20},
+                interval_sec=21600,  # 6h
+            )
+        )
         # ── news/cryptopanic（30min，新闻+社区情绪投票）
         #    bullish/bearish投票，补充GDELT的per-coin新闻情绪
-        tasks.append(CollectionTask(
-            name="cryptopanic_btc",
-            category="news", source="cryptopanic",
-            params={"currencies": "BTC", "kind": "news"},
-            interval_sec=1800,  # 30min
-        ))
+        tasks.append(
+            CollectionTask(
+                name="cryptopanic_btc",
+                category="news",
+                source="cryptopanic",
+                params={"currencies": "BTC", "kind": "news"},
+                interval_sec=1800,  # 30min
+            )
+        )
         # ── finance/sosovalue（1h，ETF可视化看板备份）
         #    与farside ETF flow交叉验证
-        tasks.append(CollectionTask(
-            name="sosovalue_etf",
-            category="finance", source="sosovalue",
-            params={},
-            interval_sec=3600,
-        ))
+        tasks.append(
+            CollectionTask(
+                name="sosovalue_etf",
+                category="finance",
+                source="sosovalue",
+                params={},
+                interval_sec=3600,
+            )
+        )
         # ── 🆕 P0 基本面缺失数据补全 ──────────────────────────────────────
         #    覆盖前端基本面面板缺失的真实数据：资金费率/多空比/UTXO/社交声量
         # ── chain/binance_funding_rate（8h，Binance Futures 真实资金费率）
         #    Binance 每 8h 结算一次（00/08/16 UTC），8h 轮询刚好覆盖每次结算
-        tasks.append(CollectionTask(
-            name="binance_funding_rate",
-            category="chain", source="binance_funding_rate",
-            params={"symbol": "BTCUSDT", "limit": 5},
-            interval_sec=28800,  # 8 小时
-        ))
+        tasks.append(
+            CollectionTask(
+                name="binance_funding_rate",
+                category="chain",
+                source="binance_funding_rate",
+                params={"symbol": "BTCUSDT", "limit": 5},
+                interval_sec=28800,  # 8 小时
+            )
+        )
         # ── chain/long_short_ratio（5min，Binance Futures 真实多空比）
         #    5min 轮询与 Binance 数据更新频率对齐
-        tasks.append(CollectionTask(
-            name="long_short_ratio",
-            category="chain", source="long_short_ratio",
-            params={"symbol": "BTCUSDT", "period": "5m"},
-            interval_sec=300,  # 5 分钟
-        ))
+        tasks.append(
+            CollectionTask(
+                name="long_short_ratio",
+                category="chain",
+                source="long_short_ratio",
+                params={"symbol": "BTCUSDT", "period": "5m"},
+                interval_sec=300,  # 5 分钟
+            )
+        )
         # ── chain/utxo_age_distribution（4h，UTXO 年龄分布）
         #    blockchain.info UTXO count + profit-supply 派生，变化缓慢
-        tasks.append(CollectionTask(
-            name="utxo_age_distribution",
-            category="chain", source="utxo_age_distribution",
-            params={},
-            interval_sec=14400,  # 4 小时
-        ))
+        tasks.append(
+            CollectionTask(
+                name="utxo_age_distribution",
+                category="chain",
+                source="utxo_age_distribution",
+                params={},
+                interval_sec=14400,  # 4 小时
+            )
+        )
         # ── chain/social_volume（30min，社交声量）
         #    从新闻采集器记录计数派生，30min 与新闻采集频率对齐
-        tasks.append(CollectionTask(
-            name="social_volume",
-            category="chain", source="social_volume",
-            params={},
-            interval_sec=1800,  # 30 分钟
-        ))
+        tasks.append(
+            CollectionTask(
+                name="social_volume",
+                category="chain",
+                source="social_volume",
+                params={},
+                interval_sec=1800,  # 30 分钟
+            )
+        )
         # ── macro/cme fomc_calendar（24h，美联储 FOMC 会议日历）
         #    从美联储官网 fomccalendars.htm 采集 2021-2027 年所有 FOMC 决议日，
         #    写入 19-DAL mm_metrics (sub_category=fomc_calendar, metric_name=timestamp)。
         #    FOMC 日程每年初公布，24h 轮询足够；供 EventWindowTracker 判定 next_fomc。
-        tasks.append(CollectionTask(
-            name="fomc_calendar",
-            category="macro", source="cme",
-            params={"type": "fomc_calendar"},
-            interval_sec=86400,  # 24 小时
-        ))
+        tasks.append(
+            CollectionTask(
+                name="fomc_calendar",
+                category="macro",
+                source="cme",
+                params={"type": "fomc_calendar"},
+                interval_sec=86400,  # 24 小时
+            )
+        )
         # ── macro/cme fedwatch（1h，FedWatch 加息/降息概率）
-        tasks.append(CollectionTask(
-            name="fedwatch_prob",
-            category="macro", source="cme",
-            params={"type": "fedwatch"},
-            interval_sec=3600,  # 1 小时
-        ))
+        tasks.append(
+            CollectionTask(
+                name="fedwatch_prob",
+                category="macro",
+                source="cme",
+                params={"type": "fedwatch"},
+                interval_sec=3600,  # 1 小时
+            )
+        )
         # ── SPEC-Phase2 §6.3: news/sec SEC RSS 执法行动（15min）
         #    3 feed 合并 + 三层去重，15min 轮询及时捕获加密相关执法行动
-        tasks.append(CollectionTask(
-            name="sec_rss_enforcement",
-            category="news", source="sec",
-            params={},
-            interval_sec=900,  # 15 分钟
-        ))
+        tasks.append(
+            CollectionTask(
+                name="sec_rss_enforcement",
+                category="news",
+                source="sec",
+                params={},
+                interval_sec=900,  # 15 分钟
+            )
+        )
         # ── SPEC-Phase2 §6.4: macro/congress 国会听证会（6h）
         #    听证会日程更新频率低，6h 轮询足够；crypto_only=True 仅采集加密相关
-        tasks.append(CollectionTask(
-            name="congressional_hearing",
-            category="macro", source="congress",
-            params={"crypto_only": True},
-            interval_sec=21600,  # 6 小时
-        ))
+        tasks.append(
+            CollectionTask(
+                name="congressional_hearing",
+                category="macro",
+                source="congress",
+                params={"crypto_only": True},
+                interval_sec=21600,  # 6 小时
+            )
+        )
+        # 环境级禁用：DC_DISABLED_SOURCES="theblockbeats_dataview,xxx" 时剔除对应任务。
+        # 云端（腾讯云机房 IP 被 theblockbeats CDN 封，TCP 超时）用它关掉不可达源，消除噪音日志。
+        disabled = {
+            s.strip() for s in os.environ.get("DC_DISABLED_SOURCES", "").split(",") if s.strip()
+        }
+        if disabled:
+            tasks = [t for t in tasks if t.source not in disabled]
         return tasks
