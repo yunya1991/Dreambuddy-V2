@@ -47,10 +47,10 @@
 
 | 项 | 内容 | 触发条件 |
 |---|---|---|
-| ~~P1-3 端到端 1 例~~ | **已完成（2026-10-30）**：v1 发布 `ml-v1`（GitHub asset digest == 本地 sha256 `2231ef7f…`）；接收端正向链路（临时注册表）checksum 一致 → 登记 state=none；对真实注册表重复 ingest 被守卫拒绝（exit 1，registry 未改动）；顺带修复 `$TAG（` unbound variable。**残余**：云端无 gh CLI/无 token，云端侧 ingest 待装 gh 或加 token-free 下载通道 | — |
+| ~~P1-3 端到端 1 例~~ | **已完成（2026-10-30）**：v1 发布 `ml-v1`（GitHub asset digest == 本地 sha256 `2231ef7f…`）；**云端侧也已打通**：已装 gh 2.103.3（复用 luke `.git-credentials` 中已有 token，未新引入凭据，hosts.yml 权限 600），云端重复守卫 exit 1 且 registry 未改动 ✓，临时注册表正向链路 checksum 一致 → 登记 state=none ✓。注意：云端 ingest 必须用 `/home/luke/venv-trading/bin/python`（系统 python3 缺 pandas 会 FAIL-OPEN exit 2） | — |
 | **P2-3 云端真实演练** | `12-dr-drill.sh --cloud --yes` 会真实 reset + 重启，需本人明确授权且在低波动窗口（G4） | 季度或重大变更后 |
 | **D1/D4/D5/D7/D8 定期执行** | 建议 crontab/timer：D1 每次部署后+每周、D4/D8 每周、D5 每次训练后、D7 每月 | 周期 |
-| **D7 发现的小项（P1 级，需走门禁链修复）** | 云端多个 `.env` 权限为 644/664（`.env.production`、`10-经典指标系统/.env`、`12-三屏趋势系统/.env`、`11-易经推理系统/.env`），应统一 `chmod 600`；SSH `permitrootlogin without-password` 建议改 `no` | 下次部署窗口 |
+| **D7 发现的小项（P1 级，需走门禁链修复）** | 云端多个 `.env` 权限为 644/664（`.env.production`、`10-经典指标系统/.env`、`12-三屏趋势系统/.env`、`11-易经推理系统/.env`），应统一 `chmod 600`；SSH `permitrootlogin without-password` 建议改 `no`；云端 gh token 为个人全 scope token（admin:enterprise 等），建议后续换 fine-grained PAT 仅 repo scope | 下次部署窗口 |
 
 > 说明：评审通道只读，上表 D7 问题不在评审时直接改云端，须经门禁链（本地改脚本 → G2 → 部署）修复。
 
