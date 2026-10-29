@@ -20,6 +20,13 @@
 | **双轨登记** | `.trae/documents/SPEC-three-tier-collab-management.md` §4.5、`version_manager.py` docstring | — | `db3cbcf1d2` | V15 实盘线(shadow→ab_eval→live) 与 12-ML 研究线状态映射；禁止跨轨写入 |
 | **三端协同 SKILL** | `1-ARCHITECTURE/skills/dream-three-tier-collab/SKILL.md` | 180 行 | `db3cbcf1d2` | category `collaboration` / role `coordinator` / tier 三端；registry 已登记（第 186 条） |
 | **P1-1 G6 健康检查 + 自动回滚** | `37-一键启动脚本/health-check.sh`、`rollback-last-good.sh`、`31-分布式计算部署/phase12/{dreambuddy-healthcheck.service,.timer,12-health-watchdog.sh}` | 健康 11 项检查（6 unit + 3 HTTP + PG/Redis），连续 3 次失败触发回滚 | `febd1ae7e4` | 沙箱：dry-run 11 项、回滚 reset+留痕通过并 FAIL-OPEN；**云端实检 HEALTHY（0/11，9 OK + 2 SKIP）**，timer 已安装（5min 巡检） |
+| **P1-3 Release 辅训通道** | `12-三屏趋势系统/ml/{publish_release.sh, ingest_release.py}`、`ml/version_manager.py::register_external` | 4.3 KB + 5.7 KB + 新增 1 函数 | 本轮提交 | `publish_release.sh --version vX` 校验 model.pkl+meta.json、算 sha256、生成 manifest.json、`gh release create ml-vX`；`ingest_release.py --release ml-vX` 下载+校验（checksum 不符 exit 3）→ `register_external` 落 versions/ 并登记 state=none；`bash -n` + `py_compile` 全通过 |
+| **P1-4 风控独立线登记** | `.trae/documents/SPEC-three-tier-collab-management.md` §一之七、`1-ARCHITECTURE/skills/dream-three-tier-collab/SKILL.md` §零 | — | 本轮提交 | `trailing-stop-runner --real`、组合风险熔断、`alpha_decay_gate`、`actr_activation`、G4 阈值归属统一归 D6；4 条硬约束（风控优先于策略信号、禁止为收益放宽风控等） |
+| **P2-1 冲突/依赖环校验** | `1-ARCHITECTURE/skills/_registry/validate_registry.py` | +E7 DFS 三色标记 / +E8 互斥 | 本轮提交 | 实跑 186 条：0 硬错误；E7 无环（26 节点/74 边）；E8 同 category+role+mutex_group 无冲突 |
+| **P2-2 Postmortem 模板** | `44-三端协作架构系统/github/templates/POSTMORTEM.md` | 模板 | 本轮提交 | 事件分级/时间线表/5Why/处置与回滚（引用 rollback-log.jsonl）/可验收改进项/只读证据；归档路径 `review/feedback/postmortem-YYYY-MM-DD-<slug>.md` |
+| **P2-3 灾备演练** | `31-分布式计算部署/phase12/12-dr-drill.sh` | 100 行 | 本轮提交 | 沙箱实跑 **PASS，RTO=15s**（造故障版本→真实 `rollback-last-good.sh --auto`→断言 HEAD 与内容回到 last_good）；`--cloud` 只读预检，`--cloud --yes` 才真实 reset |
+| **P2-4 季度 SKILL 审计** | `1-ARCHITECTURE/skills/_registry/audit_registry.py` | 7.4 KB | 本轮提交 | 输出 `audit-report.json`（总数/status/category/role/tier/同名/path 缺失/deprecated/缺元数据）；实跑 active 166 / proposed 14 / shadow 6，同名 34 组涉 70 条；`--json-only`，恒 exit 0 |
+| **八维 D1/D4/D5/D7/D8 脚本化** | `37-一键启动脚本/review-extended.sh` | 166 行 | 本轮提交 | `d1\|d4\|d5\|d7\|d8\|all [--no-save]`，只读 SSH + FAIL-OPEN；实跑：D1 本地 vs 云端 HEAD/DIRTY、D4 快照 00:44 落盘 + API 200、D5 v1 production wf_auc=0.7703/gap=0.2917（阈值内）、D7 ufw active/仅 22+80 端口、D8 内存 4.9/15Gi、磁盘 23%、timer 44 |
 
 ## 二、本次一并归档的运维脚本（此前未入版本库）
 
@@ -36,17 +43,16 @@
 
 全部通过 `bash -n` 语法检查；均不含写云端运行态的非预期动作（status/logs 只读）。
 
-## 三、未实现（按 SPEC 计划待办）
+## 三、待办（非未实现：P1/P2 全部落地，余下为周期执行与实机验证）
 
-| 项 | 内容 |
-|---|---|
-| P1-3 | 本地辅训 GitHub Release 通道（1 例端到端） |
-| P1-4 | 风控独立线在门禁链文档中显式登记 |
-| P2-1 | SKILL 冲突检测（category+role 互斥）与依赖环校验（validate_registry 扩展 W4/E7） |
-| P2-2 | Postmortem 模板 + GitHub 归档流程 |
-| P2-3 | 首次灾备演练（记 RTO/RPO） |
-| P2-4 | 季度 SKILL 审计自动化 |
-| 八维 | D1/D4/D5/D7/D8 脚本化与固定周期（当前仅 D2/D3/D6 有 `cloud-review.sh`） |
+| 项 | 内容 | 触发条件 |
+|---|---|---|
+| **P1-3 端到端 1 例** | 本地先训练出版本 → `publish_release.sh` 发 Release → 云端 `ingest_release.py` 拉取登记；需真实 model.pkl 与 GitHub Release 授权 | 本地辅训首次产出时 |
+| **P2-3 云端真实演练** | `12-dr-drill.sh --cloud --yes` 会真实 reset + 重启，需本人明确授权且在低波动窗口（G4） | 季度或重大变更后 |
+| **D1/D4/D5/D7/D8 定期执行** | 建议 crontab/timer：D1 每次部署后+每周、D4/D8 每周、D5 每次训练后、D7 每月 | 周期 |
+| **D7 发现的小项（P1 级，需走门禁链修复）** | 云端多个 `.env` 权限为 644/664（`.env.production`、`10-经典指标系统/.env`、`12-三屏趋势系统/.env`、`11-易经推理系统/.env`），应统一 `chmod 600`；SSH `permitrootlogin without-password` 建议改 `no` | 下次部署窗口 |
+
+> 说明：评审通道只读，上表 D7 问题不在评审时直接改云端，须经门禁链（本地改脚本 → G2 → 部署）修复。
 
 ## 四、云端评审提交记录（2026-10-30 00:08 CST）
 
@@ -62,6 +68,8 @@
 与本地文件逐一对齐（sha256 一致 3/3）。**云端评审执行体尚未落地**（`cloud/scripts` 为空、无 review 相关 timer）。
 
 **云端评审反馈（2026-10-30）**：结论"有条件通过"。必改 M1（D5 报告时效）、M2（G4 参数来源/周期）、M3（budget-baseline 落盘）、M4（脚本缺失）与建议 S2（hotfix 留痕）、S3（SSH 前置检查）已回写 SPEC 与 SKILL；M4 因三个脚本已入库而关闭；S1（yijing-polling-trader 静默悬案）保留为 D3 待办。闭环表见 SPEC §一之六。
+
+**副本刷新（2026-10-30 01:00 CST）**：SPEC 增加 §一之七「风控独立线」（P1-4）后，`docs/tech/` 与 `review/approved/` 两份副本同步至 `d966018a…`（sha256 `d966018a953595ec358dabbb354a0dde39b566fcf310dcb1162ee14cecda017a`）；SKILL 同步至 `ebb1f3ea…`（sha256 `ebb1f3eab7278a0b53c9e1b0f6f5173fbb21a4e20e2a0d1b829bbbcfff491558`）。三份 SPEC 与两份 SKILL 逐字节一致。
 
 ## 五、归档说明
 

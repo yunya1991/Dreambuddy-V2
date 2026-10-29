@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import pickle
+import re
 import shutil
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -271,6 +272,69 @@ class ModelVersionManager:
             f"[版本管理] 保存新版本 {version_id}: "
             f"AUC={performance.get('roc_auc', 0):.4f}, "
             f"特征数={len(model.feature_names)}"
+        )
+        return version_id
+
+    def register_external(self, version_id: str, model_path: str, meta: Dict) -> str:
+        """登记外部（本地辅训）模型产物：落 versions/<version_id>/model.pkl + meta.json。
+
+        只登记、不评估、不晋升，registry 中状态固定为 none（待 G7 eval）。
+        version_id 已存在则抛 ValueError；返回 version_id。
+        """
+        if not version_id or not str(version_id).strip():
+            raise ValueError("version_id 不能为空")
+        version_id = str(version_id).strip()
+        version_dir = os.path.join(self.versions_dir, version_id)
+        if os.path.exists(version_dir) or self._get_version_info(version_id) is not None:
+            raise ValueError(f"版本已存在，拒绝重复登记: {version_id}")
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"模型产物不存在: {model_path}")
+
+        os.makedirs(version_dir, exist_ok=True)
+        dst_model = os.path.join(version_dir, "model.pkl")
+        if os.path.abspath(model_path) != os.path.abspath(dst_model):
+            shutil.copy2(model_path, dst_model)
+
+        created_at = time.strftime("%Y-%m-%d %H:%M:%S")
+        raw_meta = dict(meta or {})
+        raw_meta["version"] = version_id
+        raw_meta.setdefault("created_at", created_at)
+        raw_meta.setdefault("source", "local_aux_train")
+        performance = raw_meta.get("performance")
+        if not isinstance(performance, dict):
+            performance = {}
+        raw_meta["performance"] = performance
+        with open(os.path.join(version_dir, "meta.json"), "w") as f:
+            json.dump(raw_meta, f, indent=2, ensure_ascii=False)
+
+        num_features = raw_meta.get("num_features")
+        if num_features is None:
+            num_features = performance.get("num_features")
+        if num_features is None:
+            num_features = len(raw_meta.get("feature_names") or [])
+
+        self.registry["versions"].append(
+            {
+                "version": version_id,
+                "created_at": raw_meta["created_at"],
+                "performance": performance,
+                "num_features": num_features,
+                "state": STATE_NONE,
+                "eval_gate": None,
+                "promoted_at": None,
+            }
+        )
+        # next_version 防冲突：外部版本号可能跳跃（如 v12），取 max(现有, N+1)
+        matched = re.match(r"v(\d+)", version_id)
+        if matched:
+            self.registry["next_version"] = max(
+                int(self.registry.get("next_version", 1)), int(matched.group(1)) + 1
+            )
+        self._save_registry()
+
+        print(
+            f"[版本管理] 登记外部模型 {version_id}: "
+            f"AUC={performance.get('walk_forward_roc_auc', 0):.4f}, 特征数={num_features}"
         )
         return version_id
 
