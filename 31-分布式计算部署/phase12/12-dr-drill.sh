@@ -36,8 +36,11 @@ run_root() {
 
 record() {
     local line; line="$(date '+%Y-%m-%dT%H:%M:%S%z') $1"; echo "$line"
-    if printf '%s\n' "$line" >> "${LOG}" 2>/dev/null; then return 0; fi
-    printf '%s\n' "$line" | sudo -n tee -a "${LOG}" >/dev/null 2>&1 || true
+    if [ -w "${STATE_DIR}" ]; then
+        printf '%s\n' "$line" >> "${LOG}" 2>/dev/null || true
+    else
+        printf '%s\n' "$line" | sudo -n tee -a "${LOG}" >/dev/null 2>&1 || true
+    fi
 }
 
 # ── 沙箱演练：造一个"故障版本"再回滚，测 RTO ──
