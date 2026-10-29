@@ -1,0 +1,10 @@
+[Unit]
+Description=Dreambuddy G6 health check + auto rollback (SPEC P1-1)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/bash /home/luke/dreambuddy/37-一键启动脚本/health-check.sh
+TimeoutStartSec=120
+Nice=10

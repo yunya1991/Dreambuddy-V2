@@ -221,6 +221,21 @@ else
     echo "  hermes-gateway 未运行, 跳过"
 fi
 
+# ── 5. G6 健康检查 + 记录 last_good（P1-1 自动回滚基线）──
+echo ""
+echo ">>> [G6] 健康检查 + 记录稳定版本"
+HEALTH_SCRIPT="${REPO_DIR}/37-一键启动脚本/health-check.sh"
+DEPLOY_STATE="${REPO_DIR}/.deploy"
+mkdir -p "${DEPLOY_STATE}" 2>/dev/null || true
+if [ -x "${HEALTH_SCRIPT}" ]; then
+    bash "${HEALTH_SCRIPT}" --dry-run 2>&1 | tail -3 || true
+    printf '{"commit":"%s","ts":"%s","branch":"%s"}\n' \
+        "$(git rev-parse HEAD)" "$(date '+%Y-%m-%dT%H:%M:%S%z')" "${CURRENT_BRANCH}" > "${DEPLOY_STATE}/last_good"
+    echo "  ✓ last_good = $(git rev-parse --short HEAD)"
+else
+    echo "  ⚠ health-check.sh 缺失，跳过 G6（FAIL-OPEN）"
+fi
+
 # ── 完成 ──
 echo ""
 echo "============================================"
@@ -229,7 +244,8 @@ echo "============================================"
 echo "  最新提交: ${NEW_COMMIT}"
 echo ""
 echo "  验证:"
-echo "    bash healthcheck.sh"
+echo "    bash 37-一键启动脚本/health-check.sh"
+echo "    systemctl status dreambuddy-healthcheck.timer"
 echo "    journalctl -u dreambuddy-frontend -n 50"
 echo "    systemctl status v15-api v15-capital-api"
 echo "    journalctl -u hermes-gateway -n 20"

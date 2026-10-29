@@ -69,7 +69,7 @@
 |---|---|---|---|---|
 | **D1 代码一致性** | 云端部署 commit 是否 == origin/main；有无未 commit 的云端本地改动 | `ssh dreambuddy-remote 'cd ~/dreambuddy && git rev-parse HEAD && git status --porcelain'` vs `git ls-remote origin main`；CI 侧 drift-guard | 每次部署后 + 每周 | drift 报告 |
 | **D2 运行健康** | 22 服务 active 状态、13 timer 触发记录、端口监听完整性 | `systemctl list-units/list-timers`、`ss -tlnp`（只读） | 每日 | 健康快照 |
-| **D3 日志质量** | 关键服务 error/warn 趋势；**静默服务识别**（如 yijing-polling-trader 日志停留 2026-10-17 的已知悬案） | `37-一键启动脚本/cloud-logs.sh errors` / `-f` | 每日 | 异常清单 |
+| **D3 日志质量** | 关键服务 error/warn 趋势；**静默服务识别**（须读 unit 的 `StandardOutput` 指定文件，`journalctl` 无应用日志 ≠ 静默；例：yijing-polling-trader → `/home/luke/logs/yijing/trader.log`） | `37-一键启动脚本/cloud-logs.sh errors` / `-f` | 每日 | 异常清单 |
 | **D4 数据链路** | 18-DB→19-DAL→快照→API→前端 字段契约、量级、缺失 | `data-troubleshoot` SKILL | 每周 + 前端异常时 | 链路诊断报告 |
 | **D5 模型质量** | walk_forward 指标趋势、overfit_gap 恶化、生产漂移 | `ml/models/registry.json` 评审 + 交易胜率 | 每次训练后 | 模型评审意见（喂 G7，有效期 24h） |
 | **D6 风控行为** | 实盘交易记录合规性、trailing-stop 触发、熔断有效性 | 交易日志只读评审 | 每日 | 风控日报 |
@@ -90,7 +90,7 @@
 | M2 | G4 阈值需注明数据来源、计算周期与评审归属 | §二 增补「G4 参数来源与周期」，阈值变更归 D6 | ✅ 已对齐 |
 | M3 | `budget-baseline.md` 未落盘，D8 月报前必须完成 | 纳入 P0-0 验收标准 | ✅ 已对齐 |
 | M4 | SKILL 引用的 cloud-review.sh / g4-volatility-gate.py / precommit_secret_scan.py 当时不存在 | 三者均已实现并入库（提交 `568c01582c`/`db3cbcf1d2`） | ✅ 已关闭 |
-| S1 | yijing-polling-trader 日志停留 2026-10-17 悬案 | 列入 D3 首批排查项，不阻塞 P0 | ⏳ 待办 |
+| S1 | yijing-polling-trader 日志停留 2026-10-17 悬案 | **误判已关闭**：unit 的 StandardOutput 重定向到 `/home/luke/logs/yijing/trader.log`，该文件当日 00:26 仍在写入（轮询 #1475，69MB）；进程 CPU 50.7%、运行 12 天。D3 判定方法已修正为"读 StandardOutput 文件" | ✅ 已关闭 |
 | S2 | hotfix「本人显式确认」缺留痕渠道 | §二 固定为 `--g4-hotfix "原因"` + `hotfix-log.jsonl` | ✅ 已对齐 |
 | S3 | D1 评审命令依赖 SSH 别名 | SKILL 增补前置检查（`ssh dreambuddy-remote true`） | ✅ 已对齐 |
 

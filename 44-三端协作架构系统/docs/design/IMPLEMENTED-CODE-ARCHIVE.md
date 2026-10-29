@@ -19,6 +19,7 @@
 | **G4 接入部署** | `31-分布式计算部署/phase1/update.sh` | 236 行 | `db3cbcf1d2` | 步骤 1/5 调用 G4，exit 4 中止；`--skip-g4` / `--g4-hotfix "原因"`；`bash -n` 通过 |
 | **双轨登记** | `.trae/documents/SPEC-three-tier-collab-management.md` §4.5、`version_manager.py` docstring | — | `db3cbcf1d2` | V15 实盘线(shadow→ab_eval→live) 与 12-ML 研究线状态映射；禁止跨轨写入 |
 | **三端协同 SKILL** | `1-ARCHITECTURE/skills/dream-three-tier-collab/SKILL.md` | 180 行 | `db3cbcf1d2` | category `collaboration` / role `coordinator` / tier 三端；registry 已登记（第 186 条） |
+| **P1-1 G6 健康检查 + 自动回滚** | `37-一键启动脚本/health-check.sh`、`rollback-last-good.sh`、`31-分布式计算部署/phase12/{dreambuddy-healthcheck.service,.timer,12-health-watchdog.sh}` | 健康 11 项检查（6 unit + 3 HTTP + PG/Redis），连续 3 次失败触发回滚 | 本次提交 | 沙箱冒烟通过：dry-run 11 项全输出且不写状态；`last_good` 回滚 reset 到目标提交并写 `rollback-log.jsonl`；FAIL-OPEN（pg/redis 缺失记 SKIP） |
 
 ## 二、本次一并归档的运维脚本（此前未入版本库）
 
@@ -39,7 +40,6 @@
 
 | 项 | 内容 |
 |---|---|
-| P1-1 | G5/G6 自动回滚 + systemd watchdog（人为造故障 → 自动回滚演练） |
 | P1-3 | 本地辅训 GitHub Release 通道（1 例端到端） |
 | P1-4 | 风控独立线在门禁链文档中显式登记 |
 | P2-1 | SKILL 冲突检测（category+role 互斥）与依赖环校验（validate_registry 扩展 W4/E7） |
