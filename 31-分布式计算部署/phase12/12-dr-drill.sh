@@ -29,7 +29,16 @@ for arg in "$@"; do
 done
 mkdir -p "${STATE_DIR}" 2>/dev/null || true
 
-record() { local line; line="$(date '+%Y-%m-%dT%H:%M:%S%z') $1"; echo "$line"; printf '%s\n' "$line" >> "${LOG}" 2>/dev/null || true; }
+# 云端 SSH 登录用户非 luke（仓库属主 luke），需要时自动提权
+run_root() {
+    if [ -w "${REPO_DIR}/.git" ] && [ -w "${STATE_DIR}" ]; then "$@"; else sudo -n "$@"; fi
+}
+
+record() {
+    local line; line="$(date '+%Y-%m-%dT%H:%M:%S%z') $1"; echo "$line"
+    if printf '%s\n' "$line" >> "${LOG}" 2>/dev/null; then return 0; fi
+    printf '%s\n' "$line" | sudo -n tee -a "${LOG}" >/dev/null 2>&1 || true
+}
 
 # ── 沙箱演练：造一个"故障版本"再回滚，测 RTO ──
 drill_sandbox() {
@@ -72,12 +81,12 @@ drill_cloud() {
         exit 2
     fi
     TARGET="$(tr -d '\n\r ' < "${STATE_DIR}/last_good" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')"
-    if ! git -C "$REPO_DIR" cat-file -e "${TARGET}^{commit}" 2>/dev/null; then
+    if ! run_root git -C "$REPO_DIR" cat-file -e "${TARGET}^{commit}" 2>/dev/null; then
         record "DR_DRILL mode=cloud result=BLOCKED reason=commit-missing target=${TARGET:0:10}"
         echo "✗ last_good 指向提交不在本地：${TARGET:0:10}"
         exit 3
     fi
-    echo "last_good=${TARGET:0:10} 当前 HEAD=$(git -C "$REPO_DIR" rev-parse --short HEAD)"
+    echo "last_good=${TARGET:0:10} 当前 HEAD=$(run_root git -C "$REPO_DIR" rev-parse --short HEAD)"
     if [ -x "$HEALTH" ]; then
         bash "$HEALTH" --dry-run 2>/dev/null | tail -2
     fi
@@ -89,7 +98,7 @@ drill_cloud() {
     fi
 
     START=$(date +%s)
-    bash "$ROLLBACK" --auto --reason "dr-drill" || true
+    run_root bash "$ROLLBACK" --auto --reason "dr-drill" || true
     END=$(date +%s)
     record "DR_DRILL mode=cloud result=PASS rto=$((END - START))s target=${TARGET:0:10}"
     echo "✓ 云端真实演练完成，RTO=$((END - START))s（记录 ${LOG}）"
