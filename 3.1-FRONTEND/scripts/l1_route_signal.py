@@ -45,6 +45,7 @@ from core.route_confidence import (
     RouteConfidenceResult,
     evaluate_route,
 )
+from core.cognitive_router import evaluate_match
 from data_query_executor import (
     exec_asset_class_trend,
     exec_contradiction_insight,
@@ -184,7 +185,16 @@ def route_query(message: str, intent: str = "") -> dict:
     except Exception:
         cognitive_available = False
 
-    signal = evaluate_route(memories, cognitive_available=cognitive_available)
+    # C4 预测误差信号（对齐 core/sufficiency.py 先例）：S 层无外部 actual，
+    # rea_confidence=match_score 使 actual==expected（预测误差=0），C4 可用不降级；
+    # 匹配评估异常时 FAIL-OPEN 退化为纯 C3（不扣预测误差分）。
+    try:
+        rea_conf = evaluate_match(memories)[0]
+    except Exception:
+        rea_conf = None
+    signal = evaluate_route(
+        memories, cognitive_available=cognitive_available,
+        rea_confidence=rea_conf)
 
     out = {
         "success": True,

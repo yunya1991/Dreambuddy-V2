@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-10-26T05:24:28.189737+00:00",
+  "merrill_clock": {
+    "month": "2026-09",
+    "growth_yoy_pct": 2.25,
+    "inflation_yoy_pct": 3.72,
+    "quadrant": "overheat",
+    "thresholds": {
+      "growth": 1.5,
+      "inflation": 2.5
+    },
+    "confidence": "medium"
+  },
+  "asset_momentum_3m_pct": {
+    "crypto_btc": 25.38,
+    "crypto_eth": 20.89,
+    "equity_spx": 4.64,
+    "usd_dxy": 0.85,
+    "rates_10y": 6.67,
+    "gold_xaut": -13.46
+  },
+  "data_coverage": {
+    "indpro": 1294,
+    "cpi": 957,
+    "sp500": 2513,
+    "dtwexbgs": 5213,
+    "dgs10": 16188,
+    "xaut_okx": 120
+  },
+  "data_source": {
+    "equity_spx": "fred_data_center:SP500",
+    "usd_dxy": "fred_data_center:DTWEXBGS",
+    "rates_10y": "fred_data_center:DGS10",
+    "gold_xaut": "okx:XAUT/USDT",
+    "crypto_btc": "okx:BTC/USDT",
+    "crypto_eth": "okx:ETH/USDT"
+  },
+  "divergence": {
+    "generated_at": "2026-10-26T11:54:29.247022+00:00",
+    "quadrant": "overheat",
+    "flat_band_pct": 1.0,
+    "checks": [
+      {
+        "asset": "equity_spx",
+        "expected_dir": 0,
+        "actual_momentum_3m_pct": 4.64,
+        "actual_dir": 1,
+        "verdict": "neutral"
+      },
+      {
+        "asset": "crypto_btc",
+        "expected_dir": 1,
+        "actual_momentum_3m_pct": 25.38,
+        "actual_dir": 1,
+        "verdict": "consistent"
+      },
+      {
+        "asset": "crypto_eth",
+        "expected_dir": 1,
+        "actual_momentum_3m_pct": 20.89,
+        "actual_dir": 1,
+        "verdict": "consistent"
+      },
+      {
+        "asset": "gold_xaut",
+        "expected_dir": 1,
+        "actual_momentum_3m_pct": -13.46,
+        "actual_dir": -1,
+        "verdict": "divergent"
+      },
+      {
+        "asset": "usd_dxy",
+        "expected_dir": -1,
+        "actual_momentum_3m_pct": 0.85,
+        "actual_dir": 0,
+        "verdict": "flat"
+      },
+      {
+        "asset": "rates_10y",
+        "expected_dir": 1,
+        "actual_momentum_3m_pct": 6.67,
+        "actual_dir": 1,
+        "verdict": "consistent"
+      }
+    ],
+    "n_divergent": 2,
+    "n_scored": 5,
+    "hy_oas_check": {
+      "latest": 3.4,
+      "date": "2026-10-22",
+      "change_20d": 0.6,
+      "widen_threshold": 0.5,
+      "divergent": true
+    },
+    "quadrant_confidence": "medium",
+    "note": "美林时钟（预期）vs 资产动量（真实）互为印证修正；背离数>1 时象限置信度降级；HY OAS 20日走阔>=0.5=信用利差背离（v0.7，候选移交23矛盾系统）"
+  }
+}

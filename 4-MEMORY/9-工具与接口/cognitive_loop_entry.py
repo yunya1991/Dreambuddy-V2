@@ -565,6 +565,32 @@ class CognitiveLoopEntry:
             pass  # FAIL-OPEN：埋点失败不影响 recall 结果
         # ---------- END B3 ----------
 
+        # ---------- D6（41 SPEC §13.4）：41 recall 文档通道并列召回 ----------
+        # 认知记忆通道（上方 dicts）+ 41 文档通道并列，不互相替代；
+        # 文档命中带 channel=doc 标记，不回写 recall_cache，不挤占记忆通道 top_k。
+        try:
+            import json as _json
+            import subprocess as _sp
+            import os as _os
+            _proc = _sp.run(
+                ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                input=_json.dumps({"cmd": "recall", "query": str(context), "limit": 3}),
+                capture_output=True, text=True, timeout=10,
+                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            )
+            _res = _json.loads(_proc.stdout or "{}")
+            if _res.get("success") and _res.get("hits"):
+                for _h in _res["hits"][:3]:
+                    dicts.append({
+                        "id": "fis-doc:" + str(_h.get("path", "")),
+                        "content": _h.get("snippet", ""),
+                        "score": float(_h.get("score", 0.0)),
+                        "channel": "doc",
+                        "source": "fis-recall",
+                    })
+        except Exception:
+            pass  # FAIL-OPEN：41 文档通道失败不影响记忆通道返回
+        # ---------- END D6 ----------
         return dicts
 
     # ============================================================
@@ -1033,6 +1059,21 @@ class CognitiveLoopEntry:
             pass  # FAIL-OPEN
         # ---------- END L4 record ----------
 
+        # ---------- D5（41 SPEC §13.4）：41 update() 向量化触发器 ----------
+        # 记忆落盘后异步触发 41 增量更新（Popen 非阻塞，不等待完成；FAIL-OPEN 不影响 record 返回）
+        try:
+            import subprocess as _sp
+            import os as _os
+            _p = _sp.Popen(
+                ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                stdin=_sp.PIPE, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
+                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            )
+            _p.stdin.write(json.dumps({"cmd": "update"}).encode("utf-8"))
+            _p.stdin.close()
+        except Exception:
+            pass  # FAIL-OPEN：触发失败不影响 record
+        # ---------- END D5 ----------
         return memory_id
 
     # ============================================================

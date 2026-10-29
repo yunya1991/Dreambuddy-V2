@@ -650,6 +650,237 @@ def S33_rea_audit(params: Dict[str, Any]) -> Dict[str, Any]:
 # DSH 节点注册表 - 供 DSH server.py 注册路由
 # ---------------------------------------------------------------------------
 
+def S33_rea_locate(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_locate 节点：文件定位（C3，41 SPEC §13.3/§7.11）。
+    基于 41 code 类型索引按名称/模式定位源码文件，替代节点自建目录遍历。
+    Params:
+        name: 文件名或模式（必填，支持子串匹配）
+        limit: 返回上限（默认 20）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    import json as _json
+    import subprocess as _sp
+    name = str(params.get("name") or "").strip()
+    if not name:
+        return _make_output(
+            "S33_rea_locate",
+            str(params.get("trace_id") or _gen_trace_id("s33lc")),
+            ok=False, result={}, error="missing_name",
+        )
+    limit = int(params.get("limit", 20))
+    try:
+        proc = _sp.run(
+            ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+            input=_json.dumps({"query": name, "limit": limit, "filters": {"type": ["code"]}}),
+            capture_output=True, text=True, timeout=10,
+            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+        )
+        res = _json.loads(proc.stdout or "{}")
+        hits = res.get("hits", []) if res.get("success") else []
+        matched = [
+            h["source"]["path"]
+            for h in hits
+            if name.lower() in h["source"]["path"].lower()
+        ][:limit]
+        return _make_output(
+            "S33_rea_locate",
+            str(params.get("trace_id") or _gen_trace_id("s33lc")),
+            ok=True,
+            result={"matched": matched, "count": len(matched), "source": "fis_code_index"},
+        )
+    except Exception as e:
+        return _make_output(
+            "S33_rea_locate",
+            str(params.get("trace_id") or _gen_trace_id("s33lc")),
+            ok=False, result={}, error=f"{type(e).__name__}: {e}",
+        )
+
+
+# ---------------------------------------------------------------------------
+# 反思层节点（SPEC-33-反思层 v0.3 §7.1）
+# ---------------------------------------------------------------------------
+def _reflection_pool(params: Dict[str, Any]):
+    from core.reflection.replay_simulator import ReplayPool
+    base = str(params.get("pool_dir") or "reflection_data/replay_pool")
+    return ReplayPool(base)
+
+
+def S33_rea_reflect(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_reflect 节点：对分析结果执行 R1-R3 反思。
+    Params:
+        report: 分析报告 dict（必填，字段见 ReflectionLayer.reflect）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    from core.reflection.reflection_layer import ReflectionLayer
+    report = params.get("report")
+    if not isinstance(report, dict):
+        return _make_output(
+            "S33_rea_reflect",
+            str(params.get("trace_id") or _gen_trace_id("s33rf")),
+            ok=False, result={}, error="missing_report",
+        )
+    critique = ReflectionLayer().reflect(report)
+    return _make_output(
+        "S33_rea_reflect",
+        str(params.get("trace_id") or _gen_trace_id("s33rf")),
+        ok=True, result=critique,
+    )
+
+
+def S33_rea_dream(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_dream 节点：触发做梦评估循环。
+    Params:
+        pool_dir: 回放池目录（可选，默认 reflection_data/replay_pool）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    from core.reflection.dreaming import DreamingLoop
+    pool = _reflection_pool(params)
+    if not pool.eval_ready():
+        return _make_output(
+            "S33_rea_dream",
+            str(params.get("trace_id") or _gen_trace_id("s33dm")),
+            ok=False, result={}, error="pool_not_eval_ready",
+        )
+    loop = DreamingLoop(pool)
+    result = loop.dream()
+    return _make_output(
+        "S33_rea_dream",
+        str(params.get("trace_id") or _gen_trace_id("s33dm")),
+        ok=True, result=result,
+    )
+
+
+def S33_rea_replay(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_replay 节点：查询/重放历史分析轨迹。
+    Params:
+        tree_id: 指定发现树 ID（可选，缺省列出全部）
+        provenance: internal / external 过滤（可选）
+        pool_dir: 回放池目录（可选）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    pool = _reflection_pool(params)
+    tree_id = str(params.get("tree_id") or "").strip()
+    if tree_id:
+        tree = pool.load(tree_id)
+        if tree is None:
+            return _make_output(
+                "S33_rea_replay",
+                str(params.get("trace_id") or _gen_trace_id("s33rp")),
+                ok=False, result={}, error=f"tree_not_found: {tree_id}",
+            )
+        result = {"tree": tree.to_dict()}
+    else:
+        provenance = params.get("provenance")
+        trees = pool.list_trees(provenance=str(provenance) if provenance else None)
+        result = {
+            "count": len(trees),
+            "trees": [t.to_dict() for t in trees],
+        }
+    return _make_output(
+        "S33_rea_replay",
+        str(params.get("trace_id") or _gen_trace_id("s33rp")),
+        ok=True, result=result,
+    )
+
+
+def S33_rea_harvest(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_harvest 节点：触发外部路径获取全链路（E1-E4）。
+    Params:
+        sources: [{source_type, location, label, patterns}]（必填）
+        pool_dir: 回放池目录（可选）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    from core.reflection.harvest import ExternalHarvester, HarvestSource
+    raw_sources = params.get("sources")
+    if not isinstance(raw_sources, list) or not raw_sources:
+        return _make_output(
+            "S33_rea_harvest",
+            str(params.get("trace_id") or _gen_trace_id("s33hv")),
+            ok=False, result={}, error="missing_sources",
+        )
+    sources = []
+    for s in raw_sources:
+        if not isinstance(s, dict) or not s.get("location"):
+            continue
+        sources.append(HarvestSource(
+            source_type=str(s.get("source_type") or "local_path"),
+            location=str(s["location"]),
+            label=str(s.get("label") or ""),
+            patterns=list(s.get("patterns") or []),
+        ))
+    pool = _reflection_pool(params)
+    harvester = ExternalHarvester(pool)
+    outcome = harvester.harvest(sources)
+    return _make_output(
+        "S33_rea_harvest",
+        str(params.get("trace_id") or _gen_trace_id("s33hv")),
+        ok=True, result={
+            "ok": outcome.ok,
+            "injected_trees": outcome.injected_trees,
+            "rejected": outcome.rejected,
+            "errors": outcome.errors,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# 输出场景节点（SPEC-33-输出场景-意图系统.md §4/§5）
+# ---------------------------------------------------------------------------
+def S33_rea_spec_enhance(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_spec_enhance 节点：两段式 Spec 增强（Q1/Q2）。
+    Params:
+        spec_draft: Spec 草案文本（必填）
+        pool_dir: 回放池目录（可选，默认 reflection_data/replay_pool）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    from core.reflection.output_scenarios import SpecEnhancer
+    spec_draft = str(params.get("spec_draft") or "").strip()
+    if not spec_draft:
+        return _make_output(
+            "S33_rea_spec_enhance",
+            str(params.get("trace_id") or _gen_trace_id("s33se")),
+            ok=False, result={}, error="missing_spec_draft",
+        )
+    pool = _reflection_pool(params)
+    enhancer = SpecEnhancer(pool)
+    result = enhancer.enhance(spec_draft)
+    return _make_output(
+        "S33_rea_spec_enhance",
+        str(params.get("trace_id") or _gen_trace_id("s33se")),
+        ok=True, result=result,
+    )
+
+
+def S33_rea_optimal_path(params: Dict[str, Any]) -> Dict[str, Any]:
+    """S33_rea_optimal_path 节点：双层延迟策略评估（Q3/Q4）。
+    Params:
+        completed_node: 已完成节点 {analyzer, acceptance{passed, confidence}}（必填）
+        force_heavy: 显式触发重量层（可选）
+        pool_dir: 回放池目录（可选）
+        trace_id: 调用方传入的 trace_id（可选）
+    """
+    from core.reflection.output_scenarios import OptimalPathEvaluator
+    completed_node = params.get("completed_node")
+    if not isinstance(completed_node, dict) or not completed_node.get("analyzer"):
+        return _make_output(
+            "S33_rea_optimal_path",
+            str(params.get("trace_id") or _gen_trace_id("s33op")),
+            ok=False, result={}, error="missing_completed_node",
+        )
+    pool = _reflection_pool(params)
+    evaluator = OptimalPathEvaluator(pool)
+    result = evaluator.evaluate(
+        completed_node,
+        task_context=params.get("task_context"),
+        force_heavy=bool(params.get("force_heavy")),
+    )
+    return _make_output(
+        "S33_rea_optimal_path",
+        str(params.get("trace_id") or _gen_trace_id("s33op")),
+        ok=True, result=result,
+    )
+
+
 DSH_NODE_REGISTRY: Dict[str, Any] = {
     "s33_rea_analyze": S33_rea_analyze,
     "s33_rea_trace": S33_rea_trace,
@@ -658,6 +889,13 @@ DSH_NODE_REGISTRY: Dict[str, Any] = {
     "s33_rea_recover_decisions": S33_rea_recover_decisions,
     "s33_rea_narrative": S33_rea_narrative,
     "s33_rea_audit": S33_rea_audit,
+    "s33_rea_locate": S33_rea_locate,  # C3（41 SPEC §13.3）：41 code 索引文件定位供给
+    "s33_rea_reflect": S33_rea_reflect,
+    "s33_rea_dream": S33_rea_dream,
+    "s33_rea_replay": S33_rea_replay,
+    "s33_rea_harvest": S33_rea_harvest,
+    "s33_rea_spec_enhance": S33_rea_spec_enhance,
+    "s33_rea_optimal_path": S33_rea_optimal_path,
 }
 
 

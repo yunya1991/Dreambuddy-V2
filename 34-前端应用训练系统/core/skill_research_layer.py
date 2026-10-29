@@ -109,6 +109,26 @@ def search_knowledge_base(
         ]
 
     # 实际检索逻辑（非 mock 模式）
+    # B4（41 SPEC §13.2）：41 search/recall 作为检索底座（优先），失败或空结果降级 ChromaDB
+    try:
+        import json as _json
+        import subprocess as _sp
+        import os as _os
+        proc = _sp.run(
+            ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+            input=_json.dumps({"query": str(query), "limit": 5}),
+            capture_output=True, text=True, timeout=10,
+            env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+        )
+        res = _json.loads(proc.stdout or "{}")
+        if res.get("success") and res.get("hits"):
+            return [
+                {"content": h.get("snippet", ""), "score": float(h.get("score", 0.0)),
+                 "path": (h.get("source") or {}).get("path")}
+                for h in res["hits"]
+            ]
+    except Exception:
+        pass  # FAIL-OPEN：41 不可用降级 ChromaDB
     try:
         # 尝试导入知识库检索器
         import sys

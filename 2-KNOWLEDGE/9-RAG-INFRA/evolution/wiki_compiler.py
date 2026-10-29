@@ -82,6 +82,7 @@ class CompileResult:
     pages: List[str] = field(default_factory=list)       # 所有生成页面清单
     duration_ms: float = 0.0          # 编译耗时（毫秒）
     token_estimate: int = 0           # LLM Token 消耗估算
+    related_pages: List[str] = field(default_factory=list)  # C5（41 SPEC §13.3）：41 search 相关页面候选
     error: str = ""
 
 
@@ -219,6 +220,26 @@ class WikiCompiler:
             result.entities = entities
             result.concepts = concepts
 
+            # 2.5 相关页面候选（C5，41 SPEC §13.3/§7.11）：41 search 供给已有相关 wiki 页面候选，
+            # 供交叉引用建立，降低编译层全量扫描成本（FAIL-OPEN：41 不可用时跳过）
+            try:
+                import json as _json
+                import subprocess as _sp
+                _query = (core_conclusion or " ".join(concepts[:3]) or source_identifier)[:80]
+                _proc = _sp.run(
+                    ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                    input=_json.dumps({"query": _query, "limit": 5, "filters": {"type": ["wiki"]}}),
+                    capture_output=True, text=True, timeout=10,
+                    env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+                )
+                _res = _json.loads(_proc.stdout or "{}")
+                if _res.get("success"):
+                    result.related_pages = [
+                        h["source"]["path"]
+                        for h in _res.get("hits", [])
+                    ]
+            except Exception:
+                pass  # FAIL-OPEN：相关页面候选失败不阻塞编译
             # 3. 生成 sources/ 页面
             source_page = self._write_source_page(
                 source_identifier, content, core_conclusion, key_points,

@@ -1,0 +1,68 @@
+{
+  "proposal_id": "prop_20261025_031559_1",
+  "generated_at": "2026-10-25T03:15:59",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_1",
+    "name": "候选意图：查询相关",
+    "description": "从 5 条未覆盖案例聚类发现，特征词：查询。描述待人工评审补充。",
+    "keywords": [
+      "查询"
+    ],
+    "examples": [
+      "查询下美国CPI数据",
+      "查询以太坊价格",
+      "查询黄金价格",
+      "查询价格"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_1",
+      "keywords": [
+        "查询"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 16,
+    "samples": [
+      "查询下美国CPI数据",
+      "查询以太坊价格",
+      "查询黄金价格",
+      "查询价格",
+      "查询BTC价格"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数充分（16）",
+      "关键词噪声率高（100%，n-gram 碎片词）",
+      "与现有意图重叠（data_query）",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 16,
+      "noise_ratio": 1.0,
+      "overlap_count": 1,
+      "overlaps": [
+        {
+          "keyword": "查询",
+          "existing_intent": "data_query",
+          "existing_keyword": "查询"
+        }
+      ],
+      "desc_complete": false
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "generated_at": "2026-10-26T12:15:56.742245+00:00",
+  "stovall_rotation": {
+    "quadrant": "overheat",
+    "quadrant_confidence": "medium",
+    "phase": "扩张（Expansion）",
+    "equity_sector_preference": [
+      "能源",
+      "材料",
+      "工业"
+    ],
+    "crypto_layer_analog": "主流层（BTC/ETH/SOL）+ 增长型层",
+    "rationale": "增长与通胀同步上行，受益于价格与产能的板块领先",
+    "note": "预注册先验映射，仅输出板块偏好建议，不产生交易信号；置信度非 high 时建议降权使用"
+  },
+  "market_breadth": {
+    "assets_above_ma200": 8,
+    "assets_valid": 9,
+    "assets_total": 9,
+    "breadth_pct": 88.9,
+    "state": "strong",
+    "layer_breadth": {
+      "L1_anchor": {
+        "above": 1,
+        "valid": 1,
+        "total": 1,
+        "breadth_pct": 100.0
+      },
+      "L2_major": {
+        "above": 2,
+        "valid": 2,
+        "total": 2,
+        "breadth_pct": 100.0
+      },
+      "L3_growth": {
+        "above": 3,
+        "valid": 3,
+        "total": 3,
+        "breadth_pct": 100.0
+      },
+      "L4_meme": {
+        "above": 2,
+        "valid": 3,
+        "total": 3,
+        "breadth_pct": 66.7
+      }
+    },
+    "detail": {
+      "BTC/USDT": {
+        "layer": "L1_anchor",
+        "above": true,
+        "distance_pct": 9.73,
+        "source": "cycle_state_anchor"
+      },
+      "ETH/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 7.63,
+        "source": "cycle_state_anchor"
+      },
+      "SOL/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 14.58,
+        "source": "cycle_state_anchor"
+      },
+      "AVAX/USDT": {
+        "layer": "L3_growth",
+        "above": true,
+        "distance_pct": 17.99,
+        "source": "okx_ma200"
+      },
+      "LINK/USDT": {
+        "layer": "L3_growth",
+        "above": true,
+        "distance_pct": 26.31,
+        "source": "okx_ma200"
+      },
+      "ADA/USDT": {
+        "layer": "L3_growth",
+        "above": true,
+        "distance_pct": 6.34,
+        "source": "okx_ma200"
+      },
+      "DOGE/USDT": {
+        "layer": "L4_meme",
+        "above": false,
+        "distance_pct": -5.96,
+        "source": "okx_ma200"
+      },
+      "PEPE/USDT": {
+        "layer": "L4_meme",
+        "above": true,
+        "distance_pct": 35.1,
+        "source": "okx_ma200"
+      },
+      "WIF/USDT": {
+        "layer": "L4_meme",
+        "above": true,
+        "distance_pct": 13.59,
+        "source": "okx_ma200"
+      }
+    },
+    "note": "广度=传导链 9 资产站上 MA200 占比（L1/L2 复用锚点，L3/L4 OKX 现算）；>=75 强势 / 50-75 分化 / <50 走弱；配合 meme 平台毕业率构成双层广度观测"
+  }
+}

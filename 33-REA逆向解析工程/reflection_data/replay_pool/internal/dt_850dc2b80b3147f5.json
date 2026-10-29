@@ -1,0 +1,364 @@
+{
+  "tree_id": "dt_850dc2b80b3147f5",
+  "task": {
+    "target": "34-前端应用训练系统",
+    "task_type": "acceptance",
+    "feature": "ModelCheckpoint 文件持久化 + 5层训练循环启动恢复"
+  },
+  "nodes": [
+    {
+      "node_id": "dn_1d7a0de041c24a0a",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "34-前端应用训练系统"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261012_checkpoint_persistence_acceptance_gate",
+          "parent_id": "dn_1d7a0de041c24a0a",
+          "action": {
+            "analyzer": "acceptance_gate",
+            "params": {
+              "skill": "dream-acceptance-verify"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+              "detail": "步骤 acceptance_gate 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+              "parent_id": "dn_seed_20261012_checkpoint_persistence_acceptance_gate",
+              "action": {
+                "analyzer": "code_commit",
+                "params": {
+                  "commit": "886a53501b"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+                  "detail": "步骤 code_commit 验收 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+                  "parent_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+                  "action": {
+                    "analyzer": "cognitive_record",
+                    "params": {
+                      "vm": "VM-1791737946287"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+                      "detail": "步骤 cognitive_record 验收 PASS"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [
+                    {
+                      "node_id": "dn_seed_20261012_checkpoint_persistence_passive_training",
+                      "parent_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+                      "action": {
+                        "analyzer": "passive_training",
+                        "params": {
+                          "decision": "ingest"
+                        }
+                      },
+                      "evidence_refs": [
+                        {
+                          "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+                          "detail": "步骤 passive_training 验收 PASS"
+                        }
+                      ],
+                      "poe_score": 0.8,
+                      "cost": {
+                        "calls": 1,
+                        "tokens": 0
+                      },
+                      "children_record": [],
+                      "created_at": 1792811519329
+                    }
+                  ],
+                  "created_at": 1792811519329
+                }
+              ],
+              "created_at": 1792811519329
+            }
+          ],
+          "created_at": 1792811519329
+        }
+      ],
+      "created_at": 1792811519329
+    },
+    {
+      "node_id": "dn_seed_20261012_checkpoint_persistence_acceptance_gate",
+      "parent_id": "dn_1d7a0de041c24a0a",
+      "action": {
+        "analyzer": "acceptance_gate",
+        "params": {
+          "skill": "dream-acceptance-verify"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+          "detail": "步骤 acceptance_gate 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+          "parent_id": "dn_seed_20261012_checkpoint_persistence_acceptance_gate",
+          "action": {
+            "analyzer": "code_commit",
+            "params": {
+              "commit": "886a53501b"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+              "detail": "步骤 code_commit 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+              "parent_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+              "action": {
+                "analyzer": "cognitive_record",
+                "params": {
+                  "vm": "VM-1791737946287"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+                  "detail": "步骤 cognitive_record 验收 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_seed_20261012_checkpoint_persistence_passive_training",
+                  "parent_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+                  "action": {
+                    "analyzer": "passive_training",
+                    "params": {
+                      "decision": "ingest"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+                      "detail": "步骤 passive_training 验收 PASS"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [],
+                  "created_at": 1792811519329
+                }
+              ],
+              "created_at": 1792811519329
+            }
+          ],
+          "created_at": 1792811519329
+        }
+      ],
+      "created_at": 1792811519329
+    },
+    {
+      "node_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+      "parent_id": "dn_seed_20261012_checkpoint_persistence_acceptance_gate",
+      "action": {
+        "analyzer": "code_commit",
+        "params": {
+          "commit": "886a53501b"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+          "detail": "步骤 code_commit 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+          "parent_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+          "action": {
+            "analyzer": "cognitive_record",
+            "params": {
+              "vm": "VM-1791737946287"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+              "detail": "步骤 cognitive_record 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_seed_20261012_checkpoint_persistence_passive_training",
+              "parent_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+              "action": {
+                "analyzer": "passive_training",
+                "params": {
+                  "decision": "ingest"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+                  "detail": "步骤 passive_training 验收 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [],
+              "created_at": 1792811519329
+            }
+          ],
+          "created_at": 1792811519329
+        }
+      ],
+      "created_at": 1792811519329
+    },
+    {
+      "node_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+      "parent_id": "dn_seed_20261012_checkpoint_persistence_code_commit",
+      "action": {
+        "analyzer": "cognitive_record",
+        "params": {
+          "vm": "VM-1791737946287"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+          "detail": "步骤 cognitive_record 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261012_checkpoint_persistence_passive_training",
+          "parent_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+          "action": {
+            "analyzer": "passive_training",
+            "params": {
+              "decision": "ingest"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+              "detail": "步骤 passive_training 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1792811519329
+        }
+      ],
+      "created_at": 1792811519329
+    },
+    {
+      "node_id": "dn_seed_20261012_checkpoint_persistence_passive_training",
+      "parent_id": "dn_seed_20261012_checkpoint_persistence_cognitive_record",
+      "action": {
+        "analyzer": "passive_training",
+        "params": {
+          "decision": "ingest"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261012_checkpoint_persistence/wrapup_report.md",
+          "detail": "步骤 passive_training 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1792811519329
+    }
+  ],
+  "provenance": "internal",
+  "source_label": "acceptance_bundle:20261012_checkpoint_persistence:886a53501b",
+  "weight": 1.0,
+  "created_at": 1792811519329
+}

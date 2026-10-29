@@ -154,6 +154,23 @@ def collect_from_all_providers(limit: int) -> dict:
             sources[label] = []
             print(f"  [{label:10s}]  失败: {e}")
     total = sum(len(v) for v in sources.values())
+    # P1.5 埋点（spec §9.1 DSH 调度域采集点）：各源采集汇总写入案例库，FAIL-OPEN
+    try:
+        from datetime import datetime as _dt
+        _case = {
+            "ts": _dt.now().isoformat(timespec="seconds"),
+            "schema_version": "v2",
+            "case_type": "dsh_dispatch",
+            "payload": {
+                "source_counts": {k: len(v) for k, v in sources.items()},
+                "total": total,
+            },
+        }
+        _store = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl")
+        with open(_store, "a", encoding="utf-8") as _f:
+            _f.write(json.dumps(_case, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
     print(f"  {'─'*40}")
     print(f"  总计采集: {total} 条")
     return sources
@@ -174,8 +191,14 @@ def _convert_case_to_training_data(case, layer: str) -> dict:
         return {"message": case.outcome_text or case.intent,
                 "intent_type": case.intent, "entities": [], "quality": case.quality}
     elif layer == "DSH":
-        return {"task": case.intent, "node_sequence": case.actions,
+        data = {"task": case.intent, "node_sequence": case.actions,
                 "outcome": outcome, "quality": case.quality}
+        try:
+            from adapters.fis_material_prefilter import search_evidence
+            data["evidence"] = search_evidence(case.intent, limit=3)
+        except Exception:
+            data["evidence"] = []
+        return data
     elif layer == "C":
         return {"context_summary": case.intent,
                 "action_taken": case.actions[0] if case.actions else "",

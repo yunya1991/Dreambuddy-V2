@@ -42,7 +42,8 @@ def tool_query_entity(message):
     pairs = []
     for sym, names in aliases.items():
         for a in names or []:
-            if a and a in (message or ""):
+            # 收紧：单字别名不参与子串匹配（避免『金』误命中『资金费率』等）
+            if a and len(a) >= 2 and a in (message or ""):
                 pairs.append((len(a), sym))
     if pairs:
         pairs.sort(reverse=True)
@@ -159,16 +160,62 @@ TOOLS = [
 ]
 
 
+def _record_reasoning_trace(tool, args, result, elapsed_ms, llm_involved=False):
+    """P5 前置 M3：推理过程记录采集点（spec v0.5 §9.2）。
+
+    记录：查询输入 → 各层语义命中 → 综合结论，落 reasoning_trace.jsonl。
+    FAIL-OPEN：记录失败不影响主链路。
+    """
+    import time
+    try:
+        trace = {
+            "schema_version": "0.5",
+            "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "tool": tool,
+            "input": {k: v for k, v in (args or {}).items() if isinstance(v, (str, bool, int, float))},
+            "semantic_hits": [],
+            "conclusion": {},
+            "elapsed_ms": round(elapsed_ms, 2),
+            "llm_involved": llm_involved,
+            "token_budget_note": "distill with_llm=true 时 LLM 参与，token 预算由蒸馏管线控制" if llm_involved else None,
+        }
+        if isinstance(result, dict):
+            # 各层语义命中提取（实体层/术语域层/匹配方式）
+            if result.get("type"):
+                trace["semantic_hits"].append({"layer": "result_type", "value": result.get("type")})
+            if result.get("symbol"):
+                trace["semantic_hits"].append({"layer": "entity", "value": result.get("symbol"), "matched_via": result.get("matched_via") or result.get("method")})
+            if result.get("domain"):
+                trace["semantic_hits"].append({"layer": "term_domain", "value": result.get("domain")})
+            if result.get("need_clarification"):
+                trace["semantic_hits"].append({"layer": "clarification", "value": result.get("hint")})
+            # 综合结论（去除大字段，保留摘要）
+            trace["conclusion"] = {k: v for k, v in result.items() if k in ("symbol", "type", "domain", "term", "method", "matched_via", "error", "hint", "need_clarification")}
+        trace_path = os.path.join(_SYS_DIR, "reasoning_trace.jsonl")
+        with open(trace_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(trace, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # FAIL-OPEN
+
+
 def _dispatch(name, args):
+    import time as _time
+    _t0 = _time.time()
     if name == "query_entity":
-        return tool_query_entity(args.get("message", ""))
-    if name == "semantic_lookup":
-        return tool_semantic_lookup(args.get("term", ""))
-    if name == "distill_aliases":
-        return tool_distill_aliases(args.get("pool", ""), bool(args.get("with_llm", False)))
-    if name == "training_feed":
-        return tool_training_feed(args.get("layer", "S"), args.get("batch", []))
-    return {"error": f"unknown tool: {name}"}
+        _r = tool_query_entity(args.get("message", ""))
+    elif name == "semantic_lookup":
+        _r = tool_semantic_lookup(args.get("term", ""))
+    elif name == "distill_aliases":
+        _llm = bool(args.get("with_llm", False))
+        _r = tool_distill_aliases(args.get("pool", ""), _llm)
+        _record_reasoning_trace(name, args, _r, (_time.time() - _t0) * 1000, llm_involved=_llm)
+        return _r
+    elif name == "training_feed":
+        _r = tool_training_feed(args.get("layer", "S"), args.get("batch", []))
+    else:
+        _r = {"error": f"unknown tool: {name}"}
+    _record_reasoning_trace(name, args, _r, (_time.time() - _t0) * 1000)
+    return _r
 
 
 def main():

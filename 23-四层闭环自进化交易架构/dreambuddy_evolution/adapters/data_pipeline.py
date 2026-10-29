@@ -376,6 +376,25 @@ class DataPipelineAdapter:
                 logger.warning("[FO] event_context injection crash: %s", e)
                 kline_data["event_context"] = {}
 
+        # 5f. 宏观约束上下文注入（40-周期神经网络系统 路径2）
+        #    数据流：40 系统 cycle_state.json → macro_constraint_adapter（只读）
+        #    单向依赖不回写；fail-open：40 产出物缺失/过期/异常时 available=False
+        try:
+            from dreambuddy_evolution.adapters.macro_constraint_adapter import load_macro_constraint
+            kline_data["macro_constraint"] = load_macro_constraint()
+        except Exception as e:
+            logger.warning("[FO] macro_constraint injection crash: %s", e)
+            kline_data["macro_constraint"] = {"available": False}
+        # 5g. strategic_extension 信号注入（43-战略承接推演层 路径，经 42 层总线）
+        #    数据流：43 层信号 → 42 层 SignalBus（bus_state.json）→ 本注入（只读）
+        #    shadow 信号仅透传供矛盾识别参考，不参与裁决权重（42 层 SPEC §21.4）
+        #    单向依赖不回写；fail-open：总线状态缺失/异常时 available=False
+        try:
+            kline_data["strategic_extension"] = self._load_strategic_extension_signal()
+        except Exception as e:
+            logger.warning("[FO] strategic_extension injection crash: %s", e)
+            kline_data["strategic_extension"] = {"available": False}
+
         # 6. ripples (Phase 2: R1 hit 基于 ESS 方向 vs K线方向一致性)
         kline_data["ripples"] = self._build_ripples(kline_data)
 
@@ -385,6 +404,40 @@ class DataPipelineAdapter:
 
         kline_data["_assemble_ms"] = round(elapsed * 1000, 1)
         return kline_data
+
+    @staticmethod
+    def _load_strategic_extension_signal() -> dict:
+        """只读加载 42 层总线上的 strategic_extension 信号（fail-open）。
+
+        数据流：43 层信号 → 42 层 SignalBus（bus_state.json）→ 本方法（只读）。
+        shadow 信号仅透传供矛盾识别参考，不参与裁决权重。
+        """
+        import json as _json
+        import os as _os
+        bus_path = "/home/luke/dreambuddy/42-神经网络交易协调层/runtime/bus_state.json"
+        try:
+            if not _os.path.exists(bus_path):
+                return {"available": False, "note": "42 层总线状态不存在（fail-open）"}
+            with open(bus_path, encoding="utf-8") as f:
+                bus = _json.load(f)
+            for sig in (bus.get("signals") or []):
+                if sig.get("source") == "strategic_extension":
+                    return {
+                        "available": True,
+                        "signal_id": sig.get("signal_id"),
+                        "ts": sig.get("ts"),
+                        "symbol": sig.get("symbol"),
+                        "direction": sig.get("direction"),
+                        "confidence": sig.get("confidence"),
+                        "horizon": sig.get("horizon"),
+                        "risk_exposure_hint": sig.get("risk_exposure_hint"),
+                        "shadow": bool(sig.get("shadow", False)),
+                        "payload": sig.get("payload") or {},
+                    }
+            return {"available": False, "note": "总线上无 strategic_extension 信号"}
+        except Exception as e:
+            logger.warning("[FO] strategic_extension load crash: %s", e)
+            return {"available": False}
 
     @staticmethod
     def _compute_capital_flow(kline_data: dict) -> float | None:

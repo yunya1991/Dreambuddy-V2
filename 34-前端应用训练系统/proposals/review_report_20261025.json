@@ -1,0 +1,947 @@
+{
+  "generated_at": "2026-10-25T00:30:00",
+  "summary": {
+    "total": 104,
+    "recommend": 0,
+    "hold": 3,
+    "reject": 101
+  },
+  "details": [
+    {
+      "file": "prop_20261024_222435_1.json",
+      "intent_id": "candidate_intent_1",
+      "intent_name": "候选意图：数据相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 0.75,
+      "overlap_count": 2
+    },
+    {
+      "file": "prop_20261024_222435_10.json",
+      "intent_id": "candidate_btc_10",
+      "intent_name": "候选意图：BTC现相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.429,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261024_222435_11.json",
+      "intent_id": "candidate_tc_11",
+      "intent_name": "候选意图：TC什么相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261024_222435_12.json",
+      "intent_id": "candidate_intent_12",
+      "intent_name": "候选意图：一句相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.375,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_13.json",
+      "intent_id": "candidate_intent_13",
+      "intent_name": "候选意图：指数相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_14.json",
+      "intent_id": "candidate_intent_14",
+      "intent_name": "候选意图：状态相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_15.json",
+      "intent_id": "candidate_ppi_15",
+      "intent_name": "候选意图：PPI相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_16.json",
+      "intent_id": "candidate_intent_16",
+      "intent_name": "候选意图：最近相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_17.json",
+      "intent_id": "candidate_intent_17",
+      "intent_name": "候选意图：风控状相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_18.json",
+      "intent_id": "candidate_intent_18",
+      "intent_name": "候选意图：预期意味相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_19.json",
+      "intent_id": "candidate_intent_19",
+      "intent_name": "候选意图：术面相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_2.json",
+      "intent_id": "candidate_pi_2",
+      "intent_name": "候选意图：PI相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_20.json",
+      "intent_id": "candidate_c_20",
+      "intent_name": "候选意图：询美国C相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_21.json",
+      "intent_id": "candidate_intent_21",
+      "intent_name": "候选意图：一下恐相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_22.json",
+      "intent_id": "candidate_intent_22",
+      "intent_name": "候选意图：演变相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_3.json",
+      "intent_id": "candidate_intent_3",
+      "intent_name": "候选意图：查一下相关",
+      "verdict": "reject",
+      "case_count": 6,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_4.json",
+      "intent_id": "candidate_bt_4",
+      "intent_name": "候选意图：BT相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 0.6,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261024_222435_5.json",
+      "intent_id": "candidate_intent_5",
+      "intent_name": "候选意图：现在相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261024_222435_6.json",
+      "intent_id": "candidate_intent_6",
+      "intent_name": "候选意图：么样相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_7.json",
+      "intent_id": "candidate_intent_7",
+      "intent_name": "候选意图：现在什么相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.75,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_8.json",
+      "intent_id": "candidate_intent_8",
+      "intent_name": "候选意图：事件相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.8,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261024_222435_9.json",
+      "intent_id": "candidate_cpi_9",
+      "intent_name": "候选意图：CPI数相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_1.json",
+      "intent_id": "candidate_intent_1",
+      "intent_name": "候选意图：数据相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 0.875,
+      "overlap_count": 2
+    },
+    {
+      "file": "prop_20261025_014101_10.json",
+      "intent_id": "candidate_tc_10",
+      "intent_name": "候选意图：TC现相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.429,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_014101_11.json",
+      "intent_id": "candidate_c_11",
+      "intent_name": "候选意图：C什相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_014101_12.json",
+      "intent_id": "candidate_intent_12",
+      "intent_name": "候选意图：意图的相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.375,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_13.json",
+      "intent_id": "candidate_intent_13",
+      "intent_name": "候选意图：指数相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_14.json",
+      "intent_id": "candidate_intent_14",
+      "intent_name": "候选意图：状态相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_15.json",
+      "intent_id": "candidate_pp_15",
+      "intent_name": "候选意图：PP相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.625,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_16.json",
+      "intent_id": "candidate_intent_16",
+      "intent_name": "候选意图：最近相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_17.json",
+      "intent_id": "candidate_intent_17",
+      "intent_name": "候选意图：风控状相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.625,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_18.json",
+      "intent_id": "candidate_intent_18",
+      "intent_name": "候选意图：期意味相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.75,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_19.json",
+      "intent_id": "candidate_intent_19",
+      "intent_name": "候选意图：技术相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_2.json",
+      "intent_id": "candidate_pi_2",
+      "intent_name": "候选意图：PI相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_20.json",
+      "intent_id": "candidate_c_20",
+      "intent_name": "候选意图：询美国C相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_21.json",
+      "intent_id": "candidate_intent_21",
+      "intent_name": "候选意图：一下恐惧相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.375,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_22.json",
+      "intent_id": "candidate_intent_22",
+      "intent_name": "候选意图：件怎么演相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_3.json",
+      "intent_id": "candidate_intent_3",
+      "intent_name": "候选意图：查一相关",
+      "verdict": "reject",
+      "case_count": 6,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_4.json",
+      "intent_id": "candidate_bt_4",
+      "intent_name": "候选意图：BT相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 0.6,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_014101_5.json",
+      "intent_id": "candidate_intent_5",
+      "intent_name": "候选意图：现在相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_014101_6.json",
+      "intent_id": "candidate_intent_6",
+      "intent_name": "候选意图：么样相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_7.json",
+      "intent_id": "candidate_intent_7",
+      "intent_name": "候选意图：在什么相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.75,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_8.json",
+      "intent_id": "candidate_intent_8",
+      "intent_name": "候选意图：事件相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.8,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_014101_9.json",
+      "intent_id": "candidate_c_9",
+      "intent_name": "候选意图：国C相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_1.json",
+      "intent_id": "candidate_intent_1",
+      "intent_name": "候选意图：查询相关",
+      "verdict": "reject",
+      "case_count": 16,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_10.json",
+      "intent_id": "candidate_intent_10",
+      "intent_name": "候选意图：现在相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_11.json",
+      "intent_id": "candidate_intent_11",
+      "intent_name": "候选意图：么价相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.5,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_12.json",
+      "intent_id": "candidate_i_12",
+      "intent_name": "候选意图：I数据相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 0.6,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_13.json",
+      "intent_id": "candidate_intent_13",
+      "intent_name": "候选意图：指数相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 0.75,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_14.json",
+      "intent_id": "candidate_intent_14",
+      "intent_name": "候选意图：怎么样相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_15.json",
+      "intent_id": "candidate_cp_15",
+      "intent_name": "候选意图：美国CP相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_16.json",
+      "intent_id": "candidate_intent_16",
+      "intent_name": "候选意图：下美相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_17.json",
+      "intent_id": "candidate_intent_17",
+      "intent_name": "候选意图：在什相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.75,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_18.json",
+      "intent_id": "candidate_intent_18",
+      "intent_name": "候选意图：事件相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.8,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_19.json",
+      "intent_id": "candidate_intent_19",
+      "intent_name": "候选意图：最新的相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.6,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_2.json",
+      "intent_id": "candidate_intent_2",
+      "intent_name": "候选意图：价格相关",
+      "verdict": "reject",
+      "case_count": 9,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_20.json",
+      "intent_id": "candidate_c_20",
+      "intent_name": "候选意图：C现相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.429,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_21.json",
+      "intent_id": "candidate_btc_21",
+      "intent_name": "候选意图：BTC什相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_22.json",
+      "intent_id": "candidate_intent_22",
+      "intent_name": "候选意图：看不出相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_23.json",
+      "intent_id": "candidate_intent_23",
+      "intent_name": "候选意图：新闻相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_24.json",
+      "intent_id": "candidate_itv_24",
+      "intent_name": "候选意图：i TV相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_25.json",
+      "intent_id": "candidate_intent_25",
+      "intent_name": "候选意图：状态相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_26.json",
+      "intent_id": "candidate_pp_26",
+      "intent_name": "候选意图：PP相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.625,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_27.json",
+      "intent_id": "candidate_intent_27",
+      "intent_name": "候选意图：一下美股相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.625,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_28.json",
+      "intent_id": "candidate_intent_28",
+      "intent_name": "候选意图：最近相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_29.json",
+      "intent_id": "candidate_intent_29",
+      "intent_name": "候选意图：在风相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_3.json",
+      "intent_id": "candidate_intent_3",
+      "intent_name": "候选意图：以太坊相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 0.75,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_30.json",
+      "intent_id": "candidate_intent_30",
+      "intent_name": "候选意图：期意味相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.625,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_31.json",
+      "intent_id": "candidate_intent_31",
+      "intent_name": "候选意图：技术面相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_32.json",
+      "intent_id": "candidate_et_32",
+      "intent_name": "候选意图：ET相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_33.json",
+      "intent_id": "candidate_intent_33",
+      "intent_name": "候选意图：下恐惧相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_34.json",
+      "intent_id": "candidate_intent_34",
+      "intent_name": "候选意图：怎么演相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_35.json",
+      "intent_id": "candidate_intent_35",
+      "intent_name": "候选意图：数是多少相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.375,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_36.json",
+      "intent_id": "candidate_intent_36",
+      "intent_name": "候选意图：坊最新相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.6,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_4.json",
+      "intent_id": "candidate_intent_4",
+      "intent_name": "候选意图：查一相关",
+      "verdict": "reject",
+      "case_count": 7,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_5.json",
+      "intent_id": "candidate_intent_5",
+      "intent_name": "候选意图：数据相关",
+      "verdict": "reject",
+      "case_count": 6,
+      "noise_ratio": 0.833,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031559_6.json",
+      "intent_id": "candidate_pi_6",
+      "intent_name": "候选意图：PI相关",
+      "verdict": "reject",
+      "case_count": 6,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_7.json",
+      "intent_id": "candidate_tc_7",
+      "intent_name": "候选意图：TC相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 0.667,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_8.json",
+      "intent_id": "candidate_intent_8",
+      "intent_name": "候选意图：太坊价相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.6,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031559_9.json",
+      "intent_id": "candidate_intent_9",
+      "intent_name": "候选意图：最新相关",
+      "verdict": "reject",
+      "case_count": 7,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_1.json",
+      "intent_id": "candidate_intent_1",
+      "intent_name": "候选意图：查询相关",
+      "verdict": "reject",
+      "case_count": 16,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031911_10.json",
+      "intent_id": "candidate_intent_10",
+      "intent_name": "候选意图：怎么样相关",
+      "verdict": "hold",
+      "case_count": 4,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_11.json",
+      "intent_id": "candidate_intent_11",
+      "intent_name": "候选意图：事件相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_12.json",
+      "intent_id": "candidate_intent_12",
+      "intent_name": "候选意图：多少相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031911_13.json",
+      "intent_id": "candidate_intent_13",
+      "intent_name": "候选意图：意图相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.8,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_14.json",
+      "intent_id": "candidate_intent_14",
+      "intent_name": "候选意图：新闻相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_15.json",
+      "intent_id": "candidate_tvl_15",
+      "intent_name": "候选意图：TVL相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_16.json",
+      "intent_id": "candidate_intent_16",
+      "intent_name": "候选意图：状态相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_17.json",
+      "intent_id": "candidate_ppi_17",
+      "intent_name": "候选意图：PPI相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_18.json",
+      "intent_id": "candidate_intent_18",
+      "intent_name": "候选意图：股行情相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_19.json",
+      "intent_id": "candidate_intent_19",
+      "intent_name": "候选意图：最近相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_2.json",
+      "intent_id": "candidate_intent_2",
+      "intent_name": "候选意图：价格相关",
+      "verdict": "reject",
+      "case_count": 8,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031911_20.json",
+      "intent_id": "candidate_intent_20",
+      "intent_name": "候选意图：风控相关",
+      "verdict": "reject",
+      "case_count": 1,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_21.json",
+      "intent_id": "candidate_intent_21",
+      "intent_name": "候选意图：预期相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.5,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_22.json",
+      "intent_id": "candidate_intent_22",
+      "intent_name": "候选意图：技术相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_23.json",
+      "intent_id": "candidate_eth_23",
+      "intent_name": "候选意图：ETH相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_24.json",
+      "intent_id": "candidate_intent_24",
+      "intent_name": "候选意图：演变相关",
+      "verdict": "reject",
+      "case_count": 2,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_3.json",
+      "intent_id": "candidate_intent_3",
+      "intent_name": "候选意图：以太相关",
+      "verdict": "reject",
+      "case_count": 5,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_4.json",
+      "intent_id": "candidate_intent_4",
+      "intent_name": "候选意图：数据相关",
+      "verdict": "reject",
+      "case_count": 6,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031911_5.json",
+      "intent_id": "candidate_btc_5",
+      "intent_name": "候选意图：BTC相关",
+      "verdict": "hold",
+      "case_count": 4,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_6.json",
+      "intent_id": "candidate_intent_6",
+      "intent_name": "候选意图：现在相关",
+      "verdict": "reject",
+      "case_count": 4,
+      "noise_ratio": 1.0,
+      "overlap_count": 1
+    },
+    {
+      "file": "prop_20261025_031911_7.json",
+      "intent_id": "candidate_cpi_7",
+      "intent_name": "候选意图：CPI相关",
+      "verdict": "hold",
+      "case_count": 5,
+      "noise_ratio": 0.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_8.json",
+      "intent_id": "candidate_intent_8",
+      "intent_name": "候选意图：最新相关",
+      "verdict": "reject",
+      "case_count": 6,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    },
+    {
+      "file": "prop_20261025_031911_9.json",
+      "intent_id": "candidate_intent_9",
+      "intent_name": "候选意图：指数相关",
+      "verdict": "reject",
+      "case_count": 3,
+      "noise_ratio": 1.0,
+      "overlap_count": 0
+    }
+  ]
+}

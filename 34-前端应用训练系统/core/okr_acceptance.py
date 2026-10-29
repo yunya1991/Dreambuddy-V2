@@ -17,6 +17,8 @@ verdict 三态: pass / degraded / fail
 整体: any fail → fail；else any degraded 或 extras → degraded；else pass；空节点 → degraded
 """
 from __future__ import annotations
+import json
+import os
 
 from typing import Any, Dict, List, Optional
 
@@ -190,6 +192,45 @@ def evaluate_nodes(nodes: Optional[List[Dict[str, Any]]],
             overall = VERDICT_DEGRADED
         else:
             overall = VERDICT_PASS
+
+        # P1.5 埋点（spec §9.1 三层架构域采集点）：验收收尾写入案例库，FAIL-OPEN
+
+        try:
+
+            from datetime import datetime as _dt
+
+            _results = verdicts if isinstance(verdicts, list) else []
+
+            _case = {
+
+                "ts": _dt.now().isoformat(timespec="seconds"),
+
+                "schema_version": "v2",
+
+                "case_type": "arch_layer",
+
+                "payload": {
+
+                    "node_count": len(nodes) if nodes else 0,
+
+                    "result_count": len(_results),
+
+                    "overall": overall,
+                    "counts": counts,
+
+                },
+
+            }
+
+            _store = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl")
+
+            with open(_store, "a", encoding="utf-8") as _f:
+
+                _f.write(json.dumps(_case, ensure_ascii=False) + "\n")
+
+        except Exception:
+
+            pass
 
         return {
             "verdict": overall,

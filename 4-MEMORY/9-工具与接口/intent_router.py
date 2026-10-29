@@ -89,10 +89,13 @@ class IntentRouter(CognitiveRouter):
         memory_recall_fn: Callable[[str, int], List[Dict[str, Any]]],
         skill_search_fn: Callable[[str, int], List[Dict[str, Any]]],
         knowledge_rag_fn: Callable[[str, int], List[Dict[str, Any]]],
+        doc_recall_fn: Optional[Callable[[str, int], List[Dict[str, Any]]]] = None,
     ) -> None:
         self._memory_recall = memory_recall_fn
         self._skill_search = skill_search_fn
         self._knowledge_rag = knowledge_rag_fn
+        # B3（41 SPEC §13.2）：41 文档通道（可选，未注入时行为不变）
+        self._doc_recall = doc_recall_fn
         # P2-2: 规则缓存 — key="{type}:{confidence_bucket}" → "fast"/"full"
         self._route_cache: Dict[str, str] = {}
         # P2-3: 结果缓存 — key=intent_signature → RecallResult
@@ -175,8 +178,13 @@ class IntentRouter(CognitiveRouter):
         memories = self._safe_call(self._memory_recall, context, top_k)[:top_k]
         skills = self._safe_call(self._skill_search, context, top_k)[:top_k]
         knowledge = self._safe_call(self._knowledge_rag, context, top_k)[:top_k]
+        # B3（41 SPEC §13.2）：41 文档通道补充召回（可选，FAIL-OPEN）
+        docs: List[Dict[str, Any]] = []
+        if self._doc_recall is not None:
+            docs = self._safe_call(self._doc_recall, context, top_k)[:top_k]
 
         # 加权置信度：按各库权重 × 召回命中率（非空即命中）
+        # B3：41 文档通道命中时按 knowledge 权重的一半计入（补充通道，不替代主链路）
         total_w = mem_w + skill_w + know_w
         hit_w = 0.0
         if memories:
@@ -185,12 +193,16 @@ class IntentRouter(CognitiveRouter):
             hit_w += skill_w
         if knowledge:
             hit_w += know_w
+        if docs:
+            hit_w += know_w * 0.5
+            total_w += know_w * 0.5
         confidence = round(intent_confidence * (hit_w / total_w), 4) if total_w > 0 else 0.0
 
         return RecallResult(
             memories=memories,
             skills=skills,
             knowledge=knowledge,
+            docs=docs,
             confidence=confidence,
         )
 

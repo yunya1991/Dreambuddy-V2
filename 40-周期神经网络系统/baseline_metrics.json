@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-10-27T11:40:20.258430+00:00",
+  "module": "P6 E1 基线固化（12 系统 LightGBM 基线落表）",
+  "baseline_source": {
+    "system": "12-三屏趋势系统",
+    "model_path": "/home/luke/dreambuddy/12-三屏趋势系统/ml/models/baseline/model.pkl",
+    "version": "v1",
+    "model_type": "LightGBMModel",
+    "num_features": 25,
+    "train_date_range": [
+      "2025-09-17",
+      "2026-03-15"
+    ]
+  },
+  "eval_protocol": {
+    "data": "BTC-USDT 1D limit=300（18 中心 data_center.compat，与基线训练同源）",
+    "feature_pipeline": "TrendFeatureEngineer(views=5) label_lookahead=7（talib 兼容层：返回类型包装 + ELDER_RAY 补齐）",
+    "samples_total": 162,
+    "eval_samples": 32,
+    "test_ratio": 0.2,
+    "ordering": "time_asc_no_shuffle",
+    "ic_samples": 25
+  },
+  "accuracy": 0.75,
+  "direction_ic": 0.3793767114217521,
+  "reference_metrics_from_meta": {
+    "test_accuracy": 0.7,
+    "walk_forward_roc_auc": 0.7702628968253968
+  },
+  "note": "基线固化记录：E2 小模型训练须 Walk-Forward 准确率与方向 IC 均不低于本基线方可晋级（SPEC_encoder 红线 3）"
+}

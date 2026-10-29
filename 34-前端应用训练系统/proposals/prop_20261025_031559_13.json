@@ -1,0 +1,73 @@
+{
+  "proposal_id": "prop_20261025_031559_13",
+  "generated_at": "2026-10-25T03:15:59",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_13",
+    "name": "候选意图：指数相关",
+    "description": "从 3 条未覆盖案例聚类发现，特征词：指数、恐惧、婪指数、贪婪指数、惧贪婪。描述待人工评审补充。",
+    "keywords": [
+      "指数",
+      "恐惧",
+      "婪指数",
+      "贪婪指数",
+      "惧贪婪",
+      "恐惧贪",
+      "贪婪指",
+      "恐惧贪婪"
+    ],
+    "examples": [
+      "查一下恐惧贪婪指数",
+      "查一下纳斯达克指数",
+      "最新的恐惧贪婪指数是多少"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_13",
+      "keywords": [
+        "指数",
+        "恐惧",
+        "婪指数",
+        "贪婪指数",
+        "惧贪婪",
+        "恐惧贪",
+        "贪婪指",
+        "恐惧贪婪"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 3,
+    "samples": [
+      "查一下恐惧贪婪指数",
+      "查一下纳斯达克指数",
+      "最新的恐惧贪婪指数是多少"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数充分（3）",
+      "关键词噪声率高（75%，n-gram 碎片词）",
+      "与现有意图无边界重叠",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 3,
+      "noise_ratio": 0.75,
+      "overlap_count": 0,
+      "overlaps": [],
+      "desc_complete": false
+    }
+  }
+}

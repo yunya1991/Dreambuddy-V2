@@ -1,0 +1,8 @@
+{
+  "updated_at": "2026-10-28T16:10:01.973804+00:00",
+  "stage": "X0",
+  "signal_source": "real",
+  "intents_today": 8,
+  "written_today": 8,
+  "trades_path": "/home/luke/dreambuddy/40-周期神经网络系统/execution_trades.jsonl"
+}

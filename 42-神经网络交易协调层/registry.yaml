@@ -1,0 +1,40 @@
+# 42 层子系统接入注册表（对齐 SPEC §21.1 接入声明）
+# Publisher：子系统通过适配器只读源文件发布信号到总线
+# Subscriber：子系统按需消费总线信号与参数，不订阅 = 不受影响
+
+subsystems:
+  - name: 43-strategic-extension
+    publisher: adapters/strategic_extension_adapter.py
+    publish: [strategic_extension]
+    subscribe: [elastic_params, risk_budget]
+    enabled: true
+
+  - name: 40-cycle
+    publisher: adapters/cycle_state_adapter.py
+    publish: [cycle_state]
+    subscribe: []
+    enabled: true
+
+  - name: 23-contradiction
+    publisher: adapters/contradiction_state_adapter.py
+    publish: [contradiction_arbitration]
+    subscribe: []
+    enabled: true
+
+  - name: 29-event
+    publisher: adapters/event_driven_adapter.py
+    publish: [event_driven]
+    subscribe: []
+    enabled: true
+
+  - name: 11-bcrm
+    publisher: adapters/bcrm_state_adapter.py
+    publish: [bcrm_strategy_state]
+    subscribe: []
+    enabled: true
+
+  - name: bdsm
+    publisher: adapters/bdsm_state_adapter.py
+    publish: [bdsm_value_constraint]
+    subscribe: []
+    enabled: true

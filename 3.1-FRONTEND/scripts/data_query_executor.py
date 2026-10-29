@@ -52,7 +52,8 @@ def _resolve_symbol(message, candidates=None):
         if candidates is not None and sym not in candidates:
             continue
         for a in aliases:
-            if a and a in message:
+            # 收紧：单字别名不参与子串匹配（避免『金』误命中『资金费率』，与 39 系统 mcp_server.py 对齐）
+            if a and len(a) >= 2 and a in message:
                 _alias_pairs.append((len(a), sym))
     if _alias_pairs:
         _alias_pairs.sort(reverse=True)
@@ -672,6 +673,35 @@ def exec_event_line_query(message):
             "data": {"lines": [{"topic": l["topic"], "count": l["event_count"]} for l in lines]}}
 
 
+def exec_doc_search(message: str):
+    """L1 文档检索（41 SPEC §7.10-1 / §13.1-A3）：零 token，桥接 41 BM25 倒排索引。"""
+    import re as _re
+    import subprocess as _sp
+    # 从问法中提取查询词：去掉检索动词与文档类名词
+    q = _re.sub(r"(帮我|请|查一下|查|搜一下|搜|找一下|找|检索|搜索|一下)", "", message)
+    q = _re.sub(r"(的)?(文档|资料|SPEC|规范|手册|指南|知识库|wiki|在哪|位置|路径|全文检索)", "", q)
+    q = q.strip() or message
+    try:
+        proc = _sp.run(
+            ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+            input=json.dumps({"query": q, "limit": 8}),
+            capture_output=True, text=True, timeout=10,
+            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+        )
+        res = json.loads(proc.stdout or "{}")
+        hits = res.get("hits", []) if res.get("success") else []
+        if not hits:
+            return {"success": True, "answer": f"未找到与『{q}』相关的文档", "data": {"query": q, "hits": []}}
+        lines = [f"{i+1}. {h['source']['path']}（相关度 {h['score']:.2f}）" for i, h in enumerate(hits[:8])]
+        return {
+            "success": True,
+            "answer": "找到 %d 篇相关文档：" % len(hits) + chr(10).join(lines),
+            "data": {"query": q, "hits": [{"path": h["source"]["path"], "score": h["score"], "type": h["type"]} for h in hits[:8]]},
+        }
+    except Exception as e:
+        return {"success": True, "degraded": True, "answer": f"文档检索暂不可用: {e}", "data": None}
+
+
 def exec_price_query(message):
     """价格查询: 经 L0 直连 OKX API 获取实时价格，失败降级回查 18 中心。"""
     # SPEC v1.5: 别名表统一解析，无币种时澄清追问（不再静默默认 BTC）
@@ -747,6 +777,8 @@ def main():
             result = exec_event_listing(message)
         elif intent == "event_line_query":
             result = exec_event_line_query(message)
+        elif intent == "doc_search":
+            result = exec_doc_search(message)
         else:
             result = {"success": True, "answer": "该意图暂不支持执行闭环", "data": None}
     except Exception as e:

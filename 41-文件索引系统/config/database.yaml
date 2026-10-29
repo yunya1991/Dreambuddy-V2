@@ -1,0 +1,23 @@
+# database.yaml — 41-文件索引系统 PostgreSQL 连接配置
+# 依据: SPEC-41-文件索引系统 v0.6 §4.1（存储层 PostgreSQL 迁移）
+# 安全约定: 密码等敏感信息一律经环境变量注入，本文件不落盘明文
+
+# 连接参数（${ENV_VAR} 形式引用环境变量，未设置时使用默认值）
+host: ${FIS_PG_HOST:127.0.0.1}
+port: ${FIS_PG_PORT:5432}
+database: ${FIS_PG_DB:fis}
+user: ${FIS_PG_USER:dreambuddy}
+password: ${FIS_PG_PASSWORD}          # 必填，无默认值；仅环境变量注入
+
+# 连接池（v0.6 §4.1：psycopg_pool 进程内池化）
+pool:
+  min_size: 1
+  max_size: 10
+  timeout: 5                          # 获取连接超时（秒）
+  max_lifetime: 1800                  # 连接最大存活（秒）
+
+# 行为约定
+options:
+  connect_timeout: 5                  # 连接超时（秒）
+  fail_open: true                     # 连接失败 FAIL-OPEN：返回空结果并记日志（对齐 SPEC v0.6 §5.5/§11）
+  schema_file: config/schema.sql       # 初始化/重建 DDL 脚本

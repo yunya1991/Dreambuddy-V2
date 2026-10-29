@@ -1,0 +1,111 @@
+{
+  "generated_at": "2026-10-26T14:43:57.889534+00:00",
+  "module": "P4 策略映射（L5）",
+  "inputs": {
+    "quadrant": "overheat",
+    "quadrant_confidence": "medium",
+    "transmission_state": "neutral",
+    "breadth_state": "strong",
+    "breadth_pct": 88.9,
+    "stagflation_correction_active": false,
+    "effective_confidence": "medium",
+    "event_window_frozen": false,
+    "clock_degraded": false
+  },
+  "strategy_suggestion": {
+    "stance": "防御性进攻",
+    "position_band_pct": [
+      30,
+      60
+    ],
+    "crypto_layer_focus": [
+      "L1_anchor",
+      "L2_major"
+    ],
+    "equity_sector_preference": [
+      "能源",
+      "材料",
+      "工业"
+    ],
+    "rationale": "过热：增长与通胀同步上行，受益于价格与产能的板块领先"
+  },
+  "adjustments_applied": {
+    "transmission": {
+      "state": "neutral",
+      "stance_shift": 0,
+      "position_shift": 0
+    },
+    "breadth": {
+      "state": "strong",
+      "position_shift": 5
+    },
+    "confidence": {
+      "level": "medium",
+      "position_shift": -5
+    }
+  },
+  "risk_notes": [
+    "象限置信度 medium（背离降级），建议降权使用",
+    "L4 meme 层广度 66.7% 为最弱层，传导末端不健康",
+    "聪明钱张力：CFTC 投机净多 vs 稳定币供应收缩并存，资金面内部矛盾"
+  ],
+  "risk_guards": {
+    "generated_at": "2026-10-26T14:43:57.875836+00:00",
+    "guard_errors": [],
+    "freshness": {
+      "cycle_state": {
+        "age_hours": 9.9,
+        "degrade_steps": 0,
+        "stale": false
+      },
+      "asset_rotation": {
+        "age_hours": 9.3,
+        "degrade_steps": 0,
+        "stale": false
+      },
+      "sector_transmission": {
+        "age_hours": 9.1,
+        "degrade_steps": 0,
+        "stale": false
+      },
+      "stovall_breadth": {
+        "age_hours": 2.5,
+        "degrade_steps": 0,
+        "stale": false
+      },
+      "fund_flow": {
+        "age_hours": 3.0,
+        "degrade_steps": 0,
+        "stale": false
+      },
+      "washout_verdicts": {
+        "age_hours": 8.1,
+        "degrade_steps": 0,
+        "stale": false
+      }
+    },
+    "event_window": {
+      "in_window": false,
+      "note": "无临近事件或数据不足（fail-open 不冻结）"
+    },
+    "clock_degradation": {
+      "clock_degraded": false,
+      "reasons": []
+    },
+    "tail_confidence": {
+      "INDPRO": {
+        "tail_points": 6,
+        "low_confidence_tail": true,
+        "note": "末端 6 期为初值/修正期，置信度降权"
+      },
+      "CPIAUCSL": {
+        "tail_points": 6,
+        "low_confidence_tail": true,
+        "note": "末端 6 期为初值/修正期，置信度降权"
+      }
+    },
+    "effective_confidence": "medium",
+    "confidence_degrade_steps": 0
+  },
+  "red_line": "只产建议不产交易信号；仓位为建议区间，交易决策归 23 系统三步门禁"
+}

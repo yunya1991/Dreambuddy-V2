@@ -19,6 +19,8 @@ FAIL-OPEN: 每层异常被隔离记录（errors），不抛出；信号自身 de
 字段表达，与编排层 degraded（阶段异常）分离。
 """
 from __future__ import annotations
+import json
+import os
 
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional
@@ -447,6 +449,27 @@ class SACGOrchestrator:
             verify_fn=self._verify_fn,
             limiter=self._limiter,
         )
+        # P1.5 埋点（spec §9.1 SACG 域采集点）：编排收尾摘要写入案例库，FAIL-OPEN
+        try:
+            from datetime import datetime as _dt
+            _case = {
+                "ts": _dt.now().isoformat(timespec="seconds"),
+                "schema_version": "v2",
+                "case_type": "sacg_orchestration",
+                "payload": {
+                    "verdict": verdict,
+                    "node_count": len(node_results or []),
+                    "sediment_types": [s.get("type") for s in sediments],
+                    "cognitive_outcome": (cognitive or {}).get("outcome"),
+                },
+            }
+            _store = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "l1_case_store.jsonl")
+            with open(_store, "a", encoding="utf-8") as _f:
+                _f.write(json.dumps(_case, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
         return {"compressed": True, "settled": True,
                 "sediments": sediments, "cognitive": cognitive}
 

@@ -17,6 +17,11 @@ import * as child_process from 'child_process';
 import { emitMonitorEvent } from './monitor-bus';
 import {
   recognizeIntent,
+  evaluateShadowRules,
+  canaryBucket,
+  getRuleStatus,
+  setRuleStatus,
+  findPreemptingRule,
   routeIntent,
   CHAIN_STEPS,
   requiresStepConfirmation,
@@ -28,6 +33,8 @@ import {
   type IntentRecognitionResult,
   type RoutingDecision,
 } from './intent';
+// L1 组合意图拆分器（spec v0.5 §4，P3）
+import { splitCompositeInput } from './intent/composite-splitter';
 import {
   fetchMarketData,
   formatMarketData,
@@ -401,6 +408,8 @@ export interface TaskFile {
   intent: {
     type: IntentType;
     confidence: number;
+    /** 复杂度（L2 接线判定：complex → 复杂意图库/SACG-DSH 编排；urgent → 紧急事件 S2 快速评估） */
+    complexity?: 'simple' | 'moderate' | 'complex' | 'urgent';
     entities?: {
       symbol?: string;
       timeframe?: string;
@@ -543,10 +552,83 @@ export function generateTaskId(): string {
 /**
  * 将新的 IntentRecognitionResult 转换为 TaskFile 格式 (兼容旧格式)
  */
+// ============ E2 灰度机制：自动回滚触发器（spec §4.2/4.3，FAIL-OPEN） ============
+const CANARY_ROUTING_LOG = process.env.CANARY_ROUTING_LOG || '/home/luke/dreambuddy/34-前端应用训练系统/canary_routing.jsonl';
+const ADR_RECORDS_LOG = process.env.ADR_RECORDS_LOG || '/home/luke/dreambuddy/34-前端应用训练系统/adr_records.jsonl';
+const CANARY_MIN_SAMPLES = 20; // 每观察窗口最小样本量，不足不评估
+interface CanarySample {
+  ts: string;
+  session_id: string;
+  rule_id: string;
+  message: string;
+  intent: string;
+}
+/**
+ * 自动回滚触发器（spec §4.2）：任一指标环比上升超阈值 → 规则置 degraded 摘除 + ADR 落盘 canary_rolled_back。
+ * 三项指标：澄清率/重试率/误归因率（复用逆向验证管线 misidentify-attribution 思路：消息同时命中其他 active 规则即计误归因）。
+ */
+export function checkCanaryRollback(ruleId: string): void {
+  try {
+    if (!fs.existsSync(CANARY_ROUTING_LOG)) return;
+    const lines = fs.readFileSync(CANARY_ROUTING_LOG, 'utf-8').split('\n').filter(Boolean);
+    const samples: CanarySample[] = [];
+    for (const line of lines) {
+      try {
+        const s = JSON.parse(line);
+        if (s && s.rule_id === ruleId) samples.push(s);
+      } catch {
+        // 跳过坏行
+      }
+    }
+    if (samples.length < CANARY_MIN_SAMPLES * 2) return; // 需要当前 + 基线两个窗口
+    const current = samples.slice(-CANARY_MIN_SAMPLES);
+    const previous = samples.slice(-CANARY_MIN_SAMPLES * 2, -CANARY_MIN_SAMPLES);
+    // 指标：澄清率（need_clarification 占比）
+    const clarificationRate = (w: CanarySample[]) =>
+      w.filter(s => s.intent === 'need_clarification').length / w.length;
+    // 指标：重试率（同 session 10 秒内重发相同消息占比）
+    const retryRate = (w: CanarySample[]) => {
+      let retries = 0;
+      for (let i = 1; i < w.length; i++) {
+        const dt = new Date(w[i].ts).getTime() - new Date(w[i - 1].ts).getTime();
+        if (w[i].session_id === w[i - 1].session_id && dt > 0 && dt <= 10_000 && w[i].message === w[i - 1].message) retries++;
+      }
+      return retries / w.length;
+    };
+    // 指标：误归因率（消息同时命中其他 active 规则关键词的占比，misidentify-attribution）
+    const misattributionRate = (w: CanarySample[]) =>
+      w.filter(s => findPreemptingRule(s.message, ruleId) !== undefined).length / w.length;
+    const metrics = {
+      clarification_rate: { previous: clarificationRate(previous), current: clarificationRate(current) },
+      retry_rate: { previous: retryRate(previous), current: retryRate(current) },
+      misattribution_rate: { previous: misattributionRate(previous), current: misattributionRate(current) },
+    };
+    const triggers: string[] = [];
+    if (metrics.clarification_rate.current - metrics.clarification_rate.previous > 0.02) triggers.push('clarification_rate_up');
+    if (metrics.retry_rate.current - metrics.retry_rate.previous > 0.02) triggers.push('retry_rate_up');
+    if (metrics.misattribution_rate.current - metrics.misattribution_rate.previous > 0.02) triggers.push('misattribution_rate_up');
+    if (triggers.length === 0) return;
+    // 回滚（spec §4.3）：置 degraded 摘除，ADR 记录 canary_rolled_back（含触发指标与样本），规则保留不删除
+    setRuleStatus(ruleId, 'degraded');
+    const adr = {
+      schema_version: '0.5',
+      adr_id: `adr_${Date.now()}_canary_rolled_back`,
+      recorded_at: new Date().toISOString(),
+      step: 'canary_rollback',
+      decision: 'rule_degraded',
+      context: { rule_id: ruleId, triggers, metrics, sample_count: current.length },
+      rollback_hint: '摘除即回滚，规则保留在提案库不删除，可按 adr_id 追溯',
+    };
+    fs.appendFileSync(ADR_RECORDS_LOG, JSON.stringify(adr) + '\n');
+  } catch {
+    // FAIL-OPEN：回滚检查失败不影响主链路
+  }
+}
 function convertIntentToTaskFile(result: IntentRecognitionResult): TaskFile['intent'] {
   const base: TaskFile['intent'] = {
     type: result.intent,
     confidence: result.confidence,
+    complexity: result.complexity,
     entities: {
       symbol: result.entities.symbol,
       timeframe: result.entities.timeframe,
@@ -590,6 +672,45 @@ export async function createTask(params: {
   });
 
   const intent = convertIntentToTaskFile(intentResult);
+  // E1 影子模式：旁路评估，只记录不干预（FAIL-OPEN），命中落 shadow_divergence.jsonl
+  try {
+    const shadow = evaluateShadowRules(params.message, params.session_id);
+    if (shadow.matched) {
+      const diverged = shadow.intent !== intentResult.intent;
+      const record = {
+        ts: new Date().toISOString(),
+        session_id: params.session_id || '',
+        message: params.message,
+        shadow: { rule_id: shadow.rule_id, intent: shadow.intent, confidence: shadow.confidence },
+        main: { intent: intentResult.intent, method: intentResult.method, matched_pattern_id: intentResult.matchedPatternId, confidence: intentResult.confidence },
+        diverged,
+        diverged_type: diverged ? (intentResult.method === 'llm' ? 'llm_override' : 'intent_mismatch') : 'agree',
+      };
+      const divPath = '/home/luke/dreambuddy/34-前端应用训练系统/shadow_divergence.jsonl';
+      fs.appendFileSync(divPath, JSON.stringify(record) + '\n');
+    }
+  } catch {
+    // FAIL-OPEN：影子评估失败不影响主链路
+  }
+  // E2 灰度机制：canary 路由记录 + 自动回滚触发器（spec §4，FAIL-OPEN）
+  try {
+    const matchedId = intentResult.matchedPatternId;
+    if (matchedId && getRuleStatus(matchedId) === 'canary') {
+      const rec = {
+        ts: new Date().toISOString(),
+        session_id: params.session_id || '',
+        rule_id: matchedId,
+        bucket: canaryBucket(params.session_id || ''),
+        message: params.message.slice(0, 100),
+        intent: intentResult.intent,
+        confidence: intentResult.confidence,
+      };
+      fs.appendFileSync(CANARY_ROUTING_LOG, JSON.stringify(rec) + '\n');
+      checkCanaryRollback(matchedId);
+    }
+  } catch {
+    // FAIL-OPEN：灰度记录失败不影响主链路
+  }
   const now = new Date().toISOString();
   const taskId = generateTaskId();
 
@@ -4036,9 +4157,147 @@ export async function createAndExecuteTask(params: {
   l1_intent_hint?: string;
   onProgress?: (event: PlannerProgressEvent) => void;
 }): Promise<{ task: TaskFile; result: ResultFile | null; needAsync: boolean }> {
+  // ===== L1 组合意图拆分（spec v0.5 §4，P3）=====
+  // 复合输入 → 拆分子意图 → 逐子意图执行 → 结果聚合
+  // 拆分置信度不足时 FAIL-OPEN：走原单消息路径，不阻断主链路
+  const compositeSplit = splitCompositeInput(params.message);
+  if (compositeSplit.isComposite && !compositeSplit.needsClarification && compositeSplit.subMessages.length > 1) {
+    console.log(`[CompositeSplitter] L1 拆分命中: ${compositeSplit.subMessages.length} 个子意图, confidence=${compositeSplit.confidence.toFixed(2)}, evidence=[${compositeSplit.evidence.join('; ')}]`);
+    const subOutcomes: Array<{ task: TaskFile; result: ResultFile | null; needAsync: boolean }> = [];
+    for (const subMessage of compositeSplit.subMessages) {
+      // 递归执行子意图（子消息为最小粒度，正常不会再触发拆分）
+      const subOutcome = await createAndExecuteTask({ ...params, message: subMessage });
+      subOutcomes.push(subOutcome);
+    }
+    // 聚合：以首个子任务为主任务，拼接各子结果
+    const primaryOutcome = subOutcomes[0];
+    const aggregatedHeader = `【组合意图已拆分为 ${subOutcomes.length} 个子意图执行】`;
+    const aggregatedContent = subOutcomes
+      .map((o, i) => {
+        const label = `**子意图 ${i + 1}（${o.task.intent.type}）**`;
+        const body = (o.result?.content || '').trim() || '（该子意图未产生结果）';
+        return `${label}\n\n${body}`;
+      })
+      .join('\n\n---\n\n');
+    const allCompleted = subOutcomes.every((o) => o.result?.status === 'completed');
+    const aggregatedIntent = {
+      type: primaryOutcome.task.intent.type,
+      confidence: primaryOutcome.task.intent.confidence,
+      method: `composite_split:${compositeSplit.confidence.toFixed(2)}`,
+      reasoning: `L1 拆分证据: ${compositeSplit.evidence.join('; ')}`,
+    };
+    const aggregatedResult: ResultFile = primaryOutcome.result
+      ? {
+          ...primaryOutcome.result,
+          status: allCompleted ? 'completed' : 'failed',
+          content: `${aggregatedHeader}\n\n${aggregatedContent}`,
+          intent: aggregatedIntent,
+        }
+      : {
+          task_id: primaryOutcome.task.task_id,
+          session_id: primaryOutcome.task.session_id,
+          status: allCompleted ? 'completed' : 'failed',
+          created_at: new Date().toISOString(),
+          content: `${aggregatedHeader}\n\n${aggregatedContent}`,
+          content_type: 'markdown',
+          intent: aggregatedIntent,
+        };
+    return { task: primaryOutcome.task, result: aggregatedResult, needAsync: subOutcomes.some((o) => o.needAsync) };
+  }
+  if (compositeSplit.isComposite && compositeSplit.needsClarification) {
+    // 拆分置信度不足 → FAIL-OPEN 降级：按原单消息路径执行
+    console.log(`[CompositeSplitter] 拆分置信度不足 (${compositeSplit.confidence.toFixed(2)})，FAIL-OPEN 走单消息路径`);
+  }
+
   // 1. 创建任务文件 (now async due to intent recognition)
   const task = await createTask(params);
   const intentType = task.intent.type;
+  // ===== L2 复杂意图接线（spec v0.5 §4，P4）=====
+  // complex 意图二分：系统内能力 → 复杂意图库直接驱动完整链路（无 LLM）
+  //               超出系统内能力 → 既有 SACG/DSH 编排（架构增强）
+  // 全程 FAIL-OPEN：库查询/执行失败降级原路径，不阻断主链路
+  if (task.intent.complexity === 'complex') {
+    try {
+      const libLookup = await new Promise<string>((resolve, reject) => {
+        const child = child_process.spawn(
+          '/home/luke/venv-trading/bin/python',
+          ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/intent_chain_executor.py'],
+          { stdio: ['pipe', 'pipe', 'ignore'] },
+        );
+        let out = '';
+        const timer = setTimeout(() => { child.kill(); reject(new Error('lib lookup timeout')); }, 15000);
+        child.stdout.on('data', (d) => { out += d; });
+        child.on('error', (e) => { clearTimeout(timer); reject(e); });
+        child.on('close', (code) => {
+          clearTimeout(timer);
+          if (code === 0) resolve(out); else reject(new Error(`lib lookup exit ${code}`));
+        });
+        child.stdin.write(JSON.stringify({ cmd: 'lookup', message: params.message }));
+        child.stdin.end();
+      });
+      const lookup = JSON.parse(libLookup) as {
+        matched: boolean;
+        match_score?: number;
+        entry?: { entry_id: string; chain_template: string[]; chain_depth: number; avg_poe: number; capability_refs?: unknown[] };
+      };
+      if (lookup.matched && lookup.entry) {
+        console.log(`[ComplexIntentLibrary] L2 库命中: ${lookup.entry.entry_id}, score=${lookup.match_score}, chain_depth=${lookup.entry.chain_depth}, poe=${lookup.entry.avg_poe}`);
+        // 直接驱动完整链路执行（无 LLM）
+        const execOut = await new Promise<string>((resolve, reject) => {
+          const child = child_process.spawn(
+            '/home/luke/venv-trading/bin/python',
+            ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/intent_chain_executor.py'],
+            { stdio: ['pipe', 'pipe', 'ignore'] },
+          );
+          let out = '';
+          const timer = setTimeout(() => { child.kill(); reject(new Error('chain exec timeout')); }, 60000);
+          child.stdout.on('data', (d) => { out += d; });
+          child.on('error', (e) => { clearTimeout(timer); reject(e); });
+          child.on('close', (code) => {
+            clearTimeout(timer);
+            if (code === 0) resolve(out); else reject(new Error(`chain exec exit ${code}`));
+          });
+          child.stdin.write(JSON.stringify({ cmd: 'execute', entry_id: lookup.entry!.entry_id, message: params.message }));
+          child.stdin.end();
+        });
+        const execResult = JSON.parse(execOut) as {
+          success: boolean; steps_executed?: number; steps_failed?: number; all_passed?: boolean; chain_template?: string[]; failed_steps?: Array<{ analyzer: string; error?: string }>;
+        };
+        const chainSummary = (execResult.chain_template || lookup.entry.chain_template).join(' → ');
+        const failedLines = (execResult.failed_steps || []).map((f) => `- ${f.analyzer}: ${f.error || 'failed'}`).join('\n');
+        const content = [
+          `【复杂意图库直接驱动执行（L2，无 LLM）】`,
+          ``,
+          `**命中条目**: ${lookup.entry.entry_id}（匹配分 ${lookup.match_score}，链路深度 ${lookup.entry.chain_depth}，PoE ${lookup.entry.avg_poe}）`,
+          ``,
+          `**执行链路**: ${chainSummary}`,
+          ``,
+          `**执行结果**: ${execResult.steps_executed || 0} 步执行，${execResult.steps_failed || 0} 步失败，整体 ${execResult.all_passed ? '通过' : '部分失败'}`,
+          failedLines ? `\n**失败步骤**:\n${failedLines}` : '',
+        ].filter(Boolean).join('\n');
+        const l2Result: ResultFile = {
+          task_id: task.task_id,
+          session_id: task.session_id,
+          status: execResult.all_passed ? 'completed' : 'failed',
+          created_at: new Date().toISOString(),
+          content,
+          content_type: 'markdown',
+          intent: {
+            type: intentType,
+            confidence: task.intent.confidence,
+            method: `complex_library:${lookup.match_score}`,
+            reasoning: `L2 复杂意图库命中 ${lookup.entry.entry_id}，链路模板直接驱动`,
+          },
+        };
+        return { task, result: l2Result, needAsync: false };
+      }
+      // 未命中 → 超出系统内能力，走既有 SACG/DSH 编排（原路径继续）
+      console.log(`[ComplexIntentLibrary] L2 库未命中（${lookup.matched ? 'score不足' : '无匹配'}），走 SACG/DSH 编排`);
+    } catch (libError) {
+      // FAIL-OPEN：库查询/执行失败降级原路径
+      console.log(`[ComplexIntentLibrary] L2 库查询失败，FAIL-OPEN 走原路径: ${libError instanceof Error ? libError.message : libError}`);
+    }
+  }
 
   // 获取智能路由
   // 使用动态上下文压缩：保留完整对话历史，但过长时进行图压缩

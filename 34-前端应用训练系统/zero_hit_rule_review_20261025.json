@@ -1,0 +1,26 @@
+{
+  "review_id": "zero_hit_rule_review_20261025",
+  "generated_at": "2026-10-25T00:33:00",
+  "source": "rule-hit-stats（109 案例）+ 线上验证证据",
+  "summary": {
+    "total": 12,
+    "keep": 12,
+    "deprecate": 0,
+    "conclusion": "全部保留观察，零命中原因为案例库分布偏差（109 案例多为查询类），非规则无用"
+  },
+  "details": [
+    {"rule": "hc_scenario_sim", "verdict": "keep", "reason": "P4 端到端验证刚命中（『情景推演』0.85，线上活跃）；泛化词风险另行收紧（见第 3 项）"},
+    {"rule": "hc_execute_trade", "verdict": "keep", "reason": "交易执行核心意图，高风险不可废弃；案例库无样本属分布偏差"},
+    {"rule": "hc_strategy_verify", "verdict": "keep", "reason": "回测验证核心功能意图；泛化词『回测』另行收紧"},
+    {"rule": "hc_deep_analysis", "verdict": "keep_observe", "reason": "深度分析为高频潜在意图，建议扩充案例库覆盖后再评审"},
+    {"rule": "hc_need_clarification", "verdict": "keep", "reason": "澄清流程功能性规则（非业务意图），多轮澄清依赖，不可废弃"},
+    {"rule": "hc_clarification_result", "verdict": "keep", "reason": "澄清结果处理功能性规则（非业务意图），澄清闭环依赖，不可废弃"},
+    {"rule": "hc_triple_chain", "verdict": "keep_observe", "reason": "三链分析低频意图，保留观察"},
+    {"rule": "hc_artifact_query", "verdict": "keep_observe", "reason": "产物查询低频意图，保留观察"},
+    {"rule": "hc_system_config", "verdict": "keep_observe", "reason": "系统配置意图，保留观察"},
+    {"rule": "hc_risk_alert_response", "verdict": "keep_observe", "reason": "风控告警响应意图，安全相关保留观察"},
+    {"rule": "hc_command", "verdict": "keep_observe", "reason": "命令执行意图，保留观察"},
+    {"rule": "hc_simple_qa", "verdict": "keep_observe", "reason": "简单问答兜底意图，保留观察"}
+  ],
+  "follow_up": "建议后续扩充案例库覆盖（各意图 ≥3 正例）后重新运行 rule-hit-stats 再评审"
+}

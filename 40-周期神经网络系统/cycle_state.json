@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-10-26T04:48:54.017547+00:00",
+  "real_cycle": {
+    "anchor": "FEDFUNDS",
+    "current_month": "2026-09",
+    "current_rate": 3.75,
+    "state": "plateau",
+    "last_change": "flat",
+    "recent_12m_distribution": {
+      "hiking": 0,
+      "cutting": 0,
+      "plateau": 12
+    },
+    "confidence": "high"
+  },
+  "params": {
+    "plateau_band": 0.25,
+    "confirm_n": 2,
+    "grad_accum": 0.5
+  },
+  "data_coverage": {
+    "records": 868,
+    "first": "1954-07",
+    "last": "2026-09"
+  },
+  "technical_anchor": {
+    "type": "MA200",
+    "generated_at": "2026-10-27T13:52:34.172778+00:00",
+    "assets": {
+      "BTC/USDT": {
+        "last_close": 80066.01,
+        "ma200": 73065.11,
+        "above": true,
+        "distance_pct": 9.58,
+        "samples": 400
+      },
+      "ETH/USDT": {
+        "last_close": 2323.65,
+        "ma200": 2159.56,
+        "above": true,
+        "distance_pct": 7.6,
+        "samples": 400
+      },
+      "SOL/USDT": {
+        "last_close": 100.17,
+        "ma200": 88.58,
+        "above": true,
+        "distance_pct": 13.08,
+        "samples": 400
+      },
+      "UNI/USDT": {
+        "last_close": 7.08,
+        "ma200": 4.64,
+        "above": true,
+        "distance_pct": 52.71,
+        "samples": 400
+      },
+      "AAVE/USDT": {
+        "last_close": 131.01,
+        "ma200": 107.43,
+        "above": true,
+        "distance_pct": 21.95,
+        "samples": 400
+      },
+      "NEAR/USDT": {
+        "last_close": 4.51,
+        "ma200": 2.46,
+        "above": true,
+        "distance_pct": 83.33,
+        "samples": 400
+      },
+      "ARB/USDT": {
+        "last_close": 0.17,
+        "ma200": 0.12,
+        "above": true,
+        "distance_pct": 37.4,
+        "samples": 400
+      },
+      "LINK/USDT": {
+        "last_close": 11.33,
+        "ma200": 9.97,
+        "above": true,
+        "distance_pct": 13.57,
+        "samples": 400
+      }
+    }
+  },
+  "sector_transmission": {
+    "generated_at": "2026-10-26T05:39:46.620293+00:00",
+    "state": "neutral",
+    "regime": "bull_consolidation",
+    "layer_median_momentum_3m_pct": {
+      "L1_anchor": 2.14,
+      "L2_major": 0.1,
+      "L3_growth": 1.51,
+      "L4_meme": -7.49
+    }
+  }
+}

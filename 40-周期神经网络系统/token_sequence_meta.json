@@ -1,0 +1,104 @@
+{
+  "generated_at": "2026-10-27T12:04:19.427592+00:00",
+  "module": "P6 E0 三屏 token 序列生成器",
+  "feature_version": "classic_indicators_v1+ma200_v1",
+  "symbols": [
+    "BTC",
+    "ETH",
+    "SOL"
+  ],
+  "screens": {
+    "1W": "weekly",
+    "1D": "daily",
+    "1H": "hourly"
+  },
+  "candle_limit": 300,
+  "total_rows": 2700,
+  "valid_rows": 2700,
+  "feature_cols": [
+    "sma_10",
+    "sma_20",
+    "sma_50",
+    "ema_12",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "bb_upper",
+    "bb_lower",
+    "atr_14",
+    "adx_14",
+    "obv",
+    "willr_14",
+    "cci_20",
+    "dc_width",
+    "ma200_dist_pct",
+    "above_ma200",
+    "ma50_ma100_state"
+  ],
+  "lineage": [
+    {
+      "symbol": "BTC",
+      "timeframe": "1W",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": false
+    },
+    {
+      "symbol": "BTC",
+      "timeframe": "1D",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": true
+    },
+    {
+      "symbol": "BTC",
+      "timeframe": "1H",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": false
+    },
+    {
+      "symbol": "ETH",
+      "timeframe": "1W",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": false
+    },
+    {
+      "symbol": "ETH",
+      "timeframe": "1D",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": true
+    },
+    {
+      "symbol": "ETH",
+      "timeframe": "1H",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": false
+    },
+    {
+      "symbol": "SOL",
+      "timeframe": "1W",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": false
+    },
+    {
+      "symbol": "SOL",
+      "timeframe": "1D",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": true
+    },
+    {
+      "symbol": "SOL",
+      "timeframe": "1H",
+      "candles": 300,
+      "feature_cols": 15,
+      "ma200_precompute": false
+    }
+  ],
+  "note": "三屏 token 序列（周/日/1H），日线屏含 MA200 预计算特征；供 P6 E2 训练消费，不产生交易信号"
+}

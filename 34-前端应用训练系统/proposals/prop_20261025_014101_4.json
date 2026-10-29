@@ -1,0 +1,73 @@
+{
+  "proposal_id": "prop_20261025_014101_4",
+  "generated_at": "2026-10-25T01:41:01",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_bt_4",
+    "name": "候选意图：BT相关",
+    "description": "从 3 条未覆盖案例聚类发现，特征词：BT、BTC、TC、么价、什么价。描述待人工评审补充。",
+    "keywords": [
+      "BT",
+      "BTC",
+      "TC",
+      "么价",
+      "什么价"
+    ],
+    "examples": [
+      "BTC技术面方向是什么",
+      "BTC现在什么价",
+      "BTC什么价"
+    ],
+    "rule": {
+      "id": "hc_candidate_bt_4",
+      "keywords": [
+        "BT",
+        "BTC",
+        "TC",
+        "么价",
+        "什么价"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 3,
+    "samples": [
+      "BTC技术面方向是什么",
+      "BTC现在什么价",
+      "BTC什么价"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数充分（3）",
+      "关键词噪声率高（60%，n-gram 碎片词）",
+      "与现有意图重叠（market_query）",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 3,
+      "noise_ratio": 0.6,
+      "overlap_count": 1,
+      "overlaps": [
+        {
+          "keyword": "什么价",
+          "existing_intent": "market_query",
+          "existing_keyword": "什么价"
+        }
+      ],
+      "desc_complete": false
+    }
+  }
+}

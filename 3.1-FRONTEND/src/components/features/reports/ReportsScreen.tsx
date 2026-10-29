@@ -43,6 +43,9 @@ export function ReportsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [searchTaskId, setSearchTaskId] = useState('');
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  // 模糊搜索联想（阶段二 P1）
+  const [suggestions, setSuggestions] = useState<Array<{ id: string; title: string; subtitle?: string }>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genMessage, setGenMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -98,6 +101,34 @@ export function ReportsScreen() {
     }
   }, [lastReportId, loadReport]);
 
+  // 防抖联想：输入变化时调用统一检索 API 模糊匹配报告（300ms）
+  useEffect(() => {
+    const q = searchTaskId.trim();
+    if (!q) {
+      setSuggestions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get<{ success: boolean; results?: Array<{ id: string; title: string; subtitle?: string }> }>(
+          `/api/search?query=${encodeURIComponent(q)}&module=report&limit=8`,
+        );
+        if (res && Array.isArray(res.results)) {
+          setSuggestions(res.results);
+        }
+      } catch {
+        // FAIL-OPEN：联想失败不影响手动输入
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTaskId]);
+  // 选中联想建议：直接加载对应报告
+  const handleSelectSuggestion = (id: string) => {
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSearchTaskId(id);
+    loadReport(id);
+  };
   const handleSearch = () => {
     const tid = searchTaskId.trim();
     if (tid) loadReport(tid);
@@ -112,11 +143,27 @@ export function ReportsScreen() {
           <input
             type="text"
             value={searchTaskId}
-            onChange={e => setSearchTaskId(e.target.value)}
+            onChange={e => { setSearchTaskId(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="输入任务 ID 查看报告..."
+            placeholder="输入任务 ID 或标题关键词模糊搜索..."
             className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/50"
           />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-lg bg-slate-900 border border-slate-700 shadow-xl overflow-hidden">
+              {suggestions.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => handleSelectSuggestion(s.id)}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-800 transition-colors"
+                >
+                  <span className="block text-xs text-slate-200 truncate">{s.title}</span>
+                  <span className="block text-[10px] text-slate-500 font-mono truncate">{s.id}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button
           onClick={handleSearch}

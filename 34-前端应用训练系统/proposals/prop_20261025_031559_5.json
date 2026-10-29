@@ -1,0 +1,78 @@
+{
+  "proposal_id": "prop_20261025_031559_5",
+  "generated_at": "2026-10-25T03:15:59",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_5",
+    "name": "候选意图：数据相关",
+    "description": "从 5 条未覆盖案例聚类发现，特征词：数据、美国、查询美国、查询美、询美。描述待人工评审补充。",
+    "keywords": [
+      "数据",
+      "美国",
+      "查询美国",
+      "查询美",
+      "询美",
+      "询美国"
+    ],
+    "examples": [
+      "查询下美国CPI数据",
+      "查询美国CPI最新数据",
+      "查询美国CPI数据",
+      "查询美国PPI数据"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_5",
+      "keywords": [
+        "数据",
+        "美国",
+        "查询美国",
+        "查询美",
+        "询美",
+        "询美国"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 6,
+    "samples": [
+      "查询下美国CPI数据",
+      "查询美国CPI最新数据",
+      "查询美国CPI数据",
+      "查询美国PPI数据",
+      "查询美国非农数据"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数充分（6）",
+      "关键词噪声率高（83%，n-gram 碎片词）",
+      "与现有意图重叠（data_query）",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 6,
+      "noise_ratio": 0.833,
+      "overlap_count": 1,
+      "overlaps": [
+        {
+          "keyword": "数据",
+          "existing_intent": "data_query",
+          "existing_keyword": "数据"
+        }
+      ],
+      "desc_complete": false
+    }
+  }
+}

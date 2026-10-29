@@ -224,3 +224,6 @@ DreamOS_intermediate.pptx
 # 备份文件不纳入版本控制
 *.bak-*
 *.bak
+34-前端应用训练系统/models/**/*.safetensors
+34-前端应用训练系统/models/**/*.msgpack
+34-前端应用训练系统/models/**/*.h5

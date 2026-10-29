@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-10-27T02:55:57.979350+00:00",
+  "module": "P5 门槛守卫（预注册，禁止放宽）",
+  "items": [
+    {
+      "name": "contradiction_events",
+      "current": 257,
+      "required": 200,
+      "passed": true,
+      "gap": 0
+    },
+    {
+      "name": "semantic_events",
+      "current": 21141,
+      "required": 1000,
+      "passed": true,
+      "gap": 0
+    },
+    {
+      "name": "x1_gate",
+      "current": {
+        "samples": 1,
+        "min_samples": 100,
+        "weeks": 0.14,
+        "min_weeks": 2,
+        "x1_ready": false
+      },
+      "required": "x1_ready == true",
+      "passed": false,
+      "gap": 1
+    }
+  ],
+  "all_passed": false,
+  "decision": "REJECT_TRAINING",
+  "note": "门槛未达标，P5 训练入口拒绝启动（SPEC v0.3 验收标准第 7 条）"
+}

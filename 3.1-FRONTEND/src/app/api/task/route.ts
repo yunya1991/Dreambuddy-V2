@@ -19,6 +19,74 @@ import { emitMonitorEvent } from '@/lib/monitor-bus';
 import { collectStrategyTaskOrderFeedItems } from '@/lib/strategy-artifacts';
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
+
+/** 主链路案例沉淀（34 训练系统，FAIL-OPEN：不阻塞响应） */
+function settleCaseAsync(intent: string, message: string, success: boolean, answer: string): void {
+  try {
+    const child = spawn(
+      '/home/luke/venv-trading/bin/python',
+      ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/settle_case_cli.py'],
+      { stdio: ['pipe', 'ignore', 'ignore'], detached: true },
+    );
+    child.stdin.write(JSON.stringify({ intent, message, success, answer }));
+    child.stdin.end();
+    child.unref();
+  } catch {
+    // FAIL-OPEN: 沉淀失败不影响主流程
+  }
+}
+
+/** 各域案例沉淀（P1.5，spec v0.5 §9.1，FAIL-OPEN：不阻塞响应） */
+function settleDomainCaseAsync(caseType: string, payload: Record<string, unknown>): void {
+  try {
+    const child = spawn(
+      '/home/luke/venv-trading/bin/python',
+      ['/home/luke/dreambuddy/34-前端应用训练系统/scripts/settle_domain_case_cli.py'],
+      { stdio: ['pipe', 'ignore', 'ignore'], detached: true },
+    );
+    child.stdin.write(JSON.stringify({ case_type: caseType, payload }));
+    child.stdin.end();
+    child.unref();
+  } catch {
+    // FAIL-OPEN: 域沉淀失败不影响主流程
+  }
+}
+
+/** P1.5 子 agent 域采集：任务执行链路各步骤（agent_id/任务/执行结果/耗时） */
+function settleSubAgentCaseAsync(taskId: string, intentType: string, executionSummary: { chain_executed?: string[]; total_steps?: number } | undefined, executionTimeMs: number | undefined): void {
+  try {
+    const steps = executionSummary?.chain_executed || [];
+    if (steps.length === 0) return;
+    settleDomainCaseAsync('sub_agent', {
+      agent_id: `frontend_task_${taskId}`,
+      task: intentType,
+      execution_result: `chain_completed:${steps.length}_steps`,
+      chain_steps: steps,
+      total_steps: executionSummary?.total_steps || steps.length,
+      elapsed_ms: executionTimeMs || 0,
+    });
+  } catch {
+    // FAIL-OPEN
+  }
+}
+
+/** P1.5 金融语义域采集：金融相关意图任务的语义消费（语义层级/查询词/返回摘要） */
+const FINANCE_SEMANTIC_INTENTS = new Set(['market_query', 'deep_analysis', 'scenario_sim', 'strategy_verify', 'execute_trade']);
+function settleFinanceSemanticCaseAsync(taskId: string, intentType: string, message: string, answer: string): void {
+  try {
+    if (!FINANCE_SEMANTIC_INTENTS.has(intentType)) return;
+    settleDomainCaseAsync('finance_semantic', {
+      semantic_layer: 'l3_synthesis',
+      query_term: message.slice(0, 100),
+      intent: intentType,
+      task_id: taskId,
+      return_summary: answer.slice(0, 200),
+    });
+  } catch {
+    // FAIL-OPEN
+  }
+}
 
 /**
  * POST /api/task - 创建任务并立即执行（v2.0 中台即时触发）
@@ -96,6 +164,26 @@ export async function POST(request: NextRequest) {
       thinking_mode: task.thinking_mode,
       chain: result?.execution_summary?.chain_executed || [],
     });
+    // 主链路案例沉淀（34 训练系统）：意图识别完成即沉淀，FAIL-OPEN
+    settleCaseAsync(
+      task.intent.type,
+      message.trim(),
+      result?.status !== 'failed',
+      String(result?.content || result?.status || '').slice(0, 300),
+    );
+    // P1.5 两域采集（spec v0.5 §9.1）：子 agent 域 + 金融语义域，FAIL-OPEN
+    settleSubAgentCaseAsync(
+      task.task_id,
+      task.intent.type,
+      result?.execution_summary,
+      result?.execution_time_ms,
+    );
+    settleFinanceSemanticCaseAsync(
+      task.task_id,
+      task.intent.type,
+      message.trim(),
+      String(result?.content || result?.status || ''),
+    );
 
     console.log(
       `[TaskAPI] Task ${isTrade ? 'pending-confirmation' : 'executed'}: ${task.task_id} | ` +

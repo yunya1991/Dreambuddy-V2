@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-10-26T06:56:45.883642+00:00",
+  "data_source": "GeckoTerminal public API /networks/solana/new_pools",
+  "sample": {
+    "pages": 5,
+    "pools_total": 100
+  },
+  "pump_platform": {
+    "pump_fun_bonding_pools": {
+      "count": 71,
+      "fdv_median_usd": 2840.21,
+      "fdv_max_usd": 38883.36,
+      "vol24_total_usd": 70290.15,
+      "buys_24h": 1529,
+      "sells_24h": 1341,
+      "buy_sell_ratio": 1.14,
+      "chg24_median_pct": -6.16
+    },
+    "pumpswap_graduated_pools": {
+      "count": 13,
+      "fdv_median_usd": 15485.23,
+      "fdv_max_usd": 152288.3,
+      "vol24_total_usd": 140135.01,
+      "buys_24h": 3439,
+      "sells_24h": 1400,
+      "buy_sell_ratio": 2.456,
+      "chg24_median_pct": 8.5
+    },
+    "graduation_rate_pct": 15.48
+  },
+  "other_dex_pools": {
+    "count": 16,
+    "fdv_median_usd": 38149.99,
+    "fdv_max_usd": 1969463.7,
+    "vol24_total_usd": 201656.61,
+    "buys_24h": 3054,
+    "sells_24h": 2613,
+    "buy_sell_ratio": 1.169,
+    "chg24_median_pct": 10.66
+  },
+  "note": "毕业率=新池样本中 pumpswap 池占比（毕业=从 bonding curve 迁移到 AMM）；毕业率上升=meme 热度健康，下降=热度退潮；回购费用指标需链上数据，列为后续扩展"
+}

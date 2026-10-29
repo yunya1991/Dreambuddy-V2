@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-10-27T12:05:41.372309+00:00",
+  "module": "P6 门槛守卫（预注册，禁止放宽）",
+  "items": [
+    {
+      "name": "p5_gate_passed",
+      "current": {
+        "all_passed": false,
+        "decision": "REJECT_TRAINING"
+      },
+      "required": "p5_gate_status.all_passed == true",
+      "passed": false,
+      "gap": 1
+    },
+    {
+      "name": "e0_token_samples",
+      "current": 2700,
+      "note": "ok",
+      "required": 2000,
+      "passed": true,
+      "gap": 0
+    },
+    {
+      "name": "e1_baseline_frozen",
+      "current": {
+        "exists": true,
+        "has_accuracy": true,
+        "has_direction_ic": true
+      },
+      "required": "baseline_metrics.json 含 accuracy 与 direction_ic",
+      "passed": true,
+      "gap": 0
+    }
+  ],
+  "all_passed": false,
+  "decision": "REJECT_TRAINING",
+  "note": "门槛未达标，P6 训练入口拒绝启动（SPEC_encoder v0.2 红线 5：E2 及以后必须以 P1-P5 完成验证为前置门禁）"
+}

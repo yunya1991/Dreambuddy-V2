@@ -1,0 +1,364 @@
+{
+  "tree_id": "dt_819fd32f457c4fbb",
+  "task": {
+    "target": "33-REA逆向解析工程",
+    "task_type": "acceptance",
+    "feature": "PoE 机制全量落地（SPEC-工程实践复现器 v0.3）"
+  },
+  "nodes": [
+    {
+      "node_id": "dn_bc19f3c19ada474f",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "33-REA逆向解析工程"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261011_poe_landing_acceptance_gate",
+          "parent_id": "dn_bc19f3c19ada474f",
+          "action": {
+            "analyzer": "acceptance_gate",
+            "params": {
+              "skill": "dream-acceptance-verify"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+              "detail": "步骤 acceptance_gate 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_seed_20261011_poe_landing_code_commit",
+              "parent_id": "dn_seed_20261011_poe_landing_acceptance_gate",
+              "action": {
+                "analyzer": "code_commit",
+                "params": {
+                  "commit": "16826f4eb1"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+                  "detail": "步骤 code_commit 验收 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_seed_20261011_poe_landing_doc_sync",
+                  "parent_id": "dn_seed_20261011_poe_landing_code_commit",
+                  "action": {
+                    "analyzer": "doc_sync",
+                    "params": {
+                      "scope": "README+INDEX"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+                      "detail": "步骤 doc_sync 验收 PASS"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [
+                    {
+                      "node_id": "dn_seed_20261011_poe_landing_cognitive_record",
+                      "parent_id": "dn_seed_20261011_poe_landing_doc_sync",
+                      "action": {
+                        "analyzer": "cognitive_record",
+                        "params": {
+                          "vm": "VM-1791723832736"
+                        }
+                      },
+                      "evidence_refs": [
+                        {
+                          "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+                          "detail": "步骤 cognitive_record 验收 PASS"
+                        }
+                      ],
+                      "poe_score": 0.8,
+                      "cost": {
+                        "calls": 1,
+                        "tokens": 0
+                      },
+                      "children_record": [],
+                      "created_at": 1792811519328
+                    }
+                  ],
+                  "created_at": 1792811519328
+                }
+              ],
+              "created_at": 1792811519328
+            }
+          ],
+          "created_at": 1792811519328
+        }
+      ],
+      "created_at": 1792811519328
+    },
+    {
+      "node_id": "dn_seed_20261011_poe_landing_acceptance_gate",
+      "parent_id": "dn_bc19f3c19ada474f",
+      "action": {
+        "analyzer": "acceptance_gate",
+        "params": {
+          "skill": "dream-acceptance-verify"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+          "detail": "步骤 acceptance_gate 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261011_poe_landing_code_commit",
+          "parent_id": "dn_seed_20261011_poe_landing_acceptance_gate",
+          "action": {
+            "analyzer": "code_commit",
+            "params": {
+              "commit": "16826f4eb1"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+              "detail": "步骤 code_commit 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_seed_20261011_poe_landing_doc_sync",
+              "parent_id": "dn_seed_20261011_poe_landing_code_commit",
+              "action": {
+                "analyzer": "doc_sync",
+                "params": {
+                  "scope": "README+INDEX"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+                  "detail": "步骤 doc_sync 验收 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_seed_20261011_poe_landing_cognitive_record",
+                  "parent_id": "dn_seed_20261011_poe_landing_doc_sync",
+                  "action": {
+                    "analyzer": "cognitive_record",
+                    "params": {
+                      "vm": "VM-1791723832736"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+                      "detail": "步骤 cognitive_record 验收 PASS"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [],
+                  "created_at": 1792811519328
+                }
+              ],
+              "created_at": 1792811519328
+            }
+          ],
+          "created_at": 1792811519328
+        }
+      ],
+      "created_at": 1792811519328
+    },
+    {
+      "node_id": "dn_seed_20261011_poe_landing_code_commit",
+      "parent_id": "dn_seed_20261011_poe_landing_acceptance_gate",
+      "action": {
+        "analyzer": "code_commit",
+        "params": {
+          "commit": "16826f4eb1"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+          "detail": "步骤 code_commit 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261011_poe_landing_doc_sync",
+          "parent_id": "dn_seed_20261011_poe_landing_code_commit",
+          "action": {
+            "analyzer": "doc_sync",
+            "params": {
+              "scope": "README+INDEX"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+              "detail": "步骤 doc_sync 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_seed_20261011_poe_landing_cognitive_record",
+              "parent_id": "dn_seed_20261011_poe_landing_doc_sync",
+              "action": {
+                "analyzer": "cognitive_record",
+                "params": {
+                  "vm": "VM-1791723832736"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+                  "detail": "步骤 cognitive_record 验收 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [],
+              "created_at": 1792811519328
+            }
+          ],
+          "created_at": 1792811519328
+        }
+      ],
+      "created_at": 1792811519328
+    },
+    {
+      "node_id": "dn_seed_20261011_poe_landing_doc_sync",
+      "parent_id": "dn_seed_20261011_poe_landing_code_commit",
+      "action": {
+        "analyzer": "doc_sync",
+        "params": {
+          "scope": "README+INDEX"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+          "detail": "步骤 doc_sync 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_seed_20261011_poe_landing_cognitive_record",
+          "parent_id": "dn_seed_20261011_poe_landing_doc_sync",
+          "action": {
+            "analyzer": "cognitive_record",
+            "params": {
+              "vm": "VM-1791723832736"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+              "detail": "步骤 cognitive_record 验收 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1792811519328
+        }
+      ],
+      "created_at": 1792811519328
+    },
+    {
+      "node_id": "dn_seed_20261011_poe_landing_cognitive_record",
+      "parent_id": "dn_seed_20261011_poe_landing_doc_sync",
+      "action": {
+        "analyzer": "cognitive_record",
+        "params": {
+          "vm": "VM-1791723832736"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "acceptance_bundles/20261011_poe_landing/wrapup_report.md",
+          "detail": "步骤 cognitive_record 验收 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1792811519328
+    }
+  ],
+  "provenance": "internal",
+  "source_label": "acceptance_bundle:20261011_poe_landing:16826f4eb1",
+  "weight": 1.0,
+  "created_at": 1792811519328
+}

@@ -1,0 +1,4 @@
+jieba==0.42.1
+psycopg[binary,pool]==3.3.6
+PyYAML==6.0.3
+pytest==9.1.1

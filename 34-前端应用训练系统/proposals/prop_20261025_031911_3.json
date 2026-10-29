@@ -1,0 +1,62 @@
+{
+  "proposal_id": "prop_20261025_031911_3",
+  "generated_at": "2026-10-25T03:19:11",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_3",
+    "name": "候选意图：以太相关",
+    "description": "从 5 条未覆盖案例聚类发现，特征词：以太。描述待人工评审补充。",
+    "keywords": [
+      "以太"
+    ],
+    "examples": [
+      "查询以太坊价格",
+      "错了，是以太坊价格",
+      "查询以太坊最新消息",
+      "最新以太坊新闻"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_3",
+      "keywords": [
+        "以太"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 5,
+    "samples": [
+      "查询以太坊价格",
+      "错了，是以太坊价格",
+      "查询以太坊最新消息",
+      "最新以太坊新闻",
+      "查询以太坊最新新闻"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数充分（5）",
+      "关键词噪声率高（100%，n-gram 碎片词）",
+      "与现有意图无边界重叠",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 5,
+      "noise_ratio": 1.0,
+      "overlap_count": 0,
+      "overlaps": [],
+      "desc_complete": false
+    }
+  }
+}

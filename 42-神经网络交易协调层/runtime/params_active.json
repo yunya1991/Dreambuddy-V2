@@ -1,0 +1,13 @@
+{
+  "version": "v1.0",
+  "generated_at": "2026-10-29T02:32:14.867386+00:00",
+  "params": {
+    "long_threshold_multiplier": 1.0,
+    "position_size_factor": 1.0,
+    "long_short_ratio_cap": null,
+    "weight_adjust_limit": 0.05,
+    "cooldown_period_hours": 24,
+    "risk_budget_ratio": {}
+  },
+  "note": "42 层 ParamGovernor 参数集（SPEC §4.1 预注册默认值）；初始版本"
+}

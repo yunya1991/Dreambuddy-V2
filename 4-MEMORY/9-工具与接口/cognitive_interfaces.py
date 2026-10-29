@@ -36,6 +36,7 @@ class RecallResult:
     memories: list[dict] = field(default_factory=list)
     skills: list[dict] = field(default_factory=list)
     knowledge: list[dict] = field(default_factory=list)
+    docs: list[dict] = field(default_factory=list)  # B3（41 SPEC §13.2）：41 文档通道召回结果
     confidence: float = 0.0
 
 

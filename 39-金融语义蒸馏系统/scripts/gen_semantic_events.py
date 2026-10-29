@@ -109,6 +109,16 @@ def main():
         start = 0
     elif args.live:
         start = _load_state().get("processed_lines", 0)
+        # ── 轮转检测（2026-10-29）：日志轮转后行数小于已处理行数 → 自动重置从头扫描 ──
+        # 防止轮转导致状态错位、增量模式静默停更（10-25 轮转事故复盘）
+        try:
+            with open(TRADER_LOG, "r", encoding="utf-8", errors="ignore") as f:
+                total_lines = sum(1 for _ in f)
+            if start > total_lines:
+                print(f"[WARN] 检测到日志轮转：已处理 {start} 行 > 当前 {total_lines} 行，重置状态从头扫描")
+                start = 0
+        except FileNotFoundError:
+            pass
     else:
         parser.error("需指定 --backfill 或 --live")
 

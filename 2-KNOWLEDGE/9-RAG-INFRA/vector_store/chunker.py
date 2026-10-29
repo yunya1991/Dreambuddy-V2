@@ -11,6 +11,7 @@
 """
 
 import re
+import sys
 from typing import Dict, List
 
 try:
@@ -111,6 +112,23 @@ def chunk_markdown(text: str, source_file: str, domain: str) -> List[Dict]:
     Returns:
         分块字典列表，每项含 content 与 metadata。
     """
+    # D2（41 SPEC §13.4）：优先复用 41 语义三级兜底分块（heading→paragraph→window），
+    # 失败降级本文件原固定切分逻辑（FAIL-OPEN）。
+    try:
+        sys.path.insert(0, "/home/ubuntu/fis-p0")
+        from core.chunker import Chunker as _FisChunker
+        _fis_chunks = _FisChunker().chunk(None, text=text)
+        if _fis_chunks:
+            _out: List[Dict] = []
+            for _c in _fis_chunks:
+                _out.append(_make_chunk(
+                    _c.content, source_file, domain,
+                    "code" if _c.boundary_kind == "code" else "text",
+                    _c.heading or "", 0, _c.position,
+                ))
+            return _out
+    except Exception:
+        pass  # FAIL-OPEN：41 分块器不可用走原逻辑
     chunks: List[Dict] = []
     lines = text.split("\n")
     i = 0

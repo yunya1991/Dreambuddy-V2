@@ -89,6 +89,23 @@ def build_index(knowledge_dir, force: bool = False,
     )
 
     hashes = _load_hashes(db_path)
+    # D3（41 SPEC §13.4）：41 变更检测统一供给——优先消费 41 变更清单，
+    # 命中清单的文件才重索引；41 不可用降级本地 md5 哈希账本（FAIL-OPEN）。
+    fis_changed: set = set()
+    try:
+        import subprocess as _sp
+        import os as _os
+        _proc = _sp.run(
+            ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+            input=json.dumps({"cmd": "changed"}),
+            capture_output=True, text=True, timeout=30,
+            env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+        )
+        _res = json.loads(_proc.stdout or "{}")
+        if _res.get("success") and isinstance(_res.get("changed"), list):
+            fis_changed = set(_res["changed"])
+    except Exception:
+        fis_changed = set()  # FAIL-OPEN：41 不可用走本地哈希账本
     md_files = sorted(knowledge_dir.rglob("*.md"))
 
     stats = {
@@ -115,8 +132,8 @@ def build_index(knowledge_dir, force: bool = False,
 
         file_hash = _md5(text)
         existing = hashes.get(rel_str)
-        if existing == file_hash and not force:
-            continue  # 未变更，跳过
+        if not force and rel_str not in fis_changed and existing == file_hash:
+            continue  # 未变更（41 清单 + 本地哈希双重确认），跳过
 
         try:
             chunks = chunk_markdown(text, rel_str, domain)

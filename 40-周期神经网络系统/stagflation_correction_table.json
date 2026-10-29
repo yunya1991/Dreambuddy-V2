@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-10-26T14:43:57.889501+00:00",
+  "trigger_rules": {
+    "rule_1": "美林时钟象限 == stagflation",
+    "rule_2": "增长 < 增长阈值 且 通胀 > 通胀阈值（独立复核，防象限误判）"
+  },
+  "growth_threshold": 1.5,
+  "inflation_threshold": 2.5,
+  "current": {
+    "quadrant": "overheat",
+    "growth_yoy_pct": 2.25,
+    "inflation_yoy_pct": 3.72
+  },
+  "correction_active": false,
+  "corrected_mapping": null,
+  "note": "滞胀修正：时钟失效降级时的独立映射，触发时覆盖象限基础映射"
+}

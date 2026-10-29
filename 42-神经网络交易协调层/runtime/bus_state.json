@@ -1,0 +1,261 @@
+{
+  "bus_id": "bus_610919a3",
+  "generated_at": "2026-10-29T09:38:32.965695+00:00",
+  "signal_count": 10,
+  "rejected_count": 0,
+  "sources": [
+    "bdsm"
+  ],
+  "signals": [
+    {
+      "signal_id": "sig_20261029_873554f9",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "HYPE",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_b09bc9d9",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "ETH",
+      "direction": "neutral",
+      "confidence": 0.75,
+      "horizon": "days",
+      "risk_exposure_hint": 0.1,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": -0.0561,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "sufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_0a05e2ab",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "ARB",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_f0d312c0",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "UNI",
+      "direction": "neutral",
+      "confidence": 0.125,
+      "horizon": "days",
+      "risk_exposure_hint": 0.175,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.1059,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "partial",
+        "snapshot_date": "2026-10-29"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_81720ec0",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "SOL",
+      "direction": "neutral",
+      "confidence": 0.625,
+      "horizon": "days",
+      "risk_exposure_hint": 0.07,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": -0.0512,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "partial",
+        "snapshot_date": "2026-10-29"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_a40420c8",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "AAVE",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_e7d8b440",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "ZEC",
+      "direction": "short",
+      "confidence": 0.5,
+      "horizon": "days",
+      "risk_exposure_hint": 0.175,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "SHORT_ONLY",
+        "score": 0.2086,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "partial",
+        "snapshot_date": "2026-10-29"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_58b79728",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "PUMP",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_4b72617c",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "CRCL",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261029_845c0ea3",
+      "source": "bdsm",
+      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "symbol": "BTC",
+      "direction": "neutral",
+      "confidence": 0.75,
+      "horizon": "days",
+      "risk_exposure_hint": 0.1,
+      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": -0.07,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "sufficient",
+        "snapshot_date": "2026-10-29"
+      },
+      "shadow": false
+    }
+  ],
+  "rejected": [],
+  "note": "P1 只读汇聚：不下发参数；shadow 信号不参与矛盾裁决权重"
+}

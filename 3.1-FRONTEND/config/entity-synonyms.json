@@ -1,0 +1,14 @@
+{
+  "schema_version": "v1",
+  "description": "实体同义词归一化表 — 意图识别后、底座查询前执行（spec v0.5 §5②，源自 Rasa synonyms 机制）",
+  "symbol": {
+    "BTC": ["BTC", "btc", "比特币", "Bitcoin", "bitcoin", "大饼"],
+    "ETH": ["ETH", "eth", "以太坊", "Ethereum", "ethereum", "以太"],
+    "SOL": ["SOL", "sol", "Solana", "solana", "索拉纳"],
+    "BNB": ["BNB", "bnb", "币安币"],
+    "XRP": ["XRP", "xrp", "瑞波", "瑞波币"],
+    "DOGE": ["DOGE", "doge", "狗狗币", "Dogecoin"],
+    "ADA": ["ADA", "ada", "艾达币", "Cardano"],
+    "AVAX": ["AVAX", "avax", "雪崩", "Avalanche"]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "proposal_id": "prop_20261025_031911_10",
+  "generated_at": "2026-10-25T03:19:11",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_10",
+    "name": "候选意图：怎么样相关",
+    "description": "从 4 条未覆盖案例聚类发现，特征词：怎么样。描述待人工评审补充。",
+    "keywords": [
+      "怎么样"
+    ],
+    "examples": [
+      "现在风控状态怎么样",
+      "现在各维度矛盾情况怎么样",
+      "AAVE估值怎么样",
+      "ETH技术面怎么样"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_10",
+      "keywords": [
+        "怎么样"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 4,
+    "samples": [
+      "现在风控状态怎么样",
+      "现在各维度矛盾情况怎么样",
+      "AAVE估值怎么样",
+      "ETH技术面怎么样"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T03:33:00",
+    "verdict": "hold",
+    "reasons": [
+      "案例数充分（4）",
+      "关键词噪声率低（0%）",
+      "与现有意图无边界重叠",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 4,
+      "noise_ratio": 0.0,
+      "overlap_count": 0,
+      "overlaps": [],
+      "desc_complete": false
+    },
+    "manual_review": true,
+    "manual_review_reason": "泛化疑问词：『怎么样』会抢占所有状态类疑问句；案例语义分散（风控状态/矛盾情况/估值/技术面四个不同方向），非单一意图；维持 hold 观察，待案例积累后按语义方向重新聚类"
+  }
+}

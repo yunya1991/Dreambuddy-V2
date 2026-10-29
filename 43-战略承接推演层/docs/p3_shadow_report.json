@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-10-28T13:26:45.557575+00:00",
+  "module": "P3 影子比对（11 原位置 vs 43 模块，迁移等价性）",
+  "bridge_switch": "off",
+  "cases": 9,
+  "comparisons": 135,
+  "matches": 135,
+  "consistency_rate": 1.0,
+  "threshold": 0.85,
+  "passed": true,
+  "per_case": [
+    {
+      "case": "空输入",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "空coin_data",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "空system_state",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "双None",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "扁平-典型值",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "扁平-极端值",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "分层-三类差异化",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "分层-部分类缺失",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    },
+    {
+      "case": "脏数据-类型错误",
+      "match": 15,
+      "total": 15,
+      "rate": 1.0
+    }
+  ],
+  "mismatches": []
+}

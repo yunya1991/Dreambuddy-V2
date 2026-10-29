@@ -1,0 +1,64 @@
+{
+  "proposal_id": "prop_20261025_031911_7",
+  "generated_at": "2026-10-25T03:19:11",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_cpi_7",
+    "name": "候选意图：CPI相关",
+    "description": "从 5 条未覆盖案例聚类发现，特征词：CPI。描述待人工评审补充。",
+    "keywords": [
+      "CPI"
+    ],
+    "examples": [
+      "查询下美国CPI数据",
+      "CPI超预期意味着什么",
+      "CPI低于预期意味着什么",
+      "查询美国CPI最新数据"
+    ],
+    "rule": {
+      "id": "hc_candidate_cpi_7",
+      "keywords": [
+        "CPI"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 5,
+    "samples": [
+      "查询下美国CPI数据",
+      "CPI超预期意味着什么",
+      "CPI低于预期意味着什么",
+      "查询美国CPI最新数据",
+      "查询美国CPI数据"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T03:33:00",
+    "verdict": "recommend",
+    "reasons": [
+      "案例数充分（5）",
+      "关键词噪声率低（0%）",
+      "与现有意图无边界重叠",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 5,
+      "noise_ratio": 0.0,
+      "overlap_count": 0,
+      "overlaps": [],
+      "desc_complete": false
+    },
+    "manual_review": true,
+    "manual_review_reason": "宏观数据查询为真实意图缺口：现有 15 种意图不覆盖宏观指标查询（CPI/非农/利率等）；案例聚类一致（查询CPI数据/CPI超预期意味着什么）；关键词噪声率 0%；建议合入时补充描述为『宏观数据查询（CPI/非农/利率等宏观指标）』并扩展关键词为 CPI/非农/美联储利率/宏观数据"
+  }
+}

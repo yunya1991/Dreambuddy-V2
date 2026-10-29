@@ -1,0 +1,63 @@
+{
+  "proposal_id": "prop_20261024_222435_7",
+  "generated_at": "2026-10-24T22:24:35",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_7",
+    "name": "候选意图：现在什么相关",
+    "description": "从 2 条未覆盖案例聚类发现，特征词：现在什么、现在什、在什、在什么。描述待人工评审补充。",
+    "keywords": [
+      "现在什么",
+      "现在什",
+      "在什",
+      "在什么"
+    ],
+    "examples": [
+      "跨资产现在什么状态",
+      "BTC现在什么价"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_7",
+      "keywords": [
+        "现在什么",
+        "现在什",
+        "在什",
+        "在什么"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 2,
+    "samples": [
+      "跨资产现在什么状态",
+      "BTC现在什么价"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数不足（2 < 3，证据薄弱）",
+      "关键词噪声率高（75%，n-gram 碎片词）",
+      "与现有意图无边界重叠",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 2,
+      "noise_ratio": 0.75,
+      "overlap_count": 0,
+      "overlaps": [],
+      "desc_complete": false
+    }
+  }
+}

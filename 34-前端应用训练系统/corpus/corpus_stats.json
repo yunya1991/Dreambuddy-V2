@@ -1,0 +1,17 @@
+{
+  "stats": {
+    "intent_noise_filtered": 147,
+    "intent_pairs": 491,
+    "newsflash_intent_pairs": 2507,
+    "newsflash_pretrain": 2507,
+    "query_doc_pairs": 1205,
+    "dedup_log": 492396,
+    "log_stream": 297377,
+    "event_stream": 20572,
+    "markdown_sections": 5642,
+    "evaluator_labels": 104,
+    "pretrain_truncated_from": 326098,
+    "pretrain_final": 100000
+  },
+  "generated_at": "2026-10-29T03:00:26"
+}

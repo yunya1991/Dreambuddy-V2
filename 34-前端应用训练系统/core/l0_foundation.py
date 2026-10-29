@@ -103,6 +103,7 @@ class L0Foundation:
         "riskcontrol.trailing": "_fetch_riskcontrol_trailing",
         "market.ticker": "_fetch_market_ticker",
         "cognitive.recall": "_fetch_cognitive_recall",
+        "docs.search": "_fetch_docs_search",  # B1（41 SPEC §13.2）：41 recall 文档上下文供给
     }
 
     def __init__(self, root: Optional[str] = None, *,
@@ -142,6 +143,32 @@ class L0Foundation:
             self._settle_cognitive_valuable(intent, message, result)
         except Exception:
             pass
+
+    # -------- scope: docs.search（B1，41 SPEC §13.2/§7.10） --------
+    def _fetch_docs_search(self, params: Dict) -> Dict[str, Any]:
+        """41 recall() 文档上下文供给：L1/L2 工作前按 query 召回相关文档片段。
+        spawn 41 search_cli recall 命令（chunk 级 BM25 候选），FAIL-OPEN 降级空结果。
+        params: query（必填）、limit（默认 5）
+        """
+        import json as _json
+        import subprocess as _sp
+        src_tag = "fis_docs_search"
+        query = params.get("query")
+        if not query:
+            return _degraded(src_tag, "invalid_params", "missing param: query")
+        limit = int(params.get("limit", 5))
+        try:
+            proc = _sp.run(
+                ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                input=_json.dumps({"cmd": "recall", "query": str(query), "limit": limit}),
+                capture_output=True, text=True, timeout=10,
+                env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            )
+            res = _json.loads(proc.stdout or "{}")
+            hits = res.get("hits", []) if res.get("success") else []
+            return _envelope(hits, src_tag)
+        except Exception as e:
+            return _degraded(src_tag, "fetch_error", f"{type(e).__name__}: {e}")
 
     # -------- 路径 --------
 
@@ -386,11 +413,16 @@ class L0Foundation:
             return
         case = {
             "ts": datetime.now().isoformat(timespec="seconds"),
+            "schema_version": "v2",  # P1.5：案例结构版本化（与 38 records 表对齐）
             "intent": intent,
             "message": message,
             "answer": str(result.get("answer", ""))[:300],
             "data": result.get("data"),
         }
+        # P1.5 扩展字段（spec §9.1）：意图系统域 complexity/entities 透传
+        for _k in ("complexity", "entities"):
+            if context.get(_k) is not None:
+                case[_k] = context[_k]
         self._append_case(case)
 
     def _append_case(self, case: Dict) -> None:

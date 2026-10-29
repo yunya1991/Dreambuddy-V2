@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-10-28T16:25:01.193175+00:00",
+  "stage": "X1-entry",
+  "allowed_sources": [
+    "40_main"
+  ],
+  "excluded_proxy_records": 1,
+  "direction_distribution": {
+    "UP": 18
+  },
+  "gate": {
+    "samples": 18,
+    "min_samples": 100,
+    "samples_ok": false,
+    "weeks": 0.57,
+    "min_weeks": 2,
+    "weeks_ok": false,
+    "distinct_days": 4,
+    "x1_ready": false
+  },
+  "note": "代理信号记录已强制排除；X1 四项指标待门槛满足后启用"
+}

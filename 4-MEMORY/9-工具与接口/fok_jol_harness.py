@@ -106,6 +106,7 @@ class MetacogHarness:
         task: Any,
         skill_match: Optional[List[Any]],
         memory_recall: Optional[List[Any]],
+        doc_hits: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
         """FOK 预评估：任务执行前判断"能不能解决"。
 
@@ -130,7 +131,13 @@ class MetacogHarness:
             skill_component = self._top_score(skill_match)
             memory_component = self._top_score(memory_recall)
 
-            fok = max(skill_component, memory_component)
+            # B5（41 SPEC §13.2）：41 检索命中密度作为 FOK 门控辅助信号
+            # 命中密度 = 命中数/5（封顶 1.0），辅助权重 0.5，不替代 SKILL/记忆主信号
+            doc_component = 0.0
+            if doc_hits:
+                doc_component = min(1.0, len(doc_hits) / 5.0) * 0.5
+
+            fok = max(skill_component, memory_component, doc_component)
             fok = max(0.0, min(1.0, fok))
 
             if fok >= self._proceed_threshold:

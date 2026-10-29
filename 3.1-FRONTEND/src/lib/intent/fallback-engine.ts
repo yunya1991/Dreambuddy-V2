@@ -240,6 +240,7 @@ const HARDCODED_INTENT_RULES: Array<{
   confidence: number;
   keywords: string[];
   id: string;
+  status?: 'active' | 'shadow' | 'canary' | 'degraded';
 }> = [
   {
     id: 'hc_deep_analysis',
@@ -253,7 +254,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'scenario_sim',
     complexity: 'complex',
     confidence: 0.85,
-    keywords: ['情景推演', '情景分析', '情景假设', '如果', '假设', '推演', '模拟', '极端行情', '压力测试', '最坏情况', '最好情况', '敏感性分析', 'hypothetical', 'scenario'],
+    keywords: ['情景推演', '情景分析', '情景假设', '极端行情', '压力测试', '最坏情况', '最好情况', '敏感性分析', 'hypothetical', 'scenario'],
   },
   {
     id: 'hc_strategy_verify',
@@ -261,7 +262,7 @@ const HARDCODED_INTENT_RULES: Array<{
     complexity: 'complex',
     confidence: 0.85,
     keywords: [
-      '策略验证', '验证策略', '回测', '策略回测', '测试策略', '检验策略',
+      '策略验证', '验证策略', '策略回测', '回测策略', '回测一下', '测试策略', '检验策略',
       '策略有效性', '策略质量', 'signal quality', '验证信号', '策略评估',
       '信号验证', '策略信号', '策略信号质量', '评估策略', '策略的有效性',
       '信号质量', 'backtest', 'validate strategy', 'strategy validation',
@@ -279,7 +280,7 @@ const HARDCODED_INTENT_RULES: Array<{
     intent: 'market_query',
     complexity: 'simple',
     confidence: 0.85,
-    keywords: ['行情', '价格', '现在', '当前', '实时', '最新', '查询', '多少', '报价', '实时行情', '现价', '市场概况', '走势', '行情分析', '市场分析', '价格走势', '行情走势', '市场状态', '市场情况', '概况', '市场数据', 'ticker', 'market', 'price', 'quote'],
+    keywords: ['什么价格', '价格多少', '的行情', '实时行情', '最新价格', '最新报价', '现价多少', '市场概况', '行情查询', '行情分析', '市场分析', '价格走势', '行情走势', '市场状态', '市场情况', '市场数据', 'ticker', 'market', 'price', 'quote'],
   },
   {
     id: 'hc_triple_chain',
@@ -288,7 +289,127 @@ const HARDCODED_INTENT_RULES: Array<{
     confidence: 0.9,
     keywords: ['全面规划', '完整策略', '综合分析', '从分析到执行', '全流程', '系统策略', '端到端', '一站式', '制定交易策略', '设计交易策略', '交易策略', '入场止损止盈', '止损止盈', '设计入场'],
   },
+  {
+    id: 'hc_credits_query',
+    intent: 'credits_query',
+    complexity: 'simple',
+    confidence: 0.85,
+    keywords: ['余额还有', '余额查询', '多少积分', '多少额度', '剩余次数', '还剩多少次', '剩余点数', 'credits', 'balance', 'quota'],
+  },
+  {
+    id: 'hc_artifact_query',
+    intent: 'artifact_query',
+    complexity: 'simple',
+    confidence: 0.85,
+    keywords: ['历史产物', '产物列表', '报告列表', '最近报告', '历史报告', '生成的策略', '历史任务', '任务列表', '任务记录', 'artifact', '之前的分析', '上次的结果'],
+  },
+  {
+    id: 'hc_system_config',
+    intent: 'system_config',
+    complexity: 'simple',
+    confidence: 0.85,
+    keywords: ['设置止损', '修改设置', '配置修改', '修改参数', '偏好设置', '切换模式', '语言设置', '主题设置', '通知设置', 'system config', 'settings'],
+  },
+  {
+    id: 'hc_risk_alert_response',
+    intent: 'risk_alert_response',
+    complexity: 'moderate',
+    confidence: 0.85,
+    keywords: ['风险提示', '止损提醒', '风险预警', '风险警告', '爆仓风险', 'risk alert', '风险通知', '止损告警', '异常波动提醒'],
+  },
+  {
+    id: 'hc_developer',
+    intent: 'developer',
+    complexity: 'complex',
+    confidence: 0.9,
+    keywords: ['写代码', '写个函数', '写脚本', '实现一个功能', '开发一个', '修复bug', '修bug', 'debug代码', '重构代码', '代码审查', '写测试用例', '帮我开发', '编程问题'],
+  },
+  {
+    id: 'hc_command',
+    intent: 'command',
+    complexity: 'simple',
+    confidence: 0.8,
+    keywords: ['执行命令', '运行命令', '跑一下', '启动服务', '停止服务', '重启服务', '刷新数据', '同步数据', '清理缓存'],
+  },
+  {
+    id: 'hc_simple_qa',
+    intent: 'simple_qa',
+    complexity: 'simple',
+    confidence: 0.7,
+    keywords: ['什么是', '是什么意思', '解释一下', '帮我解释', '为什么', '怎么理解', '名词解释', '科普一下', '区别是什么', '是什么含义'],
+  },
+  {
+    id: 'hc_need_clarification',
+    intent: 'need_clarification',
+    complexity: 'simple',
+    confidence: 0.7,
+    keywords: ['你是想问', '请明确', '不太明白你的意思', '能说清楚点吗'],
+  },
+  {
+    id: 'hc_clarification_result',
+    intent: 'clarification_result',
+    complexity: 'simple',
+    confidence: 0.8,
+    keywords: ['选项a', '选项b', '选项c', '选第一个', '选第二个', '选第三个', '第一个选项', '第二个选项', '第三个选项'],
+  },
+  {
+    // E1: CPI 提案 prop_20261025_031911_7（ADR adr_1792892646_approve），以 shadow 状态写入
+    id: 'hc_candidate_cpi_7',
+    intent: 'market_query',
+    complexity: 'simple',
+    confidence: 0.8,
+    keywords: ['CPI'],
+    status: 'shadow',
+  },
 ];
+// ============ E2 灰度机制：分桶路由 + 运行时状态覆盖（spec §4） ============
+/** canary 规则流量百分比（rule_id → 百分比，未配置默认 5%） */
+const CANARY_RULE_PERCENTAGES: Record<string, number> = {};
+/** 运行时状态覆盖（回滚触发器置 degraded，优先于静态 status，进程内生效） */
+const RULE_STATUS_OVERRIDES = new Map<string, 'active' | 'shadow' | 'canary' | 'degraded'>();
+/** 按 session_id 哈希分桶（0-99），稳定分桶保证同 session 体验一致（spec §4.1） */
+export function canaryBucket(sessionId: string): number {
+  let hash = 0;
+  for (let i = 0; i < sessionId.length; i++) {
+    hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0;
+  }
+  return hash % 100;
+}
+/** 获取规则生效状态（运行时覆盖优先于静态 status） */
+export function getRuleStatus(ruleId: string): 'active' | 'shadow' | 'canary' | 'degraded' | undefined {
+  return RULE_STATUS_OVERRIDES.get(ruleId) ?? HARDCODED_INTENT_RULES.find(r => r.id === ruleId)?.status;
+}
+/** 设置规则运行时状态（自动回滚触发器调用，置 degraded 即摘除） */
+export function setRuleStatus(ruleId: string, status: 'active' | 'shadow' | 'canary' | 'degraded'): boolean {
+  if (!HARDCODED_INTENT_RULES.some(r => r.id === ruleId)) return false;
+  RULE_STATUS_OVERRIDES.set(ruleId, status);
+  return true;
+}
+/** canary 规则是否命中当前流量桶（spec §4.1：5% → 25% → 100%） */
+export function canaryRuleHit(ruleId: string, sessionId: string | undefined): boolean {
+  if (!sessionId) return false;
+  const pct = CANARY_RULE_PERCENTAGES[ruleId] ?? 5;
+  return canaryBucket(sessionId) < pct;
+}
+/**
+ * 误归因检测（复用逆向验证管线 misidentify-attribution 思路，spec §4.2）：
+ * 消息同时命中其他 active 规则关键词 → 潜在抢占/误归因，返回冲突规则 id
+ */
+export function findPreemptingRule(message: string, excludeRuleId: string): string | undefined {
+  try {
+    const lower = message.toLowerCase().trim();
+    for (const rule of HARDCODED_INTENT_RULES) {
+      if (rule.id === excludeRuleId) continue;
+      const st = RULE_STATUS_OVERRIDES.get(rule.id) || rule.status;
+      if (st !== 'active') continue;
+      if (rule.keywords.some(kw => lower.includes(kw.toLowerCase()))) return rule.id;
+    }
+    return undefined;
+  } catch {
+    return undefined; // FAIL-OPEN
+  }
+}
+
 
 // ============ 规则引擎匹配 ============
 
@@ -344,6 +465,10 @@ function matchRuleEngine(message: string, context?: SessionContext): IntentRecog
 
   // Step 0: 先检查硬编码规则（保障 S 系列请求能被正确识别）
   for (const rule of HARDCODED_INTENT_RULES) {
+    // E1 影子模式 + E2 灰度：主匹配认 active；canary 按分桶比例参与（spec §4.1）；shadow/degraded 不参与
+    const effectiveStatus = RULE_STATUS_OVERRIDES.get(rule.id) || rule.status;
+    if (effectiveStatus === 'shadow' || effectiveStatus === 'degraded') continue;
+    if (effectiveStatus === 'canary' && !canaryRuleHit(rule.id, context?.session_id)) continue;
     const matched = rule.keywords.some(kw => lower.includes(kw.toLowerCase()));
     if (matched) {
       const entities = extractEntities(message);
@@ -582,6 +707,33 @@ ${allIntents}
 }
 
 // ============ 统一入口 ============
+
+// ============ E1 影子模式：旁路评估（只记录不干预，FAIL-OPEN） ============
+export interface ShadowEvaluationResult {
+  matched: boolean;
+  rule_id?: string;
+  intent?: IntentType;
+  confidence?: number;
+}
+
+export function evaluateShadowRules(message: string, sessionId?: string): ShadowEvaluationResult {
+  try {
+    const lower = message.toLowerCase().trim();
+    for (const rule of HARDCODED_INTENT_RULES) {
+      const st = RULE_STATUS_OVERRIDES.get(rule.id) || rule.status;
+      if (st !== 'shadow' && st !== 'canary') continue;
+      // E2：canary 命中流量桶的规则已参与主匹配，不重复记录影子分歧
+      if (st === 'canary' && canaryRuleHit(rule.id, sessionId)) continue;
+      const matched = rule.keywords.some(kw => lower.includes(kw.toLowerCase()));
+      if (matched) {
+        return { matched: true, rule_id: rule.id, intent: rule.intent, confidence: rule.confidence };
+      }
+    }
+    return { matched: false };
+  } catch {
+    return { matched: false }; // FAIL-OPEN：影子评估异常不影响主链路
+  }
+}
 
 export async function recognizeIntent(
   message: string,

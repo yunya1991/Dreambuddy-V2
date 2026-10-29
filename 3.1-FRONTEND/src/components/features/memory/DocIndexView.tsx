@@ -12,6 +12,10 @@ interface DocItem {
   size_bytes: number;
 }
 
+interface ReconcileInfo {
+  changed: number;
+  last_indexed_at: string | null;
+}
 interface SyncResult {
   action: string;
   recorded: boolean;
@@ -30,6 +34,8 @@ export function DocIndexView() {
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  // A5（SPEC §13.1）：41 reconcile_diff 新鲜度展示
+  const [reconcile, setReconcile] = useState<ReconcileInfo | null>(null);
 
   useEffect(() => {
     fetch('/api/docs/index')
@@ -42,6 +48,7 @@ export function DocIndexView() {
           return;
         }
         setDocs(data.docs);
+        setReconcile(data.reconcile ?? null);
         setDegraded(false);
         setLoading(false);
       });
@@ -121,6 +128,19 @@ export function DocIndexView() {
             <p className="text-[10px] text-slate-500">分类数</p>
           </div>
         </div>
+        {reconcile && (
+          <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-slate-500">
+            <span>41 索引新鲜度：</span>
+            {reconcile.changed > 0 ? (
+              <span className="text-amber-400">{reconcile.changed} 个文件待重索引</span>
+            ) : (
+              <span className="text-emerald-400">已同步</span>
+            )}
+            {reconcile.last_indexed_at && (
+              <span>· 最近索引 {new Date(reconcile.last_indexed_at).toLocaleString("zh-CN")}</span>
+            )}
+          </div>
+        )}
         {roots.length > 0 && (
           <div className="mt-3 pt-3 border-t border-slate-700/30">
             <p className="text-[10px] text-slate-500 mb-1.5">根目录</p>

@@ -1,0 +1,218 @@
+{
+  "generated_at": "2026-10-26T11:42:27.368374+00:00",
+  "intra_sector_flow": {
+    "layers": {
+      "L1_anchor": {
+        "n": 1,
+        "note": "样本不足"
+      },
+      "L2_major": {
+        "n": 2,
+        "median_momentum_pct": 0.1,
+        "dispersion_pct": 6.93,
+        "leader": {
+          "symbol": "SOL/USDT",
+          "momentum_pct": 5.0
+        },
+        "laggard": {
+          "symbol": "ETH/USDT",
+          "momentum_pct": -4.8
+        },
+        "pattern": "中性整固"
+      },
+      "L3_growth": {
+        "n": 3,
+        "median_momentum_pct": 7.11,
+        "dispersion_pct": 12.87,
+        "leader": {
+          "symbol": "AVAX/USDT",
+          "momentum_pct": 21.83
+        },
+        "laggard": {
+          "symbol": "ADA/USDT",
+          "momentum_pct": -2.01
+        },
+        "pattern": "分化轮动（资金选择性流动）"
+      },
+      "L4_meme": {
+        "n": 3,
+        "median_momentum_pct": -0.62,
+        "dispersion_pct": 14.01,
+        "leader": {
+          "symbol": "PEPE/USDT",
+          "momentum_pct": 15.49
+        },
+        "laggard": {
+          "symbol": "DOGE/USDT",
+          "momentum_pct": -9.87
+        },
+        "pattern": "分化轮动（资金选择性流动）"
+      }
+    },
+    "note": "离散度高=资金选择性流动；龙头动量衰减+跟风补涨=扩散末期"
+  },
+  "cross_asset_flow": {
+    "category_momentum_pct": {
+      "加密": 23.13,
+      "债券(收益率)": 6.67,
+      "股票": 4.64,
+      "美元": 0.85,
+      "黄金": -13.46
+    },
+    "asset_ranking": [
+      {
+        "asset": "crypto_btc",
+        "momentum_pct": 25.38
+      },
+      {
+        "asset": "crypto_eth",
+        "momentum_pct": 20.89
+      },
+      {
+        "asset": "rates_10y",
+        "momentum_pct": 6.67
+      },
+      {
+        "asset": "equity_spx",
+        "momentum_pct": 4.64
+      },
+      {
+        "asset": "usd_dxy",
+        "momentum_pct": 0.85
+      },
+      {
+        "asset": "gold_xaut",
+        "momentum_pct": -13.46
+      }
+    ],
+    "flow_matrix": [
+      {
+        "from": "加密",
+        "to": "债券(收益率)",
+        "momentum_gap_pct": 16.46,
+        "strength": "强"
+      },
+      {
+        "from": "加密",
+        "to": "股票",
+        "momentum_gap_pct": 18.49,
+        "strength": "强"
+      },
+      {
+        "from": "加密",
+        "to": "美元",
+        "momentum_gap_pct": 22.28,
+        "strength": "强"
+      },
+      {
+        "from": "加密",
+        "to": "黄金",
+        "momentum_gap_pct": 36.59,
+        "strength": "强"
+      },
+      {
+        "from": "债券(收益率)",
+        "to": "股票",
+        "momentum_gap_pct": 2.03,
+        "strength": "弱"
+      },
+      {
+        "from": "债券(收益率)",
+        "to": "美元",
+        "momentum_gap_pct": 5.82,
+        "strength": "中"
+      },
+      {
+        "from": "债券(收益率)",
+        "to": "黄金",
+        "momentum_gap_pct": 20.13,
+        "strength": "强"
+      },
+      {
+        "from": "股票",
+        "to": "美元",
+        "momentum_gap_pct": 3.79,
+        "strength": "弱"
+      },
+      {
+        "from": "股票",
+        "to": "黄金",
+        "momentum_gap_pct": 18.1,
+        "strength": "强"
+      },
+      {
+        "from": "美元",
+        "to": "黄金",
+        "momentum_gap_pct": 14.31,
+        "strength": "中"
+      }
+    ],
+    "inflow_leader": [
+      "加密",
+      23.13
+    ],
+    "outflow_leader": [
+      "黄金",
+      -13.46
+    ],
+    "note": "动量差为正=资金从弱类别流向强类别；rates_10y 上行=债券价格走弱"
+  },
+  "correlation_matrix": {
+    "spx_vs_10y": 0.238,
+    "gold_vs_usd": -0.772,
+    "btc_vs_spx": 0.205,
+    "note": "60 日滚动皮尔逊相关系数；股债相关性由负转正为体制切换经典信号"
+  },
+  "rs_ratio_lines": {
+    "gold_vs_spx": {
+      "last_ratio": 0.531727,
+      "ma20": 0.537419,
+      "above_ma20": false,
+      "ma20_direction": "down"
+    },
+    "btc_vs_spx": {
+      "last_ratio": 10.841273,
+      "ma20": 10.761723,
+      "above_ma20": true,
+      "ma20_direction": "up"
+    },
+    "note": "RS 比率线 + 20 日均线方向；above_ma20=true 表示相对强势"
+  },
+  "spread_indicators": {
+    "t10y2y": {
+      "latest": 0.31,
+      "date": "2026-10-23",
+      "change_20d": 0.0,
+      "direction": "flat"
+    },
+    "hy_oas": {
+      "latest": 3.4,
+      "date": "2026-10-22",
+      "change_20d": 0.6,
+      "direction": "widening"
+    },
+    "note": "期限利差倒挂=衰退预警；信用利差走阔=风险偏好收缩"
+  },
+  "smart_money": {
+    "generated_at": "2026-10-26T12:14:12.926721+00:00",
+    "cftc_btc": {
+      "date": "2026-10-20",
+      "noncomm_net": 2418,
+      "noncomm_long": 16962,
+      "noncomm_short": 14544,
+      "open_interest": 21040,
+      "note": "非商业净头寸>0=投机资金净多；周更数据"
+    },
+    "stablecoin_supply": {
+      "usdt": {
+        "circulating_usd": 182308821279.41776,
+        "change_1d_pct": -0.0715,
+        "change_7d_pct": -0.6061,
+        "change_30d_pct": -0.7209,
+        "date": "2026-10-26"
+      },
+      "note": "稳定币供应增长=加密资金流入代理；收缩=流出信号"
+    },
+    "note": "聪明钱观测：CFTC 投机头寸 + 稳定币供应变化"
+  }
+}

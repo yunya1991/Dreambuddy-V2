@@ -1,0 +1,69 @@
+{
+  "proposal_id": "prop_20261025_014101_21",
+  "generated_at": "2026-10-25T01:41:01",
+  "source": "R-1 intent_expansion_proposer（自动生成，待人工评审）",
+  "intent": {
+    "id": "candidate_intent_21",
+    "name": "候选意图：一下恐惧相关",
+    "description": "从 1 条未覆盖案例聚类发现，特征词：一下恐惧、下恐、查一下恐、恐惧贪、惧贪婪。描述待人工评审补充。",
+    "keywords": [
+      "一下恐惧",
+      "下恐",
+      "查一下恐",
+      "恐惧贪",
+      "惧贪婪",
+      "贪婪",
+      "婪指",
+      "贪婪指数"
+    ],
+    "examples": [
+      "查一下恐惧贪婪指数"
+    ],
+    "rule": {
+      "id": "hc_candidate_intent_21",
+      "keywords": [
+        "一下恐惧",
+        "下恐",
+        "查一下恐",
+        "恐惧贪",
+        "惧贪婪",
+        "贪婪",
+        "婪指",
+        "贪婪指数"
+      ],
+      "confidence": 0.8,
+      "complexity": "simple"
+    },
+    "layer": "L0"
+  },
+  "evidence": {
+    "case_count": 1,
+    "samples": [
+      "查一下恐惧贪婪指数"
+    ]
+  },
+  "review": {
+    "status": "reviewed",
+    "reviewer": null,
+    "checklist": [
+      "描述完备性",
+      "与现有 15 种意图边界无重叠",
+      "回归测试全绿（含 holdout）"
+    ],
+    "reviewed_at": "2026-10-25T00:30:00",
+    "verdict": "reject",
+    "reasons": [
+      "案例数不足（1 < 3，证据薄弱）",
+      "关键词噪声率高（38%，n-gram 碎片词）",
+      "与现有意图无边界重叠",
+      "描述为模板占位，不完备"
+    ],
+    "metrics": {
+      "case_count": 1,
+      "noise_ratio": 0.375,
+      "overlap_count": 0,
+      "overlaps": [],
+      "desc_complete": false
+    }
+  }
+}

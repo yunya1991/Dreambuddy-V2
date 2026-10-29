@@ -1,0 +1,43 @@
+{
+  "version": "x0-v0.2",
+  "spec": "docs/SPEC_execution_layer.md v0.2（风控红线数值随终审冻结版本化）",
+  "signal_source": "real",
+  "signal_sources": {
+    "real": {
+      "type": "40_main",
+      "paths": {
+        "cycle_state": "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json",
+        "asset_rotation": "/home/luke/dreambuddy/40-周期神经网络系统/asset_rotation.json"
+      }
+    },
+    "proxy": {
+      "type": "12_proxy",
+      "path": "/home/luke/dreambuddy/12-三屏趋势系统/signal_pool/pool.json",
+      "note": "仅验证管道，不得据代理信号出具任何验证指标或报告（SPEC 边界红线 6）"
+    }
+  },
+  "whitelist": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "UNI/USDT", "AAVE/USDT", "NEAR/USDT", "ARB/USDT", "LINK/USDT"],
+  "whitelist_note": "V1.2 龙头资产 8 币：BTC/ETH/SOL + 赛道龙头 UNI/AAVE/NEAR/ARB/LINK（均历经完整牛熊、MA200 锚点数据达标，归 L2_major 梯队）；meme/增长型代币永不进入验证白名单（SPEC 第二章红线，PUMP 已按 meme 红线排除、HYPE 缓议）；代币化美股/商品独立池待立项（永续合约数据已达标）",
+  "intent_notional_usdt": 100,
+  "leverage": "1x",
+  "risk_limits": {
+    "max_notional_per_order": 100,
+    "max_total_notional": 300,
+    "max_daily_loss": 50,
+    "max_concurrent_positions": 3,
+    "frozen": true,
+    "note": "预注册冻结，禁止运行时放宽（SPEC 第三章/边界红线 2）"
+  },
+  "holding_period_days": {"target": 7, "tolerance": 2},
+  "validation_metrics": {
+    "allowed_sources": ["40_main"],
+    "note": "X1 验证指标计算强制过滤 signal_snapshot.source==40_main；代理信号(12_proxy)记录仅验证管道用途，不得进入任何验证指标或报告（SPEC 边界红线 6）",
+    "min_samples": 100,
+    "min_weeks": 2
+  },
+  "output": {
+    "trades": "execution_trades.jsonl",
+    "violations": "risk_violations.jsonl",
+    "state": "execution_state.json"
+  }
+}

@@ -32,12 +32,25 @@ for e in result.evidence:
 
 | 能力 | 状态 |
 |---|---|
-| Python AST 分析（模块/类/函数/依赖） | 待实现 |
-| 依赖图构建 + 环检测 | 待实现 |
-| 调用链追踪 | 待实现 |
-| Git 历史溯源 | 待实现 |
-| morluto/rea MCP 集成（二进制） | 待实现 |
-| GitHub API 集成 | 待实现 |
+| Python AST 分析（模块/类/函数/依赖） | ✅ 已完成（python_analyzer.py / ts_analyzer.py） |
+| 依赖图构建 + 环检测 | ✅ 已完成（dependency_graph.py） |
+| 调用链追踪 | ✅ 已完成（call_chain_tracer.py） |
+| Git 历史溯源 | ✅ 已完成（git_history.py） |
+| morluto/rea MCP 集成（二进制） | ✅ 已完成（rea_mcp_adapter） |
+| GitHub API 集成 | ✅ 已完成（github_api_adapter） |
+
+### 反思层（SPEC-33-反思层 v0.3，对齐 Dream-RSI）
+
+| 能力 | 状态 |
+|---|---|
+| 回放模拟器（发现树 + 回放池） | ✅ 已完成（core/reflection/replay_simulator.py） |
+| 分析记录器 + 种子用例 | ✅ 已完成（recorder.py / seed_cases.py） |
+| 做梦循环（候选策略评估） | ✅ 已完成（dreaming.py） |
+| P3 外部最优路径获取（E1-E4 全链路） | ✅ 已完成（harvest.py，7 tests） |
+| Q6 训练案例闭环（案例生成 + 质量门控 + 历史冷启动） | ✅ 已完成（training_cases.py / rea_training_provider.py，104 条入库，门控拒绝 0） |
+| Q1/Q2 Spec 增强（两段式：零 LLM 证据提取 + 预算内组装） | ✅ 已完成（output_scenarios.py SpecEnhancer，端到端验证通过） |
+| Q3/Q4 最优路径评估（轻量层 <100ms / 重量层 <5s） | ✅ 已完成（output_scenarios.py OptimalPathEvaluator，FAIL-OPEN 降级） |
+| DSH 输出场景节点（s33_rea_spec_enhance / s33_rea_optimal_path） | ✅ 已完成（dsh_nodes.py 注册，端到端验证通过） |
 
 ### PoE 扩展层（v1.0 已落地 — commit 16826f4eb1）
 
@@ -65,9 +78,10 @@ for e in result.evidence:
 ├── PEER-REVIEW-PoE.md               # PoE 同行评审报告 v1.0
 ├── SPEC-工程实践复现器.md            # PoE 工程实践复现器 SPEC v0.3
 ├── TASKS-工程实践复现器.md           # PoE 实施任务清单 v1.0
-├── core/                            # 核心分析层
+├── core/                            # 核心分析层（含 reflection/ 反思层）
 ├── adapters/                        # 外部适配器（REA MCP / GitHub API）
 ├── prompts/                         # 逆向调查 prompt
+├── reflection_data/                 # 反思层数据（回放池 replay_pool / 训练案例库 training_cases.jsonl）
 └── tests/
 ```
 

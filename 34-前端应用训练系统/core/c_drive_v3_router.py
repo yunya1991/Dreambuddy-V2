@@ -193,6 +193,17 @@ class CDriveV3Router:
                 ) or []
             except Exception:
                 memories = []  # FAIL-OPEN
+        # 41 L3 向量通道补充（D1 集成，§13.6）：BM25 漏召的语义近邻候选
+        # 并入 memories 提升 case_density/match_score 估计，间接提升 jev 裁决质量
+        try:
+            from adapters.fis_vector_supplement import vector_supplement
+            extra = vector_supplement(
+                context=f"node:{node_id} dir:{direction}{hint_part}", top_k=5)
+            if extra:
+                memories = list(memories or []) + extra
+                steps.append("vector_supplement")
+        except Exception:
+            pass  # FAIL-OPEN: 纯 BM25 召回
         match_score, case_density = evaluate_match(memories)
         steps.append("recall")
 

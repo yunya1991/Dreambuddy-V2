@@ -1,0 +1,363 @@
+{
+  "tree_id": "dt_711b7ba6ba5443a5",
+  "task": {
+    "target": "e2e_output_scenario",
+    "goal": "training_loop"
+  },
+  "nodes": [
+    {
+      "node_id": "dn_090d719522f74427",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "e2e_output_scenario"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_e2e_acceptance_gate",
+          "parent_id": "dn_090d719522f74427",
+          "action": {
+            "analyzer": "acceptance_gate",
+            "params": {
+              "skill": "dream-acceptance-verify"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "e2e",
+              "step": "acceptance_gate"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_e2e_code_commit",
+              "parent_id": "dn_e2e_acceptance_gate",
+              "action": {
+                "analyzer": "code_commit",
+                "params": {
+                  "commit": "16826f4eb1"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "type": "e2e",
+                  "step": "code_commit"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_e2e_doc_sync",
+                  "parent_id": "dn_e2e_code_commit",
+                  "action": {
+                    "analyzer": "doc_sync",
+                    "params": {
+                      "scope": "README+INDEX"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "type": "e2e",
+                      "step": "doc_sync"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [
+                    {
+                      "node_id": "dn_e2e_cognitive_record",
+                      "parent_id": "dn_e2e_doc_sync",
+                      "action": {
+                        "analyzer": "cognitive_record",
+                        "params": {
+                          "vm": "VM-1791723832736"
+                        }
+                      },
+                      "evidence_refs": [
+                        {
+                          "type": "e2e",
+                          "step": "cognitive_record"
+                        }
+                      ],
+                      "poe_score": 0.8,
+                      "cost": {
+                        "calls": 1,
+                        "tokens": 0
+                      },
+                      "children_record": [],
+                      "created_at": 1792818022752
+                    }
+                  ],
+                  "created_at": 1792818022752
+                }
+              ],
+              "created_at": 1792818022752
+            }
+          ],
+          "created_at": 1792818022752
+        }
+      ],
+      "created_at": 1792818022752
+    },
+    {
+      "node_id": "dn_e2e_acceptance_gate",
+      "parent_id": "dn_090d719522f74427",
+      "action": {
+        "analyzer": "acceptance_gate",
+        "params": {
+          "skill": "dream-acceptance-verify"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "e2e",
+          "step": "acceptance_gate"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_e2e_code_commit",
+          "parent_id": "dn_e2e_acceptance_gate",
+          "action": {
+            "analyzer": "code_commit",
+            "params": {
+              "commit": "16826f4eb1"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "e2e",
+              "step": "code_commit"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_e2e_doc_sync",
+              "parent_id": "dn_e2e_code_commit",
+              "action": {
+                "analyzer": "doc_sync",
+                "params": {
+                  "scope": "README+INDEX"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "type": "e2e",
+                  "step": "doc_sync"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_e2e_cognitive_record",
+                  "parent_id": "dn_e2e_doc_sync",
+                  "action": {
+                    "analyzer": "cognitive_record",
+                    "params": {
+                      "vm": "VM-1791723832736"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "type": "e2e",
+                      "step": "cognitive_record"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [],
+                  "created_at": 1792818022752
+                }
+              ],
+              "created_at": 1792818022752
+            }
+          ],
+          "created_at": 1792818022752
+        }
+      ],
+      "created_at": 1792818022752
+    },
+    {
+      "node_id": "dn_e2e_code_commit",
+      "parent_id": "dn_e2e_acceptance_gate",
+      "action": {
+        "analyzer": "code_commit",
+        "params": {
+          "commit": "16826f4eb1"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "e2e",
+          "step": "code_commit"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_e2e_doc_sync",
+          "parent_id": "dn_e2e_code_commit",
+          "action": {
+            "analyzer": "doc_sync",
+            "params": {
+              "scope": "README+INDEX"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "e2e",
+              "step": "doc_sync"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_e2e_cognitive_record",
+              "parent_id": "dn_e2e_doc_sync",
+              "action": {
+                "analyzer": "cognitive_record",
+                "params": {
+                  "vm": "VM-1791723832736"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "type": "e2e",
+                  "step": "cognitive_record"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [],
+              "created_at": 1792818022752
+            }
+          ],
+          "created_at": 1792818022752
+        }
+      ],
+      "created_at": 1792818022752
+    },
+    {
+      "node_id": "dn_e2e_doc_sync",
+      "parent_id": "dn_e2e_code_commit",
+      "action": {
+        "analyzer": "doc_sync",
+        "params": {
+          "scope": "README+INDEX"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "e2e",
+          "step": "doc_sync"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_e2e_cognitive_record",
+          "parent_id": "dn_e2e_doc_sync",
+          "action": {
+            "analyzer": "cognitive_record",
+            "params": {
+              "vm": "VM-1791723832736"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "e2e",
+              "step": "cognitive_record"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1792818022752
+        }
+      ],
+      "created_at": 1792818022752
+    },
+    {
+      "node_id": "dn_e2e_cognitive_record",
+      "parent_id": "dn_e2e_doc_sync",
+      "action": {
+        "analyzer": "cognitive_record",
+        "params": {
+          "vm": "VM-1791723832736"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "e2e",
+          "step": "cognitive_record"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1792818022752
+    }
+  ],
+  "provenance": "internal",
+  "source_label": "e2e:training_loop",
+  "weight": 1.0,
+  "created_at": 1792818022752
+}

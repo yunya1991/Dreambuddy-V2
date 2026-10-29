@@ -1,13 +1,13 @@
 # 39-金融语义蒸馏系统 待办事项
 
-> 更新时间：2026-10-20 23:10
+> 更新时间：2026-10-29 01:11
 
 ## 依赖链状态（等待期任务链）
 
 | 环节 | 状态 | 产出物 |
 |------|------|--------|
 | L1 原子事件 | ✅ 完成 | atomic_events.jsonl |
-| L2 事件线 | ✅ 完成 | event_lines.json / semantic_events.jsonl |
+| L2 事件线 | ✅ 完成（2026-10-29 修复：trader.log 10-25 轮转导致状态错位停更，已重置状态追回 4873 条；crontab 每小时 3/33 分 --live 增量，timer 已恢复） | event_lines.json / semantic_events.jsonl |
 | 五维量变 | ✅ 完成 | spacetime_events.jsonl |
 | P-权重 | ✅ 完成 | newsflash_weights.jsonl / source_credibility.json（timer: 00:45 等，每 6h） |
 | P-矛盾 | ✅ 完成 | contradiction_events.jsonl / contradiction_semantics.json（timer: 00:55 等，每 6h） |

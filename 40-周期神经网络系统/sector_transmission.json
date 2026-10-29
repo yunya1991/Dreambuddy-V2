@@ -1,0 +1,181 @@
+{
+  "generated_at": "2026-10-26T05:39:46.620293+00:00",
+  "layers": {
+    "L1_anchor": [
+      "BTC/USDT"
+    ],
+    "L2_major": [
+      "ETH/USDT",
+      "SOL/USDT"
+    ],
+    "L3_growth": [
+      "AVAX/USDT",
+      "LINK/USDT",
+      "ADA/USDT"
+    ],
+    "L4_meme": [
+      "DOGE/USDT",
+      "PEPE/USDT",
+      "WIF/USDT"
+    ]
+  },
+  "assets": {
+    "BTC/USDT": {
+      "layer": "L1_anchor",
+      "momentum_3m_pct": 2.14,
+      "samples": 120,
+      "relative_strength_vs_btc": 0.0
+    },
+    "ETH/USDT": {
+      "layer": "L2_major",
+      "momentum_3m_pct": -4.8,
+      "samples": 120,
+      "relative_strength_vs_btc": -6.94
+    },
+    "SOL/USDT": {
+      "layer": "L2_major",
+      "momentum_3m_pct": 5.0,
+      "samples": 120,
+      "relative_strength_vs_btc": 2.86
+    },
+    "AVAX/USDT": {
+      "layer": "L3_growth",
+      "momentum_3m_pct": 21.83,
+      "samples": 120,
+      "relative_strength_vs_btc": 19.69
+    },
+    "LINK/USDT": {
+      "layer": "L3_growth",
+      "momentum_3m_pct": 1.51,
+      "samples": 120,
+      "relative_strength_vs_btc": -0.63
+    },
+    "ADA/USDT": {
+      "layer": "L3_growth",
+      "momentum_3m_pct": -2.01,
+      "samples": 120,
+      "relative_strength_vs_btc": -4.15
+    },
+    "DOGE/USDT": {
+      "layer": "L4_meme",
+      "momentum_3m_pct": -9.87,
+      "samples": 120,
+      "relative_strength_vs_btc": -12.01
+    },
+    "PEPE/USDT": {
+      "layer": "L4_meme",
+      "momentum_3m_pct": 15.49,
+      "samples": 120,
+      "relative_strength_vs_btc": 13.35
+    },
+    "WIF/USDT": {
+      "layer": "L4_meme",
+      "momentum_3m_pct": -7.49,
+      "samples": 120,
+      "relative_strength_vs_btc": -9.63
+    }
+  },
+  "layer_median_momentum_3m_pct": {
+    "L1_anchor": 2.14,
+    "L2_major": 0.1,
+    "L3_growth": 1.51,
+    "L4_meme": -7.49
+  },
+  "transmission": {
+    "state": "neutral",
+    "meme_vs_major_gap_pct": -7.59,
+    "btc_above_ma200": true,
+    "regime": "bull_consolidation"
+  },
+  "note": "expanding=资金沿传导链下沉扩散；contracting=资金收缩回主流层（周期晚期信号）；regime 联动 MA200 牛熊锚点",
+  "breadth": {
+    "assets_above_ma200": 8,
+    "assets_valid": 9,
+    "assets_total": 9,
+    "breadth_pct": 88.9,
+    "state": "strong",
+    "layer_breadth": {
+      "L1_anchor": {
+        "above": 1,
+        "valid": 1,
+        "total": 1,
+        "breadth_pct": 100.0
+      },
+      "L2_major": {
+        "above": 2,
+        "valid": 2,
+        "total": 2,
+        "breadth_pct": 100.0
+      },
+      "L3_growth": {
+        "above": 3,
+        "valid": 3,
+        "total": 3,
+        "breadth_pct": 100.0
+      },
+      "L4_meme": {
+        "above": 2,
+        "valid": 3,
+        "total": 3,
+        "breadth_pct": 66.7
+      }
+    },
+    "detail": {
+      "BTC/USDT": {
+        "layer": "L1_anchor",
+        "above": true,
+        "distance_pct": 9.73,
+        "source": "cycle_state_anchor"
+      },
+      "ETH/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 7.63,
+        "source": "cycle_state_anchor"
+      },
+      "SOL/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 14.58,
+        "source": "cycle_state_anchor"
+      },
+      "AVAX/USDT": {
+        "layer": "L3_growth",
+        "above": true,
+        "distance_pct": 17.99,
+        "source": "okx_ma200"
+      },
+      "LINK/USDT": {
+        "layer": "L3_growth",
+        "above": true,
+        "distance_pct": 26.31,
+        "source": "okx_ma200"
+      },
+      "ADA/USDT": {
+        "layer": "L3_growth",
+        "above": true,
+        "distance_pct": 6.34,
+        "source": "okx_ma200"
+      },
+      "DOGE/USDT": {
+        "layer": "L4_meme",
+        "above": false,
+        "distance_pct": -5.96,
+        "source": "okx_ma200"
+      },
+      "PEPE/USDT": {
+        "layer": "L4_meme",
+        "above": true,
+        "distance_pct": 35.1,
+        "source": "okx_ma200"
+      },
+      "WIF/USDT": {
+        "layer": "L4_meme",
+        "above": true,
+        "distance_pct": 13.59,
+        "source": "okx_ma200"
+      }
+    },
+    "note": "广度=传导链 9 资产站上 MA200 占比（L1/L2 复用锚点，L3/L4 OKX 现算）；>=75 强势 / 50-75 分化 / <50 走弱；配合 meme 平台毕业率构成双层广度观测"
+  }
+}

@@ -84,7 +84,7 @@ def load_newsflash(limit=2000):
     情绪判定：od_policy_sentiment_0_1 有区分度（≠0.5）时优先（政策类快讯权威标注），
     否则用描述文本关键词情绪（覆盖全部快讯，复用 L2 已验证口径）。
     """
-    rows = dc_pg.fetch_records("newsflash_%", limit=limit, order_desc=False)
+    rows = dc_pg.fetch_records("newsflash_%", limit=limit, order_desc=True)
     events = []
     for r in rows:
         m = r.get("metrics") or {}
@@ -236,18 +236,36 @@ def main():
     print(f"[OK] 内部状态加载: 恐惧贪婪 {len(fg_timeline)} 点 / 资金费率 {len(fr_timeline)} 点")
 
     events = detect_contradictions(news, fg_timeline, fr_timeline)
+    # 合并保留历史事件：按 (window_start, contradiction_type, observation) 去重，
+    # 避免取数窗口滑动后全量重写覆盖丢失旧事件
+    existing = []
+    if os.path.exists(OUT_EVENTS_PATH):
+        with open(OUT_EVENTS_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    existing.append(json.loads(line))
+                except Exception:
+                    continue
+
+    def _ev_key(e):
+        return (e.get("window_start", ""), e.get("contradiction_type", ""), e.get("observation", ""))
+
+    merged = {}
+    for e in existing + events:
+        merged.setdefault(_ev_key(e), e)
+    all_events = sorted(merged.values(), key=lambda e: e.get("window_start", ""))
     with open(OUT_EVENTS_PATH, "w", encoding="utf-8") as f:
-        for e in events:
+        for e in all_events:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
 
     # 矛盾类型统计画像
     by_type = defaultdict(int)
-    for e in events:
+    for e in all_events:
         by_type[e["contradiction_type"]] += 1
     profile = {
-        "generated_at": "2026-10-20",
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "align_window_h": ALIGN_WINDOW_H,
-        "total_contradictions": len(events),
+        "total_contradictions": len(all_events),
         "by_type": dict(by_type),
         "type_definition": {
             "macro_micro": "宏观快讯情绪 vs 微观恐惧贪婪极值方向相反",
@@ -259,11 +277,11 @@ def main():
     with open(OUT_STATS_PATH, "w", encoding="utf-8") as f:
         json.dump(profile, f, ensure_ascii=False, indent=2)
 
-    print(f"[OK] P-矛盾完成: 检出矛盾事件 {len(events)} 条 -> {OUT_EVENTS_PATH}")
+    print(f"[OK] P-矛盾完成: 本次检出 {len(events)} 条，累计保留 {len(all_events)} 条 -> {OUT_EVENTS_PATH}")
     for t, n in sorted(by_type.items(), key=lambda kv: -kv[1]):
         print(f"     {t}: {n} 条")
     print(f"     矛盾画像 -> {OUT_STATS_PATH}")
-    for e in events[-3:]:
+    for e in all_events[-3:]:
         print(f"     [样例] {e['window_start']} {e['observation']}")
 
 

@@ -8,7 +8,13 @@ export {
   checkLLMStatus,
   DEEPSEEK_CONFIG,
   extractEntities,
+  evaluateShadowRules,
+  canaryBucket,
+  getRuleStatus,
+  setRuleStatus,
+  findPreemptingRule,
 } from './fallback-engine';
+export type { ShadowEvaluationResult } from './fallback-engine';
 
 export type {
   IntentType,
