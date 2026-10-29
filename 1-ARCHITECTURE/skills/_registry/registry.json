@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1",
-  "total_count": 185,
+  "total_count": 186,
   "skills": [
     {
       "name": "polling-trader-reload",
@@ -7120,6 +7120,65 @@
       "role": "operator",
       "tier": [
         "local"
+      ]
+    },
+    {
+      "name": "dream-three-tier-collab",
+      "description": "三端协同编排（本地评审中枢 / GitHub 存证 / 云端运行）：云端八维评审 D1-D8、RACI 职责速查、门禁链 G1-G7、排查 SLA、双轨模型生命周期、意图路由与红线。Invoke when 评审云端、排查云端故障、判断部署窗口、模型 promote 决策、或需要明确三端职责边界时。",
+      "version": "1.0.0",
+      "path": "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-three-tier-collab/SKILL.md",
+      "location_role": "project-index",
+      "status": "active",
+      "category": "collaboration",
+      "triggers": [
+        "三端",
+        "三端协同",
+        "云端评审",
+        "八维评审",
+        "评审云端",
+        "门禁链",
+        "部署窗口",
+        "模型生命周期",
+        "排查云端",
+        "三端职责"
+      ],
+      "depends_on": [
+        "cloud-review.sh",
+        "cloud-logs.sh",
+        "g4-volatility-gate.py",
+        "dream-code-commit-sync-workflow",
+        "dream-code-deploy-pipeline",
+        "dream-bugfix-workflow",
+        "dream-acceptance-verify",
+        "dream-skill-index-governance"
+      ],
+      "provides": [
+        "three-tier-routing",
+        "cloud-review-checklist",
+        "gate-chain",
+        "model-lifecycle-boundary"
+      ],
+      "cognitive_links": [],
+      "content_hash": "30cd9ab6bc5a3938add73be988646a0327046e3076aa71705447fb5ffe13144e",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "orchestration",
+        "potency": "multipotent",
+        "resource_cost": "low",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.3,
+      "apply_count": 0,
+      "last_verified": "2026-10-29",
+      "execution_history": [],
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
       ]
     }
   ]

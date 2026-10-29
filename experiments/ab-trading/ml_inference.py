@@ -3,7 +3,7 @@
 ML推理模块 — 三屏趋势策略实盘ML信号
 
 职责：
-1. 加载基线模型（v1）
+1. 加载模型（读 models/current.json 指针，版本变化自动热加载，回落 baseline）
 2. 获取最新K线数据
 3. 生成特征并预测
 4. 返回ML信号（方向 + 置信度）
@@ -13,9 +13,16 @@ ML推理模块 — 三屏趋势策略实盘ML信号
 - ML预测与趋势同向：置信度增强
 - ML预测与趋势反向：置信度削弱
 """
-import os, sys, json, time
-from pathlib import Path
-from typing import Dict, Optional, Tuple
+
+import hashlib
+import json
+import os
+import sys
+import time
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # 路径设置
 TREND_SYSTEM_PATH = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统"
@@ -29,7 +36,8 @@ MODELS_DIR = os.path.join(ML_DIR, "models")
 _ml_module = None
 _model_cache = {}
 _last_load_time = 0
-_MODEL_TTL = 3600  # 模型缓存1小时
+_MODEL_TTL = 3600  # 缓存上限1小时；current.json 版本变化时立即 reload（SPEC 4.3）
+_POINTER_FILE = os.path.join(MODELS_DIR, "current.json")
 
 
 def _load_ml_modules():
@@ -41,9 +49,10 @@ def _load_ml_modules():
     try:
         from ml.feature_engineer import TrendFeatureEngineer
         from ml.version_manager import ModelVersionManager
+
         _ml_module = {
-            'TrendFeatureEngineer': TrendFeatureEngineer,
-            'ModelVersionManager': ModelVersionManager,
+            "TrendFeatureEngineer": TrendFeatureEngineer,
+            "ModelVersionManager": ModelVersionManager,
         }
         return _ml_module
     except Exception as e:
@@ -51,63 +60,131 @@ def _load_ml_modules():
         return None
 
 
+def _read_pointer() -> Tuple[Optional[str], Optional[str]]:
+    """读取 models/current.json 热加载指针（SPEC 4.3）。缺失或损坏 → (None, None)。"""
+    if not os.path.isfile(_POINTER_FILE):
+        return None, None
+    try:
+        with open(_POINTER_FILE, encoding="utf-8") as f:
+            payload = json.load(f)
+        return payload.get("version"), payload.get("checksum")
+    except Exception as e:
+        print(f"[ML推理] current.json 读取失败，回落到基线: {e}", flush=True)
+        return None, None
+
+
+def _sha256_file(path: str) -> Optional[str]:
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except Exception:
+        return None
+
+
+def _load_old_model(reason: str):
+    """加载失败时保留旧模型 + 告警（FAIL-OPEN）"""
+    old = _model_cache.get("model")
+    if old is not None:
+        print(f"[ML推理] {reason}，保留旧模型 {_model_cache.get('version')}", flush=True)
+        return old, _model_cache.get("fe"), _model_cache.get("features")
+    print(f"[ML推理] {reason}", flush=True)
+    return None, None, None
+
+
 def _load_model():
-    """加载基线模型（带缓存）"""
+    """加载模型（缓存 + current.json 版本热加载）
+
+    - current.json 版本变化 → 立即 reload（不等 TTL）
+    - 版本未变且在 TTL 内 → 复用缓存
+    - 新版本加载失败 → 保留旧模型 + 告警（FAIL-OPEN）
+    - 无 current.json（未 promote 过）→ 回落到 baseline_version
+    """
     global _last_load_time
 
     now = time.time()
-    if _model_cache and (now - _last_load_time) < _MODEL_TTL:
-        return _model_cache.get('model'), _model_cache.get('fe'), _model_cache.get('features')
+    pointer_version, pointer_checksum = _read_pointer()
+    cached_version = _model_cache.get("version")
+
+    if _model_cache.get("model") is not None:
+        if pointer_version == cached_version and (now - _last_load_time) < _MODEL_TTL:
+            return _model_cache.get("model"), _model_cache.get("fe"), _model_cache.get("features")
+        if pointer_version and pointer_version != cached_version:
+            print(
+                f"[ML推理] 检测到版本变更 {cached_version} → {pointer_version}，触发热加载",
+                flush=True,
+            )
 
     modules = _load_ml_modules()
     if not modules:
-        return None, None, None
+        return _load_old_model("ML 模块导入失败")
 
     try:
-        vm = modules['ModelVersionManager'](MODELS_DIR)
-        model = vm.load_baseline()
+        vm = modules["ModelVersionManager"](MODELS_DIR)
+        target_version = pointer_version or vm.registry.get("baseline_version")
+        if not target_version:
+            return _load_old_model("registry 无可用版本")
+
+        model = vm.load_version(target_version)
         if model is None:
-            print("[ML推理] 未找到基线模型", flush=True)
-            return None, None, None
+            return _load_old_model(f"版本 {target_version} 加载为空")
 
         # 从元数据获取特征配置
-        baseline_version = vm.registry.get('baseline_version')
-        meta = vm.get_version_meta(baseline_version)
-        selected_features = meta.get('feature_engineer_config', {}).get('selected_features', [])
+        meta = vm.get_version_meta(target_version) or {}
+        selected_features = meta.get("feature_engineer_config", {}).get("selected_features", [])
+        if not selected_features:
+            return _load_old_model(f"版本 {target_version} 元数据缺 selected_features")
+
+        # checksum 比对：指针与实际 artifact 不一致 → 告警不阻塞
+        if pointer_checksum:
+            actual = _sha256_file(os.path.join(vm.versions_dir, target_version, "model.pkl"))
+            if actual and actual != pointer_checksum:
+                print(
+                    f"[ML推理] ⚠ checksum 不一致: {target_version} "
+                    f"pointer={pointer_checksum[:12]} actual={actual[:12]}",
+                    flush=True,
+                )
 
         # 创建特征工程师
-        fe = modules['TrendFeatureEngineer'](
-            views=['direction', 'change', 'velocity', 'power', 'hierarchy']
+        fe = modules["TrendFeatureEngineer"](
+            views=["direction", "change", "velocity", "power", "hierarchy"]
         )
         fe.feature_names = selected_features
 
-        _model_cache['model'] = model
-        _model_cache['fe'] = fe
-        _model_cache['features'] = selected_features
+        _model_cache["model"] = model
+        _model_cache["fe"] = fe
+        _model_cache["features"] = selected_features
+        _model_cache["version"] = target_version
         _last_load_time = now
 
-        print(f"[ML推理] 基线模型加载成功: {baseline_version}, 特征数={len(selected_features)}", flush=True)
+        print(
+            f"[ML推理] 模型加载成功: {target_version}, 特征数={len(selected_features)}", flush=True
+        )
         return model, fe, selected_features
 
     except Exception as e:
-        print(f"[ML推理] 模型加载失败: {e}", flush=True)
-        return None, None, None
+        return _load_old_model(f"模型加载失败: {e}")
 
 
 def _fetch_candles(inst_id: str, bar: str = "1D", limit: int = 300) -> "pd.DataFrame":
     """获取K线数据并转为DataFrame"""
     try:
-        from data.market_data import fetch_candles
         import pandas as pd
+        from data.market_data import fetch_candles
 
         candles = fetch_candles(inst_id, bar, limit)
         if not candles:
             return None
 
         df = pd.DataFrame(candles)
-        df['date'] = pd.to_datetime(df['ts'], unit='ms')
-        df = df.rename(columns={'o': 'open', 'h': 'high', 'l': 'low', 'c': 'close', 'vol': 'volume'})
-        df = df[['date', 'open', 'high', 'low', 'close', 'volume']].sort_values('date').reset_index(drop=True)
+        df["date"] = pd.to_datetime(df["ts"], unit="ms")
+        df = df.rename(
+            columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+        )
+        df = (
+            df[["date", "open", "high", "low", "close", "volume"]]
+            .sort_values("date")
+            .reset_index(drop=True)
+        )
         return df
 
     except Exception as e:
@@ -280,7 +357,7 @@ if __name__ == "__main__":
     print(f"  置信度: {signal['confidence']}")
     print(f"  上涨概率: {signal['prob_up']}")
     print(f"  下跌概率: {signal['prob_down']}")
-    if signal.get('error'):
+    if signal.get("error"):
         print(f"  错误: {signal['error']}")
 
     # 3. 模拟决策调整

@@ -9,6 +9,12 @@
 6. 性能退化检测：监控新数据上的表现，触发自动回退
 
 参考: 软件版本管理思想, MLOps最佳实践, 蓝绿部署思想
+
+边界（SPEC-three-tier-collab §4.5 双轨登记）:
+    本模块只管理 12-ML 研究/信号线（none→staging→production→rejected→archived），
+    消费方为 experiments/ab-trading/ml_inference.py 的三屏 ML 信号。
+    实盘交易模型走 14-V15经典马丁策略/incremental_trainer.py（shadow→ab_eval→live，
+    状态文件 data/incremental_trainer_state.json）——两条轨道互不写入，禁止跨轨 promote。
 """
 
 import hashlib
