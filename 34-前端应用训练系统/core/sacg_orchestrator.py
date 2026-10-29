@@ -39,6 +39,13 @@ from core.sufficiency import (
     evaluate_entry_sufficiency,
     evaluate_plan_sufficiency,
 )
+from core.event_emitter import emit_event
+import uuid
+
+
+def _gen_trace_id() -> str:
+    return uuid.uuid4().hex[:16]
+
 
 STAGE_S = "S"
 STAGE_A = "A"
@@ -551,6 +558,10 @@ class SACGOrchestrator:
             }
 
         errors: List[str] = []
+        _trace_id = _gen_trace_id()
+        emit_event(_trace_id, "dreamos", "orchestrator", "sacg",
+                   "graph_execute.start", "success",
+                   meta={"l1_intent_hint": l1_intent_hint})
 
         # ── S 层：认知驱动规划入口（SPEC-v1.4 充分性状态机） ──
         action = "PROCEED"
@@ -563,6 +574,10 @@ class SACGOrchestrator:
         except Exception as e:
             errors.append(f"{STAGE_S}:{type(e).__name__}:{e}")
             plan = {"intent_hint": l1_intent_hint, "plan_items": []}
+        emit_event(_trace_id, "dreamos", STAGE_S, "s_planner",
+                   "layer_complete", "success" if not errors else "failure",
+                   error=None if not errors else errors[-1],
+                   meta={"action": action})
 
         # 新契约解包（SLayerPlanner）；旧契约裸 plan dict 直接透传
         if isinstance(plan, dict) and "plan" in plan and "action" in plan:
@@ -606,6 +621,9 @@ class SACGOrchestrator:
         except Exception as e:
             errors.append(f"{STAGE_A}:{type(e).__name__}:{e}")
             nodes = []
+        emit_event(_trace_id, "dreamos", STAGE_A, "a_decomposer",
+                   "layer_complete", "success" if nodes else "failure",
+                   meta={"node_count": len(nodes)})
 
         # ── C 层：逐节点执行（节点级异常隔离，不阻断其余节点） ──
         # P3.2: S 层消费的 hint 透传到 C 层节点决策门
@@ -625,6 +643,12 @@ class SACGOrchestrator:
                     "detail": None,
                     "error": str(e),
                 })
+                emit_event(_trace_id, "dreamos", STAGE_C, node_id,
+                           "node_execute", "failure", error=str(e))
+            else:
+                emit_event(_trace_id, "dreamos", STAGE_C,
+                           str(node.get("node_id") or "N?"),
+                           "node_execute", "success")
 
         # ── A 层验收：C 层执行结果回传 OKR 节点验收（P3.4，对账式逐节点核对） ──
         try:
@@ -643,6 +667,12 @@ class SACGOrchestrator:
         except Exception as e:
             errors.append(f"{STAGE_G}:{type(e).__name__}:{e}")
             closure = {"compressed": False, "settled": False}
+        emit_event(_trace_id, "dreamos", STAGE_G, "g_closer",
+                   "layer_complete", "success" if closure.get("settled") else "failure",
+                   meta={"sediment_types": [s.get("type") for s in (closure.get("sediments") or [])]})
+        emit_event(_trace_id, "dreamos", "orchestrator", "sacg",
+                   "graph_execute.end", "success" if not errors else "partial",
+                   error=None if not errors else errors[-1])
 
         return {
             "route": L2_HANDOFF,
