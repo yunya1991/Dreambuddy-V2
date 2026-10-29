@@ -11,15 +11,29 @@
 参考: 软件版本管理思想, MLOps最佳实践, 蓝绿部署思想
 """
 
-from typing import Dict, List, Optional, Any, Tuple
-import os
+import hashlib
 import json
-import time
-import shutil
+import os
 import pickle
-import numpy as np
-import pandas as pd
+import shutil
+import time
+from typing import Any, Dict, List, Optional, Tuple
+
 from .models import MLModel, create_model
+
+# === 模型生命周期状态机（SPEC P0-2 / 门禁 G7）===
+# none(新训练未评估) → staging(eval通过待promote) → production → archived
+#                     └──→ rejected(eval未通过) └──→ archived
+STATE_NONE = "none"
+STATE_STAGING = "staging"
+STATE_PRODUCTION = "production"
+STATE_REJECTED = "rejected"
+STATE_ARCHIVED = "archived"
+VALID_STATES = {STATE_NONE, STATE_STAGING, STATE_PRODUCTION, STATE_REJECTED, STATE_ARCHIVED}
+
+# eval 门禁以 walk_forward 为主（G7），允许相对生产版最多下降 EVAL_TOLERANCE
+EVAL_METRIC = "walk_forward_roc_auc"
+EVAL_TOLERANCE = 0.02
 
 
 class ModelVersionManager:
@@ -47,48 +61,144 @@ class ModelVersionManager:
 
     def __init__(self, base_dir: str):
         self.base_dir = base_dir
-        self.versions_dir = os.path.join(base_dir, 'versions')
-        self.current_dir = os.path.join(base_dir, 'current')
-        self.baseline_dir = os.path.join(base_dir, 'baseline')
-        self.perf_logs_dir = os.path.join(base_dir, 'perf_logs')
+        self.versions_dir = os.path.join(base_dir, "versions")
+        self.current_dir = os.path.join(base_dir, "current")
+        self.baseline_dir = os.path.join(base_dir, "baseline")
+        self.perf_logs_dir = os.path.join(base_dir, "perf_logs")
 
         os.makedirs(self.versions_dir, exist_ok=True)
         os.makedirs(self.current_dir, exist_ok=True)
         os.makedirs(self.baseline_dir, exist_ok=True)
         os.makedirs(self.perf_logs_dir, exist_ok=True)
 
-        self.registry_path = os.path.join(base_dir, 'registry.json')
-        self.perf_history_path = os.path.join(self.perf_logs_dir, 'perf_history.json')
+        self.registry_path = os.path.join(base_dir, "registry.json")
+        self.perf_history_path = os.path.join(self.perf_logs_dir, "perf_history.json")
+        # 热加载指针（SPEC 4.3）：服务轮询本文件，版本变化 → 下一周期 reload
+        self.current_json_path = os.path.join(base_dir, "current.json")
 
         self._load_registry()
         self._load_perf_history()
+        self._normalize_version_states()
 
     def _load_registry(self):
         if os.path.exists(self.registry_path):
-            with open(self.registry_path, 'r') as f:
+            with open(self.registry_path, "r") as f:
                 self.registry = json.load(f)
         else:
             self.registry = {
-                'versions': [],
-                'current_version': None,
-                'baseline_version': None,
-                'next_version': 1,
+                "versions": [],
+                "current_version": None,
+                "baseline_version": None,
+                "next_version": 1,
             }
 
     def _save_registry(self):
-        with open(self.registry_path, 'w') as f:
+        with open(self.registry_path, "w") as f:
             json.dump(self.registry, f, indent=2, ensure_ascii=False)
 
     def _load_perf_history(self):
         if os.path.exists(self.perf_history_path):
-            with open(self.perf_history_path, 'r') as f:
+            with open(self.perf_history_path, "r") as f:
                 self.perf_history = json.load(f)
         else:
-            self.perf_history = {'records': []}
+            self.perf_history = {"records": []}
 
     def _save_perf_history(self):
-        with open(self.perf_history_path, 'w') as f:
+        with open(self.perf_history_path, "w") as f:
             json.dump(self.perf_history, f, indent=2, ensure_ascii=False)
+
+    def _normalize_version_states(self):
+        """向后兼容：为旧 registry（无 state 字段）补齐生命周期字段并落盘一次。"""
+        changed = False
+        current = self.registry.get("current_version")
+        for v in self.registry["versions"]:
+            if "state" not in v or v.get("state") not in VALID_STATES:
+                v["state"] = STATE_PRODUCTION if v.get("version") == current else STATE_ARCHIVED
+                changed = True
+            if "eval_gate" not in v:
+                v["eval_gate"] = None
+                changed = True
+            if v.get("promoted_at") is None and v["state"] == STATE_PRODUCTION:
+                # 历史生产版本的晋升时间以 created_at 近似（无更早记录可用）
+                v["promoted_at"] = v.get("created_at")
+                changed = True
+            v.setdefault("promoted_at", None)
+        if changed:
+            self._save_registry()
+
+    def _write_current_pointer(self, version_id: str, reason: str = "promote") -> None:
+        """原子写 current.json（热加载指针，SPEC 4.3）。"""
+        model_path = os.path.join(self.versions_dir, version_id, "model.pkl")
+        checksum = None
+        if os.path.exists(model_path):
+            with open(model_path, "rb") as f:
+                checksum = hashlib.sha256(f.read()).hexdigest()
+        payload = {
+            "version": version_id,
+            "checksum": checksum,
+            "reason": reason,
+            "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "path": os.path.join(self.current_dir, "model.pkl"),
+        }
+        tmp_path = self.current_json_path + ".tmp"
+        with open(tmp_path, "w") as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+        os.replace(tmp_path, self.current_json_path)
+
+    def evaluate(
+        self,
+        version_id: str,
+        metric: str = EVAL_METRIC,
+        tolerance: float = EVAL_TOLERANCE,
+    ) -> Dict[str, Any]:
+        """G7 eval：新版本 vs 生产版对比，达标 → staging，不达标 → rejected。
+
+        以 walk_forward 为主。无生产版时直接判通过（首个模型）。
+        返回 eval_gate 字典。
+        """
+        version_info = self._get_version_info(version_id)
+        if version_info is None:
+            raise KeyError(f"版本不存在: {version_id}")
+
+        prod_version = self.registry.get("current_version")
+        perf = version_info.get("performance", {})
+        # 兼容旧训练脚本：优先 walk_forward，缺失时按顺序回落到既有指标键
+        candidates = [metric]
+        if metric == EVAL_METRIC:
+            candidates += ["test_roc_auc", "roc_auc", "test_accuracy", "accuracy"]
+        used_metric = next((m for m in candidates if m in perf), metric)
+        new_score = perf.get(used_metric, 0)
+        prod_score = None
+        if prod_version and prod_version != version_id:
+            prod_info = self._get_version_info(prod_version)
+            if prod_info:
+                prod_perf = prod_info.get("performance", {})
+                if used_metric in prod_perf:
+                    prod_score = prod_perf[used_metric]
+
+        if prod_score is None:
+            passed = new_score > 0
+            vs_production = f"no production baseline, {used_metric}={new_score:.4f}"
+        else:
+            passed = new_score >= prod_score - tolerance
+            vs_production = f"{new_score - prod_score:+.4f} {used_metric} (vs {prod_version})"
+
+        gate = {
+            "passed": passed,
+            "metric": used_metric,
+            "value": new_score,
+            "production_version": prod_version,
+            "production_value": prod_score,
+            "tolerance": tolerance,
+            "vs_production": vs_production,
+            "overfit_gap": perf.get("overfit_gap_accuracy"),
+            "evaluated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        version_info["eval_gate"] = gate
+        version_info["state"] = STATE_STAGING if passed else STATE_REJECTED
+        self._save_registry()
+        print(f"[版本管理] eval {version_id}: {vs_production} → {version_info['state']}")
+        return gate
 
     def save_version(
         self,
@@ -110,51 +220,58 @@ class ModelVersionManager:
         返回:
             version_id (如 'v3')
         """
-        version_num = self.registry['next_version']
-        version_id = f'v{version_num}'
+        version_num = self.registry["next_version"]
+        version_id = f"v{version_num}"
         version_dir = os.path.join(self.versions_dir, version_id)
         os.makedirs(version_dir, exist_ok=True)
 
         # 保存模型
-        model_path = os.path.join(version_dir, 'model.pkl')
+        model_path = os.path.join(version_dir, "model.pkl")
         model.save(model_path)
 
         # 保存元数据
         meta = {
-            'version': version_id,
-            'created_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'model_type': getattr(model, 'name', type(model).__name__),
-            'model_params': getattr(model, 'params', {}),
-            'performance': performance,
-            'train_date_range': [str(d) for d in train_date_range],
-            'feature_names': model.feature_names,
-            'num_features': len(model.feature_names),
-            'feature_engineer_config': feature_engineer_config or {},
-            'metadata': metadata or {},
+            "version": version_id,
+            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "model_type": getattr(model, "name", type(model).__name__),
+            "model_params": getattr(model, "params", {}),
+            "performance": performance,
+            "train_date_range": [str(d) for d in train_date_range],
+            "feature_names": model.feature_names,
+            "num_features": len(model.feature_names),
+            "feature_engineer_config": feature_engineer_config or {},
+            "metadata": metadata or {},
         }
 
-        with open(os.path.join(version_dir, 'meta.json'), 'w') as f:
+        with open(os.path.join(version_dir, "meta.json"), "w") as f:
             json.dump(meta, f, indent=2, ensure_ascii=False)
 
         # 更新注册表
-        self.registry['versions'].append({
-            'version': version_id,
-            'created_at': meta['created_at'],
-            'performance': performance,
-            'num_features': len(model.feature_names),
-        })
-        self.registry['next_version'] = version_num + 1
+        self.registry["versions"].append(
+            {
+                "version": version_id,
+                "created_at": meta["created_at"],
+                "performance": performance,
+                "num_features": len(model.feature_names),
+                "state": STATE_NONE,  # 待 eval（G7）
+                "eval_gate": None,
+                "promoted_at": None,
+            }
+        )
+        self.registry["next_version"] = version_num + 1
         self._save_registry()
 
-        print(f"[版本管理] 保存新版本 {version_id}: "
-              f"AUC={performance.get('roc_auc', 0):.4f}, "
-              f"特征数={len(model.feature_names)}")
+        print(
+            f"[版本管理] 保存新版本 {version_id}: "
+            f"AUC={performance.get('roc_auc', 0):.4f}, "
+            f"特征数={len(model.feature_names)}"
+        )
         return version_id
 
     def load_version(self, version_id: str) -> MLModel:
         """加载指定版本的模型"""
         version_dir = os.path.join(self.versions_dir, version_id)
-        model_path = os.path.join(version_dir, 'model.pkl')
+        model_path = os.path.join(version_dir, "model.pkl")
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"模型版本不存在: {version_id}")
         return _load_model_from_path(model_path)
@@ -162,39 +279,63 @@ class ModelVersionManager:
     def get_version_meta(self, version_id: str) -> Optional[Dict]:
         """获取版本元数据"""
         version_dir = os.path.join(self.versions_dir, version_id)
-        meta_path = os.path.join(version_dir, 'meta.json')
+        meta_path = os.path.join(version_dir, "meta.json")
         if not os.path.exists(meta_path):
             return None
-        with open(meta_path, 'r') as f:
+        with open(meta_path, "r") as f:
             return json.load(f)
 
-    def promote(self, version_id: str, metric: str = 'roc_auc') -> bool:
-        """将某个版本升级为当前版本
+    def promote(self, version_id: str, metric: str = "roc_auc", force: bool = False) -> bool:
+        """将 staging 版本晋升为 production（G7 门禁：必须已 eval 通过）
 
-        只有性能优于当前版本时才升级
+        `metric` 参数保留以兼容旧调用，性能判定统一由 eval_gate 负责（不再二次拦截）。
         """
         version_info = self._get_version_info(version_id)
         if version_info is None:
+            print(f"[版本管理] 版本不存在: {version_id}")
             return False
 
-        current = self.registry.get('current_version')
-        if current:
-            current_info = self._get_version_info(current)
-            if current_info and version_info['performance'].get(metric, 0) <= current_info['performance'].get(metric, 0):
-                print(f"[版本管理] {version_id} 性能未优于当前版本 {current}，不升级")
+        state = version_info.get("state")
+        if state == STATE_NONE and not force:
+            # 兼容旧训练流程（save_version 后直接 promote）：先自动过 G7 eval
+            gate = self.evaluate(version_id)
+            if not gate["passed"]:
+                print(
+                    f"[版本管理] {version_id} 自动 eval 未通过（{gate['vs_production']}），不晋升"
+                )
                 return False
+            state = version_info.get("state")
 
-        # 升级
+        if state != STATE_STAGING and not force:
+            print(
+                f"[版本管理] {version_id} 当前 state={state}，"
+                f"需先 eval 通过（staging）再 promote；确需强制请传 force=True"
+            )
+            return False
+
+        old_production = self.registry.get("current_version")
         version_dir = os.path.join(self.versions_dir, version_id)
-        for fname in ['model.pkl', 'meta.json']:
+        for fname in ["model.pkl", "meta.json"]:
             src = os.path.join(version_dir, fname)
             dst = os.path.join(self.current_dir, fname)
             if os.path.exists(src):
                 shutil.copy2(src, dst)
 
-        self.registry['current_version'] = version_id
+        # 状态机流转：新版本 → production，旧生产版 → archived
+        if old_production and old_production != version_id:
+            old_info = self._get_version_info(old_production)
+            if old_info:
+                old_info["state"] = STATE_ARCHIVED
+        version_info["state"] = STATE_PRODUCTION
+        version_info["promoted_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        self.registry["current_version"] = version_id
         self._save_registry()
-        print(f"[版本管理] 升级 {version_id} 为当前版本")
+        self._write_current_pointer(version_id, reason="promote")
+
+        print(
+            f"[版本管理] 晋升 {version_id} 为生产版本"
+            f"{f'（{old_production} → archived）' if old_production else ''}"
+        )
         return True
 
     def set_baseline(self, version_id: str) -> bool:
@@ -207,27 +348,27 @@ class ModelVersionManager:
             print(f"[版本管理] 版本 {version_id} 不存在，无法设为基线")
             return False
 
-        for fname in ['model.pkl', 'meta.json']:
+        for fname in ["model.pkl", "meta.json"]:
             src = os.path.join(version_dir, fname)
             dst = os.path.join(self.baseline_dir, fname)
             if os.path.exists(src):
                 shutil.copy2(src, dst)
 
-        self.registry['baseline_version'] = version_id
+        self.registry["baseline_version"] = version_id
         self._save_registry()
         print(f"[版本管理] 设置 {version_id} 为基线版本")
         return True
 
     def load_current(self) -> Optional[MLModel]:
         """加载当前生产版本模型"""
-        model_path = os.path.join(self.current_dir, 'model.pkl')
+        model_path = os.path.join(self.current_dir, "model.pkl")
         if not os.path.exists(model_path):
             return None
         return _load_model_from_path(model_path)
 
     def load_baseline(self) -> Optional[MLModel]:
         """加载基线版本模型"""
-        model_path = os.path.join(self.baseline_dir, 'model.pkl')
+        model_path = os.path.join(self.baseline_dir, "model.pkl")
         if not os.path.exists(model_path):
             return None
         return _load_model_from_path(model_path)
@@ -241,49 +382,57 @@ class ModelVersionManager:
         返回:
             回退后的版本号，失败返回None
         """
-        current = self.registry.get('current_version')
+        current = self.registry.get("current_version")
         if not current:
             print("[版本管理] 当前无版本，无法回退")
             return None
 
         target_version = None
         if to_baseline:
-            target_version = self.registry.get('baseline_version')
+            target_version = self.registry.get("baseline_version")
             if not target_version:
                 print("[版本管理] 无基线版本，无法回退")
                 return None
         else:
             # 回退到上一版本（registry中前一个版本）
-            versions = self.registry['versions']
+            versions = self.registry["versions"]
             current_idx = -1
             for i, v in enumerate(versions):
-                if v['version'] == current:
+                if v["version"] == current:
                     current_idx = i
                     break
             if current_idx <= 0:
                 print("[版本管理] 已是第一个版本，无法回退")
                 return None
-            target_version = versions[current_idx - 1]['version']
+            target_version = versions[current_idx - 1]["version"]
 
         # 执行回退
         target_dir = os.path.join(self.versions_dir, target_version)
-        for fname in ['model.pkl', 'meta.json']:
+        for fname in ["model.pkl", "meta.json"]:
             src = os.path.join(target_dir, fname)
             dst = os.path.join(self.current_dir, fname)
             if os.path.exists(src):
                 shutil.copy2(src, dst)
 
-        self.registry['current_version'] = target_version
+        self.registry["current_version"] = target_version
+        target_info = self._get_version_info(target_version)
+        if target_info:
+            target_info["state"] = STATE_PRODUCTION
+            target_info["promoted_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        current_info = self._get_version_info(current)
+        if current_info and current != target_version:
+            current_info["state"] = STATE_ARCHIVED
         self._save_registry()
+        self._write_current_pointer(target_version, reason="rollback")
         print(f"[版本管理] 回退: {current} → {target_version}")
         return target_version
 
     def check_degradation(
         self,
         new_performance: Dict[str, float],
-        metric: str = 'roc_auc',
+        metric: str = "roc_auc",
         threshold: float = 0.05,
-        compare_to: str = 'current',
+        compare_to: str = "current",
     ) -> Tuple[bool, float]:
         """检测性能退化
 
@@ -296,10 +445,10 @@ class ModelVersionManager:
         返回:
             (是否退化, 退化幅度) - 退化幅度 = 参考值 - 新值（正数表示退化）
         """
-        if compare_to == 'baseline':
-            ref_version = self.registry.get('baseline_version')
+        if compare_to == "baseline":
+            ref_version = self.registry.get("baseline_version")
         else:
-            ref_version = self.registry.get('current_version')
+            ref_version = self.registry.get("current_version")
 
         if not ref_version:
             return False, 0.0
@@ -308,7 +457,7 @@ class ModelVersionManager:
         if not ref_info:
             return False, 0.0
 
-        ref_score = ref_info['performance'].get(metric, 0)
+        ref_score = ref_info["performance"].get(metric, 0)
         new_score = new_performance.get(metric, 0)
         degradation = ref_score - new_score
 
@@ -331,29 +480,29 @@ class ModelVersionManager:
             date_range: (start_date, end_date)
         """
         record = {
-            'version': version_id,
-            'period': period,
-            'date_range': [str(d) for d in date_range],
-            'performance': performance,
-            'logged_at': time.strftime('%Y-%m-%d %H:%M:%S'),
+            "version": version_id,
+            "period": period,
+            "date_range": [str(d) for d in date_range],
+            "performance": performance,
+            "logged_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
-        self.perf_history['records'].append(record)
+        self.perf_history["records"].append(record)
         self._save_perf_history()
 
-    def get_best_version(self, metric: str = 'roc_auc') -> Optional[str]:
+    def get_best_version(self, metric: str = "roc_auc") -> Optional[str]:
         """获取性能最好的版本"""
         best_ver = None
-        best_score = -float('inf')
-        for v in self.registry['versions']:
-            score = v.get('performance', {}).get(metric, 0)
+        best_score = -float("inf")
+        for v in self.registry["versions"]:
+            score = v.get("performance", {}).get(metric, 0)
             if score > best_score:
                 best_score = score
-                best_ver = v['version']
+                best_ver = v["version"]
         return best_ver
 
     def list_versions(self, limit: int = 10) -> List[Dict]:
         """列出最近N个版本"""
-        versions = self.registry['versions'][-limit:]
+        versions = self.registry["versions"][-limit:]
         return list(reversed(versions))
 
     def print_status(self):
@@ -364,59 +513,119 @@ class ModelVersionManager:
         print(f"  当前版本:    {self.registry.get('current_version', '无')}")
         print(f"  基线版本:    {self.registry.get('baseline_version', '无')}")
         print(f"  总版本数:    {len(self.registry['versions'])}")
-        print(f"\n  版本列表 (最近10个):")
+        print("\n  版本列表 (最近10个):")
         for v in self.list_versions(10):
-            perf = v.get('performance', {})
-            auc = perf.get('roc_auc', 0)
-            acc = perf.get('accuracy', 0)
+            perf = v.get("performance", {})
+            auc = perf.get("roc_auc", 0)
+            acc = perf.get("accuracy", 0)
             marker = ""
-            if v['version'] == self.registry.get('current_version'):
+            if v["version"] == self.registry.get("current_version"):
                 marker = " [当前]"
-            if v['version'] == self.registry.get('baseline_version'):
+            if v["version"] == self.registry.get("baseline_version"):
                 marker += " [基线]"
-            print(f"    {v['version']:<6} AUC={auc:.4f}  Acc={acc:.4f}  "
-                  f"{v['created_at']}{marker}")
+            print(
+                f"    {v['version']:<6} state={v.get('state', '?'):<10} AUC={auc:.4f}  "
+                f"Acc={acc:.4f}  {v['created_at']}{marker}"
+            )
         print("=" * 60 + "\n")
 
     def _get_version_info(self, version_id: str) -> Optional[Dict]:
-        for v in self.registry['versions']:
-            if v['version'] == version_id:
+        for v in self.registry["versions"]:
+            if v["version"] == version_id:
                 return v
         return None
 
 
 def _load_model_from_path(path: str) -> MLModel:
     """从路径加载模型（自动检测类型）"""
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         data = pickle.load(f)
 
-    model_type = 'lightgbm'
-    params = data.get('params', {})
+    model_type = "lightgbm"
+    params = data.get("params", {})
 
-    if data.get('model_type') == 'lstm':
-        model_type = 'lstm'
+    if data.get("model_type") == "lstm":
+        model_type = "lstm"
     elif params:
-        if 'num_leaves' in params or 'objective' in params:
-            model_type = 'lightgbm'
-        elif 'booster' in params:
-            model_type = 'xgboost'
-        elif 'C' in params:
-            model_type = 'logistic'
+        if "num_leaves" in params or "objective" in params:
+            model_type = "lightgbm"
+        elif "booster" in params:
+            model_type = "xgboost"
+        elif "C" in params:
+            model_type = "logistic"
 
-    if model_type == 'lightgbm':
+    if model_type == "lightgbm":
         from .models import LightGBMModel
+
         return LightGBMModel.load(path)
-    elif model_type == 'xgboost':
+    elif model_type == "xgboost":
         from .models import XGBoostModel
+
         return XGBoostModel.load(path)
-    elif model_type == 'logistic':
+    elif model_type == "logistic":
         from .models import LogisticModel
+
         return LogisticModel.load(path)
-    elif model_type == 'lstm':
+    elif model_type == "lstm":
         from .models import LSTMModel
+
         return LSTMModel.load(path)
     else:
         model = create_model(model_type, params)
-        if 'feature_names' in data:
-            model.feature_names = data['feature_names']
+        if "feature_names" in data:
+            model.feature_names = data["feature_names"]
         return model
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    """生命周期 CLI（G7 eval / promote / rollback）。
+
+    用法（在 12-三屏趋势系统/ 下）：
+        python3 -m ml.version_manager status
+        python3 -m ml.version_manager eval v2
+        python3 -m ml.version_manager promote v2
+        python3 -m ml.version_manager rollback --to-baseline
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="模型注册表生命周期管理（SPEC P0-2）")
+    parser.add_argument("--models-dir", default=os.path.join(os.path.dirname(__file__), "models"))
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("status", help="打印注册表状态")
+
+    p_eval = sub.add_parser("eval", help="新版本 vs 生产版对比（G7），通过→staging，否则→rejected")
+    p_eval.add_argument("version")
+    p_eval.add_argument("--metric", default=EVAL_METRIC)
+    p_eval.add_argument("--tolerance", type=float, default=EVAL_TOLERANCE)
+
+    p_promote = sub.add_parser("promote", help="staging → production，旧版 → archived")
+    p_promote.add_argument("version")
+    p_promote.add_argument(
+        "--force", action="store_true", help="跳过 staging 前置检查（仅限事故恢复）"
+    )
+
+    p_rollback = sub.add_parser("rollback", help="回退到上一版或基线版")
+    p_rollback.add_argument("--to-baseline", action="store_true")
+
+    args = parser.parse_args(argv)
+    vm = ModelVersionManager(args.models_dir)
+
+    if args.cmd == "status":
+        vm.print_status()
+        return 0
+    if args.cmd == "eval":
+        gate = vm.evaluate(args.version, metric=args.metric, tolerance=args.tolerance)
+        return 0 if gate["passed"] else 3
+    if args.cmd == "promote":
+        return 0 if vm.promote(args.version, force=args.force) else 2
+    if args.cmd == "rollback":
+        return 0 if vm.rollback(to_baseline=args.to_baseline) else 2
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())

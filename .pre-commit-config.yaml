@@ -1,63 +1,48 @@
+# G2 pre-commit 门禁（SPEC P0-3）
+#
+# 原则：演进现有资产，不引入新框架。工具与 .github/workflows/ci.yml 保持一致（ruff + black）。
+#
+# 为什么全部是 `language: system`：
+#   本机无法访问 files.pythonhosted.org（2026-10-29 实测 pre-commit install-hooks 时 pip 读超时），
+#   远端 repo 型 hook（ruff-pre-commit / black-pre-commit-mirror / pre-commit-hooks 等）无法建立隔离环境，
+#   会导致 commit 永久阻塞。因此统一改用本地已安装的 ruff / black（`python3 -m` 形式，避免 PATH 差异）。
+#
+# 只查 staged：pre-commit 默认只把暂存区文件名传给 hook，不做全仓库扫描（大仓库 lint 慢）。
+# 手动全量校验请直接跑 CI 等价命令：`ruff check . && black --check .`
+#
+# 安装：`pre-commit install`（写入 .git/hooks/pre-commit，保留已有的 post-commit 自进化审计）
+# 手动执行：`pre-commit run`（仅 staged） / `pre-commit run --all-files`（全量，谨慎）
+
+default_stages: [pre-commit]
+
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
-    hooks:
-      - id: ruff
-        name: ruff (lint)
-        args: [--fix]
-        language_version: python3
-        types_or: [python, pyi]
-      - id: ruff-format
-        name: ruff (format)
-        language_version: python3
-        types_or: [python, pyi]
-
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.8.0
-    hooks:
-      - id: black
-        name: black
-        language_version: python3
-        types_or: [python, pyi]
-
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: trailing-whitespace
-        name: trim trailing whitespace
-      - id: end-of-file-fixer
-        name: fix end of files
-      - id: check-yaml
-        name: check yaml
-      - id: check-json
-        name: check json
-      - id: check-added-large-files
-        name: check for added large files
-        args: ['--maxkb=5000']
-      - id: check-case-conflict
-        name: check case conflicts
-      - id: check-merge-conflict
-        name: check for merge conflicts
-      - id: detect-private-key
-        name: detect private keys
-
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0
-    hooks:
-      - id: python-check-blanket-noqa
-        name: check blanket noqa
-      - id: python-check-mock-methods
-        name: check mock methods
-      - id: python-no-eval
-        name: no eval()
-      - id: python-use-type-annotations
-        name: use type annotations
-
   - repo: local
     hooks:
+      - id: ruff-lint
+        name: ruff (lint, staged only)
+        entry: python3 -m ruff check --force-exclude --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: black
+        name: black (format check, staged only)
+        entry: python3 -m black --check
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: secret-scan
+        name: secret scan (staged only)
+        entry: python3 scripts/precommit_secret_scan.py
+        language: system
+        pass_filenames: true
+        require_serial: true
+
+      # === 以下为手动触发（stages: manual），不参与 commit ===
       - id: pytest-quick
         name: pytest (quick)
-        entry: python -m pytest -x -q -m "not slow and not integration and not e2e and not stress"
+        entry: python3 -m pytest -x -q -m "not slow and not integration and not e2e and not stress"
         language: system
         types: [python]
         pass_filenames: false
@@ -73,7 +58,7 @@ repos:
 
       - id: engine-similarity
         name: engine similarity check (advisory)
-        entry: python '33-REA逆向解析工程/scripts/engine_similarity_check.py' --threshold 0.7
+        entry: python3 '33-REA逆向解析工程/scripts/engine_similarity_check.py' --threshold 0.7
         language: system
         types: [python]
         pass_filenames: false

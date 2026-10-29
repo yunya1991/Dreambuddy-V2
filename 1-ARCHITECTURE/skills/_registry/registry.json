@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "total_count": 185,
   "skills": [
     {
@@ -28,7 +28,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-arch-research-orchestrator",
@@ -78,7 +84,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-research-workflow",
@@ -143,7 +155,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-framework-research",
@@ -188,7 +206,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-scattered-file-cleanup",
@@ -216,7 +238,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-genome-factor-workflow",
@@ -261,7 +289,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-skill-index-governance",
@@ -314,7 +348,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "nature-shared",
@@ -345,7 +385,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-uncertainty-reasoning",
@@ -389,7 +433,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-peer-review",
@@ -431,7 +479,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "debate-reflection-methodology",
@@ -466,7 +518,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-cross-disciplinary",
@@ -509,7 +566,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "debate-classic-methodology-—-oxford-式经典辩论赛制",
@@ -537,7 +598,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-doc-sync-workflow",
@@ -585,7 +652,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-module-post-dev-verify-workflow",
@@ -628,7 +701,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "nature-figure",
@@ -671,7 +750,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-code-commit-sync-workflow",
@@ -722,7 +805,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "data-troubleshoot",
@@ -750,7 +839,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-feature-landing-workflow",
@@ -798,7 +892,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-completion-evolution-workflow",
@@ -851,7 +951,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-subagent-tdd-workflow",
@@ -900,7 +1006,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-qwen-eval-collab",
@@ -965,7 +1077,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-eng-mgmt-workflow",
@@ -1028,7 +1146,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "knowledge-ingest",
@@ -1070,7 +1194,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-self-iteration-workflow",
@@ -1098,7 +1227,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-statistics-check",
@@ -1140,7 +1275,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-bugfix-workflow",
@@ -1203,7 +1342,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "safe-service-restart",
@@ -1231,7 +1376,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-code-sync-orphan-scan-workflow",
@@ -1276,7 +1427,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "tee-red-green-progress",
@@ -1337,7 +1494,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "dream-science-paper-writing",
@@ -1379,7 +1541,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-experiment-design",
@@ -1420,7 +1586,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "drawio",
@@ -1459,7 +1629,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "evolution-case-ingest",
@@ -1487,7 +1661,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-orchestrator",
@@ -1536,7 +1715,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-code-deploy-pipeline",
@@ -1588,7 +1773,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-arch-gap-analysis-workflow",
@@ -1640,7 +1831,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "debate-con-side",
@@ -1674,7 +1871,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-backtest-verify",
@@ -1719,7 +1921,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "skill-creator",
@@ -1763,7 +1971,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "dream-arch-collaboration-workflow",
@@ -1791,7 +2004,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "debate-topic-selector",
@@ -1830,7 +2049,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "wiki-ingest-trigger",
@@ -1869,7 +2094,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-tdd-dev-workflow",
@@ -1931,7 +2161,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-classic-pipeline-tdd-migration",
@@ -1959,7 +2195,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "debate-pro-side",
@@ -1993,7 +2235,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-hypothesis-verification",
@@ -2037,7 +2284,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-literature-review",
@@ -2080,7 +2331,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-acceptance-verify",
@@ -2125,7 +2380,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dreambuddy-os",
@@ -2174,7 +2435,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "debate-adjudication-methodology",
@@ -2208,7 +2475,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-framework-research",
@@ -2253,7 +2525,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-uncertainty-reasoning",
@@ -2297,7 +2573,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-peer-review",
@@ -2339,7 +2619,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-cross-disciplinary",
@@ -2382,7 +2666,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "nature-figure",
@@ -2425,7 +2713,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-statistics-check",
@@ -2467,7 +2759,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-paper-writing",
@@ -2509,7 +2805,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-experiment-design",
@@ -2550,7 +2850,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "drawio",
@@ -2589,7 +2893,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-orchestrator",
@@ -2638,7 +2946,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-science-hypothesis-verification",
@@ -2682,7 +2996,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-science-literature-review",
@@ -2725,7 +3043,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-screen1-first",
@@ -2753,7 +3075,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-knowledge",
@@ -2781,7 +3107,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-strategy-research",
@@ -2809,7 +3139,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-screen3-third",
@@ -2837,7 +3172,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-data-analysis",
@@ -2865,7 +3204,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-doc-sync-gate",
@@ -2893,7 +3238,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "A7-practice-theory",
@@ -2921,7 +3272,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-strategy-designer",
@@ -2959,7 +3314,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-oneirology",
@@ -2987,7 +3347,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-tactical-executor",
@@ -3015,7 +3379,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-bayesian-opt",
@@ -3043,7 +3412,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-signal-scoring-spec",
@@ -3071,7 +3446,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-attention-radar",
@@ -3099,7 +3479,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "A8-theory-practice-verification",
@@ -3127,7 +3513,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-backtest",
@@ -3155,7 +3545,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-tactical-validator",
@@ -3183,7 +3578,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "master-seminar",
@@ -3211,7 +3611,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-risk-position-sizing",
@@ -3239,7 +3645,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "learning-episode-writer",
@@ -3267,7 +3677,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-first-principles",
@@ -3295,7 +3710,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "system-maintenance",
@@ -3323,7 +3742,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-contradiction-theory",
@@ -3351,7 +3776,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-screen2-second",
@@ -3379,7 +3808,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-bailian-integration",
@@ -3407,7 +3840,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "asset-research",
@@ -3435,7 +3872,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dual-agent-conflict-gate",
@@ -3463,7 +3905,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-regime-detector",
@@ -3496,7 +3944,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-pretrade-gatekeeper",
@@ -3524,7 +3976,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-strategy-parser",
@@ -3552,7 +4008,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-intelligence-monitor",
@@ -3580,7 +4040,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-systematic-trading",
@@ -3608,7 +4074,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-exit-skill-v2",
@@ -3636,7 +4106,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-knowledge",
@@ -3664,7 +4138,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-governance-manager",
@@ -3696,7 +4174,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "learning-proposal-generator",
@@ -3724,7 +4208,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "artifact-alignment-manager",
@@ -3752,7 +4241,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "memory-manager",
@@ -3780,7 +4275,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "branch-lifecycle-automation",
@@ -3808,7 +4308,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "architecture-sync-guard",
@@ -3836,7 +4341,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "safe-main-merge",
@@ -3864,7 +4375,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "code-review-merge-assistant",
@@ -3892,7 +4408,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "learning-lesson-distiller",
@@ -3920,7 +4441,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "learning-episode-writer",
@@ -3948,7 +4474,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-constitution",
@@ -3976,7 +4507,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-strategy-research",
@@ -4004,7 +4539,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "A7-practice-theory",
@@ -4032,7 +4572,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-strategy-designer",
@@ -4070,7 +4614,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-tactical-executor",
@@ -4098,7 +4647,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-signal-scoring-spec",
@@ -4126,7 +4680,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "A8-theory-practice-verification",
@@ -4154,7 +4713,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-execution-cost-model",
@@ -4182,7 +4745,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-tactical-validator",
@@ -4210,7 +4779,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-risk-position-sizing",
@@ -4238,7 +4812,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-first-principles",
@@ -4266,7 +4844,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-contradiction-theory",
@@ -4294,7 +4876,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-regime-detector",
@@ -4327,7 +4913,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-pretrade-gatekeeper",
@@ -4355,7 +4945,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-strategy-parser",
@@ -4383,7 +4977,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-intelligence-monitor",
@@ -4411,7 +5009,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-exit-skill-v2",
@@ -4439,7 +5043,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-knowledge",
@@ -4467,7 +5075,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-data-analysis",
@@ -4495,7 +5107,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-oneirology",
@@ -4523,7 +5141,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dream-archive-center",
@@ -4551,7 +5173,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "master-seminar",
@@ -4579,7 +5207,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-intelligence-analysis",
@@ -4607,7 +5241,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-bailian-integration",
@@ -4635,7 +5275,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "ai-trading-compliance",
@@ -4663,7 +5307,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "dream-product-hub-maintenance",
@@ -4691,7 +5339,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-operation-director",
@@ -4719,7 +5373,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-cost-control",
@@ -4747,7 +5407,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "auto-repair",
@@ -4775,7 +5441,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "dream-hr-recruitment",
@@ -4803,7 +5474,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "boss-secretary",
@@ -4831,7 +5508,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "dream-performance-review",
@@ -4859,7 +5542,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "resource-efficiency-analyst",
@@ -4887,7 +5576,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "find-skills",
@@ -4915,7 +5609,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "ontology",
@@ -4943,7 +5641,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "tavily",
@@ -4971,7 +5674,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "skill-creator",
@@ -4999,7 +5706,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "github",
@@ -5027,7 +5739,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "markdown-new",
@@ -5055,7 +5772,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "skill-creator",
@@ -5083,7 +5805,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "finishing-a-development-branch",
@@ -5111,7 +5838,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "cognitive-cli",
@@ -5139,7 +5870,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "test-driven-development",
@@ -5167,7 +5903,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "verification-before-completion",
@@ -5195,7 +5935,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "writing-skills",
@@ -5223,7 +5968,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "requesting-code-review",
@@ -5251,7 +6001,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "dispatching-parallel-agents",
@@ -5279,7 +6033,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "writing-plans",
@@ -5307,7 +6067,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "systematic-debugging",
@@ -5335,7 +6099,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local",
+        "github"
+      ]
     },
     {
       "name": "using-git-worktrees",
@@ -5363,7 +6132,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "executing-plans",
@@ -5391,7 +6164,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "receiving-code-review",
@@ -5419,7 +6198,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "using-superpowers",
@@ -5447,7 +6230,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "subagent-driven-development",
@@ -5475,7 +6262,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "brainstorming",
@@ -5503,7 +6294,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "t1-strategy-synthesis",
@@ -5531,7 +6328,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "t2-trade-execution",
@@ -5559,7 +6360,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "t3-risk-gatekeeper",
@@ -5587,7 +6393,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "risk",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "t0-market-cognition",
@@ -5615,7 +6427,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "intelligence-radar",
@@ -5643,7 +6459,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "meta-reflection",
@@ -5671,7 +6493,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "researcher",
+      "tier": [
+        "local",
+        "cloud"
+      ]
     },
     {
       "name": "agent-collab-screen1",
@@ -5699,7 +6526,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "screen2-trigger",
@@ -5729,7 +6560,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "approval-timeout-check",
@@ -5759,7 +6594,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "evolution-system-sync",
@@ -5787,7 +6626,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "agent-collab-gatec",
@@ -5815,7 +6660,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "hermes-feishu-bot-debug",
@@ -5852,7 +6701,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     },
     {
       "name": "feishu-hermes-debug",
@@ -5889,7 +6742,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "6-trading-screen1-framework",
@@ -5924,7 +6782,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "screen1-trigger",
@@ -5952,7 +6814,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "a6-monitor-trigger",
@@ -5980,7 +6846,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "trading-strategy-optimization",
@@ -6008,7 +6878,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "screen3-trigger",
@@ -6036,7 +6912,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "feishu-gateway-setup",
@@ -6073,7 +6953,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "process-d-trigger",
@@ -6101,7 +6985,12 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "screen-martin-trading",
@@ -6129,7 +7018,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "agent-a-trading",
@@ -6157,7 +7050,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "trader",
+      "tier": [
+        "cloud"
+      ]
     },
     {
       "name": "agent-collab-supervisor",
@@ -6185,7 +7082,13 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local",
+        "github",
+        "cloud"
+      ]
     },
     {
       "name": "graph-context-compressor",
@@ -6213,7 +7116,11 @@
       "apply_count": 0,
       "last_verified": null,
       "execution_history": [],
-      "evolution_log": []
+      "evolution_log": [],
+      "role": "operator",
+      "tier": [
+        "local"
+      ]
     }
   ]
 }
