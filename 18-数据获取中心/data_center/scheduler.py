@@ -70,8 +70,9 @@ class CollectionScheduler:
         self._src_last: dict[str, float] = {}  # source -> last ts（源级节流）
 
     # 源级最小间隔（秒）：同一 source 的相邻两次采集至少间隔这么久。
-    # coingecko 匿名档 ~5-15 req/min，30 个 chart 任务需 8s 间隔才能排空不触发 429。
-    SRC_MIN_GAP: dict[str, float] = {"coingecko": 8.0}
+    # coingecko 匿名档在共享机房 IP 上 8s/次 仍有零星 429，提到 25s/次（≈2.4 req/min）；
+    # 34 个任务一轮排空 ~15min，对 12h 间隔完全无感。
+    SRC_MIN_GAP: dict[str, float] = {"coingecko": 25.0}
 
     # ------------------------------------------------------------------
     # 单次采集
