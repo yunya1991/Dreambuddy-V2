@@ -25,3 +25,10 @@
 ## 结论
 
 文档双向同步链路（P0 timer + P1 Actions 秒级）已可用；代码变更仍按设计**不**经 docs-sync，走 `update.sh` + G4。
+
+## 云端侧回写（reverse sync 验证）
+
+- 时间：2026-10-30 14:25:10 CST
+- 云端 HEAD：6b63060e
+- origin/main：6b63060e
+- 结论：云端仓可与 GitHub 双向同步；本行由云端会话提交，本地应以 ff-only 拉取可见。
