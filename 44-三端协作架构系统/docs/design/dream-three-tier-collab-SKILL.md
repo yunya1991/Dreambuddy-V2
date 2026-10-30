@@ -1,8 +1,9 @@
 ---
 name: dream-three-tier-collab
-description: '三端协同编排（本地评审中枢 / GitHub 存证 / 云端运行）：云端八维评审 D1-D8、RACI 职责速查、门禁链 G1-G7、排查 SLA、双轨模型生命周期、意图路由与红线。Invoke when 评审云端、排查云端故障、判断部署窗口、模型 promote 决策、或需要明确三端职责边界时。'
-version: 1.0.0
+description: '三端协同编排（本地评审中枢 / GitHub 存证 / 云端运行）：云端八维评审 D1-D8、RACI 职责速查、门禁链 G1-G7+、排查 SLA、双轨模型生命周期、模块租约与角色分离（G3.5）、技术文档双向同步与云端终审（R8）、意图路由与红线。Invoke when 评审云端、排查云端故障、判断部署窗口、模型 promote 决策、双端并行开发、领租约、判断谁开发谁测试、文档同步、文档终审、或需要明确三端职责边界时。'
+version: 1.3.0
 created: 2026-10-29
+updated: 2026-10-30
 status: active
 category: collaboration
 role: coordinator
@@ -21,10 +22,22 @@ triggers:
 - 模型生命周期
 - 排查云端
 - 三端职责
+- 双端
+- 双端协作
+- 模块租约
+- 租约
+- 开发冲突
+- 角色分离
+- 文档同步
+- 双向同步
+- 闭环
 depends_on:
 - cloud-review.sh
 - cloud-logs.sh
 - g4-volatility-gate.py
+- lease.py
+- docs_sync.sh
+- lease-guard.yml
 - dream-code-commit-sync-workflow
 - dream-code-deploy-pipeline
 - dream-bugfix-workflow
@@ -35,6 +48,9 @@ provides:
 - cloud-review-checklist
 - gate-chain
 - model-lifecycle-boundary
+- module-lease
+- sod-gate
+- doc-bidirectional-sync
 ---
 
 # Dream Three-Tier Collab — 三端协同编排
@@ -52,8 +68,6 @@ provides:
 ## 零、云端八维评审清单（本地第一职责）
 
 > 评审原则：**只读**（SSH 只读查询 + 只读 API）。任何评审动作**不得**改变云端运行态；发现问题 → 登记 P0/P1/P2 → 走门禁链修复。
-> **前置检查**：首次执行前确认 `ssh dreambuddy-remote true` 返回 0（别名未配置则先配 `~/.ssh/config`，禁止硬编码 IP/私钥）；失败时 D1/D2/D3/D6 一律标记"未联通"，不得伪造评审结论。
-> **风控独立线**：`trailing-stop-runner --real`、组合风险熔断、`alpha_decay_gate`、`actr_activation` 归 D6 评审；风控判定优先于策略信号，禁止任何 SKILL 为收益放宽风控（SPEC §一之七）。
 
 | 维度 | 评审内容 | 入口 | 频率 | 产出 |
 |---|---|---|---|---|
@@ -81,6 +95,7 @@ provides:
 |---|---|---|---|
 | 云端八维评审 | **R/A** | C | C |
 | 技术方案设计/评审 | **R/A** | — | — |
+| 技术文档终审（`review/approved/`） | C（只出 feedback 意见） | C（存证） | **R/A**（R8：终审权归云端） |
 | 代码开发 | **R** | 托管 | — |
 | 代码评审 | C | **A**（CI + drift-guard） | — |
 | 架构/数据流审查 | **R/A** | — | I |
@@ -97,18 +112,19 @@ provides:
 
 ---
 
-## 二、门禁链 G1-G7
+## 二、门禁链 G1-G7（含 G3.5）
 
 ```
-本地设计 → 本地开发 → GitHub PR → CI门禁 → 云端部署 → 健康检查 → 模型评估
-   G1        G2/G3      G4        G5        G6        G7
+设计 → 开发 → PR CI → 独立测试/评审 → 部署窗口 → 部署验证 → 健康检查 → 模型评估
+ G1    G2     G3      G3.5              G4        G5        G6        G7
 ```
 
 | 门 | 位置 | 检查 | 失败处理 | 实现 |
 |---|---|---|---|---|
 | G1 设计门 | 本地 | design doc 存在且过 `dream-science-peer-review` | 无 doc 禁止开 PR（重大变更） | `.trae/documents/` |
 | G2 Pre-commit | 本地 | ruff/black + secret 扫描（只查 staged） | 阻止 commit | `.pre-commit-config.yaml` + `scripts/precommit_secret_scan.py` |
-| G3 PR CI | GitHub | 单测 + 集成 + 依赖扫描 + drift-guard | PR failed，禁止 merge | `.github/workflows/ci.yml`、`drift-guard.yml` |
+| G3 PR CI | GitHub | 单测 + 集成 + 依赖扫描 + drift-guard + **lease-guard** | PR failed，禁止 merge | `.github/workflows/ci.yml`、`drift-guard.yml`、`lease-guard.yml` |
+| G3.5 独立测试/评审门 | GitHub | ① 存在 test/review 租约且非开发方 ② 证据含命令/退出码/日志 ③ reviewer ≠ author | 不得 merge（与 G3 同等阻断） | `lease.py check-pr` + PR 评论 |
 | G4 部署窗口 | 云端 | ATR20 分位 ≤90%、|资金费率| ≤0.001、无 P0 告警 | 拦截 exit 4，推迟到低波动窗口 | `37-一键启动脚本/g4-volatility-gate.py`（`update.sh` 步骤 1/5 调用） |
 | G5 部署验证 | 云端 | systemd 启动 + 端口 + 版本号比对 | 自动回滚上一 tag | `31-分布式计算部署/phase*` |
 | G6 健康检查 | 云端 | API 30s 响应、PG/Redis 连通 | 连续 3 次失败 → 回滚 + 告警 | watchdog |
@@ -162,6 +178,9 @@ provides:
 | 要排查云端 | `cloud-logs.sh` + `dream-bugfix-workflow` |
 | 要做架构审查 | `dream-arch-research-orchestrator` |
 | 要训练/注册/promote 模型 | 本 SKILL §四（`ml/version_manager.py` promote/rollback CLI） |
+| 要双端并行开发 / 领租约 / 判断谁开发谁测试 | 本 SKILL §八 → `lease.py status\|claim`（G3.5 角色分离） |
+| 要同步技术文档（本地↔GitHub↔云端） | 本 SKILL §九 → `docs_sync.sh {pull\|push}` |
+| 要文档终审 / 判断谁能签发 approved | 本 SKILL §九 + §八 R8 → **仅云端可签发**；本地只出 `review/feedback/` 意见 |
 | 要验收 | `dream-acceptance-verify` |
 | 要治理 SKILL | `dream-skill-index-governance` |
 | 要判断能否部署 | `g4-volatility-gate.py`（G4） |
@@ -180,3 +199,97 @@ provides:
 8. **必须** 变更代码后先 commit 再重启服务
 9. **必须** 12-ML promote 前引用当次 D5 评审报告（无报告不 promote）
 10. **默认** SKILL 治理走已有 registry，不新建第二套注册表
+11. **禁止** 两端同时对同一模块持有 `dev` 租约（模块互斥，见 §八）
+12. **禁止** 开发方对自己的模块出具最终测试/评审结论（G3.5 硬阻断）
+13. **禁止** 绕过 PR 直推 `main`（`AGENT协作工具/ledger/**` 与租约文件等自动化 bot 白名单除外）
+14. **必须** 技术文档终审（`review/approved/`）由云端签发；**禁止** 本地签发最终批准或把文档直接推进到 `approved/`（R8）
+
+---
+
+## 八、双端研发协作（模块租约 + 角色分离）
+
+> 上游 SPEC：`44-三端协作架构系统/docs/tech/SPEC-dual-end-collab-governance.md`
+> 一句话：**GitHub 是唯一锁与唯一真源；谁写、谁测由租约决定，开发方不得自证。**
+
+### 8.1 模块定义
+
+| 路径 | 模块 ID |
+|---|---|
+| `44-.../github/leases/**` | `lease`（申请租约的 PR 自身免租约） |
+| `44-.../docs/**`、`44-.../review/**` | `docs:<相对路径>` / `review:<相对路径>` |
+| `.github/**` | `root:ci` |
+| 其余一级子系统 | 一级目录名 |
+| 根级文件 | `root:repo` |
+| `hotfix/<id>` 分支 | `hotfix:<id>`（免租约，24h 内补审） |
+
+### 8.2 租约操作
+
+```bash
+lease="44-三端协作架构系统/shared/tools/lease.py"
+python3 $lease claim   --module 18-数据获取中心 --end local --role dev --task T-001 --session trae-local-a
+python3 $lease status
+python3 $lease release --module 18-数据获取中心 --task T-001
+```
+
+| 规则 | 内容 |
+|---|---|
+| R1 | 同模块最多 1 个 active `dev` 租约 |
+| R2 | `test` 须有同 task 的 dev 租约（active 或已释放，可继承） |
+| R3 | 文档 `review` 不要求 dev 前置 |
+| R4 | `test`/`review` 的 end 必须 ≠ dev end；同端须独立 `session` 留痕 |
+| R5 | 不同模块可并行，不限端 |
+| R6 | TTL 默认 24h、上限 72h，超期读取即判 expired |
+| R7 | `root:ci` / `root:repo` 同时仅 1 个 active 租约 |
+| R8 | **终审权归云端**：`review:approved/**` 仅 `end=cloud` 可持租约；本地申请或把文档推进到 `approved/` 的 PR 一律 exit 2 |
+
+### 8.3 PR 约定（lease-guard 强制）
+
+分支 `feat/<task-id>@<end>`；PR 描述必填 `Task ID / 端 / 角色 / 模块`。改动文件 → 模块 → 必须有覆盖该端+角色的 active 租约，否则阻断。
+
+### 8.4 角色分离（G3.5）
+
+- 开发方（持 dev 租约）**不得**出最终测试/评审结论；由另一端或独立会话执行。
+- 测试证据必须含命令、退出码、关键日志行（不接受"已验证"）。
+- 端身份可信度分层：L1 声明+租约审计（默认）→ L2 `github/identities.json` 邮箱白名单（存在则生效）→ L3 双 bot/GPG 签名（P1）。
+- **明确边界**：共用同一 GitHub 账号时，"端"无法技术性强制验证；门禁防误撞与自证，不防蓄意伪造。
+
+---
+
+## 九、技术文档双向同步
+
+```
+本地起草 → PR → main → 云端 docs-sync 拉取(44) → 云端评审+终审(approved) → PR → main → 本地 ff-only 拉取 → 本地开发
+云端起草 → PR → main → 本地 ff-only 拉取 → 本地评审(feedback 意见) → PR → main → 云端 docs-sync 拉取 → 云端终审(approved) → 云端开发
+```
+
+| 项 | 约定 |
+|---|---|
+| 真源 | `origin/main`；两端目录均为工作副本 |
+| 同步判定 | `HEAD` sha == `origin/main` sha（**不设本地 ACK 状态文件**） |
+| 云端拉取 | `fetch` → 校验"待同步提交的全部变更文件"均落在文档路径 → 整提交 `pull --ff-only`；含代码/配置变更即跳过交 `update.sh` + G4；**不做路径级 checkout** |
+| 目录状态机 | `docs/{tech,design}`（草稿）→ `review/pending`（待评审）→ `review/feedback/YYYY-MM-DD-<slug>-review.md`（评审意见，评审方任一端可写）→ `review/approved`（**终审，仅云端**） |
+| 工具 | `bash 44-三端协作架构系统/shared/tools/docs_sync.sh {status\|pull\|push}` |
+
+---
+
+## 十、闭环状态机
+
+```
+[draft] --评审通过--> [reviewed] --dev租约--> [in_dev] --G3.5--> [tested] --G4/G5/G6--> [deployed]
+   └--驳回--> [rejected]        └--撤销--> [draft]
+```
+
+单一载体原则：**leases = 谁在做；文档 frontmatter `status:` = 生命周期；目录位置 = CI 派生校验**。不新建状态数据库，状态可由 git 历史 + leases + PR 评论重建。
+
+---
+
+## 十一、落地资产
+
+| 资产 | 路径 |
+|---|---|
+| 租约工具 | `44-三端协作架构系统/shared/tools/lease.py` |
+| 租约单测 | `44-三端协作架构系统/shared/tools/test_lease.py`（`python3 test_lease.py`） |
+| 文档同步 | `44-三端协作架构系统/shared/tools/docs_sync.sh` |
+| CI 门禁 | `.github/workflows/lease-guard.yml` |
+| 租约数据 | `44-三端协作架构系统/github/leases/<module-slug>.json` |
+| 身份白名单（可选） | `44-三端协作架构系统/github/identities.json` |

@@ -27,6 +27,10 @@
 | **P2-3 灾备演练** | `31-分布式计算部署/phase12/12-dr-drill.sh` | 100 行 | `816c4ff3e6` | 沙箱实跑 **PASS，RTO=15s**（造故障版本→真实 `rollback-last-good.sh --auto`→断言 HEAD 与内容回到 last_good）；`--cloud` 只读预检，`--cloud --yes` 才真实 reset |
 | **P2-4 季度 SKILL 审计** | `1-ARCHITECTURE/skills/_registry/audit_registry.py` | 7.4 KB | `816c4ff3e6` | 输出 `audit-report.json`（总数/status/category/role/tier/同名/path 缺失/deprecated/缺元数据）；实跑 active 166 / proposed 14 / shadow 6，同名 34 组涉 70 条；`--json-only`，恒 exit 0 |
 | **八维 D1/D4/D5/D7/D8 脚本化** | `37-一键启动脚本/review-extended.sh` | 166 行 | `816c4ff3e6` | `d1\|d4\|d5\|d7\|d8\|all [--no-save]`，只读 SSH + FAIL-OPEN；实跑：D1 本地 vs 云端 HEAD/DIRTY、D4 快照 00:44 落盘 + API 200、D5 v1 production wf_auc=0.7703/gap=0.2917（阈值内）、D7 ufw active/仅 22+80 端口、D8 内存 4.9/15Gi、磁盘 23%、timer 44 |
+| **双端协作：模块租约** | `44-三端协作架构系统/shared/tools/{lease.py,test_lease.py}` | R1-R8（R8 终审权归云端） | 本次变更 | 17 项单测全通过；冲突 exit 2；`lease` / `hotfix:*` 豁免；本地申请 `review:approved/**` 返回 exit 2 |
+| **双端协作：文档双向同步** | `44-三端协作架构系统/shared/tools/docs_sync.sh` | 103 行 | 本次变更 | `bash -n` 通过；同步判定 = HEAD vs origin/main（不设 ACK 文件）；云端 fetch→全量路径校验→整提交 `pull --ff-only`（不做路径级 checkout），不绕过 G4 |
+| **G3.5 角色分离门 + 租约 CI** | `.github/workflows/lease-guard.yml` | 70 行 | 本次变更 | PR 事件触发；无租约阻断；lease/hotfix/`lease-waiver` 豁免；可选身份白名单 |
+| **双端协作 SPEC + 独立评审** | `44-三端协作架构系统/docs/tech/SPEC-dual-end-collab-governance.md`、`review/feedback/2026-10-30-dual-end-collab-review.md` | — | 本次变更 | 独立评审"有条件通过"；M1-M6 必改、S1-S4 建议全部处置并回写；M7（终审权归云端）→ R8 |
 
 ## 二、本次一并归档的运维脚本（此前未入版本库）
 

@@ -1,8 +1,9 @@
 name: docs-sync
 
-# P1 即时拉取：文档路径推送后，SSH 通知云端立即同步（秒级）
-# 依赖 Secrets：DOCS_SYNC_SSH_KEY（专用部署私钥，云端公钥已限命令）
+# P1 即时拉取：文档路径推送到 main 后，SSH 通知云端立即同步（秒级）
+# 依赖 Secrets：DOCS_SYNC_SSH_KEY（专用部署私钥，云端 authorized_keys 已用 forced command 限制）
 # 云端兜底：docs-sync.timer 每 15 分钟轮询（P0），本工作流失败不影响兜底
+# 安全：不引入第三方 action；私钥仅落在 runner 临时目录并 600；云端 forced command 忽略请求命令
 
 on:
   push:
@@ -13,6 +14,9 @@ on:
       - 'developers/**'
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 concurrency:
   group: docs-sync
   cancel-in-progress: true
@@ -22,12 +26,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Notify cloud to pull docs
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: 43.160.201.117
-          username: luke
-          key: ${{ secrets.DOCS_SYNC_SSH_KEY }}
-          port: 22
-          command_timeout: 2m
-          script: echo 'docs-sync triggered by GitHub Actions'
+      - name: 触发云端文档同步
+        env:
+          SSH_KEY: ${{ secrets.DOCS_SYNC_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DOCS_SYNC_HOST || '43.160.201.117' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KEY}" ]; then
+            echo "::error::缺少 secret DOCS_SYNC_SSH_KEY，请在仓库 Settings → Secrets 配置"
+            exit 2
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/docs_sync
+          chmod 600 ~/.ssh/docs_sync
+          ssh -i ~/.ssh/docs_sync \
+              -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=10 \
+              -o BatchMode=yes \
+              "luke@${SSH_HOST}" docs-sync 2>&1 | tee sync-output.txt
+          grep -qE "SYNCED|OK:|SKIP:" sync-output.txt

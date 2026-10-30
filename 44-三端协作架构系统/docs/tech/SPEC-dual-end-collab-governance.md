@@ -1,6 +1,6 @@
 # SPEC — 双端研发协作治理（模块租约 + 角色分离 + 文档双向同步）
 
-> 日期：2026-10-30（v2，已按独立评审意见修订）
+> 日期：2026-10-30（v2.1：新增 R8「终审权归云端」）
 > 阶段：设计（待跨端评审）
 > 上游：[SPEC-three-tier-collab-management.md](SPEC-three-tier-collab-management.md)
 > 目标读者：项目 owner（单人维护，本地 + 云端各一个 AI 会话）
@@ -46,6 +46,7 @@
 2. **租约互斥**：模块级锁，状态存 `44-三端协作架构系统/github/leases/<module-slug>.json`（按模块分文件，随 main 审计，带 TTL）。
 3. **角色分离（SoD）**：持有 `dev` 租约方不得对自己的模块出具最终测试/评审结论；新增 G3.5 门。
 4. **失败可恢复、冲突硬阻断**：同步失败降级为"待同步"；**互斥冲突一律硬阻断**（宁可不开发，不可双开发）。
+5. **终审在云端**：技术文档的最终批准（`review/approved/`）只能由云端评审方出具——云端最贴近生产环境，终审必须建立在生产侧事实（D1-D8 实况）之上；本地最多出具评审意见与建议结论。
 
 ---
 
@@ -94,6 +95,9 @@
 | R5 | 不同模块可并行，不限端 | 允许 |
 | R6 | TTL 默认 24h、上限 72h；超期读取时判 `expired`（不依赖定时任务） | 需重新申请 |
 | R7 | `root:ci` / `root:repo` 同时只允许 1 个 active 租约（任意角色） | 拒绝 |
+| R8 | **终审权归云端**：`review:approved/**` 模块的租约 `end` 必须为 `cloud`；本地端申请或把文档推进到 `approved/` 的 PR 一律阻断 | 拒绝（exit 2） |
+
+> R8 依据：终审要对照生产实况（D1 代码一致性、D4 数据链路、D5 模型质量、D6 风控行为），只有云端能直接观测；本地终审会脱离生产环境。R8 与"单端评审不强制另一端"并不冲突——本地仍可写 `review/feedback/` 出具评审意见，只是不能签发最终批准。
 
 ### 3.4 操作入口
 
@@ -154,19 +158,22 @@ Task ID: T-20261030-001
 |---|---|---|
 | 草稿/调研 | `docs/tech/`、`docs/design/` | 起草方（持 `docs:<path>` 租约） |
 | 待评审 | `review/pending/` | 起草方 |
-| 评审意见 | `review/feedback/YYYY-MM-DD-<slug>-review.md` | **评审方**（另一端的 `review` 租约） |
-| 通过归档 | `review/approved/` | 评审方（通过/有条件通过后移动） |
+| 评审意见 | `review/feedback/YYYY-MM-DD-<slug>-review.md` | **评审方**（任一端，持 `review` 租约） |
+| 通过归档（终审） | `review/approved/` | **仅云端**（R8 硬约束；本地不得写入） |
 
 ### 5.2 同步方向
 
 ```
-本地起草 → PR → main → 云端 fetch+checkout(44) → 云端评审 → PR → main → 本地 fetch(ff-only) → 本地开发
-云端起草 → PR → main → 本地 fetch(ff-only)   → 本地评审 → PR → main → 云端 fetch+checkout(44) → 云端开发
+本地起草 → PR → main → 云端 docs-sync 拉取(44) → 云端评审+终审(approved) → PR → main → 本地 ff-only 拉取 → 本地开发
+云端起草 → PR → main → 本地 ff-only 拉取 → 本地评审(feedback 意见) → PR → main → 云端 docs-sync 拉取 → 云端终审(approved) → 云端开发
 ```
 
+> 两条路径的**终审都发生在云端**（R8）：本地评审只产出 `review/feedback/` 意见 + 建议结论，`review/approved/` 的签发必须由云端在对照生产实况（D1/D4/D5/D6）后完成；云端终审提交合入 main 后，本地再 ff-only 拉取拿到批准结论。
+
 - **同步判定不设本地状态文件**：`git rev-parse HEAD` == `git rev-parse origin/main` 即"已同步"，否则"待同步"。证据统一为 commit sha（与 D1 同源）。
-- **云端拉取契约**：只 `git fetch origin main` + 对 `44-三端协作架构系统/` 做路径级 `checkout`（独立 worktree），**不做全仓 `pull`**，避免绕过部署窗口 G4；代码部署仍走 update.sh + G4。
-- **禁止**两端同时写同一文档；`review/feedback/` 只由评审方写。
+- **云端拉取契约**：`git fetch` 后先比对"待同步提交的全部变更文件集"——仅当所有变更都落在文档路径（`44-.../docs|review`、`docs`、`developers`）时才执行 `git pull --ff-only`；出现任何代码/配置变更即跳过并交由 `update.sh` + G4。**不做路径级 checkout**（会让工作区相对 HEAD 长期漂移，D1 一致性失真），改为"整提交原子拉取 + 全量路径校验"。
+- 云端由两条通道触发：`docs-sync.timer`（15 分钟兜底）+ GitHub Actions SSH（秒级，受 forced command 约束），脚本内置 `flock` 互斥。
+- **禁止**两端同时写同一文档；`review/feedback/` 只由评审方写；**`review/approved/` 只由云端写**（R8）。
 
 ### 5.3 工具
 
@@ -205,10 +212,10 @@ Task ID: T-20261030-001
 
 | # | 交付物 | 路径 | 验收 |
 |---|---|---|---|
-| 1 | 租约工具 | `44-.../shared/tools/lease.py` | `claim/status/check-pr` 可运行；R1-R7 有单测；冲突 exit 2 |
+| 1 | 租约工具 | `44-.../shared/tools/lease.py` | `claim/status/check-pr` 可运行；R1-R8 有单测；冲突 exit 2；**R8：本地申请 `review:approved/**` 必须 exit 2** |
 | 2 | 文档同步工具 | `44-.../shared/tools/docs_sync.sh` | `bash -n` 通过；`status` 正确识别同步态 |
 | 3 | CI 门禁 | `.github/workflows/lease-guard.yml` | PR 事件触发；无租约 PR 阻断；`lease`/`hotfix` 豁免 |
-| 4 | 协作 SKILL | **扩展** `dream-three-tier-collab` v1.2（不新建 SKILL） | registry `validate_registry.py` exit 0 |
+| 4 | 协作 SKILL | **扩展** `dream-three-tier-collab` v1.3（不新建 SKILL） | registry `validate_registry.py` exit 0 |
 | 5 | 目录流程 | `44-.../README.md` 更新为双向 + 租约 | 与 SKILL 一致 |
 | 6 | 分支保护 | `gh api -X PUT repos/.../branches/main/protection`（owner 手动执行） | 必需检查生效 |
 
@@ -232,6 +239,7 @@ Task ID: T-20261030-001
 4. **禁止**把租约/ACK 之外的运行时状态（日志、DB、cache、`.sync/`）提交入库。
 5. **必须**文档评审意见由非起草方出具并落盘 `review/feedback/`。
 6. **必须**"已同步/已评审/已完成"结论附 commit sha 或 PR 编号。
+7. **必须**技术文档终审（`review/approved/`）由云端签发（R8）；**禁止**本地端签发最终批准或把文档直接推进到 `approved/`。
 
 ---
 
@@ -254,6 +262,7 @@ Task ID: T-20261030-001
 | M5 | ACK 文件不入库，另一端与 CI 不可见，构成第二真源 | 删除 ACK 文件，同步判定 = HEAD vs origin/main | §5.2 |
 | M6 | test/review 强制 dev 前置导致文档评审无租约 | test 可继承已释放 dev；review 不要求 dev | §3.3 R2/R3 |
 | S1 | `root` 过粗 | 拆 `root:ci` / `root:repo` | §3.1 |
-| S2 | 不新建 SKILL，避免同 category+role 漂移 | 扩展 `dream-three-tier-collab` v1.2 | §七 #4 |
+| S2 | 不新建 SKILL，避免同 category+role 漂移 | 扩展 `dream-three-tier-collab` v1.3 | §七 #4 |
 | S3 | 状态载体过多 | 单一载体原则 | §6.1 |
 | S4 | hotfix 缺租约豁免 | `hotfix:<id>` 免租约 + 24h 补审 | §3.1 |
+| M7 | （owner 补充）技术文档终审须落在云端，因云端最贴合生产环境 | 新增 R8：`review:approved/**` 仅 cloud 可持租约；两条同步路径的终审均在云端；本地只出 feedback 意见 | §二.5 / §3.3 R8 / §5.1 / §5.2 / §八.7 |

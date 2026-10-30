@@ -1,0 +1,67 @@
+name: lease-guard
+
+# 双端协作门禁：模块租约 + 角色分离（SPEC §3.5）
+# 允许：lease 文件专 PR、hotfix/* 分支、带 lease-waiver 标签的 PR
+# 阻断：未持租约的模块改动、开发方自审自测
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: lease-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lease:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'lease-waiver') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build PR context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100 }
+            );
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100 }
+            );
+            const last = commits[commits.length - 1];
+            const ctx = {
+              branch: pr.head.ref,
+              body: pr.body || '',
+              files: files.map((f) => f.filename),
+              author_email: (last && last.commit && last.commit.author && last.commit.author.email) || ''
+            };
+            fs.writeFileSync('pr_context.json', JSON.stringify(ctx, null, 2));
+
+      - name: Check module lease
+        run: |
+          python3 "44-三端协作架构系统/shared/tools/lease.py" check-pr \
+            --json pr_context.json \
+            --identities "44-三端协作架构系统/github/identities.json"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### lease-guard" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat pr_context.json >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
