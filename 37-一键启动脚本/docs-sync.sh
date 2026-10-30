@@ -75,8 +75,9 @@ if [ "$ALL_CHANGED" != "$DOC_CHANGED" ]; then
   exit 0
 fi
 
-# 3. 文档路径存在未提交改动时拒绝覆盖（避免冲掉人工修改）
-DIRTY=$(git status --porcelain -- "${WATCH_PATHS[@]}" 2>/dev/null || true)
+# 3. 文档路径存在未提交的**已跟踪**改动时拒绝覆盖（避免冲掉人工修改）
+#    未跟踪文件（??）不阻断：云端侧评审草稿常以新文件落盘，且 ff-only 拉取不会覆盖它们
+DIRTY=$(git status --porcelain -- "${WATCH_PATHS[@]}" 2>/dev/null | grep -v '^??' || true)
 if [ -n "$DIRTY" ]; then
   log "FAIL: 文档路径存在未提交改动，拒绝覆盖"
   printf '%s\n' "$DIRTY" | head -10 >> "$LOG_FILE"
