@@ -399,12 +399,16 @@ class TradeIndexBuilder:
         # 按退出时间排序
         result.sort(key=lambda x: x.get("exit_time", ""), reverse=True)
 
-        # 持久化索引库
+        # 持久化索引库（原子写入：临时文件 + os.replace，避免中途截断损坏）
         try:
             self._index_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self._index_path, "w", encoding="utf-8") as f:
+            tmp_path = self._index_path.with_suffix(self._index_path.suffix + ".tmp")
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 for t in result:
                     f.write(json.dumps(t, ensure_ascii=False) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, self._index_path)
         except Exception as e:
             logger.warning("[FO] save index fail: %s", e)
 
