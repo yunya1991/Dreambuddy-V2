@@ -3,7 +3,7 @@
 连接串来源（优先级由高到低）：
 1. DAL_PG_URL 环境变量
 2. DATABASE_URL 环境变量
-3. /etc/dreambuddy-pg.env 中的 DATABASE_URL（存在才读取）
+3. /etc/dreambuddy-dal.env 中的 DATABASE_URL（存在才读取；luke 可读独立副本）
 
 连接为每操作短连接（与 sqlite_unified 的 get_sqlite_connection 同生命周期语义），
 context manager 退出时提交并关闭；异常时回滚。
@@ -14,11 +14,11 @@ import os
 from contextlib import contextmanager
 from pathlib import Path
 
-_PG_ENV_FALLBACK = "/etc/dreambuddy-pg.env"
+_PG_ENV_FALLBACK = "/etc/dreambuddy-dal.env"
 
 
 def _load_pg_env_fallback() -> None:
-    """从 /etc/dreambuddy-pg.env 读取 DATABASE_URL（不覆盖已有 env）。"""
+    """从 /etc/dreambuddy-dal.env 读取 DATABASE_URL（不覆盖已有 env）。"""
     if os.environ.get("DAL_PG_URL") or os.environ.get("DATABASE_URL"):
         return
     p = Path(_PG_ENV_FALLBACK)
