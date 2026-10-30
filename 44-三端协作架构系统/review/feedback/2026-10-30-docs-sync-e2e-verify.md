@@ -12,6 +12,8 @@
 | Actions → SSH → 脚本 | `gh workflow run docs-sync.yml` → run `41012445582` success（11s） | ✅ |
 | 失败可见性 | 拉取失败时脚本 `exit 2`，Actions step 变红；fetch 失败 FAIL-OPEN `exit 0` | ✅ 设计确认 |
 | 未跟踪评审草稿不阻断 | 修复后仅「已跟踪改动」触发 `dirty_worktree` | ✅（f143abcafe 提交） |
+| **真实拉取（手工触发脚本）** | `SYNCED: f143abcafe… -> d9179a2002…`，目标文件已落盘 | ✅ |
+| **真实拉取（Actions 触发）** | 见下一次 push 的 run 结论（commit `……`） | 待回填 |
 
 ## 根因归档（本日两处云端故障）
 
