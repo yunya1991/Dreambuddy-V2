@@ -2,6 +2,7 @@
 P0-3 TDD RED：6 个 Repository Protocol（ABC）签名测试
 对齐 TECHNICAL_DESIGN.md §2.2 完整方法签名协议
 """
+
 from __future__ import annotations
 
 import inspect
@@ -22,8 +23,15 @@ class TestProtocolExistenceAndAbc:
             RiskRepository,
             TradeRepository,
         )
-        for cls in [TradeRepository, PositionRepository, MarketMacroRepository,
-                    RiskRepository, ConfigRepository, KnowledgeGraphRepository]:
+
+        for cls in [
+            TradeRepository,
+            PositionRepository,
+            MarketMacroRepository,
+            RiskRepository,
+            ConfigRepository,
+            KnowledgeGraphRepository,
+        ]:
             assert issubclass(cls, ABC), f"{cls.__name__} 不是 ABC 抽象基类"
             # 不能直接实例化（有 @abstractmethod）
             with pytest.raises(TypeError, match="abstract class|instantiate"):
@@ -31,9 +39,19 @@ class TestProtocolExistenceAndAbc:
 
     def test_protocol_package_reexports_all(self):
         from dreambuddy_dal.protocols import __all__
-        assert len(__all__) == 6
-        for name in ["TradeRepository", "PositionRepository", "MarketMacroRepository",
-                     "RiskRepository", "ConfigRepository", "KnowledgeGraphRepository"]:
+
+        assert len(__all__) == 9
+        for name in [
+            "TradeRepository",
+            "PositionRepository",
+            "MarketMacroRepository",
+            "RiskRepository",
+            "ConfigRepository",
+            "KnowledgeGraphRepository",
+            "CognitiveRepository",
+            "SkillRepository",
+            "KnowledgeRepository",
+        ]:
             assert name in __all__
 
 
@@ -42,16 +60,24 @@ class TestTradeRepositoryProtocol:
     @pytest.fixture
     def Proto(self):
         from dreambuddy_dal.protocols.trade_repo import TradeRepository
+
         return TradeRepository
 
     def test_methods_exist(self, Proto):
-        methods = {"add_trade", "get_trade", "query_trades", "close_position",
-                   "get_daily_stats", "add_or_update_daily_stats"}
+        methods = {
+            "add_trade",
+            "get_trade",
+            "query_trades",
+            "close_position",
+            "get_daily_stats",
+            "add_or_update_daily_stats",
+        }
         for m in methods:
             assert hasattr(Proto, m), f"TradeRepository 缺少方法 {m}"
             # 都是抽象方法
-            assert getattr(getattr(Proto, m), "__isabstractmethod__", False), \
-                f"TradeRepository.{m} 不是抽象方法（漏了 @abstractmethod）"
+            assert getattr(
+                getattr(Proto, m), "__isabstractmethod__", False
+            ), f"TradeRepository.{m} 不是抽象方法（漏了 @abstractmethod）"
 
     def test_add_trade_signature(self, Proto):
         sig = inspect.signature(Proto.add_trade)
@@ -82,6 +108,7 @@ class TestTradeRepositoryProtocol:
 class TestPositionRepositoryProtocol:
     def test_methods_and_params(self):
         from dreambuddy_dal.protocols.position_repo import PositionRepository
+
         sig_upsert = inspect.signature(PositionRepository.upsert_position)
         assert "position" in sig_upsert.parameters, "upsert_position 缺 position 参数"
 
@@ -106,12 +133,14 @@ class TestMarketMacroRepositoryProtocol:
 
     def test_6_upsert_6_query_exist(self):
         from dreambuddy_dal.protocols.market_macro_repo import MarketMacroRepository
+
         for upsert_m, query_m in self.MACRO_METHOD_PAIRS:
             assert hasattr(MarketMacroRepository, upsert_m), f"缺方法 {upsert_m}"
             assert hasattr(MarketMacroRepository, query_m), f"缺方法 {query_m}"
 
     def test_all_abstract(self):
         from dreambuddy_dal.protocols.market_macro_repo import MarketMacroRepository
+
         with pytest.raises(TypeError):
             MarketMacroRepository()
 
@@ -120,14 +149,17 @@ class TestMarketMacroRepositoryProtocol:
 class TestRiskRepositoryProtocol:
     def test_methods_exist(self):
         from dreambuddy_dal.protocols.risk_repo import RiskRepository
+
         for m in ["get_state", "update_state", "add_case", "query_cases"]:
             assert hasattr(RiskRepository, m), f"RiskRepository 缺 {m}"
-            assert getattr(getattr(RiskRepository, m), "__isabstractmethod__", False), \
-                f"RiskRepository.{m} 不是 @abstractmethod"
+            assert getattr(
+                getattr(RiskRepository, m), "__isabstractmethod__", False
+            ), f"RiskRepository.{m} 不是 @abstractmethod"
 
     def test_get_state_param_id_default_1(self):
         """rs_state 是单行表 id=1，默认参数 id=1"""
         from dreambuddy_dal.protocols.risk_repo import RiskRepository
+
         sig = inspect.signature(RiskRepository.get_state)
         id_param = sig.parameters["id"]
         assert id_param.default == 1, "RiskRepository.get_state() 默认 id≠1"
@@ -135,18 +167,21 @@ class TestRiskRepositoryProtocol:
     def test_update_state_version_optimistic_lock_param(self):
         """update_state(new_state, *, expected_version:int) — 乐观锁保护"""
         from dreambuddy_dal.protocols.risk_repo import RiskRepository
+
         sig = inspect.signature(RiskRepository.update_state)
         assert "new_state" in sig.parameters
         # 可以是 expected_version 或 version，只要有版本检查
         param_names = set(sig.parameters.keys())
-        assert ("expected_version" in param_names or "version" in param_names), \
-            "update_state 缺少乐观锁 version 参数"
+        assert (
+            "expected_version" in param_names or "version" in param_names
+        ), "update_state 缺少乐观锁 version 参数"
 
 
 # ---------- 6. ConfigRepository ----------
 class TestConfigRepositoryProtocol:
     def test_3_methods(self):
         from dreambuddy_dal.protocols.config_repo import ConfigRepository
+
         for m in ["get_active_version", "activate_version", "get_specific_version"]:
             assert hasattr(ConfigRepository, m)
 
@@ -155,8 +190,14 @@ class TestConfigRepositoryProtocol:
 class TestKnowledgeGraphRepositoryProtocol:
     def test_5_methods(self):
         from dreambuddy_dal.protocols.kg_repo import KnowledgeGraphRepository
-        expected = {"upsert_entity", "add_alias", "add_triple",
-                    "fts_search_entities", "query_subgraph_by_entity"}
+
+        expected = {
+            "upsert_entity",
+            "add_alias",
+            "add_triple",
+            "fts_search_entities",
+            "query_subgraph_by_entity",
+        }
         got = {m for m in dir(KnowledgeGraphRepository) if not m.startswith("_")}
         for e in expected:
             assert e in got, f"KG Repo 缺方法 {e}"
@@ -176,6 +217,7 @@ class TestProtocolLiskovSubstitution:
         class _PartialTradeRepo(TradeRepository):
             def add_trade(self, trade: TradeRecord):
                 return trade.trade_id
+
             # 其他方法故意不实现 → 必须实例化失败
 
         with pytest.raises(TypeError, match="abstract"):

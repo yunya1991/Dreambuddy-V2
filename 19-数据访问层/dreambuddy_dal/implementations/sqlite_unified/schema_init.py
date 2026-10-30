@@ -10,6 +10,7 @@ SqliteUnified 实现：Schema 初始化入口
 
 入口：init_db_schema(conn)  → 每次启动 dreambuddy_dal / di.py = sqlite_unified 时调一次
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -440,13 +441,24 @@ END
 # ============================================================
 # 4. 4 个迁移 Helper（§10 Experience 1040063 契约入口）
 # ============================================================
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    """表是否已存在（G0-6：不存在时建表归 init_db_schema，helper 不越权 DDL）。"""
+    return bool(
+        conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
+        ).fetchone()
+    )
+
+
 def _add_column_if_missing(
     conn: sqlite3.Connection,
     table: str,
     column: str,
     ddl_with_default: str,
 ) -> bool:
-    """§10 Helper 1/4：缺列 → ALTER TABLE ADD；必带 DEFAULT；幂等。"""
+    """§10 Helper 1/4：缺列 → ALTER TABLE ADD；必带 DEFAULT；幂等。表不存在时跳过。"""
+    if not _table_exists(conn, table):
+        return False
     cols = {r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()}
     if column in cols:
         return False
@@ -465,14 +477,15 @@ def _add_index_if_missing(
 
     Args:
         unique: True 时生成 UNIQUE INDEX（唯一值索引，冲突抛 IntegrityError）
+    表不存在时跳过（建表归 init_db_schema）。
     """
+    if not _table_exists(conn, table):
+        return False
     existing = {r[1] for r in conn.execute(f"PRAGMA index_list({table})").fetchall()}
     if name in existing:
         return False
     uniq = "UNIQUE " if unique else ""
-    conn.execute(
-        f"CREATE {uniq}INDEX IF NOT EXISTS {name} ON {table}({', '.join(cols)})"
-    )
+    conn.execute(f"CREATE {uniq}INDEX IF NOT EXISTS {name} ON {table}({', '.join(cols)})")
     return True
 
 
@@ -481,7 +494,9 @@ def _ensure_singleton_row(
     table: str,
     default_values: dict[str, object],
 ) -> None:
-    """§10 Helper 4/4：单行表空表时 INSERT 默认行。幂等。"""
+    """§10 Helper 4/4：单行表空表时 INSERT 默认行。幂等。表不存在时跳过。"""
+    if not _table_exists(conn, table):
+        return
     exists = conn.execute(f"SELECT COUNT(*) FROM {table} WHERE id = 1").fetchone()[0]
     if exists:
         return

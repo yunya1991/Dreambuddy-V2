@@ -7,6 +7,7 @@ SqliteTradeRepository：SQLite Unified 实现（严格对齐 P0 Protocol 签名 
 - schema_init 扩展列（strategy_source 等）走 DEFAULT 值，不参与 dataclass 往返
 - tr_trades 缺列（position_style / trial_eval_ts 等）由 __init__._ensure_trades_proto_columns() 补
 """
+
 from __future__ import annotations
 
 import json
@@ -117,13 +118,41 @@ def _load_extra_payload(raw) -> dict:
 # =====================================================================
 def _trade_from_row(row) -> TradeRecord:
     (
-        trade_id, sub_system, strategy_name, symbol, direction,
-        entry_price, quantity, entry_ts, stop_loss, take_profit, risk_level_cn,
-        status, position_style, entry_basis, position_side, entry_slippage_bps, entry_execution_id,
-        trailing_stop, close_info_json, notes, cbr_case_id, extra_payload_raw,
-        is_trial, trial_status, trial_open_ts, trial_eval_ts, trial_eval_done, trial_eval_result,
-        exit_reason, exit_price, exit_ts, realized_pnl, pnl_pct,
-        _ca, _ua,
+        trade_id,
+        sub_system,
+        strategy_name,
+        symbol,
+        direction,
+        entry_price,
+        quantity,
+        entry_ts,
+        stop_loss,
+        take_profit,
+        risk_level_cn,
+        status,
+        position_style,
+        entry_basis,
+        position_side,
+        entry_slippage_bps,
+        entry_execution_id,
+        trailing_stop,
+        close_info_json,
+        notes,
+        cbr_case_id,
+        extra_payload_raw,
+        is_trial,
+        trial_status,
+        trial_open_ts,
+        trial_eval_ts,
+        trial_eval_done,
+        trial_eval_result,
+        exit_reason,
+        exit_price,
+        exit_ts,
+        realized_pnl,
+        pnl_pct,
+        _ca,
+        _ua,
     ) = row
 
     # close_info_json → CloseInfo（ADR-19-004 Decimal→TEXT，用统一 _JsonSerdeMixin）
@@ -133,25 +162,6 @@ def _trade_from_row(row) -> TradeRecord:
             close_info = CloseInfo.from_dict(json.loads(close_info_json))
         except Exception:
             close_info = None
-
-    # exit_reason 作为枚举优先使用 exit_reason enum 列，否则 fallback 到 close_info 里的值
-    exit_reason_e: Optional[ExitReason] = None
-    if close_info is not None:
-        exit_reason_e = close_info.exit_reason
-    elif exit_reason:
-        try:
-            exit_reason_e = ExitReason(str(exit_reason))
-        except ValueError:
-            exit_reason_e = None
-
-    # exit_price / exit_ts / realized_pnl 优先用 close_info 的值（一致性保证）
-    ex_price = _to_dec(exit_price) if exit_price else Decimal("0")
-    ex_ts = (datetime.fromisoformat(str(exit_ts).replace("Z", "+00:00")) if exit_ts else None)
-    rpnl = _to_dec(realized_pnl)
-    if close_info is not None:
-        ex_price = close_info.exit_price
-        ex_ts = close_info.close_ts
-        rpnl = close_info.realized_pnl
 
     # 枚举反序列化（小写存储兼容 schema CHECK；再恢复大写 TradeDirection / TradeStatus）
     def _from_enum(enum_cls, raw, default, *, case_insensitive: bool = False):
@@ -175,7 +185,9 @@ def _trade_from_row(row) -> TradeRecord:
         direction=_from_enum(TradeDirection, direction, TradeDirection.LONG, case_insensitive=True),
         entry_price=_to_dec(entry_price),
         quantity=_to_dec(quantity),
-        entry_ts=(datetime.fromisoformat(str(entry_ts).replace("Z", "+00:00")) if entry_ts else None),
+        entry_ts=(
+            datetime.fromisoformat(str(entry_ts).replace("Z", "+00:00")) if entry_ts else None
+        ),
         stop_loss=_to_dec(stop_loss) if stop_loss else Decimal("0"),
         take_profit=_to_dec(take_profit) if take_profit else Decimal("0"),
         risk_level_cn=str(risk_level_cn or ""),
@@ -192,8 +204,16 @@ def _trade_from_row(row) -> TradeRecord:
         extra_payload=_load_extra_payload(extra_payload_raw),
         is_trial=bool(is_trial),
         trial_status=_from_enum(TrialStatus, trial_status, TrialStatus.NOT_APPLICABLE),
-        trial_open_ts=(datetime.fromisoformat(str(trial_open_ts).replace("Z", "+00:00")) if trial_open_ts else None),
-        trial_eval_ts=(datetime.fromisoformat(str(trial_eval_ts).replace("Z", "+00:00")) if trial_eval_ts else None),
+        trial_open_ts=(
+            datetime.fromisoformat(str(trial_open_ts).replace("Z", "+00:00"))
+            if trial_open_ts
+            else None
+        ),
+        trial_eval_ts=(
+            datetime.fromisoformat(str(trial_eval_ts).replace("Z", "+00:00"))
+            if trial_eval_ts
+            else None
+        ),
         trial_eval_done=bool(trial_eval_done),
         trial_eval_result=(trial_eval_result if trial_eval_result is not None else None),
     )
@@ -267,19 +287,30 @@ class SqliteTradeRepository(TradeRepository):
 
     # ------------------------------------------------------------------ 补列
     def _ensure_trades_proto_columns(self) -> None:
-        """schema_init.tr_trades 缺 unified_models.TradeRecord 的 9 列 → ALTER TABLE（幂等）。"""
+        """schema_init.tr_trades 缺 unified_models.TradeRecord 的 9 列 → ALTER TABLE（幂等）。
+
+        G0-6：表不存在（全新库）时直接返回——建表是 migrations.init_schema 的职责，
+        业务层不得越权 DDL；迁移执行后本函数补列逻辑自然生效。
+        """
         with get_sqlite_connection(self.db_path) as conn:
             existing = {c[1] for c in conn.execute("PRAGMA table_info(tr_trades)").fetchall()}
+            if not existing:
+                return
             for col, ty, default in _TRADES_MISSING_COLS:
                 if col not in existing:
-                    conn.execute(
-                        f"ALTER TABLE tr_trades ADD COLUMN {col} {ty} DEFAULT {default}"
-                    )
+                    conn.execute(f"ALTER TABLE tr_trades ADD COLUMN {col} {ty} DEFAULT {default}")
 
     def _ensure_daily_stats_proto_columns(self) -> None:
-        """补 P0 DailyStats 简版列 + 复合唯一索引。"""
+        """补 P0 DailyStats 简版列 + 复合唯一索引。
+
+        G0-6：表不存在（全新库）时直接返回，建表归 migrations.init_schema。
+        """
         with get_sqlite_connection(self.db_path) as conn:
-            existing_cols = {c[1] for c in conn.execute("PRAGMA table_info(tr_daily_stats)").fetchall()}
+            existing_cols = {
+                c[1] for c in conn.execute("PRAGMA table_info(tr_daily_stats)").fetchall()
+            }
+            if not existing_cols:
+                return
             add_defs = [
                 ("stat_date", "TEXT", "NULL"),
                 ("symbol", "TEXT", "'ALL'"),
@@ -296,7 +327,9 @@ class SqliteTradeRepository(TradeRepository):
                         f"ALTER TABLE tr_daily_stats ADD COLUMN {col} {ty} DEFAULT {default}"
                     )
             ux_name = "ux_tr_daily_stats_comp_key"
-            existing_idx = {r[1] for r in conn.execute("PRAGMA index_list(tr_daily_stats)").fetchall()}
+            existing_idx = {
+                r[1] for r in conn.execute("PRAGMA index_list(tr_daily_stats)").fetchall()
+            }
             if ux_name not in existing_idx:
                 conn.execute(
                     f"CREATE UNIQUE INDEX IF NOT EXISTS {ux_name} "
@@ -445,14 +478,20 @@ class SqliteTradeRepository(TradeRepository):
                     """,
                     (
                         stats.stat_date,
-                        str(stats.start_equity), str(stats.end_equity),
-                        str(stats.net_pnl), float(stats.max_drawdown),
-                        int(stats.win_count), int(stats.loss_count),
+                        str(stats.start_equity),
+                        str(stats.end_equity),
+                        str(stats.net_pnl),
+                        float(stats.max_drawdown),
+                        int(stats.win_count),
+                        int(stats.loss_count),
                         str(stats.trading_volume),
                         int(stats.overrides_applied),
                         stats.manual_override_note,
                         json.dumps(stats.extra_payload, ensure_ascii=False),
-                        stats.stat_date, stats.symbol, stats.sub_system, stats.strategy_name,
+                        stats.stat_date,
+                        stats.symbol,
+                        stats.sub_system,
+                        stats.strategy_name,
                     ),
                 )
             else:
@@ -466,11 +505,17 @@ class SqliteTradeRepository(TradeRepository):
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        stats.stat_date, stats.stat_date, stats.symbol, stats.sub_system,
+                        stats.stat_date,
+                        stats.stat_date,
+                        stats.symbol,
+                        stats.sub_system,
                         stats.strategy_name,
-                        str(stats.start_equity), str(stats.end_equity),
-                        str(stats.net_pnl), float(stats.max_drawdown),
-                        int(stats.win_count), int(stats.loss_count),
+                        str(stats.start_equity),
+                        str(stats.end_equity),
+                        str(stats.net_pnl),
+                        float(stats.max_drawdown),
+                        int(stats.win_count),
+                        int(stats.loss_count),
                         str(stats.trading_volume),
                         int(stats.overrides_applied),
                         stats.manual_override_note,
@@ -514,8 +559,7 @@ class SqliteTradeRepository(TradeRepository):
             row = conn.execute(sql, args).fetchone()
         if not row:
             return None
-        (sd, sym, subs, sname, seq, eeq, net, mdd, wcnt, lcnt, tv,
-         oa, mon, ep_raw) = row
+        sd, sym, subs, sname, seq, eeq, net, mdd, wcnt, lcnt, tv, oa, mon, ep_raw = row
         return DailyStats(
             stat_date=sd,
             symbol=sym,
