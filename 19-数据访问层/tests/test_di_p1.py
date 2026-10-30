@@ -62,6 +62,11 @@ def test_factory_builds_all_sqlite_repos(monkeypatch, tmp_path):
     # 把 sqlite db 路径也指到 tmp 下（避免污染运行态默认）
     monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(tmp_path / "core.db"))
 
+    # G0-6：建表必须经 DDL 唯一 owner 显式迁移（业务层不再自动建表）
+    from dreambuddy_dal.migrations.init_schema import init_schema
+
+    init_schema(str(tmp_path / "core.db"))
+
     # 清全局单例缓存（否则其他测试遗留下的 instance 会影响）
     import dreambuddy_dal.di as _di
 
@@ -99,6 +104,11 @@ def test_dual_write_backend_smoke(monkeypatch, tmp_path):
     """[4] dual_write 后端：工厂返回非 None；包装了 legacy + new 双写实例。"""
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(tmp_path / "core.db"))
+
+    # G0-6：建表必须经 DDL 唯一 owner 显式迁移
+    from dreambuddy_dal.migrations.init_schema import init_schema
+
+    init_schema(str(tmp_path / "core.db"))
 
     import dreambuddy_dal.di as _di
 

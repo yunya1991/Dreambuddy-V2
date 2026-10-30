@@ -29,7 +29,7 @@ from dreambuddy_dal.connection import get_sqlite_connection
 from dreambuddy_dal.protocols.position_repo import PositionRepository
 from dreambuddy_dal.unified_models import PositionState, TradeDirection
 
-from .schema_init import _add_column_if_missing
+from .schema_init import _add_column_if_missing, _table_exists
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +118,9 @@ class SqlitePositionRepository(PositionRepository):
             #    本 Repository 把 po_positions 改做净持仓用，不绑定具体 Trade，
             #    用虚拟占位 trade_id="__NO_LINK__" 满足 FK 约束。
             now_iso = _iso_z(datetime.now(timezone.utc))
+            # G0-6：全新库（tr_trades 未建）时跳过占位行，建表归 init_db_schema
+            if not _table_exists(conn, "tr_trades"):
+                return
             conn.execute(
                 """
                 INSERT OR IGNORE INTO tr_trades (

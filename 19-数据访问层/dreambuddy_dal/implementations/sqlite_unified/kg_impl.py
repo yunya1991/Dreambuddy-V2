@@ -44,8 +44,12 @@ class SqliteKnowledgeGraphRepository(KnowledgeGraphRepository):
 
     # ------------------------------------------------------------------ 补列
     def _ensure_proto_columns(self) -> None:
-        """kg_entity_aliases 缺 confidence 列 → ALTER。"""
+        """kg_entity_aliases 缺 confidence 列 → ALTER。表不存在时跳过（G0-6）。"""
+        from .schema_init import _table_exists
+
         with get_sqlite_connection(self.db_path) as conn:
+            if not _table_exists(conn, "kg_entity_aliases"):
+                return
             cols = {c[1] for c in conn.execute("PRAGMA table_info(kg_entity_aliases)").fetchall()}
             if "confidence" not in cols:
                 conn.execute("ALTER TABLE kg_entity_aliases ADD COLUMN confidence REAL DEFAULT 1.0")

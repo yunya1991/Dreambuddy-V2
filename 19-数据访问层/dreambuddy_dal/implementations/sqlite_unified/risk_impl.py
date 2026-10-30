@@ -29,7 +29,7 @@ from dreambuddy_dal.unified_models import (
     TradeDirection,
 )
 
-from .schema_init import _add_column_if_missing, _ensure_singleton_row
+from .schema_init import _add_column_if_missing, _ensure_singleton_row, _table_exists
 
 
 # ---------------------------------------------------------------------------
@@ -144,6 +144,9 @@ class SqliteRiskRepository(RiskRepository):
             # rs_cases.related_trade_id REFERENCES tr_trades(trade_id)：
             # 给 trade_id=None 时用占位行 __NO_LINK__（和 po_positions 同一占位）
             now_iso = _iso_z(datetime.now(timezone.utc))
+            # G0-6：全新库（tr_trades 未建）时跳过占位行，建表归 init_db_schema
+            if not _table_exists(conn, "tr_trades"):
+                return
             conn.execute(
                 """
                 INSERT OR IGNORE INTO tr_trades (
