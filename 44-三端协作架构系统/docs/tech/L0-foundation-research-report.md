@@ -11,7 +11,7 @@
 
 **主要矛盾**：单模块已验证 vs 底座整体未验证；认知五系统闭环 vs 数据底座链路的衔接未系统梳理；自建底座 vs 成熟范式未对标。
 
-**约束**：单人维护、FAIL-OPEN、云端 4C8G、禁止 MLflow/K8s 等重型工具、评审只读。
+**约束**：单人维护、FAIL-OPEN、云端 4C16G、禁止 MLflow/K8s 等重型工具、评审只读。
 
 ## 二、本地架构审计结论（现状）
 
@@ -110,7 +110,7 @@
 ## 六、风险与待验证
 
 - point-in-time 改造触及 7 个下游消费方，需逐个 FAIL-OPEN 灰度（HC-1a/零回归）
-- TimescaleDB 扩展引入需云端 PG 实例支持验证（4C8G 资源评估）
+- TimescaleDB 扩展引入需云端 PG 实例支持验证（4C16G 资源评估）
 - import-linter 契约初版会暴露存量违规，需先 report-only 再转 enforce
 - 待验证：21 特征当前是否有隐式时间对齐；38 归档方案4迁移完成度
 
@@ -282,12 +282,12 @@ L1 基础智能层（确定性算法 / 意图路由）
 
 | 技术项 | 结论 | 理由 | 最小落地形态 |
 |---|---|---|---|
-| PG 单表 outbox + 轮询 dispatcher | **备选（P3）** | 默认用 `job_runs` 状态回调（一次写、天然幂等），跨库 outbox 只在出现非调度来源时才评估；CDC/Debezium slot lag 会填满 4C8G 磁盘 | 若启用：`domain_events` 表 + `FOR UPDATE SKIP LOCKED` 单进程循环 |
+| PG 单表 outbox + 轮询 dispatcher | **备选（P3）** | 默认用 `job_runs` 状态回调（一次写、天然幂等），跨库 outbox 只在出现非调度来源时才评估；CDC/Debezium slot lag 会填满 4C16G 磁盘 | 若启用：`domain_events` 表 + `FOR UPDATE SKIP LOCKED` 单进程循环 |
 | Kafka / Redis Stream 作事实源 | 不引入 | 多一套中间件运维面；Redis 仅作缓存/快通知 | — |
 | 能力声明文件（YAML 即能力地图） | 采纳 | 机器可发现、零运行时组件；复用 DreamOS `CapabilitySpec` 的**字段名** | `capabilities.yaml` + CI 校验（不加载运行时 `CapabilityRegistry`） |
 | OpenMetadata / DataHub / Backstage 运行时 | 不引入 | 重型目录服务 | YAML 即目录 |
 | 自研任务注册表 + job_runs + 执行器 | 采纳 | 需求是周期+重试+可见性，不是分布式 | 注册表 + `job_runs` + 8 要素（幂等/状态机/退避/并发/超时/心跳/日志/开关） |
-| Prefect / Dagster / Celery / Temporal | 不引入 | 各自需自带 UI+DB 或 broker+worker，4C8G 单机养不起 | — |
+| Prefect / Dagster / Celery / Temporal | 不引入 | 各自需自带 UI+DB 或 broker+worker，4C16G 单机养不起 | — |
 | APScheduler | 仅借语义 | 借 `max_instances=1` + `misfire_grace_time` 语义，不作 jobstore 事实源 | 触发器语义对齐 |
 | Kestra 控制面/数据面分离 | 借鉴思想 | 控制面只认 task_key + 输入契约，不 import 业务函数 | 同进程线程池执行器 |
 | Hexagonal Ports & Adapters | 借鉴，**限 6 个 port** | 超过即 port explosion；只在"会被替换或有第二实现"时建 port | Memory/Collector/Search/Store/REA + Facade |

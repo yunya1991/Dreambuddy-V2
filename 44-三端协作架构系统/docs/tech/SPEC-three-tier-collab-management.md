@@ -15,7 +15,7 @@
 | # | 千问建议 | 现状资产 | 修正结论 |
 |---|---|---|---|
 | 1 | 新建 `skills/registry.yaml` | `1-ARCHITECTURE/skills/_registry/registry.json`（schema 1.0，**185 个 SKILL**，含 depends_on/provides/cognitive_links/content_hash） | **禁止新建**。扩展 schema：新增 `role`（researcher/trader/risk/operator/coordinator）+ `category: collaboration` |
-| 2 | 部署 MLflow | `12-三屏趋势系统/ml/models/registry.json`（**已含 versions/current/baseline + train/test/walk_forward ROC AUC + overfit_gap**） | **禁止引入 MLflow**（4C8G 无余量）。扩展现有注册表新增 `state` 字段实现状态机 |
+| 2 | 部署 MLflow | `12-三屏趋势系统/ml/models/registry.json`（**已含 versions/current/baseline + train/test/walk_forward ROC AUC + overfit_gap**） | **禁止引入 MLflow**（4C16G 无余量）。扩展现有注册表新增 `state` 字段实现状态机 |
 | 3 | G4 非交易时段禁部署 | 加密货币 7×24 无"非交易时段" | 改用**波动率分位门禁**：ATR 20 日分位 >90% 或资金费率异常 → 禁部署（推迟至下个窗口） |
 | 4 | 模型热加载（MLflow tag 监听） | v15/yijing/continual-training 均为轮询架构，无 tag 监听 | 降级为**版本号文件轮询**：`models/current.json` 版本变更 → 服务下一次轮询周期自动 reload（延迟 ≤ 轮询周期，秒级） |
 | 5 | 自我 RACI（本人即 A 批准者） | 已有 `dream-science-peer-review`（Devil's Advocate）、`dream-acceptance-verify`（验收门禁） | A 角色**由 AI 评审 SKILL 承担**，本人保留最终否决权，解决"自我批准"失效问题 |
@@ -74,7 +74,7 @@
 | **D5 模型质量** | walk_forward 指标趋势、overfit_gap 恶化、生产漂移 | `ml/models/registry.json` 评审 + 交易胜率 | 每次训练后 | 模型评审意见（喂 G7，有效期 24h） |
 | **D6 风控行为** | 实盘交易记录合规性、trailing-stop 触发、熔断有效性 | 交易日志只读评审 | 每日 | 风控日报 |
 | **D7 安全面** | 端口暴露面、凭据落盘位置、ufw 规则、GitHub 权限 | 只读审计命令 | 每月 | 安全审计报告 |
-| **D8 成本/资源总量** | 云端 CPU/内存/磁盘水位（4C8G 是否触顶）、腾讯云账单、LLM token 与外部数据 API 费用、GitHub Actions 用量、未来按需 GPU 租用预算 | `free -h` / `df -h` / `top`（只读）、云账单、GitHub Actions usage | 每周（水位）+ 每月（账单） | 资源/成本月报 |
+| **D8 成本/资源总量** | 云端 CPU/内存/磁盘水位（4C16G 是否触顶）、腾讯云账单、LLM token 与外部数据 API 费用、GitHub Actions 用量、未来按需 GPU 租用预算 | `free -h` / `df -h` / `top`（只读）、云账单、GitHub Actions usage | 每周（水位）+ 每月（账单） | 资源/成本月报 |
 
 **评审节奏**：D2/D3/D6 每日（可脚本化汇总成一页）；D1/D5 事件驱动；D4/D8水位 每周；D7/D8账单 每月。
 **评审产出统一入口**：`.trae/documents/review-reports/YYYY-MM-DD-<维度>.md`，问题分级后进门禁链。其中 **D5 评审意见是 §4.2 promote 决策的显式输入**——执行 promote 脚本前必须引用当次 D5 评审报告路径，无报告不 promote。**报告有效期**：promote 时刻距报告生成 ≤24 小时，且报告时间必须晚于该版本的 `eval_gate.evaluated_at`；超期或 eval 重跑后须重新出报告（过期报告一律视为"无报告"）。
@@ -251,7 +251,7 @@
 
 | 风险 | 说明 | 处置 |
 |---|---|---|
-| 云端单点 | 4C8G 单机 22 服务 + DB | PG/Redis/MinIO 快照异地备份（`dal-backup.timer` 已有 04:00） |
+| 云端单点 | 4C16G 单机 22 服务 + DB | PG/Redis/MinIO 快照异地备份（`dal-backup.timer` 已有 04:00） |
 | SKILL 膨胀 | 185 个已相当可观 | 季度审计 + 冲突检测；新增 SKILL 须证明"无现有 SKILL 可覆盖" |
 | 模型漂移无感知 | 缺生产监控 | **禁止**叠加重型 Prometheus；复用现有 `overfit_gap` + 交易胜率指标，异常写告警 |
 | GitHub 单点 | CI + 模型分发 | 模型 artifact 同步备份到云端 MinIO |

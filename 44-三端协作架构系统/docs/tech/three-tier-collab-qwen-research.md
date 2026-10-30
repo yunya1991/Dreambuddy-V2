@@ -43,7 +43,7 @@ None → Staging → Production → Archived
 金丝雀验证通过→Production（自动archive旧版）
 监控发现漂移→回滚到上一Production版本
 单人裁剪建议
-省略金丝雀发布（4C8G跑不动双模型），但保留自动评估+手动promote两道关。本地辅训的模型通过GitHub Release assets回传云端，由云端pipeline统一注册。
+省略金丝雀发布（4C16G跑不动双模型），但保留自动评估+手动promote两道关。本地辅训的模型通过GitHub Release assets回传云端，由云端pipeline统一注册。
 三端落地
 云端主训：训练→MLflow注册→自动eval→tag为Staging→手动promote到Production→systemd热加载
 本地辅训：训练→本地eval→上传GitHub Release→云端CI拉取→注册为Staging→同上流程
@@ -260,7 +260,7 @@ conflicts_with: []  # 互斥SKILL列表
 六、风险与反模式识别
 反模式	说明	建议
 反模式	说明	建议
-云端单点故障	4C8G单机跑22+服务+数据库，无冗余	至少将PG/Redis/MinIO做定期快照备份到MinIO异地bucket
+云端单点故障	4C16G单机跑22+服务+数据库，无冗余	至少将PG/Redis/MinIO做定期快照备份到MinIO异地bucket
 本地成为瓶颈	后期本地转辅训，macOS算力有限	辅训仅做轻量微调，主训保留在云端；考虑按需租用GPU实例
 过度工程化	单人维护ArgoCD/K8s等重型工具	当前systemd+Docker足够，GitOps用简单的"git pull + systemctl restart"即可
 SKILL膨胀失控	30+ SKILL继续增长，依赖地狱	严格执行注册表治理，每季度做一次SKILL审计，合并功能重叠的SKILL
