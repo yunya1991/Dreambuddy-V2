@@ -4401,7 +4401,7 @@ class PollingTrader:
         for attempt in range(max_retries):
             try:
                 if hasattr(okx_client, "cancel_algo_orders"):
-                    okx_client.cancel_algo_orders(instId=inst_id)
+                    okx_client.cancel_algo_orders(inst_id=inst_id)
             except Exception:
                 pass
             try:
@@ -7869,7 +7869,7 @@ class PollingTrader:
                 return False
             try:
                 if hasattr(okx_client, "cancel_algo_orders"):
-                    okx_client.cancel_algo_orders(instId=inst_id)
+                    okx_client.cancel_algo_orders(inst_id=inst_id)
             except Exception as _ce:
                 self._log(f"[BDSM trailing] 取消旧algo: {_ce}", "DEBUG")
 
@@ -9621,7 +9621,7 @@ class PollingTrader:
             )
             try:
                 if self.okx_client and hasattr(self.okx_client, "cancel_algo_orders"):
-                    self.okx_client.cancel_algo_orders(instId=inst_id)
+                    self.okx_client.cancel_algo_orders(inst_id=inst_id)
             except Exception as ce:
                 self._log(f"[S2调整SLTP] 取消旧algo（可能无）：{ce}", "DEBUG")
             if self.okx_client and hasattr(self.okx_client, "place_stop_loss_take_profit"):
@@ -10061,7 +10061,7 @@ class PollingTrader:
         # 任何导致close_position的路径（SL/TP/手动/时间止损）都必须清理该symbol的残留Algo条件单
         try:
             if self.okx_client and hasattr(self.okx_client, "cancel_algo_orders"):
-                _clr = self.okx_client.cancel_algo_orders(instId=inst_id)
+                _clr = self.okx_client.cancel_algo_orders(inst_id=inst_id)
                 self._log(
                     f"[{coin}] 平仓后清理{inst_id}残留Algo条件单 | ok={_clr.get('ok')} "
                     f"canceled={_clr.get('canceled_count', 0)} err={_clr.get('error','')}",
@@ -12253,7 +12253,7 @@ class PollingTrader:
                         if decision.sl_px > 0 or decision.tp_px > 0:
                             try:
                                 if self.okx_client and hasattr(self.okx_client, "cancel_algo_orders"):
-                                    self.okx_client.cancel_algo_orders(instId=inst_id)
+                                    self.okx_client.cancel_algo_orders(inst_id=inst_id)
                             except Exception as _ce:
                                 self._log(f"[EvolutionExitEngine] 取消旧algo: {_ce}", "DEBUG")
                             if self.okx_client and hasattr(self.okx_client, "place_stop_loss_take_profit"):
