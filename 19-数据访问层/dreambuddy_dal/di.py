@@ -46,7 +46,8 @@ from dreambuddy_dal.protocols import (
 BACKEND_JSON_LEGACY = "json_legacy"
 BACKEND_DUAL_WRITE = "dual_write"
 BACKEND_SQLITE_UNIFIED = "sqlite_unified"
-_VALID_BACKENDS = {BACKEND_JSON_LEGACY, BACKEND_DUAL_WRITE, BACKEND_SQLITE_UNIFIED}
+BACKEND_POSTGRES = "postgres"
+_VALID_BACKENDS = {BACKEND_JSON_LEGACY, BACKEND_DUAL_WRITE, BACKEND_SQLITE_UNIFIED, BACKEND_POSTGRES}
 
 # 单例锁（线程安全 lazy init）
 _lock = threading.RLock()
@@ -359,12 +360,17 @@ def _build_sqlite_kg() -> KnowledgeGraphRepository:
     return SqliteKnowledgeGraphRepository(dbp)
 
 
+def _build_postgres_trade() -> TradeRepository:
+    from dreambuddy_dal.implementations.postgres import PostgresTradeRepository
+    return PostgresTradeRepository()
 # ------------------------------------------------------------ repo_type → 工厂
 def _build_trade(backend: str) -> TradeRepository:
     if backend == BACKEND_JSON_LEGACY:
         return _build_legacy_trade()
     if backend == BACKEND_SQLITE_UNIFIED:
         return _build_sqlite_trade()
+    if backend == BACKEND_POSTGRES:
+        return _build_postgres_trade()
     if backend == BACKEND_DUAL_WRITE:
         return _make_dual_write(_build_legacy_trade(), _build_sqlite_trade(), "trade")
     raise ValueError(backend)
