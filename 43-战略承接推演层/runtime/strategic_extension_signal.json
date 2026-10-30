@@ -1,13 +1,13 @@
 {
-  "signal_id": "sig_20261029_7a12da2b",
+  "signal_id": "sig_20261030_ab0d3922",
   "source": "strategic_extension",
-  "ts": "2026-10-29T18:48:01.569628+00:00",
+  "ts": "2026-10-30T04:18:01.289195+00:00",
   "symbol": "BTC/USDT",
   "direction": "neutral",
   "confidence": 0.52,
   "horizon": "days",
   "risk_exposure_hint": 0.1,
-  "expires_at": "2026-10-30T18:48:01.569628+00:00",
+  "expires_at": "2026-10-31T04:18:01.289195+00:00",
   "shadow": true,
   "payload": {
     "per_asset_class": {
