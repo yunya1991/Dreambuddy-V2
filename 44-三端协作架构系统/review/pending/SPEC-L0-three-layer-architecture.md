@@ -3,11 +3,11 @@
 > **版本**: v0.3 (2026-10-30，新增 §5.1 G0 前置门禁，按本地三方评审修订 P0×12/P1×10)
 > **状态**: 本地评审已闭环，**待用户确认后进入阶段 4 云端评审（D1-D8）**
 > **本地评审报告**: [l0-three-layer-review-round1.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-three-layer-review-round1.md)
-> **调研对象**: **云端 `43.160.201.117`（Ubuntu 24.04.5，4C8G/120G）为交付目标**；本地 macOS 仅作代理证据与训练端，一致性核对见 §1.1
+> **调研对象**: **云端 `43.160.201.117`（Ubuntu 24.04.5，4C16G/180G）为交付目标**；本地 macOS 仅作代理证据与训练端，一致性核对见 §1.1
 > **依据**: [l0-foundation-research-report.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-foundation-research-report.md) 第八章（三层目标专项审计与对标）
 > **上游**: SPEC-A（五能力现状与断点 S1-S7）、SPEC-B（协同化路线图 B1-B9）
 > **关系**: 本 SPEC **吸收并重排** SPEC-B —— SPEC-B 的 B1/B3/B4 归入 L0-I，B2/B5/B6/B7 归入 L0-P，B8 归入 L0-P，B9 归入 L0-S（见 §7）
-> **约束**: 单人维护、FAIL-OPEN、云端 4C8G、禁止 MLflow/K8s/Kafka/DataHub/Backstage 运行时、零回归（HC-1a 开关回落）、评审只读、本 SPEC 不改任何代码
+> **约束**: 单人维护、FAIL-OPEN、云端 4C16G、禁止 MLflow/K8s/Kafka/DataHub/Backstage 运行时、零回归（HC-1a 开关回落）、评审只读、本 SPEC 不改任何代码
 
 ---
 
@@ -17,7 +17,7 @@
 
 ## 1.1 调研对象与证据口径（云端为目标，本地为代理）— 硬约束
 
-> **口径（用户确认）**：本 SPEC 的**目标运行环境是云端**（`43.160.201.117`，Ubuntu 24.04.5 LTS，4C8G/120G）。**本地不是交付对象**，本地审计只是"服务云端"的代理证据；**所有结论必须能说明"云端成立与否"**，凡本地与云端不一致处，一律以**云端实测**为准并显式标注。
+> **口径（用户确认）**：本 SPEC 的**目标运行环境是云端**（`43.160.201.117`，Ubuntu 24.04.5 LTS，4C16G/180G）。**本地不是交付对象**，本地审计只是"服务云端"的代理证据；**所有结论必须能说明"云端成立与否"**，凡本地与云端不一致处，一律以**云端实测**为准并显式标注。
 
 ### 1.1.1 一致性核对矩阵（2026-10-30 实测）
 
@@ -52,7 +52,7 @@
 | V1 | 云端 `dreambuddy` 库 36 表与 19-DAL 仓储的实际覆盖关系（哪些表真有读写） | `pg_stat_user_tables` 的 `n_tup_ins/upd` + DAL 仓储清单比对 |
 | V2 | 26 个 timer 的真实触发成功率与滞留（无 `job_runs` 时的替代口径） | `journalctl -u <unit> --since` 计数 |
 | V3 | 云端 18 采集是否已双写到 PG `data_center`，SQLite `data_center.db` 是否仍为事实源 | 表行数对照 + `sink_sqlite/sink_postgres` 开关取值 |
-| V4 | 云端 KB 容量余量（4C8G/120G 下新增 `job_runs` + 事件表的余量） | `df -h` + PG 库大小 |
+| V4 | 云端 KB 容量余量（4C16G/180G 下新增 `job_runs` + 事件表的余量） | `df -h` + PG 库大小 |
 
 ## 2. 命名与坐标系（避免与既有编号冲突）
 
@@ -85,7 +85,7 @@
 
 | 项 | 规定 |
 |---|---|
-| 组件①能力声明 | `capabilities.yaml`（**Schema 复用 DreamOS `CapabilitySpec`** 的字段名：`capability_id/category/name/provides/requirements/status/degraded_reason/version` + 本 SPEC 增补 `health_cmd`、`port`）；**只做"文件 + CI 校验"这一事实源，不加载进运行时 `CapabilityRegistry`**（理由：DreamOS 注册表是进程内存态，五能力分散在 5+ 个进程，加载需额外常驻进程，与 4C8G 约束冲突）；health 由外部 runner 按 `health_cmd` 探活 |
+| 组件①能力声明 | `capabilities.yaml`（**Schema 复用 DreamOS `CapabilitySpec`** 的字段名：`capability_id/category/name/provides/requirements/status/degraded_reason/version` + 本 SPEC 增补 `health_cmd`、`port`）；**只做"文件 + CI 校验"这一事实源，不加载进运行时 `CapabilityRegistry`**（理由：DreamOS 注册表是进程内存态，五能力分散在 5+ 个进程，加载需额外常驻进程，与 4C16G 约束冲突）；health 由外部 runner 按 `health_cmd` 探活 |
 | 组件②事件 | **默认不建跨库 outbox**。P2 用"`job_runs` 状态转移 → 认知 record"同进程回调（一次写，以 `external_id = run_id` 幂等，无跨库重复写）；**前置硬条件（评审 P0-7）**：认知表必须先有 `external_id` 唯一索引，且 `record()` 必须接受幂等入参——现状 `record()` 无幂等键、记忆 ID 含毫秒，同一 run 会写多条并触发 verify 反复升级置信度，未补齐前 C8 不得开工。另外，`record()` 现状会 `Popen` 触发 41 索引重建（`cognitive_loop_entry.py:1062`），**必须改为批量/去抖**，否则每次调度完成都抢 CPU 拖慢实盘（评审 P0-11）。仅当出现**非调度来源的生产者**（如 REA 分析完成、检索命中）需要通知认知时，才在 P3 评估单表事件，且**表必须与认知库同库、dispatcher 置于认知进程内**；若坚持用 PG，则表为 `domain_events`（`id/aggregate_id/type/payload/status/attempts/next_attempt_at/created_at/published_at`）+ 单进程 `FOR UPDATE SKIP LOCKED`，`aggregate_id` 内串行，消费方以 event id 幂等。**现状（云端实测，不重建）**：云端已有单向链路 `34/core/event_emitter.py` → `events/dreamos/*.jsonl` → `etl-worker.service`（60s）→ PG `observability` 三表；本 SPEC 只在链路末尾补"→ 认知 record"一段，**不新造第二个事件生产者** |
 | 组件③检索入口 | 单一 MCP 工具 `unified_search(query, sources, top_k)` **必须经 `Search` port 分发**（不得直连三后端，评审 P0-1），port 内实现 41 / Chroma / 认知 recall 三个 backend adapter。**41 是外部部署**（云端 `/home/ubuntu/fis-p0` 独立 venv + `FIS_AGENT_TOKEN` 权限 + 每小时 cron 刷新索引），不是"零依赖切片"：必须做探活，**全后端不可用时显式返回"全降级"错误码**，禁止用 FAIL-OPEN 把故障伪装成"无结果"。排序策略：各后端分数 min-max 归一化后按 `source` 分层返回（不做跨源硬比）；去重键=规范化路径（文档）或记忆 ID（认知）；`top_k` 上限 50，默认 10 |
 | 禁止 | ①自建消息总线/Kafka/CDC；②让事件直接读写某能力的私有表（必须经 L0-P）；③检索入口内同步执行业务任务（触发一律走 outbox） |
@@ -99,7 +99,7 @@
 | 控制面 | 声明式任务清单（`task_key / schedule / timeout / max_concurrency / retry / enabled / fallback`）+ `job_runs` 表（`run_id/task_key/logical_window/state/attempts/started_at/heartbeat_at/finished_at/error`） |
 | 数据面 | 执行器（线程池/子进程）**只认 `task_key` + 输入契约**，不得 import 业务函数；控制面与执行面仅经 `job_runs` 通信 |
 | 八要素 | **`logical_window` 统一为 UTC 门控时刻**（host `+0800` 与 PG 容器 UTC 不得混用，评审 P0-10）；幂等 run key（`task_key + logical_window`，unique）／状态机 `pending→claimed→running→success/failed/timeout/dead`／指数退避+抖动／按 task_key 并发限流／超时回收／心跳／运行记录与日志引用／开关。**补三条**：①迟到容忍窗（默认 5min，超窗记 `missed_run` 并跳过，不补发）；②长任务跨窗拆成多个 run，不延长单窗；③**连续 N 窗（默认 3）无 run 必须告警**——这是"回收后被 unique 拒导致静默停摆"的唯一兜底（评审 P0-10） |
-| 保留与归档 | `job_runs` 默认保留 90 天，之后归档到 `38-` 冷热分层；**禁止无界增长**（云端 120G 磁盘，评审 P1-4） |
+| 保留与归档 | `job_runs` 默认保留 90 天，之后归档到 `38-` 冷热分层；**禁止无界增长**（云端 180G 磁盘，评审 P1-4） |
 | 与 OS 层边界 | **OS 调度器只负责"拉起常驻进程 + 看门狗"**：本地为 `launchd`（25 plist），云端为 `systemd service/timer`（74 单元 + 26 timer）——两者是**同一职责的两种载体**，规则不得只写 launchd；凡是需要业务上下文（DB 状态/开关/依赖其他能力）的定时逻辑，收进 L0-S；**不得改变实盘进程的生命周期管理方式** |
 | 禁止 | ①调度层持有业务知识；②为调度引入 Prefect/Dagster/Celery/Temporal；③一次性移除 OS 调度器（launchd 或 systemd）；④在新任务注册表之外继续新增裸 `crontab`（云端现有 1 条须先纳管） |
 
@@ -141,7 +141,7 @@
 | G0-4 | **CI 阻断 job**：新增独立 job `l0-contracts`（跑新契约测试），**不动既有 `continue-on-error` job** | 现状所有 pytest 都 `continue-on-error`，测试红了流水线也是绿的 | 故意让一条契约测试失败时 CI 变红 |
 | G0-5 | **健康检查与回滚**：部署末尾改 `health-check.sh --record-good`；回滚需人工确认，禁止连续 3 次失败即 `git reset --hard` | 失败计数不清零会误回滚新代码 | 一次正常部署后 `health-state` 归零；回滚需显式操作 |
 | G0-6 | **DDL / schema 唯一 owner**：`init_db_schema` 从 `di.py:78` 移到独立迁移模块，业务层禁止建表 | 谁都能建表就永远换不掉库 | 全仓建表语句只在迁移模块 |
-| G0-7 | **磁盘与日志上限**：`events/*.jsonl` 加 logrotate；磁盘水位 >85% 告警 | 120G 写满会直接打断实盘写仓 | logrotate 生效；水位告警可触发 |
+| G0-7 | **磁盘与日志上限**：`events/*.jsonl` 加 logrotate；磁盘水位 >85% 告警 | 180G 写满会直接打断实盘写仓 | logrotate 生效；水位告警可触发 |
 | G0-8 | **认知幂等字段**：认知表加 `external_id` 唯一索引 + `record(idempotency_key=)` | C8 的"run_id 幂等"在当前实现上不成立 | 同一 key 重复 record 只产生 1 条记忆 |
 
 ## 5.2 六条硬规则与本节的优先级
@@ -236,5 +236,5 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 - **资源争抢（评审 P0-11）**：`record()` 现状会 `Popen` 触发 41 索引重建，云端 4 核下会与止损/轮询争 CPU；必须批量/去抖，非实盘 unit 限 CPU。
 - **C6 声明漂移**：声明与实际实现不一致会退化为第二份文档，CI 须校验 `health_cmd` 可执行、`provides` 有对应 port。
 - **顺序风险**：若把 C7 之后立刻做 C9（调度），`job_runs` 必须经 L0-P 的 `Event` port 落库（不得直连 PG），否则换库时调度层重写。
-- **本地代理失真（本轮新增）**：本地 macOS 的 launchd 25 服务、SQLite 主库、无 cron，**不能代表云端运行时**（云端 systemd 74 单元/26 timer、PG 主库+SQLite 遗留、1 条 cron）；凡只在本地验证的结论，一律标记"待云端复核"，禁止据此宣称交付完成。云端 4C8G 内存与 120G 磁盘也限制"新增常驻进程"的方案（见 §3.2 组件①）。
+- **本地代理失真（本轮新增）**：本地 macOS 的 launchd 25 服务、SQLite 主库、无 cron，**不能代表云端运行时**（云端 systemd 74 单元/26 timer、PG 主库+SQLite 遗留、1 条 cron）；凡只在本地验证的结论，一律标记"待云端复核"，禁止据此宣称交付完成。云端 4C16G 内存与 180G 磁盘也限制"新增常驻进程"的方案（见 §3.2 组件①）。
 - **运行数据双向漂移（代码已对齐后仍存在）**：两端 HEAD 已同为 `4d6837f880`、`.py` 改动均为 0，但运行态产物各自生长（本地 13 个 `backtest_cache` json + 2 份未提交部署文档；云端 `pool.json` + 3 个 REA 新样本）。**结论只以 commit 为准**，禁止用运行数据差异推断代码差异；需要对齐运行数据时按 phase11 `11-full-migrate.sh` 走单向同步，不做双向 merge。
