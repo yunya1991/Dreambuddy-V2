@@ -957,6 +957,7 @@ class CognitiveLoopEntry:
         # L4 预测误差门控（Friston 自由能）：提供预期/实际结果时自动计算
         expected_outcome: Optional[float] = None,
         actual_outcome: Optional[float] = None,
+        external_id: Optional[str] = None,
     ) -> str:
         """
         记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分 + Evidence-First）。
@@ -989,6 +990,7 @@ class CognitiveLoopEntry:
             level=level,
             known_gaps=known_gaps,
             observations=observations,
+            external_id=external_id,
         )
 
         # Phase1：VOYAGER 评分持久化 + 写入 bayesian 扩展字段（FAIL-OPEN 包裹）

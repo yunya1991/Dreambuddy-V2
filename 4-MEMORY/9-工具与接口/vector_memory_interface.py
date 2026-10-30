@@ -320,7 +320,8 @@ class VectorMemoryInterface:
                     verify_count INTEGER DEFAULT 0,
                     level TEXT DEFAULT 'observation',
                     known_gaps TEXT DEFAULT '[]',
-                    observations TEXT DEFAULT '[]'
+                    observations TEXT DEFAULT '[]',
+                    external_id TEXT
                 )
             """)
 
@@ -330,6 +331,8 @@ class VectorMemoryInterface:
             # 索引
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_quality ON memories(quality_level)")
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_type ON memories(memory_type)")
+            # G0-8：external_id 幂等唯一索引（部分索引，存量 NULL 不受约束）
+            self.db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_external_id ON memories(external_id) WHERE external_id IS NOT NULL")
 
             # --- 对遗留的 vec_memories 虚拟表做保护 ---
             # 场景：旧 DB 是用 sqlite_vec 引擎创建的（里面 CREATE VIRTUAL TABLE vec_memories ...），
@@ -383,6 +386,7 @@ class VectorMemoryInterface:
             ("level", "TEXT DEFAULT 'observation'"),
             ("known_gaps", "TEXT DEFAULT '[]'"),
             ("observations", "TEXT DEFAULT '[]'"),
+            ("external_id", "TEXT"),
         ]:
             try:
                 self.db.execute(
@@ -408,6 +412,7 @@ class VectorMemoryInterface:
         level: str = "observation",
         known_gaps: Optional[List[str]] = None,
         observations: Optional[List[Dict[str, Any]]] = None,
+        external_id: Optional[str] = None,
     ) -> str:
         """
         添加一条记忆。
@@ -436,6 +441,14 @@ class VectorMemoryInterface:
         observations = observations or []
 
         now = datetime.now(timezone.utc).isoformat()
+        # G0-8：external_id 幂等——已存在时复用原行，不产生重复记忆
+        if external_id:
+            with self._db_lock:
+                row = self.db.execute(
+                    "SELECT id FROM memories WHERE external_id = ?", [external_id]
+                ).fetchone()
+            if row:
+                return row[0]
         mem_id = memory_id or f"VM-{int(time.time()*1000)}-{hashlib.md5(content.encode()).hexdigest()[:8]}"
 
         # 向量化
@@ -446,8 +459,8 @@ class VectorMemoryInterface:
         with self._db_lock:
             self.db.execute("""
                 INSERT OR REPLACE INTO memories
-                    (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations, external_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [
                 mem_id, content, vector_bytes,
                 quality_level, confidence,
@@ -456,6 +469,7 @@ class VectorMemoryInterface:
                 level,
                 json.dumps(known_gaps, ensure_ascii=False),
                 json.dumps(observations, ensure_ascii=False),
+                external_id,
             ])
 
             # 插入 sqlite-vec 虚拟表
