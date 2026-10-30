@@ -30,6 +30,8 @@
 | **双端协作：模块租约** | `44-三端协作架构系统/shared/tools/{lease.py,test_lease.py}` | R1-R8（R8 终审权归云端） | 本次变更 | 17 项单测全通过；冲突 exit 2；`lease` / `hotfix:*` 豁免；本地申请 `review:approved/**` 返回 exit 2 |
 | **双端协作：文档双向同步** | `44-三端协作架构系统/shared/tools/docs_sync.sh` | 103 行 | 本次变更 | `bash -n` 通过；同步判定 = HEAD vs origin/main（不设 ACK 文件）；云端 fetch→全量路径校验→整提交 `pull --ff-only`（不做路径级 checkout），不绕过 G4 |
 | **G3.5 角色分离门 + 租约 CI** | `.github/workflows/lease-guard.yml` | 70 行 | 本次变更 | PR 事件触发；无租约阻断；lease/hotfix/`lease-waiver` 豁免；可选身份白名单 |
+| **P1 文档秒级同步（Actions）** | `.github/workflows/docs-sync.yml`、`37-一键启动脚本/docs-sync.sh` | — | `87e77ec63c` | 实跑：push 文档 → Actions 11s → 云端 `SYNCED d9179a2002 → 87e77ec63c`，`status.json=synced`；代码变更一律跳过（交 update.sh + G4） |
+| **main 分支保护** | GitHub 仓库设置（`branches/main/protection`） | — | 2026-10-30 | 必需检查 `lint` + `lease`；禁 force push/删除；`enforce_admins=false`（owner 可直推） |
 | **双端协作 SPEC + 独立评审** | `44-三端协作架构系统/docs/tech/SPEC-dual-end-collab-governance.md`、`review/feedback/2026-10-30-dual-end-collab-review.md` | — | 本次变更 | 独立评审"有条件通过"；M1-M6 必改、S1-S4 建议全部处置并回写；M7（终审权归云端）→ R8 |
 
 ## 二、本次一并归档的运维脚本（此前未入版本库）

@@ -204,7 +204,7 @@ Task ID: T-20261030-001
 
 ### 6.3 分支保护前置（P0，需 owner 执行）
 
-`main` 当前**无分支保护**。落地前必须开启：必需检查含 `ci`、`lease-guard`、`guard`，`strict=true`，禁止 force push。命令见 §七 交付物备注。
+`main` 分支保护已于 2026-10-30 开启（`gh api .../protection` 实返 required_status_checks）：必需检查 `lint` + `lease`，禁止 force push / 删除分支，要求对话解决，`enforce_admins=false`（owner 保留直推与紧急处置权）。后续若 CI 稳定，可把 `test` 加入必需检查。
 
 ---
 
