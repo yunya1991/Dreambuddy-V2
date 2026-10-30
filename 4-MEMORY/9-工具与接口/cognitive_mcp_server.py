@@ -535,8 +535,41 @@ def _handle_l4_status(args: Dict[str, Any]) -> str:
     return json.dumps(result, ensure_ascii=False)
 
 
+def _handle_unified_search(args: Dict[str, Any]) -> str:
+    """C7 统一检索：经 Search port 分发三后端（41/Chroma/recall），FAIL-OPEN。"""
+    import sys as _sys
+    import os as _os
+    _repo_root = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", ".."))
+    if _repo_root not in _sys.path:
+        _sys.path.insert(0, _repo_root)
+    from dreambuddy_l0.search import get_unified_search
+    query = str(args.get("query", ""))
+    if not query:
+        return json.dumps({"ok": False, "error_code": "invalid", "error": "missing query"}, ensure_ascii=False)
+    top_k = int(args.get("top_k", 5))
+    sources = args.get("sources") or None
+    result = get_unified_search().search(query, sources=sources, top_k=top_k)
+    return json.dumps(result, ensure_ascii=False)
+
+
+TOOL_DEFINITIONS.append({
+    "name": "unified_search",
+    "description": "C7 统一检索：经 Search port 分发三后端（41-SearchAPI/ChromaDB RAG/认知 recall），分数归一化合并去重。单后端失败自动降级其余；全后端不可用返回 error_code=all_sources_unavailable。",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "检索关键词"},
+            "top_k": {"type": "integer", "description": "返回结果数（默认5）", "default": 5},
+            "sources": {"type": "array", "items": {"type": "string"}, "description": "限定后端列表（search41/chroma/recall），默认全部"},
+        },
+        "required": ["query"],
+    },
+})
+
+TOOL_NAMES.add("unified_search")
 TOOL_HANDLERS = {
     "recall": _handle_recall,
+    "unified_search": _handle_unified_search,
     "record": _handle_record,
     "verify": _handle_verify,
     "stats": _handle_stats,
