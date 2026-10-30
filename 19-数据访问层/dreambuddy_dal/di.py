@@ -129,8 +129,42 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
     )
     READ_PREFIXES = ("get_", "query_", "list_", "has_", "check_", "fts_")
 
-    def _get_read_source() -> str:
+    def _get_read_source(repo_name: str = "") -> str:
+        """读开关：per-repo 优先（READ_SOURCE_{REPO} 大写），否则全局 READ_SOURCE。
+
+        C5 前置：原全局 READ_SOURCE 一刀切，无法按 repo 粒度灰度切读；
+        per-repo 值合法性与全局一致（shadow / next_gen / 空=legacy）。
+        """
+        if repo_name:
+            per_repo = os.environ.get(
+                "READ_SOURCE_" + repo_name.strip().upper(), ""
+            ).strip().lower()
+            if per_repo:
+                return per_repo
         return os.environ.get("READ_SOURCE", "").strip().lower()
+
+    _shadow_stats: dict = {}  # repo_name -> [diff_count, total_count]
+
+    def _get_diff_threshold() -> float:
+        try:
+            return float(os.environ.get("SHADOW_DIFF_THRESHOLD", "0.05"))
+        except ValueError:
+            return 0.05
+
+    def _record_shadow_cmp(repo_name: str, cmp_result: str) -> float:
+        """记录一次 shadow 比对，返回该 repo 当前 diff 率；超阈值 error 告警（每 repo 一次/告警周期）。"""
+        st = _shadow_stats.setdefault(repo_name, [0, 0])
+        st[1] += 1
+        if cmp_result == "DIFF":
+            st[0] += 1
+        rate = st[0] / st[1]
+        threshold = _get_diff_threshold()
+        if st[1] >= 20 and rate > threshold:
+            _log.error(
+                "DualWrite[%s] shadow diff 率 %.1f%% 超阈值 %.1f%%（%d/%d），禁止切读",
+                repo_name, rate * 100, threshold * 100, st[0], st[1],
+            )
+        return rate
 
     def _get_sqlite_db_path() -> str:
         return os.environ.get(
@@ -158,22 +192,37 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
             pass  # 审计写入失败不影响主流程
 
     def _compare_results(legacy_val, new_val) -> str:
-        """浅比对：None/空列表/基本类型 ==；dataclass 比 __dict__；其余 str() 比。"""
+        """字段级比对（C5 前置）：list 逐元素递归、dict 逐键递归、dataclass 递归 __dict__。
+
+        原实现 list 只比 len()（假 MATCH：元素字段不同也算 MATCH），已废弃。
+        """
         if legacy_val is None and new_val is None:
             return "MATCH"
         if legacy_val is None or new_val is None:
             return "DIFF"
-        # dataclass
+        # dataclass / 对象：递归比 __dict__（dict 分支承接）
         if hasattr(legacy_val, "__dict__") and hasattr(new_val, "__dict__"):
             try:
-                if str(legacy_val.__dict__) == str(new_val.__dict__):
-                    return "MATCH"
+                return _compare_results(legacy_val.__dict__, new_val.__dict__)
             except Exception:
                 pass
             return "DIFF"
-        # list
+        # list：长度 + 逐元素递归（字段级，禁止只比 len）
         if isinstance(legacy_val, list) and isinstance(new_val, list):
-            return "MATCH" if len(legacy_val) == len(new_val) else "DIFF"
+            if len(legacy_val) != len(new_val):
+                return "DIFF"
+            for a, b in zip(legacy_val, new_val):
+                if _compare_results(a, b) == "DIFF":
+                    return "DIFF"
+            return "MATCH"
+        # dict：键集 + 逐值递归
+        if isinstance(legacy_val, dict) and isinstance(new_val, dict):
+            if set(legacy_val.keys()) != set(new_val.keys()):
+                return "DIFF"
+            for k in legacy_val:
+                if _compare_results(legacy_val[k], new_val[k]) == "DIFF":
+                    return "DIFF"
+            return "MATCH"
         # 基本类型
         try:
             return "MATCH" if legacy_val == new_val else "DIFF"
@@ -201,7 +250,7 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
                 is_read = any(item.startswith(p) for p in READ_PREFIXES)
 
                 def _dual_fn(*args, **kwargs):
-                    read_source = _get_read_source()
+                    read_source = _get_read_source(name)
 
                     # ── READ_SOURCE=next_gen → 读走新库 ──
                     if is_read and read_source == "next_gen" and new_fn is not None:
@@ -228,11 +277,16 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
                             try:
                                 new_result = new_fn(*args, **kwargs)
                                 cmp = _compare_results(result, new_result)
+                                diff_rate = _record_shadow_cmp(name, cmp)
                                 entity_key = f"{item}#{str(args)[:60]}"
                                 _write_shadow_audit(
                                     entity_key=entity_key,
                                     result=cmp,
-                                    details={"method": item, "args": str(args)[:200]},
+                                    details={
+                                        "method": item,
+                                        "args": str(args)[:200],
+                                        "repo_diff_rate": round(diff_rate, 4),
+                                    },
                                 )
                             except Exception as exc:
                                 _log.warning(
