@@ -237,6 +237,12 @@ else
 fi
 
 # ── 完成 ──
+# G0-5（SPEC-L0 §5.1）：部署末尾 --record-good（清零失败计数 + 写 last_good）
+if [ -x "${REPO_DIR:-/home/luke/dreambuddy}/37-一键启动脚本/health-check.sh" ]; then
+    bash "${REPO_DIR:-/home/luke/dreambuddy}/37-一键启动脚本/health-check.sh" --record-good \
+        && echo "[update] health-state 已清零，last_good 已记录" \
+        || echo "[update] --record-good 执行失败（需人工检查 health-state）"
+fi
 echo ""
 echo "============================================"
 echo "  代码更新完成"

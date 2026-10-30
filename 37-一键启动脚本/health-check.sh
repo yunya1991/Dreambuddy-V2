@@ -97,7 +97,7 @@ if [ "${FAILS}" -gt 0 ]; then
     STATUS="DEGRADED"
     if [ "${CUR_FAILS}" -ge "${THRESHOLD}" ]; then
         STATUS="CRITICAL"
-        ACTION="rollback"
+        ACTION="manual_rollback_required"
     fi
 fi
 
@@ -112,9 +112,10 @@ fi
 
 echo "${CUR_FAILS}" > "${STATE_FILE}"
 
-if [ "${ACTION}" = "rollback" ] && [ -x "${ROLLBACK}" ]; then
-    echo "[health] 连续 ${CUR_FAILS} 次失败 ≥ ${THRESHOLD} → 触发自动回滚"
-    "${ROLLBACK}" --auto --reason "health-check consecutive=${CUR_FAILS}" || echo "[health] 回滚脚本执行失败（需人工介入）"
+if [ "${ACTION}" = "manual_rollback_required" ]; then
+    # G0-5（SPEC-L0 §5.1）：回滚需人工确认，禁止连续失败即自动 git reset --hard
+    echo "[health] 连续 ${CUR_FAILS} 次失败 ≥ ${THRESHOLD} → 需人工回滚（不再自动触发）"
+    echo "[health] 人工回滚命令: ${ROLLBACK} --yes --reason 'manual: consecutive=${CUR_FAILS}'"
 fi
 
 exit $([ "${FAILS}" -eq 0 ] && echo 0 || echo 1)

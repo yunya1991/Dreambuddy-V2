@@ -65,7 +65,9 @@ T = TypeVar("T")
 # 0. Sqlite 单库 schema 初始化（once）
 # ---------------------------------------------------------------------------
 def _ensure_sqlite_schema_inited(db_path: str) -> None:
-    # 绝对路径归一化（避免不同相对路径重复 init）
+    # G0-6（SPEC-L0 §5.1）：DDL 唯一 owner——业务层禁止建表。
+    # 此处仅确保父目录存在；schema 初始化由独立迁移模块显式执行：
+    #   python -m dreambuddy_dal.migrations.init_schema
     import os as _os
     key = _os.path.abspath(db_path)
     if key in _sqlite_schema_inited_paths:
@@ -74,10 +76,6 @@ def _ensure_sqlite_schema_inited(db_path: str) -> None:
         if key in _sqlite_schema_inited_paths:
             return
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        from dreambuddy_dal.connection import get_sqlite_connection
-        from dreambuddy_dal.implementations.sqlite_unified import init_db_schema
-        with get_sqlite_connection(db_path) as conn:
-            init_db_schema(conn)
         _sqlite_schema_inited_paths.add(key)
 
 

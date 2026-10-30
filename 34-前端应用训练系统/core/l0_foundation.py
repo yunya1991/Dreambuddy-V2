@@ -38,8 +38,25 @@ _PROJECT_ROOT = os.path.abspath(
 )
 
 # 18 中心已迁移 PostgreSQL，复用 39 模块统一 PG 辅助模块（FAIL-OPEN）
-sys.path.insert(0, os.path.join(_PROJECT_ROOT, "39-金融语义蒸馏系统", "scripts"))
-import dc_pg
+# G0-3：禁用模块级 sys.path.insert，dc_pg 改为按文件路径延迟加载（importlib）
+_DC_PG_PATH = os.path.join(_PROJECT_ROOT, "39-金融语义蒸馏系统", "scripts", "dc_pg.py")
+_dc_pg_module = None
+
+
+def _load_dc_pg():
+    """延迟加载 dc_pg（仅依赖标准库，按文件路径加载，不污染 sys.path）。"""
+    global _dc_pg_module
+    if _dc_pg_module is None:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("dreambuddy_dc_pg", _DC_PG_PATH)
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        _dc_pg_module = _mod
+    return _dc_pg_module
+
+
+# G0-2：41 外部部署路径外置为配置（环境变量 FIS_P0_HOME，本地/云端差异只在配置）
+_FIS_P0_HOME = os.environ.get("FIS_P0_HOME", "/home/ubuntu/fis-p0")
 _EVOLUTION_LOG = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
                   "logs", "evolution_pipeline.log")
 _EVOLUTION_SNAPSHOT = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
@@ -159,7 +176,8 @@ class L0Foundation:
         limit = int(params.get("limit", 5))
         try:
             proc = _sp.run(
-                ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                [os.path.join(_FIS_P0_HOME, ".venv/bin/python"),
+                 os.path.join(_FIS_P0_HOME, "scripts/search_cli.py")],
                 input=_json.dumps({"cmd": "recall", "query": str(query), "limit": limit}),
                 capture_output=True, text=True, timeout=10,
                 env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
@@ -183,7 +201,7 @@ class L0Foundation:
         if not src:
             return _degraded(src_tag, "invalid_params", "missing param: source")
         # PostgreSQL 查询（dc_pg 统一接口，FAIL-OPEN：异常/无记录返回 None）
-        row = dc_pg.fetch_latest_by_source(src, params.get("sub_category"))
+        row = _load_dc_pg().fetch_latest_by_source(src, params.get("sub_category"))
         if row is None:
             return _envelope(None, src_tag)
         return _envelope(

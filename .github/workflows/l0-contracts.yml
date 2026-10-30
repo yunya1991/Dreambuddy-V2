@@ -1,0 +1,37 @@
+name: "L0 Contracts"
+
+# G0-4（SPEC-L0 §5.1）：L0 契约测试阻断 job。
+# 与 ci.yml 相互独立；本 job 不设 continue-on-error，测试失败即 CI 变红。
+# C2 的六能力 port 契约测试完成后并入本 job 的测试目录。
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+
+concurrency:
+  group: l0-contracts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  l0-contracts:
+    name: L0 Contract Tests (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+      - name: Run L0 contract tests
+        run: |
+          python -m pytest '44-三端协作架构系统/shared/tests/' -v --tb=short
