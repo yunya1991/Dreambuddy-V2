@@ -23,10 +23,15 @@
 from __future__ import annotations
 
 import os
-import sqlite3
 import sys
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
+
+# C5 第一批：读路径经 _store_port 助手（文件粒度开关，默认 legacy 直连）
+try:
+    from force_vector._store_port import fetch_chart_timeseries_json
+except ImportError:  # 脚本直跑（同目录）
+    from _store_port import fetch_chart_timeseries_json
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -115,45 +120,33 @@ def _fetch_coin_7d_returns(sector: str, db_path: str) -> Dict[str, float]:
             if not coin_id or not db_path or not os.path.exists(db_path):
                 continue
 
-            conn = sqlite3.connect(db_path)
-            try:
-                cursor = conn.execute(
-                    "SELECT timeseries FROM records "
-                    "WHERE source='coingecko' AND category='coin' "
-                    "AND sub_category=? "
-                    "ORDER BY timestamp DESC LIMIT 1",
-                    (f"chart_{coin_id}",),
-                )
-                row = cursor.fetchone()
-                if not row or not row[0]:
-                    continue
+            ts_json = fetch_chart_timeseries_json(coin_id, db_path, switch="CATALYST")
+            if not ts_json:
+                continue
+            ts = _safe_json(ts_json)
+            if not isinstance(ts, list) or len(ts) < 8:
+                continue
 
-                ts = _safe_json(row[0])
-                if not isinstance(ts, list) or len(ts) < 8:
-                    continue
+            # 提取 price 序列
+            prices: List[float] = []
+            for item in ts:
+                if isinstance(item, dict):
+                    p = item.get("price", 0)
+                    try:
+                        prices.append(float(p) if p is not None else 0.0)
+                    except (TypeError, ValueError):
+                        prices.append(0.0)
 
-                # 提取 price 序列
-                prices: List[float] = []
-                for item in ts:
-                    if isinstance(item, dict):
-                        p = item.get("price", 0)
-                        try:
-                            prices.append(float(p) if p is not None else 0.0)
-                        except (TypeError, ValueError):
-                            prices.append(0.0)
+            valid_prices = [p for p in prices if p > 0]
+            if len(valid_prices) < 8:
+                continue
 
-                valid_prices = [p for p in prices if p > 0]
-                if len(valid_prices) < 8:
-                    continue
+            price_now = valid_prices[-1]
+            price_7d_ago = valid_prices[-8]
+            if price_7d_ago <= 0:
+                continue
 
-                price_now = valid_prices[-1]
-                price_7d_ago = valid_prices[-8]
-                if price_7d_ago <= 0:
-                    continue
-
-                returns[member] = (price_now / price_7d_ago) - 1.0
-            finally:
-                conn.close()
+            returns[member] = (price_now / price_7d_ago) - 1.0
         except Exception:
             continue  # FAIL-OPEN
 

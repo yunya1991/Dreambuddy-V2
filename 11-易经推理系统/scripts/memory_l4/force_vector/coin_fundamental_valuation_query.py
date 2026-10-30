@@ -17,10 +17,15 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import sys
 from datetime import datetime, timezone
 from typing import List, Optional
+
+# C5 第一批：读路径经 _store_port 助手（文件粒度开关，默认 legacy 直连）
+try:
+    from force_vector._store_port import fetch_chart_timeseries_json
+except ImportError:  # 脚本直跑（同目录）
+    from _store_port import fetch_chart_timeseries_json
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -98,41 +103,28 @@ def _query_via_18db(coin: str, db_path: Optional[str] = None) -> float:
         if not os.path.exists(db_path):
             return _NEUTRAL_PERCENTILE
 
-        conn = sqlite3.connect(db_path)
-        try:
-            cursor = conn.execute(
-                "SELECT timeseries FROM records "
-                "WHERE source='coingecko' AND category='coin' "
-                "AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 1",
-                (f"chart_{coin_id}",),
-            )
-            row = cursor.fetchone()
-            if not row or not row[0]:
-                return _NEUTRAL_PERCENTILE
+        ts_json = fetch_chart_timeseries_json(coin_id, db_path, switch="VALUATION")
+        if not ts_json:
+            return _NEUTRAL_PERCENTILE
+        ts = json.loads(ts_json)
+        if not isinstance(ts, list) or not ts:
+            return _NEUTRAL_PERCENTILE
 
-            ts_json = row[0]
-            ts = json.loads(ts_json)
-            if not isinstance(ts, list) or not ts:
-                return _NEUTRAL_PERCENTILE
+        # 提取 market_cap 序列
+        mcaps: List[float] = []
+        for item in ts:
+            if isinstance(item, dict):
+                mc = item.get("market_cap", 0)
+                try:
+                    mcaps.append(float(mc) if mc is not None else 0.0)
+                except (TypeError, ValueError):
+                    mcaps.append(0.0)
 
-            # 提取 market_cap 序列
-            mcaps: List[float] = []
-            for item in ts:
-                if isinstance(item, dict):
-                    mc = item.get("market_cap", 0)
-                    try:
-                        mcaps.append(float(mc) if mc is not None else 0.0)
-                    except (TypeError, ValueError):
-                        mcaps.append(0.0)
+        if not mcaps:
+            return _NEUTRAL_PERCENTILE
 
-            if not mcaps:
-                return _NEUTRAL_PERCENTILE
-
-            current = mcaps[-1]
-            return _compute_percentile(mcaps, current)
-        finally:
-            conn.close()
+        current = mcaps[-1]
+        return _compute_percentile(mcaps, current)
     except Exception:
         # FAIL-OPEN：任何异常 → 中性 50
         return _NEUTRAL_PERCENTILE

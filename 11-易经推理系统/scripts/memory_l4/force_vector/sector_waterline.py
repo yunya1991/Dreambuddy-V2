@@ -21,12 +21,17 @@ from __future__ import annotations
 import json
 import math
 import os
-import sqlite3
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from statistics import median
 from typing import Dict, List, Optional
+
+# C5 第一批：读路径经 _store_port 助手（文件粒度开关，默认 legacy 直连）
+try:
+    from force_vector._store_port import fetch_chart_timeseries_json
+except ImportError:  # 脚本直跑（同目录）
+    from _store_port import fetch_chart_timeseries_json
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -131,48 +136,36 @@ def _fetch_leader_7d_momentum(coin: str, db_path: str) -> float:
         if not db_path or not os.path.exists(db_path):
             return 0.0
 
-        conn = sqlite3.connect(db_path)
-        try:
-            cursor = conn.execute(
-                "SELECT timeseries FROM records "
-                "WHERE source='coingecko' AND category='coin' "
-                "AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 1",
-                (f"chart_{coin_id}",),
-            )
-            row = cursor.fetchone()
-            if not row or not row[0]:
-                return 0.0
+        ts_json = fetch_chart_timeseries_json(coin_id, db_path, switch="WATERLINE")
+        if not ts_json:
+            return 0.0
+        ts = _safe_json(ts_json)
+        if not isinstance(ts, list) or len(ts) < 8:
+            return 0.0  # 至少需要 8 天才能算 7d 前
 
-            ts = _safe_json(row[0])
-            if not isinstance(ts, list) or len(ts) < 8:
-                return 0.0  # 至少需要 8 天才能算 7d 前
+        # 提取 price 序列
+        prices: List[float] = []
+        for item in ts:
+            if isinstance(item, dict):
+                p = item.get("price", 0)
+                try:
+                    prices.append(float(p) if p is not None else 0.0)
+                except (TypeError, ValueError):
+                    prices.append(0.0)
 
-            # 提取 price 序列
-            prices: List[float] = []
-            for item in ts:
-                if isinstance(item, dict):
-                    p = item.get("price", 0)
-                    try:
-                        prices.append(float(p) if p is not None else 0.0)
-                    except (TypeError, ValueError):
-                        prices.append(0.0)
+        valid_prices = [p for p in prices if p > 0]
+        if len(valid_prices) < 8:
+            return 0.0
 
-            valid_prices = [p for p in prices if p > 0]
-            if len(valid_prices) < 8:
-                return 0.0
+        price_now = valid_prices[-1]
+        price_7d_ago = valid_prices[-8]  # 7 天前（含今天共 8 个点）
+        if price_7d_ago <= 0:
+            return 0.0
 
-            price_now = valid_prices[-1]
-            price_7d_ago = valid_prices[-8]  # 7 天前（含今天共 8 个点）
-            if price_7d_ago <= 0:
-                return 0.0
-
-            ret = (price_now / price_7d_ago) - 1.0
-            # 线性归一化：±20% 为满量程，clamp 到 [-1, +1]
-            momentum = max(-1.0, min(1.0, ret / _LEADER_MOMENTUM_SCALE))
-            return momentum
-        finally:
-            conn.close()
+        ret = (price_now / price_7d_ago) - 1.0
+        # 线性归一化：±20% 为满量程，clamp 到 [-1, +1]
+        momentum = max(-1.0, min(1.0, ret / _LEADER_MOMENTUM_SCALE))
+        return momentum
     except Exception:
         return 0.0  # FAIL-OPEN
 

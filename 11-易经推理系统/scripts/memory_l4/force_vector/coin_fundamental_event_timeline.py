@@ -19,10 +19,15 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import sys
 import time
 from typing import Any, Dict, List, Optional
+
+# C5 第一批：读路径经 _store_port 助手（文件粒度开关，默认 legacy 直连）
+try:
+    from force_vector._store_port import fetch_newsflash_rows
+except ImportError:  # 脚本直跑（同目录）
+    from _store_port import fetch_newsflash_rows
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
@@ -186,15 +191,7 @@ def query_event_timeline(coin: str, db_path: Optional[str] = None) -> List[Dict[
         if not os.path.exists(db_path):
             return []
 
-        conn = sqlite3.connect(db_path)
-        try:
-            cursor = conn.execute(
-                "SELECT metrics, events, raw FROM records "
-                "WHERE source='odaily_newsflash' AND category='news'"
-            )
-            rows = cursor.fetchall()
-        finally:
-            conn.close()
+        rows = fetch_newsflash_rows(db_path, switch="TIMELINE")
 
         now_ms = int(time.time() * 1000)
         events_out: List[Dict[str, Any]] = []
