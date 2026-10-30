@@ -17,6 +17,7 @@ avg_entry_price + open_quantity + source_trade_ids）。
 3. PK 复用：DB 的 inst_id PK 直接存 position_id（PositionState 的天然唯一键）。
 4. ADR-19-004：所有 Decimal 字段一律 TEXT（SQLite 不存 REAL 防精度丢失）。
 """
+
 from __future__ import annotations
 
 import json
@@ -98,12 +99,12 @@ class SqlitePositionRepository(PositionRepository):
         # 每个元素是完整的 ALTER TABLE ADD COLUMN 右半段（含列名、类型、DEFAULT）
         col_ddls = [
             "position_id TEXT DEFAULT ''",
-            "avg_entry_price TEXT DEFAULT '0'",     # ← 主列（和 entry_price 双写）
-            "open_quantity TEXT DEFAULT '0'",       # ← 主列（和 quantity 双写）
+            "avg_entry_price TEXT DEFAULT '0'",  # ← 主列（和 entry_price 双写）
+            "open_quantity TEXT DEFAULT '0'",  # ← 主列（和 quantity 双写）
             "cost_basis TEXT",
             "leverage INTEGER DEFAULT 1",
             "margin_used TEXT",
-            "last_price_refresh_ts TEXT",           # ← 主列（和 last_price_refresh_at 双写）
+            "last_price_refresh_ts TEXT",  # ← 主列（和 last_price_refresh_at 双写）
             "source_trade_ids TEXT DEFAULT ''",
             "extra_payload TEXT",
         ]
@@ -190,14 +191,31 @@ class SqlitePositionRepository(PositionRepository):
             updated_at=CURRENT_TIMESTAMP
         """
         bind = (
-            pos_id, pos_id, "__NO_LINK__", position.sub_system, position.symbol, direction_db,  # 6
-            avg_ep, avg_ep, oq, oq, opened_at,                                        # +5 = 11
-            mark_p, unreal, liq_p, float(position.leverage),                         # +4 = 15
-            position.leverage, margin_u, cost_b,                                      # +3 = 18
-            lr_ts, lr_ts,                                                             # +2 = 20
-            source_ids, 1 if position.is_trial else 0, extra_s,                      # +3 = 23
+            pos_id,
+            pos_id,
+            "__NO_LINK__",
+            position.sub_system,
+            position.symbol,
+            direction_db,  # 6
+            avg_ep,
+            avg_ep,
+            oq,
+            oq,
+            opened_at,  # +5 = 11
+            mark_p,
+            unreal,
+            liq_p,
+            float(position.leverage),  # +4 = 15
+            position.leverage,
+            margin_u,
+            cost_b,  # +3 = 18
+            lr_ts,
+            lr_ts,  # +2 = 20
+            source_ids,
+            1 if position.is_trial else 0,
+            extra_s,  # +3 = 23
             lr_ts,  # updated_at（Python 层给；ON CONFLICT UPDATE 覆盖为 CURRENT_TIMESTAMP）
-        )                                                                              # +1 = 24
+        )  # +1 = 24
         with get_sqlite_connection(self.db_path) as conn:
             conn.execute(sql, bind)
         return True
@@ -301,10 +319,24 @@ class SqlitePositionRepository(PositionRepository):
 # ============================================================
 def _row_to_position(row) -> PositionState:
     (
-        symbol, sub_system, direction_raw, avg_entry_price, open_quantity,
-        unrealized_pnl, cost_basis, leverage, margin_used, mark_price,
-        liquidation_price, lp_ts, source_trade_ids, is_trial, extra_payload_raw,
-        position_id, _ca, _ua,
+        symbol,
+        sub_system,
+        direction_raw,
+        avg_entry_price,
+        open_quantity,
+        unrealized_pnl,
+        cost_basis,
+        leverage,
+        margin_used,
+        mark_price,
+        liquidation_price,
+        lp_ts,
+        source_trade_ids,
+        is_trial,
+        extra_payload_raw,
+        position_id,
+        _ca,
+        _ua,
     ) = row
 
     extra: Dict[str, Any] = {}
@@ -319,7 +351,9 @@ def _row_to_position(row) -> PositionState:
     return PositionState(
         symbol=str(symbol or ""),
         sub_system=str(sub_system or ""),
-        direction=_from_enum(TradeDirection, direction_raw, TradeDirection.LONG, case_insensitive=True),
+        direction=_from_enum(
+            TradeDirection, direction_raw, TradeDirection.LONG, case_insensitive=True
+        ),
         avg_entry_price=_to_dec(avg_entry_price),
         open_quantity=_to_dec(open_quantity),
         unrealized_pnl=_to_dec(unrealized_pnl),
@@ -327,7 +361,9 @@ def _row_to_position(row) -> PositionState:
         leverage=int(leverage) if leverage is not None else 1,
         margin_used=_to_dec(margin_used) if margin_used not in (None, "") else None,
         mark_price=_to_dec(mark_price) if mark_price not in (None, "") else None,
-        liquidation_price=_to_dec(liquidation_price) if liquidation_price not in (None, "") else None,
+        liquidation_price=(
+            _to_dec(liquidation_price) if liquidation_price not in (None, "") else None
+        ),
         last_price_refresh_ts=_parse_iso_utc(lp_ts),
         source_trade_ids=str(source_trade_ids or ""),
         is_trial=bool(is_trial),
