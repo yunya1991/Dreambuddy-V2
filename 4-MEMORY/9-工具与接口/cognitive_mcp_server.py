@@ -567,6 +567,7 @@ TOOL_DEFINITIONS.append({
 })
 
 TOOL_NAMES.add("unified_search")
+TOOL_NAMES.add("l4_status")
 TOOL_HANDLERS = {
     "recall": _handle_recall,
     "unified_search": _handle_unified_search,
