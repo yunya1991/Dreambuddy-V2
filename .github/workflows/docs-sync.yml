@@ -1,0 +1,33 @@
+name: docs-sync
+
+# P1 即时拉取：文档路径推送后，SSH 通知云端立即同步（秒级）
+# 依赖 Secrets：DOCS_SYNC_SSH_KEY（专用部署私钥，云端公钥已限命令）
+# 云端兜底：docs-sync.timer 每 15 分钟轮询（P0），本工作流失败不影响兜底
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '44-三端协作架构系统/**'
+      - 'docs/**'
+      - 'developers/**'
+  workflow_dispatch: {}
+
+concurrency:
+  group: docs-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Notify cloud to pull docs
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 43.160.201.117
+          username: luke
+          key: ${{ secrets.DOCS_SYNC_SSH_KEY }}
+          port: 22
+          command_timeout: 2m
+          script: echo 'docs-sync triggered by GitHub Actions'
