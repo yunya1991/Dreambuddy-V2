@@ -686,7 +686,7 @@ def exec_doc_search(message: str):
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=json.dumps({"query": q, "limit": 8}),
             capture_output=True, text=True, timeout=10,
-            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = json.loads(proc.stdout or "{}")
         hits = res.get("hits", []) if res.get("success") else []

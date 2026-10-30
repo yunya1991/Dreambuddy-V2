@@ -25,7 +25,7 @@ SQL_FILE="${REPO_DIR}/31-分布式计算部署/phase10/observability_tables.sql"
 EVENTS_ROOT="${REPO_DIR}/events"
 LOG_DIR="${DEPLOY_HOME}/logs/etl-worker"
 PG_CONTAINER="dreambuddy-pg"
-DB_URL="postgresql://dreambuddy:xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE@127.0.0.1:5432/dreambuddy"
+DB_URL="${ETL_DATABASE_URL:?ETL_DATABASE_URL env required (see /etc/dreambuddy-pg.env)}"
 # 注意: etl_worker.py 用 psycopg2, 不接受 Prisma 专有的 ?schema=public 查询参数
 #       (---> "invalid URI query parameter: schema"), 故此处为纯 DSN。
 

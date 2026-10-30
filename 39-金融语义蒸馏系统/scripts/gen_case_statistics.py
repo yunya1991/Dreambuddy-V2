@@ -25,6 +25,9 @@ N_FORMAL = 30  # 正式结论最小样本量（预注册，SPEC §7.4）
 
 def load_cases():
     cases = []
+    if not os.path.exists(CASES_PATH):
+        print(f"[WARN] 案例文件不存在，跳过本轮: {CASES_PATH}")
+        return cases
     with open(CASES_PATH, "r", encoding="utf-8") as f:
         for line in f:
             try:

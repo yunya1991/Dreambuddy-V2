@@ -251,6 +251,9 @@ def main():
 
     cases = []
     grades = defaultdict(int)
+    if not os.path.exists(TRADES_PATH):
+        print(f"[WARN] 交易文件不存在，跳过本轮: {TRADES_PATH}")
+        return
     with open(TRADES_PATH, "r", encoding="utf-8") as f:
         for line in f:
             try:

@@ -230,3 +230,5 @@ DreamOS_intermediate.pptx
 34-前端应用训练系统/models/**/*.safetensors
 34-前端应用训练系统/models/**/*.msgpack
 34-前端应用训练系统/models/**/*.h5
+12-三屏趋势系统/signal_pool/pool.json
+43-战略承接推演层/runtime/strategic_extension_signal.json

@@ -29,7 +29,6 @@ _SEARCH_CACHE = {}
 def fis_query(payload, timeout=30):
     """41 检索 CLI 查询（FAIL-OPEN：失败返回 None）。"""
     env = dict(os.environ)
-    env.setdefault('FIS_PG_PASSWORD', 'xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE')
     try:
         proc = subprocess.run(
             [FIS_PY, FIS_CLI],

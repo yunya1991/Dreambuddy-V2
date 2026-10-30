@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "description": "Dreambuddy 模型注册表（SPEC D5 评审依据，G7 promote 决策显式输入）",
+  "created_at": "2026-10-30T19:04:00+08:00",
+  "models": [],
+  "notes": [
+    "初始空注册表：当前无已注册模型，待模型训练流程（walk_forward 评估）产出后登记",
+    "每条模型记录应包含：model_id, version, stage(none/staging/production), eval_gate(evaluated_at, metrics, overfit_gap), registered_at"
+  ]
+}

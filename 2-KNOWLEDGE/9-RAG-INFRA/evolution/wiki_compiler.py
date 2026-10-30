@@ -230,7 +230,7 @@ class WikiCompiler:
                     ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
                     input=_json.dumps({"query": _query, "limit": 5, "filters": {"type": ["wiki"]}}),
                     capture_output=True, text=True, timeout=10,
-                    env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+                    env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
                 )
                 _res = _json.loads(_proc.stdout or "{}")
                 if _res.get("success"):

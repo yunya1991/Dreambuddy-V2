@@ -118,7 +118,7 @@ def search_knowledge_base(
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=_json.dumps({"query": str(query), "limit": 5}),
             capture_output=True, text=True, timeout=10,
-            env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
         )
         res = _json.loads(proc.stdout or "{}")
         if res.get("success") and res.get("hits"):

@@ -673,7 +673,7 @@ def S33_rea_locate(params: Dict[str, Any]) -> Dict[str, Any]:
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=_json.dumps({"query": name, "limit": limit, "filters": {"type": ["code"]}}),
             capture_output=True, text=True, timeout=10,
-            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = _json.loads(proc.stdout or "{}")
         hits = res.get("hits", []) if res.get("success") else []

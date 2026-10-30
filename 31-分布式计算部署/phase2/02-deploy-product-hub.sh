@@ -14,7 +14,7 @@ HUB_DIR="${REPO_DIR}/7-产物中台/系统研究索引体系"
 LOG_DIR="/home/${DEPLOY_USER}/logs/product-hub"
 
 # PostgreSQL 连接（dreambuddy-pg docker 容器）
-DB_URL="${HUB_DATABASE_URL:-postgresql://dreambuddy:xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE@127.0.0.1:5432/dreambuddy?schema=public}"
+DB_URL="${HUB_DATABASE_URL:?HUB_DATABASE_URL env required (see /etc/dreambuddy-pg.env)}"
 
 echo "============================================"
 echo "  Phase 2 — 产物中台 (3456) 部署 (systemd)"

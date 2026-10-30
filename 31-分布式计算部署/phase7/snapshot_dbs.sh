@@ -27,8 +27,24 @@ for item in "${SRCS[@]}"; do
     dst="${OUT_DIR}/${name}"
     tmp="${dst}.tmp"
     rm -f "${tmp}"
-    if ! sqlite3 "${src}" ".backup '${tmp}'"; then
-        echo "[ERROR] .backup 失败: ${src}"
+    backup_ok=0
+    for attempt in 1 2 3; do
+        if sqlite3 "${src}" ".timeout 10000" ".backup '${tmp}'"; then
+            backup_ok=1
+            break
+        fi
+        echo "[WARN] .backup 第 ${attempt} 次失败(锁冲突), 5s 后重试: ${src}"
+        rm -f "${tmp}"
+        sleep 5
+    done
+    if [ "${backup_ok}" != "1" ]; then
+        echo "[ERROR] .backup 失败(已重试 3 次): ${src}"
+        rm -f "${tmp}"
+        rc=1
+        continue
+    fi
+    if [ ! -s "${tmp}" ]; then
+        echo "[ERROR] .backup 产物为空: ${tmp}"
         rm -f "${tmp}"
         rc=1
         continue

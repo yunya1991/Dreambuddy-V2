@@ -27,7 +27,7 @@ def prefiler_material(query: str, limit: int = 5) -> List[Dict[str, Any]]:
             [_FIS_CLI, _FIS_SCRIPT],
             input=json.dumps({"cmd": "recall", "query": str(query), "limit": int(limit)}),
             capture_output=True, text=True, timeout=10,
-            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = json.loads(proc.stdout or "{}")
         if not res.get("success"):
@@ -56,7 +56,7 @@ def search_evidence(query: str, limit: int = 3) -> List[Dict[str, Any]]:
             [_FIS_CLI, _FIS_SCRIPT],
             input=json.dumps({"cmd": "search", "query": str(query), "limit": int(limit)}),
             capture_output=True, text=True, timeout=10,
-            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
         )
         res = json.loads(proc.stdout or "{}")
         if not res.get("success"):

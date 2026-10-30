@@ -99,7 +99,7 @@ def build_index(knowledge_dir, force: bool = False,
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=json.dumps({"cmd": "changed"}),
             capture_output=True, text=True, timeout=30,
-            env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+            env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
         )
         _res = json.loads(_proc.stdout or "{}")
         if _res.get("success") and isinstance(_res.get("changed"), list):

@@ -576,7 +576,7 @@ class CognitiveLoopEntry:
                 ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
                 input=_json.dumps({"cmd": "recall", "query": str(context), "limit": 3}),
                 capture_output=True, text=True, timeout=10,
-                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
             )
             _res = _json.loads(_proc.stdout or "{}")
             if _res.get("success") and _res.get("hits"):
@@ -1067,7 +1067,7 @@ class CognitiveLoopEntry:
             _p = _sp.Popen(
                 ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
                 stdin=_sp.PIPE, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
-                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD", "xWazSBSwFwXqZkNdZzKVpz7L9pJxCiE")},
+                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
             )
             _p.stdin.write(json.dumps({"cmd": "update"}).encode("utf-8"))
             _p.stdin.close()
