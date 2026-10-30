@@ -64,6 +64,23 @@ echo "-- 判读规则 --"
 echo "1) append 路由的 unit：journal 停更属正常，以文件 mtime 为准"
 echo "2) SIZE=0B 且 LAST_WRITE 超过 24h → 疑似真静默（服务无输出/日志未初始化）"
 echo "3) 显示 (journal) → 该 unit 日志走 journald，或文件无读权限"
+echo ""
+echo "-- timer 停摆检测（全部 timer 全覆盖，C9 落地前过渡保障）--"
+systemctl list-timers --all --no-legend --no-pager 2>/dev/null | grep -oE "[a-zA-Z0-9_-]+\\.timer" | sort -u | while read -r t; do
+  last_us=$(systemctl show "$t" -p LastTriggerUSec --value 2>/dev/null)
+  if [ -z "$last_us" ] || [ "$last_us" = "n/a" ]; then
+    printf "%-48s %s\\n" "$t" "WARN: 从未触发"
+    continue
+  fi
+  last_epoch=$(date -d "$last_us" +%s 2>/dev/null || echo 0)
+  age_h=$(( ($(date +%s) - last_epoch) / 3600 ))
+  if [ "$age_h" -ge 25 ]; then
+    printf "%-48s %s\\n" "$t" "WARN: 上次触发 ${age_h}h 前（疑似停摆）"
+  else
+    printf "%-48s %s\\n" "$t" "OK: ${age_h}h 前触发"
+  fi
+done
+echo "(-- 判读：从未触发或 >=25h 未触发 → 疑似停摆，需人工核查 --)"
 echo '```'
 
 echo "## D6 风控行为（近 24h）"
