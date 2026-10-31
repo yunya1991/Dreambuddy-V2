@@ -2,12 +2,12 @@
 
 | 项 | 值 |
 |---|---|
-| 版本 | v1.0 |
+| 版本 | v1.1 |
 | 日期 | 2026-10-31 |
 | 状态 | 待云端评估选择 |
 | 归属 | 33-REA逆向解析工程 / 反思层 P3（外部最优路径） |
-| 关联 | [SPEC-33-反思层.md](./SPEC-33-反思层.md) §5；[external_sources.json](./reflection_data/external_sources.json) v2.0 |
-| 交付物 | 本 SPEC + `reflection_data/external_sources.json`（59 条源） |
+| 关联 | [SPEC-33-反思层.md](./SPEC-33-反思层.md) §5；[external_sources.json](./reflection_data/external_sources.json) v2.1 |
+| 交付物 | 本 SPEC + `reflection_data/external_sources.json`（97 条源） |
 
 ## 0. 决策摘要
 
@@ -153,18 +153,18 @@ git clone --depth 1 https://github.com/<org>/<repo>.git /tmp/ext/<id> \
 
 | 类别 | 内部模块 | 源数 | wave1 P0 |
 |---|---|---|---|
-| 数据采集系统 | 18/19/20/21 | 5 | dlt |
+| 数据采集系统 | 18/19/20/21 | 6 | dlt |
 | 数据库系统 | 38/19/7 | 4 | sqlite-utils |
 | 搜索引擎系统 | 41/24/39 | 6 | whoosh |
-| 广义认知系统（五类四层） | 35/4-MEMORY/2-KNOWLEDGE/0-文档 | 4 | letta |
+| 广义认知系统（五类四层） | 35/4-MEMORY/2-KNOWLEDGE/0-文档 | 5 | letta |
 | 逆向解析工程 | 33-REA/五层证明链/PoE | 6 | code2flow |
-| 金融交易模型 | 12/13/14/17/22/23/25/26/28/29 | 8 | backtrader |
+| 金融交易模型 | 12/13/14/17/22/23/25/26/28/29 | 23 | backtrader |
 | 前端产品应用 | 3.1-FRONTEND/34/7/L0-L2 | 5 | zustand |
-| AI 大模型训练 | 40/12-ml/39/31 | 6 | peft |
-| DreamOS（SACG 四层） | dreamos/S·A·C·G/BAC/16 | 9 | langgraph |
-| DSH（Harness） | dream-harness-bridge/36/30 | 6 | mcp-python-sdk、pluggy |
+| AI 大模型训练 | 40/12-ml/39/31 | 20 | peft |
+| DreamOS（SACG 四层） | dreamos/S·A·C·G/BAC/16 | 12 | langgraph |
+| DSH（Harness） | dream-harness-bridge/36/30 | 10 | mcp-python-sdk、pluggy |
 
-波次规模：wave1 = 11 源，wave2 = 24，wave3 = 20，wave4 = 4（合计 59）。
+波次规模：wave1 = 11 源，wave2 = 33，wave3 = 43，wave4 = 10（合计 97）。
 
 ## 7. 验收标准
 
@@ -266,9 +266,9 @@ for t in p.list_trees('external'):
 | A8 | 离线可跑 | 关闭外网后 harvest 仍能从缓存完成 E1→E4 |
 | A9 | 按需解压 | 只解压选中的 wave，未选源不占解压空间 |
 
-## 附录 A：真实仓库与拉取地址（59 条）
+## 附录 A：真实仓库与拉取地址（97 条）
 
-> 验证状态：全部待云端 `git ls-remote` 验证（本机无外网）。拉取统一用 `git clone --depth 1 <clone 地址> <目录>`。许可证标 `unknown` 的（reflexion / TradingAgents / FinRobot）注入前必须核对。
+> 验证状态：全部待云端 `git ls-remote` 验证（本机无外网）。拉取统一用 `git clone --depth 1 <clone 地址> <目录>`。许可证标 `unknown` 的（reflexion / TradingAgents / FinRobot / finclaw / skill-compose 等）注入前必须核对。
 
 | 类别 | id | P | 仓库 | clone 地址 | 语言 | 许可 | 上限MB | 提取目标 |
 |---|---|---|---|---|---|---|---|---|
@@ -331,6 +331,44 @@ for t in p.list_trees('external'):
 | DSH 架构（Harness） | semantic-kernel | P1 | https://github.com/microsoft/semantic-kernel | git clone --depth 1 https://github.com/microsoft/semantic-kernel.git /tmp/ext/semantic-kernel | Python/TS | MIT | 50 | Kernel/Plugin/Function 三层能力注册，对照 SKILL 调度与能力层 |
 | DSH 架构（Harness） | mcp-servers | P2 | https://github.com/modelcontextprotocol/servers | git clone --depth 1 https://github.com/modelcontextprotocol/servers.git /tmp/ext/mcp-servers | TS/Python | MIT | 30 | 参考 server 的工具/资源抽象，对照 DSH 内置工具集 |
 | DSH 架构（Harness） | aider | P2 | https://github.com/Aider-AI/aider | git clone --depth 1 https://github.com/Aider-AI/aider.git /tmp/ext/aider | Python | Apache-2.0 | 30 | repo map + 代码检索增强 + 编辑循环，对照 24-图结构上下文压缩 |
+| 数据采集系统 | tavily-python | P2 | https://github.com/tavily-ai/tavily-python | git clone --depth 1 https://github.com/tavily-ai/tavily-python.git /tmp/ext/tavily-python | Python | MIT | 10 | 搜索 API 客户端 + 结果标准化，对照 18-数据获取中心的外部搜索接入 |
+| 广义认知系统（五类四层） | rasa | P2 | https://github.com/RasaHQ/rasa | git clone --depth 1 https://github.com/RasaHQ/rasa.git /tmp/ext/rasa | Python | Apache-2.0 | 50 | 意图识别 (NLU) + 对话管理 (Core) 双系统 + 策略路由，对照 SACG-S 层意图路由 |
+| 金融交易模型 | ElegantRL | P1 | https://github.com/AI4Finance-Foundation/ElegantRL | git clone --depth 1 https://github.com/AI4Finance-Foundation/ElegantRL.git /tmp/ext/ElegantRL | Python | MIT | 50 | 云原生轻量并行 RL 训练（Actor-Learner 分离），对照 40-周期神经网络与 Shadow-RL Phase3 |
+| 金融交易模型 | FinBERT | P2 | https://github.com/yya518/FinBERT | git clone --depth 1 https://github.com/yya518/FinBERT.git /tmp/ext/FinBERT | Python | Apache-2.0 | 20 | 金融 NLP 预训练（情感/基本面分类），对照 39-金融语义蒸馏的基本面文本编码 |
+| 金融交易模型 | FinGPT | P2 | https://github.com/AI4Finance-Foundation/FinGPT | git clone --depth 1 https://github.com/AI4Finance-Foundation/FinGPT.git /tmp/ext/FinGPT | Python | MIT | 50 | 金融大模型数据-训练-推理管线，对照 39-金融语义蒸馏系统的金融语料面 |
+| 金融交易模型 | MFRA-BTC | P3 | https://github.com/RD20KHIZA/MFRA-BTC-regime-study | git clone --depth 1 https://github.com/RD20KHIZA/MFRA-BTC-regime-study.git /tmp/ext/MFRA-BTC | Python | unknown | 20 | 多因子 regime 归因分解，对照 23-四层闭环的因子归因层 |
+| 金融交易模型 | Quant-Regime-Engine | P3 | https://github.com/alinakhay/Quant-Regime-Engine | git clone --depth 1 https://github.com/alinakhay/Quant-Regime-Engine.git /tmp/ext/Quant-Regime-Engine | Python | unknown | 20 | 三因子 regime 引擎（趋势/波动/流动性），对照 12-三屏的多维权重 |
+| 金融交易模型 | Regime-Aware-BTC | P2 | https://github.com/matteodrakulic/Regime-Aware-BTC-Trading-System | git clone --depth 1 https://github.com/matteodrakulic/Regime-Aware-BTC-Trading-System.git /tmp/ext/Regime-Aware-BTC | Python | unknown | 20 | Gaussian HMM 3 状态 regime 检测 + regime 条件策略，对照 BDSM regime 切换 |
+| 金融交易模型 | XuanYuan | P2 | https://github.com/Duxiaoman-DI/XuanYuan | git clone --depth 1 https://github.com/Duxiaoman-DI/XuanYuan.git /tmp/ext/XuanYuan | Python | unknown | 50 | 中文金融对话大模型训练与微调，对照 39-金融语义蒸馏的中文金融语料 |
+| 金融交易模型 | ai-hedge-fund | P1 | https://github.com/virattt/ai-hedge-fund | git clone --depth 1 https://github.com/virattt/ai-hedge-fund.git /tmp/ext/ai-hedge-fund | Python | MIT | 50 | Risk 纯算法 + Portfolio LLM + compute_allowed_actions 动作空间约束，对照 13-风控与 22-执行引擎 |
+| 金融交易模型 | equity-vs-commodity | P2 | https://github.com/kpnguyen21/equity-vs-commodity | git clone --depth 1 https://github.com/kpnguyen21/equity-vs-commodity.git /tmp/ext/equity-vs-commodity | Python | unknown | 20 | Granger 因果筛选跨资产特征，对照 23-四层闭环的因果归因特征工程 |
+| 金融交易模型 | evolutionary-trading-strategies | P2 | https://github.com/b3hzadsh/Evolutionary-Trading-Strategies | git clone --depth 1 https://github.com/b3hzadsh/Evolutionary-Trading-Strategies.git /tmp/ext/evolutionary-trading-strategies | Python | unknown | 30 | DEAP 进化策略 + Walk-forward 验证 + ESS 多样性奖励，对照 23-四层闭环的进化循环与走前验证 |
+| 金融交易模型 | finclaw | P2 | https://github.com/NeuZhou/finclaw | git clone --depth 1 https://github.com/NeuZhou/finclaw.git /tmp/ext/finclaw | Python | unknown | 30 | GA 进化策略 + 前向验证 + 蒙特卡洛，对照 23-四层闭环的策略进化循环 |
+| 金融交易模型 | granger-causality-trading | P2 | https://github.com/suenot/117-granger-causality-trading | git clone --depth 1 https://github.com/suenot/117-granger-causality-trading.git /tmp/ext/granger-causality-trading | Python | unknown | 20 | 多变量 VAR + F 统计量因果链交易（VIX/DXY→BTC），对照 23-四层闭环的跨市场因果传导 |
+| 金融交易模型 | nautilus_trader | P2 | https://github.com/nautechsystems/nautilus_trader | git clone --depth 1 https://github.com/nautechsystems/nautilus_trader.git /tmp/ext/nautilus_trader | Rust/Python | MIT | 80 | 回测/实盘统一执行引擎（仅解析 Python API 绑定层，Rust 核心不入语义分析），对照 22-执行引擎 |
+| 金融交易模型 | regimes | P2 | https://github.com/knightianuncertainty/regimes | git clone --depth 1 https://github.com/knightianuncertainty/regimes.git /tmp/ext/regimes | Python | unknown | 20 | Bai-Perron + CUSUM + Chow Test + Markov Switching 结构断点全流程，对照 12-三屏的 regime 检测 |
+| 金融交易模型 | skfolio | P2 | https://github.com/skfolio/skfolio | git clone --depth 1 https://github.com/skfolio/skfolio.git /tmp/ext/skfolio | Python | BSD-3-Clause | 50 | scikit-learn 兼容的投资组合优化/因子模型/风险度量统一接口，对照 13-风控与组合配置 |
+| AI 大模型训练 | Calibration-Neural-SDEs | P3 | https://github.com/evaflonner/Calibration-of-Neural-SDEs-using-Bayesian-Methods | git clone --depth 1 https://github.com/evaflonner/Calibration-of-Neural-SDEs-using-Bayesian-Methods.git /tmp/ext/Calibration-Neural-SDEs | Python | unknown | 20 | 贝叶斯方法校准金融神经 SDE，对照 40-周期神经网络的不确定性校准 |
+| AI 大模型训练 | Sig-SPT | P3 | https://github.com/janka-moeller/Sig-SPT | git clone --depth 1 https://github.com/janka-moeller/Sig-SPT.git /tmp/ext/Sig-SPT | Python | unknown | 10 | 随机投资组合理论中的签名方法，对照 13-风控的路径依赖组合度量 |
+| AI 大模型训练 | Stable-Neural-SDEs | P2 | https://github.com/yongkyung-oh/Stable-Neural-SDEs | git clone --depth 1 https://github.com/yongkyung-oh/Stable-Neural-SDEs.git /tmp/ext/Stable-Neural-SDEs | Python | unknown | 20 | ICLR 2024 稳定神经 SDE（连续时间动态+不确定性），对照 40-周期神经网络的市场动态建模 |
+| AI 大模型训练 | Time-MoE | P2 | https://github.com/Time-MoE/Time-MoE | git clone --depth 1 https://github.com/Time-MoE/Time-MoE.git /tmp/ext/Time-MoE | Python | unknown | 50 | 百亿参数时序 MoE（ICLR 2025），对照 40-周期神经网络的多专家路由 |
+| AI 大模型训练 | causalml | P1 | https://github.com/uber/causalml | git clone --depth 1 https://github.com/uber/causalml.git /tmp/ext/causalml | Python | Apache-2.0 | 50 | Uber 因果推断（DML / Causal Forest / X-learner），对照 23-四层闭环的因果归因替代相关归因 |
+| AI 大模型训练 | cflue | P2 | https://github.com/aliyun/cflue | git clone --depth 1 https://github.com/aliyun/cflue.git /tmp/ext/cflue | Python | unknown | 30 | 中文金融语言理解评估基准，对照 39-金融语义蒸馏的评测面 |
+| AI 大模型训练 | decision-transformer | P2 | https://github.com/kzl/decision-transformer | git clone --depth 1 https://github.com/kzl/decision-transformer.git /tmp/ext/decision-transformer | Python | MIT | 30 | RL as Sequence Modeling 官方实现，对照 40-周期神经网络的序列决策面 |
+| AI 大模型训练 | ds4 | P2 | https://github.com/antirez/ds4 | git clone --depth 1 https://github.com/antirez/ds4.git /tmp/ext/ds4 | Python | BSD-3-Clause | 30 | antirez DeepSeek V4 推理引擎（SSD streaming / distributed / performance），对照 31-分布式计算部署 |
+| AI 大模型训练 | iisignature | P3 | https://github.com/iisignature/iisignature | git clone --depth 1 https://github.com/iisignature/iisignature.git /tmp/ext/iisignature | Python | unknown | 10 | Python CPU 版签名计算（signatory 的轻量替代），对照 23-四层闭环的路径抽象（fallback） |
+| AI 大模型训练 | moment | P2 | https://github.com/moment-timeseries-foundation-model/moment | git clone --depth 1 https://github.com/moment-timeseries-foundation-model/moment.git /tmp/ext/moment | Python | MIT | 50 | 开放时序基础模型（ICML 2024），可微调/线性探测，对照 12-ml 辅训改造 |
+| AI 大模型训练 | nixtla | P2 | https://github.com/Nixtla/nixtla | git clone --depth 1 https://github.com/Nixtla/nixtla.git /tmp/ext/nixtla | Python | Apache-2.0 | 50 | 100B 数据点预训练 Transformer 时序生成模型，对照 40-周期神经网络的生成式预测 |
+| AI 大模型训练 | signatory | P2 | https://github.com/patrick-kidger/signatory | git clone --depth 1 https://github.com/patrick-kidger/signatory.git /tmp/ext/signatory | Python/C++ | Apache-2.0 | 20 | PyTorch 可微分签名计算（ICLR 2021），路径→张量坐标，对照 23-四层闭环的路径抽象 |
+| AI 大模型训练 | signature-method-in-ML | P3 | https://github.com/kormilitzin/the-signature-method-in-machine-learning | git clone --depth 1 https://github.com/kormilitzin/the-signature-method-in-machine-learning.git /tmp/ext/signature-method-in-ML | Python | unknown | 30 | 签名方法 ML 基础与应用示例，对照 23-四层闭环路径抽象的入门参考 |
+| AI 大模型训练 | timesfm | P1 | https://github.com/google-research/timesfm | git clone --depth 1 https://github.com/google-research/timesfm.git /tmp/ext/timesfm | Python | Apache-2.0 | 50 | Google 时间序列基础模型（纯 Transformer 预训练），对照 40-周期神经网络的时序预测面 |
+| DreamOS 操作系统（SACG 四层） | openai-swarm | P1 | https://github.com/openai/swarm | git clone --depth 1 https://github.com/openai/swarm.git /tmp/ext/openai-swarm | Python | MIT | 20 | handoff 模式（agent 间移交）+ 工具调用路由，对照节点间 handoff 与 S 层路由 |
+| DreamOS 操作系统（SACG 四层） | swe-agent | P2 | https://github.com/SWE-agent/SWE-agent | git clone --depth 1 https://github.com/SWE-agent/SWE-agent.git /tmp/ext/swe-agent | Python | MIT | 50 | ACI (Agent-Computer Interface) 动作空间抽象 + 轨迹记录，对照 30-真实环境交互系统 |
+| DreamOS 操作系统（SACG 四层） | ufo | P1 | https://github.com/microsoft/UFO | git clone --depth 1 https://github.com/microsoft/UFO.git /tmp/ext/ufo | TypeScript/Python | MIT | 50 | HostAgent(调度)+AppAgent(执行)双层Agent OS + 统一动作层，对照 SACG-S层意图路由与C层执行 |
+| DSH 架构（Harness） | anthropic-financial-services | P1 | https://github.com/anthropics/financial-services | git clone --depth 1 https://github.com/anthropics/financial-services.git /tmp/ext/anthropic-financial-services | TypeScript/Python | MIT | 50 | 10 个金融 agent 模板：agent = skills + connectors + subagents，对照 DSH 9 个 subagent 与金融能力层 |
+| DSH 架构（Harness） | deepseek-harness | P1 | https://github.com/deepseek-ai/deepseek-harness | git clone --depth 1 https://github.com/deepseek-ai/deepseek-harness.git /tmp/ext/deepseek-harness | TypeScript/Node.js | MIT | 50 | Cordis 微内核 + Harness 扩展点设计，对照 dream-harness-bridge 的 Harness 内核架构 |
+| DSH 架构（Harness） | skill-compose | P2 | https://github.com/MooseGoose0701/skill-compose | git clone --depth 1 https://github.com/MooseGoose0701/skill-compose.git /tmp/ext/skill-compose | Python/TypeScript | unknown | 50 | 技能注册表 + 一句话组装 Agent + 技能进化，对照 SKILL 注册表与动态编排 |
+| DSH 架构（Harness） | superpowers | P1 | https://github.com/obra/superpowers | git clone --depth 1 https://github.com/obra/superpowers.git /tmp/ext/superpowers | TypeScript/Markdown | MIT | 30 | SKILL.md 格式规范 + 7 阶段软件开发工作流方法论，对照 SKILL 调度与元数据契约 |
 
 ## 附录 B：批量校验脚本
 
