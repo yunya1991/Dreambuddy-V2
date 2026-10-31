@@ -32,6 +32,11 @@ class OKXMarketAdapter:
         self._lsr_last_good: dict[str, tuple[float, dict]] = {}
         self._lsr_ttl: float = 900.0
         self._lsr_stale_ttl: float = 6 * 3600.0
+        # 资金费率缓存（8h 结算一次，TTL 900s 足够新鲜）
+        self._funding_cache: dict[str, tuple[float, float]] = {}
+        self._funding_ttl: float = 900.0
+        # OI 上次值缓存（供 oi_prev 计算）
+        self._oi_prev: dict[str, float] = {}
 
     def fetch(self, symbol: str, inst_id: str, limit: int = 200) -> dict[str, Any]:
         """
@@ -59,6 +64,12 @@ class OKXMarketAdapter:
         # OKX open interest → capital_flow 基础
         oi_data = self._fetch_open_interest(inst_id)
         result.update(oi_data)
+        # 资金费率 → funding_rate（ResistanceVector _calc_funding_pressure 消费）
+        fr = self._fetch_funding_rate(inst_id)
+        if fr is not None:
+            result["funding_rate"] = fr
+        # 订单簿深度 → bids_depth/asks_depth（ResistanceVector _calc_orderbook_imbalance 消费）
+        result.update(self._fetch_orderbook_depth(inst_id))
 
         return result
 
@@ -312,6 +323,11 @@ class OKXMarketAdapter:
                 return out
 
             out["open_interest"] = oi
+            # 映射 oi_current/oi_prev（ResistanceVector _calc_oi_divergence 期望的键名）
+            out["oi_current"] = oi
+            _prev = self._oi_prev.get(inst_id)
+            out["oi_prev"] = _prev if _prev is not None else oi
+            self._oi_prev[inst_id] = oi
 
             # 归一化到 capital_flow 范围 [-1, +1]
             oi_log = math.log10(max(oi, 1))
@@ -322,4 +338,53 @@ class OKXMarketAdapter:
         except Exception as e:
             logger.debug("[FO] open-interest not available: %s", e)
 
+        return out
+
+    # ---------------------------------------------------------- Funding Rate
+    def _fetch_funding_rate(self, inst_id: str) -> float | None:
+        """获取 OKX 资金费率 → funding_rate（ResistanceVector _calc_funding_pressure 消费）。
+        TTL 缓存 900s（资金费率 8h 结算一次，900s 足够新鲜）。失败返回 None。
+        """
+        _cached = self._funding_cache.get(inst_id)
+        if _cached is not None and time.time() - _cached[0] < self._funding_ttl:
+            return _cached[1]
+        try:
+            _get = getattr(self._client, "_get", None)
+            if _get is None:
+                return None
+            r = _get("/api/v5/public/funding-rate", {"instId": inst_id}, auth=False)
+            if not r or r.get("code") != "0" or not r.get("data"):
+                return None
+            fr = float(r["data"][0].get("fundingRate", 0))
+            self._funding_cache[inst_id] = (time.time(), fr)
+            return fr
+        except Exception as e:
+            logger.debug("[FO] funding-rate not available: %s", e)
+            return None
+
+    # ---------------------------------------------------------- Orderbook Depth
+    def _fetch_orderbook_depth(self, inst_id: str) -> dict[str, float]:
+        """获取 OKX 订单簿深度 → bids_depth/asks_depth（ResistanceVector _calc_orderbook_imbalance 消费）。
+        取 50 档深度，按价格×数量求和（近似名义深度）。失败返回空 dict。
+        """
+        out: dict[str, float] = {}
+        try:
+            _get = getattr(self._client, "_get", None)
+            if _get is None:
+                return out
+            r = _get("/api/v5/market/books", {"instId": inst_id, "sz": "50"}, auth=False)
+            if not r or r.get("code") != "0" or not r.get("data"):
+                return out
+            book = r["data"][0]
+            bids = book.get("bids", []) or []
+            asks = book.get("asks", []) or []
+            if not bids or not asks:
+                return out
+            bids_depth = sum(float(b[0]) * float(b[1]) for b in bids if len(b) >= 2)
+            asks_depth = sum(float(a[0]) * float(a[1]) for a in asks if len(a) >= 2)
+            if bids_depth > 0 and asks_depth > 0:
+                out["bids_depth"] = bids_depth
+                out["asks_depth"] = asks_depth
+        except Exception as e:
+            logger.debug("[FO] orderbook depth not available: %s", e)
         return out
