@@ -12,7 +12,7 @@
 - 校验失败码：`unknown_eval_id` / `no_report` / `verdict_not_pass` / `binding_mismatch` / `purpose_mismatch` / `expired`（fail-closed）
 - 测试：19 个用例（签发绑定、BLOCK/INCONCLUSIVE 拒绝、篡改 spec_hash/expires_at/purpose、过期边界）；core/gate.py 覆盖率 96%
 - 签名与 Merkle 根留待 P4-1
-- commit: `待填`
+- commit: `5a8af5021d`
 
 ## [0.3.0] — 2026-11-01 — P2 评测器接入（P2-1~P2-9 已交付）
 
