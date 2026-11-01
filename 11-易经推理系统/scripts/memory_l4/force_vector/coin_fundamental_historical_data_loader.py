@@ -33,6 +33,8 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
+from force_vector._store_port import fetch_latest_record
+
 # data_center.db 默认路径
 _REPO = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
 DEFAULT_DB_PATH = os.path.join(_REPO, "18-数据获取中心", "data_center.db")
@@ -87,33 +89,26 @@ def query_historical_fees(coin: str, db_path: Optional[str] = None) -> List[Dict
         if not os.path.exists(db_path):
             return []
 
-        conn = sqlite3.connect(db_path)
-        try:
-            cursor = conn.execute(
-                "SELECT timeseries FROM records "
-                "WHERE source='defillama' AND category='chain' "
-                "AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 1",
-                (f"fees_{protocol}",),
-            )
-            row = cursor.fetchone()
-            if not row or not row[0]:
-                return []
+        row = fetch_latest_record(
+            db_path, "defillama", "chain",
+            f"fees_{protocol}", switch="HISTLOADER",
+            columns="timeseries", order_by="timestamp DESC",
+        )
+        if not row or not row.get("timeseries"):
+            return []
 
-            ts = _safe_json_loads(row[0], [])
-            if not isinstance(ts, list):
-                return []
+        ts = _safe_json_loads(row["timeseries"], [])
+        if not isinstance(ts, list):
+            return []
 
-            result: List[Dict[str, Any]] = []
-            for item in ts:
-                if isinstance(item, dict) and "fees_usd" in item:
-                    result.append({
-                        "date": str(item.get("date", "")),
-                        "fees_usd": float(item.get("fees_usd", 0) or 0),
-                    })
-            return result
-        finally:
-            conn.close()
+        result: List[Dict[str, Any]] = []
+        for item in ts:
+            if isinstance(item, dict) and "fees_usd" in item:
+                result.append({
+                    "date": str(item.get("date", "")),
+                    "fees_usd": float(item.get("fees_usd", 0) or 0),
+                })
+        return result
     except Exception:
         return []
 
@@ -144,43 +139,36 @@ def query_historical_mcap(coin: str, db_path: Optional[str] = None) -> List[Dict
         if not os.path.exists(db_path):
             return []
 
-        conn = sqlite3.connect(db_path)
-        try:
-            cursor = conn.execute(
-                "SELECT timeseries FROM records "
-                "WHERE source='coingecko' AND category='coin' "
-                "AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 1",
-                (f"chart_{coin_id}",),
-            )
-            row = cursor.fetchone()
-            if not row or not row[0]:
-                return []
+        row = fetch_latest_record(
+            db_path, "coingecko", "coin",
+            f"chart_{coin_id}", switch="HISTLOADER",
+            columns="timeseries", order_by="timestamp DESC",
+        )
+        if not row or not row.get("timeseries"):
+            return []
 
-            ts = _safe_json_loads(row[0], [])
-            if not isinstance(ts, list):
-                return []
+        ts = _safe_json_loads(row["timeseries"], [])
+        if not isinstance(ts, list):
+            return []
 
-            result: List[Dict[str, Any]] = []
-            for item in ts:
-                if not isinstance(item, dict):
-                    continue
-                mc = item.get("market_cap", 0)
-                try:
-                    mc = float(mc) if mc is not None else 0.0
-                except (TypeError, ValueError):
-                    mc = 0.0
-                # 过滤 market_cap=0 的点
-                if mc <= 0:
-                    continue
-                result.append({
-                    "date": str(item.get("date", "")),
-                    "market_cap": mc,
-                    "price": float(item.get("price", 0) or 0),
-                })
-            return result
-        finally:
-            conn.close()
+        result: List[Dict[str, Any]] = []
+        for item in ts:
+            if not isinstance(item, dict):
+                continue
+            mc = item.get("market_cap", 0)
+            try:
+                mc = float(mc) if mc is not None else 0.0
+            except (TypeError, ValueError):
+                mc = 0.0
+            # 过滤 market_cap=0 的点
+            if mc <= 0:
+                continue
+            result.append({
+                "date": str(item.get("date", "")),
+                "market_cap": mc,
+                "price": float(item.get("price", 0) or 0),
+            })
+        return result
     except Exception:
         return []
 
@@ -207,40 +195,33 @@ def query_historical_price(symbol: str, db_path: Optional[str] = None) -> List[D
         if not os.path.exists(db_path):
             return []
 
-        conn = sqlite3.connect(db_path)
-        try:
-            cursor = conn.execute(
-                "SELECT timeseries FROM records "
-                "WHERE source='yfinance' "
-                "AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 1",
-                (symbol,),
-            )
-            row = cursor.fetchone()
-            if not row or not row[0]:
-                return []
+        row = fetch_latest_record(
+            db_path, "yfinance", None,
+            symbol, switch="HISTLOADER",
+            columns="timeseries", order_by="timestamp DESC",
+        )
+        if not row or not row.get("timeseries"):
+            return []
 
-            ts = _safe_json_loads(row[0], [])
-            if not isinstance(ts, list):
-                return []
+        ts = _safe_json_loads(row["timeseries"], [])
+        if not isinstance(ts, list):
+            return []
 
-            result: List[Dict[str, Any]] = []
-            for item in ts:
-                if not isinstance(item, dict):
-                    continue
-                close = item.get("close", item.get("Close", 0))
-                try:
-                    close = float(close) if close is not None else 0.0
-                except (TypeError, ValueError):
-                    close = 0.0
-                if close > 0:
-                    result.append({
-                        "date": str(item.get("date", "")),
-                        "close": close,
-                    })
-            return result
-        finally:
-            conn.close()
+        result: List[Dict[str, Any]] = []
+        for item in ts:
+            if not isinstance(item, dict):
+                continue
+            close = item.get("close", item.get("Close", 0))
+            try:
+                close = float(close) if close is not None else 0.0
+            except (TypeError, ValueError):
+                close = 0.0
+            if close > 0:
+                result.append({
+                    "date": str(item.get("date", "")),
+                    "close": close,
+                })
+        return result
     except Exception:
         return []
 

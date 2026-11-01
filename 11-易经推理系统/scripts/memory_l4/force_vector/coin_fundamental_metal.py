@@ -28,6 +28,7 @@ if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
 from force_vector.coin_fundamental_ranker import classify_asset_class
+from force_vector._store_port import fetch_latest_record, fetch_all_records
 
 # data_center.db 默认路径：dreambuddy-v2/18-数据获取中心/data_center.db
 # force_vector → memory_l4 → scripts → 11-易经推理系统 → dreambuddy-v2（4级）
@@ -63,15 +64,10 @@ def _fetch_fred_series(db_path: str, series_id: str) -> dict:
     if not series_id or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT metrics FROM records "
-            "WHERE source='fred' AND category='macro' "
-            f"AND sub_category='{series_id}' "
-            "ORDER BY id ASC"
-        ).fetchall()
-        conn.close()
+        rows = fetch_all_records(
+            db_path, "fred", "macro", series_id,
+            switch="METAL", columns="metrics",
+        )
         if not rows:
             return {}
         # 拼接历史序列，同 date 去重（后写入的覆盖先写入的）
@@ -102,15 +98,10 @@ def _fetch_vix(db_path: str) -> float:
     if not os.path.exists(db_path):
         return 0.0
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT metrics FROM records "
-            "WHERE source='yfinance' AND category='finance' "
-            "AND sub_category='^VIX' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, "yfinance", "finance", "^VIX",
+            switch="METAL", columns="metrics",
+        )
         if not row:
             return 0.0
         m = _safe_json(row["metrics"])

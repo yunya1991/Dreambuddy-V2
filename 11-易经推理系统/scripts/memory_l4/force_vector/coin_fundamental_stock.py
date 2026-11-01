@@ -27,6 +27,7 @@ if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
 from force_vector.coin_fundamental_ranker import get_yfinance_symbol
+from force_vector._store_port import fetch_latest_record
 
 _REPO = os.path.normpath(os.path.join(_THIS_DIR, "..", "..", "..", ".."))
 _DATA_CENTER_ROOT = os.path.join(_REPO, "18-数据获取中心")
@@ -49,15 +50,10 @@ def _fetch_stock_info(db_path: str, symbol: str) -> dict:
     if not symbol or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT metrics FROM records "
-            "WHERE source='yfinance' AND category='finance' "
-            f"AND sub_category='stock_info_{symbol}' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, "yfinance", "finance",
+            f"stock_info_{symbol}", switch="STOCK", columns="metrics",
+        )
         return _safe_json(row["metrics"]) if row else {}
     except Exception:
         return {}
@@ -67,15 +63,10 @@ def _fetch_stock_financials(db_path: str, symbol: str) -> dict:
     if not symbol or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT timeseries FROM records "
-            "WHERE source='yfinance' AND category='finance' "
-            f"AND sub_category='stock_financials_{symbol}' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, "yfinance", "finance",
+            f"stock_financials_{symbol}", switch="STOCK", columns="timeseries",
+        )
         if not row:
             return {}
         ts = _safe_json(row["timeseries"])

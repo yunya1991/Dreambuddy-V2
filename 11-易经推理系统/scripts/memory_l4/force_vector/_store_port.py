@@ -170,4 +170,93 @@ def fetch_newsflash_rows(db_path: str,
         conn.close()
 
 
-__all__ = ["RecordsStorePort", "fetch_chart_timeseries_json", "fetch_newsflash_rows"]
+def fetch_latest_record(db_path: str, source: str, category: Optional[str],
+                        sub_category: Optional[str], switch: str,
+                        columns: str = "metrics, timeseries, raw",
+                        order_by: str = "id DESC") -> Optional[Dict[str, Any]]:
+    """按 source/category/sub_category 取最新一条记录（C5 第二批通用助手）。
+    返回 {列名: 值} dict；无数据返回 None。
+    开关打开 → 走 RecordsStorePort；默认 legacy 直连（原 SQL 原样保留）。
+    供 coin_fundamental_crypto / metal / stock / historical_data_loader 使用
+    （各传自己的 switch 名，实现文件粒度开关）。
+    """
+    filters = {"source": source}
+    if category is not None:
+        filters["category"] = category
+    if sub_category is not None:
+        filters["sub_category"] = sub_category
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            r = port.query(
+                "records",
+                filters=filters,
+                limit=1,
+                order_by=order_by,
+            )
+            rows = r.get("rows") or []
+            if not rows:
+                return None
+            row = rows[0]
+            return {c: row.get(c) for c in columns.split(",") if c in row}
+        except Exception:
+            return None  # FAIL-OPEN：与 legacy 路径异常时调用方兜底语义一致
+    where, params = ["source = ?"], [source]
+    if category is not None:
+        where.append("category = ?")
+        params.append(category)
+    if sub_category is not None:
+        where.append("sub_category = ?")
+        params.append(sub_category)
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT " + columns + " FROM records WHERE "
+            + " AND ".join(where) + " ORDER BY " + order_by + " LIMIT 1",
+            params,
+        ).fetchone()
+        return dict(row) if row is not None else None
+    finally:
+        conn.close()
+
+
+def fetch_all_records(db_path: str, source: str, category: str,
+                     sub_category: str, switch: str,
+                     columns: str = "metrics, timeseries") -> List[Dict[str, Any]]:
+    """按 source/category/sub_category 取全量记录序列（id ASC，C5 第二批通用助手）。
+    供 FRED 历史序列 / historical_data_loader 拼接历史使用。
+    开关打开 → 走 RecordsStorePort；默认 legacy 直连（原 SQL 原样保留）。
+    """
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            r = port.query(
+                "records",
+                filters={"source": source, "category": category,
+                         "sub_category": sub_category},
+                limit=1000000,
+                order_by="id ASC",
+            )
+            return [
+                {c: row.get(c) for c in columns.split(",") if c in row}
+                for row in (r.get("rows") or [])
+            ]
+        except Exception:
+            return []  # FAIL-OPEN
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT " + columns + " FROM records "
+            "WHERE source=? AND category=? AND sub_category=? "
+            "ORDER BY id ASC",
+            (source, category, sub_category),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+__all__ = ["RecordsStorePort", "fetch_chart_timeseries_json", "fetch_newsflash_rows",
+           "fetch_latest_record", "fetch_all_records"]

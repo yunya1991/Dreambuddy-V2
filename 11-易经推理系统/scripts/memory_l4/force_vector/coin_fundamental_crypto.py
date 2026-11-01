@@ -28,6 +28,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
+from force_vector._store_port import fetch_latest_record
 from force_vector.coin_fundamental_ranker import (
     get_coingecko_id,
     get_protocol_mapping,
@@ -289,15 +290,11 @@ def _fetch_protocol_fees(db_path: str, protocol: str) -> dict:
     if not protocol or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT metrics, timeseries FROM records "
-            "WHERE source='defillama' AND category='protocol' "
-            f"AND sub_category='fees_{protocol}' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, "defillama", "protocol",
+            f"fees_{protocol}", switch="CRYPTO",
+            columns="metrics, timeseries",
+        )
         if row is None:
             return {}
         metrics = _safe_json(row["metrics"])
@@ -312,15 +309,10 @@ def _fetch_coin_info(db_path: str, coin_id: str) -> dict:
     if not coin_id or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT metrics FROM records "
-            "WHERE source='coingecko' AND category='coin' "
-            f"AND sub_category='{coin_id}' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, "coingecko", "coin",
+            coin_id, switch="CRYPTO", columns="metrics",
+        )
         if row is None:
             return {}
         return _safe_json(row["metrics"])
@@ -336,16 +328,11 @@ def _fetch_protocol_tvl(db_path: str, protocol: str) -> dict:
     if not protocol or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
         # 最新一条 all_protocols 记录
-        row = conn.execute(
-            "SELECT timeseries FROM records "
-            "WHERE source='defillama' AND category='protocol' "
-            "AND sub_category='all_protocols' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, "defillama", "protocol",
+            "all_protocols", switch="CRYPTO", columns="timeseries",
+        )
         if row is None:
             return {}
         ts = _safe_json(row["timeseries"])
@@ -369,15 +356,10 @@ def _fetch_bdsm_data(db_path: str, source: str) -> dict:
     if not source or not os.path.exists(db_path):
         return {}
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT metrics, raw FROM records "
-            "WHERE source=? AND category='bdsm' "
-            "ORDER BY id DESC LIMIT 1",
-            (source,),
-        ).fetchone()
-        conn.close()
+        row = fetch_latest_record(
+            db_path, source, "bdsm",
+            None, switch="CRYPTO", columns="metrics, raw",
+        )
         if row is None:
             return {}
         return {"metrics": _safe_json(row["metrics"]), "raw": _safe_json(row["raw"])}
@@ -715,16 +697,11 @@ def _fetch_L1_chain_metrics(coin: str, db_path: str) -> dict:
         coin_id = get_coingecko_id(coin)
         if coin_id:
             try:
-                conn = sqlite3.connect(db_path)
-                conn.row_factory = sqlite3.Row
-                row = conn.execute(
-                    "SELECT timeseries FROM records "
-                    "WHERE source='chain_onchain' AND category='l1' "
-                    "AND sub_category=? "
-                    "ORDER BY id DESC LIMIT 1",
-                    (f"l1_{coin_id}",),
-                ).fetchone()
-                conn.close()
+                row = fetch_latest_record(
+                    db_path, "chain_onchain", "l1",
+                    f"l1_{coin_id}", switch="CRYPTO",
+                    columns="timeseries",
+                )
                 if row is not None:
                     ts = _safe_json(row["timeseries"])
                     if isinstance(ts, dict) and ts:
