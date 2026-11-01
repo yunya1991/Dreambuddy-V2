@@ -1,0 +1,176 @@
+# thresholds.yaml — 45-评测系统 Threshold Registry（P0-3）
+# ==========================================================
+# 依据：SPEC v1.0 §8.1 阈值表（含 min_n 与统计方法）
+# 治理（§8.5 / D-01）：版本化；P1.5 灰度期用 Wilson CI 校准；
+#   放宽（调松）需双人审批并更新 effective_from 与 reason。
+# direction: gte = CI 下界 ≥ value 判过；lte = CI 上界 ≤ value 判过
+# kind: hard = 硬性项（零失败）；weighted = 加权项（判 CI 下界）
+
+version: "TH-2026Q4@1"
+effective_from: "2026-11-01T00:00:00Z"
+approved_by: "evaluator-admin"
+reason: "P0 初值：SPEC §8.1 冻结值，P1.5 滚动复核"
+
+items:
+  # ---------- 金融类（SPEC §5.1） ----------
+  - category: finance
+    item: F-W5
+    name: 回测综合分
+    value: 0.70
+    metric: backtest_composite
+    direction: gte
+    stat: "n<200 bootstrap；否则 Wilson/聚类稳健"
+    min_n: 100
+    kind: weighted
+
+  - category: finance
+    item: F-H7
+    name: DSR（主判）
+    value: 0.95
+    metric: dsr
+    direction: gte
+    stat: "解析式 + bootstrap"
+    min_n: 100
+    kind: hard
+
+  - category: finance
+    item: F-W2
+    name: OOS/IS 衰减
+    value: 0.50
+    metric: oos_is_decay
+    direction: lte
+    stat: "点估计 + CI"
+    min_n: 100
+    kind: weighted
+
+  - category: finance
+    item: F-W3
+    name: 成本×2 稳健
+    value: 0.0
+    metric: cost2x_net_sharpe
+    direction: gte
+    stat: "点估计"
+    min_n: 100
+    kind: weighted
+    params:
+      maxdd_ratio_max: 1.5 # 成本×2 下 MaxDD ≤ 1.5× 基准 MaxDD
+
+  - category: finance
+    item: F-W4
+    name: 容量约束
+    value: 0.10
+    metric: single_trade_adv_ratio
+    direction: lte
+    stat: "点估计"
+    min_n: 20
+    kind: weighted
+
+  - category: finance
+    item: F-W1
+    name: 样本外净 Sharpe
+    value: 0.5
+    metric: oos_net_sharpe
+    direction: gte
+    stat: "Wilson"
+    min_n: 100
+    kind: weighted
+    params:
+      reference_only: true # 观察线，不单独拦截（D-04：DSR 主判）
+      crypto_line: 0.8
+      equity_line: 0.5
+
+  # ---------- AI 类（SPEC §5.2） ----------
+  - category: ai
+    item: A-W1
+    name: 自动评测综合分
+    value: 0.75
+    metric: auto_eval_composite
+    direction: gte
+    stat: "Wilson/bootstrap"
+    min_n: 200
+    kind: weighted
+
+  - category: ai
+    item: A-W2
+    name: 性能压测达标率
+    value: 0.80
+    metric: perf_pass_rate
+    direction: gte
+    stat: "Wilson"
+    min_n: 30
+    kind: weighted
+
+  - category: ai
+    item: A-W3
+    name: 人工抽评均分
+    value: 0.75
+    metric: human_sample_mean
+    direction: gte
+    stat: "Wilson + α"
+    min_n: 100 # 每层（§10 分层抽样）
+    kind: weighted
+
+  - category: ai
+    item: A-H4
+    name: 裁判校准 κ/α
+    value: 0.60
+    metric: judge_cohen_kappa
+    direction: gte
+    stat: "Cohen's κ / Krippendorff α"
+    min_n: 200
+    kind: hard
+    params:
+      alpha_min: 0.67 # Krippendorff's α ≥ 0.67
+
+  # ---------- 工程类（SPEC §5.3） ----------
+  - category: engineering
+    item: E-W1
+    name: 用例通过率
+    value: 0.95
+    metric: test_pass_rate
+    direction: gte
+    stat: "Wilson"
+    min_n: 0 # 全量
+    kind: weighted
+
+  - category: engineering
+    item: E-W2
+    name: 全仓行覆盖率
+    value: 0.60
+    metric: repo_line_coverage
+    direction: gte
+    stat: "点估计"
+    min_n: 0
+    kind: weighted
+    params:
+      after_gray: 0.70 # 灰度后上调（§5.3）
+
+  - category: engineering
+    item: E-H4
+    name: 新增行覆盖率
+    value: 0.80
+    metric: new_line_coverage
+    direction: gte
+    stat: "点估计"
+    min_n: 0
+    kind: hard
+
+  - category: engineering
+    item: E-W5
+    name: 基准集对照（pycg）
+    value: 0.70
+    metric: benchmark_alignment
+    direction: gte
+    stat: "Wilson"
+    min_n: 0 # 基准规模
+    kind: weighted
+
+  - category: engineering
+    item: E-W6
+    name: 供应链健康度
+    value: 7.0
+    metric: openssf_scorecard
+    direction: gte
+    stat: "点估计"
+    min_n: 0
+    kind: weighted
