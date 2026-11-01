@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from ..ports import EventPort, StorePort
+from ..ports import EventPort, MemoryPort, StorePort
+from .event_bridge import JobRunEventBridge
 from .registry import TaskRegistry, load_registry
 from .windows import is_window_closed, split_segments, window_index, window_start
 
@@ -29,6 +30,7 @@ class JobRunRecorder:
         *,
         store: StorePort,
         event: Optional[EventPort] = None,
+        memory: Optional[MemoryPort] = None,
         registry: Optional[TaskRegistry] = None,
         table: str = TABLE,
         late_tolerance_sec: Optional[int] = None,
@@ -36,6 +38,8 @@ class JobRunRecorder:
     ) -> None:
         self.store = store
         self.event = event
+        # C8：终态同进程回调认知（external_id=run_id 幂等）；memory 为空时不回调
+        self.bridge = JobRunEventBridge(memory=memory, event=event)
         self.registry = registry or load_registry()
         self.table = table
         self.tolerance_sec = (
@@ -107,6 +111,8 @@ class JobRunRecorder:
         row["heartbeat_at"] = float(now)
         row["error"] = error
         self.store.write(self.table, data=row)
+        # C8：落库后再回调（"已写状态、后写认知"），失败只告警不回滚
+        row["bridge"] = self.bridge.on_terminal(row)
         return row
 
     def record_run(

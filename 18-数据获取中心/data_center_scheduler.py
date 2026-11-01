@@ -64,8 +64,27 @@ def _setup_logging() -> None:
     )
 
 
+def _build_memory_adapter():
+    """C8：run 终态回调认知（external_id=run_id 幂等）。
+
+    本地默认关闭（认知权威库在云端，本地只读镜像禁止直写），云端（PG 后端）默认开启；
+    `JOB_RUNS_MEMORY=1/0` 可显式覆盖。初始化失败降级为不回调。
+    """
+    try:
+        from dreambuddy_l0.scheduling.event_bridge import memory_enabled
+
+        if not memory_enabled():
+            return None
+        from dreambuddy_l0.adapters.cognitive import from_cognitive_loop
+
+        return from_cognitive_loop()
+    except Exception as e:
+        logger.error("C8 认知回调适配器初始化失败（降级为不回调）: %s: %s", type(e).__name__, e)
+        return None
+
+
 def _build_recorder():
-    """C9：构造 job_runs 记账器（经 L0 Store/Event port，失败则降级为 None）。"""
+    """C9：构造 job_runs 记账器（经 L0 Store/Event/Memory port，失败则降级为 None）。"""
     if os.environ.get("JOB_RUNS_ENABLED", "1") != "1":
         return None
     try:
@@ -74,7 +93,10 @@ def _build_recorder():
 
         path = os.environ.get("JOB_RUNS_PATH") or str(LOGS_DIR / "job_runs.jsonl")
         return JobRunRecorder(
-            store=JsonlStore(path), event=JsonlEvent(path), registry=load_registry()
+            store=JsonlStore(path),
+            event=JsonlEvent(path),
+            memory=_build_memory_adapter(),
+            registry=load_registry(),
         )
     except Exception as e:
         logger.error("job_runs 记账器初始化失败（降级为不记账）: %s: %s", type(e).__name__, e)
