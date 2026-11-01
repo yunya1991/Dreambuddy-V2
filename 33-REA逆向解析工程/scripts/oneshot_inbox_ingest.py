@@ -112,6 +112,8 @@ def main() -> int:
     ap.add_argument("--inject", action="store_true", help="对 qualified 执行 harvest 注入")
     ap.add_argument("--inject-max", type=int, default=5, help="单次注入上限")
     ap.add_argument("--batch", type=int, default=1, help="每批注入条数（并发固定 1）")
+    ap.add_argument("--reuse-report", action="store_true",
+                    help="复用当日评估报告，不再调用 GitHub API（避免 60 次/小时限流）")
     args = ap.parse_args()
 
     if not mem_gate():
@@ -123,20 +125,31 @@ def main() -> int:
 
     results = {"qualified": [], "candidate": [], "reject": []}
     evaluated = []
+    cached: dict[str, dict] = {}
+    cache_path = REPORT_DIR / f"oneshot_ingest_{dt.date.today().isoformat()}.json"
+    if args.reuse_report and cache_path.exists():
+        prev = json.loads(cache_path.read_text(encoding="utf-8"))
+        cached = {i["location"]: i for i in prev.get("items", [])}
+        log(f"reuse_report={cache_path.name} cached={len(cached)}")
+
     for src in inbox.get("sources", []):
-        owner_repo = parse_owner_repo(src["location"])
-        meta = gh_api(owner_repo)
-        level, reason = classify_level(meta)
-        rec = {
-            "id": src["id"], "location": src["location"], "category": src["category"],
-            "level": level, "reason": reason,
-            "stars": (meta or {}).get("stargazers_count"),
-            "language": (meta or {}).get("language"),
-            "license": ((meta or {}).get("license") or {}).get("spdx_id"),
-        }
+        if src["location"] in cached:
+            rec = dict(cached[src["location"]])
+            log(f"{rec['level']:9s} {src['location']:55s} {rec['reason']} (cached)")
+        else:
+            owner_repo = parse_owner_repo(src["location"])
+            meta = gh_api(owner_repo)
+            level, reason = classify_level(meta)
+            rec = {
+                "id": src["id"], "location": src["location"], "category": src["category"],
+                "level": level, "reason": reason,
+                "stars": (meta or {}).get("stargazers_count"),
+                "language": (meta or {}).get("language"),
+                "license": ((meta or {}).get("license") or {}).get("spdx_id"),
+            }
+            log(f"{level:9s} {owner_repo:42s} {reason}")
         evaluated.append(rec)
-        results[level].append(rec)
-        log(f"{level:9s} {owner_repo:42s} {reason}")
+        results[rec["level"]].append(rec)
 
     merged = 0
     if args.apply:

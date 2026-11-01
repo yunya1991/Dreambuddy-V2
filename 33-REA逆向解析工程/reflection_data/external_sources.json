@@ -2264,6 +2264,438 @@
       ],
       "extract_target": "随机投资组合理论中的签名方法，对照 13-风控的路径依赖组合度量",
       "size_cap_mb": 10
+    },
+    {
+      "id": "openlit",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/openlit/openlit",
+      "label": "openlit/openlit",
+      "language": "TypeScript",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/ai-trading-observability-selfhealing-research.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 2895,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "mcp-context-forge",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/IBM/mcp-context-forge",
+      "label": "IBM/mcp-context-forge",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/ai-trading-observability-selfhealing-research.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 4733,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "rea",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/morluto/rea",
+      "label": "morluto/rea",
+      "language": "TypeScript",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/specs/rea-engineering-practice-reproduction/README.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 416136,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "nanoclaw",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/qwibitai/nanoclaw",
+      "label": "qwibitai/nanoclaw",
+      "language": "TypeScript",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "10-经典指标系统/docs/archive/交易AI_Agent_技术文档_历史.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 31064,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "vite-plugin-react",
+      "category": "frontend",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/vitejs/vite-plugin-react",
+      "label": "vitejs/vite-plugin-react",
+      "language": "TypeScript",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "10-经典指标系统/frontend/README.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 1178,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "eslint-react",
+      "category": "frontend",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/Rel1cx/eslint-react",
+      "label": "Rel1cx/eslint-react",
+      "language": "TypeScript",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "10-经典指标系统/frontend/README.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 594,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "darts",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/unit8co/darts",
+      "label": "unit8co/darts",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 9571,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "statsmodels",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/statsmodels/statsmodels",
+      "label": "statsmodels/statsmodels",
+      "language": "Python",
+      "license": "BSD-3-Clause",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 11731,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "feast",
+      "category": "database",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/feast-dev/feast",
+      "label": "feast-dev/feast",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 7352,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "browser-use",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/browser-use/browser-use",
+      "label": "browser-use/browser-use",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/browser-use.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 119697,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "browserskill",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/Tencent/BrowserSkill",
+      "label": "Tencent/BrowserSkill",
+      "language": "TypeScript",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/browserskill.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 9855,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "hermes-agent",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/NousResearch/hermes-agent",
+      "label": "NousResearch/hermes-agent",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/hermes-agent.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 259251,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "chinese-bert-wwm",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/ymcui/Chinese-BERT-wwm",
+      "label": "ymcui/Chinese-BERT-wwm",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/chinese-bert-wwm.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 10232,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "chinese-electra",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/ymcui/Chinese-ELECTRA",
+      "label": "ymcui/Chinese-ELECTRA",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/chinese-electra.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 1434,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "chinese-xlnet",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/ymcui/Chinese-XLNet",
+      "label": "ymcui/Chinese-XLNet",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/chinese-xlnet.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 1646,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "textbrewer",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/airaria/TextBrewer",
+      "label": "airaria/TextBrewer",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/textbrewer.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 1711,
+      "last_checked_at": "2026-11-01"
     }
   ]
 }

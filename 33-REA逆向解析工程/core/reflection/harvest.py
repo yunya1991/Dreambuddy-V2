@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -23,6 +24,8 @@ from .replay_simulator import DiscoveryTree, DiscoveryNode, ReplayPool
 EXTERNAL_INIT_WEIGHT = 0.5
 VERIFY_PASS_THRESHOLD = 0.6
 FETCH_TIMEOUT = 30
+# 质量门：有效节点（不含根与叙事节点）少于该值的树视为空壳，不入池
+MIN_EFFECTIVE_NODES = 3
 
 
 @dataclass
@@ -33,6 +36,8 @@ class HarvestSource:
     location: str
     label: str = ""
     patterns: List[str] = field(default_factory=list)
+    license: str = ""
+    commit: str = ""
 
 
 @dataclass
@@ -78,6 +83,30 @@ class ExternalHarvester:
 
     def _log(self, msg: str) -> None:
         print(f"[harvest] {msg}", flush=True)
+
+    def _resolve_commit(self, local_dir: str) -> str:
+        """E1 补充：读取实际 clone 到的 commit（失败返回空串，FAIL-OPEN）。"""
+        try:
+            return self._run(["git", "-C", local_dir, "rev-parse", "HEAD"]).strip()
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _effective_node_count(self, tree: DiscoveryTree) -> int:
+        """有效节点数：排除根节点与纯叙事节点，用于空壳质量门。"""
+        return sum(
+            1 for n in tree.nodes
+            if isinstance(n.action, dict)
+            and n.action.get("analyzer") not in (None, "", "init", "s33_rea_narrative")
+        )
+
+    def _apply_metadata(self, tree: DiscoveryTree, source: HarvestSource, local_dir: str) -> None:
+        """回填外部源元数据（SPEC A2：source_id/repo_url/commit/license/collected_at）。"""
+        tree.source_id = source.label or source.location
+        tree.source_label = source.label or source.location
+        tree.repo_url = source.location
+        tree.commit = source.commit or self._resolve_commit(local_dir)
+        tree.license = source.license
+        tree.collected_at = int(time.time() * 1000)
 
     # ------------------------------------------------------------------
     # E2 解析：复用 P0 分析器，将外部项目解析为发现树
@@ -316,6 +345,15 @@ class ExternalHarvester:
                 if tree is None:
                     outcome.rejected.append({"source": source.location, "stage": "E2"})
                     continue
+                effective = self._effective_node_count(tree)
+                if effective < MIN_EFFECTIVE_NODES:
+                    outcome.rejected.append({
+                        "source": source.location,
+                        "stage": "E2-quality",
+                        "effective_nodes": effective,
+                    })
+                    continue
+                self._apply_metadata(tree, source, local_dir)
                 pass_rate = self.verify_tree(tree, source)
                 tree_id = self.inject_tree(tree, pass_rate)
                 if tree_id:
