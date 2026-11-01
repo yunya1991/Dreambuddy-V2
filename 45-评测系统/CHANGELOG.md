@@ -3,7 +3,18 @@
 > 记录方式：里程碑 + 变更条目 + 提交哈希；对应 PLAN 任务编号。
 > 根门禁（PLAN §2.6）：45 自身变更 = pytest 全绿 + 人工评审 + 本 CHANGELOG 更新，不调用自身评测器。
 
-## [0.3.0] — 2026-11-01 — P2 评测器接入（进行中）
+## [0.4.0] — 2026-11-01 — P3 强制门禁
+
+### P3-1 凭证签发与校验
+- 新增 `core/gate.py`：`issue` 仅 PASS 可签发（BLOCK/INCONCLUSIVE 拒绝），`verify` 以库内报告重算绑定并校验新鲜度
+- 凭证绑定 `eval_id + run_id + spec_hash + verdict + thresholds_version + expires_at`，并记录 `evaluator_id@version`（P2-9 版本锁定落地，供复算）
+- 有效期取报告判定时刻 +7 天（`CREDENTIAL_TTL_DAYS`），边界闭区间；过期不可重签，必须重新评测
+- 校验失败码：`unknown_eval_id` / `no_report` / `verdict_not_pass` / `binding_mismatch` / `purpose_mismatch` / `expired`（fail-closed）
+- 测试：19 个用例（签发绑定、BLOCK/INCONCLUSIVE 拒绝、篡改 spec_hash/expires_at/purpose、过期边界）；core/gate.py 覆盖率 96%
+- 签名与 Merkle 根留待 P4-1
+- commit: `待填`
+
+## [0.3.0] — 2026-11-01 — P2 评测器接入（P2-1~P2-9 已交付）
 
 ### P2-1 通用准入验证器（E3 三层）
 - 新增 `evaluators/common/e3.py`：网络层（object_ref 可达、端点健康、资源可解析）、内容层（schema、category↔object_type、哈希一致）、交叉层（commit / 泛化声明一致性）
