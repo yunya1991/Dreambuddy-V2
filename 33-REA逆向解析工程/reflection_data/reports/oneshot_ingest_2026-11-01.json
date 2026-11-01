@@ -1,0 +1,465 @@
+{
+  "generated_at": "2026-11-01T14:11:04",
+  "apply": true,
+  "inject": true,
+  "inbox_total": 45,
+  "qualified": 16,
+  "candidate": 6,
+  "reject": 23,
+  "merged": 16,
+  "injected": [],
+  "errors": [],
+  "mem_available_mb": 11463.04296875,
+  "items": [
+    {
+      "id": "sample-langgraph-strands-market-analysis",
+      "location": "https://github.com/aws-samples/sample-langgraph-strands-market-analysis",
+      "category": "dreamos",
+      "level": "reject",
+      "reason": "license=MIT-0",
+      "stars": 3,
+      "language": "Python",
+      "license": "MIT-0"
+    },
+    {
+      "id": "openlit",
+      "location": "https://github.com/openlit/openlit",
+      "category": "finance_models",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 2895,
+      "language": "TypeScript",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "mcp-context-forge",
+      "location": "https://github.com/IBM/mcp-context-forge",
+      "category": "dsh",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 4733,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "autogpt",
+      "location": "https://github.com/Significant-Gravitas/AutoGPT",
+      "category": "dreamos",
+      "level": "reject",
+      "reason": "license=NOASSERTION",
+      "stars": 187852,
+      "language": "Python",
+      "license": "NOASSERTION"
+    },
+    {
+      "id": "dexter",
+      "location": "https://github.com/virattt/dexter",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 27741,
+      "language": "TypeScript",
+      "license": null
+    },
+    {
+      "id": "agent-skill-router",
+      "location": "https://github.com/paulpas/agent-skill-router",
+      "category": "dsh",
+      "level": "reject",
+      "reason": "license=NOASSERTION",
+      "stars": 9,
+      "language": "TypeScript",
+      "license": "NOASSERTION"
+    },
+    {
+      "id": "scaling-verification",
+      "location": "https://github.com/HazyResearch/scaling-verification",
+      "category": "llm_training",
+      "level": "candidate",
+      "reason": "stars=33<300",
+      "stars": 33,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "robomonkey",
+      "location": "https://github.com/robomonkey-vla/RoboMonkey",
+      "category": "llm_training",
+      "level": "candidate",
+      "reason": "stars=47<300",
+      "stars": 47,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "rea",
+      "location": "https://github.com/morluto/rea",
+      "category": "finance_models",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 416136,
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "id": "nanoclaw",
+      "location": "https://github.com/qwibitai/nanoclaw",
+      "category": "finance_models",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 31064,
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "id": "vite-plugin-react",
+      "location": "https://github.com/vitejs/vite-plugin-react",
+      "category": "frontend",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 1178,
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "id": "eslint-react",
+      "location": "https://github.com/Rel1cx/eslint-react",
+      "category": "frontend",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 594,
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "id": "lean",
+      "location": "https://github.com/QuantConnect/Lean",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "language=C#",
+      "stars": 22333,
+      "language": "C#",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "vectorbt",
+      "location": "https://github.com/polakowo/vectorbt",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=NOASSERTION",
+      "stars": 9619,
+      "language": "Python",
+      "license": "NOASSERTION"
+    },
+    {
+      "id": "darts",
+      "location": "https://github.com/unit8co/darts",
+      "category": "finance_models",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 9571,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "statsmodels",
+      "location": "https://github.com/statsmodels/statsmodels",
+      "category": "finance_models",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 11731,
+      "language": "Python",
+      "license": "BSD-3-Clause"
+    },
+    {
+      "id": "evidently",
+      "location": "https://github.com/evidentlyai/evidently",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "language=Jupyter Notebook",
+      "stars": 8028,
+      "language": "Jupyter Notebook",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "whylogs",
+      "location": "https://github.com/whylabs/whylogs",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "language=Jupyter Notebook",
+      "stars": 2837,
+      "language": "Jupyter Notebook",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "feast",
+      "location": "https://github.com/feast-dev/feast",
+      "category": "database",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 7352,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "eventstore",
+      "location": "https://github.com/EventStore/EventStore",
+      "category": "database",
+      "level": "reject",
+      "reason": "language=C#",
+      "stars": 5881,
+      "language": "C#",
+      "license": "NOASSERTION"
+    },
+    {
+      "id": "kafka",
+      "location": "https://github.com/apache/kafka",
+      "category": "database",
+      "level": "reject",
+      "reason": "language=Java",
+      "stars": 34105,
+      "language": "Java",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "graph-data-science",
+      "location": "https://github.com/neo4j/graph-data-science",
+      "category": "database",
+      "level": "reject",
+      "reason": "language=Java",
+      "stars": 826,
+      "language": "Java",
+      "license": "NOASSERTION"
+    },
+    {
+      "id": "grok-build",
+      "location": "https://github.com/xai-org/grok-build",
+      "category": "dsh",
+      "level": "reject",
+      "reason": "language=Rust",
+      "stars": 27638,
+      "language": "Rust",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "browser-use",
+      "location": "https://github.com/browser-use/browser-use",
+      "category": "dsh",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 119697,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "browserskill",
+      "location": "https://github.com/Tencent/BrowserSkill",
+      "category": "dsh",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 9855,
+      "language": "TypeScript",
+      "license": "MIT"
+    },
+    {
+      "id": "btc-enhanced-dca",
+      "location": "https://github.com/Eumenides-K/btc-enhanced-dca",
+      "category": "finance_models",
+      "level": "candidate",
+      "reason": "stars=0<300",
+      "stars": 0,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "dcai",
+      "location": "https://github.com/cerebrux/DCAi",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "language=unknown",
+      "stars": 4,
+      "language": null,
+      "license": "AGPL-3.0"
+    },
+    {
+      "id": "hermes-agent",
+      "location": "https://github.com/NousResearch/hermes-agent",
+      "category": "dsh",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 259251,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "mefai-autotrade",
+      "location": "https://github.com/mefai-dev/mefai-autotrade",
+      "category": "finance_models",
+      "level": "candidate",
+      "reason": "stars=10<300",
+      "stars": 10,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "superpowers-evals",
+      "location": "https://github.com/prime-radiant-inc/superpowers-evals",
+      "category": "dsh",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 142,
+      "language": "TypeScript",
+      "license": null
+    },
+    {
+      "id": "dca-crypto-bot",
+      "location": "https://github.com/CodingCryptoTrading/dca-crypto-bot",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 30,
+      "language": "Python",
+      "license": null
+    },
+    {
+      "id": "hmm-marketstate",
+      "location": "https://github.com/nyro-github/HMM-MarketState",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 0,
+      "language": "Python",
+      "license": null
+    },
+    {
+      "id": "lob-regime-scanner",
+      "location": "https://github.com/CameronScarpati/lob-regime-scanner",
+      "category": "finance_models",
+      "level": "candidate",
+      "reason": "stars=19<300",
+      "stars": 19,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "market-regime-detection",
+      "location": "https://github.com/taylorjmellon/market-regime-detection",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 5,
+      "language": "Python",
+      "license": null
+    },
+    {
+      "id": "market-regime-detection-2",
+      "location": "https://github.com/LucasLarese/market-regime-detection",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "language=Jupyter Notebook",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "license": null
+    },
+    {
+      "id": "market_regime_detection",
+      "location": "https://github.com/k3tikvats/market_regime_detection",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 3,
+      "language": "Python",
+      "license": null
+    },
+    {
+      "id": "ml_engine",
+      "location": "https://github.com/Raynergy-svg/ml_engine",
+      "category": "finance_models",
+      "level": "reject",
+      "reason": "license=unknown",
+      "stars": 1,
+      "language": "Python",
+      "license": null
+    },
+    {
+      "id": "trading-bot",
+      "location": "https://github.com/EliasAbouKhater/trading-bot",
+      "category": "finance_models",
+      "level": "candidate",
+      "reason": "stars=0<300",
+      "stars": 0,
+      "language": "Python",
+      "license": "MIT"
+    },
+    {
+      "id": "bert",
+      "location": "https://github.com/google-research/bert",
+      "category": "llm_training",
+      "level": "reject",
+      "reason": "archived",
+      "stars": 40038,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "chinese-bert-wwm",
+      "location": "https://github.com/ymcui/Chinese-BERT-wwm",
+      "category": "llm_training",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 10232,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "chinese-electra",
+      "location": "https://github.com/ymcui/Chinese-ELECTRA",
+      "category": "llm_training",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 1434,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "chinese-xlnet",
+      "location": "https://github.com/ymcui/Chinese-XLNet",
+      "category": "llm_training",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 1646,
+      "language": "Python",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "hfl-anthology",
+      "location": "https://github.com/ymcui/HFL-Anthology",
+      "category": "llm_training",
+      "level": "reject",
+      "reason": "language=Markdown",
+      "stars": 378,
+      "language": "Markdown",
+      "license": "CC-BY-SA-4.0"
+    },
+    {
+      "id": "macbert",
+      "location": "https://github.com/ymcui/MacBERT",
+      "category": "llm_training",
+      "level": "reject",
+      "reason": "language=unknown",
+      "stars": 726,
+      "language": null,
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "textbrewer",
+      "location": "https://github.com/airaria/TextBrewer",
+      "category": "llm_training",
+      "level": "qualified",
+      "reason": "ok",
+      "stars": 1711,
+      "language": "Python",
+      "license": "Apache-2.0"
+    }
+  ]
+}

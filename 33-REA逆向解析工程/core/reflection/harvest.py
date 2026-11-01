@@ -15,14 +15,17 @@ from __future__ import annotations
 
 import os
 import subprocess
+import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .replay_simulator import DiscoveryTree, DiscoveryNode, ReplayPool
+from .replay_simulator import DiscoveryNode, DiscoveryTree, ReplayPool
 
 EXTERNAL_INIT_WEIGHT = 0.5
 VERIFY_PASS_THRESHOLD = 0.6
 FETCH_TIMEOUT = 30
+# 质量门：有效节点（不含根与叙事节点）少于该值的树视为空壳，不入池
+MIN_EFFECTIVE_NODES = 3
 
 
 @dataclass
@@ -33,6 +36,8 @@ class HarvestSource:
     location: str
     label: str = ""
     patterns: List[str] = field(default_factory=list)
+    license: str = ""
+    commit: str = ""
 
 
 @dataclass
@@ -70,7 +75,10 @@ class ExternalHarvester:
 
     def _run(self, cmd: List[str]) -> str:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=FETCH_TIMEOUT,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=FETCH_TIMEOUT,
         )
         if proc.returncode != 0:
             raise RuntimeError(proc.stderr.strip()[-500:])
@@ -78,6 +86,31 @@ class ExternalHarvester:
 
     def _log(self, msg: str) -> None:
         print(f"[harvest] {msg}", flush=True)
+
+    def _resolve_commit(self, local_dir: str) -> str:
+        """E1 补充：读取实际 clone 到的 commit（失败返回空串，FAIL-OPEN）。"""
+        try:
+            return self._run(["git", "-C", local_dir, "rev-parse", "HEAD"]).strip()
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _effective_node_count(self, tree: DiscoveryTree) -> int:
+        """有效节点数：排除根节点与纯叙事节点，用于空壳质量门。"""
+        return sum(
+            1
+            for n in tree.nodes
+            if isinstance(n.action, dict)
+            and n.action.get("analyzer") not in (None, "", "init", "s33_rea_narrative")
+        )
+
+    def _apply_metadata(self, tree: DiscoveryTree, source: HarvestSource, local_dir: str) -> None:
+        """回填外部源元数据（SPEC A2：source_id/repo_url/commit/license/collected_at）。"""
+        tree.source_id = source.label or source.location
+        tree.source_label = source.label or source.location
+        tree.repo_url = source.location
+        tree.commit = source.commit or self._resolve_commit(local_dir)
+        tree.license = source.license
+        tree.collected_at = int(time.time() * 1000)
 
     # ------------------------------------------------------------------
     # E2 解析：复用 P0 分析器，将外部项目解析为发现树
@@ -95,9 +128,6 @@ class ExternalHarvester:
                 source_label=source.label or source.location,
             )
             findings = self._analyze_dir(local_dir, source.patterns)
-            if not findings:
-                self._log(f"E2 no findings for {source.location}")
-                return None
             root = tree.root
             for idx, item in enumerate(findings):
                 node = DiscoveryNode(
@@ -112,19 +142,84 @@ class ExternalHarvester:
                     cost_calls=1,
                 )
                 tree.add_node(node)
+            # E2 第 2/3 步（SPEC §9 E2）：决策还原 + 演化叙事，注入决策路径树
+            n_dec = self._append_decision_nodes(tree, local_dir)
+            n_nar = self._append_narrative_nodes(tree, local_dir)
+            if not (findings or n_dec or n_nar):
+                self._log(f"E2 no findings for {source.location}")
+                return None
             return tree
         except Exception as exc:  # noqa: BLE001
             self._log(f"E2 parse failed for {source.location}: {exc}")
             return None
+
+    def _append_decision_nodes(self, tree: DiscoveryTree, local_dir: str) -> int:
+        """E2 第 2 步：设计决策还原 → ADR 级决策节点（FAIL-OPEN）。"""
+        try:
+            from core.design_decision_recovery import recover_decisions
+
+            result = recover_decisions(local_dir) or {}
+        except Exception as exc:  # noqa: BLE001
+            self._log(f"E2 recover_decisions unavailable: {exc}")
+            return 0
+        root = tree.root
+        added = 0
+        for idx, d in enumerate(result.get("decisions", [])):
+            ev = d.get("evidence")
+            ev_dict = ev.to_dict() if hasattr(ev, "to_dict") else (ev or {})
+            conf = float(ev_dict.get("confidence", 0.5)) if isinstance(ev_dict, dict) else 0.5
+            node = DiscoveryNode(
+                node_id=f"dn_dec_{idx}",
+                parent_id=root.node_id if root else None,
+                action={
+                    "analyzer": "s33_rea_recover_decisions",
+                    "params": {"decision": d.get("decision", "")},
+                },
+                evidence_refs=[ev_dict] if ev_dict else [],
+                poe_score=conf,
+                cost_calls=1,
+            )
+            tree.add_node(node)
+            added += 1
+        return added
+
+    def _append_narrative_nodes(self, tree: DiscoveryTree, local_dir: str) -> int:
+        """E2 第 3 步：演化叙事 → 转折点节点（FAIL-OPEN）。"""
+        try:
+            from core.evolution_narrative import generate_narrative
+
+            result = generate_narrative(local_dir) or {}
+        except Exception as exc:  # noqa: BLE001
+            self._log(f"E2 generate_narrative unavailable: {exc}")
+            return 0
+        root = tree.root
+        added = 0
+        for idx, tp in enumerate(result.get("turning_points", [])):
+            ev = tp.get("evidence")
+            ev_dict = ev.to_dict() if hasattr(ev, "to_dict") else (ev or {})
+            conf = float(ev_dict.get("confidence", 0.5)) if isinstance(ev_dict, dict) else 0.5
+            node = DiscoveryNode(
+                node_id=f"dn_nar_{idx}",
+                parent_id=root.node_id if root else None,
+                action={
+                    "analyzer": "s33_rea_narrative",
+                    "params": {"commit": tp.get("commit", ""), "message": tp.get("message", "")},
+                },
+                evidence_refs=[ev_dict] if ev_dict else [],
+                poe_score=conf,
+                cost_calls=1,
+            )
+            tree.add_node(node)
+            added += 1
+        return added
 
     def _analyze_dir(self, local_dir: str, patterns: List[str]) -> List[Dict[str, Any]]:
         """扫描目录并产出发现项（复用 P0 分析器接口，不可用时降级）。"""
         findings: List[Dict[str, Any]] = []
         try:
             from core import architecture_pattern_detector
-            detect = getattr(
-                architecture_pattern_detector, "detect_architecture_patterns", None
-            )
+
+            detect = getattr(architecture_pattern_detector, "detect_architecture_patterns", None)
             if callable(detect):
                 result = detect(local_dir) or {}
                 findings = self._patterns_to_findings(result)
@@ -139,15 +234,19 @@ class ExternalHarvester:
         findings: List[Dict[str, Any]] = []
         for pat in result.get("patterns", []):
             if isinstance(pat, dict):
-                findings.append({
-                    "analyzer": "architecture_pattern_detector",
-                    "path": ", ".join(pat.get("matched_dirs", [])[:5]),
-                    "evidence_refs": [{
-                        "type": "pattern",
-                        "pattern": pat.get("pattern", ""),
-                    }],
-                    "poe_score": 0.5,
-                })
+                findings.append(
+                    {
+                        "analyzer": "architecture_pattern_detector",
+                        "path": ", ".join(pat.get("matched_dirs", [])[:5]),
+                        "evidence_refs": [
+                            {
+                                "type": "pattern",
+                                "pattern": pat.get("pattern", ""),
+                            }
+                        ],
+                        "poe_score": 0.5,
+                    }
+                )
         return findings
 
     def _fallback_scan(self, local_dir: str, patterns: List[str]) -> List[Dict[str, Any]]:
@@ -162,12 +261,14 @@ class ExternalHarvester:
                 rel = os.path.relpath(os.path.join(base, name), local_dir)
                 if patterns and not any(p in rel for p in patterns):
                     continue
-                results.append({
-                    "analyzer": "fallback_scan",
-                    "path": rel,
-                    "evidence_refs": [{"type": "file", "path": rel}],
-                    "poe_score": 0.3,
-                })
+                results.append(
+                    {
+                        "analyzer": "fallback_scan",
+                        "path": rel,
+                        "evidence_refs": [{"type": "file", "path": rel}],
+                        "poe_score": 0.3,
+                    }
+                )
             if len(results) >= 50:
                 break
         return results
@@ -204,11 +305,24 @@ class ExternalHarvester:
         return with_evidence >= max(1, len(tree.nodes) // 2)
 
     def _verify_cross(self, tree: DiscoveryTree) -> bool:
-        """交叉验证：与回放池已有树的动作集合存在交集（可迁移性）。"""
+        """交叉验证：与回放池已有树的动作集合存在交集（可迁移性）。
+
+        SPEC-33-外部真实源接入 §9-2：外部树允许 external-external 动作交集；
+        首批外部树注入（池中无外部树）时放行，避免 E3 恒失败。
+        """
         existing = self.pool.list_trees()
         if not existing:
             return True  # 池为空时无法交叉，放行
         new_actions = {n.action.get("analyzer", "") for n in tree.nodes}
+        if tree.provenance == "external":
+            external_trees = [t for t in existing if t.provenance == "external"]
+            if not external_trees:
+                return True  # 首批外部树：无外部可比对，放行
+            for other in external_trees:
+                old_actions = {n.action.get("analyzer", "") for n in other.nodes}
+                if new_actions & old_actions:
+                    return True
+            return False
         for other in existing:
             old_actions = {n.action.get("analyzer", "") for n in other.nodes}
             if new_actions & old_actions:
@@ -242,16 +356,29 @@ class ExternalHarvester:
                 if tree is None:
                     outcome.rejected.append({"source": source.location, "stage": "E2"})
                     continue
+                effective = self._effective_node_count(tree)
+                if effective < MIN_EFFECTIVE_NODES:
+                    outcome.rejected.append(
+                        {
+                            "source": source.location,
+                            "stage": "E2-quality",
+                            "effective_nodes": effective,
+                        }
+                    )
+                    continue
+                self._apply_metadata(tree, source, local_dir)
                 pass_rate = self.verify_tree(tree, source)
                 tree_id = self.inject_tree(tree, pass_rate)
                 if tree_id:
                     outcome.injected_trees.append(tree_id)
                 else:
-                    outcome.rejected.append({
-                        "source": source.location,
-                        "stage": "E3/E4",
-                        "pass_rate": pass_rate,
-                    })
+                    outcome.rejected.append(
+                        {
+                            "source": source.location,
+                            "stage": "E3/E4",
+                            "pass_rate": pass_rate,
+                        }
+                    )
             except Exception as exc:  # noqa: BLE001
                 outcome.errors.append(f"{source.location}: {exc}")
         outcome.ok = not outcome.errors
