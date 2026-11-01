@@ -23,6 +23,11 @@ echo ""
 echo ">>> Phase 2/3: 部署代码"
 bash "$(dirname "$0")/02-clone-and-config.sh"
 
+# Phase 2.5: 45 评测门禁（P3-2：无有效凭证拒绝部署；影子模式只观测）
+echo ""
+echo ">>> Phase 2.5/3: 45 评测系统部署门禁"
+REPO_DIR="${REPO_DIR:-/home/luke/tmp/Dreambuddy-V2}" bash "$(dirname "$0")/preflight-eval-gate.sh"
+
 # Phase 3: 服务
 echo ""
 echo ">>> Phase 3/3: 启动服务"

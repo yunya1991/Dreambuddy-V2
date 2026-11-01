@@ -2,8 +2,9 @@
 # ============================================================
 # Dreambuddy V2 — Phase 1 代码更新脚本
 # 用法: bash update.sh [--skip-frontend] [--skip-v15] [--skip-deps] [--skip-g4] [--g4-hotfix "原因"]
-# 流程: G4 部署窗口门 → git pull → 前端 pnpm install+build+systemd restart → V15 无需重启(timer自动拉新代码)
+# 流程: G4 部署窗口门 → 45 评测门禁 → git pull → 前端 pnpm install+build+systemd restart → V15 无需重启(timer自动拉新代码)
 # G4: 波动率分位/资金费率异常时中止部署（SPEC G4）；hotfix 需 --g4-hotfix "原因" 显式豁免并留补审记录
+# 45 门禁: EVAL_ID=<eval_id> 时校验部署凭证（P3-2），影子模式只观测、实盘阻断；双凭证用 EVAL_REQUIRE_APPROVAL=1 EVAL_APPROVAL_ID=<id>
 # ============================================================
 set -e
 
@@ -64,7 +65,7 @@ if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
 fi
 
 # ── 0. G4 部署窗口门（SPEC G4 / P0-4）──
-echo ">>> [1/5] G4 部署窗口门（波动率分位 + 资金费率）"
+echo ">>> [1/6] G4 部署窗口门（波动率分位 + 资金费率）"
 G4_SCRIPT="${REPO_DIR}/37-一键启动脚本/g4-volatility-gate.py"
 if [ "${SKIP_G4}" = true ]; then
     echo "  ⚠ 已显式跳过 G4 门 (--skip-g4)"
@@ -91,9 +92,23 @@ else
     esac
 fi
 
+# ── 0b. 45 评测系统部署门禁（P3-2 / SPEC §4）──
+echo ""
+echo ">>> [2/6] 45 评测系统部署门禁（部署凭证 + 27 双凭证）"
+EVAL_GATE_SCRIPT="${REPO_DIR}/deploy/preflight-eval-gate.sh"
+if [ ! -f "${EVAL_GATE_SCRIPT}" ]; then
+    echo "  ⚠ 门禁脚本缺失: ${EVAL_GATE_SCRIPT}，FAIL-OPEN 放行"
+else
+    REPO_DIR="${REPO_DIR}" \
+    EVAL_ID="${EVAL_ID:-}" \
+    EVAL_APPROVAL_ID="${EVAL_APPROVAL_ID:-}" \
+    EVAL_REQUIRE_APPROVAL="${EVAL_REQUIRE_APPROVAL:-0}" \
+        bash "${EVAL_GATE_SCRIPT}"
+fi
+
 # ── 1. Git Pull ──
 echo ""
-echo ">>> [2/5] 拉取最新代码 (git pull)"
+echo ">>> [3/6] 拉取最新代码 (git pull)"
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo "  当前分支: ${CURRENT_BRANCH}"
 
@@ -112,7 +127,7 @@ git stash pop 2>/dev/null || true
 # ── 2. 前端更新 ──
 if [ "${SKIP_FRONTEND}" = false ]; then
     echo ""
-    echo ">>> [3/5] 前端更新 (依赖+构建+重启)"
+    echo ">>> [4/6] 前端更新 (依赖+构建+重启)"
 
     cd "${FRONTEND_DIR}"
 
@@ -177,13 +192,13 @@ EOF
     fi
 else
     echo ""
-    echo ">>> [3/5] 跳过前端更新 (--skip-frontend)"
+    echo ">>> [4/6] 跳过前端更新 (--skip-frontend)"
 fi
 
 # ── 3. V15 策略 ──
 if [ "${SKIP_V15}" = false ]; then
     echo ""
-    echo ">>> [4/5] V15 策略代码已更新"
+    echo ">>> [5/6] V15 策略代码已更新"
     echo "  V15 使用 systemd timer (oneshot 模式)"
     echo "  下次 timer 触发时自动使用新代码, 无需重启"
 
@@ -203,12 +218,12 @@ if [ "${SKIP_V15}" = false ]; then
     systemctl restart v15-capital-api.service 2>/dev/null && echo "  ✓ v15-capital-api 已重启" || true
 else
     echo ""
-    echo ">>> [4/5] 跳过 V15 更新 (--skip-v15)"
+    echo ">>> [5/6] 跳过 V15 更新 (--skip-v15)"
 fi
 
 # ── 4. Hermes 网关 ──
 echo ""
-echo ">>> [5/5] Hermes 网关"
+echo ">>> [6/6] Hermes 网关"
 if systemctl is-active --quiet hermes-gateway.service 2>/dev/null; then
     systemctl restart hermes-gateway.service
     sleep 2
