@@ -15,12 +15,11 @@
 衍生计算（merrill_phase / liquidity_score / atr_percentile_proxy）复用
 FiveDomainFetcher 的 staticmethod，保证与实时采集路径语义一致。
 """
+
 from __future__ import annotations
 
 import json
 import os
-import sqlite3
-import sys
 from typing import Any, Dict, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -83,24 +82,33 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
         return result
 
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
+        try:  # C5 第三批：包内导入（`scripts.memory_l4.` 与裸模块名两种调用方式都支持）
+            from ._five_domain_store_port import fetch_rows_by_sources
+        except ImportError:
+            from _five_domain_store_port import fetch_rows_by_sources  # type: ignore
         # 一次性拉取五维所需各源最新记录（按 id 倒序，逐 (source,sub_category) 取首条=最新）
         # 扩展：新增 theblockbeats_dataview（律动 dataview 直抓，情绪/衍生品/链上资金流/稳定币溢价/宏观卡片）
-        rows = conn.execute(
-            "SELECT source, sub_category, metrics, raw, timestamp, id "
-            "FROM records WHERE source IN "
-            "('fred','yfinance','ccxt','defillama','etherscan','tavily',"
-            "'theblockbeats_dataview','panewslab','stablecoin_transparency',"
-            "'odaily_newsflash') "
-            "ORDER BY id DESC"
-        ).fetchall()
-        conn.close()
+        rows = fetch_rows_by_sources(
+            db_path,
+            [
+                "fred",
+                "yfinance",
+                "ccxt",
+                "defillama",
+                "etherscan",
+                "tavily",
+                "theblockbeats_dataview",
+                "panewslab",
+                "stablecoin_transparency",
+                "odaily_newsflash",
+            ],
+            switch="FD_STORE_PORT",
+        )
     except Exception:
         return result
 
     # 按 (source, sub_category) 去重保留最新
-    latest: Dict[tuple, sqlite3.Row] = {}
+    latest: Dict[tuple, Any] = {}
     for r in rows:
         key = (r["source"], r["sub_category"])
         if key not in latest:
@@ -152,7 +160,9 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
         except Exception:
             eth_tvl = tron_tvl = 0.0
     # 旧口径仅保留为「ETH+TRON DeFi TVL」地维度 DeFi 板块专用观测指标
-    result["eth_tron_defi_tvl_bln"] = round(eth_tvl + tron_tvl, 4) if (eth_tvl or tron_tvl) else None
+    result["eth_tron_defi_tvl_bln"] = (
+        round(eth_tvl + tron_tvl, 4) if (eth_tvl or tron_tvl) else None
+    )
 
     # — stablecoin_transparency 真实供应量（USDT+USDC 双寡头≈ 95% 稳定币市场份额）—
     usdt_m = _metric("stablecoin_transparency", "tether_current")
@@ -217,8 +227,10 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
     # 抄底逃顶信号：按五维汇总成 avg_score（每个维度一个信号得分）
     signal_map: Dict[str, list[float]] = {}  # dim -> [score]
     for sub in (
-        "bottom_signal_tian", "bottom_signal_jiang",
-        "bottom_signal_di", "bottom_signal_dao",
+        "bottom_signal_tian",
+        "bottom_signal_jiang",
+        "bottom_signal_di",
+        "bottom_signal_dao",
     ):
         m = _metric("theblockbeats_dataview", sub)
         dim = m.get("five_dimension")
@@ -244,24 +256,17 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
     # 地维度：Top10 净流入（汇总 + 榜首币种 + 总净流入 USD）
     # 直接从 records 行级读所有 top10_inflow_di 同批次（按 id 区间，取最新一批 >= (latest_id - 20)）
     try:
-        conn2 = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        conn2.row_factory = sqlite3.Row
-        # 找到最新的一条 top10_inflow_di id
-        top = conn2.execute(
-            "SELECT id, timestamp FROM records "
-            "WHERE source='theblockbeats_dataview' AND sub_category='top10_inflow_di' "
-            "ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        inflow_rows = []
-        if top:
-            min_id = max(0, top["id"] - 50)  # 同批次不会间隔超过 50 条（共26条/次）
-            inflow_rows = conn2.execute(
-                "SELECT metrics, id FROM records "
-                "WHERE source='theblockbeats_dataview' AND sub_category='top10_inflow_di' "
-                "AND id >= ? AND id <= ? ORDER BY id DESC",
-                (min_id, top["id"]),
-            ).fetchall()
-        conn2.close()
+        try:  # C5 第三批：同批次 top10 净流入行（开关默认 legacy，行为零变化）
+            from ._five_domain_store_port import fetch_top10_inflow_batch
+        except ImportError:
+            from _five_domain_store_port import fetch_top10_inflow_batch  # type: ignore
+        top, inflow_rows = fetch_top10_inflow_batch(
+            db_path,
+            "theblockbeats_dataview",
+            "top10_inflow_di",
+            window=50,
+            switch="FD_STORE_PORT",
+        )
         if inflow_rows:
             syms, amts = [], []
             total_usd = 0.0
@@ -280,7 +285,9 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
                     total_usd += float(usd)
                 if rank == 1:
                     result["blockbeats_inflow_top1_symbol"] = str(sym)
-                    result["blockbeats_inflow_top1_usd"] = float(usd) if isinstance(usd, (int, float)) else None
+                    result["blockbeats_inflow_top1_usd"] = (
+                        float(usd) if isinstance(usd, (int, float)) else None
+                    )
             if syms:
                 result["blockbeats_inflow_top10_symbols"] = ",".join(syms[:10])
                 result["blockbeats_inflow_top10_amounts"] = ",".join(str(a) for a in amts[:10] if a)
@@ -305,10 +312,11 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
     #   否则 → 保持 blockbeats → pn_cycle_sentiment_norm → None 回退链不变
     try:
         import math
+
         # 1. 收集所有 odaily_newsflash 记录 + 按 timestamp(ms) 计算 age_hrs
         now_ms = 0
         od_rows = []
-        for (src, sub), rec in latest.items():
+        for (src, _sub), rec in latest.items():
             if src != "odaily_newsflash" or not rec["metrics"]:
                 continue
             # sqlite3.Row 没有 .get()：先 dict() 转换确保后续 .get 可用
@@ -320,6 +328,7 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
             if isinstance(ts_raw, str):
                 try:
                     from datetime import datetime as _dt
+
                     tt = _dt.fromisoformat(ts_raw.replace("Z", "+00:00"))
                     ts = int(tt.timestamp() * 1000)
                 except Exception:
@@ -338,11 +347,13 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
             decay = m.get("od_decay_hl_hrs") if isinstance(m, dict) else None
             if not isinstance(decay, (int, float)):
                 decay = 24
-            od_rows.append({
-                "m": m if isinstance(m, dict) else {},
-                "pub_ms": pub_ms,
-                "decay_hrs": float(decay),
-            })
+            od_rows.append(
+                {
+                    "m": m if isinstance(m, dict) else {},
+                    "pub_ms": pub_ms,
+                    "decay_hrs": float(decay),
+                }
+            )
         if now_ms == 0 and od_rows:
             now_ms = max(r["pub_ms"] for r in od_rows)
         HR_TO_MS = 3600_000
@@ -396,9 +407,11 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
                 result["policy_sentiment_score"] = round(sent_3d, 4)
     except Exception as e:  # noqa: BLE003  FAIL-OPEN 保持不变
         import logging as _logging
+
         _logging.getLogger("FiveDomainSqliteReader.odaily").warning(
             "§ODAILY 派生异常 %s: %s，保持不变（FAIL-OPEN）",
-            type(e).__name__, str(e)[:160],
+            type(e).__name__,
+            str(e)[:160],
         )
 
     # ── PANEWSLAB（律动 PAData 聚合）8 板块五维增强 ─────────────────────────
@@ -412,17 +425,21 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
         # ─ 共享 macro（全类消费），同时补强 FRED/VIX ─
         macro = panewslab_m.get("macro_us_stocks", {})
         if macro:
-            if result.get("fedfunds_rate") is None and isinstance(macro.get("us_DFF_value"), (int, float)):
+            if result.get("fedfunds_rate") is None and isinstance(
+                macro.get("us_DFF_value"), (int, float)
+            ):
                 result["fedfunds_rate"] = float(macro["us_DFF_value"])
-            if result.get("vix_close") is None and isinstance(macro.get("us_VIXCLS_value"), (int, float)):
+            if result.get("vix_close") is None and isinstance(
+                macro.get("us_VIXCLS_value"), (int, float)
+            ):
                 result["vix_close"] = float(macro["us_VIXCLS_value"])
             for k_src, k_dst in [
-                ("us_SP500_value",       "pn_us_sp500"),
-                ("us_NASDAQCOM_value",   "pn_us_nasdaq"),
-                ("us_DGS10_value",       "pn_us_10y_yield"),
-                ("us_DTWEXBGS_value",    "pn_us_dollar_index"),
-                ("us_DFF_value",         "pn_us_fedfunds"),
-                ("us_VIXCLS_value",      "pn_us_vix"),
+                ("us_SP500_value", "pn_us_sp500"),
+                ("us_NASDAQCOM_value", "pn_us_nasdaq"),
+                ("us_DGS10_value", "pn_us_10y_yield"),
+                ("us_DTWEXBGS_value", "pn_us_dollar_index"),
+                ("us_DFF_value", "pn_us_fedfunds"),
+                ("us_VIXCLS_value", "pn_us_vix"),
             ]:
                 v = macro.get(k_src)
                 if isinstance(v, (int, float)):
@@ -458,13 +475,18 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
                 result["policy_sentiment_score"] = float(hit_ratio) / 100.0
         hc = cycle.get("bottom_hit_count")
         tc = cycle.get("bottom_total_count")
-        if isinstance(hc, (int, float)): result["pn_cycle_bottom_hit_count"] = int(hc)
-        if isinstance(tc, (int, float)): result["pn_cycle_bottom_total_count"] = int(tc)
-        omni_hits = [float(v) for k, v in cycle.items()
-                     if isinstance(k, str) and k.endswith("_hit") and isinstance(v, bool)]
+        if isinstance(hc, (int, float)):
+            result["pn_cycle_bottom_hit_count"] = int(hc)
+        if isinstance(tc, (int, float)):
+            result["pn_cycle_bottom_total_count"] = int(tc)
+        omni_hits = [
+            float(v)
+            for k, v in cycle.items()
+            if isinstance(k, str) and k.endswith("_hit") and isinstance(v, bool)
+        ]
         if omni_hits:
             result["pn_cycle_omnitools_hit_count"] = int(sum(omni_hits))
-            result["pn_cycle_omnitools_hit_ratio"] = round(sum(omni_hits)/len(omni_hits), 4)
+            result["pn_cycle_omnitools_hit_ratio"] = round(sum(omni_hits) / len(omni_hits), 4)
 
         # ETF/机构
         btc_flow = etf.get("btc_etf_daily_flow_usd")
@@ -472,11 +494,14 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
             result["pn_btc_etf_daily_flow_usd"] = float(btc_flow)
             result["pn_btc_etf_flow_norm"] = float(max(-1.0, min(1.0, float(btc_flow) / 2e8)))
         btc_aum = etf.get("btc_etf_total_aum_usd")
-        if isinstance(btc_aum, (int, float)): result["pn_btc_etf_total_aum_usd"] = float(btc_aum)
+        if isinstance(btc_aum, (int, float)):
+            result["pn_btc_etf_total_aum_usd"] = float(btc_aum)
         btc_hold = etf.get("treasury_total_btc_holdings")
-        if isinstance(btc_hold, (int, float)): result["pn_treasury_btc_total"] = float(btc_hold)
+        if isinstance(btc_hold, (int, float)):
+            result["pn_treasury_btc_total"] = float(btc_hold)
         eth_flow = etf.get("eth_etf_daily_flow_usd")
-        if isinstance(eth_flow, (int, float)): result["pn_eth_etf_daily_flow_usd"] = float(eth_flow)
+        if isinstance(eth_flow, (int, float)):
+            result["pn_eth_etf_daily_flow_usd"] = float(eth_flow)
 
         # 稳定币 + RWA（补强 stablecoin_mcap_bln / stablecoin_change_rate）
         tvl = srwa.get("rwa_tvl_usd")
@@ -487,8 +512,15 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
         pulse = srwa.get("stable_pulse_rangeStatus")
         if pulse:
             result["pn_stablecoin_pulse_range"] = str(pulse)
-            rng_map = {"FLOOD": 0.85, "OVERFLOW": 0.95, "FULL": 0.7, "FILLING": 0.55,
-                       "HALF": 0.5, "DRAIN": 0.35, "DRAINED": 0.2}
+            rng_map = {
+                "FLOOD": 0.85,
+                "OVERFLOW": 0.95,
+                "FULL": 0.7,
+                "FILLING": 0.55,
+                "HALF": 0.5,
+                "DRAIN": 0.35,
+                "DRAINED": 0.2,
+            }
             if pulse in rng_map:
                 result["pn_stablecoin_pulse_norm"] = rng_map[pulse]
         rwa_chg7d = srwa.get("rwa_change7d_pct")
@@ -505,7 +537,8 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
             if isinstance(cap, (int, float)) and float(cap) > 0:
                 result["pn_leverage_ratio_oi_cap"] = round(float(oi) / float(cap), 6)
         fv = deriv.get("fut_volume_24h_usd")
-        if isinstance(fv, (int, float)): result["pn_fut_volume_24h_usd"] = float(fv)
+        if isinstance(fv, (int, float)):
+            result["pn_fut_volume_24h_usd"] = float(fv)
         ll = deriv.get("fut_liq_long_24h_usd")
         sl = deriv.get("fut_liq_short_24h_usd")
         if isinstance(ll, (int, float)) and isinstance(sl, (int, float)):
@@ -531,25 +564,35 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
                 result["pn_whale_netflow_cap_pct"] = round(float(nf) / float(cap) * 100, 6)
         to_ex = exch.get("whale_24h_to_ex_usd")
         from_ex = exch.get("whale_24h_from_ex_usd")
-        if isinstance(to_ex, (int, float)): result["pn_whale_24h_to_ex_usd"] = float(to_ex)
-        if isinstance(from_ex, (int, float)): result["pn_whale_24h_from_ex_usd"] = float(from_ex)
+        if isinstance(to_ex, (int, float)):
+            result["pn_whale_24h_to_ex_usd"] = float(to_ex)
+        if isinstance(from_ex, (int, float)):
+            result["pn_whale_24h_from_ex_usd"] = float(from_ex)
         btc_chg30 = exch.get("ex_bal_BTC_chg30d_pct")
-        if isinstance(btc_chg30, (int, float)): result["pn_ex_bal_btc_chg30d_pct"] = float(btc_chg30)
+        if isinstance(btc_chg30, (int, float)):
+            result["pn_ex_bal_btc_chg30d_pct"] = float(btc_chg30)
 
         # holdings：链上资金广度
         tbtc = hold.get("holdings_treasury_btc_sum")
-        if isinstance(tbtc, (int, float)): result["pn_holdings_treasury_btc"] = float(tbtc)
+        if isinstance(tbtc, (int, float)):
+            result["pn_holdings_treasury_btc"] = float(tbtc)
         trs_count = hold.get("holdings_treasury_count")
-        if isinstance(trs_count, (int, float)): result["pn_holdings_treasury_count"] = int(trs_count)
+        if isinstance(trs_count, (int, float)):
+            result["pn_holdings_treasury_count"] = int(trs_count)
         dh = hold.get("holdings_defi-fundamental-breadth_hit")
         ch = hold.get("holdings_public-chain-activity-breadth_hit")
         hits = [v for v in (dh, ch) if isinstance(v, bool)]
         if hits:
-            result["pn_holdings_breadth_hit_ratio"] = round(sum(1 for h in hits if h) / len(hits), 4)
-        for ks, kd in [("holdings_defi-fundamental-breadth_rangeStatus", "pn_defi_breadth_range"),
-                       ("holdings_public-chain-activity-breadth_rangeStatus", "pn_chain_breadth_range")]:
+            result["pn_holdings_breadth_hit_ratio"] = round(
+                sum(1 for h in hits if h) / len(hits), 4
+            )
+        for ks, kd in [
+            ("holdings_defi-fundamental-breadth_rangeStatus", "pn_defi_breadth_range"),
+            ("holdings_public-chain-activity-breadth_rangeStatus", "pn_chain_breadth_range"),
+        ]:
             v = hold.get(ks)
-            if v: result[kd] = str(v)
+            if v:
+                result[kd] = str(v)
 
     # ── 衍生：美林时钟 / 流动性评分 / VIX→ATR 分位 ──
     # 内联实现（与 FiveDomainFetcher staticmethod 语义一致），避免跨模块 import 依赖
@@ -566,6 +609,7 @@ def read_macro_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> dict:
     if isinstance(vix, (int, float)):
         try:
             import numpy as np
+
             result["atr_percentile_proxy"] = float(np.clip((float(vix) - 10) / 40.0, 0.0, 1.0))
         except Exception:
             result["atr_percentile_proxy"] = float(max(0.0, min(1.0, (float(vix) - 10) / 40.0)))
@@ -600,7 +644,9 @@ def read_three_classes_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> Dict[str, 
     # 以避免替代掉调用方已经内联的逻辑（仅作增量注入，字节等价 Fail-Open）。
 
     shared_pn_prefixes_ok_stock = (
-        "pn_us_", "pn_cycle_bottom_", "pn_cycle_sentiment_",
+        "pn_us_",
+        "pn_cycle_bottom_",
+        "pn_cycle_sentiment_",
         "pn_cycle_omnitools_",
     )
 
@@ -608,11 +654,18 @@ def read_three_classes_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> Dict[str, 
         d: Dict[str, Any] = {}
         # 基础宏观（所有类共有）
         for key in (
-            "vix_close", "fedfunds_rate", "m2_yoy_pct",
-            "fed_balance_sheet_trillion", "us_cpi_yoy_pct",
-            "us_indpro_yoy_pct", "policy_sentiment_score",
-            "liquidity_score", "merrill_phase", "atr_percentile_proxy",
-            "stablecoin_change_rate", "stablecoin_mcap_bln",
+            "vix_close",
+            "fedfunds_rate",
+            "m2_yoy_pct",
+            "fed_balance_sheet_trillion",
+            "us_cpi_yoy_pct",
+            "us_indpro_yoy_pct",
+            "policy_sentiment_score",
+            "liquidity_score",
+            "merrill_phase",
+            "atr_percentile_proxy",
+            "stablecoin_change_rate",
+            "stablecoin_mcap_bln",
         ):
             d[key] = macro.get(key)
         # Spec §5.2.3：odaily_* 字段对所有资产类注入（政策情绪→dao/tian boost）
@@ -632,8 +685,8 @@ def read_three_classes_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> Dict[str, 
         return d
 
     return {
-        "crypto_usdt":    _build("crypto_usdt"),
-        "us_stock":       _build("us_stock"),
+        "crypto_usdt": _build("crypto_usdt"),
+        "us_stock": _build("us_stock"),
         "precious_metal": _build("precious_metal"),
     }
 
@@ -641,6 +694,7 @@ def read_three_classes_from_sqlite(db_path: str = DEFAULT_DB_PATH) -> Dict[str, 
 if __name__ == "__main__":
     # CLI 自检：打印从 SQLite 读到的五维快照
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=DEFAULT_DB_PATH)
     args = ap.parse_args()
