@@ -39,188 +39,29 @@ class TradeDatabase:
 
     def _init_db(self):
         """初始化数据库表"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        from ._store_port import init_learner_tables  # C5 第七批：写路径收编（默认 legacy）
 
-        # 交易记录表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symbol TEXT NOT NULL,
-                direction INTEGER NOT NULL,
-                entry_time TEXT NOT NULL,
-                exit_time TEXT,
-                entry_price REAL NOT NULL,
-                exit_price REAL,
-                pnl_pct REAL,
-                hold_bars INTEGER,
-                exit_reason TEXT,
-                confidence REAL,
-                hexagram TEXT,
-                upper_gua TEXT,
-                lower_gua TEXT,
-                position_factor REAL,
-                model_version TEXT,
-                fold_id INTEGER,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(symbol, entry_time, direction)
-            )
-        """)
-
-        # 模型版本表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS model_versions (
-                version_id TEXT PRIMARY KEY,
-                symbol TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                sharpe_ratio REAL,
-                win_rate REAL,
-                total_trades INTEGER,
-                train_bars INTEGER,
-                feature_count INTEGER,
-                status TEXT DEFAULT 'active',
-                notes TEXT
-            )
-        """)
-
-        # 模型性能监控表
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS model_performance (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                version_id TEXT NOT NULL,
-                symbol TEXT NOT NULL,
-                date TEXT NOT NULL,
-                n_trades INTEGER,
-                win_rate REAL,
-                avg_pnl REAL,
-                max_drawdown REAL,
-                FOREIGN KEY(version_id) REFERENCES model_versions(version_id)
-            )
-        """)
-
-        conn.commit()
-        conn.close()
+        init_learner_tables(self.db_path)
 
     def add_trade(self, trade_data: Dict) -> int:
         """添加交易记录"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        from ._store_port import insert_trade  # C5 第七批：写路径收编（默认 legacy）
 
-        try:
-            cursor.execute(
-                """
-                INSERT OR IGNORE INTO trades (
-                    symbol, direction, entry_time, exit_time,
-                    entry_price, exit_price, pnl_pct, hold_bars,
-                    exit_reason, confidence, hexagram, upper_gua,
-                    lower_gua, position_factor, model_version, fold_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    trade_data.get("symbol", ""),
-                    trade_data.get("direction", 0),
-                    trade_data.get("entry_time", ""),
-                    trade_data.get("exit_time", ""),
-                    trade_data.get("entry_price", 0),
-                    trade_data.get("exit_price", 0),
-                    trade_data.get("pnl_pct", 0),
-                    trade_data.get("hold_bars", 0),
-                    trade_data.get("exit_reason", ""),
-                    trade_data.get("confidence", 0),
-                    trade_data.get("hexagram", ""),
-                    trade_data.get("upper_gua", ""),
-                    trade_data.get("lower_gua", ""),
-                    trade_data.get("position_factor", 1.0),
-                    trade_data.get("model_version", ""),
-                    trade_data.get("fold_id", 0),
-                ),
-            )
-            conn.commit()
-            return cursor.lastrowid
-        except Exception:
-            conn.rollback()
-            return -1
-        finally:
-            conn.close()
+        return insert_trade(self.db_path, trade_data)
 
     def add_trades_batch(self, trades: List[Dict]) -> int:
         """批量添加交易记录"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        from ._store_port import insert_trades_batch  # C5 第七批：写路径收编（默认 legacy）
 
-        try:
-            for trade in trades:
-                cursor.execute(
-                    """
-                    INSERT OR IGNORE INTO trades (
-                        symbol, direction, entry_time, exit_time,
-                        entry_price, exit_price, pnl_pct, hold_bars,
-                        exit_reason, confidence, hexagram, upper_gua,
-                        lower_gua, position_factor, model_version, fold_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        trade.get("symbol", ""),
-                        trade.get("direction", 0),
-                        trade.get("entry_time", ""),
-                        trade.get("exit_time", ""),
-                        trade.get("entry_price", 0),
-                        trade.get("exit_price", 0),
-                        trade.get("pnl_pct", 0),
-                        trade.get("hold_bars", 0),
-                        trade.get("exit_reason", ""),
-                        trade.get("confidence", 0),
-                        trade.get("hexagram", ""),
-                        trade.get("upper_gua", ""),
-                        trade.get("lower_gua", ""),
-                        trade.get("position_factor", 1.0),
-                        trade.get("model_version", ""),
-                        trade.get("fold_id", 0),
-                    ),
-                )
-            conn.commit()
-            return len(trades)
-        except Exception:
-            conn.rollback()
-            return 0
-        finally:
-            conn.close()
+        return insert_trades_batch(self.db_path, trades)
 
     def save_model_version(
         self, version_id: str, symbol: str, metrics: Dict, notes: str = ""
     ) -> bool:
         """保存模型版本"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        from ._store_port import upsert_model_version  # C5 第七批：写路径收编（默认 legacy）
 
-        try:
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO model_versions (
-                    version_id, symbol, created_at, sharpe_ratio,
-                    win_rate, total_trades, train_bars, feature_count, status, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    version_id,
-                    symbol,
-                    datetime.now().isoformat(),
-                    metrics.get("sharpe_ratio", 0),
-                    metrics.get("win_rate", 0),
-                    metrics.get("total_trades", 0),
-                    metrics.get("train_bars", 0),
-                    metrics.get("feature_count", 0),
-                    "active",
-                    notes,
-                ),
-            )
-            conn.commit()
-            return True
-        except Exception:
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
+        return upsert_model_version(self.db_path, version_id, symbol, metrics, notes)
 
     def get_model_versions(self, symbol: str = None) -> List[Dict]:
         """获取模型版本列表"""

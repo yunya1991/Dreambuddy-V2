@@ -24,7 +24,6 @@ P1 核心组件：为回测和实盘提供统一的宏观数据入口。
 from __future__ import annotations
 
 import logging
-import sqlite3
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -161,14 +160,14 @@ class MacroDataFetcher:
 
     def _load_cache(self, symbol: str, source: str) -> Optional[pd.DataFrame]:
         """从 SQLite 加载缓存"""
+        from ._store_port import load_cache_dataframe  # C5 第七批：读路径收编（默认 legacy）
+
         path = self._cache_path(symbol)
         if not path.exists():
             return None
         try:
-            conn = sqlite3.connect(str(path))
-            df = pd.read_sql(f"SELECT * FROM {source} ORDER BY timestamp", conn)
-            conn.close()
-            if df.empty:
+            df = load_cache_dataframe(str(path), source)
+            if df is None or df.empty:
                 return None
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s", utc=True)
             df = df.set_index("timestamp")
@@ -178,16 +177,16 @@ class MacroDataFetcher:
 
     def _save_cache(self, symbol: str, source: str, df: pd.DataFrame) -> None:
         """保存到 SQLite 缓存"""
+        from ._store_port import save_cache_dataframe  # C5 第七批：写路径收编（默认 legacy）
+
         if df.empty:
             return
         path = self._cache_path(symbol)
         try:
-            conn = sqlite3.connect(str(path))
             df_to_save = df.copy()
             df_to_save = df_to_save.reset_index()
             df_to_save["timestamp"] = df_to_save["timestamp"].astype(np.int64) // 10**9
-            df_to_save.to_sql(source, conn, if_exists="replace", index=False)
-            conn.close()
+            save_cache_dataframe(str(path), source, df_to_save)
         except Exception as e:
             logger.warning(f"缓存保存失败 [{symbol}/{source}]: {e}")
 

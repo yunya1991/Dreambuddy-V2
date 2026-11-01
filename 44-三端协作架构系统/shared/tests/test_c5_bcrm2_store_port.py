@@ -111,17 +111,18 @@ def _macro(monkeypatch, tmp_path: Path, db_path: str) -> macro_data_fetcher.Macr
     return macro_data_fetcher.MacroDataFetcher(cache_dir=tmp_path)
 
 
-# ── 只读直连已消除（写路径按 SPEC 暂缓） ──────────────────────────────────
+# ── 只读直连已消除（写路径第七批已收编） ──────────────────────────────────
 def test_read_connects_collected():
     # 动态拼接避免本文件自身成为直连命中（C10 ratchet 计数口径）
     direct = "sqlite3." + "connect("
     macro_src = MACRO_PATH.read_text(encoding="utf-8")
     learner_src = LEARNER_PATH.read_text(encoding="utf-8")
-    # macro 剩余 2 处均为写路径（_load_cache/_save_cache 用 pandas）
-    assert macro_src.count(direct) == 2
+    # macro 直连清零（第七批：_load_cache/_save_cache 已收编进 _store_port）
+    assert macro_src.count(direct) == 0
     assert "mode=ro" not in macro_src
-    # learner 剩余 5 处 = 4 写路径 + 1 聚合读（AVG/SUM 无法用 port 表达，按 SPEC 暂缓）
-    assert learner_src.count(direct) == 5
+    # learner 仅剩 1 处 = 聚合读（AVG/SUM 无法用 port 表达，按 SPEC 暂缓）；
+    # 4 处写路径第七批已收编进 _store_port
+    assert learner_src.count(direct) == 1
     assert "mode=ro" not in learner_src
 
 
