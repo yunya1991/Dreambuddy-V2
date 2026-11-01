@@ -1,0 +1,2420 @@
+{
+  "tree_id": "dt_824b62ed260e4fff",
+  "task": {
+    "target": "https://github.com/TanStack/query",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_f818b665910248a3",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/TanStack/query"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "oxlint.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "oxlint.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "oxfmt.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "oxfmt.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "knip.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "knip.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/verify-links.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/verify-links.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/getViteAliases.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/getViteAliases.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/generate-docs.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/generate-docs.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/generate-labeler-config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/generate-labeler-config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/getTsdownConfig.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/getTsdownConfig.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/oxlint/plugin.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/oxlint/plugin.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/main.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/main.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/app.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/app.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/app.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/app.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/services/projects/api.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/services/projects/api.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/services/projects/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/services/projects/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/services/projects/queries.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/services/projects/queries.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/api/projects-mock.interceptor.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/api/projects-mock.interceptor.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/pagination/src/app/components/example.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/pagination/src/app/components/example.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/main.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/main.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/app/app.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/app/app.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/app/app.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/app/app.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/app/services/tasks/api.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/app/services/tasks/api.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/app/services/tasks/queries.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/app/services/tasks/queries.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/app/components/auto-refetching.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/app/components/auto-refetching.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/auto-refetching/src/app/interceptor/mock-api.interceptor.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/auto-refetching/src/app/interceptor/mock-api.interceptor.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/simple/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/simple/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/simple/src/main.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/simple/src/main.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/simple/src/app/app.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/simple/src/app/app.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/simple/src/app/app.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/simple/src/app/app.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/simple/src/app/components/simple-example.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/simple/src/app/components/simple-example.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/main.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/main.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/app.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/app.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/app.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/app.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/app.routes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/app.routes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/services/posts/api.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/services/posts/api.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/services/posts/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/services/posts/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/services/posts/queries.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/services/posts/queries.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/components/post.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/components/post.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/query-options-from-a-service/src/app/components/posts.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/query-options-from-a-service/src/app/components/posts.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/main.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/main.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/app.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/app.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/app.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/app.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/services/posts/api.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/services/posts/api.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/services/posts/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/services/posts/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/services/posts/queries.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/services/posts/queries.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/components/post.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/components/post.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/angular/basic/src/app/components/posts.component.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/angular/basic/src/app/components/posts.component.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614066
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_f818b665910248a3",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ff6c93b7dd8eee85c30b7e2866e22dab302b23e3",
+              "message": "chore(examples): unpin 'nuxt' and remove the 'seroval' overrides now that 'seroval' versions with provenance are available (#12467)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fa9e089d92814249891cd28c6e1626aa",
+              "result": "架构转折点: commit ff6c93b7 - chore(examples): unpin 'nuxt' and remove the 'seroval' overrides now that 'serov",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/TanStack-query",
+                "commit": "ff6c93b7dd8eee85c30b7e2866e22dab302b23e3",
+                "message": "chore(examples): unpin 'nuxt' and remove the 'seroval' overrides now that 'seroval' versions with provenance are available (#12467)",
+                "files_changed": 5177,
+                "insertions": 475721,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509614323
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509614671
+        }
+      ],
+      "created_at": 1793509614062
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "oxlint.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "oxlint.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "oxfmt.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "oxfmt.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "knip.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "knip.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/verify-links.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/verify-links.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/getViteAliases.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/getViteAliases.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/generate-docs.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/generate-docs.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/generate-labeler-config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/generate-labeler-config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/getTsdownConfig.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/getTsdownConfig.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/oxlint/plugin.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/oxlint/plugin.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/main.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/main.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/app.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/app.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/app.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/app.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/services/projects/api.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/services/projects/api.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/services/projects/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/services/projects/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/services/projects/queries.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/services/projects/queries.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/api/projects-mock.interceptor.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/api/projects-mock.interceptor.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/pagination/src/app/components/example.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/pagination/src/app/components/example.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/main.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/main.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/app/app.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/app/app.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/app/app.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/app/app.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/app/services/tasks/api.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/app/services/tasks/api.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/app/services/tasks/queries.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/app/services/tasks/queries.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/app/components/auto-refetching.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/app/components/auto-refetching.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/auto-refetching/src/app/interceptor/mock-api.interceptor.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/auto-refetching/src/app/interceptor/mock-api.interceptor.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/simple/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/simple/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/simple/src/main.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/simple/src/main.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/simple/src/app/app.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/simple/src/app/app.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/simple/src/app/app.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/simple/src/app/app.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/simple/src/app/components/simple-example.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/simple/src/app/components/simple-example.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/main.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/main.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/app.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/app.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/app.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/app.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/app.routes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/app.routes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/services/posts/api.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/services/posts/api.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/services/posts/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/services/posts/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/services/posts/queries.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/services/posts/queries.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/components/post.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/components/post.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/query-options-from-a-service/src/app/components/posts.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/query-options-from-a-service/src/app/components/posts.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/main.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/main.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/app.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/app.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/app.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/app.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/services/posts/api.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/services/posts/api.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/services/posts/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/services/posts/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/services/posts/queries.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/services/posts/queries.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/components/post.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/components/post.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/angular/basic/src/app/components/posts.component.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/angular/basic/src/app/components/posts.component.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614066
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_f818b665910248a3",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ff6c93b7dd8eee85c30b7e2866e22dab302b23e3",
+          "message": "chore(examples): unpin 'nuxt' and remove the 'seroval' overrides now that 'seroval' versions with provenance are available (#12467)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fa9e089d92814249891cd28c6e1626aa",
+          "result": "架构转折点: commit ff6c93b7 - chore(examples): unpin 'nuxt' and remove the 'seroval' overrides now that 'serov",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/TanStack-query",
+            "commit": "ff6c93b7dd8eee85c30b7e2866e22dab302b23e3",
+            "message": "chore(examples): unpin 'nuxt' and remove the 'seroval' overrides now that 'seroval' versions with provenance are available (#12467)",
+            "files_changed": 5177,
+            "insertions": 475721,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509614323
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509614671
+    }
+  ],
+  "provenance": "external",
+  "source_label": "TanStack-query",
+  "weight": 0.5,
+  "created_at": 1793509614062,
+  "source_id": "p1_TanStack-query",
+  "repo_url": "https://github.com/TanStack/query",
+  "commit": "ff6c93b7dd8eee85c30b7e2866e22dab302b23e3",
+  "license": "MIT",
+  "collected_at": 1793509859331
+}

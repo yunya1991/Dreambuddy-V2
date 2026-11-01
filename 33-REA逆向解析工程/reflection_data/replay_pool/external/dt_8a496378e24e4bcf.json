@@ -1,0 +1,3478 @@
+{
+  "tree_id": "dt_8a496378e24e4bcf",
+  "task": {
+    "target": "https://github.com/All-Hands-AI/OpenHands",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_9f5124a0a2cf4ee7",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/All-Hands-AI/OpenHands"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vite-env.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vite-env.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playwright.bind-policy.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playwright.bind-policy.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hero.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hero.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playwright.mock-llm-docker.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playwright.mock-llm-docker.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "react-router.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "react-router.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.setup.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.setup.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playwright.mock-llm.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playwright.mock-llm.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playwright.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playwright.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tailwind.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tailwind.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "global.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "global.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playwright.live.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playwright.live.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/library-env.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/library-env.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/react-app-env.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/react-app-env.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/routes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/routes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/query-client-config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/query-client-config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/secret-request.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/secret-request.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/settings.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/settings.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/child-conversation-launch.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/child-conversation-launch.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/automation-form.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/automation-form.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/client-tool-result.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/client-tool-result.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/canvas-ui.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/canvas-ui.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/telemetry.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/telemetry.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/telemetry-context.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/telemetry-context.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/cloud-funnel-analytics.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/cloud-funnel-analytics.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/agent-state-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/agent-state-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/services/chat-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/services/chat-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/skills-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/skills-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/canvas-extensions-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/canvas-extensions-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/request-secret-client-tool.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/request-secret-client-tool.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-home.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-home.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-compatibility-prerelease.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-compatibility-prerelease.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/secrets-service.types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/secrets-service.types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/plugins-management-service.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/plugins-management-service.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/canvas-extensions-service.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/canvas-extensions-service.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-client-options.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-client-options.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/device-flow-client.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/device-flow-client.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/automation-form-client-tool.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/automation-form-client-tool.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/canvas-ui-client-tool.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/canvas-ui-client-tool.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/conversation-metadata-store.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/conversation-metadata-store.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/open-hands.types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/open-hands.types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/git-provider-items-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/git-provider-items-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/llm-balance-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/llm-balance-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/llm-balance-service.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/llm-balance-service.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/automation-form-session.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/automation-form-session.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-compatibility.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-compatibility.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/hooks-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/hooks-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/automation-setup-plugins.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/automation-setup-plugins.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/automation-setup-handoff-store.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/automation-setup-handoff-store.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-adapter.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-adapter.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/conversation-file-upload.api.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/conversation-file-upload.api.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/llm-subscription-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/llm-subscription-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/automation-setup-types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/automation-setup-types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/with-retry.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/with-retry.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/client-source.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/client-source.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_58",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/plugins-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/plugins-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_59",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-canvas-updates.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-canvas-updates.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_60",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-adapter.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-adapter.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_61",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/launch-child-conversation-client-tool.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/launch-child-conversation-client-tool.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_62",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/main-app-auth.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/main-app-auth.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_63",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/secrets-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/secrets-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_64",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-config.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-config.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_65",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/plugins-management-service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/plugins-management-service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_66",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/plugins-service.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/plugins-service.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_67",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-server-compatibility.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-server-compatibility.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_68",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/conversation-workspace.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/conversation-workspace.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_69",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/workspace-path-resolution.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/workspace-path-resolution.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_70",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/workspace-upload-path.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/workspace-upload-path.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_71",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/no-direct-agent-server-calls.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/no-direct-agent-server-calls.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_ext_72",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/api/agent-canvas-updates.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/api/agent-canvas-updates.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511211843
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_9f5124a0a2cf4ee7",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "7df1e5c14c1ff1a9962562b29af0a9748735b9ac",
+              "message": "fix: recover transient conversation failures without repeated errors (#19144)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ddeed4dfe8484150acde524b072309d7",
+              "result": "架构转折点: commit 7df1e5c1 - fix: recover transient conversation failures without repeated errors (#19144)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/OpenHands",
+                "commit": "7df1e5c14c1ff1a9962562b29af0a9748735b9ac",
+                "message": "fix: recover transient conversation failures without repeated errors (#19144)",
+                "files_changed": 2856,
+                "insertions": 561596,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511212115
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511212344
+        }
+      ],
+      "created_at": 1793511211842
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vite-env.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vite-env.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playwright.bind-policy.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playwright.bind-policy.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hero.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hero.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playwright.mock-llm-docker.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playwright.mock-llm-docker.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "react-router.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "react-router.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.setup.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.setup.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playwright.mock-llm.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playwright.mock-llm.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playwright.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playwright.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tailwind.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tailwind.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "global.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "global.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playwright.live.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playwright.live.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/library-env.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/library-env.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/react-app-env.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/react-app-env.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/routes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/routes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/query-client-config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/query-client-config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/secret-request.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/secret-request.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/settings.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/settings.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/child-conversation-launch.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/child-conversation-launch.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/automation-form.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/automation-form.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/client-tool-result.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/client-tool-result.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/canvas-ui.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/canvas-ui.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/telemetry.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/telemetry.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/telemetry-context.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/telemetry-context.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/cloud-funnel-analytics.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/cloud-funnel-analytics.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/agent-state-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/agent-state-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/services/chat-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/services/chat-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/skills-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/skills-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/canvas-extensions-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/canvas-extensions-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/request-secret-client-tool.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/request-secret-client-tool.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-home.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-home.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-compatibility-prerelease.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-compatibility-prerelease.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/secrets-service.types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/secrets-service.types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/plugins-management-service.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/plugins-management-service.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/canvas-extensions-service.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/canvas-extensions-service.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-client-options.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-client-options.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/device-flow-client.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/device-flow-client.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/automation-form-client-tool.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/automation-form-client-tool.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/canvas-ui-client-tool.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/canvas-ui-client-tool.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/conversation-metadata-store.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/conversation-metadata-store.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/open-hands.types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/open-hands.types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/git-provider-items-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/git-provider-items-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/llm-balance-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/llm-balance-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/llm-balance-service.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/llm-balance-service.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/automation-form-session.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/automation-form-session.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-compatibility.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-compatibility.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/hooks-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/hooks-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/automation-setup-plugins.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/automation-setup-plugins.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/automation-setup-handoff-store.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/automation-setup-handoff-store.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-adapter.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-adapter.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/conversation-file-upload.api.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/conversation-file-upload.api.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/llm-subscription-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/llm-subscription-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/automation-setup-types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/automation-setup-types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/with-retry.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/with-retry.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/client-source.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/client-source.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_58",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/plugins-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/plugins-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_59",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-canvas-updates.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-canvas-updates.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_60",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-adapter.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-adapter.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_61",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/launch-child-conversation-client-tool.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/launch-child-conversation-client-tool.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_62",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/main-app-auth.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/main-app-auth.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_63",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/secrets-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/secrets-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_64",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-config.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-config.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_65",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/plugins-management-service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/plugins-management-service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_66",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/plugins-service.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/plugins-service.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_67",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-server-compatibility.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-server-compatibility.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_68",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/conversation-workspace.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/conversation-workspace.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_69",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/workspace-path-resolution.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/workspace-path-resolution.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_70",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/workspace-upload-path.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/workspace-upload-path.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_71",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/no-direct-agent-server-calls.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/no-direct-agent-server-calls.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_ext_72",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/api/agent-canvas-updates.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/api/agent-canvas-updates.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511211843
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_9f5124a0a2cf4ee7",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "7df1e5c14c1ff1a9962562b29af0a9748735b9ac",
+          "message": "fix: recover transient conversation failures without repeated errors (#19144)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ddeed4dfe8484150acde524b072309d7",
+          "result": "架构转折点: commit 7df1e5c1 - fix: recover transient conversation failures without repeated errors (#19144)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/OpenHands",
+            "commit": "7df1e5c14c1ff1a9962562b29af0a9748735b9ac",
+            "message": "fix: recover transient conversation failures without repeated errors (#19144)",
+            "files_changed": 2856,
+            "insertions": 561596,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511212115
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511212344
+    }
+  ],
+  "provenance": "external",
+  "source_label": "OpenHands",
+  "weight": 0.5,
+  "created_at": 1793511211842,
+  "source_id": "p2_OpenHands",
+  "repo_url": "https://github.com/All-Hands-AI/OpenHands",
+  "commit": "7df1e5c14c1ff1a9962562b29af0a9748735b9ac",
+  "license": "MIT",
+  "collected_at": 1793511400342
+}

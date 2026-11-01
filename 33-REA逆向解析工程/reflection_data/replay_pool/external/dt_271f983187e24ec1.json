@@ -1,0 +1,120 @@
+{
+  "tree_id": "dt_271f983187e24ec1",
+  "task": {
+    "target": "https://github.com/suenot/117-granger-causality-trading",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_fcb0b7c3171e4c66",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/suenot/117-granger-causality-trading"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_fcb0b7c3171e4c66",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "5dfb5649980e0edbddc923cf0ee3a9d8787ad1cb",
+              "message": "Add MIT License"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c4a3b8086ec64e109ba898a46c87db03",
+              "result": "架构转折点: commit 5dfb5649 - Add MIT License",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/granger-causality-trading",
+                "commit": "5dfb5649980e0edbddc923cf0ee3a9d8787ad1cb",
+                "message": "Add MIT License",
+                "files_changed": 5,
+                "insertions": 1326,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511327160
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511327180
+        }
+      ],
+      "created_at": 1793511327153
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_fcb0b7c3171e4c66",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "5dfb5649980e0edbddc923cf0ee3a9d8787ad1cb",
+          "message": "Add MIT License"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c4a3b8086ec64e109ba898a46c87db03",
+          "result": "架构转折点: commit 5dfb5649 - Add MIT License",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/granger-causality-trading",
+            "commit": "5dfb5649980e0edbddc923cf0ee3a9d8787ad1cb",
+            "message": "Add MIT License",
+            "files_changed": 5,
+            "insertions": 1326,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511327160
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511327180
+    }
+  ],
+  "provenance": "external",
+  "source_label": "granger-causality-trading",
+  "weight": 0.5,
+  "created_at": 1793511327153,
+  "source_id": "p2_granger-causality-trading",
+  "repo_url": "https://github.com/suenot/117-granger-causality-trading",
+  "commit": "5dfb5649980e0edbddc923cf0ee3a9d8787ad1cb",
+  "license": "unknown",
+  "collected_at": 1793511404658
+}

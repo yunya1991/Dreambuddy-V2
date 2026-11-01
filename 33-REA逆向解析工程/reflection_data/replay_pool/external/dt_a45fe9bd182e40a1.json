@@ -1,0 +1,3278 @@
+{
+  "tree_id": "dt_a45fe9bd182e40a1",
+  "task": {
+    "target": "https://github.com/robomonkey-vla/RoboMonkey",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_7051420bb9c34ed3",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/robomonkey-vla/RoboMonkey"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/infer_server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/infer_server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/reward_model_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/reward_model_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/lora_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/lora_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/action_processing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/action_processing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/models/reward_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/models/reward_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/models/distributed_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/models/distributed_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/models/trainer_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/models/trainer_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/models/qlora_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/models/qlora_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/data_utils/data_utils_rm.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/data_utils/data_utils_rm.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/data_utils/common_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/data_utils/common_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/src/data_utils/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/src/data_utils/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/merge_lora_weights.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/merge_lora_weights.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/extract_mm_projector.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/extract_mm_projector.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava_base_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava_base_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/conversation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/conversation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/mm_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/mm_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llava_trainer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llava_trainer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train_mem.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train_mem.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llama_flash_attn_monkey_patch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llama_flash_attn_monkey_patch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/summarize_gpt_review.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/summarize_gpt_review.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/run_llava.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/run_llava.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_bench.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_bench.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_qa.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_qa.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_science.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_science.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/generate_webpage_data_from_table.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/generate_webpage_data_from_table.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/qa_baseline_gpt35.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/qa_baseline_gpt35.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4_requery.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4_requery.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_visual.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_visual.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_ds.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_ds.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/webpage/script.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/webpage/script.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/register_worker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/register_worker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/gradio_web_server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/gradio_web_server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/test_message.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/test_message.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/controller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/controller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/model_worker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/model_worker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/make_delta.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/make_delta.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/consolidate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/consolidate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/apply_delta.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/apply_delta.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/llava_arch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/llava_arch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/builder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/builder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "monkey-verifier/llava_setup/LLaVA/llava/model/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693628
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_89553e8afbd546aca04c74b029475f80",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+                "line": 111,
+                "marker": "TODO",
+                "comment": "# TODO(zhiqings): Hack to add support for Falcon."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693639
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_094c40eae7584f77b08037d6a2520afb",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+                "line": 205,
+                "marker": "TODO",
+                "comment": "# TODO(zhiqings): Hacking to make sure every parameter is used in the backward pass."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693639
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_48b595e74ebc4f0daa80f1be7ebdb9c2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+                "line": 210,
+                "marker": "TODO",
+                "comment": "# TODO(lxuechen): Make returning rewards at all positions and last_hidden_state an option."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693639
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_770b46d8a0c84460a58c73f4b2ee38a1",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+                "line": 212,
+                "marker": "HACK",
+                "comment": "#     next(self.reward_head.parameters()) # HACK(sheng): error with data parallel"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693639
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ecf61d852d7342fea12a33f7c3492cb3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+                "line": 225,
+                "marker": "TODO",
+                "comment": "# TODO(zhiqings): Hack to add support for Falcon."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693639
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b5f0a471474e4dd196efc788ce6bc276",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/qlora_model.py",
+                "line": 194,
+                "marker": "TODO",
+                "comment": "# TODO(zhiqings): this has to be done after get_peft_model"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693643
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_59c0c0c0a626412ba23b7b3df9b1e50c",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/data_utils_rm.py",
+                "line": 78,
+                "marker": "HACK",
+                "comment": "# HACK(sheng):, hack for V1, LLaMA2"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693646
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9f0be536c58341fc9b7412496607a2d6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/data_utils_rm.py",
+                "line": 105,
+                "marker": "TODO",
+                "comment": "# TODO(sheng): hack for LLAVA_V1, LLaMA2"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693646
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d79ce7c3651e4ead843201ab0a92c9c1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/data_utils_rm.py",
+                "line": 334,
+                "marker": "TODO",
+                "comment": "# TODO(lxuechen): Potentially replace with `transformers.PretrainedTokenizerBase.prepare_for_model`."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693646
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6a7cbdb055ec4ff2a73a2396ac03bced",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/common_utils.py",
+                "line": 538,
+                "marker": "TODO",
+                "comment": "# TODO(sheng): hack for LLAVA_V1, LLAMA_2"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793515693652
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693935
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_7051420bb9c34ed3",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "db9f8d314ea78e986f515617ac43afc58f984a53",
+              "message": "update README"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_eafb13336837410fafe42ba599b98aa7",
+              "result": "架构转折点: commit db9f8d31 - update README",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/robomonkey",
+                "commit": "db9f8d314ea78e986f515617ac43afc58f984a53",
+                "message": "update README",
+                "files_changed": 143,
+                "insertions": 17788,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793515693951
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515693968
+        }
+      ],
+      "created_at": 1793515693627
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/infer_server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/infer_server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/reward_model_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/reward_model_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/lora_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/lora_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/action_processing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/action_processing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/models/reward_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/models/reward_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/models/distributed_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/models/distributed_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/models/trainer_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/models/trainer_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/models/qlora_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/models/qlora_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/data_utils/data_utils_rm.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/data_utils/data_utils_rm.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/data_utils/common_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/data_utils/common_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/src/data_utils/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/src/data_utils/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/merge_lora_weights.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/merge_lora_weights.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/extract_mm_projector.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/extract_mm_projector.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava_base_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/scripts/convert_sqa_to_llava_base_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/conversation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/conversation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/mm_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/mm_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llava_trainer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llava_trainer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train_mem.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/train_mem.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llama_flash_attn_monkey_patch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/train/llama_flash_attn_monkey_patch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/summarize_gpt_review.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/summarize_gpt_review.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/run_llava.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/run_llava.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_bench.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_bench.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_qa.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_qa.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_science.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_science.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/generate_webpage_data_from_table.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/generate_webpage_data_from_table.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/qa_baseline_gpt35.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/qa_baseline_gpt35.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4_requery.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_science_qa_gpt4_requery.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_visual.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/eval_gpt_review_visual.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_ds.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/model_vqa_ds.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/webpage/script.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/eval/webpage/script.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/register_worker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/register_worker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/gradio_web_server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/gradio_web_server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/test_message.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/test_message.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/controller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/controller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/model_worker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/model_worker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/serve/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/make_delta.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/make_delta.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/consolidate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/consolidate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/apply_delta.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/apply_delta.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/llava_arch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/llava_arch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/builder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/builder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "monkey-verifier/llava_setup/LLaVA/llava/model/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693628
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_89553e8afbd546aca04c74b029475f80",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+            "line": 111,
+            "marker": "TODO",
+            "comment": "# TODO(zhiqings): Hack to add support for Falcon."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693639
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_094c40eae7584f77b08037d6a2520afb",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+            "line": 205,
+            "marker": "TODO",
+            "comment": "# TODO(zhiqings): Hacking to make sure every parameter is used in the backward pass."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693639
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_48b595e74ebc4f0daa80f1be7ebdb9c2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+            "line": 210,
+            "marker": "TODO",
+            "comment": "# TODO(lxuechen): Make returning rewards at all positions and last_hidden_state an option."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693639
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_770b46d8a0c84460a58c73f4b2ee38a1",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+            "line": 212,
+            "marker": "HACK",
+            "comment": "#     next(self.reward_head.parameters()) # HACK(sheng): error with data parallel"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693639
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ecf61d852d7342fea12a33f7c3492cb3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/reward_model.py",
+            "line": 225,
+            "marker": "TODO",
+            "comment": "# TODO(zhiqings): Hack to add support for Falcon."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693639
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b5f0a471474e4dd196efc788ce6bc276",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/models/qlora_model.py",
+            "line": 194,
+            "marker": "TODO",
+            "comment": "# TODO(zhiqings): this has to be done after get_peft_model"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693643
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_59c0c0c0a626412ba23b7b3df9b1e50c",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/data_utils_rm.py",
+            "line": 78,
+            "marker": "HACK",
+            "comment": "# HACK(sheng):, hack for V1, LLaMA2"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693646
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9f0be536c58341fc9b7412496607a2d6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/data_utils_rm.py",
+            "line": 105,
+            "marker": "TODO",
+            "comment": "# TODO(sheng): hack for LLAVA_V1, LLaMA2"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693646
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d79ce7c3651e4ead843201ab0a92c9c1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/data_utils_rm.py",
+            "line": 334,
+            "marker": "TODO",
+            "comment": "# TODO(lxuechen): Potentially replace with `transformers.PretrainedTokenizerBase.prepare_for_model`."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693646
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6a7cbdb055ec4ff2a73a2396ac03bced",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/robomonkey/monkey-verifier/src/data_utils/common_utils.py",
+            "line": 538,
+            "marker": "TODO",
+            "comment": "# TODO(sheng): hack for LLAVA_V1, LLAMA_2"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793515693652
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693935
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_7051420bb9c34ed3",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "db9f8d314ea78e986f515617ac43afc58f984a53",
+          "message": "update README"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_eafb13336837410fafe42ba599b98aa7",
+          "result": "架构转折点: commit db9f8d31 - update README",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/robomonkey",
+            "commit": "db9f8d314ea78e986f515617ac43afc58f984a53",
+            "message": "update README",
+            "files_changed": 143,
+            "insertions": 17788,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793515693951
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515693968
+    }
+  ],
+  "provenance": "external",
+  "source_label": "robomonkey",
+  "weight": 0.5,
+  "created_at": 1793515693626,
+  "source_id": "robomonkey",
+  "repo_url": "https://github.com/robomonkey-vla/RoboMonkey",
+  "commit": "db9f8d314ea78e986f515617ac43afc58f984a53",
+  "license": "MIT",
+  "collected_at": 1793515693969
+}

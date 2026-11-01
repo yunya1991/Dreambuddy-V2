@@ -1,0 +1,5706 @@
+{
+  "tree_id": "dt_e8db2180edb34d3a",
+  "task": {
+    "target": "https://github.com/IBM/mcp-context-forge",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_4e6cd0e2e0fe4538",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/IBM/mcp-context-forge"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "gunicorn.config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "gunicorn.config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "migration_add_annotations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "migration_add_annotations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "prettier.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "prettier.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "postcss.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "postcss.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "smoketest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "smoketest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_mutmut.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_mutmut.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "mutmut_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "mutmut_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vite.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vite.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playwright.config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playwright.config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/test_prompt_output_sentinel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/test_prompt_output_sentinel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/test_tool_output_sentinel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/test_tool_output_sentinel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/regex_filter/search_replace.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/regex_filter/search_replace.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/markdown_cleaner/markdown_cleaner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/markdown_cleaner/markdown_cleaner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/markdown_cleaner/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/markdown_cleaner/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/license_header_injector/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/license_header_injector/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/license_header_injector/license_header_injector.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/license_header_injector/license_header_injector.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/schema_guard/schema_guard.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/schema_guard/schema_guard.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/schema_guard/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/schema_guard/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/resource_filter/resource_filter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/resource_filter/resource_filter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/altk_json_processor/json_processor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/altk_json_processor/json_processor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/altk_json_processor/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/altk_json_processor/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/json_repair/json_repair.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/json_repair/json_repair.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/json_repair/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/json_repair/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/opapluginfilter/schema.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/opapluginfilter/schema.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/opapluginfilter/plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/opapluginfilter/plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/opapluginfilter/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/opapluginfilter/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/tests/test_errors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/tests/test_errors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/tests/test_all.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/tests/test_all.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/tests/test_opapluginfilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/tests/test_opapluginfilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/opa/tests/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/opa/tests/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/cedar/cedarpolicyplugin/schema.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/cedar/cedarpolicyplugin/schema.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/cedar/cedarpolicyplugin/plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/cedar/cedarpolicyplugin/plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/cedar/cedarpolicyplugin/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/cedar/cedarpolicyplugin/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/cedar/tests/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/cedar/tests/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/cedar/tests/test_cedarpolicyplugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/cedar/tests/test_cedarpolicyplugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/clamav_server/clamav_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/clamav_server/clamav_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/cache_tokenizers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/cache_tokenizers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/llmguardplugin/schema.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/llmguardplugin/schema.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/llmguardplugin/policy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/llmguardplugin/policy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/llmguardplugin/plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/llmguardplugin/plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/llmguardplugin/llmguard.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/llmguardplugin/llmguard.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/llmguardplugin/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/llmguardplugin/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/llmguardplugin/cache.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/llmguardplugin/cache.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/tests/test_llmguardplugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/tests/test_llmguardplugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/tests/test_cache.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/tests/test_cache.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/tests/test_policy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/tests/test_policy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/tests/test_all.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/tests/test_all.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/external/llmguard/tests/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/external/llmguard/tests/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514588102
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c9c191fb85a043289aca3d420b80390c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/main.py",
+                "line": 11989,
+                "marker": "TODO",
+                "comment": "# TODO: Implement methods  # pylint: disable=fixme"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514588834
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610478
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2089cd1fcab14cf29618e067568b4f25",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/services/a2a_agent_plugin_binding_service.py",
+                "line": 256,
+                "marker": "TODO",
+                "comment": "# TODO: For tables with >10K bindings, consider:  # pylint: disable=fixme"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514589402
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2225db269ca843109ad51af9b1daec5e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/services/a2a_service.py",
+                "line": 720,
+                "marker": "TODO",
+                "comment": "Register a new A2A agent.\n\n        Args:\n            db (Session): Database session.\n            agent_data (A2AAgentCreate): Data required to create an agent.\n            created_by (Optional[str]): "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514589934
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_be824f53eca5470d8f2047b9304a5019",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/services/a2a_service.py",
+                "line": 745,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514589946
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ad002bb31c4c4fd9a61bb1860ca0410d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/routers/reverse_proxy.py",
+                "line": 307,
+                "marker": "TODO",
+                "comment": "# TODO: Route to appropriate MCP client"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590677
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6fe98e1e2ce14371a0f2faad901d33a6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/routers/reverse_proxy.py",
+                "line": 544,
+                "marker": "TODO",
+                "comment": "# TODO: Implement message queue for SSE delivery"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590677
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_44efe9ca3af84e6a8453f79b6dc1fe6d",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+                "line": 1088,
+                "marker": "XXX",
+                "comment": "Validate URLs for allowed schemes and safe display.\n\n        Validation is performed on a percent-decoded copy of the URL to block\n        encoded injection payloads (CRLF, XSS, credential-separator s"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590977
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_83b75930278b4a41acfc2e125770880a",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+                "line": 255,
+                "marker": "XXX",
+                "comment": "# IIS-style `%uXXXX` is not decoded by urllib; JS `\\uXXXX`/`\\xXX` bypass regex blocklists"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590981
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_edfe8e7453114e099eab000e894b8625",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+                "line": 1336,
+                "marker": "XXX",
+                "comment": "# Reject IIS-style `%uXXXX` escapes that urllib does not decode."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590981
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_329e67ad0eb943fea8e0eaf228498b34",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+                "line": 1337,
+                "marker": "XXX",
+                "comment": "# Check both original (`%uXXXX`) and decoded (`%25u003c` → `%u003c`) forms"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590981
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_faa664829bf344d8bba57f61badf1049",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+                "line": 1338,
+                "marker": "XXX",
+                "comment": "# to close the double-encoded `%25uXXXX` bypass."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590981
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8b5fb7ce9da14688813b7363c047829a",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+                "line": 1342,
+                "marker": "XXX",
+                "comment": "# Reject JS-style `\\uXXXX`/`\\xXX` escapes that bypass blocklists in JS contexts."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514590981
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7c5217152c704c528f9a89db3867320b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/handlers/sampling.py",
+                "line": 220,
+                "marker": "TODO",
+                "comment": "# TODO: Implement actual model sampling - currently returns mock response  # pylint: disable=fixme"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591000
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_39b76f8604e24a5aaabd03b386af27c6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/handlers/sampling.py",
+                "line": 359,
+                "marker": "TODO",
+                "comment": "# TODO: Implement context gathering based on type - currently no-op  # pylint: disable=fixme"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591000
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f80ee041c5f84004914b75b0673ff29e",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/test_readme.py",
+                "line": 27,
+                "marker": "FIXME",
+                "comment": "# FIXME: Parse code blocks when they exist in README.md"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591002
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0212f19a8363432caf432b684521a1be",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 2,
+                "marker": "TODO",
+                "comment": "Location: ./tests/e2e/test_main_apis.py\nCopyright contributors to the MCP-CONTEXT-FORGE project\nSPDX-License-Identifier: Apache-2.0\n\nEnd-to-end tests for ContextForge main APIs.\nThis module contains c"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591283
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_15a972f65d3c4417b3148c09631e0153",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 393,
+                "marker": "FIXME",
+                "comment": "# FIXME"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d652dc18f392428b9825851cf1cd00d5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 512,
+                "marker": "TODO",
+                "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7a8e0eca02a142fcbe55874b7ead895e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 533,
+                "marker": "TODO",
+                "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2eaa073c77314608b216dc3a72bdb0bc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 553,
+                "marker": "TODO",
+                "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6a56c600c90a4343b8386dd8823a02cf",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 592,
+                "marker": "TODO",
+                "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_771963f9f80947c28e3a3c7e134a00ac",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 774,
+                "marker": "FIXME",
+                "comment": "# FIXME: we should remove MCP as an integration type"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3671a4af4ece4a0dac42e4c7be2b6a9f",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 795,
+                "marker": "FIXME",
+                "comment": "#     assert result[\"requestType\"] == \"GET\" # FIXME: somehow this becomes SSE?!"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_23",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_78a6d551296748b6aeef30138ec97b05",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 1677,
+                "marker": "TODO",
+                "comment": "# TODO: API should probably return 422 instead of 500 for invalid log level"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_24",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b41b61490a8546bbb434637ff94f62a5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 1678,
+                "marker": "TODO",
+                "comment": "# TODO: Catch the ValueError and return a proper 422 validation error"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_25",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a92fbad0b822417ba7b6657a46347c9a",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 1715,
+                "marker": "FIXME",
+                "comment": "# FIXME: The expected fields might differ (camelCase vs snake_case)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_26",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3a95e2edaf83433aaeb8ccf251d574d2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+                "line": 1763,
+                "marker": "TODO",
+                "comment": "# TODO: FIXME"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591292
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_27",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_33688bb740464138ae182372fb439a82",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 362,
+                "marker": "FIXME",
+                "comment": "# FIXME: Temporarily disabled due to issues with tool lifecycle tests"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_28",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d314c5044f6b414e9de56397514b3c02",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 1071,
+                "marker": "TODO",
+                "comment": "# API returns 400 for invalid ID format (TODO: should be 404?)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_29",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_851fbf69dc3f4563b69d2c7ab36a9c8f",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 1074,
+                "marker": "FIXME",
+                "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_30",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3b2568281e5b40e6acf1adcd51cfce63",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 1081,
+                "marker": "FIXME",
+                "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_31",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_36d7cb5f013d4cb9bbacad830ae18416",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 1088,
+                "marker": "FIXME",
+                "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_32",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3d055465981b49c387e5ce8ca8b90180",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 1095,
+                "marker": "FIXME",
+                "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_33",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bbea519cec9b4e3db9a7cf9ff3f44a3d",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+                "line": 1109,
+                "marker": "FIXME",
+                "comment": "# FIXME: IndexError: list index out of range"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591345
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_34",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bb234ea1de5f4fc5b8491527d068835e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/loadtest/locustfile.py",
+                "line": 2176,
+                "marker": "TODO",
+                "comment": "# TODO: Implement proper gateway load testing with mock MCP servers"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591467
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_35",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b6fa7ad968934dac94aceed4ad5ce1ef",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/loadtest/locustfile.py",
+                "line": 2237,
+                "marker": "TODO",
+                "comment": "# TODO: Re-implement with proper test fixtures"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591467
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_36",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_253188f6afd04825a93b3d8a141aa708",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/loadtest/locustfile.py",
+                "line": 2279,
+                "marker": "TODO",
+                "comment": "# TODO: Fix teams router db session handling and re-enable"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514591467
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_37",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_af37195f618d404a81b52829416ec2d6",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+                "line": 1800,
+                "marker": "XXX",
+                "comment": "Verify %25uXXXX decodes to %uXXXX and is still rejected."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514597538
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_38",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b974cf8dfb594a3788cf62dc0c386432",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+                "line": 1336,
+                "marker": "XXX",
+                "comment": "JS-style `\\uXXXX` / `\\xXX` escapes must be rejected."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514597539
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_39",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2da0e1e2918b49be85bdfaeafe0e8b24",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+                "line": 739,
+                "marker": "TODO",
+                "comment": "# TODO: Skip Use once=true for now"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514597546
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_40",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0adfbbbafd974ed5b579cb90edd003ea",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+                "line": 1797,
+                "marker": "XXX",
+                "comment": "# Coverage: %25uXXXX bypass regression (double-encoded IIS escapes)           #"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514597546
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_41",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_280d4999868242b4a5ca171f3d5f3c5f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/playwright/pages/admin_page.py",
+                "line": 22,
+                "marker": "TODO",
+                "comment": "# TODO: Remove once all tests are migrated to use properties"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514597871
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_42",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b5e7d770813d45efa3caa26af0f5eee3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/integration/test_plugin_runtime_management.py",
+                "line": 360,
+                "marker": "TODO",
+                "comment": "Tests that plugin state changes propagate via Redis.\n\n    TODO(#4300): these assertions assume NGINX round-robins across replicas\n    but don't actually verify different replicas responded. Sticky ses"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514598251
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_43",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9ed55fc0130b4c03b9355c804268573f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/integration/test_plugin_runtime_management.py",
+                "line": 436,
+                "marker": "TODO",
+                "comment": "Multi-instance tests for global plugin toggle.\n\n    These tests send multiple requests through NGINX load balancer\n    to verify state consistency across all gateway replicas.\n\n    TODO(#4300): same r"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514598251
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_dec_44",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3d2c60057e914f87a66435e2a4d106d7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/security/test_input_validation.py",
+                "line": 2,
+                "marker": "TODO",
+                "comment": "Location: ./tests/security/test_input_validation.py\nCopyright contributors to the MCP-CONTEXT-FORGE project\nSPDX-License-Identifier: Apache-2.0\n\nComprehensive security tests for ContextForge input val"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793514598683
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514610479
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_4e6cd0e2e0fe4538",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "a75ff7222d6b3d6df010cab340bc7e5a4e854c94",
+              "message": "refactor(main): extract _register_middleware for direct test invocation (#7229)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_17f66bd0494c4ac3bcdb7f721db8dfc0",
+              "result": "架构转折点: commit a75ff722 - refactor(main): extract _register_middleware for direct test invocation (#7229)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/mcp-context-forge",
+                "commit": "a75ff7222d6b3d6df010cab340bc7e5a4e854c94",
+                "message": "refactor(main): extract _register_middleware for direct test invocation (#7229)",
+                "files_changed": 2842,
+                "insertions": 1361824,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793514610917
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514611414
+        }
+      ],
+      "created_at": 1793514588099
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "gunicorn.config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "gunicorn.config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "migration_add_annotations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "migration_add_annotations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "prettier.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "prettier.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "postcss.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "postcss.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "smoketest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "smoketest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_mutmut.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_mutmut.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "mutmut_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "mutmut_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vite.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vite.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playwright.config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playwright.config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/test_prompt_output_sentinel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/test_prompt_output_sentinel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/test_tool_output_sentinel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/test_tool_output_sentinel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/regex_filter/search_replace.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/regex_filter/search_replace.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/markdown_cleaner/markdown_cleaner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/markdown_cleaner/markdown_cleaner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/markdown_cleaner/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/markdown_cleaner/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/license_header_injector/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/license_header_injector/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/license_header_injector/license_header_injector.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/license_header_injector/license_header_injector.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/schema_guard/schema_guard.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/schema_guard/schema_guard.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/schema_guard/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/schema_guard/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/resource_filter/resource_filter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/resource_filter/resource_filter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/altk_json_processor/json_processor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/altk_json_processor/json_processor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/altk_json_processor/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/altk_json_processor/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/json_repair/json_repair.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/json_repair/json_repair.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/json_repair/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/json_repair/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/opapluginfilter/schema.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/opapluginfilter/schema.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/opapluginfilter/plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/opapluginfilter/plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/opapluginfilter/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/opapluginfilter/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/tests/test_errors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/tests/test_errors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/tests/test_all.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/tests/test_all.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/tests/test_opapluginfilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/tests/test_opapluginfilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/opa/tests/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/opa/tests/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/cedar/cedarpolicyplugin/schema.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/cedar/cedarpolicyplugin/schema.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/cedar/cedarpolicyplugin/plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/cedar/cedarpolicyplugin/plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/cedar/cedarpolicyplugin/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/cedar/cedarpolicyplugin/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/cedar/tests/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/cedar/tests/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/cedar/tests/test_cedarpolicyplugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/cedar/tests/test_cedarpolicyplugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/clamav_server/clamav_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/clamav_server/clamav_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/cache_tokenizers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/cache_tokenizers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/llmguardplugin/schema.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/llmguardplugin/schema.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/llmguardplugin/policy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/llmguardplugin/policy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/llmguardplugin/plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/llmguardplugin/plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/llmguardplugin/llmguard.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/llmguardplugin/llmguard.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/llmguardplugin/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/llmguardplugin/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/llmguardplugin/cache.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/llmguardplugin/cache.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/tests/test_llmguardplugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/tests/test_llmguardplugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/tests/test_cache.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/tests/test_cache.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/tests/test_policy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/tests/test_policy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/tests/test_all.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/tests/test_all.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/external/llmguard/tests/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/external/llmguard/tests/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514588102
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c9c191fb85a043289aca3d420b80390c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/main.py",
+            "line": 11989,
+            "marker": "TODO",
+            "comment": "# TODO: Implement methods  # pylint: disable=fixme"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514588834
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610478
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2089cd1fcab14cf29618e067568b4f25",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/services/a2a_agent_plugin_binding_service.py",
+            "line": 256,
+            "marker": "TODO",
+            "comment": "# TODO: For tables with >10K bindings, consider:  # pylint: disable=fixme"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514589402
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2225db269ca843109ad51af9b1daec5e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/services/a2a_service.py",
+            "line": 720,
+            "marker": "TODO",
+            "comment": "Register a new A2A agent.\n\n        Args:\n            db (Session): Database session.\n            agent_data (A2AAgentCreate): Data required to create an agent.\n            created_by (Optional[str]): "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514589934
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_be824f53eca5470d8f2047b9304a5019",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/services/a2a_service.py",
+            "line": 745,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514589946
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ad002bb31c4c4fd9a61bb1860ca0410d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/routers/reverse_proxy.py",
+            "line": 307,
+            "marker": "TODO",
+            "comment": "# TODO: Route to appropriate MCP client"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590677
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6fe98e1e2ce14371a0f2faad901d33a6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/routers/reverse_proxy.py",
+            "line": 544,
+            "marker": "TODO",
+            "comment": "# TODO: Implement message queue for SSE delivery"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590677
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_44efe9ca3af84e6a8453f79b6dc1fe6d",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+            "line": 1088,
+            "marker": "XXX",
+            "comment": "Validate URLs for allowed schemes and safe display.\n\n        Validation is performed on a percent-decoded copy of the URL to block\n        encoded injection payloads (CRLF, XSS, credential-separator s"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590977
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_83b75930278b4a41acfc2e125770880a",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+            "line": 255,
+            "marker": "XXX",
+            "comment": "# IIS-style `%uXXXX` is not decoded by urllib; JS `\\uXXXX`/`\\xXX` bypass regex blocklists"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590981
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_edfe8e7453114e099eab000e894b8625",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+            "line": 1336,
+            "marker": "XXX",
+            "comment": "# Reject IIS-style `%uXXXX` escapes that urllib does not decode."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590981
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_329e67ad0eb943fea8e0eaf228498b34",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+            "line": 1337,
+            "marker": "XXX",
+            "comment": "# Check both original (`%uXXXX`) and decoded (`%25u003c` → `%u003c`) forms"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590981
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_faa664829bf344d8bba57f61badf1049",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+            "line": 1338,
+            "marker": "XXX",
+            "comment": "# to close the double-encoded `%25uXXXX` bypass."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590981
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8b5fb7ce9da14688813b7363c047829a",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/common/validators.py",
+            "line": 1342,
+            "marker": "XXX",
+            "comment": "# Reject JS-style `\\uXXXX`/`\\xXX` escapes that bypass blocklists in JS contexts."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514590981
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7c5217152c704c528f9a89db3867320b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/handlers/sampling.py",
+            "line": 220,
+            "marker": "TODO",
+            "comment": "# TODO: Implement actual model sampling - currently returns mock response  # pylint: disable=fixme"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591000
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_39b76f8604e24a5aaabd03b386af27c6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/mcpgateway/handlers/sampling.py",
+            "line": 359,
+            "marker": "TODO",
+            "comment": "# TODO: Implement context gathering based on type - currently no-op  # pylint: disable=fixme"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591000
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f80ee041c5f84004914b75b0673ff29e",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/test_readme.py",
+            "line": 27,
+            "marker": "FIXME",
+            "comment": "# FIXME: Parse code blocks when they exist in README.md"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591002
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0212f19a8363432caf432b684521a1be",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 2,
+            "marker": "TODO",
+            "comment": "Location: ./tests/e2e/test_main_apis.py\nCopyright contributors to the MCP-CONTEXT-FORGE project\nSPDX-License-Identifier: Apache-2.0\n\nEnd-to-end tests for ContextForge main APIs.\nThis module contains c"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591283
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_15a972f65d3c4417b3148c09631e0153",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 393,
+            "marker": "FIXME",
+            "comment": "# FIXME"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d652dc18f392428b9825851cf1cd00d5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 512,
+            "marker": "TODO",
+            "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7a8e0eca02a142fcbe55874b7ead895e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 533,
+            "marker": "TODO",
+            "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2eaa073c77314608b216dc3a72bdb0bc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 553,
+            "marker": "TODO",
+            "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6a56c600c90a4343b8386dd8823a02cf",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 592,
+            "marker": "TODO",
+            "comment": "# TODO: Fix RBAC mocking to make this test properly pass"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_771963f9f80947c28e3a3c7e134a00ac",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 774,
+            "marker": "FIXME",
+            "comment": "# FIXME: we should remove MCP as an integration type"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3671a4af4ece4a0dac42e4c7be2b6a9f",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 795,
+            "marker": "FIXME",
+            "comment": "#     assert result[\"requestType\"] == \"GET\" # FIXME: somehow this becomes SSE?!"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_23",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_78a6d551296748b6aeef30138ec97b05",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 1677,
+            "marker": "TODO",
+            "comment": "# TODO: API should probably return 422 instead of 500 for invalid log level"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_24",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b41b61490a8546bbb434637ff94f62a5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 1678,
+            "marker": "TODO",
+            "comment": "# TODO: Catch the ValueError and return a proper 422 validation error"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_25",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a92fbad0b822417ba7b6657a46347c9a",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 1715,
+            "marker": "FIXME",
+            "comment": "# FIXME: The expected fields might differ (camelCase vs snake_case)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_26",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3a95e2edaf83433aaeb8ccf251d574d2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_main_apis.py",
+            "line": 1763,
+            "marker": "TODO",
+            "comment": "# TODO: FIXME"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591292
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_27",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_33688bb740464138ae182372fb439a82",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 362,
+            "marker": "FIXME",
+            "comment": "# FIXME: Temporarily disabled due to issues with tool lifecycle tests"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_28",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d314c5044f6b414e9de56397514b3c02",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 1071,
+            "marker": "TODO",
+            "comment": "# API returns 400 for invalid ID format (TODO: should be 404?)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_29",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_851fbf69dc3f4563b69d2c7ab36a9c8f",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 1074,
+            "marker": "FIXME",
+            "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_30",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3b2568281e5b40e6acf1adcd51cfce63",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 1081,
+            "marker": "FIXME",
+            "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_31",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_36d7cb5f013d4cb9bbacad830ae18416",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 1088,
+            "marker": "FIXME",
+            "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_32",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3d055465981b49c387e5ce8ca8b90180",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 1095,
+            "marker": "FIXME",
+            "comment": "# FIXME: This test should be updated to check for 404 instead of 500"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_33",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bbea519cec9b4e3db9a7cf9ff3f44a3d",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/e2e/test_admin_apis.py",
+            "line": 1109,
+            "marker": "FIXME",
+            "comment": "# FIXME: IndexError: list index out of range"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591345
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_34",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bb234ea1de5f4fc5b8491527d068835e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/loadtest/locustfile.py",
+            "line": 2176,
+            "marker": "TODO",
+            "comment": "# TODO: Implement proper gateway load testing with mock MCP servers"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591467
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_35",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b6fa7ad968934dac94aceed4ad5ce1ef",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/loadtest/locustfile.py",
+            "line": 2237,
+            "marker": "TODO",
+            "comment": "# TODO: Re-implement with proper test fixtures"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591467
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_36",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_253188f6afd04825a93b3d8a141aa708",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/loadtest/locustfile.py",
+            "line": 2279,
+            "marker": "TODO",
+            "comment": "# TODO: Fix teams router db session handling and re-enable"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514591467
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_37",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_af37195f618d404a81b52829416ec2d6",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+            "line": 1800,
+            "marker": "XXX",
+            "comment": "Verify %25uXXXX decodes to %uXXXX and is still rejected."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514597538
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_38",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b974cf8dfb594a3788cf62dc0c386432",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+            "line": 1336,
+            "marker": "XXX",
+            "comment": "JS-style `\\uXXXX` / `\\xXX` escapes must be rejected."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514597539
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_39",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2da0e1e2918b49be85bdfaeafe0e8b24",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+            "line": 739,
+            "marker": "TODO",
+            "comment": "# TODO: Skip Use once=true for now"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514597546
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_40",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0adfbbbafd974ed5b579cb90edd003ea",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/unit/mcpgateway/validation/test_validators_advanced.py",
+            "line": 1797,
+            "marker": "XXX",
+            "comment": "# Coverage: %25uXXXX bypass regression (double-encoded IIS escapes)           #"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514597546
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_41",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_280d4999868242b4a5ca171f3d5f3c5f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/playwright/pages/admin_page.py",
+            "line": 22,
+            "marker": "TODO",
+            "comment": "# TODO: Remove once all tests are migrated to use properties"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514597871
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_42",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b5e7d770813d45efa3caa26af0f5eee3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/integration/test_plugin_runtime_management.py",
+            "line": 360,
+            "marker": "TODO",
+            "comment": "Tests that plugin state changes propagate via Redis.\n\n    TODO(#4300): these assertions assume NGINX round-robins across replicas\n    but don't actually verify different replicas responded. Sticky ses"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514598251
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_43",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9ed55fc0130b4c03b9355c804268573f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/integration/test_plugin_runtime_management.py",
+            "line": 436,
+            "marker": "TODO",
+            "comment": "Multi-instance tests for global plugin toggle.\n\n    These tests send multiple requests through NGINX load balancer\n    to verify state consistency across all gateway replicas.\n\n    TODO(#4300): same r"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514598251
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_dec_44",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3d2c60057e914f87a66435e2a4d106d7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/mcp-context-forge/tests/security/test_input_validation.py",
+            "line": 2,
+            "marker": "TODO",
+            "comment": "Location: ./tests/security/test_input_validation.py\nCopyright contributors to the MCP-CONTEXT-FORGE project\nSPDX-License-Identifier: Apache-2.0\n\nComprehensive security tests for ContextForge input val"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793514598683
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514610479
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_4e6cd0e2e0fe4538",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "a75ff7222d6b3d6df010cab340bc7e5a4e854c94",
+          "message": "refactor(main): extract _register_middleware for direct test invocation (#7229)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_17f66bd0494c4ac3bcdb7f721db8dfc0",
+          "result": "架构转折点: commit a75ff722 - refactor(main): extract _register_middleware for direct test invocation (#7229)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/mcp-context-forge",
+            "commit": "a75ff7222d6b3d6df010cab340bc7e5a4e854c94",
+            "message": "refactor(main): extract _register_middleware for direct test invocation (#7229)",
+            "files_changed": 2842,
+            "insertions": 1361824,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793514610917
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514611414
+    }
+  ],
+  "provenance": "external",
+  "source_label": "mcp-context-forge",
+  "weight": 0.5,
+  "created_at": 1793514588099,
+  "source_id": "mcp-context-forge",
+  "repo_url": "https://github.com/IBM/mcp-context-forge",
+  "commit": "a75ff7222d6b3d6df010cab340bc7e5a4e854c94",
+  "license": "Apache-2.0",
+  "collected_at": 1793514611415
+}

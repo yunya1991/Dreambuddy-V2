@@ -1,0 +1,3428 @@
+{
+  "tree_id": "dt_399d8b66ef3c4c73",
+  "task": {
+    "target": "https://github.com/microsoft/graphrag",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_2cf698fab299452a",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/microsoft/graphrag"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/scripts/create_cookie_banner.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/scripts/create_cookie_banner.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/update_workspace_dependency_versions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/update_workspace_dependency_versions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/close-dependabot-prs.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/close-dependabot-prs.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/open-deps-update-issue.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/open-deps-update-issue.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/copy_build_assets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/copy_build_assets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/__main__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/__main__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/cli/query.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/cli/query.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/cli/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/cli/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/cli/index.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/cli/index.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/cli/initialize.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/cli/initialize.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/cli/prompt_tune.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/cli/prompt_tune.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/api/query.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/api/query.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/api/index.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/api/index.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/api/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/api/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/api/prompt_tune.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/api/prompt_tune.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/index/community_report_text_units.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/index/community_report_text_units.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/index/extract_graph.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/index/extract_graph.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/index/community_report.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/index/community_report.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/index/summarize_descriptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/index/summarize_descriptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/index/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/index/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/index/extract_claims.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/index/extract_claims.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/global_search_map_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/global_search_map_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/global_search_knowledge_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/global_search_knowledge_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/global_search_reduce_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/global_search_reduce_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/drift_search_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/drift_search_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/local_search_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/local_search_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/basic_search_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/basic_search_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/question_gen_system_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/question_gen_system_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/prompts/query/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/prompts/query/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/validate_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/validate_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/text_splitting/text_splitting.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/text_splitting/text_splitting.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/text_splitting/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/text_splitting/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/update/entities.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/update/entities.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/update/incremental_index.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/update/incremental_index.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/update/communities.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/update/communities.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/update/relationships.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/update/relationships.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/update/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/update/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/derive_from_rows.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/derive_from_rows.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/hashing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/hashing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/dataframes.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/dataframes.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/is_null.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/is_null.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/dicts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/dicts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/string.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/string.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/graphrag/graphrag/index/utils/uuid.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/graphrag/graphrag/index/utils/uuid.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511035947
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b210f69b262c46cb91d6ad6315f2c98f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 78,
+                "marker": "TODO",
+                "comment": "Perform a global search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFra"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_02f71f1326f844758ff1d01383680266",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 139,
+                "marker": "TODO",
+                "comment": "Perform a global search and return the context data and response via a generator.\n\n    Context data is returned as a dictionary of lists, with one list entry for each record.\n\n    Parameters\n    -----"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_34311819f5b6469fa1bef97e584540da",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 208,
+                "marker": "TODO",
+                "comment": "Perform a local search and return the context data and response.\n\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFrame): A DataFrame"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_60fb1f2293b84cf5a6857705d0efa5cc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 273,
+                "marker": "TODO",
+                "comment": "Perform a local search and return the context data and response via a generator.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entit"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_be04545b4e25479c837d61651ef541b3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 338,
+                "marker": "TODO",
+                "comment": "Perform a DRIFT search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFram"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_276cd6d7729b4a55badffa2444322bd7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 400,
+                "marker": "TODO",
+                "comment": "Perform a DRIFT search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFram"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f1181412b2cd4dd1983063534b091fd1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 465,
+                "marker": "TODO",
+                "comment": "Perform a basic search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - text_units (pd.DataFr"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_092494ae4b22421a9cce05fd55ba739d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+                "line": 513,
+                "marker": "TODO",
+                "comment": "Perform a local search and return the context data and response via a generator.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - text_"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035965
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_356e74f49ab84d2f91f8a6cf61274aff",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/prompt_tune.py",
+                "line": 100,
+                "marker": "TODO",
+                "comment": "# TODO: Expose a way to specify Prompt Tuning model ID through config"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511035969
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1da9d0bde9d04af8bc80cb4522108d9b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/index/operations/summarize_descriptions/description_summary_extractor.py",
+                "line": 48,
+                "marker": "TODO",
+                "comment": "# TODO: streamline construction"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511036016
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1e9e686098da4103910c703608297028",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/index/operations/build_noun_graph/np_extractors/regex_extractor.py",
+                "line": 29,
+                "marker": "TODO",
+                "comment": "Noun phrase extractor for English based on TextBlob's fast NP extractor, which uses a regex POS tagger and context-free grammars to detect noun phrases.\n\n        NOTE: This is the extractor used in th"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511036033
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bb24b9f644f344b695a5dd9a4137d48c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/query/factory.py",
+                "line": 130,
+                "marker": "TODO",
+                "comment": "# TODO: Allow for another llm definition only for Global Search to leverage -mini models"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511036106
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_218e8a9ee209407ea7c466da610857ad",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/query/context_builder/dynamic_community_selection.py",
+                "line": 126,
+                "marker": "TODO",
+                "comment": "# TODO check why some sub_communities are NOT in report_df"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511036167
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_38f2b3df3fb043d3ac011674dfe709a5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/graphrag/tests/verbs/test_extract_graph.py",
+                "line": 60,
+                "marker": "TODO",
+                "comment": "# TODO: with the combined verb we can't force summarization"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511036609
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511037754
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_2cf698fab299452a",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "c600ff80b77b9b62c47d539a3ac9569e95d8949b",
+              "message": "Update dep sweep script."
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ad1b97b57aed44ccb2dc262cf2cfdfef",
+              "result": "架构转折点: commit c600ff80 - Update dep sweep script.",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/graphrag",
+                "commit": "c600ff80b77b9b62c47d539a3ac9569e95d8949b",
+                "message": "Update dep sweep script.",
+                "files_changed": 913,
+                "insertions": 97246,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511038260
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511039167
+        }
+      ],
+      "created_at": 1793511035945
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/scripts/create_cookie_banner.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/scripts/create_cookie_banner.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/update_workspace_dependency_versions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/update_workspace_dependency_versions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/close-dependabot-prs.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/close-dependabot-prs.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/open-deps-update-issue.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/open-deps-update-issue.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/copy_build_assets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/copy_build_assets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/__main__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/__main__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/cli/query.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/cli/query.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/cli/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/cli/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/cli/index.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/cli/index.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/cli/initialize.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/cli/initialize.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/cli/prompt_tune.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/cli/prompt_tune.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/api/query.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/api/query.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/api/index.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/api/index.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/api/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/api/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/api/prompt_tune.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/api/prompt_tune.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/index/community_report_text_units.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/index/community_report_text_units.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/index/extract_graph.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/index/extract_graph.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/index/community_report.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/index/community_report.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/index/summarize_descriptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/index/summarize_descriptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/index/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/index/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/index/extract_claims.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/index/extract_claims.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/global_search_map_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/global_search_map_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/global_search_knowledge_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/global_search_knowledge_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/global_search_reduce_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/global_search_reduce_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/drift_search_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/drift_search_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/local_search_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/local_search_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/basic_search_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/basic_search_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/question_gen_system_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/question_gen_system_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/prompts/query/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/prompts/query/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/validate_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/validate_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/text_splitting/text_splitting.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/text_splitting/text_splitting.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/text_splitting/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/text_splitting/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/update/entities.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/update/entities.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/update/incremental_index.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/update/incremental_index.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/update/communities.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/update/communities.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/update/relationships.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/update/relationships.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/update/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/update/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/derive_from_rows.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/derive_from_rows.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/hashing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/hashing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/dataframes.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/dataframes.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/is_null.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/is_null.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/dicts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/dicts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/string.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/string.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/graphrag/graphrag/index/utils/uuid.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/graphrag/graphrag/index/utils/uuid.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511035947
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b210f69b262c46cb91d6ad6315f2c98f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 78,
+            "marker": "TODO",
+            "comment": "Perform a global search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFra"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_02f71f1326f844758ff1d01383680266",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 139,
+            "marker": "TODO",
+            "comment": "Perform a global search and return the context data and response via a generator.\n\n    Context data is returned as a dictionary of lists, with one list entry for each record.\n\n    Parameters\n    -----"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_34311819f5b6469fa1bef97e584540da",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 208,
+            "marker": "TODO",
+            "comment": "Perform a local search and return the context data and response.\n\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFrame): A DataFrame"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_60fb1f2293b84cf5a6857705d0efa5cc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 273,
+            "marker": "TODO",
+            "comment": "Perform a local search and return the context data and response via a generator.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entit"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_be04545b4e25479c837d61651ef541b3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 338,
+            "marker": "TODO",
+            "comment": "Perform a DRIFT search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFram"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_276cd6d7729b4a55badffa2444322bd7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 400,
+            "marker": "TODO",
+            "comment": "Perform a DRIFT search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - entities (pd.DataFram"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f1181412b2cd4dd1983063534b091fd1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 465,
+            "marker": "TODO",
+            "comment": "Perform a basic search and return the context data and response.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - text_units (pd.DataFr"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_092494ae4b22421a9cce05fd55ba739d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/query.py",
+            "line": 513,
+            "marker": "TODO",
+            "comment": "Perform a local search and return the context data and response via a generator.\n\n    Parameters\n    ----------\n    - config (GraphRagConfig): A graphrag configuration (from settings.yaml)\n    - text_"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035965
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_356e74f49ab84d2f91f8a6cf61274aff",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/api/prompt_tune.py",
+            "line": 100,
+            "marker": "TODO",
+            "comment": "# TODO: Expose a way to specify Prompt Tuning model ID through config"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511035969
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1da9d0bde9d04af8bc80cb4522108d9b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/index/operations/summarize_descriptions/description_summary_extractor.py",
+            "line": 48,
+            "marker": "TODO",
+            "comment": "# TODO: streamline construction"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511036016
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1e9e686098da4103910c703608297028",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/index/operations/build_noun_graph/np_extractors/regex_extractor.py",
+            "line": 29,
+            "marker": "TODO",
+            "comment": "Noun phrase extractor for English based on TextBlob's fast NP extractor, which uses a regex POS tagger and context-free grammars to detect noun phrases.\n\n        NOTE: This is the extractor used in th"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511036033
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bb24b9f644f344b695a5dd9a4137d48c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/query/factory.py",
+            "line": 130,
+            "marker": "TODO",
+            "comment": "# TODO: Allow for another llm definition only for Global Search to leverage -mini models"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511036106
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_218e8a9ee209407ea7c466da610857ad",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/packages/graphrag/graphrag/query/context_builder/dynamic_community_selection.py",
+            "line": 126,
+            "marker": "TODO",
+            "comment": "# TODO check why some sub_communities are NOT in report_df"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511036167
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_38f2b3df3fb043d3ac011674dfe709a5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/graphrag/tests/verbs/test_extract_graph.py",
+            "line": 60,
+            "marker": "TODO",
+            "comment": "# TODO: with the combined verb we can't force summarization"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511036609
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511037754
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_2cf698fab299452a",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "c600ff80b77b9b62c47d539a3ac9569e95d8949b",
+          "message": "Update dep sweep script."
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ad1b97b57aed44ccb2dc262cf2cfdfef",
+          "result": "架构转折点: commit c600ff80 - Update dep sweep script.",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/graphrag",
+            "commit": "c600ff80b77b9b62c47d539a3ac9569e95d8949b",
+            "message": "Update dep sweep script.",
+            "files_changed": 913,
+            "insertions": 97246,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511038260
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511039167
+    }
+  ],
+  "provenance": "external",
+  "source_label": "graphrag",
+  "weight": 0.5,
+  "created_at": 1793511035945,
+  "source_id": "p2_graphrag",
+  "repo_url": "https://github.com/microsoft/graphrag",
+  "commit": "c600ff80b77b9b62c47d539a3ac9569e95d8949b",
+  "license": "MIT",
+  "collected_at": 1793511404843
+}

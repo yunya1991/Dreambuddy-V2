@@ -1,0 +1,1316 @@
+{
+  "tree_id": "dt_348f60b85588425a",
+  "task": {
+    "target": "https://github.com/moment-timeseries-foundation-model/moment",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_d6469cf0fd96494d",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/moment-timeseries-foundation-model/moment"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/models/statistical_classifiers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/models/statistical_classifiers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/models/moment.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/models/moment.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/models/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/models/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/models/layers/revin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/models/layers/revin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/models/layers/embed.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/models/layers/embed.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/models/layers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/models/layers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/ptbxl_classification_dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/ptbxl_classification_dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/synthetic_data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/synthetic_data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/anomaly_detection_dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/anomaly_detection_dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/classification_dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/classification_dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/data/informer_dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/data/informer_dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/utils/anomaly_detection_metrics.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/utils/anomaly_detection_metrics.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/utils/forecasting_metrics.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/utils/forecasting_metrics.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/utils/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/utils/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/utils/masking.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/utils/masking.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/utils/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/utils/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "momentfm/utils/data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "momentfm/utils/data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "data/ECG5000_TEST.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "data/ECG5000_TEST.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "data/ECG5000_TRAIN.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "data/ECG5000_TRAIN.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tutorials/finetune_demo/classification.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tutorials/finetune_demo/classification.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_inference.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_inference.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376274
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_d6469cf0fd96494d",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "38f7310ad594100747ca2a8357e9c7ca7d323e0e",
+              "message": "Merge pull request #81 from twinjordan02/main"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_910e12db87c2406399a7882adbdc189a",
+              "result": "架构转折点: commit 38f7310a - Merge pull request #81 from twinjordan02/main",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/moment",
+                "commit": "38f7310ad594100747ca2a8357e9c7ca7d323e0e",
+                "message": "Merge pull request #81 from twinjordan02/main",
+                "files_changed": 47,
+                "insertions": 158229,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511376443
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511376543
+        }
+      ],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/models/statistical_classifiers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/models/statistical_classifiers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/models/moment.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/models/moment.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/models/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/models/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/models/layers/revin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/models/layers/revin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/models/layers/embed.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/models/layers/embed.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/models/layers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/models/layers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/ptbxl_classification_dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/ptbxl_classification_dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/synthetic_data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/synthetic_data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/anomaly_detection_dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/anomaly_detection_dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/classification_dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/classification_dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/data/informer_dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/data/informer_dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/utils/anomaly_detection_metrics.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/utils/anomaly_detection_metrics.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/utils/forecasting_metrics.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/utils/forecasting_metrics.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/utils/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/utils/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/utils/masking.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/utils/masking.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/utils/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/utils/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "momentfm/utils/data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "momentfm/utils/data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "data/ECG5000_TEST.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "data/ECG5000_TEST.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "data/ECG5000_TRAIN.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "data/ECG5000_TRAIN.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tutorials/finetune_demo/classification.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tutorials/finetune_demo/classification.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_inference.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_inference.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376274
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_d6469cf0fd96494d",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "38f7310ad594100747ca2a8357e9c7ca7d323e0e",
+          "message": "Merge pull request #81 from twinjordan02/main"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_910e12db87c2406399a7882adbdc189a",
+          "result": "架构转折点: commit 38f7310a - Merge pull request #81 from twinjordan02/main",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/moment",
+            "commit": "38f7310ad594100747ca2a8357e9c7ca7d323e0e",
+            "message": "Merge pull request #81 from twinjordan02/main",
+            "files_changed": 47,
+            "insertions": 158229,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511376443
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511376543
+    }
+  ],
+  "provenance": "external",
+  "source_label": "moment",
+  "weight": 0.5,
+  "created_at": 1793511376274,
+  "source_id": "p2_moment",
+  "repo_url": "https://github.com/moment-timeseries-foundation-model/moment",
+  "commit": "38f7310ad594100747ca2a8357e9c7ca7d323e0e",
+  "license": "MIT",
+  "collected_at": 1793511405245
+}

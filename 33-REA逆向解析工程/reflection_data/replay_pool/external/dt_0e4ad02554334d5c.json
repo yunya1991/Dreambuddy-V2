@@ -1,0 +1,3494 @@
+{
+  "tree_id": "dt_0e4ad02554334d5c",
+  "task": {
+    "target": "https://github.com/mchaput/whoosh",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_0056a2788b364e4a",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/mchaput/whoosh"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/idsets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/idsets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/legacy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/legacy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/writing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/writing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/compat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/compat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/highlight.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/highlight.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/fields.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/fields.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/collectors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/collectors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/externalsort.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/externalsort.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/multiproc.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/multiproc.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/classify.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/classify.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/reading.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/reading.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/formats.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/formats.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/spelling.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/spelling.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/sorting.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/sorting.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/scoring.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/scoring.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/columns.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/columns.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/index.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/index.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/system.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/system.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/searching.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/searching.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/plugins.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/plugins.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/dateparse.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/dateparse.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/default.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/default.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/syntax.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/syntax.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/taggers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/taggers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/qparser/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/qparser/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/filedb/filestore.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/filedb/filestore.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/filedb/compound.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/filedb/compound.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/filedb/filetables.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/filedb/filetables.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/filedb/gae.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/filedb/gae.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/filedb/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/filedb/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/filedb/structfile.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/filedb/structfile.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/tokenizers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/tokenizers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/filters.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/filters.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/intraword.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/intraword.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/analyzers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/analyzers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/acore.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/acore.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/ngrams.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/ngrams.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/analysis/morph.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/analysis/morph.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/numeric.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/numeric.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/loading.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/loading.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/varints.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/varints.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/versions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/versions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/testing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/testing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/filelock.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/filelock.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/numlists.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/numlists.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/times.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/times.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/cache.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/cache.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/whoosh/util/text.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/whoosh/util/text.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506665646
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d61e8a2c5bad41cdad69b084488132ab",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/writing.py",
+                "line": 662,
+                "marker": "TODO",
+                "comment": "# TODO: fix this!"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665676
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b1e3329bb5a7444a90b1286aafe5f4a5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/writing.py",
+                "line": 747,
+                "marker": "TODO",
+                "comment": "# TODO: Method for adding progressive field values, ie"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665676
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_15a78f7a002f4bbc8185e023e670e3ee",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/classify.py",
+                "line": 161,
+                "marker": "TODO",
+                "comment": "# TODO: Find a way around this"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665729
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_221264573a1f48d9843434cd8105f763",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/formats.py",
+                "line": 117,
+                "marker": "TODO",
+                "comment": "# TODO: as a legacy thing most of these formats store the frequency but not the"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665749
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6ac153eea51d46edb95e7563ba05a414",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/columns.py",
+                "line": 911,
+                "marker": "TODO",
+                "comment": "# TODO: use binary search instead of linear"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665781
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_16fb3f0cb5144f1cb4ebd7295f3ad9c3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/qparser/plugins.py",
+                "line": 597,
+                "marker": "TODO",
+                "comment": "# TODO: If this call raises an exception, return an error query"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665815
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d899f3da13ec4fa99a8bad47be88d467",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/matching/wrappers.py",
+                "line": 181,
+                "marker": "TODO",
+                "comment": "# TODO: Possible optimization: if the last matcher is current, replace"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665954
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a59a319884b445479f257e00e3d7d550",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/matching/binary.py",
+                "line": 306,
+                "marker": "TODO",
+                "comment": "# TODO: this class inherits from AdditiveBiMatcher (through UnionMatcher)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665963
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f416e365c0bd4bcb9a3dc082f2bfb0c6",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/codec/base.py",
+                "line": 207,
+                "marker": "HACK",
+                "comment": "# HACK: items where docnum == -1 indicate words that should be added"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506665993
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4687de18e7b347e4b4a6094ccc62e042",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/query/spans.py",
+                "line": 249,
+                "marker": "TODO",
+                "comment": "# TODO: fix this"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506666031
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c78fda6bb94841f5929e2788fe15b7f0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/query/spans.py",
+                "line": 460,
+                "marker": "TODO",
+                "comment": "# TODO: fix this"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506666031
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_195cf20682084785b25ea47a3ce41401",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/src/whoosh/query/spans.py",
+                "line": 594,
+                "marker": "TODO",
+                "comment": "# TODO: fix this"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506666031
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_838b455e56614a06961e2ba85093e615",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/whoosh/tests/test_queries.py",
+                "line": 243,
+                "marker": "TODO",
+                "comment": "# TODO: FIX THIS"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506666367
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667337
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_0056a2788b364e4a",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "d9a3fa2a4905e7326c9623c89e6395713c189161",
+              "message": "Fix weird non-idiomatic line"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5e3538b8844c4ade9bcca820e3b2356d",
+              "result": "架构转折点: commit d9a3fa2a - Fix weird non-idiomatic line",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/whoosh",
+                "commit": "d9a3fa2a4905e7326c9623c89e6395713c189161",
+                "message": "Fix weird non-idiomatic line",
+                "files_changed": 238,
+                "insertions": 71328,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793506667370
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506667403
+        }
+      ],
+      "created_at": 1793506665644
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/idsets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/idsets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/legacy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/legacy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/writing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/writing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/compat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/compat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/highlight.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/highlight.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/fields.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/fields.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/collectors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/collectors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/externalsort.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/externalsort.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/multiproc.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/multiproc.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/classify.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/classify.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/reading.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/reading.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/formats.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/formats.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/spelling.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/spelling.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/sorting.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/sorting.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/scoring.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/scoring.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/columns.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/columns.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/index.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/index.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/system.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/system.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/searching.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/searching.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/plugins.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/plugins.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/dateparse.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/dateparse.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/default.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/default.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/syntax.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/syntax.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/taggers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/taggers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/qparser/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/qparser/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/filedb/filestore.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/filedb/filestore.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/filedb/compound.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/filedb/compound.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/filedb/filetables.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/filedb/filetables.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/filedb/gae.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/filedb/gae.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/filedb/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/filedb/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/filedb/structfile.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/filedb/structfile.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/tokenizers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/tokenizers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/filters.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/filters.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/intraword.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/intraword.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/analyzers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/analyzers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/acore.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/acore.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/ngrams.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/ngrams.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/analysis/morph.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/analysis/morph.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/numeric.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/numeric.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/loading.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/loading.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/varints.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/varints.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/versions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/versions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/testing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/testing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/filelock.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/filelock.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/numlists.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/numlists.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/times.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/times.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/cache.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/cache.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/whoosh/util/text.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/whoosh/util/text.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506665646
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d61e8a2c5bad41cdad69b084488132ab",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/writing.py",
+            "line": 662,
+            "marker": "TODO",
+            "comment": "# TODO: fix this!"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665676
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b1e3329bb5a7444a90b1286aafe5f4a5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/writing.py",
+            "line": 747,
+            "marker": "TODO",
+            "comment": "# TODO: Method for adding progressive field values, ie"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665676
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_15a78f7a002f4bbc8185e023e670e3ee",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/classify.py",
+            "line": 161,
+            "marker": "TODO",
+            "comment": "# TODO: Find a way around this"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665729
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_221264573a1f48d9843434cd8105f763",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/formats.py",
+            "line": 117,
+            "marker": "TODO",
+            "comment": "# TODO: as a legacy thing most of these formats store the frequency but not the"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665749
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6ac153eea51d46edb95e7563ba05a414",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/columns.py",
+            "line": 911,
+            "marker": "TODO",
+            "comment": "# TODO: use binary search instead of linear"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665781
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_16fb3f0cb5144f1cb4ebd7295f3ad9c3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/qparser/plugins.py",
+            "line": 597,
+            "marker": "TODO",
+            "comment": "# TODO: If this call raises an exception, return an error query"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665815
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d899f3da13ec4fa99a8bad47be88d467",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/matching/wrappers.py",
+            "line": 181,
+            "marker": "TODO",
+            "comment": "# TODO: Possible optimization: if the last matcher is current, replace"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665954
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a59a319884b445479f257e00e3d7d550",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/matching/binary.py",
+            "line": 306,
+            "marker": "TODO",
+            "comment": "# TODO: this class inherits from AdditiveBiMatcher (through UnionMatcher)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665963
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f416e365c0bd4bcb9a3dc082f2bfb0c6",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/codec/base.py",
+            "line": 207,
+            "marker": "HACK",
+            "comment": "# HACK: items where docnum == -1 indicate words that should be added"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506665993
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4687de18e7b347e4b4a6094ccc62e042",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/query/spans.py",
+            "line": 249,
+            "marker": "TODO",
+            "comment": "# TODO: fix this"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506666031
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c78fda6bb94841f5929e2788fe15b7f0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/query/spans.py",
+            "line": 460,
+            "marker": "TODO",
+            "comment": "# TODO: fix this"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506666031
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_195cf20682084785b25ea47a3ce41401",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/src/whoosh/query/spans.py",
+            "line": 594,
+            "marker": "TODO",
+            "comment": "# TODO: fix this"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506666031
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_838b455e56614a06961e2ba85093e615",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/whoosh/tests/test_queries.py",
+            "line": 243,
+            "marker": "TODO",
+            "comment": "# TODO: FIX THIS"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506666367
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667337
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_0056a2788b364e4a",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "d9a3fa2a4905e7326c9623c89e6395713c189161",
+          "message": "Fix weird non-idiomatic line"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5e3538b8844c4ade9bcca820e3b2356d",
+          "result": "架构转折点: commit d9a3fa2a - Fix weird non-idiomatic line",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/whoosh",
+            "commit": "d9a3fa2a4905e7326c9623c89e6395713c189161",
+            "message": "Fix weird non-idiomatic line",
+            "files_changed": 238,
+            "insertions": 71328,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793506667370
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506667403
+    }
+  ],
+  "provenance": "external",
+  "source_label": "whoosh",
+  "weight": 0.5,
+  "created_at": 1793506665644,
+  "source_id": "p0_whoosh",
+  "repo_url": "https://github.com/mchaput/whoosh",
+  "commit": "d9a3fa2a4905e7326c9623c89e6395713c189161",
+  "license": "BSD-2-Clause",
+  "collected_at": 1793506854959
+}

@@ -1,0 +1,258 @@
+{
+  "tree_id": "dt_0f45676513bd48a3",
+  "task": {
+    "target": "https://github.com/yya518/FinBERT",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_abf3e92492394d6f",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/yya518/FinBERT"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_abf3e92492394d6f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "archive/datasets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "archive/datasets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511253347
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_abf3e92492394d6f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "archive/bertModel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "archive/bertModel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511253347
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_abf3e92492394d6f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "archive/train_bert.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "archive/train_bert.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511253347
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_abf3e92492394d6f",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "4675e2df64f67287aea49075452ffeb565015c6b",
+              "message": "Update requirements.txt"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_179924bdd2ad490caab450a9236816c3",
+              "result": "架构转折点: commit 4675e2df - Update requirements.txt",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/FinBERT",
+                "commit": "4675e2df64f67287aea49075452ffeb565015c6b",
+                "message": "Update requirements.txt",
+                "files_changed": 10,
+                "insertions": 2187,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511253393
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511253423
+        }
+      ],
+      "created_at": 1793511253347
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_abf3e92492394d6f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "archive/datasets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "archive/datasets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511253347
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_abf3e92492394d6f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "archive/bertModel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "archive/bertModel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511253347
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_abf3e92492394d6f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "archive/train_bert.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "archive/train_bert.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511253347
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_abf3e92492394d6f",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "4675e2df64f67287aea49075452ffeb565015c6b",
+          "message": "Update requirements.txt"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_179924bdd2ad490caab450a9236816c3",
+          "result": "架构转折点: commit 4675e2df - Update requirements.txt",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/FinBERT",
+            "commit": "4675e2df64f67287aea49075452ffeb565015c6b",
+            "message": "Update requirements.txt",
+            "files_changed": 10,
+            "insertions": 2187,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511253393
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511253423
+    }
+  ],
+  "provenance": "external",
+  "source_label": "FinBERT",
+  "weight": 0.5,
+  "created_at": 1793511253347,
+  "source_id": "p2_FinBERT",
+  "repo_url": "https://github.com/yya518/FinBERT",
+  "commit": "4675e2df64f67287aea49075452ffeb565015c6b",
+  "license": "Apache-2.0",
+  "collected_at": 1793511399592
+}

@@ -1,0 +1,1046 @@
+{
+  "tree_id": "dt_8ecad81a59324c92",
+  "task": {
+    "target": "https://github.com/anthropics/financial-services",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_c7b717742ae64d52",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/anthropics/financial-services"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/agent-plugins/model-builder/skills/dcf-model/scripts/validate_dcf.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/agent-plugins/model-builder/skills/dcf-model/scripts/validate_dcf.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/agent-plugins/pitch-agent/skills/ib-check-deck/scripts/extract_numbers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/agent-plugins/pitch-agent/skills/ib-check-deck/scripts/extract_numbers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/agent-plugins/pitch-agent/skills/dcf-model/scripts/validate_dcf.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/agent-plugins/pitch-agent/skills/dcf-model/scripts/validate_dcf.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/vertical-plugins/financial-analysis/skills/ib-check-deck/scripts/extract_numbers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/vertical-plugins/financial-analysis/skills/ib-check-deck/scripts/extract_numbers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/vertical-plugins/financial-analysis/skills/dcf-model/scripts/validate_dcf.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/vertical-plugins/financial-analysis/skills/dcf-model/scripts/validate_dcf.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/package_skill.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/package_skill.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/quick_validate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/quick_validate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/sync-agent-skills.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/sync-agent-skills.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/version_bump.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/version_bump.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/check.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/check.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/validate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/validate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/orchestrate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/orchestrate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/mint_dev_token.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/mint_dev_token.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/app.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/app.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/get_tenant_id.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/get_tenant_id.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "claude-for-msft-365-install/examples/python-bootstrap/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764772
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c1d94ba11fb24894b69b7ce97f3b3aa1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/anthropic-financial-services/plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py",
+                "line": 57,
+                "marker": "TODO",
+                "comment": "## [TODO: Replace with the first main section based on chosen structure]"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509764802
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764923
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_18c59558d8c94122a968efd43fa0151e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/anthropic-financial-services/plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py",
+                "line": 119,
+                "marker": "TODO",
+                "comment": "# TODO: Add actual script logic here"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509764802
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509764923
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_c7b717742ae64d52",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "60565064557ca77b12f62aa7877f365d111c129d",
+              "message": "Fix malformed JSON in financial-analysis .mcp.json (#388)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8de4ce472d964133979022a155ffcc7d",
+              "result": "架构转折点: commit 60565064 - Fix malformed JSON in financial-analysis .mcp.json (#388)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/anthropic-financial-services",
+                "commit": "60565064557ca77b12f62aa7877f365d111c129d",
+                "message": "Fix malformed JSON in financial-analysis .mcp.json (#388)",
+                "files_changed": 363,
+                "insertions": 47382,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509764957
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509765031
+        }
+      ],
+      "created_at": 1793509764767
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/agent-plugins/model-builder/skills/dcf-model/scripts/validate_dcf.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/agent-plugins/model-builder/skills/dcf-model/scripts/validate_dcf.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/agent-plugins/pitch-agent/skills/ib-check-deck/scripts/extract_numbers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/agent-plugins/pitch-agent/skills/ib-check-deck/scripts/extract_numbers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/agent-plugins/pitch-agent/skills/dcf-model/scripts/validate_dcf.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/agent-plugins/pitch-agent/skills/dcf-model/scripts/validate_dcf.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/vertical-plugins/financial-analysis/skills/ib-check-deck/scripts/extract_numbers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/vertical-plugins/financial-analysis/skills/ib-check-deck/scripts/extract_numbers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/vertical-plugins/financial-analysis/skills/dcf-model/scripts/validate_dcf.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/vertical-plugins/financial-analysis/skills/dcf-model/scripts/validate_dcf.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/package_skill.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/package_skill.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/quick_validate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/quick_validate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/sync-agent-skills.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/sync-agent-skills.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/version_bump.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/version_bump.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/check.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/check.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/validate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/validate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/orchestrate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/orchestrate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/mint_dev_token.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/mint_dev_token.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/app.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/app.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/get_tenant_id.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/get_tenant_id.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "claude-for-msft-365-install/examples/python-bootstrap/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764772
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c1d94ba11fb24894b69b7ce97f3b3aa1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/anthropic-financial-services/plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py",
+            "line": 57,
+            "marker": "TODO",
+            "comment": "## [TODO: Replace with the first main section based on chosen structure]"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509764802
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764923
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_18c59558d8c94122a968efd43fa0151e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/anthropic-financial-services/plugins/vertical-plugins/financial-analysis/skills/skill-creator/scripts/init_skill.py",
+            "line": 119,
+            "marker": "TODO",
+            "comment": "# TODO: Add actual script logic here"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509764802
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509764923
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_c7b717742ae64d52",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "60565064557ca77b12f62aa7877f365d111c129d",
+          "message": "Fix malformed JSON in financial-analysis .mcp.json (#388)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8de4ce472d964133979022a155ffcc7d",
+          "result": "架构转折点: commit 60565064 - Fix malformed JSON in financial-analysis .mcp.json (#388)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/anthropic-financial-services",
+            "commit": "60565064557ca77b12f62aa7877f365d111c129d",
+            "message": "Fix malformed JSON in financial-analysis .mcp.json (#388)",
+            "files_changed": 363,
+            "insertions": 47382,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509764957
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509765031
+    }
+  ],
+  "provenance": "external",
+  "source_label": "anthropic-financial-services",
+  "weight": 0.5,
+  "created_at": 1793509764767,
+  "source_id": "p1_anthropic-financial-services",
+  "repo_url": "https://github.com/anthropics/financial-services",
+  "commit": "60565064557ca77b12f62aa7877f365d111c129d",
+  "license": "MIT",
+  "collected_at": 1793509859630
+}

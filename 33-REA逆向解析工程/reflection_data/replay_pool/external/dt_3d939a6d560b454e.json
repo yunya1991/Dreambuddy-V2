@@ -1,0 +1,120 @@
+{
+  "tree_id": "dt_3d939a6d560b454e",
+  "task": {
+    "target": "https://github.com/kpnguyen21/equity-vs-commodity",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_1bff82c87657431b",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/kpnguyen21/equity-vs-commodity"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_1bff82c87657431b",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "75441f12e7ad9f2fc3555e3db0b1452adf44bd4c",
+              "message": "Add files via upload"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_94e8de67320e459f87267faef0ec0d0d",
+              "result": "架构转折点: commit 75441f12 - Add files via upload",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/equity-vs-commodity",
+                "commit": "75441f12e7ad9f2fc3555e3db0b1452adf44bd4c",
+                "message": "Add files via upload",
+                "files_changed": 138,
+                "insertions": 127717,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511315337
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511317172
+        }
+      ],
+      "created_at": 1793511314675
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_1bff82c87657431b",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "75441f12e7ad9f2fc3555e3db0b1452adf44bd4c",
+          "message": "Add files via upload"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_94e8de67320e459f87267faef0ec0d0d",
+          "result": "架构转折点: commit 75441f12 - Add files via upload",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/equity-vs-commodity",
+            "commit": "75441f12e7ad9f2fc3555e3db0b1452adf44bd4c",
+            "message": "Add files via upload",
+            "files_changed": 138,
+            "insertions": 127717,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511315337
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511317172
+    }
+  ],
+  "provenance": "external",
+  "source_label": "equity-vs-commodity",
+  "weight": 0.5,
+  "created_at": 1793511314675,
+  "source_id": "p2_equity-vs-commodity",
+  "repo_url": "https://github.com/kpnguyen21/equity-vs-commodity",
+  "commit": "75441f12e7ad9f2fc3555e3db0b1452adf44bd4c",
+  "license": "unknown",
+  "collected_at": 1793511404030
+}

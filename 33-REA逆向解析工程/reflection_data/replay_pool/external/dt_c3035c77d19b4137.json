@@ -1,0 +1,2512 @@
+{
+  "tree_id": "dt_c3035c77d19b4137",
+  "task": {
+    "target": "https://github.com/Rel1cx/eslint-react",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_6cd954bd841143b7",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/Rel1cx/eslint-react"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tsl.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tsl.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "eslint.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "eslint.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/samples/file.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/samples/file.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/tsdown.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/tsdown.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/tsl.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/tsl.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/plugin.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/plugin.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/utils/create-rule.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/utils/create-rule.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/utils/remove-jsx-attribute.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/utils/remove-jsx-attribute.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/configs/recommended.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/configs/recommended.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-jsx/src/configs/strict.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-jsx/src/configs/strict.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/tsdown.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/tsdown.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/tsl.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/tsl.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/plugin.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/plugin.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/lib.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/lib.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/lib.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/lib.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626025
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_6cd954bd841143b7",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "7b0666ee807ddeb073400010e6ddc49a2d7eea96",
+              "message": "release: 5.30.0-beta.21"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cbf02a46f5e34243a1fc66ad09634f91",
+              "result": "架构转折点: commit 7b0666ee - release: 5.30.0-beta.21",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/eslint-react",
+                "commit": "7b0666ee807ddeb073400010e6ddc49a2d7eea96",
+                "message": "release: 5.30.0-beta.21",
+                "files_changed": 1594,
+                "insertions": 200657,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793514626109
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514626196
+        }
+      ],
+      "created_at": 1793514626023
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tsl.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tsl.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "eslint.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "eslint.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/samples/file.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/samples/file.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/tsdown.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/tsdown.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/tsl.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/tsl.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/plugin.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/plugin.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-namespace/no-namespace.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-dollar/no-leaked-dollar.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop/no-children-prop.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-comment-textnodes/no-comment-textnodes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-key-after-spread/no-key-after-spread.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-useless-fragment/no-useless-fragment.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-leaked-semicolon/no-leaked-semicolon.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/rules/no-children-prop-with-children/no-children-prop-with-children.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/utils/create-rule.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/utils/create-rule.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/utils/remove-jsx-attribute.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/utils/remove-jsx-attribute.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/configs/recommended.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/configs/recommended.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-jsx/src/configs/strict.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-jsx/src/configs/strict.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/tsdown.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/tsdown.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/tsl.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/tsl.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/plugin.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/plugin.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-timeout/no-leaked-timeout.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/no-leaked-resize-observer.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/lib.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-resize-observer/lib.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-interval/no-leaked-interval.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/no-leaked-event-listener.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/origins.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/helpers.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/effect.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-event-listener/collect.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/no-leaked-fetch.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/lib.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "plugins/eslint-plugin-react-web-api/src/rules/no-leaked-fetch/lib.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626025
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_6cd954bd841143b7",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "7b0666ee807ddeb073400010e6ddc49a2d7eea96",
+          "message": "release: 5.30.0-beta.21"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cbf02a46f5e34243a1fc66ad09634f91",
+          "result": "架构转折点: commit 7b0666ee - release: 5.30.0-beta.21",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/eslint-react",
+            "commit": "7b0666ee807ddeb073400010e6ddc49a2d7eea96",
+            "message": "release: 5.30.0-beta.21",
+            "files_changed": 1594,
+            "insertions": 200657,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793514626109
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514626196
+    }
+  ],
+  "provenance": "external",
+  "source_label": "eslint-react",
+  "weight": 0.5,
+  "created_at": 1793514626023,
+  "source_id": "eslint-react",
+  "repo_url": "https://github.com/Rel1cx/eslint-react",
+  "commit": "7b0666ee807ddeb073400010e6ddc49a2d7eea96",
+  "license": "MIT",
+  "collected_at": 1793514626198
+}

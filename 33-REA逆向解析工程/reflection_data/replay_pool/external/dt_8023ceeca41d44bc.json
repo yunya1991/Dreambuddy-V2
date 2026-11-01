@@ -1,0 +1,6126 @@
+{
+  "tree_id": "dt_8023ceeca41d44bc",
+  "task": {
+    "target": "https://github.com/microsoft/pyright",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_3019321f6d2f4519",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/microsoft/pyright"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/jest.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/jest.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/debug.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/debug.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/nodeMain.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/nodeMain.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/fileSystemMapping.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/fileSystemMapping.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/backgroundThreadBase.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/backgroundThreadBase.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/pyright.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/pyright.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageServerBase.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageServerBase.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/backgroundAnalysis.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/backgroundAnalysis.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/nodeServer.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/nodeServer.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/server.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/server.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/pyrightFileSystem.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/pyrightFileSystem.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/partialStubService.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/partialStubService.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/backgroundAnalysisBase.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/backgroundAnalysisBase.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/workspaceFactory.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/workspaceFactory.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/readonlyAugmentedFileSystem.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/readonlyAugmentedFileSystem.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/analyzerServiceExecutor.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/analyzerServiceExecutor.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/callHierarchyProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/callHierarchyProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/pullDiagnosticsDynamicFeature.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/pullDiagnosticsDynamicFeature.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/workspaceSymbolProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/workspaceSymbolProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/completionProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/completionProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/completionProviderUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/completionProviderUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/dynamicFeature.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/dynamicFeature.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/importSorter.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/importSorter.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/renameProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/renameProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/documentSymbolProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/documentSymbolProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/quickActions.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/quickActions.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/autoImporter.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/autoImporter.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/referencesProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/referencesProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/symbolIndexer.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/symbolIndexer.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/signatureHelpProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/signatureHelpProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/fileWatcherDynamicFeature.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/fileWatcherDynamicFeature.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/definitionProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/definitionProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/documentHighlightProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/documentHighlightProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/tooltipUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/tooltipUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/documentSymbolCollector.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/documentSymbolCollector.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/navigationUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/navigationUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/importStatementCandidates.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/importStatementCandidates.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/hoverProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/hoverProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/languageService/codeActionProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/languageService/codeActionProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/programTypes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/programTypes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/decorators.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/decorators.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/packageTypeReport.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/packageTypeReport.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/constraintSolution.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/constraintSolution.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/pyTypedUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/pyTypedUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/overloadResult.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/overloadResult.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/circularDependency.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/circularDependency.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/properties.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/properties.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/serviceUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/serviceUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeStubMessages.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeStubMessages.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/declaration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/declaration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typePrinter.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typePrinter.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typePrinterUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typePrinterUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/symbolUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/symbolUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sourceMapper.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sourceMapper.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/codeFlowEngine.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/codeFlowEngine.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/declarationUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/declarationUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/binder.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/binder.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_58",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeStubOutput.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeStubOutput.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_59",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/cacheManager.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/cacheManager.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_60",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/symbolNameUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/symbolNameUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_61",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/tupleComparison.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/tupleComparison.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_62",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/analyzerNodeInfo.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/analyzerNodeInfo.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_63",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/functionTransform.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/functionTransform.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_64",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/docStringUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/docStringUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_65",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/constraintTracker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/constraintTracker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_66",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/commentUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/commentUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058632
+        },
+        {
+          "node_id": "dn_ext_67",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/analyzerFileInfo.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/analyzerFileInfo.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_68",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/overloadResultController.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/overloadResultController.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_69",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/checker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/checker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_70",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeStubRenderer.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeStubRenderer.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_71",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/overloadResultAdmission.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/overloadResultAdmission.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_72",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/deprecatedSymbols.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/deprecatedSymbols.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_73",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/protocols.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/protocols.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_74",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/scopeUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/scopeUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_75",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typedDicts.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typedDicts.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_76",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/importResult.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/importResult.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_77",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/importResolver.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/importResolver.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_78",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeStubGeneration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeStubGeneration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_79",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/cellChainIndex.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/cellChainIndex.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_80",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/packageTypeVerifier.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/packageTypeVerifier.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_81",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/tuples.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/tuples.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_82",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/program.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/program.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_83",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_84",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/testWalker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/testWalker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_85",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sourceMapperUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sourceMapperUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_86",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/constructors.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/constructors.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_87",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/analysis.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/analysis.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_88",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sourceFileInfoUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sourceFileInfoUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_89",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sourceFileInfo.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sourceFileInfo.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_90",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/importResolverFileSystem.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/importResolverFileSystem.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_91",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/namedTuples.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/namedTuples.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_92",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/docStringConversion.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/docStringConversion.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_93",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/constraintSolver.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/constraintSolver.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_94",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sourceFile.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sourceFile.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_95",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sentinel.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sentinel.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_96",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/scope.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/scope.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_97",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/symbol.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/symbol.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_98",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/constructorTransform.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/constructorTransform.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_99",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeEvaluatorWithTracker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeEvaluatorWithTracker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_100",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_101",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeWalker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeWalker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_102",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeComplexity.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeComplexity.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_103",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/parameterUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/parameterUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_104",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/dataClasses.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/dataClasses.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_105",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeCacheUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeCacheUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_106",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/codeFlowTypes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/codeFlowTypes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_107",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/codeFlowUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/codeFlowUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_108",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/service.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/service.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_109",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/importResolverTypes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/importResolverTypes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_110",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/parentDirectoryCache.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/parentDirectoryCache.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_111",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/parseTreeUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/parseTreeUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_112",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeGuards.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeGuards.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_113",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/staticExpressions.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/staticExpressions.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_114",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/importStatementUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/importStatementUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_115",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/enums.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/enums.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_116",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/tracePrinter.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/tracePrinter.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_117",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/parseTreeWalker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/parseTreeWalker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_118",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/importLogger.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/importLogger.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_119",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/pythonPathUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/pythonPathUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_120",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeshedInfoProvider.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeshedInfoProvider.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_121",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/sourceEnumerator.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/sourceEnumerator.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_122",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeEvaluator.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeEvaluator.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_123",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/patternMatching.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/patternMatching.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_124",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeEvaluatorTypes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeEvaluatorTypes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_125",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/typeDocStringUtils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/typeDocStringUtils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_126",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/operations.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/operations.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_127",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/overloadResultSelector.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/overloadResultSelector.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_ext_128",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/pyright-internal/src/analyzer/backgroundAnalysisProgram.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/pyright-internal/src/analyzer/backgroundAnalysisProgram.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511058633
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4f2de7f7962b402faabbf6759bd0eabc",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/pyright/build/perfCompare.py",
+                "line": 12,
+                "marker": "XXX",
+                "comment": "Compare pyright type-checking performance across two or more commits/branches.\n\nAdapted from mypy's misc/perf_compare.py for pyright. Where mypy self-checks its\nown (mypyc-compiled) source, pyright is"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511059904
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511061341
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_3019321f6d2f4519",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "74743ab17950a6bd205935e21808102a610d40a1",
+              "message": "Fix runaway specialization of nested variadic callbacks (#11911)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f36c2cad37464d7ab070bb9c5cbf9f10",
+              "result": "架构转折点: commit 74743ab1 - Fix runaway specialization of nested variadic callbacks (#11911)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/pyright",
+                "commit": "74743ab17950a6bd205935e21808102a610d40a1",
+                "message": "Fix runaway specialization of nested variadic callbacks (#11911)",
+                "files_changed": 7952,
+                "insertions": 858316,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511061737
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511062525
+        }
+      ],
+      "created_at": 1793511058630
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/jest.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/jest.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/debug.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/debug.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/nodeMain.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/nodeMain.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/fileSystemMapping.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/fileSystemMapping.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/backgroundThreadBase.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/backgroundThreadBase.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/pyright.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/pyright.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageServerBase.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageServerBase.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/backgroundAnalysis.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/backgroundAnalysis.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/nodeServer.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/nodeServer.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/server.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/server.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/pyrightFileSystem.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/pyrightFileSystem.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/partialStubService.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/partialStubService.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/backgroundAnalysisBase.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/backgroundAnalysisBase.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/workspaceFactory.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/workspaceFactory.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/readonlyAugmentedFileSystem.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/readonlyAugmentedFileSystem.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/analyzerServiceExecutor.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/analyzerServiceExecutor.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/callHierarchyProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/callHierarchyProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/pullDiagnosticsDynamicFeature.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/pullDiagnosticsDynamicFeature.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/workspaceSymbolProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/workspaceSymbolProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/completionProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/completionProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/completionProviderUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/completionProviderUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/dynamicFeature.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/dynamicFeature.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/importSorter.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/importSorter.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/renameProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/renameProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/documentSymbolProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/documentSymbolProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/quickActions.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/quickActions.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/autoImporter.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/autoImporter.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/referencesProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/referencesProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/symbolIndexer.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/symbolIndexer.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/signatureHelpProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/signatureHelpProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/fileWatcherDynamicFeature.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/fileWatcherDynamicFeature.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/definitionProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/definitionProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/documentHighlightProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/documentHighlightProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/tooltipUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/tooltipUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/documentSymbolCollector.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/documentSymbolCollector.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/navigationUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/navigationUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/importStatementCandidates.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/importStatementCandidates.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/hoverProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/hoverProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/languageService/codeActionProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/languageService/codeActionProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/programTypes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/programTypes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/decorators.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/decorators.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/packageTypeReport.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/packageTypeReport.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/constraintSolution.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/constraintSolution.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/pyTypedUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/pyTypedUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/overloadResult.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/overloadResult.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/circularDependency.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/circularDependency.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/properties.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/properties.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/serviceUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/serviceUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeStubMessages.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeStubMessages.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/declaration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/declaration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typePrinter.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typePrinter.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typePrinterUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typePrinterUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/symbolUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/symbolUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sourceMapper.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sourceMapper.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/codeFlowEngine.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/codeFlowEngine.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/declarationUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/declarationUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/binder.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/binder.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_58",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeStubOutput.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeStubOutput.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_59",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/cacheManager.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/cacheManager.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_60",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/symbolNameUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/symbolNameUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_61",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/tupleComparison.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/tupleComparison.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_62",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/analyzerNodeInfo.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/analyzerNodeInfo.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_63",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/functionTransform.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/functionTransform.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_64",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/docStringUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/docStringUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_65",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/constraintTracker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/constraintTracker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_66",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/commentUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/commentUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058632
+    },
+    {
+      "node_id": "dn_ext_67",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/analyzerFileInfo.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/analyzerFileInfo.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_68",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/overloadResultController.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/overloadResultController.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_69",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/checker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/checker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_70",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeStubRenderer.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeStubRenderer.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_71",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/overloadResultAdmission.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/overloadResultAdmission.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_72",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/deprecatedSymbols.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/deprecatedSymbols.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_73",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/protocols.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/protocols.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_74",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/scopeUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/scopeUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_75",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typedDicts.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typedDicts.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_76",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/importResult.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/importResult.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_77",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/importResolver.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/importResolver.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_78",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeStubGeneration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeStubGeneration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_79",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/cellChainIndex.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/cellChainIndex.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_80",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/packageTypeVerifier.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/packageTypeVerifier.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_81",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/tuples.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/tuples.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_82",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/program.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/program.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_83",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_84",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/testWalker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/testWalker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_85",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sourceMapperUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sourceMapperUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_86",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/constructors.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/constructors.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_87",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/analysis.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/analysis.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_88",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sourceFileInfoUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sourceFileInfoUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_89",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sourceFileInfo.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sourceFileInfo.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_90",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/importResolverFileSystem.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/importResolverFileSystem.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_91",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/namedTuples.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/namedTuples.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_92",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/docStringConversion.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/docStringConversion.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_93",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/constraintSolver.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/constraintSolver.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_94",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sourceFile.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sourceFile.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_95",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sentinel.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sentinel.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_96",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/scope.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/scope.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_97",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/symbol.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/symbol.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_98",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/constructorTransform.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/constructorTransform.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_99",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeEvaluatorWithTracker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeEvaluatorWithTracker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_100",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_101",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeWalker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeWalker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_102",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeComplexity.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeComplexity.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_103",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/parameterUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/parameterUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_104",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/dataClasses.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/dataClasses.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_105",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeCacheUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeCacheUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_106",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/codeFlowTypes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/codeFlowTypes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_107",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/codeFlowUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/codeFlowUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_108",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/service.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/service.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_109",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/importResolverTypes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/importResolverTypes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_110",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/parentDirectoryCache.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/parentDirectoryCache.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_111",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/parseTreeUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/parseTreeUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_112",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeGuards.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeGuards.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_113",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/staticExpressions.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/staticExpressions.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_114",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/importStatementUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/importStatementUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_115",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/enums.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/enums.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_116",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/tracePrinter.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/tracePrinter.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_117",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/parseTreeWalker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/parseTreeWalker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_118",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/importLogger.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/importLogger.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_119",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/pythonPathUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/pythonPathUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_120",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeshedInfoProvider.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeshedInfoProvider.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_121",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/sourceEnumerator.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/sourceEnumerator.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_122",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeEvaluator.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeEvaluator.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_123",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/patternMatching.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/patternMatching.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_124",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeEvaluatorTypes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeEvaluatorTypes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_125",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/typeDocStringUtils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/typeDocStringUtils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_126",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/operations.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/operations.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_127",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/overloadResultSelector.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/overloadResultSelector.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_ext_128",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/pyright-internal/src/analyzer/backgroundAnalysisProgram.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/pyright-internal/src/analyzer/backgroundAnalysisProgram.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511058633
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4f2de7f7962b402faabbf6759bd0eabc",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/pyright/build/perfCompare.py",
+            "line": 12,
+            "marker": "XXX",
+            "comment": "Compare pyright type-checking performance across two or more commits/branches.\n\nAdapted from mypy's misc/perf_compare.py for pyright. Where mypy self-checks its\nown (mypyc-compiled) source, pyright is"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511059904
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511061341
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_3019321f6d2f4519",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "74743ab17950a6bd205935e21808102a610d40a1",
+          "message": "Fix runaway specialization of nested variadic callbacks (#11911)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f36c2cad37464d7ab070bb9c5cbf9f10",
+          "result": "架构转折点: commit 74743ab1 - Fix runaway specialization of nested variadic callbacks (#11911)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/pyright",
+            "commit": "74743ab17950a6bd205935e21808102a610d40a1",
+            "message": "Fix runaway specialization of nested variadic callbacks (#11911)",
+            "files_changed": 7952,
+            "insertions": 858316,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511061737
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511062525
+    }
+  ],
+  "provenance": "external",
+  "source_label": "pyright",
+  "weight": 0.5,
+  "created_at": 1793511058630,
+  "source_id": "p2_pyright",
+  "repo_url": "https://github.com/microsoft/pyright",
+  "commit": "74743ab17950a6bd205935e21808102a610d40a1",
+  "license": "MIT",
+  "collected_at": 1793511406437
+}

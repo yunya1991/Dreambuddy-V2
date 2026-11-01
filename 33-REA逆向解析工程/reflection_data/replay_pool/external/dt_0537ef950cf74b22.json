@@ -1,0 +1,2924 @@
+{
+  "tree_id": "dt_0537ef950cf74b22",
+  "task": {
+    "target": "https://github.com/microsoft/UFO",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_86626e22637d465e",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/microsoft/UFO"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/galaxy_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/galaxy_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/galaxy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/galaxy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/__main__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/__main__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/galaxy_session.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/galaxy_session.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/base_observer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/base_observer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/agent_output_observer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/agent_output_observer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/constellation_sync_observer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/constellation_sync_observer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/task_visualization_handler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/task_visualization_handler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/dag_visualization_observer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/dag_visualization_observer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/session/observers/constellation_visualization_handler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/session/observers/constellation_visualization_handler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/dependencies.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/dependencies.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/websocket_observer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/websocket_observer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/services/galaxy_service.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/services/galaxy_service.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/services/device_service.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/services/device_service.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/services/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/services/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/services/config_service.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/services/config_service.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/models/enums.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/models/enums.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/models/responses.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/models/responses.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/models/requests.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/models/requests.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/models/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/models/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/routers/health.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/routers/health.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/routers/auth.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/routers/auth.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/routers/websocket.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/routers/websocket.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/routers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/routers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/routers/devices.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/routers/devices.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/tailwind.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/tailwind.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/src/vite-env.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/src/vite-env.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/src/services/websocket.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/src/services/websocket.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/src/config/api.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/src/config/api.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/src/store/mockData.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/src/store/mockData.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/src/store/galaxyStore.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/src/store/galaxyStore.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/frontend/dist/assets/index-Bthiy-Xd.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/frontend/dist/assets/index-Bthiy-Xd.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/handlers/websocket_handlers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/handlers/websocket_handlers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/handlers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/handlers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/security/url_validator.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/security/url_validator.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/webui/security/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/webui/security/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/trajectory/generate_report.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/trajectory/generate_report.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/trajectory/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/trajectory/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/trajectory/galaxy_parser.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/trajectory/galaxy_parser.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/client/config_loader.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/client/config_loader.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/client/demo_device_events.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/client/demo_device_events.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/client/device_manager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/client/device_manager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/client/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/client/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "galaxy/client/constellation_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "galaxy/client/constellation_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509755361
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d57390ea29624fee8497d979706ab26a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/galaxy/client/support/status_manager.py",
+                "line": 181,
+                "marker": "TODO",
+                "comment": "# TODO: Add completed task tracking"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509755490
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_364b5e65d3354bf69341cb590c2781d7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/ufo/module/session_pool.py",
+                "line": 217,
+                "marker": "TODO",
+                "comment": "# TODO: Add Linux follower and batch modes if needed"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509755761
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2369d60ce30046bab3ae7a938eefd488",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/ufo/module/session_pool.py",
+                "line": 261,
+                "marker": "TODO",
+                "comment": "# TODO: Add Mobile follower and batch modes if needed"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509755762
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3004be799582408fbf3688d34aceb6ec",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/ufo/module/basic.py",
+                "line": 418,
+                "marker": "TODO",
+                "comment": "TODO: Evaluate the round."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509755769
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_dbf26b1128c547f08f4844060381270b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/ufo/agents/processors/strategies/app_agent_processing_strategy.py",
+                "line": 522,
+                "marker": "TODO",
+                "comment": "# TODO: Push added control info to client."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509755982
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fef476e625e444c7ba4ab9518e9724a8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/ufo/agents/agent/basic.py",
+                "line": 233,
+                "marker": "TODO",
+                "comment": "TODO:\n        Reflect on the action."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509756129
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_35814a340f2442018b20c607654fd1ec",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/ufo/ufo/agents/agent/host_agent.py",
+                "line": 366,
+                "marker": "TODO",
+                "comment": "TODO: Process the confirmation."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509756137
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509757865
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_86626e22637d465e",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "eae3c0a8d168c47cb10df0652e293e092eda1078",
+              "message": "Merge pull request #360 from rhmsd/CWE-198-312"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_88cf7a5425374648bf8507217c94323c",
+              "result": "架构转折点: commit eae3c0a8 - Merge pull request #360 from rhmsd/CWE-198-312",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/ufo",
+                "commit": "eae3c0a8d168c47cb10df0652e293e092eda1078",
+                "message": "Merge pull request #360 from rhmsd/CWE-198-312",
+                "files_changed": 932,
+                "insertions": 262592,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509758230
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509759085
+        }
+      ],
+      "created_at": 1793509755359
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/galaxy_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/galaxy_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/galaxy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/galaxy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/__main__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/__main__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/galaxy_session.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/galaxy_session.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/base_observer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/base_observer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/agent_output_observer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/agent_output_observer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/constellation_sync_observer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/constellation_sync_observer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/task_visualization_handler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/task_visualization_handler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/dag_visualization_observer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/dag_visualization_observer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/session/observers/constellation_visualization_handler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/session/observers/constellation_visualization_handler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/dependencies.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/dependencies.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/websocket_observer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/websocket_observer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/services/galaxy_service.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/services/galaxy_service.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/services/device_service.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/services/device_service.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/services/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/services/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/services/config_service.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/services/config_service.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/models/enums.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/models/enums.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/models/responses.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/models/responses.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/models/requests.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/models/requests.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/models/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/models/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/routers/health.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/routers/health.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/routers/auth.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/routers/auth.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/routers/websocket.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/routers/websocket.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/routers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/routers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/routers/devices.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/routers/devices.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/tailwind.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/tailwind.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/src/vite-env.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/src/vite-env.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/src/services/websocket.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/src/services/websocket.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/src/config/api.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/src/config/api.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/src/store/mockData.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/src/store/mockData.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/src/store/galaxyStore.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/src/store/galaxyStore.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/frontend/dist/assets/index-Bthiy-Xd.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/frontend/dist/assets/index-Bthiy-Xd.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/handlers/websocket_handlers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/handlers/websocket_handlers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/handlers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/handlers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/security/url_validator.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/security/url_validator.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/webui/security/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/webui/security/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/trajectory/generate_report.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/trajectory/generate_report.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/trajectory/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/trajectory/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/trajectory/galaxy_parser.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/trajectory/galaxy_parser.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/client/config_loader.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/client/config_loader.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/client/demo_device_events.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/client/demo_device_events.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/client/device_manager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/client/device_manager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/client/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/client/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "galaxy/client/constellation_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "galaxy/client/constellation_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509755361
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d57390ea29624fee8497d979706ab26a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/galaxy/client/support/status_manager.py",
+            "line": 181,
+            "marker": "TODO",
+            "comment": "# TODO: Add completed task tracking"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509755490
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_364b5e65d3354bf69341cb590c2781d7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/ufo/module/session_pool.py",
+            "line": 217,
+            "marker": "TODO",
+            "comment": "# TODO: Add Linux follower and batch modes if needed"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509755761
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2369d60ce30046bab3ae7a938eefd488",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/ufo/module/session_pool.py",
+            "line": 261,
+            "marker": "TODO",
+            "comment": "# TODO: Add Mobile follower and batch modes if needed"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509755762
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3004be799582408fbf3688d34aceb6ec",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/ufo/module/basic.py",
+            "line": 418,
+            "marker": "TODO",
+            "comment": "TODO: Evaluate the round."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509755769
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_dbf26b1128c547f08f4844060381270b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/ufo/agents/processors/strategies/app_agent_processing_strategy.py",
+            "line": 522,
+            "marker": "TODO",
+            "comment": "# TODO: Push added control info to client."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509755982
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fef476e625e444c7ba4ab9518e9724a8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/ufo/agents/agent/basic.py",
+            "line": 233,
+            "marker": "TODO",
+            "comment": "TODO:\n        Reflect on the action."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509756129
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_35814a340f2442018b20c607654fd1ec",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/ufo/ufo/agents/agent/host_agent.py",
+            "line": 366,
+            "marker": "TODO",
+            "comment": "TODO: Process the confirmation."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509756137
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509757865
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_86626e22637d465e",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "eae3c0a8d168c47cb10df0652e293e092eda1078",
+          "message": "Merge pull request #360 from rhmsd/CWE-198-312"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_88cf7a5425374648bf8507217c94323c",
+          "result": "架构转折点: commit eae3c0a8 - Merge pull request #360 from rhmsd/CWE-198-312",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/ufo",
+            "commit": "eae3c0a8d168c47cb10df0652e293e092eda1078",
+            "message": "Merge pull request #360 from rhmsd/CWE-198-312",
+            "files_changed": 932,
+            "insertions": 262592,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509758230
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509759085
+    }
+  ],
+  "provenance": "external",
+  "source_label": "ufo",
+  "weight": 0.5,
+  "created_at": 1793509755359,
+  "source_id": "p1_ufo",
+  "repo_url": "https://github.com/microsoft/UFO",
+  "commit": "eae3c0a8d168c47cb10df0652e293e092eda1078",
+  "license": "MIT",
+  "collected_at": 1793509861935
+}

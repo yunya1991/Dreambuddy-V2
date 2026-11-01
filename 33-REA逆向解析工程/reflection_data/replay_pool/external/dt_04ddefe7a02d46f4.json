@@ -1,0 +1,2840 @@
+{
+  "tree_id": "dt_04ddefe7a02d46f4",
+  "task": {
+    "target": "https://github.com/google-research/timesfm",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_4e1155272fa24cc0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/google-research/timesfm"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/configs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/configs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/timesfm_2p5/timesfm_2p5_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/timesfm_2p5/timesfm_2p5_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/timesfm_2p5/timesfm_2p5_torch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/timesfm_2p5/timesfm_2p5_torch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/timesfm_2p5/timesfm_2p5_flax.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/timesfm_2p5/timesfm_2p5_flax.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/utils/xreg_lib.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/utils/xreg_lib.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/torch/dense.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/torch/dense.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/torch/normalization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/torch/normalization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/torch/util.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/torch/util.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/torch/transformer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/torch/transformer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/torch/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/torch/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/flax/dense.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/flax/dense.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/flax/normalization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/flax/normalization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/flax/util.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/flax/util.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/flax/transformer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/flax/transformer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm/flax/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm/flax/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/dense.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/dense.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/normalization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/normalization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/cpm_revin_refine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/cpm_revin_refine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/util.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/util.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/evaluator.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/evaluator.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/backward_compat_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/backward_compat_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/timesfm3_forecaster.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/timesfm3_forecaster.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/configs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/configs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/transformer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/transformer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/transformations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/transformations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/dense.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/dense.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/timesfm3_forecaster_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/timesfm3_forecaster_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/normalization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/normalization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/cpm_revin_refine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/cpm_revin_refine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/util.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/util.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/timesfm3_forecaster.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/timesfm3_forecaster.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/configs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/configs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/model_parity_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/model_parity_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/transformer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/transformer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/transformations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/transformations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/mlx/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/mlx/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/dense.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/dense.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/timesfm3_forecaster_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/timesfm3_forecaster_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/normalization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/normalization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/cpm_revin_refine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/cpm_revin_refine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/util.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/util.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/model_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/model_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/evaluator.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/evaluator.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/transformer_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/transformer_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/timesfm3_forecaster.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/timesfm3_forecaster.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/configs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/configs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/transformer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/transformer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/primitives_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/primitives_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/transformations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/transformations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timesfm3/torch/cpm_revin_refine_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timesfm3/torch/cpm_revin_refine_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826423
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f483323e8f004bcba0904a8ee2978e88",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/timesfm/src/timesfm/configs.py",
+                "line": 23,
+                "marker": "TODO",
+                "comment": "Options for forecasting.\n\n  Attributes:\n    max_context: The maximum context length. This is used by the compiled decode\n      function at inference time during batched inference. Any input time serie"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509826425
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826977
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bc1c6d1aec274486bb87ac4c9c86f3ae",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/timesfm/v1/src/timesfm/timesfm_torch.py",
+                "line": 70,
+                "marker": "TODO",
+                "comment": "# TODO: add compilation."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509826567
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509826977
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_4e1155272fa24cc0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "e51928e27119cb17bebc005be2696b75e0a9e688",
+              "message": "Update README.md"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_63580556743c48938fe722ff14367830",
+              "result": "架构转折点: commit e51928e2 - Update README.md",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/timesfm",
+                "commit": "e51928e27119cb17bebc005be2696b75e0a9e688",
+                "message": "Update README.md",
+                "files_changed": 156,
+                "insertions": 49017,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509827006
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509827060
+        }
+      ],
+      "created_at": 1793509826422
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/configs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/configs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/timesfm_2p5/timesfm_2p5_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/timesfm_2p5/timesfm_2p5_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/timesfm_2p5/timesfm_2p5_torch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/timesfm_2p5/timesfm_2p5_torch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/timesfm_2p5/timesfm_2p5_flax.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/timesfm_2p5/timesfm_2p5_flax.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/utils/xreg_lib.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/utils/xreg_lib.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/torch/dense.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/torch/dense.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/torch/normalization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/torch/normalization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/torch/util.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/torch/util.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/torch/transformer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/torch/transformer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/torch/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/torch/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/flax/dense.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/flax/dense.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/flax/normalization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/flax/normalization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/flax/util.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/flax/util.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/flax/transformer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/flax/transformer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm/flax/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm/flax/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/dense.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/dense.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/normalization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/normalization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/cpm_revin_refine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/cpm_revin_refine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/util.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/util.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/evaluator.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/evaluator.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/backward_compat_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/backward_compat_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/timesfm3_forecaster.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/timesfm3_forecaster.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/configs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/configs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/transformer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/transformer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/transformations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/transformations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/dense.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/dense.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/timesfm3_forecaster_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/timesfm3_forecaster_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/normalization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/normalization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/cpm_revin_refine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/cpm_revin_refine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/util.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/util.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/timesfm3_forecaster.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/timesfm3_forecaster.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/configs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/configs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/model_parity_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/model_parity_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/transformer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/transformer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/transformations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/transformations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/mlx/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/mlx/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/dense.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/dense.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/timesfm3_forecaster_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/timesfm3_forecaster_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/normalization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/normalization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/cpm_revin_refine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/cpm_revin_refine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/util.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/util.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/model_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/model_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/evaluator.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/evaluator.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/transformer_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/transformer_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/timesfm3_forecaster.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/timesfm3_forecaster.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/configs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/configs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/transformer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/transformer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/primitives_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/primitives_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/transformations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/transformations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timesfm3/torch/cpm_revin_refine_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timesfm3/torch/cpm_revin_refine_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826423
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f483323e8f004bcba0904a8ee2978e88",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/timesfm/src/timesfm/configs.py",
+            "line": 23,
+            "marker": "TODO",
+            "comment": "Options for forecasting.\n\n  Attributes:\n    max_context: The maximum context length. This is used by the compiled decode\n      function at inference time during batched inference. Any input time serie"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509826425
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826977
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bc1c6d1aec274486bb87ac4c9c86f3ae",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/timesfm/v1/src/timesfm/timesfm_torch.py",
+            "line": 70,
+            "marker": "TODO",
+            "comment": "# TODO: add compilation."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509826567
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509826977
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_4e1155272fa24cc0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "e51928e27119cb17bebc005be2696b75e0a9e688",
+          "message": "Update README.md"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_63580556743c48938fe722ff14367830",
+          "result": "架构转折点: commit e51928e2 - Update README.md",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/timesfm",
+            "commit": "e51928e27119cb17bebc005be2696b75e0a9e688",
+            "message": "Update README.md",
+            "files_changed": 156,
+            "insertions": 49017,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509827006
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509827060
+    }
+  ],
+  "provenance": "external",
+  "source_label": "timesfm",
+  "weight": 0.5,
+  "created_at": 1793509826422,
+  "source_id": "p1_timesfm",
+  "repo_url": "https://github.com/google-research/timesfm",
+  "commit": "e51928e27119cb17bebc005be2696b75e0a9e688",
+  "license": "Apache-2.0",
+  "collected_at": 1793509861749
+}

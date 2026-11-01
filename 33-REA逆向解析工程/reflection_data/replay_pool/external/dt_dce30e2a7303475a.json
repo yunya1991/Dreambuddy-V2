@@ -1,0 +1,2420 @@
+{
+  "tree_id": "dt_dce30e2a7303475a",
+  "task": {
+    "target": "https://github.com/vitejs/vite-plugin-react",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_3cd3ed5dd7a646e0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/vitejs/vite-plugin-react"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "oxlint.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "oxlint.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/publishCI.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/publishCI.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/prepare-release.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/prepare-release.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/extract-changelog.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/extract-changelog.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/detect-release.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/detect-release.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/vitestSetup.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/vitestSetup.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/shims.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/shims.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/test-utils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/test-utils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/vitestGlobalSetup.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/vitestGlobalSetup.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/vitest.config.e2e.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/vitest.config.e2e.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/node-env-production/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/node-env-production/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/node-env-production/__tests__/node-env-production.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/node-env-production/__tests__/node-env-production.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/bundled-dev/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/bundled-dev/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/bundled-dev/__tests__/bundled-dev.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/bundled-dev/__tests__/bundled-dev.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-emotion/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-emotion/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-emotion/__tests__/react.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-emotion/__tests__/react.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/tsconfig-jsx-preserve/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/tsconfig-jsx-preserve/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/tsconfig-jsx-preserve/__tests__/tsconfig-jsx-preserve.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/tsconfig-jsx-preserve/__tests__/tsconfig-jsx-preserve.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react/__tests__/react.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react/__tests__/react.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react/hmr/jsx-import-runtime.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react/hmr/jsx-import-runtime.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react/non-jsx/test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react/non-jsx/test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/include-node-modules/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/include-node-modules/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/include-node-modules/__tests__/node-modules-include.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/include-node-modules/__tests__/node-modules-include.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-classic/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-classic/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-classic/__tests__/react.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-classic/__tests__/react.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/class-components/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/class-components/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/class-components/__tests__/class-components.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/class-components/__tests__/class-components.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/hook-with-jsx/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/hook-with-jsx/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/hook-with-jsx/__tests__/hook-with-jsx.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/hook-with-jsx/__tests__/hook-with-jsx.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/ssr-react/vite.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/ssr-react/vite.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/ssr-react/src/multiply.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/ssr-react/src/multiply.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/ssr-react/src/add.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/ssr-react/src/add.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/ssr-react/__tests__/ssr-react.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/ssr-react/__tests__/ssr-react.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/compiler/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/compiler/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/compiler/__tests__/compiler.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/compiler/__tests__/compiler.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-sourcemap/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-sourcemap/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-sourcemap/__tests__/react-sourcemap.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-sourcemap/__tests__/react-sourcemap.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-env/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-env/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/react-env/__tests__/react.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/react-env/__tests__/react.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/hmr-false/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/hmr-false/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/hmr-false/__tests__/hmr-false.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/hmr-false/__tests__/hmr-false.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/mdx/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/mdx/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/mdx/src/vite-env.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/mdx/src/vite-env.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/mdx/__tests__/mdx.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/mdx/__tests__/mdx.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/compiler-react-18/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/compiler-react-18/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "playground/compiler-react-18/__tests__/compiler-react-18.spec.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "playground/compiler-react-18/__tests__/compiler-react-18.spec.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/plugin-react-swc/tsdown.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/plugin-react-swc/tsdown.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/plugin-react-swc/playwright.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/plugin-react-swc/playwright.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "packages/plugin-react-swc/src/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "packages/plugin-react-swc/src/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623083
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_3cd3ed5dd7a646e0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "304a92a9e6fb0374bf7e0bca363984c5d5c73590",
+              "message": "feat(plugin-react): add refreshInclude and refreshExclude options (#1516)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_97eb9d1ba9924b40adbb853e08d2f997",
+              "result": "架构转折点: commit 304a92a9 - feat(plugin-react): add refreshInclude and refreshExclude options (#1516)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/vite-plugin-react",
+                "commit": "304a92a9e6fb0374bf7e0bca363984c5d5c73590",
+                "message": "feat(plugin-react): add refreshInclude and refreshExclude options (#1516)",
+                "files_changed": 2076,
+                "insertions": 76542,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793514623154
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514623219
+        }
+      ],
+      "created_at": 1793514623082
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "oxlint.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "oxlint.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/publishCI.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/publishCI.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/prepare-release.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/prepare-release.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/extract-changelog.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/extract-changelog.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/detect-release.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/detect-release.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/vitestSetup.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/vitestSetup.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/shims.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/shims.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/test-utils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/test-utils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/vitestGlobalSetup.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/vitestGlobalSetup.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/vitest.config.e2e.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/vitest.config.e2e.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/node-env-production/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/node-env-production/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/node-env-production/__tests__/node-env-production.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/node-env-production/__tests__/node-env-production.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/bundled-dev/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/bundled-dev/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/bundled-dev/__tests__/bundled-dev.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/bundled-dev/__tests__/bundled-dev.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-emotion/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-emotion/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-emotion/__tests__/react.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-emotion/__tests__/react.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/tsconfig-jsx-preserve/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/tsconfig-jsx-preserve/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/tsconfig-jsx-preserve/__tests__/tsconfig-jsx-preserve.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/tsconfig-jsx-preserve/__tests__/tsconfig-jsx-preserve.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react/__tests__/react.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react/__tests__/react.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react/hmr/jsx-import-runtime.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react/hmr/jsx-import-runtime.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react/non-jsx/test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react/non-jsx/test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/include-node-modules/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/include-node-modules/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/include-node-modules/__tests__/node-modules-include.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/include-node-modules/__tests__/node-modules-include.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-classic/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-classic/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-classic/__tests__/react.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-classic/__tests__/react.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/class-components/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/class-components/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/class-components/__tests__/class-components.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/class-components/__tests__/class-components.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/hook-with-jsx/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/hook-with-jsx/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/hook-with-jsx/__tests__/hook-with-jsx.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/hook-with-jsx/__tests__/hook-with-jsx.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/ssr-react/vite.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/ssr-react/vite.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/ssr-react/src/multiply.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/ssr-react/src/multiply.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/ssr-react/src/add.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/ssr-react/src/add.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/ssr-react/__tests__/ssr-react.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/ssr-react/__tests__/ssr-react.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/compiler/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/compiler/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/compiler/__tests__/compiler.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/compiler/__tests__/compiler.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-sourcemap/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-sourcemap/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-sourcemap/__tests__/react-sourcemap.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-sourcemap/__tests__/react-sourcemap.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-env/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-env/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/react-env/__tests__/react.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/react-env/__tests__/react.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/hmr-false/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/hmr-false/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/hmr-false/__tests__/hmr-false.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/hmr-false/__tests__/hmr-false.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/mdx/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/mdx/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/mdx/src/vite-env.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/mdx/src/vite-env.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/mdx/__tests__/mdx.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/mdx/__tests__/mdx.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/compiler-react-18/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/compiler-react-18/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "playground/compiler-react-18/__tests__/compiler-react-18.spec.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "playground/compiler-react-18/__tests__/compiler-react-18.spec.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/plugin-react-swc/tsdown.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/plugin-react-swc/tsdown.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/plugin-react-swc/playwright.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/plugin-react-swc/playwright.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "packages/plugin-react-swc/src/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "packages/plugin-react-swc/src/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623083
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_3cd3ed5dd7a646e0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "304a92a9e6fb0374bf7e0bca363984c5d5c73590",
+          "message": "feat(plugin-react): add refreshInclude and refreshExclude options (#1516)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_97eb9d1ba9924b40adbb853e08d2f997",
+          "result": "架构转折点: commit 304a92a9 - feat(plugin-react): add refreshInclude and refreshExclude options (#1516)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/vite-plugin-react",
+            "commit": "304a92a9e6fb0374bf7e0bca363984c5d5c73590",
+            "message": "feat(plugin-react): add refreshInclude and refreshExclude options (#1516)",
+            "files_changed": 2076,
+            "insertions": 76542,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793514623154
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514623219
+    }
+  ],
+  "provenance": "external",
+  "source_label": "vite-plugin-react",
+  "weight": 0.5,
+  "created_at": 1793514623082,
+  "source_id": "vite-plugin-react",
+  "repo_url": "https://github.com/vitejs/vite-plugin-react",
+  "commit": "304a92a9e6fb0374bf7e0bca363984c5d5c73590",
+  "license": "MIT",
+  "collected_at": 1793514623220
+}

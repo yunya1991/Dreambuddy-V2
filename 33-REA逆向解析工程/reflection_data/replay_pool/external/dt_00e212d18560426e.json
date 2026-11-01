@@ -1,0 +1,120 @@
+{
+  "tree_id": "dt_00e212d18560426e",
+  "task": {
+    "target": "https://github.com/NeuZhou/finclaw",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_f5ed0585d3504d64",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/NeuZhou/finclaw"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_f5ed0585d3504d64",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "345d7c6a8ce31d547c14e6eede8cd1f6f8673673",
+              "message": "feat: add equity curve and drawdown charts to README"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5e8e1d593ea94d6a966c8dbfd38f7aea",
+              "result": "架构转折点: commit 345d7c6a - feat: add equity curve and drawdown charts to README",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/finclaw",
+                "commit": "345d7c6a8ce31d547c14e6eede8cd1f6f8673673",
+                "message": "feat: add equity curve and drawdown charts to README",
+                "files_changed": 6,
+                "insertions": 216,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511298674
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511298706
+        }
+      ],
+      "created_at": 1793511298666
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_f5ed0585d3504d64",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "345d7c6a8ce31d547c14e6eede8cd1f6f8673673",
+          "message": "feat: add equity curve and drawdown charts to README"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5e8e1d593ea94d6a966c8dbfd38f7aea",
+          "result": "架构转折点: commit 345d7c6a - feat: add equity curve and drawdown charts to README",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/finclaw",
+            "commit": "345d7c6a8ce31d547c14e6eede8cd1f6f8673673",
+            "message": "feat: add equity curve and drawdown charts to README",
+            "files_changed": 6,
+            "insertions": 216,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511298674
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511298706
+    }
+  ],
+  "provenance": "external",
+  "source_label": "finclaw",
+  "weight": 0.5,
+  "created_at": 1793511298666,
+  "source_id": "p2_finclaw",
+  "repo_url": "https://github.com/NeuZhou/finclaw",
+  "commit": "345d7c6a8ce31d547c14e6eede8cd1f6f8673673",
+  "license": "unknown",
+  "collected_at": 1793511404438
+}

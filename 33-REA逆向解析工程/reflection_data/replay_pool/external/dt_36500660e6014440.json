@@ -1,0 +1,1132 @@
+{
+  "tree_id": "dt_36500660e6014440",
+  "task": {
+    "target": "https://github.com/EliasAbouKhater/trading-bot",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_6d9d475450e64226",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/EliasAbouKhater/trading-bot"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "app.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "app.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cron_rebalance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cron_rebalance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "dashboard/routes.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "dashboard/routes.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "dashboard/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "dashboard/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "strategies/ma_crossover.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "strategies/ma_crossover.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "strategies/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "strategies/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "strategies/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "strategies/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "strategies/grid.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "strategies/grid.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "strategies/pairs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "strategies/pairs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/broker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/broker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/risk.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/risk.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/gradual_deploy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/gradual_deploy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/rebalance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/rebalance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/live_rebalance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/live_rebalance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/adaptive_rebalance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/adaptive_rebalance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/bear_cash_rebalance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/bear_cash_rebalance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "core/data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "core/data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/backtest_adaptive.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/backtest_adaptive.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721742
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_6d9d475450e64226",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "1ce8f1c35e925a6c55a71c29f2b23511bcc167b5",
+              "message": "Fix drift threshold cache expiring only on date match"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_44a0e330e22841cb9724c6fafa72c842",
+              "result": "架构转折点: commit 1ce8f1c3 - Fix drift threshold cache expiring only on date match",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/trading-bot",
+                "commit": "1ce8f1c35e925a6c55a71c29f2b23511bcc167b5",
+                "message": "Fix drift threshold cache expiring only on date match",
+                "files_changed": 35,
+                "insertions": 4581,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793515721849
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793515721858
+        }
+      ],
+      "created_at": 1793515721741
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "app.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "app.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cron_rebalance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cron_rebalance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "dashboard/routes.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "dashboard/routes.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "dashboard/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "dashboard/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "strategies/ma_crossover.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "strategies/ma_crossover.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "strategies/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "strategies/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "strategies/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "strategies/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "strategies/grid.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "strategies/grid.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "strategies/pairs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "strategies/pairs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/broker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/broker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/risk.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/risk.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/gradual_deploy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/gradual_deploy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/rebalance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/rebalance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/live_rebalance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/live_rebalance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/adaptive_rebalance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/adaptive_rebalance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/bear_cash_rebalance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/bear_cash_rebalance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "core/data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "core/data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/backtest_adaptive.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/backtest_adaptive.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721742
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_6d9d475450e64226",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "1ce8f1c35e925a6c55a71c29f2b23511bcc167b5",
+          "message": "Fix drift threshold cache expiring only on date match"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_44a0e330e22841cb9724c6fafa72c842",
+          "result": "架构转折点: commit 1ce8f1c3 - Fix drift threshold cache expiring only on date match",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/trading-bot",
+            "commit": "1ce8f1c35e925a6c55a71c29f2b23511bcc167b5",
+            "message": "Fix drift threshold cache expiring only on date match",
+            "files_changed": 35,
+            "insertions": 4581,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793515721849
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793515721858
+    }
+  ],
+  "provenance": "external",
+  "source_label": "trading-bot",
+  "weight": 0.5,
+  "created_at": 1793515721741,
+  "source_id": "trading-bot",
+  "repo_url": "https://github.com/EliasAbouKhater/trading-bot",
+  "commit": "1ce8f1c35e925a6c55a71c29f2b23511bcc167b5",
+  "license": "MIT",
+  "collected_at": 1793515721859
+}

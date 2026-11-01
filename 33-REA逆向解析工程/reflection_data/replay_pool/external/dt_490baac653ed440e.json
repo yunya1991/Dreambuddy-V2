@@ -1,0 +1,6086 @@
+{
+  "tree_id": "dt_490baac653ed440e",
+  "task": {
+    "target": "https://github.com/freqtrade/freqtrade",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_2677c58b1abd418c",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/freqtrade/freqtrade"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "build_helpers/binance_update_lev_tiers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "build_helpers/binance_update_lev_tiers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574292
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "build_helpers/pre_commit_update.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "build_helpers/pre_commit_update.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574292
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "build_helpers/extract_config_json_schema.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "build_helpers/extract_config_json_schema.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574292
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "build_helpers/create_command_partials.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "build_helpers/create_command_partials.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574292
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "build_helpers/freqtrade_client_version_align.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "build_helpers/freqtrade_client_version_align.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/javascripts/config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/javascripts/config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/candle_columns.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/candle_columns.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/freqtradebot.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/freqtradebot.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/wallets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/wallets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/worker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/worker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/misc.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/misc.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/__main__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/__main__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/directory_operations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/directory_operations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/config_setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/config_setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/timerange.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/timerange.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/configuration.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/configuration.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/config_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/config_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/config_secrets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/config_secrets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/deploy_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/deploy_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/detect_environment.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/detect_environment.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/deprecated_settings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/deprecated_settings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/environment_vars.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/environment_vars.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/configuration/load_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/configuration/load_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlistmanager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlistmanager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/protectionmanager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/protectionmanager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/CrossMarketPairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/CrossMarketPairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/OffsetFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/OffsetFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/PercentChangePairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/PercentChangePairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/AgeFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/AgeFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/PairInformationFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/PairInformationFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/IPairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/IPairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/RemotePairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/RemotePairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/VolumePairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/VolumePairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/SpreadFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/SpreadFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/pairlist_helpers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/pairlist_helpers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/rangestabilityfilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/rangestabilityfilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/DelistFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/DelistFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/MarketCapPairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/MarketCapPairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/PrecisionFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/PrecisionFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/ShuffleFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/ShuffleFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/ProducerPairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/ProducerPairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/StaticPairList.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/StaticPairList.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/PerformanceFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/PerformanceFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/VolatilityFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/VolatilityFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/FullTradesFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/FullTradesFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "freqtrade/plugins/pairlist/PriceFilter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "freqtrade/plugins/pairlist/PriceFilter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509574294
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9f2246d3e911402d96c99d25c7d89a68",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+                "line": 1638,
+                "marker": "TODO",
+                "comment": "Check if trade is fulfilled in which case the stoploss\n        on exchange should be added immediately if stoploss on exchange\n        is enabled.\n        # TODO: liquidation price always on exchange,"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574323
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6fcc7fd115b244988cb4fe8f16b6a0d0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+                "line": 926,
+                "marker": "TODO",
+                "comment": "# TODO Remove to allow mul open orders"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574334
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_52739921965a447ca86a9282ba92bea6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+                "line": 1642,
+                "marker": "TODO",
+                "comment": "# TODO: liquidation price always on exchange, even without stoploss_on_exchange"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574335
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0858a509187443a0a0f4d70f836ab9a0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+                "line": 2590,
+                "marker": "TODO",
+                "comment": "# TODO: Margin will need to use interest_rate as well."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574335
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2d6cb99604974003ab1018d2da607364",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/configuration/configuration.py",
+                "line": 429,
+                "marker": "TODO",
+                "comment": "# TODO: The following 3 lines (candle_type_def, trading_mode, margin_mode) are actually"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574356
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0d2eca6de1964249b76302e31024f34e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/plugins/protections/max_drawdown_protection.py",
+                "line": 26,
+                "marker": "TODO",
+                "comment": "# TODO: Implement checks to limit max_drawdown to sensible values"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574404
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_70d9888be07c430083265f10345d88dd",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/telegram.py",
+                "line": 188,
+                "marker": "TODO",
+                "comment": "# TODO: DRY! - its not good to list all valid cmds here. But otherwise"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574466
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7bc080801d86479d948b06c705a9339a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/telegram.py",
+                "line": 724,
+                "marker": "TODO",
+                "comment": "# TODO: This calculation ignores fees."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574466
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cb70ab9a115a4a4b833201b90bc09a06",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/api_schemas.py",
+                "line": 714,
+                "marker": "TODO",
+                "comment": "# TODO: Properly type backtestresult..."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574512
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8e491ba9913e48d18c53e6deb1bf67e6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/api_schemas.py",
+                "line": 718,
+                "marker": "TODO",
+                "comment": "# TODO: This is a copy of BacktestHistoryEntryType"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574512
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_980ad57c4d8f450db758505240e476fd",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/uvicorn_threaded.py",
+                "line": 11,
+                "marker": "TODO",
+                "comment": "# TODO: is this workaround actually needed?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574524
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a8c50ce49d2043bb94251274788f0990",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/api_pairlists.py",
+                "line": 84,
+                "marker": "TODO",
+                "comment": "# TODO: overwrite blacklist? make it optional and fall back to the one in config?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574528
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0a56357ffe614202a916c2aba9cadc1e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/webserver_bgwork.py",
+                "line": 64,
+                "marker": "TODO",
+                "comment": "# TODO: Change this to FtTTLCache -> must be more intelligent than FtTTLCache - as we can't"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574534
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_73e6d216bea64858ae3581bba780a9d2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/enums/rpcmessagetype.py",
+                "line": 30,
+                "marker": "TODO",
+                "comment": "# TODO: do we still need to overwrite __repr__? Impact needs to be looked at in detail"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574551
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6fd1a5c070674d3ea42ba8c1956b169e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/enums/candletype.py",
+                "line": 13,
+                "marker": "TODO",
+                "comment": "# TODO: Could take up less memory if these weren't a CandleType"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574554
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_776382f085c242f2b1ce0dd4e41c1beb",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/util/datetime_helpers.py",
+                "line": 107,
+                "marker": "TODO",
+                "comment": "# TODO: can be removed once https://github.com/python-humanize/humanize/pull/425 lands."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574559
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_161de0e76e1f48aca431d9e87f1ea792",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange.py",
+                "line": 2928,
+                "marker": "TODO",
+                "comment": "# TODO: does this message make sense? would docs be better?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574791
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_11f19242d11147d2a786e734eda52eaa",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange.py",
+                "line": 4000,
+                "marker": "TODO",
+                "comment": "# TODO: Remove this warning eventually"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574791
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c4d7aef59ed64fc7b702b5b822bf7afb",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/bybit.py",
+                "line": 37,
+                "marker": "TODO",
+                "comment": "# TODO: Can be removed once bybit fully forces all accounts to unified mode."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574836
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_be4d48acd0fe410488ba24b9b2a259cc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange_utils.py",
+                "line": 330,
+                "marker": "TODO",
+                "comment": "Returns the price rounded to the precision the Exchange accepts.\n    Partial Re-implementation of ccxt internal method decimal_to_precision(),\n    which does not support rounding up.\n    For stoploss "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574850
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_67d4337bc01a4c0bab43bf86ac6d8bcc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange_ws.py",
+                "line": 22,
+                "marker": "TODO",
+                "comment": "# TODO: should either be configurable or use the main timeframe."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574871
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1c32d9d3cb15482092153e25785f28fe",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/dataprovider.py",
+                "line": 362,
+                "marker": "TODO",
+                "comment": "# TODO: does this message make sense? might be pointless as funding fees don't"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574890
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_57f3c6075d9e4bbf99b42092bc806745",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/history/history_utils.py",
+                "line": 726,
+                "marker": "TODO",
+                "comment": "# TODO: use native datetime instead of strftime to avoid timezone issues"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574915
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_23",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_380f00538b3141e78e3b5ec8c85e1256",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/history/datahandlers/jsondatahandler.py",
+                "line": 126,
+                "marker": "TODO",
+                "comment": "Load a pair from file, either .json.gz or .json\n        # TODO: respect timerange ...\n        :param pair: Load trades for this pair\n        :param trading_mode: Trading mode to use (used to determine"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574931
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_24",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2652e906505741448ad92c0cfa905964",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/history/datahandlers/jsondatahandler.py",
+                "line": 128,
+                "marker": "TODO",
+                "comment": "# TODO: respect timerange ..."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509574932
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_25",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_37ca04a9918a46aab172a428440a0703",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/optimize/hyperopt/hyperopt.py",
+                "line": 122,
+                "marker": "TODO",
+                "comment": "Log results if it is better than any previous evaluation\n        TODO: this should be moved to HyperoptTools too"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575025
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_26",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2b07918d5d074b90ab7d00437da71e37",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/leverage/liquidation_price.py",
+                "line": 39,
+                "marker": "TODO",
+                "comment": "# TODO: This should be done in a batch update"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575098
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_27",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9f0fcfdba125465ba853de022b0c56fe",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/plot/plotting.py",
+                "line": 366,
+                "marker": "TODO",
+                "comment": "# TODO: Figure out why scattergl causes problems plotly/plotly.js#2284"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575111
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_28",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3c6d609d057f4b9a9ed756ff189d7cb0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/resolvers/strategy_resolver.py",
+                "line": 207,
+                "marker": "TODO",
+                "comment": "# TODO: Implementing one of the following methods should show a deprecation warning"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575188
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_29",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2fc276c197594d9cb9237835b726124b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/freqtrade/commands/optimize_commands.py",
+                "line": 160,
+                "marker": "TODO",
+                "comment": "# TODO: return False here in order to help freqtrade to exit"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575254
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_30",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_49f2dc713ee04d08b51d1c9eba943abd",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/conftest.py",
+                "line": 636,
+                "marker": "TODO",
+                "comment": "# TODO: re-enable hyperliquid websocket tests"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575555
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_31",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f924eaf4f94c4dc9b349318a197b8edf",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/conftest.py",
+                "line": 721,
+                "marker": "TODO",
+                "comment": "# TODO: re-verify this ..."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575555
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_32",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9640a8e16096411f8c125dcf9321cde4",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/conftest.py",
+                "line": 726,
+                "marker": "TODO",
+                "comment": "# TODO: filled should be 0, not None."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575555
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_33",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_11b7f18cffb24ded86495300d936cc05",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/test_ccxt_compat.py",
+                "line": 228,
+                "marker": "TODO",
+                "comment": "# TODO: Gate is unstable here at the moment, ignoring the limit partially."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509575572
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_34",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7f1f820d251b4f23b6356e799d28b334",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+                "line": 988,
+                "marker": "TODO",
+                "comment": "# TODO: this test does not assert ..."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576012
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_35",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ce75b1cfe2b14aaea1107d0b4bebb0b9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+                "line": 6490,
+                "marker": "TODO",
+                "comment": "# TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576013
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_36",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d8d9df6024794b9b94b38e0d2188d82d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+                "line": 6502,
+                "marker": "TODO",
+                "comment": "# TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576013
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_37",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_477db0e6c61248d88ae46691fb4ef082",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+                "line": 7057,
+                "marker": "TODO",
+                "comment": "# TODO: remove once get_leverage_tiers workaround has been removed."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576013
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_38",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c080e6bb18604c1eafaa24f064cf759d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/optimize/test_backtesting_adjust_position.py",
+                "line": 86,
+                "marker": "TODO",
+                "comment": "# TODO: pandas3 - create correctly above ?!?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576145
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_39",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_459489d9330e459cb17c21c36c168f60",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/optimize/test_backtesting.py",
+                "line": 924,
+                "marker": "TODO",
+                "comment": "# TODO: pandas3 - create correctly above ?!?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576185
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_40",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_162111aac865446cbc319027a4b7b1bc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/optimize/test_backtest_detail.py",
+                "line": 1357,
+                "marker": "TODO",
+                "comment": "# TODO: Should we initialize this properly??"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576219
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_41",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a795a34fd7324e93801658d636be1995",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/strategy/strats/strategy_test_v3.py",
+                "line": 86,
+                "marker": "TODO",
+                "comment": "# TODO: Can this work with protection tests? (replace HyperoptableStrategy implicitly ... )"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576321
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_42",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a37b27d17bb740b9acba8b8413eb8991",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_stoploss_on_exchange.py",
+                "line": 830,
+                "marker": "TODO",
+                "comment": "# TODO: Is this actually correct ? This will create a new order every time,"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576347
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_43",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_47c142fc1b854731928d2fab1fb6554a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+                "line": 5958,
+                "marker": "TODO",
+                "comment": "TODO: Should be adjusted to test both long and short\n    buy 100 @ 11\n    sell 50 @ 8\n    sell 50 @ 16"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576414
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_44",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c0db0c676f9f4e069c49e20c12ec9d77",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+                "line": 730,
+                "marker": "TODO",
+                "comment": "# TODO: Move this test to test_worker"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576443
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_45",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_aa4d55601b6047c0a65c366a74d39bd3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+                "line": 935,
+                "marker": "TODO",
+                "comment": "# TODO: Split this test into multiple tests to improve readability"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576443
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_46",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fc00c9bbd474461a8a6883a50d363944",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+                "line": 1486,
+                "marker": "TODO",
+                "comment": "# TODO: should not be magicmock"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576443
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_47",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_880b447456da401cb5a1ab9204b5ec5c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+                "line": 1503,
+                "marker": "TODO",
+                "comment": "# TODO: should not be magicmock"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576443
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_dec_48",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1b65fc7f859b419fa3447c0c9c9ce231",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+                "line": 2950,
+                "marker": "TODO",
+                "comment": "# TODO: should not be magicmock"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509576443
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509578214
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_2677c58b1abd418c",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "eea497b88a12e5c25acee6a9102df135ab01311b",
+              "message": "fix: improve resilience of generic_performance_query"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_79c30f3ceca243c5bf32c6f32098be9c",
+              "result": "架构转折点: commit eea497b8 - fix: improve resilience of generic_performance_query",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/freqtrade",
+                "commit": "eea497b88a12e5c25acee6a9102df135ab01311b",
+                "message": "fix: improve resilience of generic_performance_query",
+                "files_changed": 777,
+                "insertions": 308208,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509578494
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509579102
+        }
+      ],
+      "created_at": 1793509574290
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "build_helpers/binance_update_lev_tiers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "build_helpers/binance_update_lev_tiers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574292
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "build_helpers/pre_commit_update.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "build_helpers/pre_commit_update.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574292
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "build_helpers/extract_config_json_schema.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "build_helpers/extract_config_json_schema.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574292
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "build_helpers/create_command_partials.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "build_helpers/create_command_partials.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574292
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "build_helpers/freqtrade_client_version_align.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "build_helpers/freqtrade_client_version_align.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/javascripts/config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/javascripts/config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/candle_columns.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/candle_columns.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/freqtradebot.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/freqtradebot.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/wallets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/wallets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/worker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/worker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/misc.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/misc.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/__main__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/__main__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/directory_operations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/directory_operations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/config_setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/config_setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/timerange.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/timerange.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/configuration.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/configuration.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/config_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/config_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/config_secrets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/config_secrets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/deploy_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/deploy_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/detect_environment.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/detect_environment.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/deprecated_settings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/deprecated_settings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/environment_vars.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/environment_vars.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/configuration/load_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/configuration/load_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlistmanager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlistmanager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/protectionmanager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/protectionmanager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/CrossMarketPairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/CrossMarketPairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/OffsetFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/OffsetFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/PercentChangePairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/PercentChangePairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/AgeFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/AgeFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/PairInformationFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/PairInformationFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/IPairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/IPairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/RemotePairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/RemotePairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/VolumePairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/VolumePairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/SpreadFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/SpreadFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/pairlist_helpers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/pairlist_helpers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/rangestabilityfilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/rangestabilityfilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/DelistFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/DelistFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/MarketCapPairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/MarketCapPairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/PrecisionFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/PrecisionFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/ShuffleFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/ShuffleFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/ProducerPairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/ProducerPairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/StaticPairList.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/StaticPairList.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/PerformanceFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/PerformanceFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/VolatilityFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/VolatilityFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/FullTradesFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/FullTradesFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "freqtrade/plugins/pairlist/PriceFilter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "freqtrade/plugins/pairlist/PriceFilter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509574294
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9f2246d3e911402d96c99d25c7d89a68",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+            "line": 1638,
+            "marker": "TODO",
+            "comment": "Check if trade is fulfilled in which case the stoploss\n        on exchange should be added immediately if stoploss on exchange\n        is enabled.\n        # TODO: liquidation price always on exchange,"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574323
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6fcc7fd115b244988cb4fe8f16b6a0d0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+            "line": 926,
+            "marker": "TODO",
+            "comment": "# TODO Remove to allow mul open orders"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574334
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_52739921965a447ca86a9282ba92bea6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+            "line": 1642,
+            "marker": "TODO",
+            "comment": "# TODO: liquidation price always on exchange, even without stoploss_on_exchange"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574335
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0858a509187443a0a0f4d70f836ab9a0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/freqtradebot.py",
+            "line": 2590,
+            "marker": "TODO",
+            "comment": "# TODO: Margin will need to use interest_rate as well."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574335
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2d6cb99604974003ab1018d2da607364",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/configuration/configuration.py",
+            "line": 429,
+            "marker": "TODO",
+            "comment": "# TODO: The following 3 lines (candle_type_def, trading_mode, margin_mode) are actually"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574356
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0d2eca6de1964249b76302e31024f34e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/plugins/protections/max_drawdown_protection.py",
+            "line": 26,
+            "marker": "TODO",
+            "comment": "# TODO: Implement checks to limit max_drawdown to sensible values"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574404
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_70d9888be07c430083265f10345d88dd",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/telegram.py",
+            "line": 188,
+            "marker": "TODO",
+            "comment": "# TODO: DRY! - its not good to list all valid cmds here. But otherwise"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574466
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7bc080801d86479d948b06c705a9339a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/telegram.py",
+            "line": 724,
+            "marker": "TODO",
+            "comment": "# TODO: This calculation ignores fees."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574466
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cb70ab9a115a4a4b833201b90bc09a06",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/api_schemas.py",
+            "line": 714,
+            "marker": "TODO",
+            "comment": "# TODO: Properly type backtestresult..."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574512
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8e491ba9913e48d18c53e6deb1bf67e6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/api_schemas.py",
+            "line": 718,
+            "marker": "TODO",
+            "comment": "# TODO: This is a copy of BacktestHistoryEntryType"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574512
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_980ad57c4d8f450db758505240e476fd",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/uvicorn_threaded.py",
+            "line": 11,
+            "marker": "TODO",
+            "comment": "# TODO: is this workaround actually needed?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574524
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a8c50ce49d2043bb94251274788f0990",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/api_pairlists.py",
+            "line": 84,
+            "marker": "TODO",
+            "comment": "# TODO: overwrite blacklist? make it optional and fall back to the one in config?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574528
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0a56357ffe614202a916c2aba9cadc1e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/rpc/api_server/webserver_bgwork.py",
+            "line": 64,
+            "marker": "TODO",
+            "comment": "# TODO: Change this to FtTTLCache -> must be more intelligent than FtTTLCache - as we can't"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574534
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_73e6d216bea64858ae3581bba780a9d2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/enums/rpcmessagetype.py",
+            "line": 30,
+            "marker": "TODO",
+            "comment": "# TODO: do we still need to overwrite __repr__? Impact needs to be looked at in detail"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574551
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6fd1a5c070674d3ea42ba8c1956b169e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/enums/candletype.py",
+            "line": 13,
+            "marker": "TODO",
+            "comment": "# TODO: Could take up less memory if these weren't a CandleType"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574554
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_776382f085c242f2b1ce0dd4e41c1beb",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/util/datetime_helpers.py",
+            "line": 107,
+            "marker": "TODO",
+            "comment": "# TODO: can be removed once https://github.com/python-humanize/humanize/pull/425 lands."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574559
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_161de0e76e1f48aca431d9e87f1ea792",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange.py",
+            "line": 2928,
+            "marker": "TODO",
+            "comment": "# TODO: does this message make sense? would docs be better?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574791
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_11f19242d11147d2a786e734eda52eaa",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange.py",
+            "line": 4000,
+            "marker": "TODO",
+            "comment": "# TODO: Remove this warning eventually"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574791
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c4d7aef59ed64fc7b702b5b822bf7afb",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/bybit.py",
+            "line": 37,
+            "marker": "TODO",
+            "comment": "# TODO: Can be removed once bybit fully forces all accounts to unified mode."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574836
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_be4d48acd0fe410488ba24b9b2a259cc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange_utils.py",
+            "line": 330,
+            "marker": "TODO",
+            "comment": "Returns the price rounded to the precision the Exchange accepts.\n    Partial Re-implementation of ccxt internal method decimal_to_precision(),\n    which does not support rounding up.\n    For stoploss "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574850
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_67d4337bc01a4c0bab43bf86ac6d8bcc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/exchange/exchange_ws.py",
+            "line": 22,
+            "marker": "TODO",
+            "comment": "# TODO: should either be configurable or use the main timeframe."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574871
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1c32d9d3cb15482092153e25785f28fe",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/dataprovider.py",
+            "line": 362,
+            "marker": "TODO",
+            "comment": "# TODO: does this message make sense? might be pointless as funding fees don't"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574890
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_57f3c6075d9e4bbf99b42092bc806745",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/history/history_utils.py",
+            "line": 726,
+            "marker": "TODO",
+            "comment": "# TODO: use native datetime instead of strftime to avoid timezone issues"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574915
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_23",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_380f00538b3141e78e3b5ec8c85e1256",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/history/datahandlers/jsondatahandler.py",
+            "line": 126,
+            "marker": "TODO",
+            "comment": "Load a pair from file, either .json.gz or .json\n        # TODO: respect timerange ...\n        :param pair: Load trades for this pair\n        :param trading_mode: Trading mode to use (used to determine"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574931
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_24",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2652e906505741448ad92c0cfa905964",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/data/history/datahandlers/jsondatahandler.py",
+            "line": 128,
+            "marker": "TODO",
+            "comment": "# TODO: respect timerange ..."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509574932
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_25",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_37ca04a9918a46aab172a428440a0703",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/optimize/hyperopt/hyperopt.py",
+            "line": 122,
+            "marker": "TODO",
+            "comment": "Log results if it is better than any previous evaluation\n        TODO: this should be moved to HyperoptTools too"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575025
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_26",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2b07918d5d074b90ab7d00437da71e37",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/leverage/liquidation_price.py",
+            "line": 39,
+            "marker": "TODO",
+            "comment": "# TODO: This should be done in a batch update"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575098
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_27",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9f0fcfdba125465ba853de022b0c56fe",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/plot/plotting.py",
+            "line": 366,
+            "marker": "TODO",
+            "comment": "# TODO: Figure out why scattergl causes problems plotly/plotly.js#2284"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575111
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_28",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3c6d609d057f4b9a9ed756ff189d7cb0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/resolvers/strategy_resolver.py",
+            "line": 207,
+            "marker": "TODO",
+            "comment": "# TODO: Implementing one of the following methods should show a deprecation warning"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575188
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_29",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2fc276c197594d9cb9237835b726124b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/freqtrade/commands/optimize_commands.py",
+            "line": 160,
+            "marker": "TODO",
+            "comment": "# TODO: return False here in order to help freqtrade to exit"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575254
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_30",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_49f2dc713ee04d08b51d1c9eba943abd",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/conftest.py",
+            "line": 636,
+            "marker": "TODO",
+            "comment": "# TODO: re-enable hyperliquid websocket tests"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575555
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_31",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f924eaf4f94c4dc9b349318a197b8edf",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/conftest.py",
+            "line": 721,
+            "marker": "TODO",
+            "comment": "# TODO: re-verify this ..."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575555
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_32",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9640a8e16096411f8c125dcf9321cde4",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/conftest.py",
+            "line": 726,
+            "marker": "TODO",
+            "comment": "# TODO: filled should be 0, not None."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575555
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_33",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_11b7f18cffb24ded86495300d936cc05",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange_online/test_ccxt_compat.py",
+            "line": 228,
+            "marker": "TODO",
+            "comment": "# TODO: Gate is unstable here at the moment, ignoring the limit partially."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509575572
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_34",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7f1f820d251b4f23b6356e799d28b334",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+            "line": 988,
+            "marker": "TODO",
+            "comment": "# TODO: this test does not assert ..."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576012
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_35",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ce75b1cfe2b14aaea1107d0b4bebb0b9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+            "line": 6490,
+            "marker": "TODO",
+            "comment": "# TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576013
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_36",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d8d9df6024794b9b94b38e0d2188d82d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+            "line": 6502,
+            "marker": "TODO",
+            "comment": "# TODO: Uncomment once _calculate_funding_fees can pass time_in_ratio to exchange."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576013
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_37",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_477db0e6c61248d88ae46691fb4ef082",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/exchange/test_exchange.py",
+            "line": 7057,
+            "marker": "TODO",
+            "comment": "# TODO: remove once get_leverage_tiers workaround has been removed."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576013
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_38",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c080e6bb18604c1eafaa24f064cf759d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/optimize/test_backtesting_adjust_position.py",
+            "line": 86,
+            "marker": "TODO",
+            "comment": "# TODO: pandas3 - create correctly above ?!?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576145
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_39",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_459489d9330e459cb17c21c36c168f60",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/optimize/test_backtesting.py",
+            "line": 924,
+            "marker": "TODO",
+            "comment": "# TODO: pandas3 - create correctly above ?!?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576185
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_40",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_162111aac865446cbc319027a4b7b1bc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/optimize/test_backtest_detail.py",
+            "line": 1357,
+            "marker": "TODO",
+            "comment": "# TODO: Should we initialize this properly??"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576219
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_41",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a795a34fd7324e93801658d636be1995",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/strategy/strats/strategy_test_v3.py",
+            "line": 86,
+            "marker": "TODO",
+            "comment": "# TODO: Can this work with protection tests? (replace HyperoptableStrategy implicitly ... )"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576321
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_42",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a37b27d17bb740b9acba8b8413eb8991",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_stoploss_on_exchange.py",
+            "line": 830,
+            "marker": "TODO",
+            "comment": "# TODO: Is this actually correct ? This will create a new order every time,"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576347
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_43",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_47c142fc1b854731928d2fab1fb6554a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+            "line": 5958,
+            "marker": "TODO",
+            "comment": "TODO: Should be adjusted to test both long and short\n    buy 100 @ 11\n    sell 50 @ 8\n    sell 50 @ 16"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576414
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_44",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c0db0c676f9f4e069c49e20c12ec9d77",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+            "line": 730,
+            "marker": "TODO",
+            "comment": "# TODO: Move this test to test_worker"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576443
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_45",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_aa4d55601b6047c0a65c366a74d39bd3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+            "line": 935,
+            "marker": "TODO",
+            "comment": "# TODO: Split this test into multiple tests to improve readability"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576443
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_46",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fc00c9bbd474461a8a6883a50d363944",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+            "line": 1486,
+            "marker": "TODO",
+            "comment": "# TODO: should not be magicmock"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576443
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_47",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_880b447456da401cb5a1ab9204b5ec5c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+            "line": 1503,
+            "marker": "TODO",
+            "comment": "# TODO: should not be magicmock"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576443
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_dec_48",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1b65fc7f859b419fa3447c0c9c9ce231",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/freqtrade/tests/freqtradebot/test_freqtradebot.py",
+            "line": 2950,
+            "marker": "TODO",
+            "comment": "# TODO: should not be magicmock"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509576443
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509578214
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_2677c58b1abd418c",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "eea497b88a12e5c25acee6a9102df135ab01311b",
+          "message": "fix: improve resilience of generic_performance_query"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_79c30f3ceca243c5bf32c6f32098be9c",
+          "result": "架构转折点: commit eea497b8 - fix: improve resilience of generic_performance_query",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/freqtrade",
+            "commit": "eea497b88a12e5c25acee6a9102df135ab01311b",
+            "message": "fix: improve resilience of generic_performance_query",
+            "files_changed": 777,
+            "insertions": 308208,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509578494
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509579102
+    }
+  ],
+  "provenance": "external",
+  "source_label": "freqtrade",
+  "weight": 0.5,
+  "created_at": 1793509574290,
+  "source_id": "p1_freqtrade",
+  "repo_url": "https://github.com/freqtrade/freqtrade",
+  "commit": "eea497b88a12e5c25acee6a9102df135ab01311b",
+  "license": "GPL-3.0",
+  "collected_at": 1793509793640
+}

@@ -1,0 +1,350 @@
+{
+  "tree_id": "dt_e6f29a6391f24d87",
+  "task": {
+    "target": "https://github.com/janka-moeller/Sig-SPT",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_f27aa3e2720b48ae",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/janka-moeller/Sig-SPT"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_f27aa3e2720b48ae",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "Signature_portfolios_optimize_realdata.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "Signature_portfolios_optimize_realdata.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512180161
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_f27aa3e2720b48ae",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "Signature_portfolios_optimize_simulated_markets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "Signature_portfolios_optimize_simulated_markets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512180161
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_f27aa3e2720b48ae",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "Signature_portfolios_functions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "Signature_portfolios_functions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512180161
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_f27aa3e2720b48ae",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "Randomize_signatures.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "Randomize_signatures.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512180161
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_f27aa3e2720b48ae",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "Signature_portfolios_classes.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "Signature_portfolios_classes.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512180161
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_f27aa3e2720b48ae",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "03747236f501aaaa1c3dbc2b1ca07b238bf38b22",
+              "message": "Update README.md"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3d0b36557d604be1a984dc8deb6a7f4c",
+              "result": "架构转折点: commit 03747236 - Update README.md",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/Sig-SPT",
+                "commit": "03747236f501aaaa1c3dbc2b1ca07b238bf38b22",
+                "message": "Update README.md",
+                "files_changed": 6,
+                "insertions": 3534,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793512180309
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512180333
+        }
+      ],
+      "created_at": 1793512180161
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_f27aa3e2720b48ae",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "Signature_portfolios_optimize_realdata.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "Signature_portfolios_optimize_realdata.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512180161
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_f27aa3e2720b48ae",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "Signature_portfolios_optimize_simulated_markets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "Signature_portfolios_optimize_simulated_markets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512180161
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_f27aa3e2720b48ae",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "Signature_portfolios_functions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "Signature_portfolios_functions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512180161
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_f27aa3e2720b48ae",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "Randomize_signatures.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "Randomize_signatures.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512180161
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_f27aa3e2720b48ae",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "Signature_portfolios_classes.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "Signature_portfolios_classes.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512180161
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_f27aa3e2720b48ae",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "03747236f501aaaa1c3dbc2b1ca07b238bf38b22",
+          "message": "Update README.md"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3d0b36557d604be1a984dc8deb6a7f4c",
+          "result": "架构转折点: commit 03747236 - Update README.md",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/Sig-SPT",
+            "commit": "03747236f501aaaa1c3dbc2b1ca07b238bf38b22",
+            "message": "Update README.md",
+            "files_changed": 6,
+            "insertions": 3534,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793512180309
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512180333
+    }
+  ],
+  "provenance": "external",
+  "source_label": "Sig-SPT",
+  "weight": 0.5,
+  "created_at": 1793512180161,
+  "source_id": "p3_Sig-SPT",
+  "repo_url": "https://github.com/janka-moeller/Sig-SPT",
+  "commit": "03747236f501aaaa1c3dbc2b1ca07b238bf38b22",
+  "license": "unknown",
+  "collected_at": 1793515302142
+}

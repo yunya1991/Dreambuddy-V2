@@ -1,0 +1,120 @@
+{
+  "tree_id": "dt_a28709e3a120462b",
+  "task": {
+    "target": "https://github.com/kormilitzin/the-signature-method-in-machine-learning",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_199f375b97b24f17",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/kormilitzin/the-signature-method-in-machine-learning"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_199f375b97b24f17",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "aac789ee119a51d439e87879360da0c91deb001f",
+              "message": "Update README.md"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_845e20235d9d4e1f82c6dcea34a6b941",
+              "result": "架构转折点: commit aac789ee - Update README.md",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/signature-method-in-ML",
+                "commit": "aac789ee119a51d439e87879360da0c91deb001f",
+                "message": "Update README.md",
+                "files_changed": 12,
+                "insertions": 262,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793512915911
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512915921
+        }
+      ],
+      "created_at": 1793512915905
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_199f375b97b24f17",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "aac789ee119a51d439e87879360da0c91deb001f",
+          "message": "Update README.md"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_845e20235d9d4e1f82c6dcea34a6b941",
+          "result": "架构转折点: commit aac789ee - Update README.md",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/signature-method-in-ML",
+            "commit": "aac789ee119a51d439e87879360da0c91deb001f",
+            "message": "Update README.md",
+            "files_changed": 12,
+            "insertions": 262,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793512915911
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512915921
+    }
+  ],
+  "provenance": "external",
+  "source_label": "signature-method-in-ML",
+  "weight": 0.5,
+  "created_at": 1793512915905,
+  "source_id": "p3_signature-method-in-ML",
+  "repo_url": "https://github.com/kormilitzin/the-signature-method-in-machine-learning",
+  "commit": "aac789ee119a51d439e87879360da0c91deb001f",
+  "license": "unknown",
+  "collected_at": 1793512919007
+}

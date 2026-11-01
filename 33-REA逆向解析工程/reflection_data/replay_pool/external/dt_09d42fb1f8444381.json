@@ -1,0 +1,718 @@
+{
+  "tree_id": "dt_09d42fb1f8444381",
+  "task": {
+    "target": "https://github.com/Duxiaoman-DI/XuanYuan",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_774accf0d4904209",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/Duxiaoman-DI/XuanYuan"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "conversation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "conversation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli_demo.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli_demo.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "llm-code/dxm_llm_main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "llm-code/dxm_llm_main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "llm-code/model_hook.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "llm-code/model_hook.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "llm-code/pretrain_data_process.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "llm-code/pretrain_data_process.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "llm-code/dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "llm-code/dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "llm-code/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "llm-code/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "FinanceIQ/src/categories.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "FinanceIQ/src/categories.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "FinanceIQ/src/gpt4.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "FinanceIQ/src/gpt4.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "FinanceIQ/src/ernie.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "FinanceIQ/src/ernie.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "FinanceIQ/src/hf_causal_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "FinanceIQ/src/hf_causal_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "FinanceIQ/src/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "FinanceIQ/src/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "FinanceIQ/src/chatgpt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "FinanceIQ/src/chatgpt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275526
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_774accf0d4904209",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "d12168b4e531b630d289e619c1b0dc121514f9c4",
+              "message": "Update README.md"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c93c30e9ef7d40069742f5c9284811e3",
+              "result": "架构转折点: commit d12168b4 - Update README.md",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/XuanYuan",
+                "commit": "d12168b4e531b630d289e619c1b0dc121514f9c4",
+                "message": "Update README.md",
+                "files_changed": 96,
+                "insertions": 14610,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511275659
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511275869
+        }
+      ],
+      "created_at": 1793511275525
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "conversation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "conversation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli_demo.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli_demo.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "llm-code/dxm_llm_main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "llm-code/dxm_llm_main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "llm-code/model_hook.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "llm-code/model_hook.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "llm-code/pretrain_data_process.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "llm-code/pretrain_data_process.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "llm-code/dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "llm-code/dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "llm-code/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "llm-code/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "FinanceIQ/src/categories.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "FinanceIQ/src/categories.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "FinanceIQ/src/gpt4.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "FinanceIQ/src/gpt4.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "FinanceIQ/src/ernie.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "FinanceIQ/src/ernie.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "FinanceIQ/src/hf_causal_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "FinanceIQ/src/hf_causal_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "FinanceIQ/src/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "FinanceIQ/src/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "FinanceIQ/src/chatgpt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "FinanceIQ/src/chatgpt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275526
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_774accf0d4904209",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "d12168b4e531b630d289e619c1b0dc121514f9c4",
+          "message": "Update README.md"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c93c30e9ef7d40069742f5c9284811e3",
+          "result": "架构转折点: commit d12168b4 - Update README.md",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/XuanYuan",
+            "commit": "d12168b4e531b630d289e619c1b0dc121514f9c4",
+            "message": "Update README.md",
+            "files_changed": 96,
+            "insertions": 14610,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511275659
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511275869
+    }
+  ],
+  "provenance": "external",
+  "source_label": "XuanYuan",
+  "weight": 0.5,
+  "created_at": 1793511275525,
+  "source_id": "p2_XuanYuan",
+  "repo_url": "https://github.com/Duxiaoman-DI/XuanYuan",
+  "commit": "d12168b4e531b630d289e619c1b0dc121514f9c4",
+  "license": "unknown",
+  "collected_at": 1793511401832
+}

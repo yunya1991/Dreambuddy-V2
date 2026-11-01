@@ -1,0 +1,3680 @@
+{
+  "tree_id": "dt_57dca208942e4728",
+  "task": {
+    "target": "https://github.com/akfamily/akshare",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_6b84b1dc442e4ae0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/akfamily/akshare"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/conf.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/conf.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/check_release.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/check_release.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/check_punctuation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/check_punctuation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/build_registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/build_registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/datasets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/datasets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/_version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/_version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/request.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/request.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/crypto/crypto_hold.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/crypto/crypto_hold.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/crypto/crypto_bitcoin_cme.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/crypto/crypto_bitcoin_cme.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/crypto/crypto_js_spot.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/crypto/crypto_js_spot.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/crypto/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/crypto/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/pro/cons.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/pro/cons.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/pro/data_pro.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/pro/data_pro.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/pro/client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/pro/client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/pro/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/pro/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/migration/cons.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/migration/cons.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/migration/migration_baidu.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/migration/migration_baidu.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/migration/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/migration/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_cflp.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_cflp.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_global_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_global_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_eri.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_eri.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_csindex.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_csindex.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/cons.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/cons.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_cni.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_cni.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_sw.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_sw.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_stock_zh.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_stock_zh.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_drewry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_drewry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_stock_zh_csindex.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_stock_zh_csindex.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_stock_us_sina.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_stock_us_sina.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_kq_fz.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_kq_fz.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_sugar.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_sugar.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_cx.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_cx.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_stock_hk.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_stock_hk.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_research_sw.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_research_sw.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_zh_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_zh_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_yw.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_yw.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_research_fund_sw.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_research_fund_sw.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_spot.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_spot.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_cons.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_cons.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_kq_ss.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_kq_ss.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_option_qvix.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_option_qvix.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_zh_a_scope.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_zh_a_scope.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/index/index_global_sina.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/index/index_global_sina.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/indicator/indicator_rv.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/indicator/indicator_rv.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/indicator/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/indicator/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_risk_indicator_sse.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_risk_indicator_sse.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/cons.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/cons.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_commodity_sina.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_commodity_sina.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_premium_analysis_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_premium_analysis_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_current_szse.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_current_szse.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_risk_analysis_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_risk_analysis_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_finance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_finance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_margin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_margin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_value_analysis_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_value_analysis_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_58",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_czce.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_czce.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_59",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_contract_info_ctp.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_contract_info_ctp.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_60",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_current_sse.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_current_sse.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_61",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_commodity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_commodity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_62",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_daily_stats_sse_szse.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_daily_stats_sse_szse.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_63",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_lhb_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_lhb_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_64",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_em.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_em.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_65",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_comm_qihuo.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_comm_qihuo.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_66",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/option_finance_sina.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/option_finance_sina.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_ext_67",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "akshare/option/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "akshare/option/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510996118
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a6f9577d0d8148ea800d6877aa890fdd",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/akshare/akshare/migration/migration_baidu.py",
+                "line": 19,
+                "marker": "XXX",
+                "comment": "百度地图慧眼-百度迁徙-XXX迁入地详情\n    百度地图慧眼-百度迁徙-XXX迁出地详情\n    以上展示 top100 结果，如不够 100 则展示全部\n    迁入来源地比例：从 xx 地迁入到当前区域的人数与当前区域迁入总人口的比值\n    迁出目的地比例：从当前区域迁出到 xx 的人口与从当前区域迁出总人口的比值\n    https://qianxi.baidu.com/?from=sh"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793510996152
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510997899
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_26bc3cd7b7ac4749913e0cb2b4ff23dd",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/akshare/akshare/stock/research/stock_hold_num_cninfo.py",
+                "line": 31,
+                "marker": "XXX",
+                "comment": "巨潮资讯-数据中心-专题统计-股东股本-股东人数及持股集中度\n    https://webapi.cninfo.com.cn/#/thematicStatistics\n    :param date: choice of {\"XXXX0331\", \"XXXX0630\", \"XXXX0930\", \"XXXX1231\"}；从 20170331 开始\n    :type date: str\n    :"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793510996552
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510997899
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_60cdc539af2a42958458abf3d432c71c",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/akshare/akshare/fund/fund_report_cninfo.py",
+                "line": 31,
+                "marker": "XXX",
+                "comment": "巨潮资讯-数据中心-专题统计-基金报表-基金重仓股\n    https://webapi.cninfo.com.cn/#/thematicStatistics\n    :param date: 报告时间；choice of {\"XXXX0331\", \"XXXX0630\", \"XXXX0930\", \"XXXX1231\"}\n    :type date: str\n    :return: 基金重仓股\n"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793510996871
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510997899
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8f60a44a22e6492da9f9b695b6628750",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/akshare/akshare/fund/fund_report_cninfo.py",
+                "line": 97,
+                "marker": "XXX",
+                "comment": "巨潮资讯-数据中心-专题统计-基金报表-基金行业配置\n    https://webapi.cninfo.com.cn/#/thematicStatistics\n    :param date: 报告时间；choice of {\"XXXX0331\", \"XXXX0630\", \"XXXX0930\", \"XXXX1231\"}，从 2017 年开始\n    :type date: str\n    :re"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793510996871
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510997899
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_25f29cc8b6224dcb87b0426eefe70f2d",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/akshare/akshare/bank/bank_cbirc_2020.py",
+                "line": 3,
+                "marker": "XXX",
+                "comment": "Date: 2025/2/4 23:00\nDesc: 中国银行保险监督管理委员会-首页-政务信息-行政处罚-银保监分局本级-XXXX行政处罚信息公开表\nhttps://www.nfra.gov.cn/cn/view/pages/ItemList.html?itemPId=923&itemId=4115&itemUrl=ItemListRightList.html&itemName=%E9%93%B"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793510996946
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510997899
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7cff8e77926f4714b01c19511fc164a8",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/akshare/akshare/bank/bank_cbirc_2020.py",
+                "line": 117,
+                "marker": "XXX",
+                "comment": "获取 首页-政务信息-行政处罚-银保监分局本级-XXXX行政处罚信息公开表 数据\n    :param page: 需要获取前 page 页的内容，总页数请通过 ak.bank_fjcf_total_page() 获取\n    :type page: int\n    :param item: choice of {\"机关\", \"本级\", \"分局本级\"}\n    :type item: str\n  "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793510996946
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510997899
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_6b84b1dc442e4ae0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "f8dc2d6c6c3456f5cab037523459f9b5bd0ecbc7",
+              "message": "fix(stock): keep real trading days in Sina daily bars and stop redundant fetch in minute bars"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4ebd966c7677463faf465c496fcd266d",
+              "result": "架构转折点: commit f8dc2d6c - fix(stock): keep real trading days in Sina daily bars and stop redundant fetch i",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/akshare",
+                "commit": "f8dc2d6c6c3456f5cab037523459f9b5bd0ecbc7",
+                "message": "fix(stock): keep real trading days in Sina daily bars and stop redundant fetch in minute bars",
+                "files_changed": 518,
+                "insertions": 196253,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793510997971
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793510998085
+        }
+      ],
+      "created_at": 1793510996116
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/conf.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/conf.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/check_release.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/check_release.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/check_punctuation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/check_punctuation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/build_registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/build_registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/datasets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/datasets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/_version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/_version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/request.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/request.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/crypto/crypto_hold.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/crypto/crypto_hold.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/crypto/crypto_bitcoin_cme.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/crypto/crypto_bitcoin_cme.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/crypto/crypto_js_spot.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/crypto/crypto_js_spot.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/crypto/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/crypto/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/pro/cons.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/pro/cons.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/pro/data_pro.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/pro/data_pro.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/pro/client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/pro/client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/pro/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/pro/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/migration/cons.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/migration/cons.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/migration/migration_baidu.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/migration/migration_baidu.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/migration/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/migration/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_cflp.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_cflp.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_global_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_global_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_eri.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_eri.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_csindex.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_csindex.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/cons.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/cons.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_cni.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_cni.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_sw.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_sw.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_stock_zh.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_stock_zh.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_drewry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_drewry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_stock_zh_csindex.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_stock_zh_csindex.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_stock_us_sina.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_stock_us_sina.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_kq_fz.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_kq_fz.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_sugar.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_sugar.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_cx.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_cx.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_stock_hk.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_stock_hk.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_research_sw.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_research_sw.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_zh_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_zh_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_yw.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_yw.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_research_fund_sw.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_research_fund_sw.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_spot.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_spot.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_cons.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_cons.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_kq_ss.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_kq_ss.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_option_qvix.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_option_qvix.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_zh_a_scope.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_zh_a_scope.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/index/index_global_sina.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/index/index_global_sina.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/indicator/indicator_rv.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/indicator/indicator_rv.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/indicator/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/indicator/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_risk_indicator_sse.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_risk_indicator_sse.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/cons.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/cons.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_commodity_sina.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_commodity_sina.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_premium_analysis_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_premium_analysis_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_current_szse.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_current_szse.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_risk_analysis_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_risk_analysis_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_finance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_finance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_margin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_margin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_value_analysis_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_value_analysis_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_58",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_czce.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_czce.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_59",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_contract_info_ctp.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_contract_info_ctp.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_60",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_current_sse.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_current_sse.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_61",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_commodity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_commodity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_62",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_daily_stats_sse_szse.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_daily_stats_sse_szse.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_63",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_lhb_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_lhb_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_64",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_em.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_em.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_65",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_comm_qihuo.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_comm_qihuo.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_66",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/option_finance_sina.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/option_finance_sina.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_ext_67",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "akshare/option/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "akshare/option/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510996118
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a6f9577d0d8148ea800d6877aa890fdd",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/akshare/akshare/migration/migration_baidu.py",
+            "line": 19,
+            "marker": "XXX",
+            "comment": "百度地图慧眼-百度迁徙-XXX迁入地详情\n    百度地图慧眼-百度迁徙-XXX迁出地详情\n    以上展示 top100 结果，如不够 100 则展示全部\n    迁入来源地比例：从 xx 地迁入到当前区域的人数与当前区域迁入总人口的比值\n    迁出目的地比例：从当前区域迁出到 xx 的人口与从当前区域迁出总人口的比值\n    https://qianxi.baidu.com/?from=sh"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793510996152
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510997899
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_26bc3cd7b7ac4749913e0cb2b4ff23dd",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/akshare/akshare/stock/research/stock_hold_num_cninfo.py",
+            "line": 31,
+            "marker": "XXX",
+            "comment": "巨潮资讯-数据中心-专题统计-股东股本-股东人数及持股集中度\n    https://webapi.cninfo.com.cn/#/thematicStatistics\n    :param date: choice of {\"XXXX0331\", \"XXXX0630\", \"XXXX0930\", \"XXXX1231\"}；从 20170331 开始\n    :type date: str\n    :"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793510996552
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510997899
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_60cdc539af2a42958458abf3d432c71c",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/akshare/akshare/fund/fund_report_cninfo.py",
+            "line": 31,
+            "marker": "XXX",
+            "comment": "巨潮资讯-数据中心-专题统计-基金报表-基金重仓股\n    https://webapi.cninfo.com.cn/#/thematicStatistics\n    :param date: 报告时间；choice of {\"XXXX0331\", \"XXXX0630\", \"XXXX0930\", \"XXXX1231\"}\n    :type date: str\n    :return: 基金重仓股\n"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793510996871
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510997899
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8f60a44a22e6492da9f9b695b6628750",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/akshare/akshare/fund/fund_report_cninfo.py",
+            "line": 97,
+            "marker": "XXX",
+            "comment": "巨潮资讯-数据中心-专题统计-基金报表-基金行业配置\n    https://webapi.cninfo.com.cn/#/thematicStatistics\n    :param date: 报告时间；choice of {\"XXXX0331\", \"XXXX0630\", \"XXXX0930\", \"XXXX1231\"}，从 2017 年开始\n    :type date: str\n    :re"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793510996871
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510997899
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_25f29cc8b6224dcb87b0426eefe70f2d",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/akshare/akshare/bank/bank_cbirc_2020.py",
+            "line": 3,
+            "marker": "XXX",
+            "comment": "Date: 2025/2/4 23:00\nDesc: 中国银行保险监督管理委员会-首页-政务信息-行政处罚-银保监分局本级-XXXX行政处罚信息公开表\nhttps://www.nfra.gov.cn/cn/view/pages/ItemList.html?itemPId=923&itemId=4115&itemUrl=ItemListRightList.html&itemName=%E9%93%B"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793510996946
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510997899
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7cff8e77926f4714b01c19511fc164a8",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/akshare/akshare/bank/bank_cbirc_2020.py",
+            "line": 117,
+            "marker": "XXX",
+            "comment": "获取 首页-政务信息-行政处罚-银保监分局本级-XXXX行政处罚信息公开表 数据\n    :param page: 需要获取前 page 页的内容，总页数请通过 ak.bank_fjcf_total_page() 获取\n    :type page: int\n    :param item: choice of {\"机关\", \"本级\", \"分局本级\"}\n    :type item: str\n  "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793510996946
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510997899
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_6b84b1dc442e4ae0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "f8dc2d6c6c3456f5cab037523459f9b5bd0ecbc7",
+          "message": "fix(stock): keep real trading days in Sina daily bars and stop redundant fetch in minute bars"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4ebd966c7677463faf465c496fcd266d",
+          "result": "架构转折点: commit f8dc2d6c - fix(stock): keep real trading days in Sina daily bars and stop redundant fetch i",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/akshare",
+            "commit": "f8dc2d6c6c3456f5cab037523459f9b5bd0ecbc7",
+            "message": "fix(stock): keep real trading days in Sina daily bars and stop redundant fetch in minute bars",
+            "files_changed": 518,
+            "insertions": 196253,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793510997971
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793510998085
+    }
+  ],
+  "provenance": "external",
+  "source_label": "akshare",
+  "weight": 0.5,
+  "created_at": 1793510996116,
+  "source_id": "p2_akshare",
+  "repo_url": "https://github.com/akfamily/akshare",
+  "commit": "f8dc2d6c6c3456f5cab037523459f9b5bd0ecbc7",
+  "license": "MIT",
+  "collected_at": 1793511402596
+}

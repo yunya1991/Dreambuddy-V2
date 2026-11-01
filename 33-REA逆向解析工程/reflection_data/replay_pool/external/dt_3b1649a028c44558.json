@@ -1,0 +1,3932 @@
+{
+  "tree_id": "dt_3b1649a028c44558",
+  "task": {
+    "target": "https://github.com/crewAIInc/crewAI",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_aa05fc6025044300",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/crewAIInc/crewAI"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/reo-tracking.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/reo-tracking.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/common-room-tracking.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/common-room-tracking.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/jev_evaluation_runner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/jev_evaluation_runner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/age90_file_input_runner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/age90_file_input_runner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/wharf_runner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/wharf_runner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/update_litellm_catalog.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/update_litellm_catalog.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/docs/prefix_version_paths.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/docs/prefix_version_paths.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/docs/freeze_current_edge.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/docs/freeze_current_edge.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/docs/freeze_historical_versions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/docs/freeze_historical_versions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/git.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/git.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/kickoff_flow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/kickoff_flow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/task_outputs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/task_outputs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/user_data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/user_data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/evaluate_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/evaluate_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/input_prompt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/input_prompt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/create_json_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/create_json_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/update_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/update_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/reset_memories_command.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/reset_memories_command.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/crew_chat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/crew_chat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/model_catalog.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/model_catalog.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/checkpoint_tui.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/checkpoint_tui.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/train_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/train_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/memory_tui.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/memory_tui.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/crew_run_tui.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/crew_run_tui.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/create_flow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/create_flow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/create_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/create_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/checkpoint_cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/checkpoint_cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/add_crew_to_flow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/add_crew_to_flow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/plot_flow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/plot_flow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/tui_picker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/tui_picker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/provider.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/provider.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/command.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/command.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/replay_from_task.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/replay_from_task.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/install_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/install_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/plus_api.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/plus_api.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/run_declarative_flow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/run_declarative_flow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/run_crew.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/run_crew.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/organization/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/organization/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/organization/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/organization/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/skills/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/skills/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/skills/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/skills/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/remote_template/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/remote_template/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "lib/cli/src/crewai_cli/remote_template/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "lib/cli/src/crewai_cli/remote_template/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511237420
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_236db6866fd042608230dd668892db0b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/llm.py",
+                "line": 2490,
+                "marker": "TODO",
+                "comment": "# TODO: Remove this code after merging PR https://github.com/BerriAI/litellm/pull/10917"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511238706
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8e20a57f9aca425da78b0992787a66aa",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/process.py",
+                "line": 11,
+                "marker": "TODO",
+                "comment": "# TODO: consensual = 'consensual'"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511238712
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c791debc46b645ea9a9ebcaadfa6909e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/crew.py",
+                "line": 630,
+                "marker": "TODO",
+                "comment": "# TODO: Improve typing"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511238756
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_598868e074d44500b4a1c9145c570be1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/agent_utils.py",
+                "line": 894,
+                "marker": "TODO",
+                "comment": "Core logic for handling agent actions and tool results.\n\n    Args:\n        formatted_answer: The agent's action\n        tool_result: The result of executing the tool\n        messages: Optional list of"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511239587
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4e3cf2c4c4574a84865ed1d2ac10f486",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/converter.py",
+                "line": 381,
+                "marker": "TODO",
+                "comment": "Convert a result string to a Pydantic model or JSON using instructions.\n\n    Args:\n        result: The result string to convert.\n        model: The Pydantic model class to convert to.\n        is_json_"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511239617
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cfd148d3bb894bdbbaff5b44afe825b0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/constants.py",
+                "line": 73,
+                "marker": "TODO",
+                "comment": "Sentinel class to detect when no value has been explicitly provided.\n\n    Notes:\n        - TODO: Consider moving this class and NOT_SPECIFIED to types.py\n          as they are more type-related constr"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511239622
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6bfde9d5fab54eecbed3948918a65251",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/types.py",
+                "line": 17,
+                "marker": "TODO",
+                "comment": "Type for formatted LLM messages.\n\n    Notes:\n        - TODO: Update the LLM.call & BaseLLM.call signatures to use this type\n          instead of str | list[dict[str, str]]"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511239662
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2e35eddc1a1b4fedb6b34a60f49cc568",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/llms/providers/anthropic/completion.py",
+                "line": 1549,
+                "marker": "TODO",
+                "comment": "# TODO: we drop this"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240012
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bb24869d454a40fd8b421bdfd8aa82a0",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/llms/providers/bedrock/completion.py",
+                "line": 2170,
+                "marker": "XXX",
+                "comment": "Extract raw finish_reason (``stopReason``) from a Bedrock Converse\n        response dict. Defensive — returns (None, None) on any failure.\n\n        Bedrock Converse has no model-level response id; Res"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240048
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cab7f9f1f0ae4a508a7d0f6c4ae97fca",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/cache/cache_handler.py",
+                "line": 11,
+                "marker": "TODO",
+                "comment": "Handles caching of tool execution results.\n\n    Provides thread-safe in-memory caching for tool outputs based on tool name and input.\n    Uses a read-write lock to allow concurrent reads while ensurin"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240501
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_27ce3ce9c3644e5891952c9c4a2932d0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/cache/cache_handler.py",
+                "line": 24,
+                "marker": "TODO",
+                "comment": "Add a tool result to the cache.\n\n        Declared failures are never stored: replaying one would make a\n        transient error permanent for the rest of the run, and every later hit\n        would re-"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240501
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d16a238012084b3a95c031c7339369ce",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/cache/cache_handler.py",
+                "line": 47,
+                "marker": "TODO",
+                "comment": "Retrieve a cached tool result.\n\n        Args:\n            tool: Name of the tool.\n            input: Input string used for the tool.\n\n        Returns:\n            Cached result if found, None otherwis"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240501
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_819d1e6b1e694c569c189845eec47a47",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/agent_adapters/openai_agents/openai_adapter.py",
+                "line": 178,
+                "marker": "TODO",
+                "comment": "Configure the OpenAI agent for execution.\n\n        While OpenAI handles execution differently through Runner,\n        this method sets up tools and agent configuration.\n\n        Args:\n            tool"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240524
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1392835d5ef64aee941f6e4f72818538",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/tasks/task_output.py",
+                "line": 76,
+                "marker": "TODO",
+                "comment": "Get the JSON string representation of the task output.\n\n        Returns:\n            JSON string representation of the task output, or None when the\n            output could not be converted to the ta"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240549
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_525e068455194013b7e4c5c0b1469110",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/security/security_config.py",
+                "line": 21,
+                "marker": "TODO",
+                "comment": "Configuration for CrewAI security features.\n\n    This class manages security settings for CrewAI agents, including:\n    - Authentication credentials *TODO*\n    - Identity information (agent fingerprin"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240551
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4be35c15d3244999bec8181e256225e3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/security/constants.py",
+                "line": 1,
+                "marker": "TODO",
+                "comment": "Security constants for CrewAI.\n\nThis module contains security-related constants used throughout the security module.\n\nNotes:\n    - TODO: Determine if CREW_AI_NAMESPACE should be made dynamic or config"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511240552
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cdf8519b97d243e09b2fe5ab289b70fe",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/tests/test_llm.py",
+                "line": 27,
+                "marker": "TODO",
+                "comment": "# TODO: This test fails without print statement, which makes me think that something is happening asynchronously that we need to eventually fix and dive deeper into at a later date"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511241086
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_45214870cf4e4dde9fb2adb60b7d9f40",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai/tests/agents/test_crew_agent_parser.py",
+                "line": 370,
+                "marker": "TODO",
+                "comment": "# TODO: ADD TEST TO MAKE SURE ** REMOVAL DOESN'T MESS UP ANYTHING"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511242839
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c58e96f81b974343b21025eaf00a9900",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai-tools/src/crewai_tools/tools/llamaindex_tool/llamaindex_tool.py",
+                "line": 82,
+                "marker": "HACK",
+                "comment": "# HACK: we are replacing the schema with our custom schema"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511243109
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_592198ffee4d4412b04ab71c2349beb0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai-tools/src/crewai_tools/tools/brave_search_tool/brave_search_tool.py",
+                "line": 27,
+                "marker": "TODO",
+                "comment": "# TODO: Extend support to additional endpoints (e.g., /images, /news, etc.)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511243164
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_656a0a0f6bff46f6b2164b436d397e1c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/crewAI/lib/crewai-tools/src/crewai_tools/tools/brave_search_tool/brave_search_tool.py",
+                "line": 139,
+                "marker": "TODO",
+                "comment": "# TODO: Handle other result types like \"discussions\", \"faq\", etc."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511243164
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511254949
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_aa05fc6025044300",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "1a3089fd15aa313f1adae1da598db1e9bea2afc9",
+              "message": "fix(deps): let crewai[litellm] import on python 3.10; raise joserfc, pyasn1, pypdf floors (#8760)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fa570892ff15420e87eacb9168e6363b",
+              "result": "架构转折点: commit 1a3089fd - fix(deps): let crewai[litellm] import on python 3.10; raise joserfc, pyasn1, pyp",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/crewAI",
+                "commit": "1a3089fd15aa313f1adae1da598db1e9bea2afc9",
+                "message": "fix(deps): let crewai[litellm] import on python 3.10; raise joserfc, pyasn1, pypdf floors (#8760)",
+                "files_changed": 39673,
+                "insertions": 9196736,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511259494
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511266811
+        }
+      ],
+      "created_at": 1793511237297
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/reo-tracking.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/reo-tracking.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/common-room-tracking.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/common-room-tracking.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/jev_evaluation_runner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/jev_evaluation_runner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/age90_file_input_runner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/age90_file_input_runner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/wharf_runner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/wharf_runner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/update_litellm_catalog.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/update_litellm_catalog.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/docs/prefix_version_paths.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/docs/prefix_version_paths.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/docs/freeze_current_edge.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/docs/freeze_current_edge.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/docs/freeze_historical_versions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/docs/freeze_historical_versions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/git.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/git.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/kickoff_flow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/kickoff_flow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/task_outputs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/task_outputs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/user_data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/user_data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/evaluate_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/evaluate_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/input_prompt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/input_prompt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/create_json_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/create_json_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/update_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/update_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/reset_memories_command.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/reset_memories_command.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/crew_chat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/crew_chat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/model_catalog.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/model_catalog.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/checkpoint_tui.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/checkpoint_tui.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/train_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/train_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/memory_tui.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/memory_tui.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/crew_run_tui.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/crew_run_tui.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/create_flow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/create_flow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/create_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/create_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/checkpoint_cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/checkpoint_cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/add_crew_to_flow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/add_crew_to_flow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/plot_flow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/plot_flow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/tui_picker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/tui_picker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/provider.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/provider.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/command.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/command.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/replay_from_task.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/replay_from_task.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/install_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/install_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/plus_api.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/plus_api.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/run_declarative_flow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/run_declarative_flow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/run_crew.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/run_crew.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/organization/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/organization/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/organization/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/organization/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/skills/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/skills/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/skills/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/skills/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/remote_template/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/remote_template/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "lib/cli/src/crewai_cli/remote_template/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "lib/cli/src/crewai_cli/remote_template/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511237420
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_236db6866fd042608230dd668892db0b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/llm.py",
+            "line": 2490,
+            "marker": "TODO",
+            "comment": "# TODO: Remove this code after merging PR https://github.com/BerriAI/litellm/pull/10917"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511238706
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8e20a57f9aca425da78b0992787a66aa",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/process.py",
+            "line": 11,
+            "marker": "TODO",
+            "comment": "# TODO: consensual = 'consensual'"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511238712
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c791debc46b645ea9a9ebcaadfa6909e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/crew.py",
+            "line": 630,
+            "marker": "TODO",
+            "comment": "# TODO: Improve typing"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511238756
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_598868e074d44500b4a1c9145c570be1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/agent_utils.py",
+            "line": 894,
+            "marker": "TODO",
+            "comment": "Core logic for handling agent actions and tool results.\n\n    Args:\n        formatted_answer: The agent's action\n        tool_result: The result of executing the tool\n        messages: Optional list of"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511239587
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4e3cf2c4c4574a84865ed1d2ac10f486",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/converter.py",
+            "line": 381,
+            "marker": "TODO",
+            "comment": "Convert a result string to a Pydantic model or JSON using instructions.\n\n    Args:\n        result: The result string to convert.\n        model: The Pydantic model class to convert to.\n        is_json_"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511239617
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cfd148d3bb894bdbbaff5b44afe825b0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/constants.py",
+            "line": 73,
+            "marker": "TODO",
+            "comment": "Sentinel class to detect when no value has been explicitly provided.\n\n    Notes:\n        - TODO: Consider moving this class and NOT_SPECIFIED to types.py\n          as they are more type-related constr"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511239622
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6bfde9d5fab54eecbed3948918a65251",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/utilities/types.py",
+            "line": 17,
+            "marker": "TODO",
+            "comment": "Type for formatted LLM messages.\n\n    Notes:\n        - TODO: Update the LLM.call & BaseLLM.call signatures to use this type\n          instead of str | list[dict[str, str]]"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511239662
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2e35eddc1a1b4fedb6b34a60f49cc568",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/llms/providers/anthropic/completion.py",
+            "line": 1549,
+            "marker": "TODO",
+            "comment": "# TODO: we drop this"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240012
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bb24869d454a40fd8b421bdfd8aa82a0",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/llms/providers/bedrock/completion.py",
+            "line": 2170,
+            "marker": "XXX",
+            "comment": "Extract raw finish_reason (``stopReason``) from a Bedrock Converse\n        response dict. Defensive — returns (None, None) on any failure.\n\n        Bedrock Converse has no model-level response id; Res"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240048
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cab7f9f1f0ae4a508a7d0f6c4ae97fca",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/cache/cache_handler.py",
+            "line": 11,
+            "marker": "TODO",
+            "comment": "Handles caching of tool execution results.\n\n    Provides thread-safe in-memory caching for tool outputs based on tool name and input.\n    Uses a read-write lock to allow concurrent reads while ensurin"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240501
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_27ce3ce9c3644e5891952c9c4a2932d0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/cache/cache_handler.py",
+            "line": 24,
+            "marker": "TODO",
+            "comment": "Add a tool result to the cache.\n\n        Declared failures are never stored: replaying one would make a\n        transient error permanent for the rest of the run, and every later hit\n        would re-"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240501
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d16a238012084b3a95c031c7339369ce",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/cache/cache_handler.py",
+            "line": 47,
+            "marker": "TODO",
+            "comment": "Retrieve a cached tool result.\n\n        Args:\n            tool: Name of the tool.\n            input: Input string used for the tool.\n\n        Returns:\n            Cached result if found, None otherwis"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240501
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_819d1e6b1e694c569c189845eec47a47",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/agents/agent_adapters/openai_agents/openai_adapter.py",
+            "line": 178,
+            "marker": "TODO",
+            "comment": "Configure the OpenAI agent for execution.\n\n        While OpenAI handles execution differently through Runner,\n        this method sets up tools and agent configuration.\n\n        Args:\n            tool"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240524
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1392835d5ef64aee941f6e4f72818538",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/tasks/task_output.py",
+            "line": 76,
+            "marker": "TODO",
+            "comment": "Get the JSON string representation of the task output.\n\n        Returns:\n            JSON string representation of the task output, or None when the\n            output could not be converted to the ta"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240549
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_525e068455194013b7e4c5c0b1469110",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/security/security_config.py",
+            "line": 21,
+            "marker": "TODO",
+            "comment": "Configuration for CrewAI security features.\n\n    This class manages security settings for CrewAI agents, including:\n    - Authentication credentials *TODO*\n    - Identity information (agent fingerprin"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240551
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4be35c15d3244999bec8181e256225e3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/src/crewai/security/constants.py",
+            "line": 1,
+            "marker": "TODO",
+            "comment": "Security constants for CrewAI.\n\nThis module contains security-related constants used throughout the security module.\n\nNotes:\n    - TODO: Determine if CREW_AI_NAMESPACE should be made dynamic or config"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511240552
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cdf8519b97d243e09b2fe5ab289b70fe",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/tests/test_llm.py",
+            "line": 27,
+            "marker": "TODO",
+            "comment": "# TODO: This test fails without print statement, which makes me think that something is happening asynchronously that we need to eventually fix and dive deeper into at a later date"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511241086
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_45214870cf4e4dde9fb2adb60b7d9f40",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai/tests/agents/test_crew_agent_parser.py",
+            "line": 370,
+            "marker": "TODO",
+            "comment": "# TODO: ADD TEST TO MAKE SURE ** REMOVAL DOESN'T MESS UP ANYTHING"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511242839
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c58e96f81b974343b21025eaf00a9900",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai-tools/src/crewai_tools/tools/llamaindex_tool/llamaindex_tool.py",
+            "line": 82,
+            "marker": "HACK",
+            "comment": "# HACK: we are replacing the schema with our custom schema"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511243109
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_592198ffee4d4412b04ab71c2349beb0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai-tools/src/crewai_tools/tools/brave_search_tool/brave_search_tool.py",
+            "line": 27,
+            "marker": "TODO",
+            "comment": "# TODO: Extend support to additional endpoints (e.g., /images, /news, etc.)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511243164
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_656a0a0f6bff46f6b2164b436d397e1c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/crewAI/lib/crewai-tools/src/crewai_tools/tools/brave_search_tool/brave_search_tool.py",
+            "line": 139,
+            "marker": "TODO",
+            "comment": "# TODO: Handle other result types like \"discussions\", \"faq\", etc."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511243164
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511254949
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_aa05fc6025044300",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "1a3089fd15aa313f1adae1da598db1e9bea2afc9",
+          "message": "fix(deps): let crewai[litellm] import on python 3.10; raise joserfc, pyasn1, pypdf floors (#8760)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fa570892ff15420e87eacb9168e6363b",
+          "result": "架构转折点: commit 1a3089fd - fix(deps): let crewai[litellm] import on python 3.10; raise joserfc, pyasn1, pyp",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/crewAI",
+            "commit": "1a3089fd15aa313f1adae1da598db1e9bea2afc9",
+            "message": "fix(deps): let crewai[litellm] import on python 3.10; raise joserfc, pyasn1, pypdf floors (#8760)",
+            "files_changed": 39673,
+            "insertions": 9196736,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511259494
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511266811
+    }
+  ],
+  "provenance": "external",
+  "source_label": "crewAI",
+  "weight": 0.5,
+  "created_at": 1793511237297,
+  "source_id": "p2_crewAI",
+  "repo_url": "https://github.com/crewAIInc/crewAI",
+  "commit": "1a3089fd15aa313f1adae1da598db1e9bea2afc9",
+  "license": "MIT",
+  "collected_at": 1793511403183
+}

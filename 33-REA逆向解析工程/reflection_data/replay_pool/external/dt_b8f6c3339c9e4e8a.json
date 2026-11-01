@@ -1,0 +1,3292 @@
+{
+  "tree_id": "dt_b8f6c3339c9e4e8a",
+  "task": {
+    "target": "https://github.com/OpenBB-finance/OpenBB",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_154e18aa277c4368",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/OpenBB-finance/OpenBB"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/integration/test_integration_base_controller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/integration/test_integration_base_controller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/integration/test_integration_base_platform_controller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/integration/test_integration_base_platform_controller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/integration/test_commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/integration/test_commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/integration/test_integration_cli_controller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/integration/test_integration_cli_controller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/integration/test_integration_obbject_registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/integration/test_integration_obbject_registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/session.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/session.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/auth.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/auth.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/backend.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/backend.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/argparse_argument.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/argparse_argument.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/argparse_class_processor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/argparse_class_processor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/reference_processor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/reference_processor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/obbject_registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/obbject_registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/argparse_translator.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/argparse_translator.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/argparse_translator/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/argparse_translator/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/console.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/console.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/loader.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/loader.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/style.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/style.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/completer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/completer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/menu_text.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/menu_text.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/config/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/config/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/models/settings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/models/settings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/utils/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/utils/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/stdio.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/stdio.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/rich.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/rich.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/json.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/json.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/figure.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/figure.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/html.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/html.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/tsv.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/tsv.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/outputs/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/outputs/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/package_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/package_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/credentials.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/credentials.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/namespace_tree.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/namespace_tree.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/project_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/project_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/fetcher_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/fetcher_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/provider_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/provider_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/router_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/router_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/pydantic_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/pydantic_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/post_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/post_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/codegen/test_gen.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/codegen/test_gen.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/local.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/local.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/http.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/http.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/spec.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/spec.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/openapi_schema.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/openapi_schema.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/protocol.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/protocol.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/_unpack.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/_unpack.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/socrata.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/socrata.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/multi.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/multi.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/openbb_cli/dispatchers/runtime.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/openbb_cli/dispatchers/runtime.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509419169
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_84218fcae5b14df28231a8e29bd6381c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/extensions/tests/utils/integration_tests_testers.py",
+                "line": 314,
+                "marker": "TODO",
+                "comment": "# TODO: See how to handle edge cases that are excluded from the schema"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509428562
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6de78a90d51e4ff6ac4491d1a0f52857",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/openbb_core/api/router/helpers/coverage_helpers.py",
+                "line": 26,
+                "marker": "TODO",
+                "comment": "# TODO: Add return typing Optional[Callable] to this function. First need to"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509428588
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ce9950fb5ffd41238a820f0069acefa5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/openbb_core/app/provider_interface.py",
+                "line": 109,
+                "marker": "TODO",
+                "comment": "# TODO: Try these 4 methods in a single iteration"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509428825
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_86b282f1251344438e443d457cf4f11a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/openbb_core/app/static/package_builder/import_definition.py",
+                "line": 267,
+                "marker": "TODO",
+                "comment": "# TODO: Find a better way to handle this. This is a temporary solution."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509428961
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_602f7e6175be4d50af980a17ab2f3853",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/tests/app/test_command_runner.py",
+                "line": 252,
+                "marker": "TODO",
+                "comment": "# TODO: add more test cases with @pytest.mark.parametrize"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509429165
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c31e2eebe01a48fc8f007aea21a864bf",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/tests/app/test_command_runner.py",
+                "line": 309,
+                "marker": "TODO",
+                "comment": "# TODO: add more test cases with @pytest.mark.parametrize"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509429165
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4ae8fdacda6840219699dee17ae151b2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/tests/app/model/charts/test_chart.py",
+                "line": 59,
+                "marker": "TODO",
+                "comment": "# TODO : add test after the function is properly refactored"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509429387
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509439896
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_154e18aa277c4368",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "7df7d0c5592bf25be88e87e130a05c71e243d2d8",
+              "message": "[BugFix] #7672-Preserve unnamed MultiIndex levels in DataFrame round-trip. (#7762)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5129ee285d1d4fd09862cb93803a75c1",
+              "result": "架构转折点: commit 7df7d0c5 - [BugFix] #7672-Preserve unnamed MultiIndex levels in DataFrame round-trip. (#776",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/OpenBB",
+                "commit": "7df7d0c5592bf25be88e87e130a05c71e243d2d8",
+                "message": "[BugFix] #7672-Preserve unnamed MultiIndex levels in DataFrame round-trip. (#7762)",
+                "files_changed": 4138,
+                "insertions": 1853721,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509440903
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509443285
+        }
+      ],
+      "created_at": 1793509419168
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/integration/test_integration_base_controller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/integration/test_integration_base_controller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/integration/test_integration_base_platform_controller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/integration/test_integration_base_platform_controller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/integration/test_commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/integration/test_commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/integration/test_integration_cli_controller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/integration/test_integration_cli_controller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/integration/test_integration_obbject_registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/integration/test_integration_obbject_registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/session.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/session.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/auth.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/auth.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/backend.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/backend.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/argparse_argument.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/argparse_argument.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/argparse_class_processor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/argparse_class_processor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/reference_processor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/reference_processor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/obbject_registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/obbject_registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/argparse_translator.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/argparse_translator.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/argparse_translator/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/argparse_translator/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/console.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/console.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/loader.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/loader.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/style.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/style.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/completer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/completer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/menu_text.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/menu_text.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/config/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/config/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/models/settings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/models/settings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/utils/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/utils/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/stdio.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/stdio.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/rich.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/rich.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/json.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/json.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/figure.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/figure.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/html.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/html.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/tsv.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/tsv.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/outputs/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/outputs/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/package_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/package_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/credentials.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/credentials.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/namespace_tree.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/namespace_tree.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/project_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/project_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/fetcher_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/fetcher_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/provider_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/provider_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/router_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/router_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/pydantic_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/pydantic_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/post_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/post_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/codegen/test_gen.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/codegen/test_gen.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/local.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/local.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/http.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/http.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/spec.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/spec.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/openapi_schema.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/openapi_schema.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/protocol.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/protocol.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/_unpack.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/_unpack.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/socrata.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/socrata.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/multi.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/multi.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/openbb_cli/dispatchers/runtime.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/openbb_cli/dispatchers/runtime.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509419169
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_84218fcae5b14df28231a8e29bd6381c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/extensions/tests/utils/integration_tests_testers.py",
+            "line": 314,
+            "marker": "TODO",
+            "comment": "# TODO: See how to handle edge cases that are excluded from the schema"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509428562
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6de78a90d51e4ff6ac4491d1a0f52857",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/openbb_core/api/router/helpers/coverage_helpers.py",
+            "line": 26,
+            "marker": "TODO",
+            "comment": "# TODO: Add return typing Optional[Callable] to this function. First need to"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509428588
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ce9950fb5ffd41238a820f0069acefa5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/openbb_core/app/provider_interface.py",
+            "line": 109,
+            "marker": "TODO",
+            "comment": "# TODO: Try these 4 methods in a single iteration"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509428825
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_86b282f1251344438e443d457cf4f11a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/openbb_core/app/static/package_builder/import_definition.py",
+            "line": 267,
+            "marker": "TODO",
+            "comment": "# TODO: Find a better way to handle this. This is a temporary solution."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509428961
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_602f7e6175be4d50af980a17ab2f3853",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/tests/app/test_command_runner.py",
+            "line": 252,
+            "marker": "TODO",
+            "comment": "# TODO: add more test cases with @pytest.mark.parametrize"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509429165
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c31e2eebe01a48fc8f007aea21a864bf",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/tests/app/test_command_runner.py",
+            "line": 309,
+            "marker": "TODO",
+            "comment": "# TODO: add more test cases with @pytest.mark.parametrize"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509429165
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4ae8fdacda6840219699dee17ae151b2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/OpenBB/openbb_platform/core/tests/app/model/charts/test_chart.py",
+            "line": 59,
+            "marker": "TODO",
+            "comment": "# TODO : add test after the function is properly refactored"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509429387
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509439896
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_154e18aa277c4368",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "7df7d0c5592bf25be88e87e130a05c71e243d2d8",
+          "message": "[BugFix] #7672-Preserve unnamed MultiIndex levels in DataFrame round-trip. (#7762)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5129ee285d1d4fd09862cb93803a75c1",
+          "result": "架构转折点: commit 7df7d0c5 - [BugFix] #7672-Preserve unnamed MultiIndex levels in DataFrame round-trip. (#776",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/OpenBB",
+            "commit": "7df7d0c5592bf25be88e87e130a05c71e243d2d8",
+            "message": "[BugFix] #7672-Preserve unnamed MultiIndex levels in DataFrame round-trip. (#7762)",
+            "files_changed": 4138,
+            "insertions": 1853721,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509440903
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509443285
+    }
+  ],
+  "provenance": "external",
+  "source_label": "OpenBB",
+  "weight": 0.5,
+  "created_at": 1793509419168,
+  "source_id": "p1_OpenBB",
+  "repo_url": "https://github.com/OpenBB-finance/OpenBB",
+  "commit": "7df7d0c5592bf25be88e87e130a05c71e243d2d8",
+  "license": "Apache-2.0",
+  "collected_at": 1793509791186
+}

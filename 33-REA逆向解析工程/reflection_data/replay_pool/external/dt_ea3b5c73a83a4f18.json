@@ -1,0 +1,2906 @@
+{
+  "tree_id": "dt_ea3b5c73a83a4f18",
+  "task": {
+    "target": "https://github.com/AI4Finance-Foundation/FinRobot",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_4e9de912cec0403c",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/AI4Finance-Foundation/FinRobot"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/refresh_sec_holdings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/refresh_sec_holdings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/wf_operator_fuzz.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/wf_operator_fuzz.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_forward_seed_integration_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_forward_seed_integration_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/verify_fmp_stable_migration.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/verify_fmp_stable_migration.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_review_map.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_review_map.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/verify_ceo_name_basket.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/verify_ceo_name_basket.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_regen_aapl_report.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_regen_aapl_report.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_cyclical_classifier_basket.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_cyclical_classifier_basket.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_edgartools_api.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_edgartools_api.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_ddm_blume_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_ddm_blume_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_dcf_protocol_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_dcf_protocol_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_verify_gate_live.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_verify_gate_live.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_cyclical_probe_profiles.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_cyclical_probe_profiles.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_foreign_fx_end_to_end.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_foreign_fx_end_to_end.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_edgartools_v2.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_edgartools_v2.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_numeric_audit_basket.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_numeric_audit_basket.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_cyclical_probe_sec.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_cyclical_probe_sec.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/scan_artifact_contract.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/scan_artifact_contract.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_b1b2_fix_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_b1b2_fix_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/verify_report_field_basket.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/verify_report_field_basket.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_probe_fmp_stinv_coverage.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_probe_fmp_stinv_coverage.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_cross_caliber.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_cross_caliber.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_bank_ddm_research_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_bank_ddm_research_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/build_truth_anchor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/build_truth_anchor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/verify_rivn_financials.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/verify_rivn_financials.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_cyclical_probe_peers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_cyclical_probe_peers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/convert_skills.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/convert_skills.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_dcf_base_caliber_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_dcf_base_caliber_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_audit_balance_sheet_truth.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_audit_balance_sheet_truth.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_terminal_fcf_fix_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_terminal_fcf_fix_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_cyclical_normalization_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_cyclical_normalization_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/probe_derived_fields_truth.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/probe_derived_fields_truth.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/find_refs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/find_refs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_prompt_eval_equity_research.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_prompt_eval_equity_research.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/scripts/_peer_determinism_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/scripts/_peer_determinism_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/llm_probe.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/llm_probe.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/sdk.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/sdk.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/paths.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/paths.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/warning_text.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/warning_text.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/events.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/events.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/auth.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/auth.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088212
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/secret_store.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/secret_store.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/ratelimit.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/ratelimit.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/run_store.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/run_store.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/semantic_diff.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/semantic_diff.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/field_registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/field_registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/migrate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/migrate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/builders.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/builders.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/summary_extractor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/summary_extractor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/contract.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/contract.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/store.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/store.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_ext_58",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finrobot_desktop/finrobot/artifact/sqlite_store.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finrobot_desktop/finrobot/artifact/sqlite_store.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511088213
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4ce234a3be1b4cada26d5e412f82a3e8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinRobot/finrobot_autogen/finrobot/data_source/filings_src/prepline_sec_filings/sec_document.py",
+                "line": 116,
+                "marker": "TODO",
+                "comment": "# TODO(alan): Maybe swap risk title out for something more generic? It helps to"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511091368
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511094138
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_4e9de912cec0403c",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "63e1884a42ea7b729551a5424b4bd6a65af636e0",
+              "message": "fix(data): classify FMP payment-required responses (#119)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7e89121e559d446194d5e4ccceea6dde",
+              "result": "架构转折点: commit 63e1884a - fix(data): classify FMP payment-required responses (#119)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/FinRobot",
+                "commit": "63e1884a42ea7b729551a5424b4bd6a65af636e0",
+                "message": "fix(data): classify FMP payment-required responses (#119)",
+                "files_changed": 1049,
+                "insertions": 312825,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511094328
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511094887
+        }
+      ],
+      "created_at": 1793511088210
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/refresh_sec_holdings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/refresh_sec_holdings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/wf_operator_fuzz.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/wf_operator_fuzz.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_forward_seed_integration_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_forward_seed_integration_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/verify_fmp_stable_migration.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/verify_fmp_stable_migration.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_review_map.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_review_map.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/verify_ceo_name_basket.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/verify_ceo_name_basket.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_regen_aapl_report.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_regen_aapl_report.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_cyclical_classifier_basket.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_cyclical_classifier_basket.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_edgartools_api.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_edgartools_api.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_ddm_blume_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_ddm_blume_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_dcf_protocol_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_dcf_protocol_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_verify_gate_live.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_verify_gate_live.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_cyclical_probe_profiles.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_cyclical_probe_profiles.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_foreign_fx_end_to_end.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_foreign_fx_end_to_end.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_edgartools_v2.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_edgartools_v2.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_numeric_audit_basket.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_numeric_audit_basket.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_cyclical_probe_sec.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_cyclical_probe_sec.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/scan_artifact_contract.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/scan_artifact_contract.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_b1b2_fix_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_b1b2_fix_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/verify_report_field_basket.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/verify_report_field_basket.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_probe_fmp_stinv_coverage.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_probe_fmp_stinv_coverage.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_cross_caliber.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_cross_caliber.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_bank_ddm_research_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_bank_ddm_research_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/build_truth_anchor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/build_truth_anchor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/verify_rivn_financials.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/verify_rivn_financials.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_cyclical_probe_peers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_cyclical_probe_peers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/convert_skills.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/convert_skills.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_dcf_base_caliber_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_dcf_base_caliber_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_audit_balance_sheet_truth.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_audit_balance_sheet_truth.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_terminal_fcf_fix_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_terminal_fcf_fix_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_cyclical_normalization_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_cyclical_normalization_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/probe_derived_fields_truth.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/probe_derived_fields_truth.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/find_refs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/find_refs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_prompt_eval_equity_research.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_prompt_eval_equity_research.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/scripts/_peer_determinism_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/scripts/_peer_determinism_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/llm_probe.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/llm_probe.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/sdk.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/sdk.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/paths.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/paths.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/warning_text.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/warning_text.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/events.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/events.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/auth.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/auth.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088212
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/secret_store.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/secret_store.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/ratelimit.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/ratelimit.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/run_store.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/run_store.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/semantic_diff.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/semantic_diff.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/field_registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/field_registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/migrate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/migrate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/builders.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/builders.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/summary_extractor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/summary_extractor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/contract.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/contract.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/store.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/store.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_ext_58",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finrobot_desktop/finrobot/artifact/sqlite_store.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finrobot_desktop/finrobot/artifact/sqlite_store.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511088213
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4ce234a3be1b4cada26d5e412f82a3e8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinRobot/finrobot_autogen/finrobot/data_source/filings_src/prepline_sec_filings/sec_document.py",
+            "line": 116,
+            "marker": "TODO",
+            "comment": "# TODO(alan): Maybe swap risk title out for something more generic? It helps to"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511091368
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511094138
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_4e9de912cec0403c",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "63e1884a42ea7b729551a5424b4bd6a65af636e0",
+          "message": "fix(data): classify FMP payment-required responses (#119)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7e89121e559d446194d5e4ccceea6dde",
+          "result": "架构转折点: commit 63e1884a - fix(data): classify FMP payment-required responses (#119)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/FinRobot",
+            "commit": "63e1884a42ea7b729551a5424b4bd6a65af636e0",
+            "message": "fix(data): classify FMP payment-required responses (#119)",
+            "files_changed": 1049,
+            "insertions": 312825,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511094328
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511094887
+    }
+  ],
+  "provenance": "external",
+  "source_label": "FinRobot",
+  "weight": 0.5,
+  "created_at": 1793511088210,
+  "source_id": "p2_FinRobot",
+  "repo_url": "https://github.com/AI4Finance-Foundation/FinRobot",
+  "commit": "63e1884a42ea7b729551a5424b4bd6a65af636e0",
+  "license": "unknown",
+  "collected_at": 1793511400121
+}

@@ -1,0 +1,166 @@
+{
+  "tree_id": "dt_045122832da043dd",
+  "task": {
+    "target": "https://github.com/b3hzadsh/Evolutionary-Trading-Strategies",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_a4a15dd05e8c44f0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/b3hzadsh/Evolutionary-Trading-Strategies"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_a4a15dd05e8c44f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "GP+Testing-Copy2.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "GP+Testing-Copy2.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511320146
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_a4a15dd05e8c44f0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ec5fa03144fae450d27c6bef5b601c0281085cf3",
+              "message": "load data from quandl"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_20d6f744dac74c859323d54a28f7d8c6",
+              "result": "架构转折点: commit ec5fa031 - load data from quandl",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/evolutionary-trading-strategies",
+                "commit": "ec5fa03144fae450d27c6bef5b601c0281085cf3",
+                "message": "load data from quandl",
+                "files_changed": 3,
+                "insertions": 431,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511320169
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511320177
+        }
+      ],
+      "created_at": 1793511320146
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_a4a15dd05e8c44f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "GP+Testing-Copy2.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "GP+Testing-Copy2.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511320146
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_a4a15dd05e8c44f0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ec5fa03144fae450d27c6bef5b601c0281085cf3",
+          "message": "load data from quandl"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_20d6f744dac74c859323d54a28f7d8c6",
+          "result": "架构转折点: commit ec5fa031 - load data from quandl",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/evolutionary-trading-strategies",
+            "commit": "ec5fa03144fae450d27c6bef5b601c0281085cf3",
+            "message": "load data from quandl",
+            "files_changed": 3,
+            "insertions": 431,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511320169
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511320177
+    }
+  ],
+  "provenance": "external",
+  "source_label": "evolutionary-trading-strategies",
+  "weight": 0.5,
+  "created_at": 1793511320146,
+  "source_id": "p2_evolutionary-trading-strategies",
+  "repo_url": "https://github.com/b3hzadsh/Evolutionary-Trading-Strategies",
+  "commit": "ec5fa03144fae450d27c6bef5b601c0281085cf3",
+  "license": "unknown",
+  "collected_at": 1793511404226
+}

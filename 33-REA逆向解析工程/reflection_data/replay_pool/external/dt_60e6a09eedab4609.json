@@ -1,0 +1,3062 @@
+{
+  "tree_id": "dt_60e6a09eedab4609",
+  "task": {
+    "target": "https://github.com/yongkyung-oh/Stable-Neural-SDEs",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_e2bbd69608004e4b",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/yongkyung-oh/Stable-Neural-SDEs"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/common_sde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/common_sde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/mujoco.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/mujoco.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/mujoco-sde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/mujoco-sde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/time_dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/time_dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/parse.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/parse.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/misc.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/misc.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint_mem.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint_mem.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/odesolver_endtime.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/odesolver_endtime.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/adaptive_grid_solver.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/adaptive_grid_solver.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/symplectic.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/symplectic.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/fixed_grid_solver.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/fixed_grid_solver.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/tuple_to_tensor_wrapper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/tuple_to_tensor_wrapper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/autograd_functional.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/autograd_functional.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/stiff_ode_solver.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/stiff_ode_solver.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/ode_solver.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/ode_solver.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models_sde/neuralsde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models_sde/neuralsde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models_sde/other.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models_sde/other.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models_sde/metamodel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models_sde/metamodel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models_sde/vector_fields.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models_sde/vector_fields.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models_sde/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models_sde/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models/other.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models/other.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models/metamodel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models/metamodel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models/vector_fields.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models/vector_fields.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/models/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/models/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/datasets/mujoco.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/datasets/mujoco.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/datasets/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/datasets/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/datasets/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/datasets/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/controldiffeq/cdeint_module.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/controldiffeq/cdeint_module.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/controldiffeq/interpolate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/controldiffeq/interpolate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/controldiffeq/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/controldiffeq/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_forecasting/controldiffeq/misc.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_forecasting/controldiffeq/misc.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/speech_commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/speech_commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/common_sde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/common_sde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/sepsis-sde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/sepsis-sde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/speech_commands-sde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/speech_commands-sde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/sepsis.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/sepsis.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models_sde/neuralsde.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models_sde/neuralsde.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models_sde/other.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models_sde/other.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models_sde/metamodel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models_sde/metamodel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models_sde/vector_fields.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models_sde/vector_fields.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models_sde/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models_sde/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models/other.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models/other.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models/metamodel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models/metamodel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models/vector_fields.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models/vector_fields.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "benchmark_classification/models/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "benchmark_classification/models/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511342485
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d95384edb13c4d609ad1a842929fcc12",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/benchmark_forecasting/models/metamodel.py",
+                "line": 160,
+                "marker": "TODO",
+                "comment": "# TODO z0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342606
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343436
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e31fac17fdfd4f89944059dda36cf0cb",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/module/grud.py",
+                "line": 202,
+                "marker": "TODO",
+                "comment": "#TODO: not adapted yet"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342860
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343436
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_802647177a51423f980a2f799d7d8f7a",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/module/odelstm.py",
+                "line": 59,
+                "marker": "HACK",
+                "comment": "# HACK: Make sure no two points are equal"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342869
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343436
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cde76aa0d5e7491b896ab194fe8c5321",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+                "line": 87,
+                "marker": "TODO",
+                "comment": "# TODO z0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342897
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343437
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_afc340fc7ff5400c9ab49d75c01f8dfe",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+                "line": 272,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342897
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343437
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_501bd239b2d74d3d828a0baa19cac0a9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+                "line": 453,
+                "marker": "TODO",
+                "comment": "# TODO z0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342897
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343437
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1e09d17fb28c4889b574cbcb7eed7b2e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+                "line": 498,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511342897
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343437
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_e2bbd69608004e4b",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "dbda6575f8e7150af357febf6ef00c9702183322",
+              "message": "Update README"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_64d58465033a4479bd46981ebd83baa6",
+              "result": "架构转折点: commit dbda6575 - Update README",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/Stable-Neural-SDEs",
+                "commit": "dbda6575f8e7150af357febf6ef00c9702183322",
+                "message": "Update README",
+                "files_changed": 170,
+                "insertions": 35436,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511343509
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511343792
+        }
+      ],
+      "created_at": 1793511342483
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/common_sde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/common_sde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/mujoco.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/mujoco.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/mujoco-sde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/mujoco-sde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/time_dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/time_dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/parse.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/parse.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/misc.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/misc.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint_mem.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint_mem.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/odesolver_endtime.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/odesolver_endtime.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver_mem/adjoint.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/adaptive_grid_solver.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/adaptive_grid_solver.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/symplectic.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/symplectic.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/fixed_grid_solver.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/fixed_grid_solver.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/tuple_to_tensor_wrapper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/tuple_to_tensor_wrapper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/autograd_functional.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/autograd_functional.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/stiff_ode_solver.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/stiff_ode_solver.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/ode_solver.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/TorchDiffEqPack/odesolver/ode_solver.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models_sde/neuralsde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models_sde/neuralsde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models_sde/other.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models_sde/other.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models_sde/metamodel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models_sde/metamodel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models_sde/vector_fields.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models_sde/vector_fields.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models_sde/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models_sde/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models/other.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models/other.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models/metamodel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models/metamodel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models/vector_fields.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models/vector_fields.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/models/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/models/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/datasets/mujoco.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/datasets/mujoco.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/datasets/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/datasets/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/datasets/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/datasets/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/controldiffeq/cdeint_module.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/controldiffeq/cdeint_module.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/controldiffeq/interpolate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/controldiffeq/interpolate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/controldiffeq/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/controldiffeq/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_forecasting/controldiffeq/misc.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_forecasting/controldiffeq/misc.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/speech_commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/speech_commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/common_sde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/common_sde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/sepsis-sde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/sepsis-sde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/speech_commands-sde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/speech_commands-sde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/sepsis.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/sepsis.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models_sde/neuralsde.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models_sde/neuralsde.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models_sde/other.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models_sde/other.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models_sde/metamodel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models_sde/metamodel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models_sde/vector_fields.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models_sde/vector_fields.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models_sde/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models_sde/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models/other.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models/other.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models/metamodel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models/metamodel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models/vector_fields.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models/vector_fields.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "benchmark_classification/models/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "benchmark_classification/models/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511342485
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d95384edb13c4d609ad1a842929fcc12",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/benchmark_forecasting/models/metamodel.py",
+            "line": 160,
+            "marker": "TODO",
+            "comment": "# TODO z0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342606
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343436
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e31fac17fdfd4f89944059dda36cf0cb",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/module/grud.py",
+            "line": 202,
+            "marker": "TODO",
+            "comment": "#TODO: not adapted yet"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342860
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343436
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_802647177a51423f980a2f799d7d8f7a",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/module/odelstm.py",
+            "line": 59,
+            "marker": "HACK",
+            "comment": "# HACK: Make sure no two points are equal"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342869
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343436
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cde76aa0d5e7491b896ab194fe8c5321",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+            "line": 87,
+            "marker": "TODO",
+            "comment": "# TODO z0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342897
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343437
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_afc340fc7ff5400c9ab49d75c01f8dfe",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+            "line": 272,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342897
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343437
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_501bd239b2d74d3d828a0baa19cac0a9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+            "line": 453,
+            "marker": "TODO",
+            "comment": "# TODO z0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342897
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343437
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1e09d17fb28c4889b574cbcb7eed7b2e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/Stable-Neural-SDEs/torch-ists/torch_ists/diff_module/ANCDE/metamodel.py",
+            "line": 498,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511342897
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343437
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_e2bbd69608004e4b",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "dbda6575f8e7150af357febf6ef00c9702183322",
+          "message": "Update README"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_64d58465033a4479bd46981ebd83baa6",
+          "result": "架构转折点: commit dbda6575 - Update README",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/Stable-Neural-SDEs",
+            "commit": "dbda6575f8e7150af357febf6ef00c9702183322",
+            "message": "Update README",
+            "files_changed": 170,
+            "insertions": 35436,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511343509
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511343792
+    }
+  ],
+  "provenance": "external",
+  "source_label": "Stable-Neural-SDEs",
+  "weight": 0.5,
+  "created_at": 1793511342483,
+  "source_id": "p2_Stable-Neural-SDEs",
+  "repo_url": "https://github.com/yongkyung-oh/Stable-Neural-SDEs",
+  "commit": "dbda6575f8e7150af357febf6ef00c9702183322",
+  "license": "unknown",
+  "collected_at": 1793511401003
+}

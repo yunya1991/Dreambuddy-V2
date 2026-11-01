@@ -1,0 +1,488 @@
+{
+  "tree_id": "dt_808cb97f20ff4a8d",
+  "task": {
+    "target": "https://github.com/aliyun/cflue",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_0c0c9bd06941472f",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/aliyun/cflue"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "exec_application_eval.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "exec_application_eval.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "exec_knowledge_eval.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "exec_knowledge_eval.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cflue_main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cflue_main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "evaluator/evaluator.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "evaluator/evaluator.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/compute_score.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/compute_score.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/extract_choice.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/extract_choice.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/format_example.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/format_example.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/dataset.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/dataset.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362564
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_0c0c9bd06941472f",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ff28c38f9618b51b6747f275b09d24c14fe58509",
+              "message": "Merge branch 'zhujie'"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_54e82ff718404189904f0dfe736a371d",
+              "result": "架构转折点: commit ff28c38f - Merge branch 'zhujie'",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/cflue",
+                "commit": "ff28c38f9618b51b6747f275b09d24c14fe58509",
+                "message": "Merge branch 'zhujie'",
+                "files_changed": 21,
+                "insertions": 1835,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511362653
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511362735
+        }
+      ],
+      "created_at": 1793511362563
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "exec_application_eval.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "exec_application_eval.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "exec_knowledge_eval.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "exec_knowledge_eval.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cflue_main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cflue_main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "evaluator/evaluator.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "evaluator/evaluator.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/compute_score.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/compute_score.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/extract_choice.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/extract_choice.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/format_example.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/format_example.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/dataset.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/dataset.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362564
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_0c0c9bd06941472f",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ff28c38f9618b51b6747f275b09d24c14fe58509",
+          "message": "Merge branch 'zhujie'"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_54e82ff718404189904f0dfe736a371d",
+          "result": "架构转折点: commit ff28c38f - Merge branch 'zhujie'",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/cflue",
+            "commit": "ff28c38f9618b51b6747f275b09d24c14fe58509",
+            "message": "Merge branch 'zhujie'",
+            "files_changed": 21,
+            "insertions": 1835,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511362653
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511362735
+    }
+  ],
+  "provenance": "external",
+  "source_label": "cflue",
+  "weight": 0.5,
+  "created_at": 1793511362563,
+  "source_id": "p2_cflue",
+  "repo_url": "https://github.com/aliyun/cflue",
+  "commit": "ff28c38f9618b51b6747f275b09d24c14fe58509",
+  "license": "unknown",
+  "collected_at": 1793511402913
+}

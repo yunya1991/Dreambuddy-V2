@@ -1,0 +1,2064 @@
+{
+  "tree_id": "dt_63ecdb0bbe344e49",
+  "task": {
+    "target": "https://github.com/pytest-dev/pluggy",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_40bc56e830d74878",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/pytest-dev/pluggy"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/benchmark.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/benchmark.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_warnings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_warnings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_tracer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_tracer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_details.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_details.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_hookcaller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_hookcaller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_invocations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_invocations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_multicall.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_multicall.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_pluginmanager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_pluginmanager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_result.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_result.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "testing/test_helpers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "testing/test_helpers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_warnings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_warnings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_decorators.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_decorators.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_hooks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_hooks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_compat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_compat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_result.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_result.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_tracing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_tracing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_caller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_caller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_manager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_manager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_impl.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_impl.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_callers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_callers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/pluggy/_execution.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/pluggy/_execution.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/conf.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/conf.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/toy-example.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/toy-example.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample-spam/setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample-spam/setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample-spam/eggsample_spam.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample-spam/eggsample_spam.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample/setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample/setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample/eggsample/lib.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample/eggsample/lib.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample/eggsample/hookspecs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample/eggsample/hookspecs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample/eggsample/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample/eggsample/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/examples/eggsample/eggsample/host.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/examples/eggsample/eggsample/host.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "downstream/run_downstream.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "downstream/run_downstream.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/towncrier-draft-to-file.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/towncrier-draft-to-file.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/release.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/release.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707126
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f5412193e20c45c0bc2ceb95eecfedd6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+                "line": 87,
+                "marker": "TODO",
+                "comment": "# TODO: Document, or make private."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506707186
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707286
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4ca8ad57298647ff844b6bc786e8358f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+                "line": 93,
+                "marker": "TODO",
+                "comment": "# TODO: Document, or make private."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506707186
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707286
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_544ee7ab196f4966acd37162e24c899e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+                "line": 97,
+                "marker": "TODO",
+                "comment": "# TODO: Document, or make private."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506707186
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707286
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_91b5087ed033492f8aa8aa7fce4f0694",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+                "line": 271,
+                "marker": "XXX",
+                "comment": "# XXX: remember firstresult isn't compat with historic"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506707186
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707286
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_40bc56e830d74878",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "3fc9e561ea7e72a95549673d79ebdaf4a9fae829",
+              "message": "[pre-commit.ci] pre-commit autoupdate (#813)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f95ec74dd656488a881e1ebcb2d96b35",
+              "result": "架构转折点: commit 3fc9e561 - [pre-commit.ci] pre-commit autoupdate (#813)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/pluggy",
+                "commit": "3fc9e561ea7e72a95549673d79ebdaf4a9fae829",
+                "message": "[pre-commit.ci] pre-commit autoupdate (#813)",
+                "files_changed": 82,
+                "insertions": 10906,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793506707294
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506707313
+        }
+      ],
+      "created_at": 1793506707125
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/benchmark.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/benchmark.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_warnings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_warnings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_tracer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_tracer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_details.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_details.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_hookcaller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_hookcaller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_invocations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_invocations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_multicall.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_multicall.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_pluginmanager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_pluginmanager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_result.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_result.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "testing/test_helpers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "testing/test_helpers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_warnings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_warnings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_decorators.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_decorators.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_hooks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_hooks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_compat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_compat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_result.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_result.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_tracing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_tracing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_caller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_caller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_manager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_manager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_impl.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_impl.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_callers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_callers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/pluggy/_execution.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/pluggy/_execution.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/conf.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/conf.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/toy-example.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/toy-example.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample-spam/setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample-spam/setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample-spam/eggsample_spam.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample-spam/eggsample_spam.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample/setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample/setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample/eggsample/lib.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample/eggsample/lib.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample/eggsample/hookspecs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample/eggsample/hookspecs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample/eggsample/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample/eggsample/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/examples/eggsample/eggsample/host.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/examples/eggsample/eggsample/host.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "downstream/run_downstream.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "downstream/run_downstream.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/towncrier-draft-to-file.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/towncrier-draft-to-file.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/release.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/release.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707126
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f5412193e20c45c0bc2ceb95eecfedd6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+            "line": 87,
+            "marker": "TODO",
+            "comment": "# TODO: Document, or make private."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506707186
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707286
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4ca8ad57298647ff844b6bc786e8358f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+            "line": 93,
+            "marker": "TODO",
+            "comment": "# TODO: Document, or make private."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506707186
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707286
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_544ee7ab196f4966acd37162e24c899e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+            "line": 97,
+            "marker": "TODO",
+            "comment": "# TODO: Document, or make private."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506707186
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707286
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_91b5087ed033492f8aa8aa7fce4f0694",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/pluggy/src/pluggy/_caller.py",
+            "line": 271,
+            "marker": "XXX",
+            "comment": "# XXX: remember firstresult isn't compat with historic"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506707186
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707286
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_40bc56e830d74878",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "3fc9e561ea7e72a95549673d79ebdaf4a9fae829",
+          "message": "[pre-commit.ci] pre-commit autoupdate (#813)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f95ec74dd656488a881e1ebcb2d96b35",
+          "result": "架构转折点: commit 3fc9e561 - [pre-commit.ci] pre-commit autoupdate (#813)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/pluggy",
+            "commit": "3fc9e561ea7e72a95549673d79ebdaf4a9fae829",
+            "message": "[pre-commit.ci] pre-commit autoupdate (#813)",
+            "files_changed": 82,
+            "insertions": 10906,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793506707294
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506707313
+    }
+  ],
+  "provenance": "external",
+  "source_label": "pluggy",
+  "weight": 0.5,
+  "created_at": 1793506707125,
+  "source_id": "p0_pluggy",
+  "repo_url": "https://github.com/pytest-dev/pluggy",
+  "commit": "3fc9e561ea7e72a95549673d79ebdaf4a9fae829",
+  "license": "MIT",
+  "collected_at": 1793506855029
+}

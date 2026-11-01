@@ -1,0 +1,2846 @@
+{
+  "tree_id": "dt_1cf0058b51d44a7f",
+  "task": {
+    "target": "https://github.com/uber/causalml",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_34b32607a3c24202",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/uber/causalml"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/conf.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/conf.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/_static/js/collapsible-toctree.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/_static/js/collapsible-toctree.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/propensity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/propensity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/match.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/match.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/rate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/rate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/classification.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/classification.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/cate_scoring.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/cate_scoring.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/visualize.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/visualize.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/sensitivity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/sensitivity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/regression.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/regression.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/ground_truth.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/ground_truth.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/metrics/const.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/metrics/const.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/optimize/unit_selection.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/optimize/unit_selection.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/optimize/policylearner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/optimize/policylearner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/optimize/value_optimization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/optimize/value_optimization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/optimize/pns.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/optimize/pns.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/optimize/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/optimize/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/optimize/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/optimize/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/feature_selection/filters.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/feature_selection/filters.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/feature_selection/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/feature_selection/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/classification.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/classification.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/_benchmarks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/_benchmarks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/regression.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/regression.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/semiSynthetic.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/semiSynthetic.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/synthetic.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/synthetic.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/dataset/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/dataset/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/serialization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/serialization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/_arg_order.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/_arg_order.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/tmle.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/tmle.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/tlearner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/tlearner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/serialization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/serialization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/rlearner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/rlearner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/slearner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/slearner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/xlearner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/xlearner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/drlearner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/drlearner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/meta/explainer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/meta/explainer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/dragonnet.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/dragonnet.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/cevae/cevae.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/cevae/cevae.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/cevae/losses.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/cevae/losses.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/cevae/modeling.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/cevae/modeling.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "causalml/inference/jax/cevae/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "causalml/inference/jax/cevae/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509821490
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b215ceedf36f44658668dd1dfb76adcc",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/causalml/causalml/match.py",
+                "line": 202,
+                "marker": "XXX",
+                "comment": "# XXX: Should we deduplicate the indices of the control group too?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509821500
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509822188
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ab41f7a7ae5141908af92a2f9408ec34",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/causalml/causalml/feature_selection/filters.py",
+                "line": 506,
+                "marker": "TODO",
+                "comment": "# [TODO] Application to categorical features"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509821542
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509822188
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6ac9b0e998c84e3aa1ac251aba0756f5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/causalml/causalml/inference/tree/_tree/_classes.py",
+                "line": 440,
+                "marker": "TODO",
+                "comment": "# TODO: tree shouldn't need this in this case"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509821671
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509822188
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fa06c9f896014f92ae72b70ae7e6be84",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/causalml/causalml/inference/tree/_tree/_classes.py",
+                "line": 618,
+                "marker": "TODO",
+                "comment": "# TODO: the tree shouldn't need this param"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509821671
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509822188
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_34b32607a3c24202",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "d59bb520fc78410c01c443bad0ac57ea972844b8",
+              "message": "Release v0.18.0 (#1056)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9a55088807464624a29236616f7dfb5a",
+              "result": "架构转折点: commit d59bb520 - Release v0.18.0 (#1056)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/causalml",
+                "commit": "d59bb520fc78410c01c443bad0ac57ea972844b8",
+                "message": "Release v0.18.0 (#1056)",
+                "files_changed": 250,
+                "insertions": 100650,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509822591
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509823532
+        }
+      ],
+      "created_at": 1793509821489
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/conf.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/conf.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/_static/js/collapsible-toctree.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/_static/js/collapsible-toctree.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/propensity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/propensity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/match.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/match.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/rate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/rate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/classification.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/classification.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/cate_scoring.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/cate_scoring.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/visualize.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/visualize.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/sensitivity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/sensitivity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/regression.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/regression.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/ground_truth.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/ground_truth.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/metrics/const.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/metrics/const.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/optimize/unit_selection.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/optimize/unit_selection.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/optimize/policylearner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/optimize/policylearner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/optimize/value_optimization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/optimize/value_optimization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/optimize/pns.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/optimize/pns.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/optimize/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/optimize/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/optimize/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/optimize/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/feature_selection/filters.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/feature_selection/filters.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/feature_selection/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/feature_selection/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/classification.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/classification.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/_benchmarks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/_benchmarks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/regression.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/regression.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/semiSynthetic.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/semiSynthetic.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/synthetic.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/synthetic.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/dataset/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/dataset/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/serialization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/serialization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/_arg_order.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/_arg_order.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/tmle.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/tmle.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/tlearner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/tlearner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/serialization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/serialization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/rlearner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/rlearner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/slearner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/slearner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/xlearner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/xlearner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/drlearner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/drlearner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/meta/explainer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/meta/explainer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/dragonnet.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/dragonnet.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/cevae/cevae.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/cevae/cevae.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/cevae/losses.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/cevae/losses.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/cevae/modeling.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/cevae/modeling.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "causalml/inference/jax/cevae/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "causalml/inference/jax/cevae/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509821490
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b215ceedf36f44658668dd1dfb76adcc",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/causalml/causalml/match.py",
+            "line": 202,
+            "marker": "XXX",
+            "comment": "# XXX: Should we deduplicate the indices of the control group too?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509821500
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509822188
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ab41f7a7ae5141908af92a2f9408ec34",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/causalml/causalml/feature_selection/filters.py",
+            "line": 506,
+            "marker": "TODO",
+            "comment": "# [TODO] Application to categorical features"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509821542
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509822188
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6ac9b0e998c84e3aa1ac251aba0756f5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/causalml/causalml/inference/tree/_tree/_classes.py",
+            "line": 440,
+            "marker": "TODO",
+            "comment": "# TODO: tree shouldn't need this in this case"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509821671
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509822188
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fa06c9f896014f92ae72b70ae7e6be84",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/causalml/causalml/inference/tree/_tree/_classes.py",
+            "line": 618,
+            "marker": "TODO",
+            "comment": "# TODO: the tree shouldn't need this param"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509821671
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509822188
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_34b32607a3c24202",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "d59bb520fc78410c01c443bad0ac57ea972844b8",
+          "message": "Release v0.18.0 (#1056)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9a55088807464624a29236616f7dfb5a",
+          "result": "架构转折点: commit d59bb520 - Release v0.18.0 (#1056)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/causalml",
+            "commit": "d59bb520fc78410c01c443bad0ac57ea972844b8",
+            "message": "Release v0.18.0 (#1056)",
+            "files_changed": 250,
+            "insertions": 100650,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509822591
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509823532
+    }
+  ],
+  "provenance": "external",
+  "source_label": "causalml",
+  "weight": 0.5,
+  "created_at": 1793509821489,
+  "source_id": "p1_causalml",
+  "repo_url": "https://github.com/uber/causalml",
+  "commit": "d59bb520fc78410c01c443bad0ac57ea972844b8",
+  "license": "Apache-2.0",
+  "collected_at": 1793509860066
+}

@@ -1,0 +1,2650 @@
+{
+  "tree_id": "dt_ad0ec8f0f1cc4ddf",
+  "task": {
+    "target": "https://github.com/TauricResearch/TradingAgents",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_56aedcbbead24ba0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/TauricResearch/TradingAgents"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/display.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/display.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/selections.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/selections.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/updates.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/updates.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/run.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/run.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/stats_handler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/stats_handler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/prefs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/prefs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/report_html.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/report_html.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/default_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/default_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/portfolio.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/portfolio.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/reporting.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/reporting.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/backtest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/backtest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/memory/reflection.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/memory/reflection.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/memory/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/memory/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/memory/settlement.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/memory/settlement.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/memory/log.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/memory/log.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/analyst_execution.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/analyst_execution.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/checkpointer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/checkpointer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/conditional_logic.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/conditional_logic.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/propagation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/propagation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/trading_graph.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/trading_graph.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/graph/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/graph/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/symbols.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/symbols.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/router.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/router.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/errors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/errors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/date_window.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/date_window.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/net.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/net.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/files.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/files.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/reddit.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/reddit.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/fred.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/fred.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/sec_edgar.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/sec_edgar.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/stocktwits.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/stocktwits.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/polymarket.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/polymarket.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/indicator.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/indicator.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/stock.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/stock.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/news.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/news.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/fundamentals.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/fundamentals.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/alpha_vantage/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/snapshot.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/snapshot.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/ohlcv.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/ohlcv.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/market.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/market.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/news.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/news.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/fundamentals.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/fundamentals.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tradingagents/dataflows/vendors/yahoo/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tradingagents/dataflows/vendors/yahoo/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511080976
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_56aedcbbead24ba0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "c4544913a14ed3df5f1ed7b9e8483270ce20682a",
+              "message": "Merge pull request #1613 from TauricResearch/v0.7.1"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4e5071446f7141fcb5ab27abae459ab4",
+              "result": "架构转折点: commit c4544913 - Merge pull request #1613 from TauricResearch/v0.7.1",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/TradingAgents",
+                "commit": "c4544913a14ed3df5f1ed7b9e8483270ce20682a",
+                "message": "Merge pull request #1613 from TauricResearch/v0.7.1",
+                "files_changed": 213,
+                "insertions": 31008,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511081937
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511082050
+        }
+      ],
+      "created_at": 1793511080975
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/display.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/display.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/selections.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/selections.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/updates.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/updates.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/run.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/run.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/stats_handler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/stats_handler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/prefs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/prefs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/report_html.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/report_html.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/default_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/default_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/portfolio.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/portfolio.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/reporting.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/reporting.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/backtest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/backtest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/memory/reflection.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/memory/reflection.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/memory/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/memory/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/memory/settlement.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/memory/settlement.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/memory/log.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/memory/log.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/analyst_execution.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/analyst_execution.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/checkpointer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/checkpointer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/conditional_logic.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/conditional_logic.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/propagation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/propagation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/trading_graph.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/trading_graph.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/graph/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/graph/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/symbols.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/symbols.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/router.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/router.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/errors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/errors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/date_window.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/date_window.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/net.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/net.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/files.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/files.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/reddit.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/reddit.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/fred.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/fred.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/sec_edgar.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/sec_edgar.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/stocktwits.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/stocktwits.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/polymarket.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/polymarket.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/indicator.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/indicator.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/stock.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/stock.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/news.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/news.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/fundamentals.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/fundamentals.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/alpha_vantage/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/snapshot.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/snapshot.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/ohlcv.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/ohlcv.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/market.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/market.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/news.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/news.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/fundamentals.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/fundamentals.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tradingagents/dataflows/vendors/yahoo/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tradingagents/dataflows/vendors/yahoo/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511080976
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_56aedcbbead24ba0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "c4544913a14ed3df5f1ed7b9e8483270ce20682a",
+          "message": "Merge pull request #1613 from TauricResearch/v0.7.1"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4e5071446f7141fcb5ab27abae459ab4",
+          "result": "架构转折点: commit c4544913 - Merge pull request #1613 from TauricResearch/v0.7.1",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/TradingAgents",
+            "commit": "c4544913a14ed3df5f1ed7b9e8483270ce20682a",
+            "message": "Merge pull request #1613 from TauricResearch/v0.7.1",
+            "files_changed": 213,
+            "insertions": 31008,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511081937
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511082050
+    }
+  ],
+  "provenance": "external",
+  "source_label": "TradingAgents",
+  "weight": 0.5,
+  "created_at": 1793511080975,
+  "source_id": "p2_TradingAgents",
+  "repo_url": "https://github.com/TauricResearch/TradingAgents",
+  "commit": "c4544913a14ed3df5f1ed7b9e8483270ce20682a",
+  "license": "unknown",
+  "collected_at": 1793511401605
+}

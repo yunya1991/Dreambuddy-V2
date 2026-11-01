@@ -1,0 +1,2420 @@
+{
+  "tree_id": "dt_c8b49cf606ff45bc",
+  "task": {
+    "target": "https://github.com/virattt/ai-hedge-fund",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_07cc1a57e0ce4d7e",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/virattt/ai-hedge-fund"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/test_run.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/test_run.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paths.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paths.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/run.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/run.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/risk/limits.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/risk/limits.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/risk/test_limits.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/risk/test_limits.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/risk/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/risk/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/watch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/watch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/test_contract.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/test_contract.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/test_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/test_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/contract.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/contract.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/test_watch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/test_watch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/llm/cache.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/llm/cache.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/pead.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/pead.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/druckenmiller.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/druckenmiller.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/graham.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/graham.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/munger.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/munger.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/llm_agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/llm_agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/lynch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/lynch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/test_signals.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/test_signals.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/buffett.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/buffett.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/test_llm_agents.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/test_llm_agents.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/signals/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/signals/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/paper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/paper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/protocol.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/protocol.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/test_paper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/test_paper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/costs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/costs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/sim.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/sim.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/test_sim.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/test_sim.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/brokers/test_costs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/brokers/test_costs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/test_ledger.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/test_ledger.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/runner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/runner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/deployed.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/deployed.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/test_tick.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/test_tick.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/ledger.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/ledger.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/tick.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/tick.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/paper/test_runner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/paper/test_runner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/portfolio/construction.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/portfolio/construction.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/portfolio/validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/portfolio/validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/portfolio/test_construction.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/portfolio/test_construction.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "hedge_fund/portfolio/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "hedge_fund/portfolio/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509817905
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_07cc1a57e0ce4d7e",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "d3a2b6b2bc3579cf0f5bde9cebeea9754f1eae15",
+              "message": "Bump version to 2.6.3"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_13eb91c0567d4752accfe80e6b0ce3e6",
+              "result": "架构转折点: commit d3a2b6b2 - Bump version to 2.6.3",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/ai-hedge-fund",
+                "commit": "d3a2b6b2bc3579cf0f5bde9cebeea9754f1eae15",
+                "message": "Bump version to 2.6.3",
+                "files_changed": 141,
+                "insertions": 26022,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509818621
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509818662
+        }
+      ],
+      "created_at": 1793509817904
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/test_run.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/test_run.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paths.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paths.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/run.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/run.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/risk/limits.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/risk/limits.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/risk/test_limits.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/risk/test_limits.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/risk/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/risk/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/watch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/watch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/test_contract.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/test_contract.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/test_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/test_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/contract.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/contract.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/test_watch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/test_watch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/llm/cache.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/llm/cache.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/pead.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/pead.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/druckenmiller.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/druckenmiller.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/graham.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/graham.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/munger.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/munger.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/llm_agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/llm_agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/lynch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/lynch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/test_signals.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/test_signals.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/buffett.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/buffett.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/test_llm_agents.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/test_llm_agents.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/signals/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/signals/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/paper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/paper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/protocol.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/protocol.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/test_paper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/test_paper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/costs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/costs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/sim.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/sim.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/test_sim.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/test_sim.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/brokers/test_costs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/brokers/test_costs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/test_ledger.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/test_ledger.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/runner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/runner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/deployed.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/deployed.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/test_tick.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/test_tick.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/ledger.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/ledger.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/tick.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/tick.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/paper/test_runner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/paper/test_runner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/portfolio/construction.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/portfolio/construction.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/portfolio/validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/portfolio/validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/portfolio/test_construction.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/portfolio/test_construction.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "hedge_fund/portfolio/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "hedge_fund/portfolio/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509817905
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_07cc1a57e0ce4d7e",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "d3a2b6b2bc3579cf0f5bde9cebeea9754f1eae15",
+          "message": "Bump version to 2.6.3"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_13eb91c0567d4752accfe80e6b0ce3e6",
+          "result": "架构转折点: commit d3a2b6b2 - Bump version to 2.6.3",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/ai-hedge-fund",
+            "commit": "d3a2b6b2bc3579cf0f5bde9cebeea9754f1eae15",
+            "message": "Bump version to 2.6.3",
+            "files_changed": 141,
+            "insertions": 26022,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509818621
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509818662
+    }
+  ],
+  "provenance": "external",
+  "source_label": "ai-hedge-fund",
+  "weight": 0.5,
+  "created_at": 1793509817904,
+  "source_id": "p1_ai-hedge-fund",
+  "repo_url": "https://github.com/virattt/ai-hedge-fund",
+  "commit": "d3a2b6b2bc3579cf0f5bde9cebeea9754f1eae15",
+  "license": "MIT",
+  "collected_at": 1793509859464
+}

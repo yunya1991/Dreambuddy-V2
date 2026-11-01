@@ -1,0 +1,2466 @@
+{
+  "tree_id": "dt_ae93ce0b09dd47b9",
+  "task": {
+    "target": "https://github.com/Nixtla/nixtla",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_97896bbde665493b",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/Nixtla/nixtla"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/cleanup_finetuned_models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/cleanup_finetuned_models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/filter_licenses.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/filter_licenses.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/test_markers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/test_markers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/test_imports.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/test_imports.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/docs/test_simulate_explain_docs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/docs/test_simulate_explain_docs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/snowflake/test_snowflake_deployment.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/snowflake/test_snowflake_deployment.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/snowflake/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/snowflake/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/snowflake/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/snowflake/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/utils/test_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/utils/test_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/date_features/test_date_features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/date_features/test_date_features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_finetune_and_forecast.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_finetune_and_forecast.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_retry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_retry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_ray.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_ray.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_jobs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_jobs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_detect_anomalies_online.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_detect_anomalies_online.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_explain.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_explain.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_dask.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_dask.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_deprecations.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_deprecations.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_missing_values.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_missing_values.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_spark.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_spark.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_execute_step_job.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_execute_step_job.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_distributed_async_wrappers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_distributed_async_wrappers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_audit_data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_audit_data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_simulate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_simulate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_feature_contribution_types.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_feature_contribution_types.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_start_datetime_payload.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_start_datetime_payload.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_future_exog_alignment.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_future_exog_alignment.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_categorical_features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_categorical_features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_simulate_explain_jobs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_simulate_explain_jobs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_freq_regularity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_freq_regularity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_nixtla_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_nixtla_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/nixtla_client/test_jobs_integration.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/nixtla_client/test_jobs_integration.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/helpers/client_helper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/helpers/client_helper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/helpers/states.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/helpers/states.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/helpers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/helpers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/helpers/checks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/helpers/checks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/fixtures/spark_fixtures.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/fixtures/spark_fixtures.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/fixtures/ray_fixtures.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/fixtures/ray_fixtures.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/fixtures/dask_fixtures.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/fixtures/dask_fixtures.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "nixtla_tests/fixtures/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "nixtla_tests/fixtures/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/amazon-chronos/src/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/amazon-chronos/src/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/amazon-chronos/src/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/amazon-chronos/src/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/amazon-chronos/src/statsforecast_pipeline.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/amazon-chronos/src/statsforecast_pipeline.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/amazon-chronos/src/amazon_chronos/forecaster.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/amazon-chronos/src/amazon_chronos/forecaster.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/amazon-chronos/src/amazon_chronos/pipeline.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/amazon-chronos/src/amazon_chronos/pipeline.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/foundation-time-series-arena/xiuhmolpilli/arena.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/foundation-time-series-arena/xiuhmolpilli/arena.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "experiments/foundation-time-series-arena/xiuhmolpilli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "experiments/foundation-time-series-arena/xiuhmolpilli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511381637
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_97896bbde665493b",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "cadf28e5d31ffbf5497b0d3a6c25530b49b5b8ea",
+              "message": "[DOC] sync openapi doc version (#930)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1563ec6d643a4bb3804babe48c1e400a",
+              "result": "架构转折点: commit cadf28e5 - [DOC] sync openapi doc version (#930)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/nixtla",
+                "commit": "cadf28e5d31ffbf5497b0d3a6c25530b49b5b8ea",
+                "message": "[DOC] sync openapi doc version (#930)",
+                "files_changed": 465,
+                "insertions": 105042,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511382568
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511383133
+        }
+      ],
+      "created_at": 1793511381635
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/cleanup_finetuned_models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/cleanup_finetuned_models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/filter_licenses.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/filter_licenses.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/test_markers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/test_markers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/test_imports.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/test_imports.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/docs/test_simulate_explain_docs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/docs/test_simulate_explain_docs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/snowflake/test_snowflake_deployment.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/snowflake/test_snowflake_deployment.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/snowflake/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/snowflake/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/snowflake/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/snowflake/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/utils/test_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/utils/test_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/date_features/test_date_features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/date_features/test_date_features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_finetune_and_forecast.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_finetune_and_forecast.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_retry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_retry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_ray.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_ray.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_jobs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_jobs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_detect_anomalies_online.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_detect_anomalies_online.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_explain.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_explain.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_dask.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_dask.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_deprecations.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_deprecations.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_missing_values.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_missing_values.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_spark.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_spark.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_execute_step_job.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_execute_step_job.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_distributed_async_wrappers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_distributed_async_wrappers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_audit_data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_audit_data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_simulate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_simulate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_feature_contribution_types.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_feature_contribution_types.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_start_datetime_payload.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_start_datetime_payload.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_future_exog_alignment.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_future_exog_alignment.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_categorical_features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_categorical_features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_simulate_explain_jobs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_simulate_explain_jobs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_freq_regularity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_freq_regularity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_nixtla_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_nixtla_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/nixtla_client/test_jobs_integration.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/nixtla_client/test_jobs_integration.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/helpers/client_helper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/helpers/client_helper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/helpers/states.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/helpers/states.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/helpers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/helpers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/helpers/checks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/helpers/checks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/fixtures/spark_fixtures.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/fixtures/spark_fixtures.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/fixtures/ray_fixtures.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/fixtures/ray_fixtures.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/fixtures/dask_fixtures.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/fixtures/dask_fixtures.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "nixtla_tests/fixtures/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "nixtla_tests/fixtures/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/amazon-chronos/src/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/amazon-chronos/src/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/amazon-chronos/src/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/amazon-chronos/src/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/amazon-chronos/src/statsforecast_pipeline.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/amazon-chronos/src/statsforecast_pipeline.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/amazon-chronos/src/amazon_chronos/forecaster.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/amazon-chronos/src/amazon_chronos/forecaster.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/amazon-chronos/src/amazon_chronos/pipeline.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/amazon-chronos/src/amazon_chronos/pipeline.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/foundation-time-series-arena/xiuhmolpilli/arena.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/foundation-time-series-arena/xiuhmolpilli/arena.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "experiments/foundation-time-series-arena/xiuhmolpilli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "experiments/foundation-time-series-arena/xiuhmolpilli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511381637
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_97896bbde665493b",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "cadf28e5d31ffbf5497b0d3a6c25530b49b5b8ea",
+          "message": "[DOC] sync openapi doc version (#930)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1563ec6d643a4bb3804babe48c1e400a",
+          "result": "架构转折点: commit cadf28e5 - [DOC] sync openapi doc version (#930)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/nixtla",
+            "commit": "cadf28e5d31ffbf5497b0d3a6c25530b49b5b8ea",
+            "message": "[DOC] sync openapi doc version (#930)",
+            "files_changed": 465,
+            "insertions": 105042,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511382568
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511383133
+    }
+  ],
+  "provenance": "external",
+  "source_label": "nixtla",
+  "weight": 0.5,
+  "created_at": 1793511381635,
+  "source_id": "p2_nixtla",
+  "repo_url": "https://github.com/Nixtla/nixtla",
+  "commit": "cadf28e5d31ffbf5497b0d3a6c25530b49b5b8ea",
+  "license": "Apache-2.0",
+  "collected_at": 1793511405958
+}

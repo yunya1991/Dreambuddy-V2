@@ -1,0 +1,2558 @@
+{
+  "tree_id": "dt_7046c2d474ab4c54",
+  "task": {
+    "target": "https://github.com/openlit/openlit",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_fcd3a2862d5d4d8e",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/openlit/openlit"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/gen/semconv.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/gen/semconv.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/internal/coding/install/marketplace/plugins/opencode/openlit.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/internal/coding/install/marketplace/plugins/opencode/openlit.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/jest.response-polyfill.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/jest.response-polyfill.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/jest.setup.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/jest.setup.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/jest.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/jest.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/tailwind.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/tailwind.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/next.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/next.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/postcss.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/postcss.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/middleware.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/middleware.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/instrumentation.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/instrumentation.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/optimize-agent-tables-storage-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/optimize-agent-tables-storage-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/migration-helper.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/migration-helper.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-evaluation-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-evaluation-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-custom-dashboards-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-custom-dashboards-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-chat-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-chat-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/encrypt-vault-values-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/encrypt-vault-values-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-coding-agent-summary-fields-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-coding-agent-summary-fields-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-controller-ttl-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-controller-ttl-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-trace-analysis-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-trace-analysis-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-otter-runs-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-otter-runs-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-controller-skipping-indexes-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-controller-skipping-indexes-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-telemetry-rollups-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-telemetry-rollups-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/drop-vcs-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/drop-vcs-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-vault-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-vault-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-rule-engine-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-rule-engine-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-openground-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-openground-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-agents-summary-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-agents-summary-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-controller-cluster-id-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-controller-cluster-id-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-controller-sdk-actions-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-controller-sdk-actions-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-agents-summary-skip-indexes-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-agents-summary-skip-indexes-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-cron-log-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-cron-log-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/backfill-otel-tenant-environment-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/backfill-otel-tenant-environment-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/generalize-controller-desired-states-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/generalize-controller-desired-states-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-chat-message-model-attribution-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-chat-message-model-attribution-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-prompt-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-prompt-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-coding-agents-audit-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-coding-agents-audit-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/update-controller-actions-ttl-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/update-controller-actions-ttl-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-agent-versions-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-agent-versions-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-chat-conversation-type-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-chat-conversation-type-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/seed-orcarouter-provider-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/seed-orcarouter-provider-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-controller-resource-attrs-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-controller-resource-attrs-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-controller-workload-key-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-controller-workload-key-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-coding-agent-loc-summary-fields-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-coding-agent-loc-summary-fields-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/alter-controller-mode-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/alter-controller-mode-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/alter-telemetry-rollups-dimensions-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/alter-telemetry-rollups-dimensions-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-providers-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-providers-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-evaluation-type-defaults-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-evaluation-type-defaults-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/drop-legacy-openground-tables-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/drop-legacy-openground-tables-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-controller-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-controller-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/seed-typesafe-provider-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/seed-typesafe-provider-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/add-provider-models-cache-prices-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/add-provider-models-cache-prices-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/client/src/clickhouse/migrations/create-provider-metadata-migration.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/client/src/clickhouse/migrations/create-provider-metadata-migration.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514580873
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_fcd3a2862d5d4d8e",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "1ed8bb7359a8978178e4abadda17d75adb04697d",
+              "message": "fix: keep OTLP ingest reachable across architectures and host setups (#1834)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e77e544d727c46729fa4817c53a8b3fa",
+              "result": "架构转折点: commit 1ed8bb73 - fix: keep OTLP ingest reachable across architectures and host setups (#1834)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/openlit",
+                "commit": "1ed8bb7359a8978178e4abadda17d75adb04697d",
+                "message": "fix: keep OTLP ingest reachable across architectures and host setups (#1834)",
+                "files_changed": 3288,
+                "insertions": 594683,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793514584496
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514585327
+        }
+      ],
+      "created_at": 1793514580870
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/gen/semconv.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/gen/semconv.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/internal/coding/install/marketplace/plugins/opencode/openlit.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/internal/coding/install/marketplace/plugins/opencode/openlit.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/jest.response-polyfill.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/jest.response-polyfill.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/jest.setup.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/jest.setup.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/jest.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/jest.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/tailwind.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/tailwind.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/next.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/next.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/postcss.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/postcss.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/middleware.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/middleware.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/instrumentation.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/instrumentation.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/optimize-agent-tables-storage-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/optimize-agent-tables-storage-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/migration-helper.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/migration-helper.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-evaluation-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-evaluation-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-custom-dashboards-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-custom-dashboards-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-chat-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-chat-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/encrypt-vault-values-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/encrypt-vault-values-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-coding-agent-summary-fields-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-coding-agent-summary-fields-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-controller-ttl-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-controller-ttl-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-trace-analysis-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-trace-analysis-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-otter-runs-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-otter-runs-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-controller-skipping-indexes-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-controller-skipping-indexes-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-telemetry-rollups-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-telemetry-rollups-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/drop-vcs-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/drop-vcs-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-vault-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-vault-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-rule-engine-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-rule-engine-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-openground-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-openground-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-agents-summary-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-agents-summary-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-controller-cluster-id-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-controller-cluster-id-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-controller-sdk-actions-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-controller-sdk-actions-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-agents-summary-skip-indexes-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-agents-summary-skip-indexes-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-cron-log-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-cron-log-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/backfill-otel-tenant-environment-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/backfill-otel-tenant-environment-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/generalize-controller-desired-states-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/generalize-controller-desired-states-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-chat-message-model-attribution-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-chat-message-model-attribution-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-prompt-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-prompt-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-coding-agents-audit-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-coding-agents-audit-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/update-controller-actions-ttl-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/update-controller-actions-ttl-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-agent-versions-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-agent-versions-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-chat-conversation-type-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-chat-conversation-type-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/seed-orcarouter-provider-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/seed-orcarouter-provider-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-controller-resource-attrs-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-controller-resource-attrs-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-controller-workload-key-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-controller-workload-key-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-coding-agent-loc-summary-fields-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-coding-agent-loc-summary-fields-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/alter-controller-mode-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/alter-controller-mode-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/alter-telemetry-rollups-dimensions-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/alter-telemetry-rollups-dimensions-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-providers-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-providers-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-evaluation-type-defaults-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-evaluation-type-defaults-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/drop-legacy-openground-tables-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/drop-legacy-openground-tables-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-controller-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-controller-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/seed-typesafe-provider-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/seed-typesafe-provider-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/add-provider-models-cache-prices-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/add-provider-models-cache-prices-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/client/src/clickhouse/migrations/create-provider-metadata-migration.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/client/src/clickhouse/migrations/create-provider-metadata-migration.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514580873
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_fcd3a2862d5d4d8e",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "1ed8bb7359a8978178e4abadda17d75adb04697d",
+          "message": "fix: keep OTLP ingest reachable across architectures and host setups (#1834)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e77e544d727c46729fa4817c53a8b3fa",
+          "result": "架构转折点: commit 1ed8bb73 - fix: keep OTLP ingest reachable across architectures and host setups (#1834)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/openlit",
+            "commit": "1ed8bb7359a8978178e4abadda17d75adb04697d",
+            "message": "fix: keep OTLP ingest reachable across architectures and host setups (#1834)",
+            "files_changed": 3288,
+            "insertions": 594683,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793514584496
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514585327
+    }
+  ],
+  "provenance": "external",
+  "source_label": "openlit",
+  "weight": 0.5,
+  "created_at": 1793514580870,
+  "source_id": "openlit",
+  "repo_url": "https://github.com/openlit/openlit",
+  "commit": "1ed8bb7359a8978178e4abadda17d75adb04697d",
+  "license": "Apache-2.0",
+  "collected_at": 1793514585328
+}

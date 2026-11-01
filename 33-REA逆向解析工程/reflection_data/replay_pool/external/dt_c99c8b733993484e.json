@@ -1,0 +1,2636 @@
+{
+  "tree_id": "dt_c99c8b733993484e",
+  "task": {
+    "target": "https://github.com/scottrogowski/code2flow",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_48c6fcb2a5b04b51",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/scottrogowski/code2flow"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "make_expected.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "make_expected.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/javascript.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/javascript.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/php.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/php.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/get_ast.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/get_ast.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/ruby.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/ruby.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/python.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/python.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "code2flow/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "code2flow/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_graphs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_graphs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/testdata.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/testdata.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_interface.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_interface.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/globals/globals.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/globals/globals.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/ambiguous_names/ambiguous_names.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/ambiguous_names/ambiguous_names.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/classes/classes.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/classes/classes.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/class_in_function/class_in_function.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/class_in_function/class_in_function.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/ternary_new/ternary_new.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/ternary_new/ternary_new.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/simple_a_js/simple_a.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/simple_a_js/simple_a.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/exclude_modules/exclude_modules.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/exclude_modules/exclude_modules.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/inheritance_attr/inheritance_attr.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/inheritance_attr/inheritance_attr.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/scoping/scoping.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/scoping/scoping.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/exclude_modules_es6/exclude_modules_es6.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/exclude_modules_es6/exclude_modules_es6.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/chained/chained.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/chained/chained.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/simple_b_js/simple_b.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/simple_b_js/simple_b.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/moment/moment.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/moment/moment.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/two_file_imports/importer.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/two_file_imports/importer.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/two_file_imports/imported.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/two_file_imports/imported.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/weird_assignments/weird_assignments.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/weird_assignments/weird_assignments.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/inheritance/inheritance.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/inheritance/inheritance.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/bad_parse/file_a_good.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/bad_parse/file_a_good.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/bad_parse/file_b_bad.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/bad_parse/file_b_bad.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/two_file_simple/file_a.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/two_file_simple/file_a.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/two_file_simple/file_b.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/two_file_simple/file_b.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/js/complex_ownership/complex_ownership.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/js/complex_ownership/complex_ownership.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/async_basic/async_basic.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/async_basic/async_basic.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_a.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_a.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_b.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_b.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/weird_calls/weird_calls.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/weird_calls/weird_calls.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/weird_encoding/weird_encoding.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/weird_encoding/weird_encoding.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/simple_a/simple_a.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/simple_a/simple_a.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/exclude_modules/exclude_modules.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/exclude_modules/exclude_modules.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/nested_calls/nested_calls.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/nested_calls/nested_calls.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/chained/chained.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/chained/chained.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/ambiguous_resolution/ambiguous_resolution.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/ambiguous_resolution/ambiguous_resolution.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/simple_b/simple_b.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/simple_b/simple_b.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610845
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/import_paths/import_paths.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/import_paths/import_paths.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610846
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/import_paths/cadabra.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/import_paths/cadabra.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610846
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/test_code/py/import_paths/abra.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/test_code/py/import_paths/abra.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610846
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_12d0531c42d74511a90e839e23636a30",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/code2flow/code2flow/javascript.py",
+                "line": 346,
+                "marker": "TODO",
+                "comment": "# TODO - this is when a class is defined within a function"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506610856
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610984
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e58e4b3f61f5413590c9c99fc53796f9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/code2flow/code2flow/model.py",
+                "line": 560,
+                "marker": "TODO",
+                "comment": "Return the first constructor for this group - if any\n        TODO, this excludes the possibility of multiple constructors like\n        __init__ vs __new__\n        :rtype: Node|None"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506610883
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610984
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_77178a09f6624ebb8e90c52616471299",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/code2flow/code2flow/model.py",
+                "line": 367,
+                "marker": "TODO",
+                "comment": "# TODO variables should be sorted by scope before line_number"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506610884
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506610984
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_48c6fcb2a5b04b51",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "c2c22afe5e12f969cc256373bf8f4eec592dc762",
+              "message": "version bump 2.5.1"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cc2f8d6f5e9a4e01b862b9b256504429",
+              "result": "架构转折点: commit c2c22afe - version bump 2.5.1",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/code2flow",
+                "commit": "c2c22afe5e12f969cc256373bf8f4eec592dc762",
+                "message": "version bump 2.5.1",
+                "files_changed": 184,
+                "insertions": 21446,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793506610995
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506611012
+        }
+      ],
+      "created_at": 1793506610842
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "make_expected.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "make_expected.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/javascript.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/javascript.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/php.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/php.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/get_ast.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/get_ast.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/ruby.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/ruby.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/python.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/python.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "code2flow/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "code2flow/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_graphs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_graphs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/testdata.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/testdata.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_interface.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_interface.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/globals/globals.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/globals/globals.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/ambiguous_names/ambiguous_names.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/ambiguous_names/ambiguous_names.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/classes/classes.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/classes/classes.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/class_in_function/class_in_function.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/class_in_function/class_in_function.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/ternary_new/ternary_new.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/ternary_new/ternary_new.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/simple_a_js/simple_a.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/simple_a_js/simple_a.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/exclude_modules/exclude_modules.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/exclude_modules/exclude_modules.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/inheritance_attr/inheritance_attr.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/inheritance_attr/inheritance_attr.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/scoping/scoping.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/scoping/scoping.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/exclude_modules_es6/exclude_modules_es6.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/exclude_modules_es6/exclude_modules_es6.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/chained/chained.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/chained/chained.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/simple_b_js/simple_b.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/simple_b_js/simple_b.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/moment/moment.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/moment/moment.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/two_file_imports/importer.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/two_file_imports/importer.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/two_file_imports/imported.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/two_file_imports/imported.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/weird_assignments/weird_assignments.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/weird_assignments/weird_assignments.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/inheritance/inheritance.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/inheritance/inheritance.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/bad_parse/file_a_good.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/bad_parse/file_a_good.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/bad_parse/file_b_bad.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/bad_parse/file_b_bad.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/two_file_simple/file_a.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/two_file_simple/file_a.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/two_file_simple/file_b.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/two_file_simple/file_b.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/js/complex_ownership/complex_ownership.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/js/complex_ownership/complex_ownership.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/async_basic/async_basic.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/async_basic/async_basic.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_a.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_a.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_b.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/exclude_modules_two_files/exclude_modules_b.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/weird_calls/weird_calls.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/weird_calls/weird_calls.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/weird_encoding/weird_encoding.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/weird_encoding/weird_encoding.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/simple_a/simple_a.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/simple_a/simple_a.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/exclude_modules/exclude_modules.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/exclude_modules/exclude_modules.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/nested_calls/nested_calls.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/nested_calls/nested_calls.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/chained/chained.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/chained/chained.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/ambiguous_resolution/ambiguous_resolution.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/ambiguous_resolution/ambiguous_resolution.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/simple_b/simple_b.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/simple_b/simple_b.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610845
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/import_paths/import_paths.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/import_paths/import_paths.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610846
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/import_paths/cadabra.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/import_paths/cadabra.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610846
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/test_code/py/import_paths/abra.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/test_code/py/import_paths/abra.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610846
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_12d0531c42d74511a90e839e23636a30",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/code2flow/code2flow/javascript.py",
+            "line": 346,
+            "marker": "TODO",
+            "comment": "# TODO - this is when a class is defined within a function"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506610856
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610984
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e58e4b3f61f5413590c9c99fc53796f9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/code2flow/code2flow/model.py",
+            "line": 560,
+            "marker": "TODO",
+            "comment": "Return the first constructor for this group - if any\n        TODO, this excludes the possibility of multiple constructors like\n        __init__ vs __new__\n        :rtype: Node|None"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506610883
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610984
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_77178a09f6624ebb8e90c52616471299",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/code2flow/code2flow/model.py",
+            "line": 367,
+            "marker": "TODO",
+            "comment": "# TODO variables should be sorted by scope before line_number"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506610884
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506610984
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_48c6fcb2a5b04b51",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "c2c22afe5e12f969cc256373bf8f4eec592dc762",
+          "message": "version bump 2.5.1"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cc2f8d6f5e9a4e01b862b9b256504429",
+          "result": "架构转折点: commit c2c22afe - version bump 2.5.1",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/code2flow",
+            "commit": "c2c22afe5e12f969cc256373bf8f4eec592dc762",
+            "message": "version bump 2.5.1",
+            "files_changed": 184,
+            "insertions": 21446,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793506610995
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506611012
+    }
+  ],
+  "provenance": "external",
+  "source_label": "code2flow",
+  "weight": 0.5,
+  "created_at": 1793506610842,
+  "source_id": "p0_code2flow",
+  "repo_url": "https://github.com/scottrogowski/code2flow",
+  "commit": "c2c22afe5e12f969cc256373bf8f4eec592dc762",
+  "license": "MIT",
+  "collected_at": 1793506855081
+}

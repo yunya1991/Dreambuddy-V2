@@ -1,0 +1,5726 @@
+{
+  "tree_id": "dt_315d3086ac9a4eff",
+  "task": {
+    "target": "https://github.com/axolotl-ai-cloud/axolotl",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_94538e1ce6d94830",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/axolotl-ai-cloud/axolotl"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/select_e2e_tests.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/select_e2e_tests.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/deps_hash.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/deps_hash.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/e2e_cuda_kernels.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/e2e_cuda_kernels.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/multigpu.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/multigpu.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/deep_ep.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/deep_ep.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/cleanup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/cleanup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/e2e_testmon.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/e2e_testmon.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/e2e_tests.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/e2e_tests.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/e2e_blackwell.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/e2e_blackwell.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/single_gpu.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/single_gpu.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cicd/e2e_selected.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cicd/e2e_selected.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/train.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/train.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/prompt_tokenizers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/prompt_tokenizers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/datasets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/datasets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/logging_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/logging_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/convert.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/convert.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/prompters.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/prompters.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/processing_strategies.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/processing_strategies.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/evaluate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/evaluate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/plugins.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/plugins.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/config_options.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/config_options.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/train.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/train.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/art.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/art.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/vllm_serve.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/vllm_serve.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/inference.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/inference.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/delinearize_llama4.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/delinearize_llama4.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/generate_config_options.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/generate_config_options.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/args.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/args.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/export.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/export.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/evaluate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/evaluate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/merge_sharded_fsdp_weights.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/merge_sharded_fsdp_weights.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/merge_lora.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/merge_lora.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/chat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/chat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/checks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/checks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/preprocess.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/preprocess.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/quantize.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/quantize.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/agent_docs/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/agent_docs/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/train.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/train.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/param_wrapper_merge.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/param_wrapper_merge.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/native_nvfp4_merge.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/native_nvfp4_merge.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/lora_merge.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/lora_merge.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/diffusion.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/diffusion.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/compiled_lora_merge.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/compiled_lora_merge.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/load.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/load.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/args.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/args.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/sweeps.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/sweeps.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/axolotl/cli/utils/fetch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/axolotl/cli/utils/fetch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509619156
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_be5f928420a447f09b670b744bb057f6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/train.py",
+                "line": 215,
+                "marker": "TODO",
+                "comment": "# TODO: disabling for now as not compatible with FSDP2 + torchao low bit optimizers"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619263
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1b143aca61494b86a606b8944b8e9cb6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/train.py",
+                "line": 417,
+                "marker": "TODO",
+                "comment": "# TODO(wing):see https://github.com/huggingface/transformers/pull/40207"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619264
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9b18a001413c4360960ae59a5ab0095c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/train.py",
+                "line": 507,
+                "marker": "TODO",
+                "comment": "# TODO: add integration support so this can be implemented completely within the plugin"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619264
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7f731a3d904e4db39adecc913d12010b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/prompt_tokenizers.py",
+                "line": 61,
+                "marker": "TODO",
+                "comment": "# TODO: Document how they are different."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619276
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4bc58444879049498de91be1b9236695",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/processing_strategies.py",
+                "line": 296,
+                "marker": "TODO",
+                "comment": "# TODO: support multi-image samples; for now we take the first."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619318
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fd5b1345db4a4c548c2d2367f2664cd9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/loaders/patch_manager.py",
+                "line": 1230,
+                "marker": "TODO",
+                "comment": "# TODO(MengqingCao): split these patches separately"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619668
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c888d7b05eb24ba698cde05f175b6572",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/loaders/model.py",
+                "line": 1041,
+                "marker": "TODO",
+                "comment": "# TODO: can we put the reference model on it's own gpu? I think we have to move"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619691
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_32b99967310c4cb2ab7ce03720eb62e6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/loaders/model.py",
+                "line": 1428,
+                "marker": "TODO",
+                "comment": "# TODO(wing): remove once 4.54.1 is released"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619691
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_dd8c62836a0948caa63812b72ebfc38f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/prompt_strategies/chat_template.py",
+                "line": 1342,
+                "marker": "TODO",
+                "comment": "# TODO handle reasoning_content with split_thinking"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619815
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a067a6a6c957488aa002e2b339a8f935",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/prompt_strategies/chat_template.py",
+                "line": 1549,
+                "marker": "TODO",
+                "comment": "# TODO: address this in the future with mistral-specific checks"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509619815
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_156ace22ed994b74ab7c74e53401bc84",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/trainer.py",
+                "line": 534,
+                "marker": "FIXME",
+                "comment": "# FIXME: is there a bug here somewhere? the total num steps depends"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620082
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f7d45ff40dac477ea98429c78b769dbf",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/trainer.py",
+                "line": 736,
+                "marker": "TODO",
+                "comment": "# TODO @SalmanMohammadi remove the cfg.fsdp check in 0.12"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620082
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a7f24b3cd9cf47e1aac443fd9a362275",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/model_shard_quant.py",
+                "line": 198,
+                "marker": "TODO",
+                "comment": "# TODO can we detect the model arch and dynamically set skip_modules"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620145
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bc8f64ab9b56438da8a41f7e1f229238",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/comet_.py",
+                "line": 62,
+                "marker": "TODO",
+                "comment": "# TODO, we need to convert Axolotl configuration to environment variables"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620183
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_65f340db3b25436982b8b3ce10db4098",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/data/streaming.py",
+                "line": 278,
+                "marker": "FIXME",
+                "comment": "# FIXME using attention mask unpad/pad with trainer and packed pretraining is broken atm"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620455
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6d98fea90f9b470fa86d90f8c3eeeb3e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/data/sft.py",
+                "line": 158,
+                "marker": "TODO",
+                "comment": "# TODO(djsaunde): Implement for multiple datasets"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620475
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d184a3ac52024c33958c4d840d3004b7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/schemas/validation.py",
+                "line": 313,
+                "marker": "TODO",
+                "comment": "# TODO(djsaunde): remove this check + implement change for 0.13.0 release"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620613
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0312d4859a594a2e88252b6fa3d1fb8a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/schemas/validation.py",
+                "line": 362,
+                "marker": "TODO",
+                "comment": "# TODO also should check test_datasets and val_set_size as we can skip"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620613
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ef9605d1c4a64651a119b44a0f961869",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/schemas/validation.py",
+                "line": 1092,
+                "marker": "TODO",
+                "comment": "# TODO: SalmanMohammadi"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620613
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5cee19e8c08c4377a3f85ae742256ba6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/optimizers/adopt.py",
+                "line": 91,
+                "marker": "TODO",
+                "comment": "# TODO: support fused"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620719
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d24bb27629fa4745bd6a20032069d81f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/optimizers/adopt.py",
+                "line": 97,
+                "marker": "TODO",
+                "comment": "# TODO(crcrpar): [low prec params & their higher prec copy]"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620719
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f336ed64699e48f3b8b8d6cc56e411b7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/base.py",
+                "line": 1401,
+                "marker": "TODO",
+                "comment": "# TODO(wing): remove once https://github.com/huggingface/transformers/pull/39866/files is merged"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620914
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6eaaf61bb51d449589bcab196bd41ec3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/mixins/checkpoints.py",
+                "line": 21,
+                "marker": "TODO",
+                "comment": "# TODO: fix fsdp2 optimizer saving"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620975
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_23",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6e1e3716954d469283d6710a8614e400",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/mixins/rng_state_loader.py",
+                "line": 1,
+                "marker": "TODO",
+                "comment": "Temporary fix/override for bug in resume from checkpoint\n\nSee https://github.com/huggingface/transformers/pull/37162\n\nTODO: Remove when upstream added PR to release"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509620991
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_24",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7974ac4642434d94b8d497278161ca96",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/grpo/trainer.py",
+                "line": 274,
+                "marker": "TODO",
+                "comment": "# TODO(djsaunde): We might be able to use `accelerate`'s dataloader preparation"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621046
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_25",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d9ce6fc65dbc4904a0b411a9c81382e6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/causal.py",
+                "line": 84,
+                "marker": "TODO",
+                "comment": "# TODO: check if can move to base class"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621363
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_26",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8e30fa460cdf4b6ca7ec32fef25ae775",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+                "line": 282,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621376
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_27",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_075470b66dee4f7fa649bca045524eda",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+                "line": 286,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621376
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_28",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e36c092716c043b6b042e30c98bbea2b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+                "line": 290,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621376
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_29",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e1a5f2d627a14564b8070d5c55a08652",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+                "line": 294,
+                "marker": "TODO",
+                "comment": "# TODO"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621376
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_30",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_148ad89bfdce42c1850c98cb7f18ed50",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/datasets/transforms/chat_builder.py",
+                "line": 126,
+                "marker": "TODO",
+                "comment": "# TODO if \"tool_calls\" in message[message_content_field]: then convert tool call to ToolCallContents"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621380
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_31",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3adf01930fd249bd829cbfc6f58e6cee",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/chat/messages.py",
+                "line": 145,
+                "marker": "TODO",
+                "comment": "# TODO also handle non-text content types"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621383
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_32",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cc6b6d9e852b40e4a1b06576cac1e109",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/monkeypatch/attention/flex_attn.py",
+                "line": 16,
+                "marker": "TODO",
+                "comment": "# TODO remove this patch when transformers#37285 is merged and in a release"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621608
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_33",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e2ff11cef08e4ba58d491f93033fc8a6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/monkeypatch/trainer/lr.py",
+                "line": 12,
+                "marker": "TODO",
+                "comment": "# TODO remove this patch once https://github.com/huggingface/transformers/pull/37881 is included in a release"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621682
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_34",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_84be4258d2da464ab4648646160871f6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/monkeypatch/accelerate/fsdp2_checkpoint.py",
+                "line": 796,
+                "marker": "TODO",
+                "comment": "# TODO: stream checkpoint assembly layerwise to reduce rank-0 host memory."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509621972
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_35",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_29c38b14d0324db68e1fa55363a9ebeb",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kernels/libs/sonicmoe/fp4_cute_ops.py",
+                "line": 86,
+                "marker": "TODO",
+                "comment": "# TODO(nano): verify on B200 that FSDP2 unshard re-allocation cannot hand a same-shape layer an earlier layer's data_ptr (stale engine)."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509622414
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_36",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d6678fd4e4aa4670a1dcee8c8cf49ed4",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kernels/libs/sonicmoe/fp8_bwd.py",
+                "line": 174,
+                "marker": "TODO",
+                "comment": "# TODO(nano): verify on B200 that FSDP2 unshard re-allocation cannot hand a same-shape layer an earlier layer's data_ptr (stale fp8 copy)."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509622441
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_37",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_27daf52339764a9bbf45f28da59c8263",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/liger/args.py",
+                "line": 137,
+                "marker": "TODO",
+                "comment": "# TODO @SalmanMohammadi this is a larger fix - investigate"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509622855
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_38",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1e2c514e08c942b3a7b6ebe10f11e423",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kd/collator_online_teacher.py",
+                "line": 441,
+                "marker": "TODO",
+                "comment": "# TODO save and load targets to disk for caching for next epoch"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509622876
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_39",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e68690e837164ade90b61b751dece6b9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kd/collator_online_teacher.py",
+                "line": 531,
+                "marker": "TODO",
+                "comment": "# TODO make sure to figure out which input in sub_batch_features to update the batch in the original `features` object so the super class can handle it properly."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509622876
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_40",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d0b4d475151446ada16c2765c94492cc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kd/args.py",
+                "line": 50,
+                "marker": "TODO",
+                "comment": "# TODO online kd"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509622877
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_41",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_61a0d794fe0943e48ac861fd81ef3fd5",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/tests/test_packed_pretraining.py",
+                "line": 107,
+                "marker": "FIXME",
+                "comment": "# FIXME add back once we fix packing unpad/pad with attention mask"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509623509
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_42",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_eddf5a85aac44a56b1a9b5915887d462",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/tests/e2e/test_quantization.py",
+                "line": 173,
+                "marker": "TODO",
+                "comment": "# TODO: add mslk-cuda as a CI dependency once pytorch 2.10.x is available"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509623958
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_dec_43",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d82f7e1a6afe466f8d3c0c1a02dc817f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/axolotl/tests/integrations/liger/test_plugin.py",
+                "line": 138,
+                "marker": "TODO",
+                "comment": "# TODO this test is brittle in CI"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509626030
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633205
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_94538e1ce6d94830",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ae96f5cef6789597b0382d27519f4f196a11b3cd",
+              "message": "fix: shared FP8 / fused-LoRA kernel fixes for transformers 5.22 (#4229) [skip ci]"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d89356d18b5346c59a18951e1ded69bd",
+              "result": "架构转折点: commit ae96f5ce - fix: shared FP8 / fused-LoRA kernel fixes for transformers 5.22 (#4229) [skip ci",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/axolotl",
+                "commit": "ae96f5cef6789597b0382d27519f4f196a11b3cd",
+                "message": "fix: shared FP8 / fused-LoRA kernel fixes for transformers 5.22 (#4229) [skip ci]",
+                "files_changed": 2264,
+                "insertions": 462591,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509633374
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509633553
+        }
+      ],
+      "created_at": 1793509619155
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/select_e2e_tests.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/select_e2e_tests.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/deps_hash.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/deps_hash.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/e2e_cuda_kernels.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/e2e_cuda_kernels.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/multigpu.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/multigpu.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/deep_ep.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/deep_ep.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/cleanup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/cleanup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/e2e_testmon.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/e2e_testmon.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/e2e_tests.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/e2e_tests.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/e2e_blackwell.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/e2e_blackwell.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/single_gpu.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/single_gpu.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cicd/e2e_selected.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cicd/e2e_selected.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/train.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/train.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/prompt_tokenizers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/prompt_tokenizers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/datasets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/datasets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/logging_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/logging_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/convert.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/convert.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/prompters.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/prompters.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/processing_strategies.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/processing_strategies.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/evaluate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/evaluate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/plugins.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/plugins.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/config_options.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/config_options.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/train.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/train.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/art.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/art.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/vllm_serve.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/vllm_serve.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/inference.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/inference.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/delinearize_llama4.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/delinearize_llama4.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/generate_config_options.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/generate_config_options.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/args.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/args.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/export.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/export.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/evaluate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/evaluate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/merge_sharded_fsdp_weights.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/merge_sharded_fsdp_weights.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/merge_lora.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/merge_lora.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/chat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/chat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/checks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/checks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/preprocess.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/preprocess.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/quantize.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/quantize.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/agent_docs/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/agent_docs/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/train.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/train.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/param_wrapper_merge.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/param_wrapper_merge.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/native_nvfp4_merge.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/native_nvfp4_merge.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/lora_merge.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/lora_merge.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/diffusion.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/diffusion.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/compiled_lora_merge.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/compiled_lora_merge.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/load.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/load.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/args.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/args.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/sweeps.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/sweeps.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/axolotl/cli/utils/fetch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/axolotl/cli/utils/fetch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509619156
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_be5f928420a447f09b670b744bb057f6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/train.py",
+            "line": 215,
+            "marker": "TODO",
+            "comment": "# TODO: disabling for now as not compatible with FSDP2 + torchao low bit optimizers"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619263
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1b143aca61494b86a606b8944b8e9cb6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/train.py",
+            "line": 417,
+            "marker": "TODO",
+            "comment": "# TODO(wing):see https://github.com/huggingface/transformers/pull/40207"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619264
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9b18a001413c4360960ae59a5ab0095c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/train.py",
+            "line": 507,
+            "marker": "TODO",
+            "comment": "# TODO: add integration support so this can be implemented completely within the plugin"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619264
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7f731a3d904e4db39adecc913d12010b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/prompt_tokenizers.py",
+            "line": 61,
+            "marker": "TODO",
+            "comment": "# TODO: Document how they are different."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619276
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4bc58444879049498de91be1b9236695",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/processing_strategies.py",
+            "line": 296,
+            "marker": "TODO",
+            "comment": "# TODO: support multi-image samples; for now we take the first."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619318
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fd5b1345db4a4c548c2d2367f2664cd9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/loaders/patch_manager.py",
+            "line": 1230,
+            "marker": "TODO",
+            "comment": "# TODO(MengqingCao): split these patches separately"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619668
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c888d7b05eb24ba698cde05f175b6572",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/loaders/model.py",
+            "line": 1041,
+            "marker": "TODO",
+            "comment": "# TODO: can we put the reference model on it's own gpu? I think we have to move"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619691
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_32b99967310c4cb2ab7ce03720eb62e6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/loaders/model.py",
+            "line": 1428,
+            "marker": "TODO",
+            "comment": "# TODO(wing): remove once 4.54.1 is released"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619691
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_dd8c62836a0948caa63812b72ebfc38f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/prompt_strategies/chat_template.py",
+            "line": 1342,
+            "marker": "TODO",
+            "comment": "# TODO handle reasoning_content with split_thinking"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619815
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a067a6a6c957488aa002e2b339a8f935",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/prompt_strategies/chat_template.py",
+            "line": 1549,
+            "marker": "TODO",
+            "comment": "# TODO: address this in the future with mistral-specific checks"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509619815
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_156ace22ed994b74ab7c74e53401bc84",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/trainer.py",
+            "line": 534,
+            "marker": "FIXME",
+            "comment": "# FIXME: is there a bug here somewhere? the total num steps depends"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620082
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f7d45ff40dac477ea98429c78b769dbf",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/trainer.py",
+            "line": 736,
+            "marker": "TODO",
+            "comment": "# TODO @SalmanMohammadi remove the cfg.fsdp check in 0.12"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620082
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a7f24b3cd9cf47e1aac443fd9a362275",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/model_shard_quant.py",
+            "line": 198,
+            "marker": "TODO",
+            "comment": "# TODO can we detect the model arch and dynamically set skip_modules"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620145
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bc8f64ab9b56438da8a41f7e1f229238",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/comet_.py",
+            "line": 62,
+            "marker": "TODO",
+            "comment": "# TODO, we need to convert Axolotl configuration to environment variables"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620183
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_65f340db3b25436982b8b3ce10db4098",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/data/streaming.py",
+            "line": 278,
+            "marker": "FIXME",
+            "comment": "# FIXME using attention mask unpad/pad with trainer and packed pretraining is broken atm"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620455
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6d98fea90f9b470fa86d90f8c3eeeb3e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/data/sft.py",
+            "line": 158,
+            "marker": "TODO",
+            "comment": "# TODO(djsaunde): Implement for multiple datasets"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620475
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d184a3ac52024c33958c4d840d3004b7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/schemas/validation.py",
+            "line": 313,
+            "marker": "TODO",
+            "comment": "# TODO(djsaunde): remove this check + implement change for 0.13.0 release"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620613
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0312d4859a594a2e88252b6fa3d1fb8a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/schemas/validation.py",
+            "line": 362,
+            "marker": "TODO",
+            "comment": "# TODO also should check test_datasets and val_set_size as we can skip"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620613
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ef9605d1c4a64651a119b44a0f961869",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/schemas/validation.py",
+            "line": 1092,
+            "marker": "TODO",
+            "comment": "# TODO: SalmanMohammadi"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620613
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5cee19e8c08c4377a3f85ae742256ba6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/optimizers/adopt.py",
+            "line": 91,
+            "marker": "TODO",
+            "comment": "# TODO: support fused"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620719
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d24bb27629fa4745bd6a20032069d81f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/utils/optimizers/adopt.py",
+            "line": 97,
+            "marker": "TODO",
+            "comment": "# TODO(crcrpar): [low prec params & their higher prec copy]"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620719
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f336ed64699e48f3b8b8d6cc56e411b7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/base.py",
+            "line": 1401,
+            "marker": "TODO",
+            "comment": "# TODO(wing): remove once https://github.com/huggingface/transformers/pull/39866/files is merged"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620914
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6eaaf61bb51d449589bcab196bd41ec3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/mixins/checkpoints.py",
+            "line": 21,
+            "marker": "TODO",
+            "comment": "# TODO: fix fsdp2 optimizer saving"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620975
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_23",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6e1e3716954d469283d6710a8614e400",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/mixins/rng_state_loader.py",
+            "line": 1,
+            "marker": "TODO",
+            "comment": "Temporary fix/override for bug in resume from checkpoint\n\nSee https://github.com/huggingface/transformers/pull/37162\n\nTODO: Remove when upstream added PR to release"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509620991
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_24",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7974ac4642434d94b8d497278161ca96",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/trainers/grpo/trainer.py",
+            "line": 274,
+            "marker": "TODO",
+            "comment": "# TODO(djsaunde): We might be able to use `accelerate`'s dataloader preparation"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621046
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_25",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d9ce6fc65dbc4904a0b411a9c81382e6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/causal.py",
+            "line": 84,
+            "marker": "TODO",
+            "comment": "# TODO: check if can move to base class"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621363
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_26",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8e30fa460cdf4b6ca7ec32fef25ae775",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+            "line": 282,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621376
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_27",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_075470b66dee4f7fa649bca045524eda",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+            "line": 286,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621376
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_28",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e36c092716c043b6b042e30c98bbea2b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+            "line": 290,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621376
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_29",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e1a5f2d627a14564b8070d5c55a08652",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/builders/base.py",
+            "line": 294,
+            "marker": "TODO",
+            "comment": "# TODO"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621376
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_30",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_148ad89bfdce42c1850c98cb7f18ed50",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/datasets/transforms/chat_builder.py",
+            "line": 126,
+            "marker": "TODO",
+            "comment": "# TODO if \"tool_calls\" in message[message_content_field]: then convert tool call to ToolCallContents"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621380
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_31",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3adf01930fd249bd829cbfc6f58e6cee",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/core/chat/messages.py",
+            "line": 145,
+            "marker": "TODO",
+            "comment": "# TODO also handle non-text content types"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621383
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_32",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cc6b6d9e852b40e4a1b06576cac1e109",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/monkeypatch/attention/flex_attn.py",
+            "line": 16,
+            "marker": "TODO",
+            "comment": "# TODO remove this patch when transformers#37285 is merged and in a release"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621608
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_33",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e2ff11cef08e4ba58d491f93033fc8a6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/monkeypatch/trainer/lr.py",
+            "line": 12,
+            "marker": "TODO",
+            "comment": "# TODO remove this patch once https://github.com/huggingface/transformers/pull/37881 is included in a release"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621682
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_34",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_84be4258d2da464ab4648646160871f6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/monkeypatch/accelerate/fsdp2_checkpoint.py",
+            "line": 796,
+            "marker": "TODO",
+            "comment": "# TODO: stream checkpoint assembly layerwise to reduce rank-0 host memory."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509621972
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_35",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_29c38b14d0324db68e1fa55363a9ebeb",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kernels/libs/sonicmoe/fp4_cute_ops.py",
+            "line": 86,
+            "marker": "TODO",
+            "comment": "# TODO(nano): verify on B200 that FSDP2 unshard re-allocation cannot hand a same-shape layer an earlier layer's data_ptr (stale engine)."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509622414
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_36",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d6678fd4e4aa4670a1dcee8c8cf49ed4",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kernels/libs/sonicmoe/fp8_bwd.py",
+            "line": 174,
+            "marker": "TODO",
+            "comment": "# TODO(nano): verify on B200 that FSDP2 unshard re-allocation cannot hand a same-shape layer an earlier layer's data_ptr (stale fp8 copy)."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509622441
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_37",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_27daf52339764a9bbf45f28da59c8263",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/liger/args.py",
+            "line": 137,
+            "marker": "TODO",
+            "comment": "# TODO @SalmanMohammadi this is a larger fix - investigate"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509622855
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_38",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1e2c514e08c942b3a7b6ebe10f11e423",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kd/collator_online_teacher.py",
+            "line": 441,
+            "marker": "TODO",
+            "comment": "# TODO save and load targets to disk for caching for next epoch"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509622876
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_39",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e68690e837164ade90b61b751dece6b9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kd/collator_online_teacher.py",
+            "line": 531,
+            "marker": "TODO",
+            "comment": "# TODO make sure to figure out which input in sub_batch_features to update the batch in the original `features` object so the super class can handle it properly."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509622876
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_40",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d0b4d475151446ada16c2765c94492cc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/src/axolotl/integrations/kd/args.py",
+            "line": 50,
+            "marker": "TODO",
+            "comment": "# TODO online kd"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509622877
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_41",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_61a0d794fe0943e48ac861fd81ef3fd5",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/tests/test_packed_pretraining.py",
+            "line": 107,
+            "marker": "FIXME",
+            "comment": "# FIXME add back once we fix packing unpad/pad with attention mask"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509623509
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_42",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_eddf5a85aac44a56b1a9b5915887d462",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/tests/e2e/test_quantization.py",
+            "line": 173,
+            "marker": "TODO",
+            "comment": "# TODO: add mslk-cuda as a CI dependency once pytorch 2.10.x is available"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509623958
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_dec_43",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d82f7e1a6afe466f8d3c0c1a02dc817f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/axolotl/tests/integrations/liger/test_plugin.py",
+            "line": 138,
+            "marker": "TODO",
+            "comment": "# TODO this test is brittle in CI"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509626030
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633205
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_94538e1ce6d94830",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ae96f5cef6789597b0382d27519f4f196a11b3cd",
+          "message": "fix: shared FP8 / fused-LoRA kernel fixes for transformers 5.22 (#4229) [skip ci]"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d89356d18b5346c59a18951e1ded69bd",
+          "result": "架构转折点: commit ae96f5ce - fix: shared FP8 / fused-LoRA kernel fixes for transformers 5.22 (#4229) [skip ci",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/axolotl",
+            "commit": "ae96f5cef6789597b0382d27519f4f196a11b3cd",
+            "message": "fix: shared FP8 / fused-LoRA kernel fixes for transformers 5.22 (#4229) [skip ci]",
+            "files_changed": 2264,
+            "insertions": 462591,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509633374
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509633553
+    }
+  ],
+  "provenance": "external",
+  "source_label": "axolotl",
+  "weight": 0.5,
+  "created_at": 1793509619155,
+  "source_id": "p1_axolotl",
+  "repo_url": "https://github.com/axolotl-ai-cloud/axolotl",
+  "commit": "ae96f5cef6789597b0382d27519f4f196a11b3cd",
+  "license": "Apache-2.0",
+  "collected_at": 1793509859903
+}

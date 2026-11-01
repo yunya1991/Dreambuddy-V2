@@ -1,0 +1,3212 @@
+{
+  "tree_id": "dt_6f8bfd3e26db4cf1",
+  "task": {
+    "target": "https://github.com/langchain-ai/langgraph",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_d6ae7efb8f8a4d78",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/langchain-ai/langgraph"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/generate_redirects.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/generate_redirects.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/chatbot-simulation-evaluation/simulation_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/chatbot-simulation-evaluation/simulation_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "examples/delta-channel-dump/dump.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "examples/delta-channel-dump/dump.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/generate_schema.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/generate_schema.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/templates.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/templates.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/exec.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/exec.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/_ignore.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/_ignore.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/util.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/util.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/archive.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/archive.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/host_backend.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/host_backend.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/progress.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/progress.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/analytics.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/analytics.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/docker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/docker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/uv_lock.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/uv_lock.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/dependency_tracking.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/dependency_tracking.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/schemas.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/schemas.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/deploy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/deploy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/image_reference.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/image_reference.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/langgraph_cli/__main__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/langgraph_cli/__main__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/libs/common/helpers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/libs/common/helpers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/libs/common/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/libs/common/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/graph.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/graph.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/state.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/state.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/my_app.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/my_app.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_b/hello.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_b/hello.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_b/utils/greeter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_b/utils/greeter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_b/utils/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_b/utils/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_b/graphs_submod/agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_b/graphs_submod/agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graph_prerelease_reqs/agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graph_prerelease_reqs/agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_a/hello.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_a/hello.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_a/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_a/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graph_prerelease_reqs_fail/agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graph_prerelease_reqs_fail/agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs/storm.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs/storm.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/examples/graphs/agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/examples/graphs/agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/graph.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/graph.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/uv-examples/simple/src/agent/graph.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/uv-examples/simple/src/agent/graph.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "libs/cli/uv-examples/simple/src/agent/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "libs/cli/uv-examples/simple/src/agent/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506692530
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_edb2975a0f0f48ffa34f81464940f20d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/examples/chatbot-simulation-evaluation/simulation_utils.py",
+                "line": 197,
+                "marker": "TODO",
+                "comment": "# TODO support other stop criteria"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506692539
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_594fae3d714c45f59de56266c0c94615",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/checkpoint/tests/test_memory.py",
+                "line": 155,
+                "marker": "TODO",
+                "comment": "# TODO: test before and limit params"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506692939
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d2437c0372104c71855aa074e77f6c2c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/checkpoint-postgres/tests/test_store.py",
+                "line": 868,
+                "marker": "TODO",
+                "comment": "# TODO: We don't currently fill in additional results if there are not enough"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506692995
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_508ede9986574149b4d26ce3566229c0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/langgraph/runtime.py",
+                "line": 306,
+                "marker": "TODO",
+                "comment": "# TODO: in an ideal world, we would have a context manager for"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693136
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2e07761550c14692b786e0c1cecab47e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/langgraph/graph/_node.py",
+                "line": 73,
+                "marker": "TODO",
+                "comment": "# TODO: we probably don't want to explicitly support the config / store signatures once"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693191
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_618d1a2f78f8415e96f9c489d35c9be5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/langgraph/pregel/_loop.py",
+                "line": 1247,
+                "marker": "TODO",
+                "comment": "# TODO: replace with an explicit `exiting: bool = False` parameter."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693333
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0f4d306f569d4eeda0fe2cf3a06b5b4f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_algo.py",
+                "line": 44,
+                "marker": "TODO",
+                "comment": "# TODO: add more tests"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693506
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ec78c1cb05604ed8ab01ee9b93adecce",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_delta_channel_migration.py",
+                "line": 1,
+                "marker": "TODO",
+                "comment": "Tests for the BinaryOperatorAggregate -> DeltaChannel migration path.\n\nA thread written under `BinaryOperatorAggregate(...)` must keep working\nafter its annotation is swapped to `DeltaChannel(...)` on"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693548
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9187fab3b07b40baab32cc7eb8266844",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_remote_graph.py",
+                "line": 1534,
+                "marker": "TODO",
+                "comment": "# TODO: Fix the namespace matching in the next api release."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693577
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b1a39f240d2045b8ae94b0a7e6705ad6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_large_cases.py",
+                "line": 6426,
+                "marker": "TODO",
+                "comment": "# TODO add here test with invoke(Command())"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506693728
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2ace9e57d2ba4fccadc91ccc4db86034",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_channels.py",
+                "line": 415,
+                "marker": "TODO",
+                "comment": "# TODO(delta-channel-cadence): the previous \"snapshot fires even when channel"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793506694146
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506696959
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_d6ae7efb8f8a4d78",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "e5c961d7fbe7ca6fdd4c94c84d90511372514d55",
+              "message": "fix(cli): remove outdated deploy private-beta notice (#9506)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f977ed364b1141838effb597e37df295",
+              "result": "架构转折点: commit e5c961d7 - fix(cli): remove outdated deploy private-beta notice (#9506)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/langgraph",
+                "commit": "e5c961d7fbe7ca6fdd4c94c84d90511372514d55",
+                "message": "fix(cli): remove outdated deploy private-beta notice (#9506)",
+                "files_changed": 701,
+                "insertions": 253183,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793506697065
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506697184
+        }
+      ],
+      "created_at": 1793506692529
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/generate_redirects.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/generate_redirects.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/chatbot-simulation-evaluation/simulation_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/chatbot-simulation-evaluation/simulation_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "examples/delta-channel-dump/dump.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "examples/delta-channel-dump/dump.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/generate_schema.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/generate_schema.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/templates.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/templates.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/exec.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/exec.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/_ignore.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/_ignore.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/util.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/util.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/archive.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/archive.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/host_backend.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/host_backend.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/progress.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/progress.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/analytics.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/analytics.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/docker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/docker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/uv_lock.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/uv_lock.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/dependency_tracking.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/dependency_tracking.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/schemas.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/schemas.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/deploy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/deploy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/image_reference.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/image_reference.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/langgraph_cli/__main__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/langgraph_cli/__main__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/libs/common/helpers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/libs/common/helpers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/libs/common/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/libs/common/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/libs/shared/src/shared/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/graph.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/graph.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/state.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/state.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/python-monorepo-example/apps/agent/src/agent/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/my_app.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/my_app.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_b/hello.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_b/hello.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_b/utils/greeter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_b/utils/greeter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_b/utils/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_b/utils/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_b/graphs_submod/agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_b/graphs_submod/agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graph_prerelease_reqs/agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graph_prerelease_reqs/agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_a/hello.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_a/hello.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_a/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_a/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs_reqs_a/graphs_submod/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graph_prerelease_reqs_fail/agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graph_prerelease_reqs_fail/agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs/storm.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs/storm.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/examples/graphs/agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/examples/graphs/agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/uv-examples/monorepo/libs/shared/src/shared/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/graph.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/graph.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/uv-examples/simple/src/agent/graph.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/uv-examples/simple/src/agent/graph.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "libs/cli/uv-examples/simple/src/agent/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "libs/cli/uv-examples/simple/src/agent/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506692530
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_edb2975a0f0f48ffa34f81464940f20d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/examples/chatbot-simulation-evaluation/simulation_utils.py",
+            "line": 197,
+            "marker": "TODO",
+            "comment": "# TODO support other stop criteria"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506692539
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_594fae3d714c45f59de56266c0c94615",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/checkpoint/tests/test_memory.py",
+            "line": 155,
+            "marker": "TODO",
+            "comment": "# TODO: test before and limit params"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506692939
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d2437c0372104c71855aa074e77f6c2c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/checkpoint-postgres/tests/test_store.py",
+            "line": 868,
+            "marker": "TODO",
+            "comment": "# TODO: We don't currently fill in additional results if there are not enough"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506692995
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_508ede9986574149b4d26ce3566229c0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/langgraph/runtime.py",
+            "line": 306,
+            "marker": "TODO",
+            "comment": "# TODO: in an ideal world, we would have a context manager for"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693136
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2e07761550c14692b786e0c1cecab47e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/langgraph/graph/_node.py",
+            "line": 73,
+            "marker": "TODO",
+            "comment": "# TODO: we probably don't want to explicitly support the config / store signatures once"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693191
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_618d1a2f78f8415e96f9c489d35c9be5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/langgraph/pregel/_loop.py",
+            "line": 1247,
+            "marker": "TODO",
+            "comment": "# TODO: replace with an explicit `exiting: bool = False` parameter."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693333
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0f4d306f569d4eeda0fe2cf3a06b5b4f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_algo.py",
+            "line": 44,
+            "marker": "TODO",
+            "comment": "# TODO: add more tests"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693506
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ec78c1cb05604ed8ab01ee9b93adecce",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_delta_channel_migration.py",
+            "line": 1,
+            "marker": "TODO",
+            "comment": "Tests for the BinaryOperatorAggregate -> DeltaChannel migration path.\n\nA thread written under `BinaryOperatorAggregate(...)` must keep working\nafter its annotation is swapped to `DeltaChannel(...)` on"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693548
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9187fab3b07b40baab32cc7eb8266844",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_remote_graph.py",
+            "line": 1534,
+            "marker": "TODO",
+            "comment": "# TODO: Fix the namespace matching in the next api release."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693577
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b1a39f240d2045b8ae94b0a7e6705ad6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_large_cases.py",
+            "line": 6426,
+            "marker": "TODO",
+            "comment": "# TODO add here test with invoke(Command())"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506693728
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2ace9e57d2ba4fccadc91ccc4db86034",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/langgraph/libs/langgraph/tests/test_channels.py",
+            "line": 415,
+            "marker": "TODO",
+            "comment": "# TODO(delta-channel-cadence): the previous \"snapshot fires even when channel"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793506694146
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506696959
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_d6ae7efb8f8a4d78",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "e5c961d7fbe7ca6fdd4c94c84d90511372514d55",
+          "message": "fix(cli): remove outdated deploy private-beta notice (#9506)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f977ed364b1141838effb597e37df295",
+          "result": "架构转折点: commit e5c961d7 - fix(cli): remove outdated deploy private-beta notice (#9506)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/langgraph",
+            "commit": "e5c961d7fbe7ca6fdd4c94c84d90511372514d55",
+            "message": "fix(cli): remove outdated deploy private-beta notice (#9506)",
+            "files_changed": 701,
+            "insertions": 253183,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793506697065
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506697184
+    }
+  ],
+  "provenance": "external",
+  "source_label": "langgraph",
+  "weight": 0.5,
+  "created_at": 1793506692529,
+  "source_id": "p0_langgraph",
+  "repo_url": "https://github.com/langchain-ai/langgraph",
+  "commit": "e5c961d7fbe7ca6fdd4c94c84d90511372514d55",
+  "license": "MIT",
+  "collected_at": 1793506855037
+}

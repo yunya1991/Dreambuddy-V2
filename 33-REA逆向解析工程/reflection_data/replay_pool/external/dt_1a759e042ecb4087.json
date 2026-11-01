@@ -1,0 +1,5962 @@
+{
+  "tree_id": "dt_1a759e042ecb4087",
+  "task": {
+    "target": "https://github.com/qwibitai/nanoclaw",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_45cf89465c5a46ef",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/qwibitai/nanoclaw"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.skills.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.skills.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/webhook-server.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/webhook-server.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-approval-summary.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-approval-summary.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/project-doc-compose.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/project-doc-compose.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runtime.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runtime.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/attachment-safety.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/attachment-safety.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/request-wake.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/request-wake.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/card-text.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/card-text.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-sweep.feeds.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-sweep.feeds.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-approval-presentation.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-approval-presentation.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/session-manager.feeds.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/session-manager.feeds.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-restart.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-restart.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-read-policy.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-read-policy.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/slash-command.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/slash-command.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/upgrade-state.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/upgrade-state.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/session-manager.outbox.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/session-manager.outbox.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/log.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/log.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-instance.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-instance.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-restart-shadow.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-restart-shadow.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-session-lifecycle.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-session-lifecycle.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/attachment-naming.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/attachment-naming.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile-session.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile-session.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/liveness.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/liveness.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/router.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/router.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery-poll.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery-poll.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/anchored-dir.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/anchored-dir.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-core.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-core.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-skills.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-skills.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-read-policy.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-read-policy.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timezone.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timezone.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile-queue.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile-queue.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/migrate-claude-memory-settings.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/migrate-claude-memory-settings.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-folder.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-folder.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/command-gate.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/command-gate.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/state-sqlite.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/state-sqlite.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/circuit-breaker.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/circuit-breaker.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery-guard.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery-guard.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery-actions.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery-actions.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/liveness.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/liveness.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/install-slug.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/install-slug.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/concurrency.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/concurrency.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/attachment-naming.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/attachment-naming.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-sweep.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-sweep.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/router-session-created.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/router-session-created.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/config-webhook-host.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/config-webhook-host.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-init.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-init.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/egress-lockdown.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/egress-lockdown.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/platform-id.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/platform-id.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-session-lifecycle.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-session-lifecycle.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/mount-composition.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/mount-composition.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/project-doc-compose.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/project-doc-compose.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/test-setup.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/test-setup.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_58",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-approval-coordinator.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-approval-coordinator.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_59",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-folder.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-folder.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_60",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runner.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runner.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_61",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile-queue.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile-queue.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_62",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/timezone.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/timezone.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_63",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/config-webhook-port.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/config-webhook-port.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_64",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/attachment-safety.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/attachment-safety.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_65",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-availability.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-availability.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_66",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/env.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/env.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_67",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-restart.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-restart.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_68",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile-session.env-overrides.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile-session.env-overrides.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_69",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/session-manager.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/session-manager.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_70",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/slash-command.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/slash-command.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_71",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-persona.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-persona.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_72",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/router-command-gate-deny.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/router-command-gate-deny.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_73",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_74",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_75",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runner.gateway-input.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runner.gateway-input.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_76",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runner.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runner.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_77",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runner.orphans.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runner.orphans.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_78",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/webhook-server.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/webhook-server.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_79",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile-feeds.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile-feeds.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_80",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-sweep.queue.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-sweep.queue.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_81",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-init.settings.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-init.settings.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_82",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-config-model-defaults.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-config-model-defaults.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_83",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/workspace-contract.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/workspace-contract.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_84",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/session-manager.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/session-manager.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_85",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-availability.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-availability.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_86",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery-shadow.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery-shadow.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_87",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_88",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-sweep-grace.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-sweep-grace.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_89",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/upgrade-state.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/upgrade-state.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_90",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/backfill-container-configs.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/backfill-container-configs.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_91",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/claimant-liveness.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/claimant-liveness.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_92",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-lifecycle.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-lifecycle.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_93",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/request-wake.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/request-wake.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_94",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-instance.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-instance.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_95",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-sweep.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-sweep.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_96",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/host-lifecycle.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/host-lifecycle.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_97",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/session-manager.attachments.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/session-manager.attachments.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_98",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/egress-lockdown.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/egress-lockdown.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_99",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/provider-surfaces.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/provider-surfaces.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_100",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/card-text.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/card-text.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_101",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/response-registry.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/response-registry.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_102",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/log.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/log.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_103",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runner.egress-adoption.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runner.egress-adoption.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_104",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-connections.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-connections.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_105",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/router-unknown-engage-mode.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/router-unknown-engage-mode.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_106",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-approval-presentation.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-approval-presentation.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_107",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/delivery-attempts-authority.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/delivery-attempts-authority.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_108",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/state-sqlite.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/state-sqlite.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_109",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-runner.claims.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-runner.claims.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_110",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/session-claim-fencing.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/session-claim-fencing.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_111",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/env.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/env.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_112",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-approval-coordinator.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-approval-coordinator.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_113",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/repo-hygiene.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/repo-hygiene.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_114",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/circuit-breaker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/circuit-breaker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_115",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/container-config.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/container-config.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_116",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/command-gate.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/command-gate.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_117",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/anchored-dir.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/anchored-dir.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_118",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/concurrency.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/concurrency.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_119",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/reconcile-feeds.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/reconcile-feeds.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_120",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/webhook-server-raw.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/webhook-server-raw.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_121",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/install-slug.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/install-slug.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_122",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/gateway-connections.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/gateway-connections.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_123",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-persona.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-persona.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_124",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/group-skills.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/group-skills.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_125",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory-migration-contract.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory-migration-contract.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_ext_126",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/startup-order.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/startup-order.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620091
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_45cf89465c5a46ef",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "acc2b1c8f52a954368cfaf04b61c32f9a1efc280",
+              "message": "agent-images: v2026.10.0 -> v2026.10.0-20261026T0306 (#4226)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f8980d7cd56b414eb73260e459fb5cc5",
+              "result": "架构转折点: commit acc2b1c8 - agent-images: v2026.10.0 -> v2026.10.0-20261026T0306 (#4226)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/nanoclaw",
+                "commit": "acc2b1c8f52a954368cfaf04b61c32f9a1efc280",
+                "message": "agent-images: v2026.10.0 -> v2026.10.0-20261026T0306 (#4226)",
+                "files_changed": 1343,
+                "insertions": 242992,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793514620229
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793514620430
+        }
+      ],
+      "created_at": 1793514620090
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.skills.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.skills.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/webhook-server.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/webhook-server.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-approval-summary.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-approval-summary.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/project-doc-compose.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/project-doc-compose.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runtime.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runtime.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/attachment-safety.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/attachment-safety.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/request-wake.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/request-wake.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/card-text.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/card-text.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-sweep.feeds.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-sweep.feeds.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-approval-presentation.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-approval-presentation.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/session-manager.feeds.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/session-manager.feeds.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-restart.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-restart.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-read-policy.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-read-policy.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/slash-command.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/slash-command.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/upgrade-state.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/upgrade-state.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/session-manager.outbox.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/session-manager.outbox.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/log.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/log.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-instance.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-instance.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-restart-shadow.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-restart-shadow.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-session-lifecycle.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-session-lifecycle.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/attachment-naming.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/attachment-naming.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile-session.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile-session.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/liveness.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/liveness.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/router.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/router.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery-poll.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery-poll.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/anchored-dir.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/anchored-dir.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-core.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-core.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-skills.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-skills.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-read-policy.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-read-policy.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timezone.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timezone.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile-queue.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile-queue.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/migrate-claude-memory-settings.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/migrate-claude-memory-settings.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-folder.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-folder.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/command-gate.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/command-gate.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/state-sqlite.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/state-sqlite.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/circuit-breaker.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/circuit-breaker.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery-guard.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery-guard.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery-actions.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery-actions.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/liveness.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/liveness.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/install-slug.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/install-slug.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/concurrency.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/concurrency.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/attachment-naming.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/attachment-naming.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-sweep.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-sweep.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/router-session-created.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/router-session-created.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/config-webhook-host.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/config-webhook-host.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-init.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-init.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/egress-lockdown.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/egress-lockdown.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/platform-id.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/platform-id.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-session-lifecycle.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-session-lifecycle.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/mount-composition.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/mount-composition.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/project-doc-compose.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/project-doc-compose.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/test-setup.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/test-setup.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_58",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-approval-coordinator.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-approval-coordinator.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_59",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-folder.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-folder.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_60",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runner.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runner.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_61",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile-queue.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile-queue.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_62",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/timezone.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/timezone.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_63",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/config-webhook-port.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/config-webhook-port.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_64",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/attachment-safety.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/attachment-safety.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_65",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-availability.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-availability.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_66",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/env.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/env.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_67",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-restart.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-restart.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_68",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile-session.env-overrides.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile-session.env-overrides.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_69",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/session-manager.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/session-manager.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_70",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/slash-command.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/slash-command.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_71",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-persona.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-persona.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_72",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/router-command-gate-deny.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/router-command-gate-deny.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_73",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_74",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_75",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runner.gateway-input.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runner.gateway-input.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_76",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runner.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runner.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_77",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runner.orphans.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runner.orphans.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_78",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/webhook-server.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/webhook-server.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_79",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile-feeds.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile-feeds.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_80",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-sweep.queue.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-sweep.queue.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_81",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-init.settings.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-init.settings.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_82",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-config-model-defaults.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-config-model-defaults.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_83",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/workspace-contract.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/workspace-contract.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_84",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/session-manager.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/session-manager.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_85",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-availability.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-availability.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_86",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery-shadow.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery-shadow.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_87",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_88",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-sweep-grace.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-sweep-grace.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_89",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/upgrade-state.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/upgrade-state.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_90",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/backfill-container-configs.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/backfill-container-configs.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_91",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/claimant-liveness.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/claimant-liveness.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_92",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-lifecycle.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-lifecycle.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_93",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/request-wake.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/request-wake.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_94",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-instance.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-instance.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_95",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-sweep.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-sweep.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_96",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/host-lifecycle.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/host-lifecycle.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_97",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/session-manager.attachments.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/session-manager.attachments.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_98",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/egress-lockdown.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/egress-lockdown.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_99",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/provider-surfaces.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/provider-surfaces.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_100",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/card-text.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/card-text.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_101",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/response-registry.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/response-registry.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_102",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/log.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/log.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_103",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runner.egress-adoption.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runner.egress-adoption.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_104",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-connections.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-connections.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_105",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/router-unknown-engage-mode.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/router-unknown-engage-mode.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_106",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-approval-presentation.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-approval-presentation.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_107",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/delivery-attempts-authority.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/delivery-attempts-authority.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_108",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/state-sqlite.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/state-sqlite.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_109",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-runner.claims.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-runner.claims.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_110",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/session-claim-fencing.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/session-claim-fencing.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_111",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/env.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/env.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_112",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-approval-coordinator.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-approval-coordinator.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_113",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/repo-hygiene.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/repo-hygiene.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_114",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/circuit-breaker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/circuit-breaker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_115",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/container-config.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/container-config.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_116",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/command-gate.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/command-gate.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_117",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/anchored-dir.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/anchored-dir.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_118",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/concurrency.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/concurrency.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_119",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/reconcile-feeds.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/reconcile-feeds.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_120",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/webhook-server-raw.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/webhook-server-raw.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_121",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/install-slug.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/install-slug.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_122",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/gateway-connections.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/gateway-connections.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_123",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-persona.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-persona.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_124",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/group-skills.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/group-skills.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_125",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory-migration-contract.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory-migration-contract.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_ext_126",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/startup-order.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/startup-order.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620091
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_45cf89465c5a46ef",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "acc2b1c8f52a954368cfaf04b61c32f9a1efc280",
+          "message": "agent-images: v2026.10.0 -> v2026.10.0-20261026T0306 (#4226)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f8980d7cd56b414eb73260e459fb5cc5",
+          "result": "架构转折点: commit acc2b1c8 - agent-images: v2026.10.0 -> v2026.10.0-20261026T0306 (#4226)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/nanoclaw",
+            "commit": "acc2b1c8f52a954368cfaf04b61c32f9a1efc280",
+            "message": "agent-images: v2026.10.0 -> v2026.10.0-20261026T0306 (#4226)",
+            "files_changed": 1343,
+            "insertions": 242992,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793514620229
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793514620430
+    }
+  ],
+  "provenance": "external",
+  "source_label": "nanoclaw",
+  "weight": 0.5,
+  "created_at": 1793514620090,
+  "source_id": "nanoclaw",
+  "repo_url": "https://github.com/qwibitai/nanoclaw",
+  "commit": "acc2b1c8f52a954368cfaf04b61c32f9a1efc280",
+  "license": "MIT",
+  "collected_at": 1793514620431
+}

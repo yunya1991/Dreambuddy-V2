@@ -1,0 +1,2742 @@
+{
+  "tree_id": "dt_5b75ea0b267f4eab",
+  "task": {
+    "target": "https://github.com/shadcn-ui/ui",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_355bcb86858448af",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/shadcn-ui/ui"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.workspace.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.workspace.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vitest.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vitest.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/astro-app/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/astro-app/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-app/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-app/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-app/react-router.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-app/react-router.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-app/app/routes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-app/app/routes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-monorepo/apps/web/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-monorepo/apps/web/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-monorepo/apps/web/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-monorepo/apps/web/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-monorepo/apps/web/src/routeTree.gen.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-monorepo/apps/web/src/routeTree.gen.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-monorepo/packages/ui/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-monorepo/packages/ui/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-monorepo/packages/ui/eslint.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-monorepo/packages/ui/eslint.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-app/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-app/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-app/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-app/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-app/src/routeTree.gen.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-app/src/routeTree.gen.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/start-app/src/lib/utils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/start-app/src/lib/utils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-app/next.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-app/next.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/.eslintrc.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/.eslintrc.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/apps/web/next-env.d.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/apps/web/next-env.d.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/apps/web/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/apps/web/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/apps/web/next.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/apps/web/next.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/packages/ui/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/packages/ui/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/packages/eslint-config/base.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/packages/eslint-config/base.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/packages/eslint-config/react-internal.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/packages/eslint-config/react-internal.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/next-monorepo/packages/eslint-config/next.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/next-monorepo/packages/eslint-config/next.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/vite-monorepo/apps/web/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/vite-monorepo/apps/web/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/vite-monorepo/apps/web/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/vite-monorepo/apps/web/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/vite-monorepo/packages/ui/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/vite-monorepo/packages/ui/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/vite-app/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/vite-app/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/vite-app/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/vite-app/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/astro-monorepo/apps/web/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/astro-monorepo/apps/web/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/astro-monorepo/packages/ui/eslint.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/astro-monorepo/packages/ui/eslint.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-monorepo/apps/web/vite.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-monorepo/apps/web/vite.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-monorepo/apps/web/react-router.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-monorepo/apps/web/react-router.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-monorepo/apps/web/app/routes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-monorepo/apps/web/app/routes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "templates/react-router-monorepo/packages/ui/src/lib/utils.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "templates/react-router-monorepo/packages/ui/src/lib/utils.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/source.config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/source.config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-colors.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-colors.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-search-registry.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-search-registry.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-delayed-status.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-delayed-status.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-meta-color.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-meta-color.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-mounted.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-mounted.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-copy-to-clipboard.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-copy-to-clipboard.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-mobile.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-mobile.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/hooks/use-mutation-observer.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/hooks/use-mutation-observer.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/scripts/build-icons.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/scripts/build-icons.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/base-colors.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/base-colors.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/themes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/themes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/_legacy-colors.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/_legacy-colors.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/_legacy-base-colors.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/_legacy-base-colors.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/_legacy-themes.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/_legacy-themes.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/fonts.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/fonts.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/_legacy-styles.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/_legacy-styles.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/config.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/config.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/bases.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/bases.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "apps/v4/registry/calendar.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "apps/v4/registry/calendar.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509596655
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_355bcb86858448af",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "c0d63c339d6cd2fc26135590a54cf1f362269451",
+              "message": "feat(registry): add community registries (#12551)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_83a77dbb79c94dd89896a2b4b0fbf210",
+              "result": "架构转折点: commit c0d63c33 - feat(registry): add community registries (#12551)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/shadcn-ui",
+                "commit": "c0d63c339d6cd2fc26135590a54cf1f362269451",
+                "message": "feat(registry): add community registries (#12551)",
+                "files_changed": 6411,
+                "insertions": 899325,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509597017
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509597363
+        }
+      ],
+      "created_at": 1793509596651
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.workspace.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.workspace.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vitest.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vitest.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/astro-app/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/astro-app/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-app/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-app/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-app/react-router.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-app/react-router.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-app/app/routes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-app/app/routes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-monorepo/apps/web/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-monorepo/apps/web/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-monorepo/apps/web/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-monorepo/apps/web/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-monorepo/apps/web/src/routeTree.gen.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-monorepo/apps/web/src/routeTree.gen.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-monorepo/packages/ui/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-monorepo/packages/ui/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-monorepo/packages/ui/eslint.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-monorepo/packages/ui/eslint.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-app/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-app/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-app/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-app/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-app/src/routeTree.gen.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-app/src/routeTree.gen.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/start-app/src/lib/utils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/start-app/src/lib/utils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-app/next.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-app/next.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/.eslintrc.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/.eslintrc.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/apps/web/next-env.d.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/apps/web/next-env.d.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/apps/web/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/apps/web/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/apps/web/next.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/apps/web/next.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/packages/ui/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/packages/ui/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/packages/eslint-config/base.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/packages/eslint-config/base.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/packages/eslint-config/react-internal.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/packages/eslint-config/react-internal.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/next-monorepo/packages/eslint-config/next.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/next-monorepo/packages/eslint-config/next.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/vite-monorepo/apps/web/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/vite-monorepo/apps/web/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/vite-monorepo/apps/web/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/vite-monorepo/apps/web/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/vite-monorepo/packages/ui/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/vite-monorepo/packages/ui/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/vite-app/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/vite-app/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/vite-app/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/vite-app/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/astro-monorepo/apps/web/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/astro-monorepo/apps/web/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/astro-monorepo/packages/ui/eslint.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/astro-monorepo/packages/ui/eslint.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-monorepo/apps/web/vite.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-monorepo/apps/web/vite.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-monorepo/apps/web/react-router.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-monorepo/apps/web/react-router.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-monorepo/apps/web/app/routes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-monorepo/apps/web/app/routes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "templates/react-router-monorepo/packages/ui/src/lib/utils.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "templates/react-router-monorepo/packages/ui/src/lib/utils.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/source.config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/source.config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-colors.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-colors.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-search-registry.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-search-registry.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-delayed-status.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-delayed-status.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-meta-color.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-meta-color.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-mounted.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-mounted.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-copy-to-clipboard.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-copy-to-clipboard.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-mobile.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-mobile.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/hooks/use-mutation-observer.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/hooks/use-mutation-observer.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/scripts/build-icons.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/scripts/build-icons.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/base-colors.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/base-colors.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/themes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/themes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/_legacy-colors.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/_legacy-colors.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/_legacy-base-colors.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/_legacy-base-colors.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/_legacy-themes.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/_legacy-themes.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/fonts.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/fonts.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/_legacy-styles.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/_legacy-styles.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/config.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/config.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/bases.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/bases.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "apps/v4/registry/calendar.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "apps/v4/registry/calendar.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509596655
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_355bcb86858448af",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "c0d63c339d6cd2fc26135590a54cf1f362269451",
+          "message": "feat(registry): add community registries (#12551)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_83a77dbb79c94dd89896a2b4b0fbf210",
+          "result": "架构转折点: commit c0d63c33 - feat(registry): add community registries (#12551)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/shadcn-ui",
+            "commit": "c0d63c339d6cd2fc26135590a54cf1f362269451",
+            "message": "feat(registry): add community registries (#12551)",
+            "files_changed": 6411,
+            "insertions": 899325,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509597017
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509597363
+    }
+  ],
+  "provenance": "external",
+  "source_label": "shadcn-ui",
+  "weight": 0.5,
+  "created_at": 1793509596651,
+  "source_id": "p1_shadcn-ui",
+  "repo_url": "https://github.com/shadcn-ui/ui",
+  "commit": "c0d63c339d6cd2fc26135590a54cf1f362269451",
+  "license": "MIT",
+  "collected_at": 1793509861032
+}

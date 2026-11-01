@@ -1,0 +1,2558 @@
+{
+  "tree_id": "dt_8c281a6d510345c7",
+  "task": {
+    "target": "https://github.com/vnpy/vnpy",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_7d7ae39a9eba4a62",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/vnpy/vnpy"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/chart/item.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/chart/item.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/chart/manager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/chart/manager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/chart/widget.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/chart/widget.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/chart/axis.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/chart/axis.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/chart/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/chart/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/chart/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/chart/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/event/engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/event/engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/event/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/event/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/rpc/client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/rpc/client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/rpc/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/rpc/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/rpc/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/rpc/server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/rpc/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/rpc/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/object.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/object.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/logger.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/logger.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/optimize.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/optimize.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/gateway.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/gateway.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/setting.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/setting.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/utility.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/utility.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/constant.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/constant.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/converter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/converter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/app.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/app.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/datafeed.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/datafeed.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/event.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/event.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/database.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/database.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/wechat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/wechat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/locale/build_hook.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/locale/build_hook.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/locale/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/locale/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/ui/mainwindow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/ui/mainwindow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/ui/qt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/ui/qt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/ui/widget.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/ui/widget.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/ui/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/ui/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/trader/ui/ico/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/trader/ui/ico/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/logger.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/logger.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/lab.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/lab.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/model/template.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/model/template.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/model/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/model/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/model/models/mlp_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/model/models/mlp_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/model/models/lgb_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/model/models/lgb_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/model/models/lasso_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/model/models/lasso_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/model/models/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/model/models/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/processor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/processor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/template.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/template.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/math_function.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/math_function.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/cs_function.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/cs_function.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/utility.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/utility.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/factor_performance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/factor_performance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/ts_function.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/ts_function.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "vnpy/alpha/dataset/ta_function.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "vnpy/alpha/dataset/ta_function.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511098179
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_7d7ae39a9eba4a62",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "c6e231caf32b7fc97e6459817fff66458cf7e7c4",
+              "message": "[Fix] mypy related warning"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_82f3174645414072ad8be5ac2b30840c",
+              "result": "架构转折点: commit c6e231ca - [Fix] mypy related warning",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/vnpy",
+                "commit": "c6e231caf32b7fc97e6459817fff66458cf7e7c4",
+                "message": "[Fix] mypy related warning",
+                "files_changed": 210,
+                "insertions": 689726,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511098823
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511099085
+        }
+      ],
+      "created_at": 1793511098178
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/chart/item.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/chart/item.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/chart/manager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/chart/manager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/chart/widget.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/chart/widget.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/chart/axis.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/chart/axis.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/chart/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/chart/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/chart/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/chart/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/event/engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/event/engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/event/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/event/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/rpc/client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/rpc/client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/rpc/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/rpc/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/rpc/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/rpc/server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/rpc/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/rpc/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/object.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/object.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/logger.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/logger.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/optimize.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/optimize.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/gateway.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/gateway.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/setting.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/setting.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/utility.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/utility.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/constant.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/constant.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/converter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/converter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/app.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/app.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/datafeed.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/datafeed.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/event.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/event.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/database.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/database.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/wechat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/wechat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/locale/build_hook.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/locale/build_hook.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/locale/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/locale/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/ui/mainwindow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/ui/mainwindow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/ui/qt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/ui/qt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/ui/widget.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/ui/widget.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/ui/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/ui/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/trader/ui/ico/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/trader/ui/ico/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/logger.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/logger.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/lab.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/lab.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/model/template.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/model/template.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/model/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/model/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/model/models/mlp_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/model/models/mlp_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/model/models/lgb_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/model/models/lgb_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/model/models/lasso_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/model/models/lasso_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/model/models/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/model/models/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/processor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/processor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/template.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/template.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/math_function.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/math_function.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/cs_function.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/cs_function.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/utility.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/utility.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/factor_performance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/factor_performance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/ts_function.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/ts_function.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "vnpy/alpha/dataset/ta_function.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "vnpy/alpha/dataset/ta_function.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511098179
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_7d7ae39a9eba4a62",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "c6e231caf32b7fc97e6459817fff66458cf7e7c4",
+          "message": "[Fix] mypy related warning"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_82f3174645414072ad8be5ac2b30840c",
+          "result": "架构转折点: commit c6e231ca - [Fix] mypy related warning",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/vnpy",
+            "commit": "c6e231caf32b7fc97e6459817fff66458cf7e7c4",
+            "message": "[Fix] mypy related warning",
+            "files_changed": 210,
+            "insertions": 689726,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511098823
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511099085
+    }
+  ],
+  "provenance": "external",
+  "source_label": "vnpy",
+  "weight": 0.5,
+  "created_at": 1793511098178,
+  "source_id": "p2_vnpy",
+  "repo_url": "https://github.com/vnpy/vnpy",
+  "commit": "c6e231caf32b7fc97e6459817fff66458cf7e7c4",
+  "license": "MIT",
+  "collected_at": 1793511409648
+}

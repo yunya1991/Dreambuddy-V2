@@ -1,0 +1,120 @@
+{
+  "tree_id": "dt_13ae6e36c34a4a03",
+  "task": {
+    "target": "https://github.com/letta-ai/letta",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_66ae142acf2e438b",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/letta-ai/letta"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_66ae142acf2e438b",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "8816d3a8516893bfdc0fa14bfb1235226012e295",
+              "message": "docs: remove desktop app mention from README (#3454)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_dfa7c0ffb137497489b676aeba4c53c6",
+              "result": "架构转折点: commit 8816d3a8 - docs: remove desktop app mention from README (#3454)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/letta",
+                "commit": "8816d3a8516893bfdc0fa14bfb1235226012e295",
+                "message": "docs: remove desktop app mention from README (#3454)",
+                "files_changed": 12,
+                "insertions": 879,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793506670639
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793506670671
+        }
+      ],
+      "created_at": 1793506670631
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_66ae142acf2e438b",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "8816d3a8516893bfdc0fa14bfb1235226012e295",
+          "message": "docs: remove desktop app mention from README (#3454)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_dfa7c0ffb137497489b676aeba4c53c6",
+          "result": "架构转折点: commit 8816d3a8 - docs: remove desktop app mention from README (#3454)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/letta",
+            "commit": "8816d3a8516893bfdc0fa14bfb1235226012e295",
+            "message": "docs: remove desktop app mention from README (#3454)",
+            "files_changed": 12,
+            "insertions": 879,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793506670639
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793506670671
+    }
+  ],
+  "provenance": "external",
+  "source_label": "letta",
+  "weight": 0.5,
+  "created_at": 1793506670631,
+  "source_id": "p0_letta",
+  "repo_url": "https://github.com/letta-ai/letta",
+  "commit": "8816d3a8516893bfdc0fa14bfb1235226012e295",
+  "license": "Apache-2.0",
+  "collected_at": 1793506855008
+}

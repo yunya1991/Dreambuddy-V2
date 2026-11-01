@@ -1,0 +1,994 @@
+{
+  "tree_id": "dt_2100ddb45c504f3a",
+  "task": {
+    "target": "https://github.com/obra/superpowers",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_2c647aeb915d487b",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/obra/superpowers"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "index.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "index.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "skills/writing-skills/render-graphs.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "skills/writing-skills/render-graphs.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "skills/systematic-debugging/condition-based-waiting-example.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "skills/systematic-debugging/condition-based-waiting-example.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "skills/brainstorming/scripts/helper.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "skills/brainstorming/scripts/helper.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": ".pi/extensions/superpowers.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": ".pi/extensions/superpowers.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": ".opencode/plugins/superpowers.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": ".opencode/plugins/superpowers.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": ".hermes-plugin/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": ".hermes-plugin/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/browser-launcher.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/browser-launcher.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/ws-protocol.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/ws-protocol.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/lifecycle.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/lifecycle.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/helper.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/helper.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/auth.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/auth.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/branding.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/branding.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/brainstorm-server/server.test.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/brainstorm-server/server.test.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/claude-code/analyze-token-usage.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/claude-code/analyze-token-usage.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/hermes/test_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/hermes/test_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/hermes/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/hermes/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/hermes/test_bootstrap.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/hermes/test_bootstrap.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/hermes/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/hermes/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787052
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_2c647aeb915d487b",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+              "message": "Release v7.0.1: brainstorming retune, skills that better survive compaction, contribution templates (#2581)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_dd37085661f54800929520e08e85942e",
+              "result": "架构转折点: commit 2ce8aa15 - Release v7.0.1: brainstorming retune, skills that better survive compaction, con",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/superpowers",
+                "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+                "message": "Release v7.0.1: brainstorming retune, skills that better survive compaction, contribution templates (#2581)",
+                "files_changed": 231,
+                "insertions": 35616,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509787095
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509787134
+        }
+      ],
+      "created_at": 1793509787049
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "index.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "index.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "skills/writing-skills/render-graphs.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "skills/writing-skills/render-graphs.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "skills/systematic-debugging/condition-based-waiting-example.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "skills/systematic-debugging/condition-based-waiting-example.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "skills/brainstorming/scripts/helper.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "skills/brainstorming/scripts/helper.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": ".pi/extensions/superpowers.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": ".pi/extensions/superpowers.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": ".opencode/plugins/superpowers.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": ".opencode/plugins/superpowers.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": ".hermes-plugin/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": ".hermes-plugin/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/browser-launcher.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/browser-launcher.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/ws-protocol.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/ws-protocol.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/lifecycle.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/lifecycle.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/helper.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/helper.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/auth.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/auth.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/branding.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/branding.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/brainstorm-server/server.test.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/brainstorm-server/server.test.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/claude-code/analyze-token-usage.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/claude-code/analyze-token-usage.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/hermes/test_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/hermes/test_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/hermes/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/hermes/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/hermes/test_bootstrap.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/hermes/test_bootstrap.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/hermes/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/hermes/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787052
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_2c647aeb915d487b",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+          "message": "Release v7.0.1: brainstorming retune, skills that better survive compaction, contribution templates (#2581)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_dd37085661f54800929520e08e85942e",
+          "result": "架构转折点: commit 2ce8aa15 - Release v7.0.1: brainstorming retune, skills that better survive compaction, con",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/superpowers",
+            "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+            "message": "Release v7.0.1: brainstorming retune, skills that better survive compaction, contribution templates (#2581)",
+            "files_changed": 231,
+            "insertions": 35616,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509787095
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509787134
+    }
+  ],
+  "provenance": "external",
+  "source_label": "superpowers",
+  "weight": 0.5,
+  "created_at": 1793509787049,
+  "source_id": "p1_superpowers",
+  "repo_url": "https://github.com/obra/superpowers",
+  "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+  "license": "MIT",
+  "collected_at": 1793509861372
+}

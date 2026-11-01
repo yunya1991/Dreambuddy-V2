@@ -1,0 +1,350 @@
+{
+  "tree_id": "dt_ffc8bb3bd5964ce2",
+  "task": {
+    "target": "https://github.com/RD20KHIZA/MFRA-BTC-regime-study",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_e53fbb6e610a4d92",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/RD20KHIZA/MFRA-BTC-regime-study"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_e53fbb6e610a4d92",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "create_notebook.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "create_notebook.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512171730
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_e53fbb6e610a4d92",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_daily.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_daily.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512171730
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_e53fbb6e610a4d92",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "create_kf_notebook.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "create_kf_notebook.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512171730
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_e53fbb6e610a4d92",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_kf_daily.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_kf_daily.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512171730
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_e53fbb6e610a4d92",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_full_mfra.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_full_mfra.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512171730
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_e53fbb6e610a4d92",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "d388d872561a31e9184f225df48a8d6e0ce49aa7",
+              "message": "Update Q1 2026: notebooks for publication, metrics, data through Apr 1"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_94c2ce30debf4ff1a10a27dcae9d529d",
+              "result": "架构转折点: commit d388d872 - Update Q1 2026: notebooks for publication, metrics, data through Apr 1",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/MFRA-BTC",
+                "commit": "d388d872561a31e9184f225df48a8d6e0ce49aa7",
+                "message": "Update Q1 2026: notebooks for publication, metrics, data through Apr 1",
+                "files_changed": 22,
+                "insertions": 49542,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793512171830
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793512171900
+        }
+      ],
+      "created_at": 1793512171730
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_e53fbb6e610a4d92",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "create_notebook.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "create_notebook.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512171730
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_e53fbb6e610a4d92",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_daily.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_daily.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512171730
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_e53fbb6e610a4d92",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "create_kf_notebook.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "create_kf_notebook.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512171730
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_e53fbb6e610a4d92",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_kf_daily.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_kf_daily.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512171730
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_e53fbb6e610a4d92",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_full_mfra.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_full_mfra.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512171730
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_e53fbb6e610a4d92",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "d388d872561a31e9184f225df48a8d6e0ce49aa7",
+          "message": "Update Q1 2026: notebooks for publication, metrics, data through Apr 1"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_94c2ce30debf4ff1a10a27dcae9d529d",
+          "result": "架构转折点: commit d388d872 - Update Q1 2026: notebooks for publication, metrics, data through Apr 1",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/MFRA-BTC",
+            "commit": "d388d872561a31e9184f225df48a8d6e0ce49aa7",
+            "message": "Update Q1 2026: notebooks for publication, metrics, data through Apr 1",
+            "files_changed": 22,
+            "insertions": 49542,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793512171830
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793512171900
+    }
+  ],
+  "provenance": "external",
+  "source_label": "MFRA-BTC",
+  "weight": 0.5,
+  "created_at": 1793512171730,
+  "source_id": "p3_MFRA-BTC",
+  "repo_url": "https://github.com/RD20KHIZA/MFRA-BTC-regime-study",
+  "commit": "d388d872561a31e9184f225df48a8d6e0ce49aa7",
+  "license": "unknown",
+  "collected_at": 1793515299912
+}

@@ -1,0 +1,2700 @@
+{
+  "tree_id": "dt_5b14514fcada4a76",
+  "task": {
+    "target": "https://github.com/neuml/txtai",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_7c776feed4384040",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/neuml/txtai"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/cluster.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/cluster.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/application.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/application.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/factory.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/factory.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/route.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/route.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/authorization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/authorization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/extension.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/extension.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/objects.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/objects.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/tabular.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/tabular.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/embeddings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/embeddings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/segmentation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/segmentation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/reranker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/reranker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/agent.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/agent.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/translation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/translation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/labels.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/labels.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/llm.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/llm.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/transcription.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/transcription.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/textractor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/textractor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/caption.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/caption.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/entity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/entity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/openai.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/openai.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/workflow.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/workflow.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/similarity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/similarity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/extractor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/extractor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/rag.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/rag.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/texttospeech.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/texttospeech.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/summary.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/summary.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/routers/upload.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/routers/upload.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/responses/messagepack.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/responses/messagepack.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/responses/factory.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/responses/factory.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/responses/json.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/responses/json.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/api/responses/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/api/responses/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/functions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/functions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/reducer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/reducer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/documents.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/documents.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/indexids.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/indexids.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/autoid.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/autoid.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/action.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/action.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/configuration.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/configuration.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/stream.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/stream.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/indexes.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/indexes.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/transform.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/transform.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/python/txtai/embeddings/index/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/python/txtai/embeddings/index/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511044935
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b671d61c40674b5caa81de7403ab0d8d",
+              "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+              "level": "inference",
+              "provenance": {
+                "file": "/tmp/rea_harvest/txtai/src/python/txtai/ann/dense/pgvector.py",
+                "analysis": "orm_raw_sql_coexistence"
+              },
+              "confidence": 0.5,
+              "known_gaps": [
+                "推断基于代码共存，无直接证据证明设计意图",
+                "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+              ],
+              "observations": [],
+              "created_at": 1793511045980
+            }
+          ],
+          "poe_score": 0.5,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511046615
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_970695ae9f6a4825b92d4588a133a68e",
+              "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+              "level": "inference",
+              "provenance": {
+                "file": "/tmp/rea_harvest/txtai/src/python/txtai/graph/rdbms.py",
+                "analysis": "orm_raw_sql_coexistence"
+              },
+              "confidence": 0.5,
+              "known_gaps": [
+                "推断基于代码共存，无直接证据证明设计意图",
+                "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+              ],
+              "observations": [],
+              "created_at": 1793511046167
+            }
+          ],
+          "poe_score": 0.5,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511046615
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f0020f535ced4cc5a277e0334a7dcbef",
+              "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+              "level": "inference",
+              "provenance": {
+                "file": "/tmp/rea_harvest/txtai/src/python/txtai/scoring/pgtext.py",
+                "analysis": "orm_raw_sql_coexistence"
+              },
+              "confidence": 0.5,
+              "known_gaps": [
+                "推断基于代码共存，无直接证据证明设计意图",
+                "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+              ],
+              "observations": [],
+              "created_at": 1793511046195
+            }
+          ],
+          "poe_score": 0.5,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511046615
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c207c11b1333473bb9a4d1308c84a714",
+              "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+              "level": "inference",
+              "provenance": {
+                "file": "/tmp/rea_harvest/txtai/src/python/txtai/database/client.py",
+                "analysis": "orm_raw_sql_coexistence"
+              },
+              "confidence": 0.5,
+              "known_gaps": [
+                "推断基于代码共存，无直接证据证明设计意图",
+                "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+              ],
+              "observations": [],
+              "created_at": 1793511046230
+            }
+          ],
+          "poe_score": 0.5,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511046615
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_7c776feed4384040",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "2a11bb1cfb8d3b50b69e3cd88a104b6dc0732097",
+              "message": "Update build script to work with Ubuntu 26 runner #1492"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_33696d715bdc469aad897fb525e3ca1a",
+              "result": "架构转折点: commit 2a11bb1c - Update build script to work with Ubuntu 26 runner #1492",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/txtai",
+                "commit": "2a11bb1cfb8d3b50b69e3cd88a104b6dc0732097",
+                "message": "Update build script to work with Ubuntu 26 runner #1492",
+                "files_changed": 658,
+                "insertions": 142729,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511046889
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511047569
+        }
+      ],
+      "created_at": 1793511044933
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/cluster.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/cluster.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/application.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/application.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/factory.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/factory.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/route.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/route.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/authorization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/authorization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/extension.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/extension.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/objects.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/objects.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/tabular.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/tabular.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/embeddings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/embeddings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/segmentation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/segmentation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/reranker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/reranker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/agent.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/agent.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/translation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/translation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/labels.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/labels.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/llm.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/llm.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/transcription.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/transcription.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/textractor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/textractor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/caption.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/caption.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/entity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/entity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/openai.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/openai.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/workflow.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/workflow.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/similarity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/similarity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/extractor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/extractor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/rag.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/rag.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/texttospeech.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/texttospeech.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/summary.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/summary.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/routers/upload.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/routers/upload.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/responses/messagepack.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/responses/messagepack.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/responses/factory.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/responses/factory.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/responses/json.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/responses/json.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/api/responses/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/api/responses/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/functions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/functions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/reducer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/reducer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/documents.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/documents.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/indexids.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/indexids.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/autoid.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/autoid.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/action.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/action.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/configuration.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/configuration.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/stream.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/stream.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/indexes.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/indexes.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/transform.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/transform.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/python/txtai/embeddings/index/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/python/txtai/embeddings/index/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511044935
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b671d61c40674b5caa81de7403ab0d8d",
+          "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+          "level": "inference",
+          "provenance": {
+            "file": "/tmp/rea_harvest/txtai/src/python/txtai/ann/dense/pgvector.py",
+            "analysis": "orm_raw_sql_coexistence"
+          },
+          "confidence": 0.5,
+          "known_gaps": [
+            "推断基于代码共存，无直接证据证明设计意图",
+            "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+          ],
+          "observations": [],
+          "created_at": 1793511045980
+        }
+      ],
+      "poe_score": 0.5,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511046615
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_970695ae9f6a4825b92d4588a133a68e",
+          "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+          "level": "inference",
+          "provenance": {
+            "file": "/tmp/rea_harvest/txtai/src/python/txtai/graph/rdbms.py",
+            "analysis": "orm_raw_sql_coexistence"
+          },
+          "confidence": 0.5,
+          "known_gaps": [
+            "推断基于代码共存，无直接证据证明设计意图",
+            "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+          ],
+          "observations": [],
+          "created_at": 1793511046167
+        }
+      ],
+      "poe_score": 0.5,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511046615
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f0020f535ced4cc5a277e0334a7dcbef",
+          "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+          "level": "inference",
+          "provenance": {
+            "file": "/tmp/rea_harvest/txtai/src/python/txtai/scoring/pgtext.py",
+            "analysis": "orm_raw_sql_coexistence"
+          },
+          "confidence": 0.5,
+          "known_gaps": [
+            "推断基于代码共存，无直接证据证明设计意图",
+            "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+          ],
+          "observations": [],
+          "created_at": 1793511046195
+        }
+      ],
+      "poe_score": 0.5,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511046615
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "替代方案推断：推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c207c11b1333473bb9a4d1308c84a714",
+          "result": "推断：曾考虑直接使用原生 SQL，最终选择 ORM 但保留原生 SQL 兜底",
+          "level": "inference",
+          "provenance": {
+            "file": "/tmp/rea_harvest/txtai/src/python/txtai/database/client.py",
+            "analysis": "orm_raw_sql_coexistence"
+          },
+          "confidence": 0.5,
+          "known_gaps": [
+            "推断基于代码共存，无直接证据证明设计意图",
+            "原生 SQL 可能仅用于性能优化或特殊查询，非替代方案遗留"
+          ],
+          "observations": [],
+          "created_at": 1793511046230
+        }
+      ],
+      "poe_score": 0.5,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511046615
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_7c776feed4384040",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "2a11bb1cfb8d3b50b69e3cd88a104b6dc0732097",
+          "message": "Update build script to work with Ubuntu 26 runner #1492"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_33696d715bdc469aad897fb525e3ca1a",
+          "result": "架构转折点: commit 2a11bb1c - Update build script to work with Ubuntu 26 runner #1492",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/txtai",
+            "commit": "2a11bb1cfb8d3b50b69e3cd88a104b6dc0732097",
+            "message": "Update build script to work with Ubuntu 26 runner #1492",
+            "files_changed": 658,
+            "insertions": 142729,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511046889
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511047569
+    }
+  ],
+  "provenance": "external",
+  "source_label": "txtai",
+  "weight": 0.5,
+  "created_at": 1793511044933,
+  "source_id": "p2_txtai",
+  "repo_url": "https://github.com/neuml/txtai",
+  "commit": "2a11bb1cfb8d3b50b69e3cd88a104b6dc0732097",
+  "license": "Apache-2.0",
+  "collected_at": 1793511409393
+}

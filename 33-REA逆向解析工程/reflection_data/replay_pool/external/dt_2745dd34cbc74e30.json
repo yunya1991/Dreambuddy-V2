@@ -1,0 +1,4448 @@
+{
+  "tree_id": "dt_2745dd34cbc74e30",
+  "task": {
+    "target": "https://github.com/Aider-AI/aider",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_d4b3712332244418",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/Aider-AI/aider"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/openrouter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/openrouter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/deprecated.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/deprecated.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/watch.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/watch.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/sendchat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/sendchat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/io.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/io.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/scrape.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/scrape.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/dump.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/dump.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/onboarding.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/onboarding.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/help_pats.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/help_pats.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/special.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/special.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/watch_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/watch_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/voice.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/voice.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/run_cmd.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/run_cmd.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/report.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/report.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/llm.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/llm.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/format_settings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/format_settings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/gui.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/gui.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/history.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/history.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/repomap.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/repomap.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/editor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/editor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/args.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/args.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/copypaste.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/copypaste.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/analytics.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/analytics.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/waiting.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/waiting.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/versioncheck.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/versioncheck.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/reasoning_tags.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/reasoning_tags.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/repo.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/repo.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/linter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/linter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/diffs.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/diffs.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/help.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/help.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/urls.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/urls.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/args_formatter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/args_formatter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/__main__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/__main__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/mdstream.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/mdstream.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/resources/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/resources/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/architect_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/architect_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editblock_fenced_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editblock_fenced_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editor_whole_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editor_whole_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/patch_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/patch_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/udiff_simple_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/udiff_simple_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/udiff_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/udiff_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/chat_chunks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/chat_chunks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editor_editblock_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editor_editblock_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/help_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/help_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/wholefile_func_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/wholefile_func_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/wholefile_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/wholefile_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editor_whole_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editor_whole_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editblock_func_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editblock_func_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_55",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editblock_fenced_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editblock_fenced_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_56",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editor_diff_fenced_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editor_diff_fenced_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_57",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/wholefile_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/wholefile_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_58",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/search_replace.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/search_replace.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_59",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/shell.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/shell.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_60",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editblock_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editblock_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_61",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/single_wholefile_func_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/single_wholefile_func_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_62",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/help_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/help_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_63",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/wholefile_func_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/wholefile_func_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_64",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editblock_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editblock_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_65",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/ask_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/ask_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_66",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/architect_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/architect_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_67",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/base_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/base_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_68",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/udiff_simple.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/udiff_simple.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_69",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/patch_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/patch_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_70",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/context_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/context_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_71",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/base_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/base_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_72",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/context_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/context_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_73",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/ask_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/ask_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_74",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editor_editblock_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editor_editblock_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_75",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editblock_func_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editblock_func_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_76",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/udiff_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/udiff_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_77",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_78",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/single_wholefile_func_prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/single_wholefile_func_prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_ext_79",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "aider/coders/editor_diff_fenced_coder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "aider/coders/editor_diff_fenced_coder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511281488
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f9556c1765964f739228198431d6e2f7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/udiff_coder.py",
+                "line": 134,
+                "marker": "TODO",
+                "comment": "# TODO: handle inserting into new file"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281653
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c914d29506a842da87bfc5309c64f87f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/wholefile_coder.py",
+                "line": 81,
+                "marker": "TODO",
+                "comment": "# TODO: sense which file it is by diff size"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281660
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0db380261dd1424e8651cdf6d87846dc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/wholefile_func_prompts.py",
+                "line": 24,
+                "marker": "TODO",
+                "comment": "# TODO: should this be present for using this with gpt-4?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281670
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_92f547a9b4d8488c90f1a98a7b1b9691",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/wholefile_func_prompts.py",
+                "line": 27,
+                "marker": "TODO",
+                "comment": "# TODO: fix the chat history, except we can't keep the whole file"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281670
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_231428e6c8d649ae986689fec48888d5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/base_coder.py",
+                "line": 1040,
+                "marker": "TODO",
+                "comment": "# TODO check for impact on image messages"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281703
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_06a4f7a2031c4d64b91e84c1bf03579a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/base_coder.py",
+                "line": 1297,
+                "marker": "TODO",
+                "comment": "# TODO review impact of token count on image messages"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281703
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3872de23a82a4bb79105939518aebf3d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/base_coder.py",
+                "line": 1831,
+                "marker": "TODO",
+                "comment": "# TODO: push this into subclasses"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281703
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a25c9e54041842d694c972e3a9db8f2c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/single_wholefile_func_prompts.py",
+                "line": 24,
+                "marker": "TODO",
+                "comment": "# TODO: should this be present for using this with gpt-4?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281715
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d6da2030c0b944e68790e909405d04b0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/aider/aider/coders/single_wholefile_func_prompts.py",
+                "line": 27,
+                "marker": "TODO",
+                "comment": "# TODO: fix the chat history, except we can't keep the whole file"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511281715
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511282488
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_d4b3712332244418",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+              "message": "Merge pull request #5173 from Cyberfilo/feat/anthropic_models-list-add-opus-4-5"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_083f0ba5899a45a9940e84b7219a70df",
+              "result": "架构转折点: commit 5dc9490b - Merge pull request #5173 from Cyberfilo/feat/anthropic_models-list-add-opus-4-5",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/aider",
+                "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+                "message": "Merge pull request #5173 from Cyberfilo/feat/anthropic_models-list-add-opus-4-5",
+                "files_changed": 691,
+                "insertions": 245870,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511282723
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511283188
+        }
+      ],
+      "created_at": 1793511281487
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/openrouter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/openrouter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/deprecated.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/deprecated.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/watch.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/watch.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/sendchat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/sendchat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/io.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/io.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/scrape.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/scrape.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/dump.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/dump.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/onboarding.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/onboarding.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/help_pats.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/help_pats.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/special.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/special.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/watch_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/watch_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/voice.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/voice.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/run_cmd.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/run_cmd.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/report.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/report.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/llm.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/llm.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/format_settings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/format_settings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/gui.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/gui.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/history.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/history.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/repomap.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/repomap.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/editor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/editor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/args.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/args.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/copypaste.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/copypaste.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/analytics.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/analytics.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/waiting.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/waiting.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/versioncheck.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/versioncheck.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/reasoning_tags.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/reasoning_tags.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/repo.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/repo.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/linter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/linter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/diffs.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/diffs.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/help.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/help.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/urls.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/urls.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/args_formatter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/args_formatter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/__main__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/__main__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/mdstream.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/mdstream.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/resources/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/resources/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/architect_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/architect_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editblock_fenced_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editblock_fenced_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editor_whole_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editor_whole_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/patch_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/patch_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/udiff_simple_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/udiff_simple_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/udiff_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/udiff_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/chat_chunks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/chat_chunks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editor_editblock_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editor_editblock_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/help_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/help_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/wholefile_func_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/wholefile_func_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/wholefile_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/wholefile_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editor_whole_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editor_whole_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editblock_func_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editblock_func_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_55",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editblock_fenced_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editblock_fenced_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_56",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editor_diff_fenced_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editor_diff_fenced_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_57",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/wholefile_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/wholefile_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_58",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/search_replace.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/search_replace.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_59",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/shell.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/shell.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_60",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editblock_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editblock_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_61",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/single_wholefile_func_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/single_wholefile_func_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_62",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/help_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/help_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_63",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/wholefile_func_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/wholefile_func_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_64",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editblock_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editblock_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_65",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/ask_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/ask_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_66",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/architect_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/architect_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_67",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/base_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/base_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_68",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/udiff_simple.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/udiff_simple.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_69",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/patch_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/patch_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_70",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/context_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/context_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_71",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/base_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/base_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_72",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/context_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/context_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_73",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/ask_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/ask_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_74",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editor_editblock_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editor_editblock_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_75",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editblock_func_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editblock_func_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_76",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/udiff_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/udiff_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_77",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_78",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/single_wholefile_func_prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/single_wholefile_func_prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_ext_79",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "aider/coders/editor_diff_fenced_coder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "aider/coders/editor_diff_fenced_coder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511281488
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f9556c1765964f739228198431d6e2f7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/udiff_coder.py",
+            "line": 134,
+            "marker": "TODO",
+            "comment": "# TODO: handle inserting into new file"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281653
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c914d29506a842da87bfc5309c64f87f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/wholefile_coder.py",
+            "line": 81,
+            "marker": "TODO",
+            "comment": "# TODO: sense which file it is by diff size"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281660
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0db380261dd1424e8651cdf6d87846dc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/wholefile_func_prompts.py",
+            "line": 24,
+            "marker": "TODO",
+            "comment": "# TODO: should this be present for using this with gpt-4?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281670
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_92f547a9b4d8488c90f1a98a7b1b9691",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/wholefile_func_prompts.py",
+            "line": 27,
+            "marker": "TODO",
+            "comment": "# TODO: fix the chat history, except we can't keep the whole file"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281670
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_231428e6c8d649ae986689fec48888d5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/base_coder.py",
+            "line": 1040,
+            "marker": "TODO",
+            "comment": "# TODO check for impact on image messages"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281703
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_06a4f7a2031c4d64b91e84c1bf03579a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/base_coder.py",
+            "line": 1297,
+            "marker": "TODO",
+            "comment": "# TODO review impact of token count on image messages"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281703
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3872de23a82a4bb79105939518aebf3d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/base_coder.py",
+            "line": 1831,
+            "marker": "TODO",
+            "comment": "# TODO: push this into subclasses"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281703
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a25c9e54041842d694c972e3a9db8f2c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/single_wholefile_func_prompts.py",
+            "line": 24,
+            "marker": "TODO",
+            "comment": "# TODO: should this be present for using this with gpt-4?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281715
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d6da2030c0b944e68790e909405d04b0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/aider/aider/coders/single_wholefile_func_prompts.py",
+            "line": 27,
+            "marker": "TODO",
+            "comment": "# TODO: fix the chat history, except we can't keep the whole file"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511281715
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511282488
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_d4b3712332244418",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+          "message": "Merge pull request #5173 from Cyberfilo/feat/anthropic_models-list-add-opus-4-5"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_083f0ba5899a45a9940e84b7219a70df",
+          "result": "架构转折点: commit 5dc9490b - Merge pull request #5173 from Cyberfilo/feat/anthropic_models-list-add-opus-4-5",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/aider",
+            "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+            "message": "Merge pull request #5173 from Cyberfilo/feat/anthropic_models-list-add-opus-4-5",
+            "files_changed": 691,
+            "insertions": 245870,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511282723
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511283188
+    }
+  ],
+  "provenance": "external",
+  "source_label": "aider",
+  "weight": 0.5,
+  "created_at": 1793511281487,
+  "source_id": "p2_aider",
+  "repo_url": "https://github.com/Aider-AI/aider",
+  "commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+  "license": "Apache-2.0",
+  "collected_at": 1793511402097
+}

@@ -1,0 +1,2970 @@
+{
+  "tree_id": "dt_779637f344fe4cf5",
+  "task": {
+    "target": "https://github.com/AI4Finance-Foundation/FinGPT",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_1dab1e55366244fc",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/AI4Finance-Foundation/FinGPT"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cloud_test_fingpt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cloud_test_fingpt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "test_imports.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "test_imports.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "scripts/identify_spam_issues.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "scripts/identify_spam_issues.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/compliance_gate/gate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/compliance_gate/gate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/dependencies.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/dependencies.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/agents_explorer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/agents_explorer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/search.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/search.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/mandates_console.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/mandates_console.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/approvals.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/approvals.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/corridors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/corridors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ops_console/routers/ledger_explorer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ops_console/routers/ledger_explorer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/partner_execution/bridge_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/partner_execution/bridge_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/partner_execution/executor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/partner_execution/executor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/reconciliation/reconciler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/reconciliation/reconciler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/intent_sweeper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/intent_sweeper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/dependencies.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/dependencies.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/chain_watcher.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/chain_watcher.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/schemas.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/schemas.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/middleware/payment_required.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/middleware/payment_required.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/middleware/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/middleware/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/payment_intents.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/payment_intents.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/topup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/topup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/kya.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/kya.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/agent_accounts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/agent_accounts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/wallets.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/wallets.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/health.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/health.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/agent_ledger_api/routers/micropay.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/agent_ledger_api/routers/micropay.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/dependencies.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/dependencies.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/schemas.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/schemas.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/routers/onboarding.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/routers/onboarding.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/routers/batches.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/routers/batches.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/routers/webhooks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/routers/webhooks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/routers/health.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/routers/health.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/ingress_api/routers/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/ingress_api/routers/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/routing_engine/engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/routing_engine/engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/services/routing_engine/worker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/services/routing_engine/worker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/mcp/kyt_aml/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/mcp/kyt_aml/server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/mcp/identity/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/mcp/identity/server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/mcp/kya_validator/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/mcp/kya_validator/server.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "finogrid/mcp/kya_validator/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "finogrid/mcp/kya_validator/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511260202
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1e5a55d0e5754050b5205daf104b5eec",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/finogrid/services/ingress_api/routers/webhooks.py",
+                "line": 15,
+                "marker": "TODO",
+                "comment": "# TODO: verify HMAC signature, update execution_events, trigger reconciliation"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260285
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ba2fe5618a3e4863905694d24fc6ae97",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/finogrid/services/ingress_api/routers/webhooks.py",
+                "line": 24,
+                "marker": "TODO",
+                "comment": "# TODO: update compliance_result on payout_task, trigger release or hold"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260285
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e290faab5c33499daa338786ce0695b9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/finogrid/mcp/kya_validator/server.py",
+                "line": 182,
+                "marker": "TODO",
+                "comment": "# TODO: poll Sardine for decision"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260299
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_113d29745ce847dda068bdd3fad9479f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_RAG/instruct-FinGPT/training/utils/utils.py",
+                "line": 118,
+                "marker": "TODO",
+                "comment": "# TODO: use prefiltering for efficiency"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260540
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_400c90df6f7b4591956e57cd84270147",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_RAG/multisource_retrieval/news_scraper.py",
+                "line": 31,
+                "marker": "TODO",
+                "comment": "# TODO: Twitter API requests # https://twitter.com/bryan4665/"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260594
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_429fdbc1bbc84f28ad04c73545e89c37",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_Forecaster/data.py",
+                "line": 39,
+                "marker": "TODO",
+                "comment": "# TODO: likely to be merged with get_stock_data"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260677
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_be81b00192574d17a848ab4e8a1defba",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_Others/FinGPT_Trading/chatgpt-trading-v2/pyfolio/round_trips.py",
+                "line": 64,
+                "marker": "FIXME",
+                "comment": "#  FIXME: Instead of x.max() - x.min() this should be"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511260788
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511262308
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_1dab1e55366244fc",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ac5c5443fbeeafad801e7a3c188e4f24cfaad4d8",
+              "message": "Merge pull request #281 from jellyfishing2346/fix/forecaster-basics-lookahead-280"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_16b5d9d284504b0391929b9d0acbd41f",
+              "result": "架构转折点: commit ac5c5443 - Merge pull request #281 from jellyfishing2346/fix/forecaster-basics-lookahead-28",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/FinGPT",
+                "commit": "ac5c5443fbeeafad801e7a3c188e4f24cfaad4d8",
+                "message": "Merge pull request #281 from jellyfishing2346/fix/forecaster-basics-lookahead-280",
+                "files_changed": 438,
+                "insertions": 158974,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511262607
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511263352
+        }
+      ],
+      "created_at": 1793511260200
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cloud_test_fingpt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cloud_test_fingpt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "test_imports.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "test_imports.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "scripts/identify_spam_issues.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "scripts/identify_spam_issues.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/compliance_gate/gate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/compliance_gate/gate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/dependencies.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/dependencies.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/agents_explorer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/agents_explorer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/search.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/search.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/mandates_console.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/mandates_console.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/approvals.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/approvals.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/corridors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/corridors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ops_console/routers/ledger_explorer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ops_console/routers/ledger_explorer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/partner_execution/bridge_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/partner_execution/bridge_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/partner_execution/executor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/partner_execution/executor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/reconciliation/reconciler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/reconciliation/reconciler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/intent_sweeper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/intent_sweeper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/dependencies.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/dependencies.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/chain_watcher.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/chain_watcher.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/schemas.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/schemas.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/middleware/payment_required.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/middleware/payment_required.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/middleware/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/middleware/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/payment_intents.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/payment_intents.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/topup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/topup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/kya.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/kya.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/agent_accounts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/agent_accounts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/wallets.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/wallets.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/health.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/health.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/agent_ledger_api/routers/micropay.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/agent_ledger_api/routers/micropay.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/dependencies.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/dependencies.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/schemas.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/schemas.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/routers/onboarding.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/routers/onboarding.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/routers/batches.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/routers/batches.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/routers/webhooks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/routers/webhooks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/routers/health.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/routers/health.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/ingress_api/routers/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/ingress_api/routers/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/routing_engine/engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/routing_engine/engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/services/routing_engine/worker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/services/routing_engine/worker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/mcp/kyt_aml/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/mcp/kyt_aml/server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/mcp/identity/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/mcp/identity/server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/mcp/kya_validator/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/mcp/kya_validator/server.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "finogrid/mcp/kya_validator/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "finogrid/mcp/kya_validator/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511260202
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1e5a55d0e5754050b5205daf104b5eec",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/finogrid/services/ingress_api/routers/webhooks.py",
+            "line": 15,
+            "marker": "TODO",
+            "comment": "# TODO: verify HMAC signature, update execution_events, trigger reconciliation"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260285
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ba2fe5618a3e4863905694d24fc6ae97",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/finogrid/services/ingress_api/routers/webhooks.py",
+            "line": 24,
+            "marker": "TODO",
+            "comment": "# TODO: update compliance_result on payout_task, trigger release or hold"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260285
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e290faab5c33499daa338786ce0695b9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/finogrid/mcp/kya_validator/server.py",
+            "line": 182,
+            "marker": "TODO",
+            "comment": "# TODO: poll Sardine for decision"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260299
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_113d29745ce847dda068bdd3fad9479f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_RAG/instruct-FinGPT/training/utils/utils.py",
+            "line": 118,
+            "marker": "TODO",
+            "comment": "# TODO: use prefiltering for efficiency"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260540
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_400c90df6f7b4591956e57cd84270147",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_RAG/multisource_retrieval/news_scraper.py",
+            "line": 31,
+            "marker": "TODO",
+            "comment": "# TODO: Twitter API requests # https://twitter.com/bryan4665/"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260594
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_429fdbc1bbc84f28ad04c73545e89c37",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_Forecaster/data.py",
+            "line": 39,
+            "marker": "TODO",
+            "comment": "# TODO: likely to be merged with get_stock_data"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260677
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_be81b00192574d17a848ab4e8a1defba",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/FinGPT/fingpt/FinGPT_Others/FinGPT_Trading/chatgpt-trading-v2/pyfolio/round_trips.py",
+            "line": 64,
+            "marker": "FIXME",
+            "comment": "#  FIXME: Instead of x.max() - x.min() this should be"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511260788
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511262308
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_1dab1e55366244fc",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ac5c5443fbeeafad801e7a3c188e4f24cfaad4d8",
+          "message": "Merge pull request #281 from jellyfishing2346/fix/forecaster-basics-lookahead-280"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_16b5d9d284504b0391929b9d0acbd41f",
+          "result": "架构转折点: commit ac5c5443 - Merge pull request #281 from jellyfishing2346/fix/forecaster-basics-lookahead-28",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/FinGPT",
+            "commit": "ac5c5443fbeeafad801e7a3c188e4f24cfaad4d8",
+            "message": "Merge pull request #281 from jellyfishing2346/fix/forecaster-basics-lookahead-280",
+            "files_changed": 438,
+            "insertions": 158974,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511262607
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511263352
+    }
+  ],
+  "provenance": "external",
+  "source_label": "FinGPT",
+  "weight": 0.5,
+  "created_at": 1793511260200,
+  "source_id": "p2_FinGPT",
+  "repo_url": "https://github.com/AI4Finance-Foundation/FinGPT",
+  "commit": "ac5c5443fbeeafad801e7a3c188e4f24cfaad4d8",
+  "license": "MIT",
+  "collected_at": 1793511399863
+}

@@ -1,0 +1,4960 @@
+{
+  "tree_id": "dt_21fd9f7482904527",
+  "task": {
+    "target": "https://github.com/microsoft/semantic-kernel",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_1c977ce4ab8848f0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/microsoft/semantic-kernel"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/kernel_pydantic.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/kernel_pydantic.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/kernel.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/kernel.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/kernel_types.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/kernel_types.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/const.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/const.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/web_search_engine_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/web_search_engine_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/http_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/http_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/wait_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/wait_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/time_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/time_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/conversation_summary_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/conversation_summary_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/text_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/text_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/text_memory_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/text_memory_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/math_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/math_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_settings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_settings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/crew_ai/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/crew_ai/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_plugin.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_plugin.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_remote_file_metadata.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_remote_file_metadata.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_settings.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_settings.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/core_plugins/sessions_python_tool/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/services/ai_service_selector.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/services/ai_service_selector.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/services/kernel_services_extension.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/services/kernel_services_extension.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/services/ai_service_client_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/services/ai_service_client_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/services/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/services/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/memory_record.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/memory_record.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/semantic_text_memory.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/semantic_text_memory.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/semantic_text_memory_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/semantic_text_memory_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/null_memory.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/null_memory.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/volatile_memory_store.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/volatile_memory_store.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/memory_query_result.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/memory_query_result.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/memory/memory_store_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/memory/memory_store_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/schema/kernel_json_schema_builder.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/schema/kernel_json_schema_builder.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/schema/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/schema/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/filter_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/filter_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/memory_connector_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/memory_connector_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/agent_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/agent_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/service_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/service_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/template_engine_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/template_engine_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/kernel_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/kernel_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/search_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/search_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/content_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/content_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/function_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/function_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/vector_store_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/vector_store_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/exceptions/process_exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/exceptions/process_exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/text/text_chunker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/text/text_chunker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/text/function_extension.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/text/function_extension.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "python/semantic_kernel/text/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "python/semantic_kernel/text/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509710785
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6a015e0d193b47d9844021dadca480ea",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_settings.py",
+                "line": 27,
+                "marker": "TODO",
+                "comment": "# Asynchronous = \"asynchronous\" TODO: Enable when available"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509710835
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e9af1e103ee647d98f30a8151d21cb34",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/schema/kernel_json_schema_builder.py",
+                "line": 80,
+                "marker": "TODO",
+                "comment": "# TODO (moonbox3): add support for handling forward references, which is not currently tested"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509710852
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0a09a243b24f464aa3ba5721177034a6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/text/text_chunker.py",
+                "line": 43,
+                "marker": "TODO",
+                "comment": "Count the number of tokens in a string.\n\n    TODO: chunking methods should be configurable to allow for different\n          tokenization strategies depending on the model to be called.\n          For n"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509710859
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_06de860f8092417383de0704aac2e49f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/connectors/mcp.py",
+                "line": 428,
+                "marker": "TODO",
+                "comment": "# TODO (eavanvalkenburg): deal with other parts of the modelPreferences concept"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711077
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_441db4781dbe47cca01a05fbbcc0ce11",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/connectors/memory_stores/astradb/astradb_memory_store.py",
+                "line": 51,
+                "marker": "TODO",
+                "comment": "Initializes a new instance of the AstraDBMemoryStore class.\n\n        Args:\n            astra_application_token (str): The Astra application token.\n            astra_id (str): The Astra id of database."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711161
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_489c1c409c664b6ab7438ef86b8daf19",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/connectors/ai/open_ai/services/azure_config_base.py",
+                "line": 107,
+                "marker": "TODO",
+                "comment": "# TODO (eavanvalkenburg): Remove the check on model type when the package fixes: https://github.com/openai/openai-python/issues/2120"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711318
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9849923ac1a24571b923cb5ac104ed9c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/data/vector.py",
+                "line": 1979,
+                "marker": "TODO",
+                "comment": "# TODO (eavanvalkenburg): this only deals with string values, should support other types as well"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711577
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_03137e8f7a7d425f831f70b079c381e8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/utils/telemetry/model_diagnostics/decorators.py",
+                "line": 346,
+                "marker": "TODO",
+                "comment": "# TODO(@glahaye): we'll need to have a way to get these attributes from model"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711592
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_594fea8f43b945c1901f223b3e5ce4fc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/functions/function_result.py",
+                "line": 49,
+                "marker": "TODO",
+                "comment": "# TODO (eavanvalkenburg): remove this once function result doesn't include input args"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711626
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7c3bbc03d278426592b7ded6da658efa",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/open_ai/openai_responses_agent.py",
+                "line": 767,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): improve typing in this method"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711706
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b14224f5a32748b3bbc7c6068e43d7d7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/open_ai/responses_agent_thread_actions.py",
+                "line": 1054,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): add metadata support"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711727
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_09f50807723949778e708bdbdac9307f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/open_ai/responses_agent_thread_actions.py",
+                "line": 1063,
+                "marker": "TODO",
+                "comment": "# TODO(evmatso): handle refusal"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711727
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_223e9a79c2754a178cd48203a82512aa",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+                "line": 494,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): if responses are given for a publish"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711834
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f254111f0d07480ba2bed07532b93587",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+                "line": 606,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): we should raise the intervention exception to the publisher."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711834
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f91dd6d4c3934a59be4e93912911fb52",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+                "line": 634,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): should we raise the exception to sender of the response instead?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711834
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_15e3cb6b24644415b8ee7a28131ee2a7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+                "line": 813,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): uncomment out the following type ignore when this is fixed in mypy: https://github.com/python/mypy/issues/3737"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711834
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_91da45ad52614903b054c8e98674ad57",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+                "line": 819,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): check if remote"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711834
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b1fd1bffa987464d97a64fd801940fc1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/runtime_impl_helpers.py",
+                "line": 82,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): optimize this..."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711837
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3a179962260f43dba024db3d43814ee2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/base_agent.py",
+                "line": 217,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): deduplication"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711852
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_340471cbe08d4242bef43fe572cd218f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/core_runtime.py",
+                "line": 110,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): uncomment out the following type ignore when this is fixed in mypy: https://github.com/python/mypy/issues/3737"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711853
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e50cbf96b46c4633af4d12acd89a9072",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/serialization.py",
+                "line": 121,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): what's the correct content type? There seems to be some disagreement over what it should be"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711858
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_de90402163724878936d107393c12509",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+                "line": 21,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): Generic typevar bound binding U to agent type"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711867
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6ec6b6cf03564adb8612648a4012b70d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+                "line": 47,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): Use a protocol for the outer function to check checked arg names"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711867
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_23",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ff42fb282a9a4406b43c4bebcf60fa2f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+                "line": 515,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): handle deduplication"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711867
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_24",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5dedb2e7891541ab93f2013f45f2b5c8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+                "line": 521,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): support different serializers"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711867
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_25",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b6c73e6f52e54a0293e11b71f5a1a945",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/telemetry/tracing_config.py",
+                "line": 130,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): Make this more pythonic?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711874
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_26",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_50855ba2751740fc8286ba63fc55bb1b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/telemetry/tracing_config.py",
+                "line": 180,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): Use stringified convention"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711874
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_27",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_65d09856cfb147bbbc4abc52d920d42a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/azure_ai/azure_ai_agent.py",
+                "line": 138,
+                "marker": "TODO",
+                "comment": "# TODO(evmattso): Implement Azure Function tool support"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509711926
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_28",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ed547d62933d40968cc10b7a5a4506e6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/samples/demos/guided_conversations/guided_conversation/utils/resources.py",
+                "line": 157,
+                "marker": "TODO",
+                "comment": "# TODO: This can likely be simplified"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509712328
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_29",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e26a55fba25e42639be9484ad397a624",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/tests/unit/connectors/search/test_brave_search.py",
+                "line": 246,
+                "marker": "TODO",
+                "comment": "# TODO check: shouldn't this output be \"test query\" instead of \"test query+\"?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509712956
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_30",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_59582bc13eda458aa57a2f72daacfd30",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/completions/test_azure_oai_chat_service_extensions.py",
+                "line": 136,
+                "marker": "TODO",
+                "comment": "# TODO: get streaming working for this test"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509713355
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_31",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b6047037307f49b2a8603542de601493",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/fakes/fun_plugin_fake.py",
+                "line": 6,
+                "marker": "TODO",
+                "comment": "# TODO: this fake plugin is temporal usage."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509713381
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_32",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d747ad95b1f34f4f8b15eb4f1062b677",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/fakes/writer_plugin_fake.py",
+                "line": 7,
+                "marker": "TODO",
+                "comment": "# TODO: this fake plugin is temporal usage."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509713381
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_dec_33",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_26ed51ada28e40fbb448d467fb1eeb15",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/fakes/summarize_plugin_fake.py",
+                "line": 5,
+                "marker": "TODO",
+                "comment": "# TODO: this fake plugin is temporal usage."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793509713381
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509716858
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_1c977ce4ab8848f0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "96c9e860db4d7c6da40652d9b421a31b05e98692",
+              "message": ".Net: [BREAKING] Consolidate file access (#14679)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e72492b228774a70a060847085bfb3b8",
+              "result": "架构转折点: commit 96c9e860 - .Net: [BREAKING] Consolidate file access (#14679)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/semantic-kernel",
+                "commit": "96c9e860db4d7c6da40652d9b421a31b05e98692",
+                "message": ".Net: [BREAKING] Consolidate file access (#14679)",
+                "files_changed": 4845,
+                "insertions": 813260,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793509717320
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793509717939
+        }
+      ],
+      "created_at": 1793509710781
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/kernel_pydantic.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/kernel_pydantic.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/kernel.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/kernel.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/kernel_types.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/kernel_types.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/const.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/const.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/web_search_engine_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/web_search_engine_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/http_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/http_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/wait_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/wait_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/time_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/time_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/conversation_summary_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/conversation_summary_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/text_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/text_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/text_memory_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/text_memory_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/math_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/math_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_settings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_settings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/crew_ai/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/crew_ai/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/crew_ai/crew_ai_enterprise_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_plugin.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_plugin.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_remote_file_metadata.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_remote_file_metadata.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_settings.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_settings.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/core_plugins/sessions_python_tool/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/services/ai_service_selector.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/services/ai_service_selector.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/services/kernel_services_extension.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/services/kernel_services_extension.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/services/ai_service_client_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/services/ai_service_client_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/services/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/services/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/memory_record.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/memory_record.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/semantic_text_memory.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/semantic_text_memory.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/semantic_text_memory_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/semantic_text_memory_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/null_memory.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/null_memory.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/volatile_memory_store.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/volatile_memory_store.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/memory_query_result.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/memory_query_result.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/memory/memory_store_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/memory/memory_store_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/schema/kernel_json_schema_builder.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/schema/kernel_json_schema_builder.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/schema/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/schema/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/filter_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/filter_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/memory_connector_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/memory_connector_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/agent_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/agent_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/service_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/service_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/template_engine_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/template_engine_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/kernel_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/kernel_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/search_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/search_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/content_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/content_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/function_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/function_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/vector_store_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/vector_store_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/exceptions/process_exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/exceptions/process_exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/text/text_chunker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/text/text_chunker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/text/function_extension.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/text/function_extension.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "python/semantic_kernel/text/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "python/semantic_kernel/text/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509710785
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6a015e0d193b47d9844021dadca480ea",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/core_plugins/sessions_python_tool/sessions_python_settings.py",
+            "line": 27,
+            "marker": "TODO",
+            "comment": "# Asynchronous = \"asynchronous\" TODO: Enable when available"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509710835
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e9af1e103ee647d98f30a8151d21cb34",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/schema/kernel_json_schema_builder.py",
+            "line": 80,
+            "marker": "TODO",
+            "comment": "# TODO (moonbox3): add support for handling forward references, which is not currently tested"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509710852
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0a09a243b24f464aa3ba5721177034a6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/text/text_chunker.py",
+            "line": 43,
+            "marker": "TODO",
+            "comment": "Count the number of tokens in a string.\n\n    TODO: chunking methods should be configurable to allow for different\n          tokenization strategies depending on the model to be called.\n          For n"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509710859
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_06de860f8092417383de0704aac2e49f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/connectors/mcp.py",
+            "line": 428,
+            "marker": "TODO",
+            "comment": "# TODO (eavanvalkenburg): deal with other parts of the modelPreferences concept"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711077
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_441db4781dbe47cca01a05fbbcc0ce11",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/connectors/memory_stores/astradb/astradb_memory_store.py",
+            "line": 51,
+            "marker": "TODO",
+            "comment": "Initializes a new instance of the AstraDBMemoryStore class.\n\n        Args:\n            astra_application_token (str): The Astra application token.\n            astra_id (str): The Astra id of database."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711161
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_489c1c409c664b6ab7438ef86b8daf19",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/connectors/ai/open_ai/services/azure_config_base.py",
+            "line": 107,
+            "marker": "TODO",
+            "comment": "# TODO (eavanvalkenburg): Remove the check on model type when the package fixes: https://github.com/openai/openai-python/issues/2120"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711318
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9849923ac1a24571b923cb5ac104ed9c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/data/vector.py",
+            "line": 1979,
+            "marker": "TODO",
+            "comment": "# TODO (eavanvalkenburg): this only deals with string values, should support other types as well"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711577
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_03137e8f7a7d425f831f70b079c381e8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/utils/telemetry/model_diagnostics/decorators.py",
+            "line": 346,
+            "marker": "TODO",
+            "comment": "# TODO(@glahaye): we'll need to have a way to get these attributes from model"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711592
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_594fea8f43b945c1901f223b3e5ce4fc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/functions/function_result.py",
+            "line": 49,
+            "marker": "TODO",
+            "comment": "# TODO (eavanvalkenburg): remove this once function result doesn't include input args"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711626
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7c3bbc03d278426592b7ded6da658efa",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/open_ai/openai_responses_agent.py",
+            "line": 767,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): improve typing in this method"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711706
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b14224f5a32748b3bbc7c6068e43d7d7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/open_ai/responses_agent_thread_actions.py",
+            "line": 1054,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): add metadata support"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711727
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_09f50807723949778e708bdbdac9307f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/open_ai/responses_agent_thread_actions.py",
+            "line": 1063,
+            "marker": "TODO",
+            "comment": "# TODO(evmatso): handle refusal"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711727
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_223e9a79c2754a178cd48203a82512aa",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+            "line": 494,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): if responses are given for a publish"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711834
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f254111f0d07480ba2bed07532b93587",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+            "line": 606,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): we should raise the intervention exception to the publisher."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711834
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f91dd6d4c3934a59be4e93912911fb52",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+            "line": 634,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): should we raise the exception to sender of the response instead?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711834
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_15e3cb6b24644415b8ee7a28131ee2a7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+            "line": 813,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): uncomment out the following type ignore when this is fixed in mypy: https://github.com/python/mypy/issues/3737"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711834
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_91da45ad52614903b054c8e98674ad57",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/in_process_runtime.py",
+            "line": 819,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): check if remote"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711834
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b1fd1bffa987464d97a64fd801940fc1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/in_process/runtime_impl_helpers.py",
+            "line": 82,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): optimize this..."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711837
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3a179962260f43dba024db3d43814ee2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/base_agent.py",
+            "line": 217,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): deduplication"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711852
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_340471cbe08d4242bef43fe572cd218f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/core_runtime.py",
+            "line": 110,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): uncomment out the following type ignore when this is fixed in mypy: https://github.com/python/mypy/issues/3737"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711853
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e50cbf96b46c4633af4d12acd89a9072",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/serialization.py",
+            "line": 121,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): what's the correct content type? There seems to be some disagreement over what it should be"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711858
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_de90402163724878936d107393c12509",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+            "line": 21,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): Generic typevar bound binding U to agent type"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711867
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6ec6b6cf03564adb8612648a4012b70d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+            "line": 47,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): Use a protocol for the outer function to check checked arg names"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711867
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_23",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ff42fb282a9a4406b43c4bebcf60fa2f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+            "line": 515,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): handle deduplication"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711867
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_24",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5dedb2e7891541ab93f2013f45f2b5c8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/routed_agent.py",
+            "line": 521,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): support different serializers"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711867
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_25",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b6c73e6f52e54a0293e11b71f5a1a945",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/telemetry/tracing_config.py",
+            "line": 130,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): Make this more pythonic?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711874
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_26",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_50855ba2751740fc8286ba63fc55bb1b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/runtime/core/telemetry/tracing_config.py",
+            "line": 180,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): Use stringified convention"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711874
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_27",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_65d09856cfb147bbbc4abc52d920d42a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/semantic_kernel/agents/azure_ai/azure_ai_agent.py",
+            "line": 138,
+            "marker": "TODO",
+            "comment": "# TODO(evmattso): Implement Azure Function tool support"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509711926
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_28",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ed547d62933d40968cc10b7a5a4506e6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/samples/demos/guided_conversations/guided_conversation/utils/resources.py",
+            "line": 157,
+            "marker": "TODO",
+            "comment": "# TODO: This can likely be simplified"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509712328
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_29",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e26a55fba25e42639be9484ad397a624",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/tests/unit/connectors/search/test_brave_search.py",
+            "line": 246,
+            "marker": "TODO",
+            "comment": "# TODO check: shouldn't this output be \"test query\" instead of \"test query+\"?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509712956
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_30",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_59582bc13eda458aa57a2f72daacfd30",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/completions/test_azure_oai_chat_service_extensions.py",
+            "line": 136,
+            "marker": "TODO",
+            "comment": "# TODO: get streaming working for this test"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509713355
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_31",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b6047037307f49b2a8603542de601493",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/fakes/fun_plugin_fake.py",
+            "line": 6,
+            "marker": "TODO",
+            "comment": "# TODO: this fake plugin is temporal usage."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509713381
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_32",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d747ad95b1f34f4f8b15eb4f1062b677",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/fakes/writer_plugin_fake.py",
+            "line": 7,
+            "marker": "TODO",
+            "comment": "# TODO: this fake plugin is temporal usage."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509713381
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_dec_33",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_26ed51ada28e40fbb448d467fb1eeb15",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/semantic-kernel/python/tests/integration/fakes/summarize_plugin_fake.py",
+            "line": 5,
+            "marker": "TODO",
+            "comment": "# TODO: this fake plugin is temporal usage."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793509713381
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509716858
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_1c977ce4ab8848f0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "96c9e860db4d7c6da40652d9b421a31b05e98692",
+          "message": ".Net: [BREAKING] Consolidate file access (#14679)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e72492b228774a70a060847085bfb3b8",
+          "result": "架构转折点: commit 96c9e860 - .Net: [BREAKING] Consolidate file access (#14679)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/semantic-kernel",
+            "commit": "96c9e860db4d7c6da40652d9b421a31b05e98692",
+            "message": ".Net: [BREAKING] Consolidate file access (#14679)",
+            "files_changed": 4845,
+            "insertions": 813260,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793509717320
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793509717939
+    }
+  ],
+  "provenance": "external",
+  "source_label": "semantic-kernel",
+  "weight": 0.5,
+  "created_at": 1793509710781,
+  "source_id": "p1_semantic-kernel",
+  "repo_url": "https://github.com/microsoft/semantic-kernel",
+  "commit": "96c9e860db4d7c6da40652d9b421a31b05e98692",
+  "license": "MIT",
+  "collected_at": 1793509860852
+}

@@ -1,0 +1,4312 @@
+{
+  "tree_id": "dt_45bd9099fef942ef",
+  "task": {
+    "target": "https://github.com/skfolio/skfolio",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_b764f2f3916f4d59",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/skfolio/skfolio"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/exceptions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/exceptions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/typing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/typing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/_constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/_constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_returns.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_returns.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_winsorizer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_winsorizer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_standard_scaler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_standard_scaler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_tanh_shrinker.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_tanh_shrinker.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_percentile_rank_scaler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_percentile_rank_scaler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_gaussian_rank_scaler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_gaussian_rank_scaler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/population/_population.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/population/_population.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/population/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/population/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_characteristics_factor_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_characteristics_factor_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_synthetic_data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_synthetic_data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_entropy_pooling.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_entropy_pooling.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_opinion_pooling.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_opinion_pooling.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_time_series_factor_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_time_series_factor_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_empirical.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_empirical.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_black_litterman.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_black_litterman.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_model/_return_distribution.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_model/_return_distribution.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_model/_family_constraint_basis.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_model/_family_constraint_basis.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_model/_factor_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_model/_factor_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_model/_covariance_sqrt.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_model/_covariance_sqrt.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/prior/_model/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/prior/_model/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/metrics/_scorer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/metrics/_scorer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/metrics/_covariance.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/metrics/_covariance.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/metrics/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/metrics/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_walk_forward.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_walk_forward.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_multiple_randomized_cv.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_multiple_randomized_cv.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_combinatorial.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_combinatorial.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_covariance_forecast_evaluation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_covariance_forecast_evaluation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_online/_search.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_online/_search.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_online/_validation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_online/_validation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_online/_covariance_forecast_evaluation.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_online/_covariance_forecast_evaluation.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/model_selection/_online/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/model_selection/_online/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/portfolio/_portfolio.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/portfolio/_portfolio.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/portfolio/_multi_period_portfolio.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/portfolio/_multi_period_portfolio.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/portfolio/_failed_portfolio.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/portfolio/_failed_portfolio.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/portfolio/_base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/portfolio/_base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skfolio/portfolio/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skfolio/portfolio/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511346628
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_71f91a1521df4414b426cac358e3ee73",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/population/_population.py",
+                "line": 293,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated non_denominated_sort in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346667
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ff05c0b8bbd54eeb833ee8f2ff523eea",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/metrics/_scorer.py",
+                "line": 98,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated X_test and the X default in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346785
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3bda936e987c4f488589d886897c7462",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/metrics/_scorer.py",
+                "line": 160,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated X_test and the X default in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346785
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6710d5862b6e4e45b9804aa647d170e9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+                "line": 706,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated annualized_factor in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346881
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d3dc3cacef6d4e0abe0fa7d3a2390d46",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+                "line": 713,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated annualized_factor in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346881
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ddf0a4f2aea44e9c8d80de6813c60912",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+                "line": 1370,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated annualized_factor in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346881
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7a460e2ba2684d25bf9130365f6789e2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+                "line": 1381,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated annualized_factor in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511346881
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_db8f20b3957e4c378e58a34903d1433d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/utils/tools.py",
+                "line": 1161,
+                "marker": "TODO",
+                "comment": "# TODO: remove the pandas-specific branch once the minimum supported"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347048
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e5eb4a86a2024fc599aba550b162cbb0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/utils/sorting.py",
+                "line": 127,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated non_denominated_sort in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347076
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2d76027d8087485ba25802f7c338dedd",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/utils/bootstrap.py",
+                "line": 114,
+                "marker": "TODO",
+                "comment": "# TODO: don't use loop"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347078
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8f0432b8ba794ad1ae029311dfcab58f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_empirical_covariance.py",
+                "line": 94,
+                "marker": "TODO",
+                "comment": "# TODO: Remove WARN after an announced transition to explicit weight requests."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347171
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3dc2cb86a65b439090f309042faf75d8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_implied_covariance.py",
+                "line": 192,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated annualized_factor in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347178
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_55f5d164d55e48b48bfdbd8fb511ebe3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_implied_covariance.py",
+                "line": 247,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated annualized_factor in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347178
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0e57f6b5dcc94196a8f453d8f77dae99",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_base.py",
+                "line": 282,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated X_test and the X default in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347198
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2c5830a499ba46d4b0a527c323fdafc4",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/distance/_distance.py",
+                "line": 565,
+                "marker": "TODO",
+                "comment": "# TODO: parallelize"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347312
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1200b6f4cc60432d9426fe9601944bd1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_hrp.py",
+                "line": 356,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347423
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3dbd5fe3c2c34510b5b338c6cb83288e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_hrp.py",
+                "line": 373,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347423
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_22428a6222be461781924e42d1b338b0",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_schur.py",
+                "line": 368,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347432
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a991c5b902714b75a0215369653ffd4f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_schur.py",
+                "line": 385,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347432
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_70250ebdda7441b7908cfcfd821716a3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+                "line": 227,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347441
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4dc012cc98c6416e88ce79d6faa1c83d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+                "line": 254,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator_ in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347441
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_abb026481649429b80e485a41af19ce9",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+                "line": 301,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator handling in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347441
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_54a297621848458091d6c68c347d0aa8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+                "line": 583,
+                "marker": "TODO",
+                "comment": "# TODO remove deprecated hierarchical_clustering_estimator warning in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347441
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_23",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c7e05d57e7754cf2ba8838158193d035",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/cluster/hierarchical/_base.py",
+                "line": 30,
+                "marker": "TODO",
+                "comment": "# TODO remove BaseHierarchicalOptimization and its compatibility methods in v2.0"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347507
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_dec_24",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_184388dd6020492daad1c59084deb406",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest/skfolio/tests/test_optimization/test_hierarchical/test_nco.py",
+                "line": 75,
+                "marker": "TODO",
+                "comment": "# TODO: remove warnings at the estimator level"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793511347808
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351044
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_b764f2f3916f4d59",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "0db206ed812622088cbd33af2e34a0f4762fa71e",
+              "message": "v1.12.5 [skip ci]"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_94619cf6509b40bfbfa419abde329966",
+              "result": "架构转折点: commit 0db206ed - v1.12.5 [skip ci]",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest/skfolio",
+                "commit": "0db206ed812622088cbd33af2e34a0f4762fa71e",
+                "message": "v1.12.5 [skip ci]",
+                "files_changed": 716,
+                "insertions": 208659,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793511351110
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793511351212
+        }
+      ],
+      "created_at": 1793511346626
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/exceptions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/exceptions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/typing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/typing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/_constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/_constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_returns.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_returns.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_winsorizer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_winsorizer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_standard_scaler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_standard_scaler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_tanh_shrinker.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_tanh_shrinker.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_percentile_rank_scaler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_percentile_rank_scaler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_gaussian_rank_scaler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/preprocessing/_transformer/_cross_sectional/_cs_gaussian_rank_scaler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/population/_population.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/population/_population.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/population/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/population/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_characteristics_factor_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_characteristics_factor_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_synthetic_data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_synthetic_data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_entropy_pooling.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_entropy_pooling.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_opinion_pooling.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_opinion_pooling.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_time_series_factor_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_time_series_factor_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_empirical.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_empirical.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_black_litterman.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_black_litterman.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_model/_return_distribution.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_model/_return_distribution.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_model/_family_constraint_basis.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_model/_family_constraint_basis.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_model/_factor_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_model/_factor_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_model/_covariance_sqrt.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_model/_covariance_sqrt.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/prior/_model/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/prior/_model/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/metrics/_scorer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/metrics/_scorer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/metrics/_covariance.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/metrics/_covariance.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/metrics/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/metrics/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_walk_forward.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_walk_forward.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_multiple_randomized_cv.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_multiple_randomized_cv.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_combinatorial.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_combinatorial.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_covariance_forecast_evaluation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_covariance_forecast_evaluation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_online/_search.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_online/_search.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_online/_validation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_online/_validation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_online/_covariance_forecast_evaluation.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_online/_covariance_forecast_evaluation.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/model_selection/_online/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/model_selection/_online/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/portfolio/_portfolio.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/portfolio/_portfolio.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/portfolio/_multi_period_portfolio.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/portfolio/_multi_period_portfolio.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/portfolio/_failed_portfolio.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/portfolio/_failed_portfolio.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/portfolio/_base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/portfolio/_base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skfolio/portfolio/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skfolio/portfolio/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511346628
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_71f91a1521df4414b426cac358e3ee73",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/population/_population.py",
+            "line": 293,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated non_denominated_sort in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346667
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ff05c0b8bbd54eeb833ee8f2ff523eea",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/metrics/_scorer.py",
+            "line": 98,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated X_test and the X default in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346785
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3bda936e987c4f488589d886897c7462",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/metrics/_scorer.py",
+            "line": 160,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated X_test and the X default in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346785
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6710d5862b6e4e45b9804aa647d170e9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+            "line": 706,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated annualized_factor in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346881
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d3dc3cacef6d4e0abe0fa7d3a2390d46",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+            "line": 713,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated annualized_factor in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346881
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ddf0a4f2aea44e9c8d80de6813c60912",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+            "line": 1370,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated annualized_factor in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346881
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7a460e2ba2684d25bf9130365f6789e2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/portfolio/_base.py",
+            "line": 1381,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated annualized_factor in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511346881
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_db8f20b3957e4c378e58a34903d1433d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/utils/tools.py",
+            "line": 1161,
+            "marker": "TODO",
+            "comment": "# TODO: remove the pandas-specific branch once the minimum supported"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347048
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e5eb4a86a2024fc599aba550b162cbb0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/utils/sorting.py",
+            "line": 127,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated non_denominated_sort in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347076
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2d76027d8087485ba25802f7c338dedd",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/utils/bootstrap.py",
+            "line": 114,
+            "marker": "TODO",
+            "comment": "# TODO: don't use loop"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347078
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8f0432b8ba794ad1ae029311dfcab58f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_empirical_covariance.py",
+            "line": 94,
+            "marker": "TODO",
+            "comment": "# TODO: Remove WARN after an announced transition to explicit weight requests."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347171
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3dc2cb86a65b439090f309042faf75d8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_implied_covariance.py",
+            "line": 192,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated annualized_factor in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347178
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_55f5d164d55e48b48bfdbd8fb511ebe3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_implied_covariance.py",
+            "line": 247,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated annualized_factor in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347178
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0e57f6b5dcc94196a8f453d8f77dae99",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/moments/covariance/_base.py",
+            "line": 282,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated X_test and the X default in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347198
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2c5830a499ba46d4b0a527c323fdafc4",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/distance/_distance.py",
+            "line": 565,
+            "marker": "TODO",
+            "comment": "# TODO: parallelize"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347312
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1200b6f4cc60432d9426fe9601944bd1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_hrp.py",
+            "line": 356,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347423
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3dbd5fe3c2c34510b5b338c6cb83288e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_hrp.py",
+            "line": 373,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347423
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_22428a6222be461781924e42d1b338b0",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_schur.py",
+            "line": 368,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347432
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a991c5b902714b75a0215369653ffd4f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_schur.py",
+            "line": 385,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347432
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_70250ebdda7441b7908cfcfd821716a3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+            "line": 227,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347441
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4dc012cc98c6416e88ce79d6faa1c83d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+            "line": 254,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator_ in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347441
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_abb026481649429b80e485a41af19ce9",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+            "line": 301,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator handling in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347441
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_54a297621848458091d6c68c347d0aa8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/hierarchical/_seriation/_base.py",
+            "line": 583,
+            "marker": "TODO",
+            "comment": "# TODO remove deprecated hierarchical_clustering_estimator warning in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347441
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_23",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c7e05d57e7754cf2ba8838158193d035",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/src/skfolio/optimization/cluster/hierarchical/_base.py",
+            "line": 30,
+            "marker": "TODO",
+            "comment": "# TODO remove BaseHierarchicalOptimization and its compatibility methods in v2.0"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347507
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_dec_24",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_184388dd6020492daad1c59084deb406",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest/skfolio/tests/test_optimization/test_hierarchical/test_nco.py",
+            "line": 75,
+            "marker": "TODO",
+            "comment": "# TODO: remove warnings at the estimator level"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793511347808
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351044
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_b764f2f3916f4d59",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "0db206ed812622088cbd33af2e34a0f4762fa71e",
+          "message": "v1.12.5 [skip ci]"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_94619cf6509b40bfbfa419abde329966",
+          "result": "架构转折点: commit 0db206ed - v1.12.5 [skip ci]",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest/skfolio",
+            "commit": "0db206ed812622088cbd33af2e34a0f4762fa71e",
+            "message": "v1.12.5 [skip ci]",
+            "files_changed": 716,
+            "insertions": 208659,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793511351110
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793511351212
+    }
+  ],
+  "provenance": "external",
+  "source_label": "skfolio",
+  "weight": 0.5,
+  "created_at": 1793511346626,
+  "source_id": "p2_skfolio",
+  "repo_url": "https://github.com/skfolio/skfolio",
+  "commit": "0db206ed812622088cbd33af2e34a0f4762fa71e",
+  "license": "BSD-3-Clause",
+  "collected_at": 1793511408432
+}
