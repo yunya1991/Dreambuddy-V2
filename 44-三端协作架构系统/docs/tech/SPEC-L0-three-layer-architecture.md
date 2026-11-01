@@ -142,7 +142,7 @@
 | G0-5 | **健康检查与回滚**：部署末尾改 `health-check.sh --record-good`；回滚需人工确认，禁止连续 3 次失败即 `git reset --hard` | 失败计数不清零会误回滚新代码 | 一次正常部署后 `health-state` 归零；回滚需显式操作 |
 | G0-6 | **DDL / schema 唯一 owner**：`init_db_schema` 从 `di.py:78` 移到独立迁移模块，业务层禁止建表 | 谁都能建表就永远换不掉库 | 全仓建表语句只在迁移模块 |
 | G0-7 | **磁盘与日志上限**：`events/*.jsonl` 加 logrotate；磁盘水位 >85% 告警 | 180G 写满会直接打断实盘写仓 | logrotate 生效；水位告警可触发 |
-| G0-8 | **认知幂等字段**：认知表加 `external_id` 唯一索引 + `record(idempotency_key=)` | C8 的"run_id 幂等"在当前实现上不成立 | 同一 key 重复 record 只产生 1 条记忆 |
+| G0-8 | **认知幂等字段**：认知表加 `external_id` 唯一索引 + `record(idempotency_key=)` | C8 的"run_id 幂等"在当前实现上不成立 | 同一 key 重复 record 只产生 1 条记忆 | **✅ 2026-11-01 已关闭**：`memories.external_id` + 部分唯一索引（`WHERE external_id IS NOT NULL`；`7b0917f87c`）+ `record(idempotency_key=)` 契约入口 + 存量库已迁移；P0-11 索引重建改为 `index_rebuild_trigger` 去抖（默认 60s 窗，路径经 `FIS_P0_HOME` 外置）；9 条契约测试入阻断 job |
 
 ## 5.2 六条硬规则与本节的优先级
 
@@ -219,6 +219,7 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 - [ ] P0 后：公共门面可被新代码调用且 4 处既有调用方行为零变化；6 port + 6 fake 契约测试**在阻断 job 中通过**；直连基线报告可产出；**`unified_search` 经 `Search` port 可用（"打通"第一成果），且全后端故障返回显式错误码**
 - [ ] P1 后：19-DAL PG adapter 落地且 `dc_pg` 收编后调用方零改动（字段级比对达阈值）；五能力声明可机器读取且校验可拦截漂移；11 系统第一批直连收编（独立轨道）启动
 - [x] **C6 能力声明已落地（2026-11-01）**：五能力声明可机器读取；`validate_capabilities.py` 可拦截 port/impl 漂移；接入 `l0-contracts` 阻断 job
+- [x] **G0-8 已关闭（2026-11-01）**：`external_id` 幂等（含存量库迁移）+ `record(idempotency_key=)` 契约入口 + P0-11 索引重建去抖；C8 开工前置解除（另有 9 条契约测试入阻断 job）
 - [ ] P2 后：一次采集可产出可 recall 的认知记录且重复执行不重复写入（`external_id` 生效）；三条链路有 `job_runs` 记录且幂等生效（UTC 窗口）；grep 门禁可拦截新增直连
 - [ ] P3 后：检索可触发可追踪任务；health 含五能力 + 调度分项；**每端各 1 个**非实盘周期任务在 `job_runs` 可见
 - [ ] 全量回归：pytest 无新增失败；tsc 0 errors；云端健康检查通过；实盘进程生命周期未改变

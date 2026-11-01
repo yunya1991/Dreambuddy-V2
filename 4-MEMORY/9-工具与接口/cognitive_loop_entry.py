@@ -1019,6 +1019,7 @@ class CognitiveLoopEntry:
         expected_outcome: Optional[float] = None,
         actual_outcome: Optional[float] = None,
         external_id: Optional[str] = None,
+        idempotency_key: Optional[str] = None,
     ) -> str:
         """
         记录新经验到记忆系统（Phase1 扩展 VOYAGER 5 维评分 + Evidence-First）。
@@ -1040,6 +1041,8 @@ class CognitiveLoopEntry:
         Returns:
             记忆ID
         """
+        # G0-8：SPEC 契约 record(idempotency_key=) 与 external_id 同义（同一 key 只写 1 条）
+        external_id = external_id or idempotency_key
         tags_list = list(tags or [])
         memory_id = self._vm.add(
             content=content,
@@ -1133,23 +1136,11 @@ class CognitiveLoopEntry:
         # ---------- END L4 record ----------
 
         # ---------- D5（41 SPEC §13.4）：41 update() 向量化触发器 ----------
-        # 记忆落盘后异步触发 41 增量更新（Popen 非阻塞，不等待完成；FAIL-OPEN 不影响 record 返回）
+        # P0-11：改为去抖触发（同一窗口只触发一次），避免高频 record 每条都 Popen 抢 CPU 拖慢实盘
         try:
-            import os as _os
-            import subprocess as _sp
+            from index_rebuild_trigger import trigger as _trigger_index_update
 
-            _p = _sp.Popen(
-                [
-                    "/home/ubuntu/fis-p0/.venv/bin/python",
-                    "/home/ubuntu/fis-p0/scripts/search_cli.py",
-                ],
-                stdin=_sp.PIPE,
-                stdout=_sp.DEVNULL,
-                stderr=_sp.DEVNULL,
-                env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
-            )
-            _p.stdin.write(json.dumps({"cmd": "update"}).encode("utf-8"))
-            _p.stdin.close()
+            _trigger_index_update()
         except Exception:
             pass  # FAIL-OPEN：触发失败不影响 record
         # ---------- END D5 ----------
