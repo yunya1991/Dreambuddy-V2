@@ -35,6 +35,9 @@ jobs:
       - name: Validate capabilities declaration (C6)
         run: |
           python scripts/validate_capabilities.py
+      - name: C10 direct-connection gate (ratchet, blocking)
+        run: |
+          python scripts/check_db_direct_imports.py --ratchet
       - name: Run L0 contract tests
         run: |
           python -m pytest '44-三端协作架构系统/shared/tests/' -v --tb=short
