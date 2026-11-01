@@ -322,21 +322,44 @@ docs_scanned=3916（全仓 md）   urls_found=144   hit_existing=97   new=47
 
 ---
 
-## 10. 两地联调计划
+## 10. 两地联调计划（2026-11-01 已执行）
 
-| 步骤 | 动作 | 通过判据 |
-|---|---|---|
-| T1 | 本地 `sync_external_sources.py --dry-run` | 抽到 URL 数与人工核对一致；无网络依赖 |
-| T2 | 本地 `--emit-inbox` → scp 上传 | inbox 文件在云端可读、JSON 合法 |
-| T3 | 云端 `merge_external_inbox.py` 两次 | 第一次新增 N 条，第二次新增 0、hash 不变 |
-| T4 | 云端 `verify_external_sources.py --limit 5` | 5 源 verified 有结论；内存报告落盘 |
-| T5 | 云端模拟低内存 | ALERT + exit 3，主清单未改 |
-| T6 | 云端 `--inject-max 2` | 外部池 +2，V 增量非负 |
-| T7 | 回传合并后的主清单到本地 | 本地 hash 与云端一致 |
+| 步骤 | 动作 | 通过判据 | 结果 |
+|---|---|---|---|
+| T1 | 本地 `sync_external_sources.py --dry-run` | 抽到 URL 数与人工核对一致；无网络依赖 | ✅ `docs_scanned=3969 urls_found=142 new=0`（142 条唯一 URL 全部已在主清单） |
+| T2 | 本地 `--emit-inbox` → scp 上传 | inbox 文件在云端可读、JSON 合法 | ✅ 云端 `reflection_data/inbox/external_sources.local.json`（45 条，14:08 已同步） |
+| T3 | 云端 `merge_external_inbox.py` 两次 | 第一次新增 N 条，第二次新增 0、hash 不变 | ✅ 该 inbox 此前已被一次性注入消费：两次均 `added=0 skipped=45`，主清单 hash 不变；本次已归档到 `inbox/archive/20261101_154122` |
+| T4 | 云端 `verify_external_sources.py --limit 5` | 5 源 verified 有结论；内存报告落盘 | ✅ 5/5 verified，`admissible=4`（Calibration-Neural-SDEs 因 GPL-3.0 被拒），MemAvailable 11619MB |
+| T5 | 云端模拟低内存 | ALERT + exit 3，主清单未改 | ✅ `REA_MEM_FAKE_AVAILABLE_MB=100` → `exit 3`，`ALERT_mem_20261101_153914.json`，hash `ae22a26c…` 前后一致 |
+| T6 | 云端 `--inject-max 2` | 外部池 +2，V 增量非负 | ⏸ 本次 `eligible=0`（137 棵池树已覆盖全部已校验合格源），注入 0 条；待后续周校验产出新合格源后自动触发 |
+| T7 | 回传合并后的主清单到本地 | 本地 hash 与云端一致 | ✅ 双端 `md5=327918b2b465d7317ad4eda311b926f9`，143 条（云端自调研 +1 `openlit`） |
+
+**补充执行（cron 实跑）**：云端 `external_source_weekly.py`（无注入）→ `scan 8.0s / merge 0.1s / verify 40 源 21.5s / 总 29.6s`，exit 0，内存 11692→11743MB；40/40 verified、admissible 23；主清单 143 条（verified 90 / admissible 27）；cron 已装 `0 4 * * 0`（与现有 00:10 / 00:25 / 03:00 错峰，`flock -n /tmp/rea_weekly.lock`）。
+
+**Q2 实现细则（回写 §8.7）**：GitHub primary language 对科研仓库常报 `Jupyter Notebook`（实现仍是 Python）→ 视作 Python 兼容；`NOASSERTION/unknown` 许可不覆盖清单已登记的具体许可；API 明确返回其他语言（如 Go）仍判 `admissible=false`。
 
 ---
 
-## 11. 云端评审意见（待填）
+## 11. 云端评审意见（2026-11-01 已填）
 
-> 同步云端后由云端填写：审核结论、驳回项、落地排期。
+**审核结论：通过。** §8 双路径与合并协议成立，写者/权限边界无冲突；G1–G5 全部达成（单测 22 passed；dry-run 与人工核对一致；低内存 exit 3 且主清单不变；inbox 重复合并 hash 不变）。
+
+| # | 事项 | 状态 | 产物 |
+|---|---|---|---|
+| 1 | 审核 §8 双路径与合并协议 | ✅ 通过 | 本表 |
+| 2 | `sync_external_sources.py --emit-inbox` | ✅ 已有 | `scripts/sync_external_sources.py` |
+| 3 | `merge_external_inbox.py` | ✅ 新增并落地 | 幂等合并 + `also_seen_in` + `local_hint` + `retired` + inbox 消费后归档 |
+| 4 | `verify_external_sources.py` | ✅ 新增并落地 | 存在性 + Q2（notebook/NOASSERTION 细则见 §10） |
+| 5 | `external_source_weekly.py` | ✅ 新增并落地 | 6 步编排 + 内存门禁 + 汇总报告 |
+| 6 | 目录 | ✅ | `inbox/`、`inbox/archive/`、`reports/` |
+| 7 | cron | ✅ `0 4 * * 0` | `flock -n /tmp/rea_weekly.lock`，日志 `/tmp/rea_weekly.log` |
+| 8 | 告警通道 | ✅ JSON | `reports/ALERT_mem_<ts>.json`；飞书通知留开关 |
+| 9 | 运维说明 | ✅ | `docs/EXTERNAL_SOURCE_PIPELINE_RUNBOOK.md` |
+| 10 | 质量门 Q2/Q3 | ✅ Q2 / ⏳ Q3 | Q3（LLM 语义相关性）留待最新调研产出时按需评分，默认 `qualified` |
+
+**遗留（不阻塞）**
+1. T6 注入待触发：需周校验产出新的 `admissible` 源，下一周日自动生效（当前 `eligible=0`）。
+2. 未配置 `GITHUB_TOKEN`：未认证限流 60 次/小时，单次上限 40 源，当前周任务 40 源刚好在限内；如扩到 >60 需配置 token。
+3. `reflection_data/replay_pool/external/`（137 棵树，约 26MB）仍未纳入 git：建议 `.gitignore` + 由云端为权威副本再同步。
+4. Q3 语义相关性未自动化，`priority` 级别暂无自动晋升路径（人工标注或后续接入 LLM 评分）。
 

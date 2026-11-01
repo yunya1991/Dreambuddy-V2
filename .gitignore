@@ -233,4 +233,8 @@ DreamOS_intermediate.pptx
 12-三屏趋势系统/signal_pool/pool.json
 43-战略承接推演层/runtime/strategic_extension_signal.json
 1-ARCHITECTURE/dreamos/.env
-33-REA逆向解析工程/reflection_data/replay_pool/internal/
+
+# 外部源回放池（云端为权威副本，本地镜像不入 git）+ 清单写锁临时文件
+33-REA逆向解析工程/reflection_data/replay_pool/external/
+*.json.lock
+*.json.tmp

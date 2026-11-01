@@ -1,6 +1,6 @@
 {
   "version": "2.1",
-  "generated_at": "2026-10-31",
+  "generated_at": "2026-11-01",
   "generated_for": "s33_rea_harvest / SPEC-33-反思层 §5",
   "scope": "架构级外部源清单：10 类系统 × 内部模块映射 × 可解析外部项目",
   "dimensions": [
@@ -174,7 +174,13 @@
         "python_analyzer"
       ],
       "extract_target": "schema 演化/增量加载/源-管道-目的地三层抽象，对照 18→19→20 链路",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 6044,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "airbyte",
@@ -184,7 +190,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/airbytehq/airbyte",
       "label": "airbyte",
-      "language": "Python/TS",
+      "language": "Python",
       "license": "MIT",
       "patterns": [
         "airbyte-cdk",
@@ -196,7 +202,13 @@
         "python_analyzer"
       ],
       "extract_target": "Connector CDK 契约/增量同步状态机，对照 18 采集器插件化",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 22294,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "OpenBB",
@@ -218,7 +230,13 @@
         "python_analyzer"
       ],
       "extract_target": "多数据源统一 Provider 接口 + 标准化模型层，对照 19 DAL 的多源适配",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 74972,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "scrapy",
@@ -240,7 +258,9 @@
         "python_analyzer"
       ],
       "extract_target": "Spider/Middleware/Pipeline 责任链，对照 20 清洗流水线",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "akshare",
@@ -261,7 +281,13 @@
         "python_analyzer"
       ],
       "extract_target": "数据源函数编排与字段标准化（对照 18 的 A 股取数覆盖）",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 23155,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "sqlite-utils",
@@ -283,7 +309,9 @@
         "python_analyzer"
       ],
       "extract_target": "轻量 DAL：表/索引/迁移/事务封装，对照 19-DAL 与 38-数据库管理",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "sqlalchemy",
@@ -305,7 +333,9 @@
         "python_analyzer"
       ],
       "extract_target": "Engine/Pool/Session/UnitOfWork 分层，对照 DAL 连接池与事务边界",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "chroma",
@@ -315,7 +345,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/chroma-core/chroma",
       "label": "chroma",
-      "language": "Python/TS",
+      "language": "Rust",
       "license": "Apache-2.0",
       "patterns": [
         "chromadb",
@@ -328,7 +358,13 @@
         "ts_analyzer"
       ],
       "extract_target": "集合/分段/元数据过滤的向量库 API 分层，对照 4-MEMORY 向量检索",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "language=Rust",
+      "stars": 29615,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "duckdb",
@@ -338,7 +374,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/duckdb/duckdb",
       "label": "duckdb",
-      "language": "C++/Python",
+      "language": "C++",
       "license": "MIT",
       "patterns": [
         "tools/pythonpkg",
@@ -350,7 +386,13 @@
         "python_analyzer"
       ],
       "extract_target": "列式执行/向量化算子（只看 Python 包边界，C++ 不入语义分析）",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "language=C++",
+      "stars": 42724,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "whoosh",
@@ -371,7 +413,9 @@
         "python_analyzer"
       ],
       "extract_target": "倒排索引/分词/评分/查询 DSL 的纯 Python 实现，对照 41-文件索引",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "bm25s",
@@ -392,7 +436,13 @@
         "python_analyzer"
       ],
       "extract_target": "稀疏检索打分与 top-k 管线，对照知识库 BM25 通道",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 1818,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "llama_index",
@@ -414,7 +464,9 @@
         "python_analyzer"
       ],
       "extract_target": "Index/Retriever/NodePostprocessor 组合式检索，对照混合检索与重排",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "verified": false
     },
     {
       "id": "graphrag",
@@ -436,7 +488,9 @@
         "python_analyzer"
       ],
       "extract_target": "社区摘要+图检索管线，对照 24-图结构上下文压缩",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "24-图结构上下文压缩/docs/archive/THEORY-AND-PRACTICE.md",
+      "verified": false
     },
     {
       "id": "txtai",
@@ -458,7 +512,9 @@
         "python_analyzer"
       ],
       "extract_target": "嵌入索引/管道式检索（可对照 39-金融语义蒸馏检索面）",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "langchain",
@@ -480,7 +536,9 @@
         "python_analyzer"
       ],
       "extract_target": "BaseRetriever/EnsembleRetriever 契约（已有调研结论，做外部对照）",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "letta",
@@ -502,7 +560,9 @@
         "python_analyzer"
       ],
       "extract_target": "分层记忆（core/recall/archival）+ 记忆自编辑，对照 4-MEMORY 三层记忆与 C2",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "24-图结构上下文压缩/docs/archive/THEORY-AND-PRACTICE.md",
+      "verified": false
     },
     {
       "id": "mem0",
@@ -524,7 +584,9 @@
         "python_analyzer"
       ],
       "extract_target": "抽取-去重-更新-检索四段记忆流水线，对照 C2 记忆层写路径",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "dspy",
@@ -546,7 +608,13 @@
         "python_analyzer"
       ],
       "extract_target": "程序化提示优化/自动编译，对照反思层的策略寻优与 C4 元认知",
-      "size_cap_mb": 40
+      "size_cap_mb": 40,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 38872,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "reflexion",
@@ -568,7 +636,9 @@
         "python_analyzer"
       ],
       "extract_target": "自我反思+情景记忆+重试循环（反思层 P4/P5 的学术原型）",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "code2flow",
@@ -590,7 +660,13 @@
         "call_chain_tracer"
       ],
       "extract_target": "调用图构建与入口发现，对照 call_chain_tracer",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 4619,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "pydeps",
@@ -612,7 +688,9 @@
         "dependency_graph"
       ],
       "extract_target": "模块依赖图与循环依赖检测，对照 dependency_graph",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "pycg",
@@ -634,7 +712,9 @@
         "call_chain_tracer"
       ],
       "extract_target": "静态调用图算法与基准集，作为调用链解析质量标尺",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "ast-grep",
@@ -644,7 +724,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/ast-grep/ast-grep",
       "label": "ast-grep",
-      "language": "Rust/TS/Python",
+      "language": "Rust",
       "license": "MIT",
       "patterns": [
         "crates",
@@ -656,7 +736,13 @@
         "python_analyzer"
       ],
       "extract_target": "tree-sitter 结构查询与规则引擎（只解析绑定层与规则组织）",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "language=Rust",
+      "stars": 16404,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "pyright",
@@ -677,7 +763,9 @@
         "python_analyzer"
       ],
       "extract_target": "符号表/类型推断/引用解析，对照 python_analyzer 的语义深度",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "semgrep",
@@ -699,7 +787,9 @@
         "python_analyzer"
       ],
       "extract_target": "规则-匹配-污点分析的分层，作为 35-SPEC 所述 CodeQL 升级参照",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "backtrader",
@@ -721,7 +811,13 @@
         "python_analyzer"
       ],
       "extract_target": "strategy/indicator/broker/feed 四层事件驱动骨架，对照 22-执行引擎",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "verified": true,
+      "verify_reason": "license=GPL-3.0",
+      "stars": 23625,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "jesse",
@@ -743,7 +839,9 @@
         "python_analyzer"
       ],
       "extract_target": "candle-time 原子化 + numpy 预缓存 + 向量化指标，对照 12-三屏指标计算",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "freqtrade",
@@ -765,7 +863,13 @@
         "python_analyzer"
       ],
       "extract_target": "FreqAI 特征工程/time-split/LightGBM 管线，对照 Screen1 七维权重训练",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "license=GPL-3.0",
+      "stars": 56228,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "vnpy",
@@ -787,7 +891,9 @@
         "python_analyzer"
       ],
       "extract_target": "EventEngine + Gateway + App 分层，对照 29-事件驱动与 CTP 接入",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "qlib",
@@ -809,7 +915,9 @@
         "python_analyzer"
       ],
       "extract_target": "Data/Model/Backtest 三层标准分层，对照 23-四层闭环",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "FinRL",
@@ -819,7 +927,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/AI4Finance-Foundation/FinRL",
       "label": "FinRL",
-      "language": "Python",
+      "language": "Jupyter Notebook",
       "license": "MIT",
       "patterns": [
         "finrl",
@@ -831,7 +939,13 @@
         "python_analyzer"
       ],
       "extract_target": "env-agent-trainer 三段式 RL 交易管线，对照 40-周期神经网络决策面",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 16936,
+      "admissible": true,
+      "last_checked_at": "2026-11-01",
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md"
     },
     {
       "id": "TradingAgents",
@@ -842,7 +956,7 @@
       "location": "https://github.com/TauricResearch/TradingAgents",
       "label": "TradingAgents",
       "language": "Python",
-      "license": "unknown",
+      "license": "Apache-2.0",
       "patterns": [
         "tradingagents",
         "tests",
@@ -853,7 +967,13 @@
         "python_analyzer"
       ],
       "extract_target": "多角色研究/辩论/裁决流程，对照 32-对抗性辩论 Bot",
-      "size_cap_mb": 40
+      "size_cap_mb": 40,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 119162,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "FinRobot",
@@ -864,7 +984,7 @@
       "location": "https://github.com/AI4Finance-Foundation/FinRobot",
       "label": "FinRobot",
       "language": "Python",
-      "license": "unknown",
+      "license": "Apache-2.0",
       "patterns": [
         "finrobot",
         "docs"
@@ -874,7 +994,13 @@
         "python_analyzer"
       ],
       "extract_target": "金融分析 Agent 的感知-推理-执行分层，对照 S 链",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 8346,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "zustand",
@@ -896,7 +1022,9 @@
         "architecture_pattern_detector"
       ],
       "extract_target": "极简 store/middleware 分层，对照 3.1 前端状态管理",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "shadcn-ui",
@@ -918,7 +1046,9 @@
         "architecture_pattern_detector"
       ],
       "extract_target": "组件复制式架构与 registry 契约，对照前端组件库组织",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "vite",
@@ -940,7 +1070,9 @@
         "architecture_pattern_detector"
       ],
       "extract_target": "插件容器/钩子流水线（同时是 DSH 插件架构的对照源）",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "TanStack-query",
@@ -962,7 +1094,13 @@
         "architecture_pattern_detector"
       ],
       "extract_target": "缓存/失效/重试状态机，对照前端数据层与后端 API 契约",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 50507,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "nextjs",
@@ -984,7 +1122,9 @@
         "architecture_pattern_detector"
       ],
       "extract_target": "渲染模式/路由/中间件分层（大仓需裁剪）",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "peft",
@@ -1006,7 +1146,9 @@
         "python_analyzer"
       ],
       "extract_target": "LoRA/Adapter 注入点与配置分层，对照 12-ml 辅训模型改造",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "unsloth",
@@ -1028,7 +1170,9 @@
         "python_analyzer"
       ],
       "extract_target": "显存优化/训练加速的算子替换层，对照 31-分布式训练资源面",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "axolotl",
@@ -1050,7 +1194,13 @@
         "python_analyzer"
       ],
       "extract_target": "YAML 配置驱动的训练管线与数据集编排，对照 walk-forward 训练配置化",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 12652,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "pytorch-lightning",
@@ -1072,7 +1222,9 @@
         "python_analyzer"
       ],
       "extract_target": "Trainer/Module/Callback 生命周期，对照 40-周期神经网络训练循环",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "vllm",
@@ -1094,7 +1246,9 @@
         "python_analyzer"
       ],
       "extract_target": "推理调度/批处理/缓存，作为云端模型服务对照（大仓裁剪）",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "transformers",
@@ -1116,7 +1270,9 @@
         "python_analyzer"
       ],
       "extract_target": "Model/Tokenizer/Pipeline 三层抽象（只取 src/transformers 子目录）",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "langgraph",
@@ -1138,7 +1294,9 @@
         "python_analyzer"
       ],
       "extract_target": "状态图/检查点/中断恢复，对照 SACG-A层执行图与 C层调度",
-      "size_cap_mb": 40
+      "size_cap_mb": 40,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": false
     },
     {
       "id": "temporal-sdk-python",
@@ -1160,7 +1318,9 @@
         "python_analyzer"
       ],
       "extract_target": "持久化工作流/活动重试/补偿，对照 SACG-C层任务时间线与恢复",
-      "size_cap_mb": 40
+      "size_cap_mb": 40,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "autogen",
@@ -1171,7 +1331,7 @@
       "location": "https://github.com/microsoft/autogen",
       "label": "autogen",
       "language": "Python",
-      "license": "MIT",
+      "license": "CC-BY-4.0",
       "patterns": [
         "python/packages/autogen-core",
         "python/packages/autogen-agentchat",
@@ -1182,7 +1342,13 @@
         "python_analyzer"
       ],
       "extract_target": "AgentRuntime/群聊/工具调用分层，对照 DSH 子 agent 与 C 层执行",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": true,
+      "verify_reason": "license=CC-BY-4.0",
+      "stars": 61660,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "dagster",
@@ -1204,7 +1370,13 @@
         "python_analyzer"
       ],
       "extract_target": "Asset/DAG/分区调度与 lineage，对照 A 层执行图与 G 层沉淀",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 16359,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "airflow",
@@ -1226,7 +1398,13 @@
         "python_analyzer"
       ],
       "extract_target": "DAG/Operator/Executor 调度分层，对照 SACG-A/C 两层（大仓裁剪）",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 47336,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "prefect",
@@ -1248,7 +1426,9 @@
         "python_analyzer"
       ],
       "extract_target": "Flow/Task/状态机/重试，对照节点注册表与执行状态",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "crewAI",
@@ -1270,7 +1450,13 @@
         "python_analyzer"
       ],
       "extract_target": "Sequential/Hierarchical/Flow 三模式编排，对照节点编排与角色分工",
-      "size_cap_mb": 40
+      "size_cap_mb": 40,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 60361,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "OpenHands",
@@ -1280,7 +1466,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/All-Hands-AI/OpenHands",
       "label": "OpenHands",
-      "language": "Python/TS",
+      "language": "TypeScript",
       "license": "MIT",
       "patterns": [
         "openhands",
@@ -1293,7 +1479,13 @@
         "ts_analyzer"
       ],
       "extract_target": "Agent runtime + 沙箱执行 + 事件流，对照 30-真实环境交互",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 92388,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "MetaGPT",
@@ -1315,7 +1507,13 @@
         "python_analyzer"
       ],
       "extract_target": "SOP 化多角色协作（调研评为低-中价值，作负样本对照）",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 71114,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "mcp-python-sdk",
@@ -1337,7 +1535,9 @@
         "python_analyzer"
       ],
       "extract_target": "Server/Client/Transport/工具注册协议，对照 DSH 的 MCP 工具层",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "pluggy",
@@ -1359,7 +1559,9 @@
         "python_analyzer"
       ],
       "extract_target": "hookspec/hookimpl 插件钩子协议，对照 DSH Harness 扩展点",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "stevedore",
@@ -1380,7 +1582,9 @@
         "python_analyzer"
       ],
       "extract_target": "entrypoint 插件发现与加载，对照 SKILL/节点动态注册",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "semantic-kernel",
@@ -1402,7 +1606,9 @@
         "python_analyzer"
       ],
       "extract_target": "Kernel/Plugin/Function 三层能力注册，对照 SKILL 调度与能力层",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "mcp-servers",
@@ -1423,7 +1629,9 @@
         "python_analyzer"
       ],
       "extract_target": "参考 server 的工具/资源抽象，对照 DSH 内置工具集",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "aider",
@@ -1445,7 +1653,13 @@
         "architecture_pattern_detector",
         "python_analyzer"
       ],
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 49863,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "ufo",
@@ -1468,7 +1682,9 @@
         "python_analyzer"
       ],
       "extract_target": "HostAgent(调度)+AppAgent(执行)双层Agent OS + 统一动作层，对照 SACG-S层意图路由与C层执行",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "1-ARCHITECTURE/WORKBUDDY_OS_COMPETITIVE_ANALYSIS.md",
+      "verified": false
     },
     {
       "id": "openai-swarm",
@@ -1489,7 +1705,9 @@
         "python_analyzer"
       ],
       "extract_target": "handoff 模式（agent 间移交）+ 工具调用路由，对照节点间 handoff 与 S 层路由",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": false
     },
     {
       "id": "swe-agent",
@@ -1511,7 +1729,9 @@
         "python_analyzer"
       ],
       "extract_target": "ACI (Agent-Computer Interface) 动作空间抽象 + 轨迹记录，对照 30-真实环境交互系统",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": false
     },
     {
       "id": "superpowers",
@@ -1533,7 +1753,9 @@
         "ts_analyzer"
       ],
       "extract_target": "SKILL.md 格式规范 + 7 阶段软件开发工作流方法论，对照 SKILL 调度与元数据契约",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "1-ARCHITECTURE/SUPERPOWERS_INTEGRATION_UPGRADE.md",
+      "verified": false
     },
     {
       "id": "anthropic-financial-services",
@@ -1543,8 +1765,8 @@
       "source_type": "github_repo",
       "location": "https://github.com/anthropics/financial-services",
       "label": "anthropics/financial-services",
-      "language": "TypeScript/Python",
-      "license": "MIT",
+      "language": "Python",
+      "license": "Apache-2.0",
       "patterns": [
         "skills",
         "connectors",
@@ -1556,7 +1778,13 @@
         "python_analyzer"
       ],
       "extract_target": "10 个金融 agent 模板：agent = skills + connectors + subagents，对照 DSH 9 个 subagent 与金融能力层",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 40960,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "deepseek-harness",
@@ -1566,7 +1794,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/deepseek-ai/deepseek-harness",
       "label": "deepseek-harness",
-      "language": "TypeScript/Node.js",
+      "language": "TypeScript",
       "license": "MIT",
       "patterns": [
         "src",
@@ -1578,7 +1806,13 @@
         "ts_analyzer"
       ],
       "extract_target": "Cordis 微内核 + Harness 扩展点设计，对照 dream-harness-bridge 的 Harness 内核架构",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "1-ARCHITECTURE/RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 267724,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "skill-compose",
@@ -1601,7 +1835,9 @@
         "ts_analyzer"
       ],
       "extract_target": "技能注册表 + 一句话组装 Agent + 技能进化，对照 SKILL 注册表与动态编排",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "1-ARCHITECTURE/WORKBUDDY_OS_COMPETITIVE_ANALYSIS.md",
+      "verified": false
     },
     {
       "id": "ai-hedge-fund",
@@ -1623,7 +1859,13 @@
         "python_analyzer"
       ],
       "extract_target": "Risk 纯算法 + Portfolio LLM + compute_allowed_actions 动作空间约束，对照 13-风控与 22-执行引擎",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "1-ARCHITECTURE/specs/ARCH_OPTIMIZATION_INDUSTRY_BENCHMARK_SPEC.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 64403,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "nautilus_trader",
@@ -1645,7 +1887,9 @@
         "python_analyzer"
       ],
       "extract_target": "回测/实盘统一执行引擎（仅解析 Python API 绑定层，Rust 核心不入语义分析），对照 22-执行引擎",
-      "size_cap_mb": 80
+      "size_cap_mb": 80,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "ElegantRL",
@@ -1667,7 +1911,13 @@
         "python_analyzer"
       ],
       "extract_target": "云原生轻量并行 RL 训练（Actor-Learner 分离），对照 40-周期神经网络与 Shadow-RL Phase3",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 4374,
+      "admissible": true,
+      "last_checked_at": "2026-11-01",
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md"
     },
     {
       "id": "finclaw",
@@ -1689,7 +1939,13 @@
         "python_analyzer"
       ],
       "extract_target": "GA 进化策略 + 前向验证 + 蒙特卡洛，对照 23-四层闭环的策略进化循环",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 33,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "FinGPT",
@@ -1699,7 +1955,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/AI4Finance-Foundation/FinGPT",
       "label": "FinGPT",
-      "language": "Python",
+      "language": "Jupyter Notebook",
       "license": "MIT",
       "patterns": [
         "fingpt",
@@ -1711,7 +1967,13 @@
         "python_analyzer"
       ],
       "extract_target": "金融大模型数据-训练-推理管线，对照 39-金融语义蒸馏系统的金融语料面",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 21504,
+      "admissible": true,
+      "last_checked_at": "2026-11-01",
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md"
     },
     {
       "id": "XuanYuan",
@@ -1732,7 +1994,13 @@
         "python_analyzer"
       ],
       "extract_target": "中文金融对话大模型训练与微调，对照 39-金融语义蒸馏的中文金融语料",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 1325,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "FinBERT",
@@ -1742,7 +2010,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/yya518/FinBERT",
       "label": "FinBERT",
-      "language": "Python",
+      "language": "Jupyter Notebook",
       "license": "Apache-2.0",
       "patterns": [
         "finbert",
@@ -1753,7 +2021,13 @@
         "python_analyzer"
       ],
       "extract_target": "金融 NLP 预训练（情感/基本面分类），对照 39-金融语义蒸馏的基本面文本编码",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 667,
+      "admissible": true,
+      "last_checked_at": "2026-11-01",
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md"
     },
     {
       "id": "equity-vs-commodity",
@@ -1763,7 +2037,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/kpnguyen21/equity-vs-commodity",
       "label": "equity-vs-commodity",
-      "language": "Python",
+      "language": "Jupyter Notebook",
       "license": "unknown",
       "patterns": [
         "src",
@@ -1774,7 +2048,13 @@
         "python_analyzer"
       ],
       "extract_target": "Granger 因果筛选跨资产特征，对照 23-四层闭环的因果归因特征工程",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/docs/三维度矛盾论理论框架.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 0,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "regimes",
@@ -1795,7 +2075,9 @@
         "python_analyzer"
       ],
       "extract_target": "Bai-Perron + CUSUM + Chow Test + Markov Switching 结构断点全流程，对照 12-三屏的 regime 检测",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/docs/三维度矛盾论理论框架.md",
+      "verified": false
     },
     {
       "id": "Regime-Aware-BTC",
@@ -1805,7 +2087,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/matteodrakulic/Regime-Aware-BTC-Trading-System",
       "label": "Regime-Aware-BTC",
-      "language": "Python",
+      "language": "Jupyter Notebook",
       "license": "unknown",
       "patterns": [
         "src",
@@ -1816,7 +2098,13 @@
         "python_analyzer"
       ],
       "extract_target": "Gaussian HMM 3 状态 regime 检测 + regime 条件策略，对照 BDSM regime 切换",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/docs/三维度矛盾论理论框架.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 0,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "MFRA-BTC",
@@ -1826,7 +2114,7 @@
       "source_type": "github_repo",
       "location": "https://github.com/RD20KHIZA/MFRA-BTC-regime-study",
       "label": "MFRA-BTC",
-      "language": "Python",
+      "language": "Jupyter Notebook",
       "license": "unknown",
       "patterns": [
         "src",
@@ -1837,7 +2125,13 @@
         "python_analyzer"
       ],
       "extract_target": "多因子 regime 归因分解，对照 23-四层闭环的因子归因层",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/docs/三维度矛盾论理论框架.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 0,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "Quant-Regime-Engine",
@@ -1848,7 +2142,7 @@
       "location": "https://github.com/alinakhay/Quant-Regime-Engine",
       "label": "Quant-Regime-Engine",
       "language": "Python",
-      "license": "unknown",
+      "license": "MIT",
       "patterns": [
         "quant_regime_engine",
         "tests"
@@ -1858,7 +2152,13 @@
         "python_analyzer"
       ],
       "extract_target": "三因子 regime 引擎（趋势/波动/流动性），对照 12-三屏的多维权重",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/docs/三维度矛盾论理论框架.md",
+      "verified": true,
+      "verify_reason": "stars=1<300",
+      "stars": 1,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "granger-causality-trading",
@@ -1879,7 +2179,9 @@
         "python_analyzer"
       ],
       "extract_target": "多变量 VAR + F 统计量因果链交易（VIX/DXY→BTC），对照 23-四层闭环的跨市场因果传导",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/docs/三维度矛盾论理论框架.md",
+      "verified": false
     },
     {
       "id": "evolutionary-trading-strategies",
@@ -1900,7 +2202,13 @@
         "python_analyzer"
       ],
       "extract_target": "DEAP 进化策略 + Walk-forward 验证 + ESS 多样性奖励，对照 23-四层闭环的进化循环与走前验证",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 0,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "skfolio",
@@ -1922,7 +2230,9 @@
         "python_analyzer"
       ],
       "extract_target": "scikit-learn 兼容的投资组合优化/因子模型/风险度量统一接口，对照 13-风控与组合配置",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "31-分布式计算部署/docs/RESEARCH-分布式计算核心逻辑-三层异构协同.md",
+      "verified": false
     },
     {
       "id": "rasa",
@@ -1944,7 +2254,9 @@
         "python_analyzer"
       ],
       "extract_target": "意图识别 (NLU) + 对话管理 (Core) 双系统 + 策略路由，对照 SACG-S 层意图路由",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": false
     },
     {
       "id": "tavily-python",
@@ -1965,7 +2277,9 @@
         "python_analyzer"
       ],
       "extract_target": "搜索 API 客户端 + 结果标准化，对照 18-数据获取中心的外部搜索接入",
-      "size_cap_mb": 10
+      "size_cap_mb": 10,
+      "discovered_from": "11-易经推理系统/skills/4-GENERIC/tavily/SKILL.md",
+      "verified": false
     },
     {
       "id": "timesfm",
@@ -1986,7 +2300,9 @@
         "python_analyzer"
       ],
       "extract_target": "Google 时间序列基础模型（纯 Transformer 预训练），对照 40-周期神经网络的时序预测面",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "nixtla",
@@ -2008,7 +2324,9 @@
         "python_analyzer"
       ],
       "extract_target": "100B 数据点预训练 Transformer 时序生成模型，对照 40-周期神经网络的生成式预测",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "Time-MoE",
@@ -2019,7 +2337,7 @@
       "location": "https://github.com/Time-MoE/Time-MoE",
       "label": "Time-MoE",
       "language": "Python",
-      "license": "unknown",
+      "license": "Apache-2.0",
       "patterns": [
         "timemoe",
         "examples"
@@ -2029,7 +2347,13 @@
         "python_analyzer"
       ],
       "extract_target": "百亿参数时序 MoE（ICLR 2025），对照 40-周期神经网络的多专家路由",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 1007,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "moment",
@@ -2051,7 +2375,9 @@
         "python_analyzer"
       ],
       "extract_target": "开放时序基础模型（ICML 2024），可微调/线性探测，对照 12-ml 辅训改造",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "Stable-Neural-SDEs",
@@ -2061,8 +2387,8 @@
       "source_type": "github_repo",
       "location": "https://github.com/yongkyung-oh/Stable-Neural-SDEs",
       "label": "Stable-Neural-SDEs",
-      "language": "Python",
-      "license": "unknown",
+      "language": "Jupyter Notebook",
+      "license": "MIT",
       "patterns": [
         "models",
         "experiments"
@@ -2072,7 +2398,13 @@
         "python_analyzer"
       ],
       "extract_target": "ICLR 2024 稳定神经 SDE（连续时间动态+不确定性），对照 40-周期神经网络的市场动态建模",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "stars=81<300",
+      "stars": 81,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "decision-transformer",
@@ -2093,7 +2425,13 @@
         "python_analyzer"
       ],
       "extract_target": "RL as Sequence Modeling 官方实现，对照 40-周期神经网络的序列决策面",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 2845,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "signatory",
@@ -2115,7 +2453,9 @@
         "python_analyzer"
       ],
       "extract_target": "PyTorch 可微分签名计算（ICLR 2021），路径→张量坐标，对照 23-四层闭环的路径抽象",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "causalml",
@@ -2137,7 +2477,13 @@
         "python_analyzer"
       ],
       "extract_target": "Uber 因果推断（DML / Causal Forest / X-learner），对照 23-四层闭环的因果归因替代相关归因",
-      "size_cap_mb": 50
+      "size_cap_mb": 50,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "ok",
+      "stars": 6037,
+      "admissible": true,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "cflue",
@@ -2158,7 +2504,13 @@
         "python_analyzer"
       ],
       "extract_target": "中文金融语言理解评估基准，对照 39-金融语义蒸馏的评测面",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 96,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "ds4",
@@ -2168,8 +2520,8 @@
       "source_type": "github_repo",
       "location": "https://github.com/antirez/ds4",
       "label": "ds4",
-      "language": "Python",
-      "license": "BSD-3-Clause",
+      "language": "C",
+      "license": "MIT",
       "patterns": [
         "ds4",
         "docs"
@@ -2179,7 +2531,13 @@
         "python_analyzer"
       ],
       "extract_target": "antirez DeepSeek V4 推理引擎（SSD streaming / distributed / performance），对照 31-分布式计算部署",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-ds4架构借鉴与系统增强.md",
+      "verified": true,
+      "verify_reason": "language=C",
+      "stars": 24175,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "Calibration-Neural-SDEs",
@@ -2189,8 +2547,8 @@
       "source_type": "github_repo",
       "location": "https://github.com/evaflonner/Calibration-of-Neural-SDEs-using-Bayesian-Methods",
       "label": "Calibration-Neural-SDEs",
-      "language": "Python",
-      "license": "unknown",
+      "language": "Jupyter Notebook",
+      "license": "GPL-3.0",
       "patterns": [
         "src",
         "notebooks"
@@ -2200,7 +2558,13 @@
         "python_analyzer"
       ],
       "extract_target": "贝叶斯方法校准金融神经 SDE，对照 40-周期神经网络的不确定性校准",
-      "size_cap_mb": 20
+      "size_cap_mb": 20,
+      "verified": true,
+      "verify_reason": "license=GPL-3.0",
+      "stars": 6,
+      "admissible": false,
+      "last_checked_at": "2026-11-01",
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md"
     },
     {
       "id": "iisignature",
@@ -2221,7 +2585,9 @@
         "python_analyzer"
       ],
       "extract_target": "Python CPU 版签名计算（signatory 的轻量替代），对照 23-四层闭环的路径抽象（fallback）",
-      "size_cap_mb": 10
+      "size_cap_mb": 10,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "signature-method-in-ML",
@@ -2242,7 +2608,9 @@
         "python_analyzer"
       ],
       "extract_target": "签名方法 ML 基础与应用示例，对照 23-四层闭环路径抽象的入门参考",
-      "size_cap_mb": 30
+      "size_cap_mb": 30,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": false
     },
     {
       "id": "Sig-SPT",
@@ -2263,7 +2631,13 @@
         "python_analyzer"
       ],
       "extract_target": "随机投资组合理论中的签名方法，对照 13-风控的路径依赖组合度量",
-      "size_cap_mb": 10
+      "size_cap_mb": 10,
+      "discovered_from": "23-四层闭环自进化交易架构/SPEC-AGI升级蓝图.md",
+      "verified": true,
+      "verify_reason": "license=unknown",
+      "stars": 11,
+      "admissible": false,
+      "last_checked_at": "2026-11-01"
     },
     {
       "id": "openlit",
@@ -3479,6 +3853,31 @@
       "verified": true,
       "stars": 726,
       "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "iisignature-2",
+      "category": "llm_training",
+      "level": "candidate",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/bottler/iisignature",
+      "label": "bottler/iisignature",
+      "language": "unknown",
+      "license": "unknown",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "33-REA逆向解析工程/SPEC-33-外部真实源接入.md",
+      "discovered_at": "2026-11-01",
+      "verified": false
     }
   ]
 }

@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-11-01T15:40:35",
+  "dry_run": false,
+  "elapsed_s": 29.6,
+  "roots": [
+    "."
+  ],
+  "steps": [
+    {
+      "name": "scan",
+      "cmd": [
+        "sync_external_sources.py",
+        "--roots",
+        ".",
+        "--max-new",
+        "50"
+      ],
+      "returncode": 0,
+      "elapsed_s": 8.0,
+      "stdout_tail": "[sync] docs_scanned=2567\n[sync] urls_found=143\n[sync] new=1 updated=97 skipped=45 total=143\n[sync] report=33-REA逆向解析工程/reflection_data/sync_reports/2026-11-01.json",
+      "stderr_tail": ""
+    },
+    {
+      "name": "merge",
+      "cmd": [
+        "merge_external_inbox.py"
+      ],
+      "returncode": 0,
+      "elapsed_s": 0.1,
+      "stdout_tail": "[merge] inbox_files=1 inbox_sources=45\n[merge] 主清单无变化，保留 inbox（下周重试或人工确认）\n[merge] added=0 updated=0 skipped=45 id_conflict=0 changed=False report=merge-2026-11-01.json",
+      "stderr_tail": ""
+    },
+    {
+      "name": "verify",
+      "cmd": [
+        "verify_external_sources.py",
+        "--limit",
+        "40"
+      ],
+      "returncode": 0,
+      "elapsed_s": 21.5,
+      "stdout_tail": "[verify] 37/40 equity-vs-commodity        verified=True license=unknown\n[verify] 38/40 evolutionary-trading-strategies verified=True license=unknown\n[verify] 39/40 finclaw                    verified=True license=unknown\n[verify] 40/40 freqtrade                  verified=True license=GPL-3.0\n[verify] write main total=143\n[verify] checked=40 ok=40 errors=0 report=verify-2026-11-01.json",
+      "stderr_tail": ""
+    }
+  ],
+  "inject": {
+    "enabled": false
+  },
+  "mem_start_mb": 11692.6,
+  "mem_total_mb": 15609.2,
+  "mem_end_mb": 11743.8
+}

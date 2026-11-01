@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-11-01T15:41:22",
+  "dry_run": false,
+  "inbox_files": [
+    "reflection_data/inbox/external_sources.local.json"
+  ],
+  "content_hash_before": "704a744ed75bae19895e5f54b526dc02bd9808c83d5532c515d301076b96cc3d",
+  "content_hash_after": "704a744ed75bae19895e5f54b526dc02bd9808c83d5532c515d301076b96cc3d",
+  "changed": false,
+  "total_sources": 143,
+  "archived": [
+    "/home/luke/dreambuddy/33-REA逆向解析工程/reflection_data/inbox/archive/20261101_154122/external_sources.local.json"
+  ],
+  "added": 0,
+  "updated": 0,
+  "skipped": 45,
+  "category_conflict": 0,
+  "id_conflict": 0,
+  "retired": 0,
+  "inbox_total": 45,
+  "matched_existing": 45,
+  "new_ids": []
+}

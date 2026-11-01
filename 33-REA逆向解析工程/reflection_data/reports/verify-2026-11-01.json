@@ -1,0 +1,417 @@
+{
+  "generated_at": "2026-11-01T15:40:35",
+  "dry_run": false,
+  "limit": 40,
+  "stale_days": 30,
+  "checked": 40,
+  "targets": 40,
+  "verified_ok": 40,
+  "admissible": 23,
+  "errors": [],
+  "paused_memory": false,
+  "mem_available_mb": 11736.0,
+  "mem_total_mb": 15609.2,
+  "mem_peak_available_mb": 11682.8,
+  "items": [
+    {
+      "id": "FinRobot",
+      "location": "https://github.com/AI4Finance-Foundation/FinRobot",
+      "verified": true,
+      "reason": "ok",
+      "stars": 8346,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "MFRA-BTC",
+      "location": "https://github.com/RD20KHIZA/MFRA-BTC-regime-study",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "MetaGPT",
+      "location": "https://github.com/FoundationAgents/MetaGPT",
+      "verified": true,
+      "reason": "ok",
+      "stars": 71114,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "OpenBB",
+      "location": "https://github.com/OpenBB-finance/OpenBB",
+      "verified": true,
+      "reason": "ok",
+      "stars": 74972,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "OpenHands",
+      "location": "https://github.com/All-Hands-AI/OpenHands",
+      "verified": true,
+      "reason": "ok",
+      "stars": 92388,
+      "language": "TypeScript",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "Quant-Regime-Engine",
+      "location": "https://github.com/alinakhay/Quant-Regime-Engine",
+      "verified": true,
+      "reason": "stars=1<300",
+      "stars": 1,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "Regime-Aware-BTC",
+      "location": "https://github.com/matteodrakulic/Regime-Aware-BTC-Trading-System",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "Sig-SPT",
+      "location": "https://github.com/janka-moeller/Sig-SPT",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 11,
+      "language": "Python",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "Stable-Neural-SDEs",
+      "location": "https://github.com/yongkyung-oh/Stable-Neural-SDEs",
+      "verified": true,
+      "reason": "stars=81<300",
+      "stars": 81,
+      "language": "Jupyter Notebook",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "TanStack-query",
+      "location": "https://github.com/TanStack/query",
+      "verified": true,
+      "reason": "ok",
+      "stars": 50507,
+      "language": "TypeScript",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "Time-MoE",
+      "location": "https://github.com/Time-MoE/Time-MoE",
+      "verified": true,
+      "reason": "ok",
+      "stars": 1007,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "TradingAgents",
+      "location": "https://github.com/TauricResearch/TradingAgents",
+      "verified": true,
+      "reason": "ok",
+      "stars": 119162,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "XuanYuan",
+      "location": "https://github.com/Duxiaoman-DI/XuanYuan",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 1325,
+      "language": "Python",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "ai-hedge-fund",
+      "location": "https://github.com/virattt/ai-hedge-fund",
+      "verified": true,
+      "reason": "ok",
+      "stars": 64403,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "aider",
+      "location": "https://github.com/Aider-AI/aider",
+      "verified": true,
+      "reason": "ok",
+      "stars": 49863,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "airbyte",
+      "location": "https://github.com/airbytehq/airbyte",
+      "verified": true,
+      "reason": "ok",
+      "stars": 22294,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "airflow",
+      "location": "https://github.com/apache/airflow",
+      "verified": true,
+      "reason": "ok",
+      "stars": 47336,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "akshare",
+      "location": "https://github.com/akfamily/akshare",
+      "verified": true,
+      "reason": "ok",
+      "stars": 23155,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "anthropic-financial-services",
+      "location": "https://github.com/anthropics/financial-services",
+      "verified": true,
+      "reason": "ok",
+      "stars": 40960,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "ast-grep",
+      "location": "https://github.com/ast-grep/ast-grep",
+      "verified": true,
+      "reason": "language=Rust",
+      "stars": 16404,
+      "language": "Rust",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "autogen",
+      "location": "https://github.com/microsoft/autogen",
+      "verified": true,
+      "reason": "license=CC-BY-4.0",
+      "stars": 61660,
+      "language": "Python",
+      "license": "CC-BY-4.0",
+      "admissible": false
+    },
+    {
+      "id": "axolotl",
+      "location": "https://github.com/axolotl-ai-cloud/axolotl",
+      "verified": true,
+      "reason": "ok",
+      "stars": 12652,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "backtrader",
+      "location": "https://github.com/mementum/backtrader",
+      "verified": true,
+      "reason": "license=GPL-3.0",
+      "stars": 23625,
+      "language": "Python",
+      "license": "GPL-3.0",
+      "admissible": false
+    },
+    {
+      "id": "bm25s",
+      "location": "https://github.com/xhluca/bm25s",
+      "verified": true,
+      "reason": "ok",
+      "stars": 1818,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "causalml",
+      "location": "https://github.com/uber/causalml",
+      "verified": true,
+      "reason": "ok",
+      "stars": 6037,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "cflue",
+      "location": "https://github.com/aliyun/cflue",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 96,
+      "language": "Python",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "chroma",
+      "location": "https://github.com/chroma-core/chroma",
+      "verified": true,
+      "reason": "language=Rust",
+      "stars": 29615,
+      "language": "Rust",
+      "license": "Apache-2.0",
+      "admissible": false
+    },
+    {
+      "id": "code2flow",
+      "location": "https://github.com/scottrogowski/code2flow",
+      "verified": true,
+      "reason": "ok",
+      "stars": 4619,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "crewAI",
+      "location": "https://github.com/crewAIInc/crewAI",
+      "verified": true,
+      "reason": "ok",
+      "stars": 60361,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "dagster",
+      "location": "https://github.com/dagster-io/dagster",
+      "verified": true,
+      "reason": "ok",
+      "stars": 16359,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "decision-transformer",
+      "location": "https://github.com/kzl/decision-transformer",
+      "verified": true,
+      "reason": "ok",
+      "stars": 2845,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "deepseek-harness",
+      "location": "https://github.com/deepseek-ai/deepseek-harness",
+      "verified": true,
+      "reason": "ok",
+      "stars": 267724,
+      "language": "TypeScript",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "dlt",
+      "location": "https://github.com/dlt-hub/dlt",
+      "verified": true,
+      "reason": "ok",
+      "stars": 6044,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "ds4",
+      "location": "https://github.com/antirez/ds4",
+      "verified": true,
+      "reason": "language=C",
+      "stars": 24175,
+      "language": "C",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "dspy",
+      "location": "https://github.com/stanfordnlp/dspy",
+      "verified": true,
+      "reason": "ok",
+      "stars": 38872,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "duckdb",
+      "location": "https://github.com/duckdb/duckdb",
+      "verified": true,
+      "reason": "language=C++",
+      "stars": 42724,
+      "language": "C++",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "equity-vs-commodity",
+      "location": "https://github.com/kpnguyen21/equity-vs-commodity",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "evolutionary-trading-strategies",
+      "location": "https://github.com/b3hzadsh/Evolutionary-Trading-Strategies",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 0,
+      "language": null,
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "finclaw",
+      "location": "https://github.com/NeuZhou/finclaw",
+      "verified": true,
+      "reason": "license=unknown",
+      "stars": 33,
+      "language": null,
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "freqtrade",
+      "location": "https://github.com/freqtrade/freqtrade",
+      "verified": true,
+      "reason": "license=GPL-3.0",
+      "stars": 56228,
+      "language": "Python",
+      "license": "GPL-3.0",
+      "admissible": false
+    }
+  ]
+}

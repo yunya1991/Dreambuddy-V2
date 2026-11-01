@@ -1,0 +1,11 @@
+{
+  "type": "memory_pressure",
+  "ts": "2026-11-01T15:39:14",
+  "stage": "start",
+  "mem_available_mb": 100.0,
+  "mem_total_mb": 8000.0,
+  "mem_available_pct": 1.2,
+  "threshold_mb": 800,
+  "threshold_pct": 10.0,
+  "action": "pause"
+}
