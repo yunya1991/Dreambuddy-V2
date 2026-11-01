@@ -1,0 +1,419 @@
+{
+  "generated_at": "2026-11-01T13:49:52",
+  "dry_run": true,
+  "roots": [
+    "1-ARCHITECTURE",
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH",
+    "23-四层闭环自进化交易架构"
+  ],
+  "docs_scanned": 1288,
+  "urls_found": 433,
+  "total_sources": 97,
+  "new": 50,
+  "updated": 37,
+  "skipped": 0,
+  "truncated": true,
+  "new_items": [
+    {
+      "id": "anthropic-sdk-typescript",
+      "location": "https://github.com/anthropics/anthropic-sdk-typescript",
+      "category": "dsh"
+    },
+    {
+      "id": "neoqs",
+      "location": "https://github.com/puruvj/neoqs",
+      "category": "dsh"
+    },
+    {
+      "id": "qs",
+      "location": "https://github.com/ljharb/qs",
+      "category": "dsh"
+    },
+    {
+      "id": "aws-sdk-js-crypto-helpers",
+      "location": "https://github.com/aws/aws-sdk-js-crypto-helpers",
+      "category": "dsh"
+    },
+    {
+      "id": "aws-javascript-crypto-helpers",
+      "location": "https://github.com/aws/aws-javascript-crypto-helpers",
+      "category": "dsh"
+    },
+    {
+      "id": "aws-sdk-js-v3",
+      "location": "https://github.com/aws/aws-sdk-js-v3",
+      "category": "dsh"
+    },
+    {
+      "id": "aws-sdk-js-tests",
+      "location": "https://github.com/aws-samples/aws-sdk-js-tests",
+      "category": "dsh"
+    },
+    {
+      "id": "zod",
+      "location": "https://github.com/colinhacks/zod",
+      "category": "dsh"
+    },
+    {
+      "id": "opentelemetry-specification",
+      "location": "https://github.com/open-telemetry/opentelemetry-specification",
+      "category": "dsh"
+    },
+    {
+      "id": "opentelemetry-js",
+      "location": "https://github.com/open-telemetry/opentelemetry-js",
+      "category": "dsh"
+    },
+    {
+      "id": "chokidar",
+      "location": "https://github.com/paulmillr/chokidar",
+      "category": "dsh"
+    },
+    {
+      "id": "binary-extensions",
+      "location": "https://github.com/sindresorhus/binary-extensions",
+      "category": "dsh"
+    },
+    {
+      "id": "chokidar-cli",
+      "location": "https://github.com/open-cli-tools/chokidar-cli",
+      "category": "dsh"
+    },
+    {
+      "id": "brunch",
+      "location": "https://github.com/brunch/brunch",
+      "category": "dsh"
+    },
+    {
+      "id": "readdirp",
+      "location": "https://github.com/paulmillr/readdirp",
+      "category": "dsh"
+    },
+    {
+      "id": "stream-handbook",
+      "location": "https://github.com/substack/stream-handbook",
+      "category": "dsh"
+    },
+    {
+      "id": "turndown",
+      "location": "https://github.com/mixmark-io/turndown",
+      "category": "dsh"
+    },
+    {
+      "id": "schemastery",
+      "location": "https://github.com/shigma/schemastery",
+      "category": "dsh"
+    },
+    {
+      "id": "google-auth-library-nodejs",
+      "location": "https://github.com/googleapis/google-auth-library-nodejs",
+      "category": "dsh"
+    },
+    {
+      "id": "js-genai",
+      "location": "https://github.com/googleapis/js-genai",
+      "category": "dsh"
+    },
+    {
+      "id": "libimagequant",
+      "location": "https://github.com/lovell/libimagequant",
+      "category": "finance_models"
+    },
+    {
+      "id": "libpng",
+      "location": "https://github.com/pnggroup/libpng",
+      "category": "dsh"
+    },
+    {
+      "id": "mozjpeg",
+      "location": "https://github.com/mozilla/mozjpeg",
+      "category": "dsh"
+    },
+    {
+      "id": "zlib-ng",
+      "location": "https://github.com/zlib-ng/zlib-ng",
+      "category": "dsh"
+    },
+    {
+      "id": "sharp-libvips",
+      "location": "https://github.com/lovell/sharp-libvips",
+      "category": "dsh"
+    },
+    {
+      "id": "turndown-2",
+      "location": "https://github.com/domchristie/turndown",
+      "category": "dsh"
+    },
+    {
+      "id": "turndown-plugin-gfm",
+      "location": "https://github.com/domchristie/turndown-plugin-gfm",
+      "category": "dsh"
+    },
+    {
+      "id": "joplin",
+      "location": "https://github.com/laurent22/joplin",
+      "category": "dsh"
+    },
+    {
+      "id": "csswg-drafts",
+      "location": "https://github.com/w3c/csswg-drafts",
+      "category": "dsh"
+    },
+    {
+      "id": "proposal-weakrefs",
+      "location": "https://github.com/tc39/proposal-weakrefs",
+      "category": "dsh"
+    },
+    {
+      "id": "domino",
+      "location": "https://github.com/angular/domino",
+      "category": "dsh"
+    },
+    {
+      "id": "domino-2",
+      "location": "https://github.com/fgnass/domino",
+      "category": "dsh"
+    },
+    {
+      "id": "dom.js",
+      "location": "https://github.com/andreasgal/dom.js",
+      "category": "dsh"
+    },
+    {
+      "id": "dombench",
+      "location": "https://github.com/fgnass/dombench",
+      "category": "dsh"
+    },
+    {
+      "id": "zest",
+      "location": "https://github.com/chjj/zest",
+      "category": "dsh"
+    },
+    {
+      "id": "opentelemetry-js-api",
+      "location": "https://github.com/open-telemetry/opentelemetry-js-api",
+      "category": "dsh"
+    },
+    {
+      "id": "opentelemetry-proto",
+      "location": "https://github.com/open-telemetry/opentelemetry-proto",
+      "category": "dsh"
+    },
+    {
+      "id": "opentelemetry-js-contrib",
+      "location": "https://github.com/open-telemetry/opentelemetry-js-contrib",
+      "category": "dsh"
+    },
+    {
+      "id": "opentelemetry-browser",
+      "location": "https://github.com/open-telemetry/opentelemetry-browser",
+      "category": "dsh"
+    },
+    {
+      "id": "semantic-conventions",
+      "location": "https://github.com/open-telemetry/semantic-conventions",
+      "category": "dsh"
+    },
+    {
+      "id": "protobuf.js",
+      "location": "https://github.com/protobufjs/protobuf.js",
+      "category": "dsh"
+    },
+    {
+      "id": "definitelytyped",
+      "location": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "category": "dsh"
+    },
+    {
+      "id": "node-retry",
+      "location": "https://github.com/tim-kos/node-retry",
+      "category": "dsh"
+    },
+    {
+      "id": "ripgrep",
+      "location": "https://github.com/BurntSushi/ripgrep",
+      "category": "dsh"
+    },
+    {
+      "id": "ripgrep-prebuilt",
+      "location": "https://github.com/microsoft/ripgrep-prebuilt",
+      "category": "dsh"
+    },
+    {
+      "id": "bignumber.js",
+      "location": "https://github.com/MikeMcl/bignumber.js",
+      "category": "dsh"
+    },
+    {
+      "id": "big.js",
+      "location": "https://github.com/MikeMcl/big.js",
+      "category": "dsh"
+    },
+    {
+      "id": "decimal.js",
+      "location": "https://github.com/MikeMcl/decimal.js",
+      "category": "dsh"
+    },
+    {
+      "id": "terser",
+      "location": "https://github.com/terser/terser",
+      "category": "dsh"
+    },
+    {
+      "id": "bowser",
+      "location": "https://github.com/bowser-js/bowser",
+      "category": "dsh"
+    }
+  ],
+  "updated_items": [
+    {
+      "id": "deepseek-harness",
+      "location": "https://github.com/deepseek-ai/deepseek-harness"
+    },
+    {
+      "id": "superpowers",
+      "location": "https://github.com/obra/superpowers"
+    },
+    {
+      "id": "ufo",
+      "location": "https://github.com/microsoft/UFO"
+    },
+    {
+      "id": "skill-compose",
+      "location": "https://github.com/MooseGoose0701/skill-compose"
+    },
+    {
+      "id": "nextjs",
+      "location": "https://github.com/vercel/next.js"
+    },
+    {
+      "id": "TradingAgents",
+      "location": "https://github.com/TauricResearch/TradingAgents"
+    },
+    {
+      "id": "ai-hedge-fund",
+      "location": "https://github.com/virattt/ai-hedge-fund"
+    },
+    {
+      "id": "langgraph",
+      "location": "https://github.com/langchain-ai/langgraph"
+    },
+    {
+      "id": "autogen",
+      "location": "https://github.com/microsoft/autogen"
+    },
+    {
+      "id": "crewAI",
+      "location": "https://github.com/crewAIInc/crewAI"
+    },
+    {
+      "id": "openai-swarm",
+      "location": "https://github.com/openai/swarm"
+    },
+    {
+      "id": "swe-agent",
+      "location": "https://github.com/SWE-agent/SWE-agent"
+    },
+    {
+      "id": "signatory",
+      "location": "https://github.com/patrick-kidger/signatory"
+    },
+    {
+      "id": "Stable-Neural-SDEs",
+      "location": "https://github.com/yongkyung-oh/Stable-Neural-SDEs"
+    },
+    {
+      "id": "timesfm",
+      "location": "https://github.com/google-research/timesfm"
+    },
+    {
+      "id": "decision-transformer",
+      "location": "https://github.com/kzl/decision-transformer"
+    },
+    {
+      "id": "causalml",
+      "location": "https://github.com/uber/causalml"
+    },
+    {
+      "id": "nixtla",
+      "location": "https://github.com/Nixtla/nixtla"
+    },
+    {
+      "id": "Time-MoE",
+      "location": "https://github.com/Time-MoE/Time-MoE"
+    },
+    {
+      "id": "nautilus_trader",
+      "location": "https://github.com/nautechsystems/nautilus_trader"
+    },
+    {
+      "id": "qlib",
+      "location": "https://github.com/microsoft/qlib"
+    },
+    {
+      "id": "freqtrade",
+      "location": "https://github.com/freqtrade/freqtrade"
+    },
+    {
+      "id": "FinRL",
+      "location": "https://github.com/AI4Finance-Foundation/FinRL"
+    },
+    {
+      "id": "ElegantRL",
+      "location": "https://github.com/AI4Finance-Foundation/ElegantRL"
+    },
+    {
+      "id": "finclaw",
+      "location": "https://github.com/NeuZhou/finclaw"
+    },
+    {
+      "id": "signature-method-in-ML",
+      "location": "https://github.com/kormilitzin/the-signature-method-in-machine-learning"
+    },
+    {
+      "id": "Sig-SPT",
+      "location": "https://github.com/janka-moeller/Sig-SPT"
+    },
+    {
+      "id": "iisignature",
+      "location": "https://github.com/iisignature/iisignature"
+    },
+    {
+      "id": "Calibration-Neural-SDEs",
+      "location": "https://github.com/evaflonner/Calibration-of-Neural-SDEs-using-Bayesian-Methods"
+    },
+    {
+      "id": "moment",
+      "location": "https://github.com/moment-timeseries-foundation-model/moment"
+    },
+    {
+      "id": "ds4",
+      "location": "https://github.com/antirez/ds4"
+    },
+    {
+      "id": "granger-causality-trading",
+      "location": "https://github.com/suenot/117-granger-causality-trading"
+    },
+    {
+      "id": "equity-vs-commodity",
+      "location": "https://github.com/kpnguyen21/equity-vs-commodity"
+    },
+    {
+      "id": "regimes",
+      "location": "https://github.com/knightianuncertainty/regimes"
+    },
+    {
+      "id": "Regime-Aware-BTC",
+      "location": "https://github.com/matteodrakulic/Regime-Aware-BTC-Trading-System"
+    },
+    {
+      "id": "MFRA-BTC",
+      "location": "https://github.com/RD20KHIZA/MFRA-BTC-regime-study"
+    },
+    {
+      "id": "Quant-Regime-Engine",
+      "location": "https://github.com/alinakhay/Quant-Regime-Engine"
+    }
+  ],
+  "archived": []
+}
