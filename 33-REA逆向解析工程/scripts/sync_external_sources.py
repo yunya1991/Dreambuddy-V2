@@ -33,14 +33,18 @@ REPORT_DIR = REA_DIR / "reflection_data" / "sync_reports"
 INBOX_DIR = REA_DIR / "reflection_data" / "inbox"
 INBOX_FILE = INBOX_DIR / "external_sources.local.json"
 KB_DIR = PROJECT_ROOT / "2-KNOWLEDGE" / "7-EXTERNAL-RESEARCH" / "external-sources"
-DEFAULT_ROOTS = [
-    "1-ARCHITECTURE",
-    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH",
-    "23-四层闭环自进化交易架构",
-]
+DEFAULT_ROOTS = ["."]  # 全仓扫描，依赖库文档由 NOISE_MARKERS 排除
 
 URL_RE = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)")
 SKIP_OWNER = {"topics", "search", "features", "about", "login", "orgs", "sponsors"}
+# 占位符 / 自引用仓库：不是外部项目
+PLACEHOLDER_OWNERS = {"your-username", "your-org", "your-name", "org", "owner", "user", "example"}
+SELF_REPOS = {"yunya1991/dreambuddy-v2"}
+# 依赖库文档目录：其中的 GitHub 链接是第三方依赖，不是本系统调研结论
+NOISE_MARKERS = (
+    "node_modules", ".venv", "site-packages", "/dist/", "/build/", ".git/",
+    "third_party", "vendor", ".trae-cn", "package-lock", "pnpm-lock", "yarn.lock",
+)
 
 # 归类关键词（owner/repo 全名命中，按顺序优先匹配更具体类目）
 CATEGORY_RULES: dict[str, list[str]] = {
@@ -50,11 +54,13 @@ CATEGORY_RULES: dict[str, list[str]] = {
     ],
     "dsh": [
         "mcp", "pluggy", "stevedore", "semantic-kernel", "aider", "superpowers",
-        "harness", "skill", "subagent", "claude-code",
+        "harness", "skill", "subagent", "claude-code", "browser-use", "browser-skill",
+        "agent-skill-router", "grok-build", "hermes-agent",
     ],
     "dreamos": [
         "langgraph", "temporal", "autogen", "dagster", "airflow", "prefect", "crewai",
-        "openhands", "metagpt", "ufo", "swarm", "swe-agent", "agent-os",
+        "openhands", "metagpt", "ufo", "swarm", "swe-agent", "agent-os", "autogpt",
+        "auto-gpt",
     ],
     "search_engine": [
         "whoosh", "bm25", "llama_index", "llama-index", "graphrag", "txtai", "langchain",
@@ -62,7 +68,8 @@ CATEGORY_RULES: dict[str, list[str]] = {
     ],
     "database": [
         "sqlite", "sqlalchemy", "chroma", "duckdb", "postgres", "clickhouse", "lancedb",
-        "database", "orm",
+        "database", "orm", "kafka", "eventstore", "event-store", "neo4j",
+        "graph-data-science", "feast",
     ],
     "data_acquisition": [
         "dlt", "airbyte", "openbb", "scrapy", "akshare", "tavily", "ingest", "etl",
@@ -79,11 +86,13 @@ CATEGORY_RULES: dict[str, list[str]] = {
         "peft", "unsloth", "axolotl", "lightning", "vllm", "transformers", "timesfm",
         "nixtla", "time-moe", "moment", "neural-sde", "signature", "signatory", "bert",
         "finbert", "fingpt", "llm", "training", "finetune",
+        "ymcui", "macbert", "electra", "xlnet", "textbrewer", "hfl", "chinese-bert",
     ],
     "finance_models": [
         "backtrader", "jesse", "freqtrade", "vnpy", "qlib", "finrl", "tradingagents",
         "finrobot", "hedge-fund", "regime", "skfolio", "causalml", "nautilus", "finclaw",
         "trading", "quant", "portfolio", "alpha",
+        "vectorbt", "darts", "statsmodels", "evidently", "whylogs", "market-regime",
     ],
 }
 
@@ -108,7 +117,9 @@ def extract_urls(docs: list[Path]) -> list[tuple[str, str, str]]:
             continue
         for m in URL_RE.finditer(text):
             owner, repo = m.group(1), m.group(2)
-            if owner.lower() in SKIP_OWNER:
+            if owner.lower() in SKIP_OWNER or owner.lower() in PLACEHOLDER_OWNERS:
+                continue
+            if f"{owner}/{repo}".lower() in SELF_REPOS:
                 continue
             repo = re.sub(r"\.git$", "", repo)
             loc = f"https://github.com/{owner}/{repo}"
@@ -148,6 +159,7 @@ def build_entry(loc: str, owner_repo: str, doc_path: str, cat: str, taken: set[s
     return {
         "id": repo_id,
         "category": cat,
+        "level": "candidate",
         "priority": "P3",
         "wave": 4,
         "source_type": "github_repo",
@@ -226,7 +238,10 @@ def main() -> int:
     for root in args.roots:
         root_path = PROJECT_ROOT / root if not os.path.isabs(root) else Path(root)
         if root_path.is_dir():
-            docs.extend(sorted(root_path.rglob("*.md")))
+            docs.extend(
+                d for d in sorted(root_path.rglob("*.md"))
+                if not any(k in str(d) for k in NOISE_MARKERS)
+            )
     _log(f"docs_scanned={len(docs)}")
 
     found = extract_urls(docs)

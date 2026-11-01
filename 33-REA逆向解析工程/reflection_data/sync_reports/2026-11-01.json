@@ -1,271 +1,274 @@
 {
-  "generated_at": "2026-11-01T13:49:52",
-  "dry_run": true,
+  "generated_at": "2026-11-01T13:57:57",
+  "dry_run": false,
   "roots": [
-    "1-ARCHITECTURE",
-    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH",
-    "23-四层闭环自进化交易架构"
+    "."
   ],
-  "docs_scanned": 1288,
-  "urls_found": 433,
+  "docs_scanned": 3963,
+  "urls_found": 144,
   "total_sources": 97,
-  "new": 50,
-  "updated": 37,
+  "new": 47,
+  "updated": 97,
   "skipped": 0,
-  "truncated": true,
+  "truncated": false,
   "new_items": [
     {
-      "id": "anthropic-sdk-typescript",
-      "location": "https://github.com/anthropics/anthropic-sdk-typescript",
-      "category": "dsh"
+      "id": "sample-langgraph-strands-market-analysis",
+      "location": "https://github.com/aws-samples/sample-langgraph-strands-market-analysis",
+      "category": "dreamos"
     },
     {
-      "id": "neoqs",
-      "location": "https://github.com/puruvj/neoqs",
-      "category": "dsh"
-    },
-    {
-      "id": "qs",
-      "location": "https://github.com/ljharb/qs",
-      "category": "dsh"
-    },
-    {
-      "id": "aws-sdk-js-crypto-helpers",
-      "location": "https://github.com/aws/aws-sdk-js-crypto-helpers",
-      "category": "dsh"
-    },
-    {
-      "id": "aws-javascript-crypto-helpers",
-      "location": "https://github.com/aws/aws-javascript-crypto-helpers",
-      "category": "dsh"
-    },
-    {
-      "id": "aws-sdk-js-v3",
-      "location": "https://github.com/aws/aws-sdk-js-v3",
-      "category": "dsh"
-    },
-    {
-      "id": "aws-sdk-js-tests",
-      "location": "https://github.com/aws-samples/aws-sdk-js-tests",
-      "category": "dsh"
-    },
-    {
-      "id": "zod",
-      "location": "https://github.com/colinhacks/zod",
-      "category": "dsh"
-    },
-    {
-      "id": "opentelemetry-specification",
-      "location": "https://github.com/open-telemetry/opentelemetry-specification",
-      "category": "dsh"
-    },
-    {
-      "id": "opentelemetry-js",
-      "location": "https://github.com/open-telemetry/opentelemetry-js",
-      "category": "dsh"
-    },
-    {
-      "id": "chokidar",
-      "location": "https://github.com/paulmillr/chokidar",
-      "category": "dsh"
-    },
-    {
-      "id": "binary-extensions",
-      "location": "https://github.com/sindresorhus/binary-extensions",
-      "category": "dsh"
-    },
-    {
-      "id": "chokidar-cli",
-      "location": "https://github.com/open-cli-tools/chokidar-cli",
-      "category": "dsh"
-    },
-    {
-      "id": "brunch",
-      "location": "https://github.com/brunch/brunch",
-      "category": "dsh"
-    },
-    {
-      "id": "readdirp",
-      "location": "https://github.com/paulmillr/readdirp",
-      "category": "dsh"
-    },
-    {
-      "id": "stream-handbook",
-      "location": "https://github.com/substack/stream-handbook",
-      "category": "dsh"
-    },
-    {
-      "id": "turndown",
-      "location": "https://github.com/mixmark-io/turndown",
-      "category": "dsh"
-    },
-    {
-      "id": "schemastery",
-      "location": "https://github.com/shigma/schemastery",
-      "category": "dsh"
-    },
-    {
-      "id": "google-auth-library-nodejs",
-      "location": "https://github.com/googleapis/google-auth-library-nodejs",
-      "category": "dsh"
-    },
-    {
-      "id": "js-genai",
-      "location": "https://github.com/googleapis/js-genai",
-      "category": "dsh"
-    },
-    {
-      "id": "libimagequant",
-      "location": "https://github.com/lovell/libimagequant",
+      "id": "openlit",
+      "location": "https://github.com/openlit/openlit",
       "category": "finance_models"
     },
     {
-      "id": "libpng",
-      "location": "https://github.com/pnggroup/libpng",
+      "id": "mcp-context-forge",
+      "location": "https://github.com/IBM/mcp-context-forge",
       "category": "dsh"
     },
     {
-      "id": "mozjpeg",
-      "location": "https://github.com/mozilla/mozjpeg",
+      "id": "autogpt",
+      "location": "https://github.com/Significant-Gravitas/AutoGPT",
+      "category": "dreamos"
+    },
+    {
+      "id": "dexter",
+      "location": "https://github.com/virattt/dexter",
+      "category": "finance_models"
+    },
+    {
+      "id": "agent-skill-router",
+      "location": "https://github.com/paulpas/agent-skill-router",
       "category": "dsh"
     },
     {
-      "id": "zlib-ng",
-      "location": "https://github.com/zlib-ng/zlib-ng",
+      "id": "scaling-verification",
+      "location": "https://github.com/HazyResearch/scaling-verification",
+      "category": "llm_training"
+    },
+    {
+      "id": "robomonkey",
+      "location": "https://github.com/robomonkey-vla/RoboMonkey",
+      "category": "llm_training"
+    },
+    {
+      "id": "rea",
+      "location": "https://github.com/morluto/rea",
+      "category": "finance_models"
+    },
+    {
+      "id": "nanoclaw",
+      "location": "https://github.com/qwibitai/nanoclaw",
+      "category": "finance_models"
+    },
+    {
+      "id": "vite-plugin-react",
+      "location": "https://github.com/vitejs/vite-plugin-react",
+      "category": "frontend"
+    },
+    {
+      "id": "eslint-react",
+      "location": "https://github.com/Rel1cx/eslint-react",
+      "category": "frontend"
+    },
+    {
+      "id": "dream-multiskill-v2",
+      "location": "https://github.com/yunya1991/dream-multiskill-v2",
       "category": "dsh"
     },
     {
-      "id": "sharp-libvips",
-      "location": "https://github.com/lovell/sharp-libvips",
+      "id": "lean",
+      "location": "https://github.com/QuantConnect/Lean",
+      "category": "finance_models"
+    },
+    {
+      "id": "vectorbt",
+      "location": "https://github.com/polakowo/vectorbt",
+      "category": "finance_models"
+    },
+    {
+      "id": "darts",
+      "location": "https://github.com/unit8co/darts",
+      "category": "finance_models"
+    },
+    {
+      "id": "statsmodels",
+      "location": "https://github.com/statsmodels/statsmodels",
+      "category": "finance_models"
+    },
+    {
+      "id": "evidently",
+      "location": "https://github.com/evidentlyai/evidently",
+      "category": "finance_models"
+    },
+    {
+      "id": "whylogs",
+      "location": "https://github.com/whylabs/whylogs",
+      "category": "finance_models"
+    },
+    {
+      "id": "feast",
+      "location": "https://github.com/feast-dev/feast",
+      "category": "database"
+    },
+    {
+      "id": "eventstore",
+      "location": "https://github.com/EventStore/EventStore",
+      "category": "database"
+    },
+    {
+      "id": "kafka",
+      "location": "https://github.com/apache/kafka",
+      "category": "database"
+    },
+    {
+      "id": "graph-data-science",
+      "location": "https://github.com/neo4j/graph-data-science",
+      "category": "database"
+    },
+    {
+      "id": "grok-build",
+      "location": "https://github.com/xai-org/grok-build",
       "category": "dsh"
     },
     {
-      "id": "turndown-2",
-      "location": "https://github.com/domchristie/turndown",
+      "id": "browser-use",
+      "location": "https://github.com/browser-use/browser-use",
       "category": "dsh"
     },
     {
-      "id": "turndown-plugin-gfm",
-      "location": "https://github.com/domchristie/turndown-plugin-gfm",
+      "id": "browserskill",
+      "location": "https://github.com/Tencent/BrowserSkill",
       "category": "dsh"
     },
     {
-      "id": "joplin",
-      "location": "https://github.com/laurent22/joplin",
+      "id": "btc-enhanced-dca",
+      "location": "https://github.com/Eumenides-K/btc-enhanced-dca",
+      "category": "finance_models"
+    },
+    {
+      "id": "dcai",
+      "location": "https://github.com/cerebrux/DCAi",
+      "category": "finance_models"
+    },
+    {
+      "id": "hermes-agent",
+      "location": "https://github.com/NousResearch/hermes-agent",
       "category": "dsh"
     },
     {
-      "id": "csswg-drafts",
-      "location": "https://github.com/w3c/csswg-drafts",
+      "id": "mefai-autotrade",
+      "location": "https://github.com/mefai-dev/mefai-autotrade",
+      "category": "finance_models"
+    },
+    {
+      "id": "superpowers-evals",
+      "location": "https://github.com/prime-radiant-inc/superpowers-evals",
       "category": "dsh"
     },
     {
-      "id": "proposal-weakrefs",
-      "location": "https://github.com/tc39/proposal-weakrefs",
-      "category": "dsh"
+      "id": "dca-crypto-bot",
+      "location": "https://github.com/CodingCryptoTrading/dca-crypto-bot",
+      "category": "finance_models"
     },
     {
-      "id": "domino",
-      "location": "https://github.com/angular/domino",
-      "category": "dsh"
+      "id": "hmm-marketstate",
+      "location": "https://github.com/nyro-github/HMM-MarketState",
+      "category": "finance_models"
     },
     {
-      "id": "domino-2",
-      "location": "https://github.com/fgnass/domino",
-      "category": "dsh"
+      "id": "lob-regime-scanner",
+      "location": "https://github.com/CameronScarpati/lob-regime-scanner",
+      "category": "finance_models"
     },
     {
-      "id": "dom.js",
-      "location": "https://github.com/andreasgal/dom.js",
-      "category": "dsh"
+      "id": "market-regime-detection",
+      "location": "https://github.com/taylorjmellon/market-regime-detection",
+      "category": "finance_models"
     },
     {
-      "id": "dombench",
-      "location": "https://github.com/fgnass/dombench",
-      "category": "dsh"
+      "id": "market-regime-detection-2",
+      "location": "https://github.com/LucasLarese/market-regime-detection",
+      "category": "finance_models"
     },
     {
-      "id": "zest",
-      "location": "https://github.com/chjj/zest",
-      "category": "dsh"
+      "id": "market_regime_detection",
+      "location": "https://github.com/k3tikvats/market_regime_detection",
+      "category": "finance_models"
     },
     {
-      "id": "opentelemetry-js-api",
-      "location": "https://github.com/open-telemetry/opentelemetry-js-api",
-      "category": "dsh"
+      "id": "ml_engine",
+      "location": "https://github.com/Raynergy-svg/ml_engine",
+      "category": "finance_models"
     },
     {
-      "id": "opentelemetry-proto",
-      "location": "https://github.com/open-telemetry/opentelemetry-proto",
-      "category": "dsh"
+      "id": "trading-bot",
+      "location": "https://github.com/EliasAbouKhater/trading-bot",
+      "category": "finance_models"
     },
     {
-      "id": "opentelemetry-js-contrib",
-      "location": "https://github.com/open-telemetry/opentelemetry-js-contrib",
-      "category": "dsh"
+      "id": "bert",
+      "location": "https://github.com/google-research/bert",
+      "category": "llm_training"
     },
     {
-      "id": "opentelemetry-browser",
-      "location": "https://github.com/open-telemetry/opentelemetry-browser",
-      "category": "dsh"
+      "id": "chinese-bert-wwm",
+      "location": "https://github.com/ymcui/Chinese-BERT-wwm",
+      "category": "llm_training"
     },
     {
-      "id": "semantic-conventions",
-      "location": "https://github.com/open-telemetry/semantic-conventions",
-      "category": "dsh"
+      "id": "chinese-electra",
+      "location": "https://github.com/ymcui/Chinese-ELECTRA",
+      "category": "llm_training"
     },
     {
-      "id": "protobuf.js",
-      "location": "https://github.com/protobufjs/protobuf.js",
-      "category": "dsh"
+      "id": "chinese-xlnet",
+      "location": "https://github.com/ymcui/Chinese-XLNet",
+      "category": "llm_training"
     },
     {
-      "id": "definitelytyped",
-      "location": "https://github.com/DefinitelyTyped/DefinitelyTyped",
-      "category": "dsh"
+      "id": "hfl-anthology",
+      "location": "https://github.com/ymcui/HFL-Anthology",
+      "category": "llm_training"
     },
     {
-      "id": "node-retry",
-      "location": "https://github.com/tim-kos/node-retry",
-      "category": "dsh"
+      "id": "macbert",
+      "location": "https://github.com/ymcui/MacBERT",
+      "category": "llm_training"
     },
     {
-      "id": "ripgrep",
-      "location": "https://github.com/BurntSushi/ripgrep",
-      "category": "dsh"
+      "id": "textbrewer",
+      "location": "https://github.com/airaria/TextBrewer",
+      "category": "llm_training"
     },
     {
-      "id": "ripgrep-prebuilt",
-      "location": "https://github.com/microsoft/ripgrep-prebuilt",
-      "category": "dsh"
-    },
-    {
-      "id": "bignumber.js",
-      "location": "https://github.com/MikeMcl/bignumber.js",
-      "category": "dsh"
-    },
-    {
-      "id": "big.js",
-      "location": "https://github.com/MikeMcl/big.js",
-      "category": "dsh"
-    },
-    {
-      "id": "decimal.js",
-      "location": "https://github.com/MikeMcl/decimal.js",
-      "category": "dsh"
-    },
-    {
-      "id": "terser",
-      "location": "https://github.com/terser/terser",
-      "category": "dsh"
-    },
-    {
-      "id": "bowser",
-      "location": "https://github.com/bowser-js/bowser",
-      "category": "dsh"
+      "id": "dreambuddy-v2",
+      "location": "https://github.com/yunya1991/Dreambuddy-V2",
+      "category": "finance_models"
     }
   ],
   "updated_items": [
+    {
+      "id": "ai-hedge-fund",
+      "location": "https://github.com/virattt/ai-hedge-fund"
+    },
+    {
+      "id": "TradingAgents",
+      "location": "https://github.com/TauricResearch/TradingAgents"
+    },
+    {
+      "id": "skfolio",
+      "location": "https://github.com/skfolio/skfolio"
+    },
+    {
+      "id": "Stable-Neural-SDEs",
+      "location": "https://github.com/yongkyung-oh/Stable-Neural-SDEs"
+    },
+    {
+      "id": "freqtrade",
+      "location": "https://github.com/freqtrade/freqtrade"
+    },
     {
       "id": "deepseek-harness",
       "location": "https://github.com/deepseek-ai/deepseek-harness"
@@ -281,18 +284,6 @@
     {
       "id": "skill-compose",
       "location": "https://github.com/MooseGoose0701/skill-compose"
-    },
-    {
-      "id": "nextjs",
-      "location": "https://github.com/vercel/next.js"
-    },
-    {
-      "id": "TradingAgents",
-      "location": "https://github.com/TauricResearch/TradingAgents"
-    },
-    {
-      "id": "ai-hedge-fund",
-      "location": "https://github.com/virattt/ai-hedge-fund"
     },
     {
       "id": "langgraph",
@@ -315,12 +306,24 @@
       "location": "https://github.com/SWE-agent/SWE-agent"
     },
     {
-      "id": "signatory",
-      "location": "https://github.com/patrick-kidger/signatory"
+      "id": "backtrader",
+      "location": "https://github.com/mementum/backtrader"
     },
     {
-      "id": "Stable-Neural-SDEs",
-      "location": "https://github.com/yongkyung-oh/Stable-Neural-SDEs"
+      "id": "FinRL",
+      "location": "https://github.com/AI4Finance-Foundation/FinRL"
+    },
+    {
+      "id": "llama_index",
+      "location": "https://github.com/run-llama/llama_index"
+    },
+    {
+      "id": "tavily-python",
+      "location": "https://github.com/tavily-ai/tavily-python"
+    },
+    {
+      "id": "signatory",
+      "location": "https://github.com/patrick-kidger/signatory"
     },
     {
       "id": "timesfm",
@@ -349,14 +352,6 @@
     {
       "id": "qlib",
       "location": "https://github.com/microsoft/qlib"
-    },
-    {
-      "id": "freqtrade",
-      "location": "https://github.com/freqtrade/freqtrade"
-    },
-    {
-      "id": "FinRL",
-      "location": "https://github.com/AI4Finance-Foundation/FinRL"
     },
     {
       "id": "ElegantRL",
@@ -413,7 +408,239 @@
     {
       "id": "Quant-Regime-Engine",
       "location": "https://github.com/alinakhay/Quant-Regime-Engine"
+    },
+    {
+      "id": "letta",
+      "location": "https://github.com/letta-ai/letta"
+    },
+    {
+      "id": "graphrag",
+      "location": "https://github.com/microsoft/graphrag"
+    },
+    {
+      "id": "dlt",
+      "location": "https://github.com/dlt-hub/dlt"
+    },
+    {
+      "id": "airbyte",
+      "location": "https://github.com/airbytehq/airbyte"
+    },
+    {
+      "id": "OpenBB",
+      "location": "https://github.com/OpenBB-finance/OpenBB"
+    },
+    {
+      "id": "scrapy",
+      "location": "https://github.com/scrapy/scrapy"
+    },
+    {
+      "id": "akshare",
+      "location": "https://github.com/akfamily/akshare"
+    },
+    {
+      "id": "sqlite-utils",
+      "location": "https://github.com/simonw/sqlite-utils"
+    },
+    {
+      "id": "sqlalchemy",
+      "location": "https://github.com/sqlalchemy/sqlalchemy"
+    },
+    {
+      "id": "chroma",
+      "location": "https://github.com/chroma-core/chroma"
+    },
+    {
+      "id": "duckdb",
+      "location": "https://github.com/duckdb/duckdb"
+    },
+    {
+      "id": "whoosh",
+      "location": "https://github.com/mchaput/whoosh"
+    },
+    {
+      "id": "bm25s",
+      "location": "https://github.com/xhluca/bm25s"
+    },
+    {
+      "id": "txtai",
+      "location": "https://github.com/neuml/txtai"
+    },
+    {
+      "id": "langchain",
+      "location": "https://github.com/langchain-ai/langchain"
+    },
+    {
+      "id": "mem0",
+      "location": "https://github.com/mem0ai/mem0"
+    },
+    {
+      "id": "dspy",
+      "location": "https://github.com/stanfordnlp/dspy"
+    },
+    {
+      "id": "reflexion",
+      "location": "https://github.com/noahshinn/reflexion"
+    },
+    {
+      "id": "code2flow",
+      "location": "https://github.com/scottrogowski/code2flow"
+    },
+    {
+      "id": "pydeps",
+      "location": "https://github.com/thebjorn/pydeps"
+    },
+    {
+      "id": "pycg",
+      "location": "https://github.com/vitsalis/PyCG"
+    },
+    {
+      "id": "ast-grep",
+      "location": "https://github.com/ast-grep/ast-grep"
+    },
+    {
+      "id": "pyright",
+      "location": "https://github.com/microsoft/pyright"
+    },
+    {
+      "id": "semgrep",
+      "location": "https://github.com/semgrep/semgrep"
+    },
+    {
+      "id": "jesse",
+      "location": "https://github.com/jesse-ai/jesse"
+    },
+    {
+      "id": "vnpy",
+      "location": "https://github.com/vnpy/vnpy"
+    },
+    {
+      "id": "FinRobot",
+      "location": "https://github.com/AI4Finance-Foundation/FinRobot"
+    },
+    {
+      "id": "zustand",
+      "location": "https://github.com/pmndrs/zustand"
+    },
+    {
+      "id": "shadcn-ui",
+      "location": "https://github.com/shadcn-ui/ui"
+    },
+    {
+      "id": "vite",
+      "location": "https://github.com/vitejs/vite"
+    },
+    {
+      "id": "TanStack-query",
+      "location": "https://github.com/TanStack/query"
+    },
+    {
+      "id": "nextjs",
+      "location": "https://github.com/vercel/next.js"
+    },
+    {
+      "id": "peft",
+      "location": "https://github.com/huggingface/peft"
+    },
+    {
+      "id": "unsloth",
+      "location": "https://github.com/unslothai/unsloth"
+    },
+    {
+      "id": "axolotl",
+      "location": "https://github.com/axolotl-ai-cloud/axolotl"
+    },
+    {
+      "id": "pytorch-lightning",
+      "location": "https://github.com/Lightning-AI/pytorch-lightning"
+    },
+    {
+      "id": "vllm",
+      "location": "https://github.com/vllm-project/vllm"
+    },
+    {
+      "id": "transformers",
+      "location": "https://github.com/huggingface/transformers"
+    },
+    {
+      "id": "temporal-sdk-python",
+      "location": "https://github.com/temporalio/sdk-python"
+    },
+    {
+      "id": "dagster",
+      "location": "https://github.com/dagster-io/dagster"
+    },
+    {
+      "id": "airflow",
+      "location": "https://github.com/apache/airflow"
+    },
+    {
+      "id": "prefect",
+      "location": "https://github.com/PrefectHQ/prefect"
+    },
+    {
+      "id": "OpenHands",
+      "location": "https://github.com/All-Hands-AI/OpenHands"
+    },
+    {
+      "id": "MetaGPT",
+      "location": "https://github.com/FoundationAgents/MetaGPT"
+    },
+    {
+      "id": "mcp-python-sdk",
+      "location": "https://github.com/modelcontextprotocol/python-sdk"
+    },
+    {
+      "id": "pluggy",
+      "location": "https://github.com/pytest-dev/pluggy"
+    },
+    {
+      "id": "stevedore",
+      "location": "https://github.com/openstack/stevedore"
+    },
+    {
+      "id": "semantic-kernel",
+      "location": "https://github.com/microsoft/semantic-kernel"
+    },
+    {
+      "id": "mcp-servers",
+      "location": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "aider",
+      "location": "https://github.com/Aider-AI/aider"
+    },
+    {
+      "id": "rasa",
+      "location": "https://github.com/RasaHQ/rasa"
+    },
+    {
+      "id": "FinBERT",
+      "location": "https://github.com/yya518/FinBERT"
+    },
+    {
+      "id": "FinGPT",
+      "location": "https://github.com/AI4Finance-Foundation/FinGPT"
+    },
+    {
+      "id": "XuanYuan",
+      "location": "https://github.com/Duxiaoman-DI/XuanYuan"
+    },
+    {
+      "id": "evolutionary-trading-strategies",
+      "location": "https://github.com/b3hzadsh/Evolutionary-Trading-Strategies"
+    },
+    {
+      "id": "cflue",
+      "location": "https://github.com/aliyun/cflue"
+    },
+    {
+      "id": "anthropic-financial-services",
+      "location": "https://github.com/anthropics/financial-services"
     }
   ],
-  "archived": []
+  "archived": [
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/btc-enhanced-dca.md",
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/dcai.md",
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/mefai-autotrade.md"
+  ]
 }

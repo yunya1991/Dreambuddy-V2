@@ -253,28 +253,51 @@ cron 加一行即可（例如每周日 04:00 跑 `scripts/external_source_cron.p
 
 ---
 
-### 8.7 抽取质量管理（本地 dry-run 实测，2026-11-01）
+### 8.7 抽取质量管理（本地实测，2026-11-01）
 
-首次本地 `--dry-run` 结果：
+**第一次 dry-run 的 433 是假象**（仅扫 3 个根目录）：
 
 ```
-docs_scanned=1288   urls_found=433   new=396   updated=37   skipped=0
+docs_scanned=1288   urls_found=433   new=396
 ```
 
-**433 个 URL 中只有 37 个命中已有 97 源**，说明"文档里出现过的 GitHub 链接"远多于"值得注入的项目"。如果直接无人值守入库，清单会从 97 → 493，噪声极高。因此**无人值守 ≠ 无门禁**，必须叠三层质量门：
+排查发现其中 372 篇文档位于 `node_modules/`、`site-packages/`、`dist/` 等依赖目录，抽出的是 `openai/openai-node`（被提及 1814 次）、`aws-sdk`、`zod`、`chokidar` 这类**第三方依赖**，不是本系统的调研结论。
 
-| 层 | 规则 | 目的 |
+**修正口径（全仓扫描 + 排除依赖目录 + 排除占位符/自引用仓库）**：
+
+```
+docs_scanned=3916（全仓 md）   urls_found=144   hit_existing=97   new=47
+```
+
+即：**知识库里真实存在的 GitHub 项目是 144 个**，其中 97 个已入清单，**新增候选仅 47 个**。47 条按 10 类自动归类分布：
+
+| 类别 | 条数 |
+|---|---|
+| finance_models | 19 |
+| dsh | 11 |
+| llm_training | 9 |
+| database | 4 |
+| dreamos | 2 |
+| frontend | 2 |
+
+已排除的噪声：`your-username/dream-multiSkill`、`org/repo` 等 4 个占位符，`yunya1991/Dreambuddy-V2` 自引用 1 个。
+
+**这 47 条交由云端调研评估**（Q2 硬指标 + Q3 语义相关性），入口为 `reflection_data/inbox/external_sources.local.json`（`level=candidate`，不注入、不直接进主清单）。
+
+三层质量门（Q1 本地已实现，Q2/Q3 归云端）：
+
+| 层 | 规则 | 归属 |
 |---|---|---|
-| Q1 结构过滤 | 排除 `topics/search/features/login/orgs/sponsors` 等非仓库路径（已实现） | 去伪链接 |
-| Q2 硬指标 | 云端校验 `stars ≥ 300`、`language ∈ {Python, TypeScript}`、`license ∈ {MIT,Apache,BSD}` 才升 `P2/P3` | 去小仓/异语言/GPL 注入风险 |
-| Q3 语义相关性 | LLM 判定"是否含可抽取的架构模式且映射到我方模块"，产出 `extract_target` 与 `relevance_score` | 去"文中顺手引用"类噪声 |
+| Q1 结构过滤 | 排除非仓库路径、依赖目录、占位符、自引用仓库 | 本地 ✅ |
+| Q2 硬指标 | `stars ≥ 300`、`language ∈ {Python, TypeScript}`、`license ∈ {MIT, Apache, BSD}` 才升 `qualified` | 云端 |
+| Q3 语义相关性 | LLM 判定"含可抽取架构模式 + 能映射到我方模块"，产出 `extract_target`、`relevance_score` 才升 `priority` | 云端 |
 
 **分级入库（关键）**：
 - `candidate`（仅 Q1 通过）：只进 `inbox`，不进主清单、不注入
 - `qualified`（Q1+Q2 通过）：进主清单，`wave=4`，不自动注入
 - `priority`（Q1+Q2+Q3 通过）：进主清单并允许 `--inject-max` 注入
 
-这样"无人值守"体现在**流程不停、自动分级**，而不是"全部直接进池"。当前脚本只实现 Q1 + `--max-new` 截断，Q2/Q3 待云端落地（列入 §9）。
+这样"无人值守"体现在**流程不停、自动分级**，而不是"全部直接进池"。
 
 ---
 
