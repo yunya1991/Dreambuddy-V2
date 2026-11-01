@@ -1,6 +1,7 @@
 # SPEC-C — L0 三层目标架构：互联层（L0-I）/ 调度层（L0-S）/ 封装层（L0-P）
 
-> **版本**: v0.3 (2026-10-30，新增 §5.1 G0 前置门禁，按本地三方评审修订 P0×12/P1×10)
+> **版本**: v0.4
+> **更新日期**: 2026-11-01（C11/C12/C13 落地 + §9 全量验收回写；v0.3 = 2026-10-30 新增 §5.1 G0 前置门禁）
 > **状态**: 本地评审已闭环，**待用户确认后进入阶段 4 云端评审（D1-D8）**
 > **本地评审报告**: [l0-three-layer-review-round1.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-three-layer-review-round1.md)
 > **调研对象**: **云端 `43.160.201.117`（Ubuntu 24.04.5，4C16G/180G）为交付目标**；本地 macOS 仅作代理证据与训练端，一致性核对见 §1.1
@@ -215,12 +216,13 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 
 ## 9. 验收标准（SPEC-C 整体）
 
-- [ ] **G0 门禁（开工前置）**：G0-1~G0-8 全关闭（密钥轮换、配置外置、CI 阻断 job 变红、健康检查 `--record-good`、DDL 唯一 owner、日志/磁盘上限、认知幂等字段）
-- [ ] P0 后：公共门面可被新代码调用且 4 处既有调用方行为零变化；6 port + 6 fake 契约测试**在阻断 job 中通过**；直连基线报告可产出；**`unified_search` 经 `Search` port 可用（"打通"第一成果），且全后端故障返回显式错误码**
-- [ ] P1 后：19-DAL PG adapter 落地且 `dc_pg` 收编后调用方零改动（字段级比对达阈值）；五能力声明可机器读取且校验可拦截漂移；11 系统第一批直连收编（独立轨道）启动
+- [x] **G0 门禁（开工前置，2026-11-01 复核）**：G0-1~G0-8 全关闭 —— G0-1/2/3 由 `test_g0_invariants.py` 守卫（无明文口令、`_FIS_P0_HOME` 外置、无模块级 `sys.path.insert`）；G0-4 `l0-contracts.yml` 阻断 job（无 `continue-on-error`，含 validate_capabilities + C10 ratchet + 契约测试）；G0-5 `health-check.sh --record-good` 已接入 `31/phase1/update.sh` 部署末尾；G0-6 `init_db_schema` 只在 `19-DAL/.../schema_init.py`；G0-7 `31/phase1/logrotate-dreambuddy.conf`；G0-8 见下方专条
+- [x] **P0 已完成（2026-11-01 复核）**：C1 门面包 `dreambuddy_l0/`（W3，4b8ac0460b）；C2 六 port + 六 fake + 方言能力集 + 9 条契约测试（W4，f1f8568500）；C3 直连基线仪表 report-only（`scripts/check_db_direct_imports.py`，基线 188 处/89 文件，f1daae7790）；C7 `unified_search` 经 `Search` port 分发三后端（41/Chroma/recall，min-max 归一化 + 全降级 `all_sources_unavailable`，df1310c960）
+- [x] **C4a / C4b 已完成（2026-11-01 复核）**：PG 第四后端 `PostgresTradeRepository` + 契约测试（类型映射/事务/分页/daily_stats upsert，335836e160 + c6ad3ee73a + DSN 权限修复 c50d210eae；本地无 DSN 时 6 条 skip，云端 125 passed 全跑）；`dc_pg` 收编为 39 薄壳 → `DataCenterQueries`，字段级比对 8 项全 MATCH、调用方零改动（7e46d30c07）
+- [ ] **C5 进行中（独立轨道，不阻塞 C6-C13）**：前置已完成（DualWrite 字段级 diff + per-repo 读开关 + shadow diff 率门槛，0b1e73c020）；11-易经 `force_vector` 首批 4 文件收编（41a70b35f8）、第二批 4 文件收编（db2799982e）；白名单中 11 系统仍有 19 处直连待收编（`0-系统文档管理/db_direct_whitelist.tsv`）
 - [x] **C6 能力声明已落地（2026-11-01）**：五能力声明可机器读取；`validate_capabilities.py` 可拦截 port/impl 漂移；接入 `l0-contracts` 阻断 job
 - [x] **G0-8 已关闭（2026-11-01）**：`external_id` 幂等（含存量库迁移）+ `record(idempotency_key=)` 契约入口 + P0-11 索引重建去抖；C8 开工前置解除（另有 9 条契约测试入阻断 job）
-- [x] **C9 本地 + 云端已落地（2026-11-01）**：任务注册表可查询；幂等 run key / UTC 窗口 / 5min 容忍 / 跨窗拆 run / missed_run+连续 3 窗告警 / 90 天保留均有契约测试；job_runs 只经 Store/Event port 落库（JSONL adapter，PG adapter 待 C4a）；`audit(host=)` 限定本机任务，避免云端误判 local 任务缺失。云端三段真实 run 已复跑（见 §6 C9 行证据），41 cron→`index-reconcile.timer` 归零完成，`job-runs-audit.timer` 每小时审计+保留
+- [x] **C9 本地 + 云端已落地（2026-11-01）**：任务注册表可查询；幂等 run key / UTC 窗口 / 5min 容忍 / 跨窗拆 run / missed_run+连续 3 窗告警 / 90 天保留均有契约测试；job_runs 只经 Store/Event port 落库（JSONL adapter；PG adapter 待接入，可复用 C4a 已落地的 19-DAL PG 后端）；`audit(host=)` 限定本机任务，避免云端误判 local 任务缺失。云端三段真实 run 已复跑（见 §6 C9 行证据），41 cron→`index-reconcile.timer` 归零完成，`job-runs-audit.timer` 每小时审计+保留
 - [x] **C8 本地 + 云端已落地（2026-11-01）**：`job_runs` 终态 → 认知 `record` 同进程回调（`external_id=run_id` 幂等），FAIL-OPEN（record 失败只告警+发 `scheduling.memory_record_failed`，不回滚 run）；`memory_enabled()` 云端（PG 后端）默认开、本地默认关；云端实测同一 `dc.collect.cloud@5978430` 两次写入返回同一 memory_id（`memories` 按 external_id 计数=1），重启调度器后真实窗口 `dc.collect.cloud@5978431` 自动产出记忆，且该记录可被 `recall` 命中（top-1）；16 条契约测试入 `l0-contracts` 阻断 job
 - [x] **C10 本地 + 云端已落地（2026-11-01）**：`scripts/check_db_direct_imports.py --ratchet` 白名单 ratchet（只减不增）接入 `l0-contracts` CI 阻断步骤，白名单外新增直连即红；契约测试 `test_c10_direct_gate.py` 入阻断 job；本地与云端复核 ratchet exit=0（d17abcb854）
 - [x] **C11 本地 + 云端已落地（2026-11-01）**：检索命中 → `SearchJobTrigger.on_search` 按 task_key `enqueue` pending job（去重键 `task_key:sha1(ref)[:12]@window`，开放态计入 `max_concurrency`，失败信封不排 job，FAIL-OPEN）；11 条契约测试入阻断 job；云端实证命中 41 文档 → `index.reconcile.cloud@498204` pending 落盘，30s 内重复命中判 `duplicate`（3e0db93c2c）
@@ -228,9 +230,9 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 - [x] **C13 本地 + 云端已落地（2026-11-01）**：launchd/systemd 只读旁路 `sidecar.py`（不改 `ExecStart`/plist；launchd `print gui/<uid>/<label>` 优先 + plistlib 日志 mtime；systemd `LastTriggerUSec` 兼容新版格式化时间戳；审计先行的 `missed_run` 行可被旁路后到证据升级为真实终态），注册表新增 `os.dbsync.local`（600s）+ `os.memory-cleanup.cloud`（6h），cli 增 `sidecar` 子命令；17 条契约测试入阻断 job；两端实证 `os.dbsync.local@2986511`、`os.memory-cleanup.cloud@83031` succeeded 且二次扫描 `duplicate`，实盘进程零改动（760bb0377d + da5a04e425 + 02f7becf86）
 - [x] P2 后：一次采集可产出可 recall 的认知记录且重复执行不重复写入（`external_id` 生效，**C8 已达成**）；三条链路有 `job_runs` 记录且幂等生效（UTC 窗口，**C9 已达成**）；grep 门禁可拦截新增直连（**C10 已达成**）
 - [x] P3 后：检索可触发可追踪任务（**C11 已达成**）；health 含五能力 + 调度分项（**C12 已达成**）；**每端各 1 个**非实盘周期任务在 `job_runs` 可见（**C13 已达成**）
-- [ ] 全量回归：pytest 无新增失败；tsc 0 errors；云端健康检查通过；实盘进程生命周期未改变
-- [ ] **云端一致性验收（新增硬门禁）**：每项落地后，在云端 `43.160.201.117` 复跑一次代码级审计与 health 探测，**云端数值必须等于本 SPEC 记录的基线或按计划变动**；本地验证通过而云端未验证的项，不得宣称"完成"
-- [ ] 每项落地执行 dream-acceptance-verify 五维验收（症状复测 + 日志证据 + 回归 + 影响面 + 边界）
+- [x] **全量回归（2026-11-01 复核）**：本地 `44-三端协作架构系统/shared/tests/` 119 passed / 6 skipped（skip 均为 PG DSN 未配置的 C4a 用例）；云端同目录 125 passed（venv 含 numpy + PG DSN，无 skip）；`tsc --noEmit` 0 errors（3.1-FRONTEND，补齐缺失的 `minisearch` 依赖后）；云端 health 探测 `ok=true / degraded=false / 五能力全 ok`；实盘进程生命周期未改变（`systemctl show ActiveEnterTimestamp`：trailing-stop-runner 与 v15-api 自 2026-10-17 01:51、yijing-polling-trader 自 2026-10-31 08:43 持续运行，均早于本轮改动；6 个实盘相关 unit 全 `active running`）
+- [x] **云端一致性验收（2026-11-01 复核）**：云端 `43.160.201.117`（HEAD=`4b31cc2435`）复跑 §6 代码级审计与 health 探测 —— validate_capabilities `OK`、C10 ratchet `exit=0`、契约测试 125 passed、`collect_l0_health(host="cloud")` 返回 `ok=true` 且 tasks 恰为 4 个云端任务（`dc.backfill.cloud/dc.collect.cloud/index.reconcile.cloud/os.memory-cleanup.cloud`）、`degraded_reasons={}`，与本 SPEC 记录基线一致
+- [x] **五维验收（2026-11-01）**：C11/C12/C13 各自的症状复测、日志/落盘证据、回归、影响面、边界证据见 §6 三行证据列；影响面 = 纯新增只读模块（无实盘 unit/`ExecStart` 改动，实盘 ActiveEnterTimestamp 早于改动即证）；边界 = FAIL-OPEN（store/registry/声明文件/探针单项故障只标 `degraded`、不抛错不拖垮整体），由对应契约测试覆盖
 
 ## 10. 风险
 

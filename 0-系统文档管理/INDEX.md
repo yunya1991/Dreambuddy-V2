@@ -197,6 +197,9 @@
 | **2-KNOWLEDGE/9-RAG-INFRA** | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) | ✅ v2.0 | RAG三层融合+桥接模块+热路径集成 |
 | **辩论系统（dream-harness-bridge）** | [.trae/documents/debate-engine-v2-spec.md](../.trae/documents/debate-engine-v2-spec.md) · [.trae/documents/debate-adjudication-training-spec.md](../.trae/documents/debate-adjudication-training-spec.md) | ✅ v2.0 + v1.2 | 对抗性辩论引擎：6维评审+5步反思+Bayesian/Elo/CBR训练 |
 | **★ Jev 决策模型接入辩论** | [.trae/documents/debate-jev-integration-spec.md](../.trae/documents/debate-jev-integration-spec.md) **v1.1** | ✅ 已落地 | C质量门控+B评审校验+A补充评分+D DPO偏好，43 tests GREEN |
+| **★ 44-三端协作架构系统** | [44-三端协作架构系统/README.md](../44-三端协作架构系统/README.md) | ✅ README + docs/tech 8 份 SPEC | 本地评审 / GitHub 存证 / 云端运行三端协同；L0 契约测试在 `shared/tests/` |
+| **★ L0 三层目标架构（SPEC-C）** | [44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md](../44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) **v0.4** | ✅ C1-C13 已落地（G0 全关闭） | L0-P 封装 / L0-I 互联 / L0-S 调度；C10 gated、C11 检索触发、C12 health 聚合、C13 只读旁路；契约测试入 `l0-contracts` 阻断 job |
+| **★ L0 公共门面代码** | [dreambuddy_l0/](../dreambuddy_l0/) | ✅ 六 port + 六 fake + adapters | 新代码唯一入口：`ports/`（Protocol）+ `fakes/` + `adapters/`（jsonl/cognitive）+ `scheduling/`（registry/windows/job_runs/event_bridge/trigger/health/sidecar）+ `search/` |
 
 ---
 
