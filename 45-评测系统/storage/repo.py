@@ -394,7 +394,7 @@ class InMemoryRepo(InMemoryEvalRequestStore):
 # ---------- PostgreSQL 实现 ----------
 
 
-class PgRepo:
+class PgRepo:  # pragma: no cover — PG 专属实现，本地无库；集成用例需 EVAL_PG_DSN（CI/云端执行）
     """PostgreSQL 实现（psycopg3）：每方法短连接，连接池属 P1 优化。"""
 
     def __init__(self, dsn: str) -> None:

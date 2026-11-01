@@ -333,6 +333,90 @@ def test_list_requests_time_window(repo, gateway):
     assert repo.list_requests(to_dt=NOW - timedelta(hours=2)) == []
 
 
+# ---------- InMemory 错误路径（P0-7 覆盖率补齐） ----------
+
+
+def test_canonical_json_rejects_unserializable():
+    from storage.repo import canonical_json
+
+    with pytest.raises(TypeError, match="不可序列化"):
+        canonical_json({"bad": object()})
+
+
+def test_assemble_report_missing_evidence_lookup_error():
+    from storage.repo import assemble_report
+
+    with pytest.raises(LookupError, match="缺证据行"):
+        assemble_report(
+            report_row={"eval_id": "EV-20261101-000001"},
+            run_row={},
+            item_rows=[],
+            evidence_row=None,
+        )
+
+
+def test_get_report_with_ci_reassembled(repo, gateway):
+    """ci_lower/upper 非空时重建 ci 字典（method 占位 none）。"""
+    result = gateway.submit(make_payload(), idempotency_key="ci-1")
+    run = make_run(result.eval_id)
+    repo.insert_run(run)
+    _insert_evidence(repo, run.run_id)
+    report = _report_dict(result.eval_id, run.run_id)
+    report["ci"] = {"lower": 0.7, "upper": 0.9, "method": "none"}
+    repo.insert_report(report)
+    loaded = repo.get_report(result.eval_id)
+    assert loaded["ci"] == {"lower": 0.7, "upper": 0.9, "method": "none"}
+
+
+def test_insert_run_duplicate_rejected(repo, gateway):
+    result = gateway.submit(make_payload(), idempotency_key="run-dup")
+    run = make_run(result.eval_id)
+    repo.insert_run(run)
+    with pytest.raises(ValueError, match="run_id 冲突"):
+        repo.insert_run(run)
+
+
+def test_insert_evidence_duplicate_hash_rejected(repo, gateway):
+    result = gateway.submit(make_payload(), idempotency_key="ev-dup")
+    run = make_run(result.eval_id)
+    repo.insert_run(run)
+    entry = _insert_evidence(repo, run.run_id)
+    with pytest.raises(ValueError, match="证据哈希冲突"):
+        repo.insert_evidence(entry)
+
+
+def test_insert_report_duplicate_rejected(repo, gateway):
+    result = gateway.submit(make_payload(), idempotency_key="rep-dup")
+    report = _report_dict(result.eval_id, "RUN-x")
+    repo.insert_report(report)
+    with pytest.raises(ValueError, match="报告已存在"):
+        repo.insert_report(report)
+
+
+def test_get_report_missing_run_lookup_error(repo, gateway):
+    result = gateway.submit(make_payload(), idempotency_key="rep-norun")
+    repo.insert_report(_report_dict(result.eval_id, "RUN-ghost"))
+    with pytest.raises(LookupError, match="缺 Run 行"):
+        repo.get_report(result.eval_id)
+
+
+def _insert_evidence(repo, run_id: str):
+    from storage.repo import EvidenceRow
+
+    entry = EvidenceRow(
+        evidence_id=f"EVD-{run_id}-01",
+        run_id=run_id,
+        sha256="a" * 64,
+        uri=f"local://evidence/EVD-{run_id}-01",
+        prev_hash=None,
+        hash="b" * 64,
+        signed_by=None,
+        created_at=NOW,
+    )
+    repo.insert_evidence(entry)
+    return entry
+
+
 # ---------- PG 集成测试（可选） ----------
 
 
