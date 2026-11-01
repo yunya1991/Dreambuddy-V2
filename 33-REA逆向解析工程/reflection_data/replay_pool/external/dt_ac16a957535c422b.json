@@ -1,0 +1,2420 @@
+{
+  "tree_id": "dt_ac16a957535c422b",
+  "task": {
+    "target": "https://github.com/virattt/dexter",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_af6fb77c14bf4423",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/virattt/dexter"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "jest.config.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "jest.config.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/providers.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/providers.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/theme.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/theme.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/cli.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/cli.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/evaluator.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/evaluator.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/options.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/options.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/sampling.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/sampling.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/evaluator.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/evaluator.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/run.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/run.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/options.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/options.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/sampling.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/sampling.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/dataset.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/dataset.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/dataset.test.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/dataset.test.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/components/eval-app.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/components/eval-app.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/components/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/components/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/components/eval-progress.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/components/eval-progress.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/components/eval-current-question.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/components/eval-current-question.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/components/eval-recent-results.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/components/eval-recent-results.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evals/components/eval-stats.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evals/components/eval-stats.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skills/registry.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skills/registry.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skills/loader.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skills/loader.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skills/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skills/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/skills/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/skills/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/working-indicator.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/working-indicator.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/subagent-group.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/subagent-group.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/hint-bar.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/hint-bar.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/select-list.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/select-list.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/intro.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/intro.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/tool-event.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/tool-event.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/approval-prompt.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/approval-prompt.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/user-query.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/user-query.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/debug-panel.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/debug-panel.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/question-prompt.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/question-prompt.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/chat-log.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/chat-log.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/answer-box.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/answer-box.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/components/custom-editor.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/components/custom-editor.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/mmr.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/mmr.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/search.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/search.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/temporal-decay.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/temporal-decay.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/flush.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/flush.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/chunker.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/chunker.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/embeddings.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/embeddings.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/session-files.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/session-files.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/store.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/store.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/database.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/database.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/memory/indexer.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/memory/indexer.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503601
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_af6fb77c14bf4423",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "534f6be455523c5926eba72bdaf4f914555be5c9",
+              "message": "Bump @langchain/anthropic to 1.5.11 for Claude 5 thinking support"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_abcee3eb6509480682f91e846de9da5e",
+              "result": "架构转折点: commit 534f6be4 - Bump @langchain/anthropic to 1.5.11 for Claude 5 thinking support",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/dexter",
+                "commit": "534f6be455523c5926eba72bdaf4f914555be5c9",
+                "message": "Bump @langchain/anthropic to 1.5.11 for Claude 5 thinking support",
+                "files_changed": 239,
+                "insertions": 43567,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516503631
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516503695
+        }
+      ],
+      "created_at": 1793516503600
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "jest.config.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "jest.config.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/providers.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/providers.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/theme.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/theme.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/cli.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/cli.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/evaluator.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/evaluator.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/options.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/options.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/sampling.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/sampling.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/evaluator.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/evaluator.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/run.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/run.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/options.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/options.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/sampling.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/sampling.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/dataset.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/dataset.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/dataset.test.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/dataset.test.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/components/eval-app.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/components/eval-app.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/components/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/components/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/components/eval-progress.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/components/eval-progress.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/components/eval-current-question.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/components/eval-current-question.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/components/eval-recent-results.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/components/eval-recent-results.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evals/components/eval-stats.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evals/components/eval-stats.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skills/registry.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skills/registry.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skills/loader.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skills/loader.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skills/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skills/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/skills/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/skills/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/working-indicator.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/working-indicator.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/subagent-group.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/subagent-group.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/hint-bar.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/hint-bar.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/select-list.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/select-list.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/intro.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/intro.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/tool-event.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/tool-event.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/approval-prompt.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/approval-prompt.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/user-query.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/user-query.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/debug-panel.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/debug-panel.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/question-prompt.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/question-prompt.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/chat-log.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/chat-log.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/answer-box.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/answer-box.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/components/custom-editor.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/components/custom-editor.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/mmr.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/mmr.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/search.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/search.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/temporal-decay.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/temporal-decay.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/flush.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/flush.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/chunker.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/chunker.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/embeddings.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/embeddings.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/session-files.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/session-files.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/store.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/store.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/database.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/database.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/memory/indexer.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/memory/indexer.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503601
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_af6fb77c14bf4423",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "534f6be455523c5926eba72bdaf4f914555be5c9",
+          "message": "Bump @langchain/anthropic to 1.5.11 for Claude 5 thinking support"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_abcee3eb6509480682f91e846de9da5e",
+          "result": "架构转折点: commit 534f6be4 - Bump @langchain/anthropic to 1.5.11 for Claude 5 thinking support",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/dexter",
+            "commit": "534f6be455523c5926eba72bdaf4f914555be5c9",
+            "message": "Bump @langchain/anthropic to 1.5.11 for Claude 5 thinking support",
+            "files_changed": 239,
+            "insertions": 43567,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516503631
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516503695
+    }
+  ],
+  "provenance": "external",
+  "source_label": "dexter",
+  "weight": 0.5,
+  "created_at": 1793516503600,
+  "source_id": "dexter",
+  "repo_url": "https://github.com/virattt/dexter",
+  "commit": "534f6be455523c5926eba72bdaf4f914555be5c9",
+  "license": "",
+  "collected_at": 1793516503698
+}

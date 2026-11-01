@@ -1,0 +1,3658 @@
+{
+  "tree_id": "dt_29fd50ec20994d72",
+  "task": {
+    "target": "https://github.com/evidentlyai/evidently",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_25b77c7216104746",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/evidentlyai/evidently"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "example_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "example_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/telemetry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/telemetry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/_registry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/_registry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/_pydantic_compat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/_pydantic_compat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/_version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/_version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/pydantic_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/pydantic_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/errors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/errors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/migrate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/migrate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/report.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/report.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/demo_project.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/demo_project.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/ui.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/ui.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/legacy_ui.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/legacy_ui.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/cli/__main__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/cli/__main__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/widgets/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/widgets/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/templates.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/templates.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/options.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/options.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/datagen/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/datagen/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/datagen/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/datagen/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/datagen/rag.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/datagen/rag.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/datagen/base.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/datagen/base.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/datagen/fewshot.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/datagen/fewshot.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/prompts/content.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/prompts/content.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/prompts/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/prompts/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/rag/index.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/rag/index.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/rag/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/rag/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/rag/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/rag/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/rag/splitter.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/rag/splitter.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/templates.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/templates.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/blocks.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/blocks.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/prompt_render.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/prompt_render.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/errors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/errors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/wrapper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/wrapper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/utils/parsing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/utils/parsing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/optimization/optimizer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/optimization/optimizer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/optimization/scorers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/optimization/scorers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/optimization/prompts.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/optimization/prompts.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/optimization/errors.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/optimization/errors.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/llm/optimization/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/llm/optimization/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/decorators.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/decorators.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/core.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/core.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/trace.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/trace.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/guards/word_presence.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/guards/word_presence.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/guards/python_function.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/guards/python_function.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/guards/pii_llm.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/guards/pii_llm.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/guards/negativity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/guards/negativity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/guards/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/guards/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_ext_54",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evidently/guardrails/guards/toxicity.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evidently/guardrails/guards/toxicity.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516561884
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e98ecd2c10c847b8bb1e847fd62235f2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/cli/demo_project.py",
+                "line": 25,
+                "marker": "TODO",
+                "comment": "# TODO: better type safety"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516561916
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7e8d61e4d38e441882c35ec3fa0016dd",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/cli/ui.py",
+                "line": 70,
+                "marker": "TODO",
+                "comment": "# TODO: better type safety"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516561921
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6f7c4c3e36bc4c608261ea64b0a0ef7e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/cli/ui.py",
+                "line": 110,
+                "marker": "TODO",
+                "comment": "# TODO: better type safety"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516561921
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_267a867f741547868d262ca2faac1d5f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/ui/service/managers/projects.py",
+                "line": 156,
+                "marker": "TODO",
+                "comment": "# TODO: Support points for dashboard."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562062
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f9dec7ded1e84460855d220c1e78a12b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metric_results.py",
+                "line": 295,
+                "marker": "TODO",
+                "comment": "# TODO: fix type collision with super type"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562297
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a1d6657d2a154a7ebbc9681083b260c1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/ui/api/projects.py",
+                "line": 270,
+                "marker": "TODO",
+                "comment": "# TODO: no datetime, as it unable to validate '2023-07-09T02:03'"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562336
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5bd1d3bf59f043049b232f4479c4b05b",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metrics/data_integrity/column_summary_metric.py",
+                "line": 178,
+                "marker": "TODO",
+                "comment": "Args:\n        data: Column data includes column name current and reference data (if present)\n        datetime_data: Datetime data if present\n        target_data: Target data if present\n        merge_s"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562409
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c7dca723e8c5478bb8428dd9240fce7c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metrics/regression_performance/regression_performance_metrics.py",
+                "line": 156,
+                "marker": "TODO",
+                "comment": "# TODO: Fix assignments"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562481
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e30891aef8be4ed9a1a0ed67637f43fe",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metrics/regression_performance/regression_quality.py",
+                "line": 156,
+                "marker": "TODO",
+                "comment": "# TODO: fix typing"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562486
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a1e82280e6c24acd9356af7af3078c89",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/utils/data_preprocessing.py",
+                "line": 598,
+                "marker": "TODO",
+                "comment": "# TODO: add proper type check"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562610
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b8e09072219c4adbbc26c466eafe42b4",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_drift.py",
+                "line": 228,
+                "marker": "TODO",
+                "comment": "# TODO: assignment DataFrame to Series"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562669
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_312f7d358426479d91f3d6ea6283aaae",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_quality.py",
+                "line": 191,
+                "marker": "TODO",
+                "comment": "# TODO: Fix this check"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562675
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_dcb9fdacaa0b4f50897843d1e41c2b87",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_quality.py",
+                "line": 202,
+                "marker": "TODO",
+                "comment": "# TODO: Fix assignment types"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562675
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_79a3149286564ad5b77a56bf74eec09a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_quality.py",
+                "line": 494,
+                "marker": "TODO",
+                "comment": "# TODO: implement distribution for num column"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516562675
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516564766
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_25b77c7216104746",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "34771fe41c08ca074d96a52aaf4a45cd640cbaf5",
+              "message": "Update version of pypa/gh-action-pypi-publish to 1.14.2 (#1925)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9e15cf5bbbf2401ba70afdc88aa1d6ff",
+              "result": "架构转折点: commit 34771fe4 - Update version of pypa/gh-action-pypi-publish to 1.14.2 (#1925)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/evidently",
+                "commit": "34771fe41c08ca074d96a52aaf4a45cd640cbaf5",
+                "message": "Update version of pypa/gh-action-pypi-publish to 1.14.2 (#1925)",
+                "files_changed": 1238,
+                "insertions": 160234,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516565078
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516566117
+        }
+      ],
+      "created_at": 1793516561883
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "example_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "example_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/telemetry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/telemetry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/_registry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/_registry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/_pydantic_compat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/_pydantic_compat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/_version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/_version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/pydantic_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/pydantic_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/errors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/errors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/migrate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/migrate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/report.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/report.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/demo_project.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/demo_project.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/ui.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/ui.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/legacy_ui.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/legacy_ui.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/cli/__main__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/cli/__main__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/widgets/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/widgets/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/templates.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/templates.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/options.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/options.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/datagen/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/datagen/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/datagen/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/datagen/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/datagen/rag.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/datagen/rag.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/datagen/base.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/datagen/base.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/datagen/fewshot.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/datagen/fewshot.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/prompts/content.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/prompts/content.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/prompts/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/prompts/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/rag/index.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/rag/index.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/rag/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/rag/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/rag/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/rag/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/rag/splitter.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/rag/splitter.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/templates.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/templates.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/blocks.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/blocks.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/prompt_render.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/prompt_render.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/errors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/errors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/wrapper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/wrapper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/utils/parsing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/utils/parsing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/optimization/optimizer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/optimization/optimizer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/optimization/scorers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/optimization/scorers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/optimization/prompts.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/optimization/prompts.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/optimization/errors.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/optimization/errors.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/llm/optimization/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/llm/optimization/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/decorators.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/decorators.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/core.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/core.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/trace.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/trace.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/guards/word_presence.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/guards/word_presence.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/guards/python_function.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/guards/python_function.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/guards/pii_llm.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/guards/pii_llm.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/guards/negativity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/guards/negativity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/guards/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/guards/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_ext_54",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evidently/guardrails/guards/toxicity.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evidently/guardrails/guards/toxicity.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516561884
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e98ecd2c10c847b8bb1e847fd62235f2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/cli/demo_project.py",
+            "line": 25,
+            "marker": "TODO",
+            "comment": "# TODO: better type safety"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516561916
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7e8d61e4d38e441882c35ec3fa0016dd",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/cli/ui.py",
+            "line": 70,
+            "marker": "TODO",
+            "comment": "# TODO: better type safety"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516561921
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6f7c4c3e36bc4c608261ea64b0a0ef7e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/cli/ui.py",
+            "line": 110,
+            "marker": "TODO",
+            "comment": "# TODO: better type safety"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516561921
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_267a867f741547868d262ca2faac1d5f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/ui/service/managers/projects.py",
+            "line": 156,
+            "marker": "TODO",
+            "comment": "# TODO: Support points for dashboard."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562062
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f9dec7ded1e84460855d220c1e78a12b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metric_results.py",
+            "line": 295,
+            "marker": "TODO",
+            "comment": "# TODO: fix type collision with super type"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562297
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a1d6657d2a154a7ebbc9681083b260c1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/ui/api/projects.py",
+            "line": 270,
+            "marker": "TODO",
+            "comment": "# TODO: no datetime, as it unable to validate '2023-07-09T02:03'"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562336
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5bd1d3bf59f043049b232f4479c4b05b",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metrics/data_integrity/column_summary_metric.py",
+            "line": 178,
+            "marker": "TODO",
+            "comment": "Args:\n        data: Column data includes column name current and reference data (if present)\n        datetime_data: Datetime data if present\n        target_data: Target data if present\n        merge_s"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562409
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c7dca723e8c5478bb8428dd9240fce7c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metrics/regression_performance/regression_performance_metrics.py",
+            "line": 156,
+            "marker": "TODO",
+            "comment": "# TODO: Fix assignments"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562481
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e30891aef8be4ed9a1a0ed67637f43fe",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/metrics/regression_performance/regression_quality.py",
+            "line": 156,
+            "marker": "TODO",
+            "comment": "# TODO: fix typing"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562486
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a1e82280e6c24acd9356af7af3078c89",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/utils/data_preprocessing.py",
+            "line": 598,
+            "marker": "TODO",
+            "comment": "# TODO: add proper type check"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562610
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b8e09072219c4adbbc26c466eafe42b4",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_drift.py",
+            "line": 228,
+            "marker": "TODO",
+            "comment": "# TODO: assignment DataFrame to Series"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562669
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_312f7d358426479d91f3d6ea6283aaae",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_quality.py",
+            "line": 191,
+            "marker": "TODO",
+            "comment": "# TODO: Fix this check"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562675
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_dcb9fdacaa0b4f50897843d1e41c2b87",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_quality.py",
+            "line": 202,
+            "marker": "TODO",
+            "comment": "# TODO: Fix assignment types"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562675
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_79a3149286564ad5b77a56bf74eec09a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/evidently/src/evidently/legacy/calculations/data_quality.py",
+            "line": 494,
+            "marker": "TODO",
+            "comment": "# TODO: implement distribution for num column"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516562675
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516564766
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_25b77c7216104746",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "34771fe41c08ca074d96a52aaf4a45cd640cbaf5",
+          "message": "Update version of pypa/gh-action-pypi-publish to 1.14.2 (#1925)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9e15cf5bbbf2401ba70afdc88aa1d6ff",
+          "result": "架构转折点: commit 34771fe4 - Update version of pypa/gh-action-pypi-publish to 1.14.2 (#1925)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/evidently",
+            "commit": "34771fe41c08ca074d96a52aaf4a45cd640cbaf5",
+            "message": "Update version of pypa/gh-action-pypi-publish to 1.14.2 (#1925)",
+            "files_changed": 1238,
+            "insertions": 160234,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516565078
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516566117
+    }
+  ],
+  "provenance": "external",
+  "source_label": "evidently",
+  "weight": 0.5,
+  "created_at": 1793516561883,
+  "source_id": "evidently",
+  "repo_url": "https://github.com/evidentlyai/evidently",
+  "commit": "34771fe41c08ca074d96a52aaf4a45cd640cbaf5",
+  "license": "Apache-2.0",
+  "collected_at": 1793516566122
+}

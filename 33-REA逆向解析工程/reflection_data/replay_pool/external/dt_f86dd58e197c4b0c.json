@@ -1,0 +1,3448 @@
+{
+  "tree_id": "dt_f86dd58e197c4b0c",
+  "task": {
+    "target": "https://github.com/apache/kafka",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_820cc91840e74a12",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/apache/kafka"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "committer-tools/verify_license.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "committer-tools/verify_license.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "committer-tools/find-unfinished-test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "committer-tools/find-unfinished-test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "committer-tools/reviewers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "committer-tools/reviewers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "committer-tools/kafka-merge-pr.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "committer-tools/kafka-merge-pr.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "committer-tools/refresh_collaborators.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "committer-tools/refresh_collaborators.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/extract_docker_official_image_artifact.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/extract_docker_official_image_artifact.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/common.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/common.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/prepare_docker_official_image_source.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/prepare_docker_official_image_source.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/generate_kafka_pr_template.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/generate_kafka_pr_template.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/docker_official_image_build_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/docker_official_image_build_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/docker_release.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/docker_release.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/docker_build_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/docker_build_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/test/docker_sanity_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/test/docker_sanity_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/test/constants.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/test/constants.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docker/test/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docker/test/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/git.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/git.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/gpg.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/gpg.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/svn.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/svn.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/preferences.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/preferences.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/templates.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/templates.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/test_docker_trigger_interactive.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/test_docker_trigger_interactive.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/notes.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/notes.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/test_gh_actions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/test_gh_actions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/gh_actions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/gh_actions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/textfiles.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/textfiles.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/release.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/release.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "release/runtime.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "release/runtime.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/setup.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/setup.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/bin/external_trogdor_command_example.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/bin/external_trogdor_command_example.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/unit/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/unit/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/unit/directory_layout/check_project_paths.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/unit/directory_layout/check_project_paths.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/unit/directory_layout/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/unit/directory_layout/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/unit/version/check_version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/unit/version/check_version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/unit/version/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/unit/version/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/version.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/version.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/verifiable_consumer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/verifiable_consumer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/verifiable_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/verifiable_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/log_compaction_tester.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/log_compaction_tester.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/zookeeper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/zookeeper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/connect.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/connect.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/consumer_property.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/consumer_property.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/transactional_message_copier.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/transactional_message_copier.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/streams_property.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/streams_property.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591615
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/streams.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/streams.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/delegation_tokens.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/delegation_tokens.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/console_consumer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/console_consumer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/verifiable_share_consumer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/verifiable_share_consumer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/replica_verification_tool.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/replica_verification_tool.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/console_share_consumer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/console_share_consumer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tests/kafkatest/services/verifiable_producer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tests/kafkatest/services/verifiable_producer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516591616
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_032aac79220a4034b176b8fbc038a6c7",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/committer-tools/kafka-merge-pr.py",
+                "line": 329,
+                "marker": "XXX",
+                "comment": "Standardize the jira reference commit message prefix to \"PROJECT_NAME-XXX; Issue\"\n\n    >>> standardize_jira_ref(\"%s-5954; Top by key\" % CAPITALIZED_PROJECT_NAME)\n    'KAFKA-5954; Top by key'\n    >>> s"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591669
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7309992d237f4938a2dc33c0bb48264a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/release/release.py",
+                "line": 431,
+                "marker": "TODO",
+                "comment": "# TODO: Many of these suggested validation steps could be automated"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591769
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c82ae89fb569411dbbeae55df55fc4bc",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/release/release.py",
+                "line": 436,
+                "marker": "TODO",
+                "comment": "# TODO: Can we close the staging repository via a REST API since we"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591769
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f7db8d1b06fb4ad4bc4e989f4f4aa6c1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/services/kafka/kafka.py",
+                "line": 505,
+                "marker": "TODO",
+                "comment": "# TODO: disentangle interbroker and intercontroller protocol information"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591886
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0f5ad8d292d7471997d5f4254650fe59",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/services/monitor/http.py",
+                "line": 54,
+                "marker": "TODO",
+                "comment": "# TODO: currently we maintain just a simple map from all key info -> value. However, some key fields are far"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591908
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6967b4c0af4b4eda9a0e093f6625470d",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/benchmarks/core/benchmark_test.py",
+                "line": 139,
+                "marker": "FIXME",
+                "comment": "# FIXME we should be generating a graph too"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591947
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_015f2d000c5e41b49d99f93da1110497",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_broker_down_resilience_test.py",
+                "line": 163,
+                "marker": "TODO",
+                "comment": "# TODO KIP-441: consider rewriting the test for HighAvailabilityTaskAssignor"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591964
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2790e112d136419e854add3d8e665f2d",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_broker_down_resilience_test.py",
+                "line": 244,
+                "marker": "TODO",
+                "comment": "# TODO KIP-441: consider rewriting the test for HighAvailabilityTaskAssignor"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591964
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_660e418c9f794a51aa87c82035207d0d",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_upgrade_test.py",
+                "line": 46,
+                "marker": "XXX",
+                "comment": "After each release one should first check that the released version has been uploaded to \nhttps://s3-us-west-2.amazonaws.com/kafka-packages/ which is the url used by system test to download jars; \nany"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591977
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_673c3f0277f946c58c9487b16a5760ac",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_standby_replica_test.py",
+                "line": 57,
+                "marker": "TODO",
+                "comment": "# TODO KIP-441: consider rewriting the test for HighAvailabilityTaskAssignor"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516591986
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_15ef453a87b3477e95b5b6c7f4441337",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/client/consumer_test.py",
+                "line": 121,
+                "marker": "TODO",
+                "comment": "# TODO: make this test work with hard shutdowns, which probably requires"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516592036
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_41b2827b0130454aa9fb0b881a2db67e",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/client/consumer_test.py",
+                "line": 473,
+                "marker": "TODO",
+                "comment": "# TODO: we need a way to target the coordinator instead of picking arbitrarily"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516592036
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b1eada3b71e14533a609acf9ce3af44c",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/connect/connect_rest_test.py",
+                "line": 162,
+                "marker": "TODO",
+                "comment": "# TODO: It would be nice to validate a complete listing, but that doesn't make sense for the file connectors"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516592189
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516592810
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_820cc91840e74a12",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "94b8481467bbaa6de8eae35cbf9b7702e54a35b2",
+              "message": "KAFKA-18039 Test all versions of quorum responses in RequestResponseTest (#23949)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5cb8069e8837442488e07e4a159e3325",
+              "result": "架构转折点: commit 94b84814 - KAFKA-18039 Test all versions of quorum responses in RequestResponseTest (#23949",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/kafka",
+                "commit": "94b8481467bbaa6de8eae35cbf9b7702e54a35b2",
+                "message": "KAFKA-18039 Test all versions of quorum responses in RequestResponseTest (#23949)",
+                "files_changed": 7647,
+                "insertions": 1857057,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516593692
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516594890
+        }
+      ],
+      "created_at": 1793516591565
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "committer-tools/verify_license.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "committer-tools/verify_license.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "committer-tools/find-unfinished-test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "committer-tools/find-unfinished-test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "committer-tools/reviewers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "committer-tools/reviewers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "committer-tools/kafka-merge-pr.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "committer-tools/kafka-merge-pr.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "committer-tools/refresh_collaborators.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "committer-tools/refresh_collaborators.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/extract_docker_official_image_artifact.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/extract_docker_official_image_artifact.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/common.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/common.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/prepare_docker_official_image_source.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/prepare_docker_official_image_source.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/generate_kafka_pr_template.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/generate_kafka_pr_template.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/docker_official_image_build_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/docker_official_image_build_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/docker_release.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/docker_release.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/docker_build_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/docker_build_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/test/docker_sanity_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/test/docker_sanity_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/test/constants.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/test/constants.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docker/test/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docker/test/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/git.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/git.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/gpg.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/gpg.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/svn.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/svn.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/preferences.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/preferences.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/templates.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/templates.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/test_docker_trigger_interactive.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/test_docker_trigger_interactive.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/notes.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/notes.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/test_gh_actions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/test_gh_actions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/gh_actions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/gh_actions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/textfiles.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/textfiles.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/release.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/release.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "release/runtime.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "release/runtime.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/setup.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/setup.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/bin/external_trogdor_command_example.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/bin/external_trogdor_command_example.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/unit/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/unit/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/unit/directory_layout/check_project_paths.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/unit/directory_layout/check_project_paths.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/unit/directory_layout/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/unit/directory_layout/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/unit/version/check_version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/unit/version/check_version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/unit/version/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/unit/version/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/version.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/version.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/verifiable_consumer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/verifiable_consumer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/verifiable_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/verifiable_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/log_compaction_tester.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/log_compaction_tester.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/zookeeper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/zookeeper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/connect.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/connect.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/consumer_property.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/consumer_property.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/transactional_message_copier.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/transactional_message_copier.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/streams_property.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/streams_property.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591615
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/streams.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/streams.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/delegation_tokens.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/delegation_tokens.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/console_consumer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/console_consumer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/verifiable_share_consumer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/verifiable_share_consumer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/replica_verification_tool.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/replica_verification_tool.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/console_share_consumer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/console_share_consumer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tests/kafkatest/services/verifiable_producer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tests/kafkatest/services/verifiable_producer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516591616
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_032aac79220a4034b176b8fbc038a6c7",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/committer-tools/kafka-merge-pr.py",
+            "line": 329,
+            "marker": "XXX",
+            "comment": "Standardize the jira reference commit message prefix to \"PROJECT_NAME-XXX; Issue\"\n\n    >>> standardize_jira_ref(\"%s-5954; Top by key\" % CAPITALIZED_PROJECT_NAME)\n    'KAFKA-5954; Top by key'\n    >>> s"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591669
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7309992d237f4938a2dc33c0bb48264a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/release/release.py",
+            "line": 431,
+            "marker": "TODO",
+            "comment": "# TODO: Many of these suggested validation steps could be automated"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591769
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c82ae89fb569411dbbeae55df55fc4bc",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/release/release.py",
+            "line": 436,
+            "marker": "TODO",
+            "comment": "# TODO: Can we close the staging repository via a REST API since we"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591769
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f7db8d1b06fb4ad4bc4e989f4f4aa6c1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/services/kafka/kafka.py",
+            "line": 505,
+            "marker": "TODO",
+            "comment": "# TODO: disentangle interbroker and intercontroller protocol information"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591886
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0f5ad8d292d7471997d5f4254650fe59",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/services/monitor/http.py",
+            "line": 54,
+            "marker": "TODO",
+            "comment": "# TODO: currently we maintain just a simple map from all key info -> value. However, some key fields are far"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591908
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6967b4c0af4b4eda9a0e093f6625470d",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/benchmarks/core/benchmark_test.py",
+            "line": 139,
+            "marker": "FIXME",
+            "comment": "# FIXME we should be generating a graph too"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591947
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_015f2d000c5e41b49d99f93da1110497",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_broker_down_resilience_test.py",
+            "line": 163,
+            "marker": "TODO",
+            "comment": "# TODO KIP-441: consider rewriting the test for HighAvailabilityTaskAssignor"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591964
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2790e112d136419e854add3d8e665f2d",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_broker_down_resilience_test.py",
+            "line": 244,
+            "marker": "TODO",
+            "comment": "# TODO KIP-441: consider rewriting the test for HighAvailabilityTaskAssignor"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591964
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_660e418c9f794a51aa87c82035207d0d",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_upgrade_test.py",
+            "line": 46,
+            "marker": "XXX",
+            "comment": "After each release one should first check that the released version has been uploaded to \nhttps://s3-us-west-2.amazonaws.com/kafka-packages/ which is the url used by system test to download jars; \nany"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591977
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_673c3f0277f946c58c9487b16a5760ac",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/streams/streams_standby_replica_test.py",
+            "line": 57,
+            "marker": "TODO",
+            "comment": "# TODO KIP-441: consider rewriting the test for HighAvailabilityTaskAssignor"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516591986
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_15ef453a87b3477e95b5b6c7f4441337",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/client/consumer_test.py",
+            "line": 121,
+            "marker": "TODO",
+            "comment": "# TODO: make this test work with hard shutdowns, which probably requires"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516592036
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_41b2827b0130454aa9fb0b881a2db67e",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/client/consumer_test.py",
+            "line": 473,
+            "marker": "TODO",
+            "comment": "# TODO: we need a way to target the coordinator instead of picking arbitrarily"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516592036
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b1eada3b71e14533a609acf9ce3af44c",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/kafka/tests/kafkatest/tests/connect/connect_rest_test.py",
+            "line": 162,
+            "marker": "TODO",
+            "comment": "# TODO: It would be nice to validate a complete listing, but that doesn't make sense for the file connectors"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516592189
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516592810
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_820cc91840e74a12",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "94b8481467bbaa6de8eae35cbf9b7702e54a35b2",
+          "message": "KAFKA-18039 Test all versions of quorum responses in RequestResponseTest (#23949)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5cb8069e8837442488e07e4a159e3325",
+          "result": "架构转折点: commit 94b84814 - KAFKA-18039 Test all versions of quorum responses in RequestResponseTest (#23949",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/kafka",
+            "commit": "94b8481467bbaa6de8eae35cbf9b7702e54a35b2",
+            "message": "KAFKA-18039 Test all versions of quorum responses in RequestResponseTest (#23949)",
+            "files_changed": 7647,
+            "insertions": 1857057,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516593692
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516594890
+    }
+  ],
+  "provenance": "external",
+  "source_label": "kafka",
+  "weight": 0.5,
+  "created_at": 1793516591565,
+  "source_id": "kafka",
+  "repo_url": "https://github.com/apache/kafka",
+  "commit": "94b8481467bbaa6de8eae35cbf9b7702e54a35b2",
+  "license": "Apache-2.0",
+  "collected_at": 1793516594892
+}

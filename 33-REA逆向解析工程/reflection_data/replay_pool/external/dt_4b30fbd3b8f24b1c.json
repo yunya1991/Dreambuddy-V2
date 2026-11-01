@@ -1,0 +1,718 @@
+{
+  "tree_id": "dt_4b30fbd3b8f24b1c",
+  "task": {
+    "target": "https://github.com/google-research/bert",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_fd6f7dec66e94d70",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/google-research/bert"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "optimization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "optimization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_classifier.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_classifier.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "modeling.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "modeling.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "modeling_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "modeling_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_squad.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_squad.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_classifier_with_tfhub.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_classifier_with_tfhub.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tokenization.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tokenization.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "extract_features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "extract_features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "tokenization_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "tokenization_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "create_pretraining_data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "create_pretraining_data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "optimization_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "optimization_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "run_pretraining.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "run_pretraining.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690123
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_fd6f7dec66e94d70",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "eedf5716ce1268e56f0a50264a88cafad334ac61",
+              "message": "Merge pull request #1027 from iuliaturc-google/master"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7b28299d29a64d4ea732838fef4d4320",
+              "result": "架构转折点: commit eedf5716 - Merge pull request #1027 from iuliaturc-google/master",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/bert",
+                "commit": "eedf5716ce1268e56f0a50264a88cafad334ac61",
+                "message": "Merge pull request #1027 from iuliaturc-google/master",
+                "files_changed": 21,
+                "insertions": 9030,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516690309
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516690322
+        }
+      ],
+      "created_at": 1793516690122
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "optimization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "optimization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_classifier.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_classifier.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "modeling.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "modeling.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "modeling_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "modeling_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_squad.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_squad.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_classifier_with_tfhub.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_classifier_with_tfhub.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tokenization.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tokenization.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "extract_features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "extract_features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "tokenization_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "tokenization_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "create_pretraining_data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "create_pretraining_data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "optimization_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "optimization_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "run_pretraining.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "run_pretraining.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690123
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_fd6f7dec66e94d70",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "eedf5716ce1268e56f0a50264a88cafad334ac61",
+          "message": "Merge pull request #1027 from iuliaturc-google/master"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7b28299d29a64d4ea732838fef4d4320",
+          "result": "架构转折点: commit eedf5716 - Merge pull request #1027 from iuliaturc-google/master",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/bert",
+            "commit": "eedf5716ce1268e56f0a50264a88cafad334ac61",
+            "message": "Merge pull request #1027 from iuliaturc-google/master",
+            "files_changed": 21,
+            "insertions": 9030,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516690309
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516690322
+    }
+  ],
+  "provenance": "external",
+  "source_label": "bert",
+  "weight": 0.5,
+  "created_at": 1793516690122,
+  "source_id": "bert",
+  "repo_url": "https://github.com/google-research/bert",
+  "commit": "eedf5716ce1268e56f0a50264a88cafad334ac61",
+  "license": "Apache-2.0",
+  "collected_at": 1793516690323
+}

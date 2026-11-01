@@ -1,0 +1,4260 @@
+{
+  "tree_id": "dt_318c66b01c3e4baf",
+  "task": {
+    "target": "https://github.com/Raynergy-svg/ml_engine",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_405232ce3d634cfd",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/Raynergy-svg/ml_engine"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "ms_head_engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "ms_head_engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "trade_analyzer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "trade_analyzer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "modular_inference.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "modular_inference.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "mr_engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "mr_engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "position_sizing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "position_sizing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "feature_engineering.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "feature_engineering.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "modular_trainers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "modular_trainers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "multi_pair_inference.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "multi_pair_inference.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "oanda_practice.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "oanda_practice.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "ml_head_engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "ml_head_engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "confidence_calibration.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "confidence_calibration.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "mt_engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "mt_engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "fx_paper.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "fx_paper.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "mx_head_engine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "mx_head_engine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "trade_journal.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "trade_journal.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "improved_base_optimizer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "improved_base_optimizer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "llm_providers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "llm_providers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "buddy.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "buddy.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market_intelligence.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market_intelligence.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "pair_scanner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "pair_scanner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "buddy_intelligent_mode.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "buddy_intelligent_mode.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "online_retrainer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "online_retrainer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "self_refine.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "self_refine.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "buddy_scanner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "buddy_scanner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "rl_position_sizing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "rl_position_sizing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli_entry.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli_entry.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "memory_client.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "memory_client.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "risk_management.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "risk_management.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "news_features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "news_features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/fx_trading.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/fx_trading.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/training.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/training.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/risk_target_training.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/risk_target_training.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/buddy_helpers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/buddy_helpers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/argparser.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/argparser.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/calibration.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/calibration.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/meta_pipeline.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/meta_pipeline.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/tf_config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/tf_config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/training_monitor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/training_monitor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/training_ops.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/training_ops.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/models.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/models.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/model_management.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/model_management.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/buddy_scanning.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/buddy_scanning.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/io_utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/io_utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/legacy_commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/legacy_commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/candle_optimizer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/candle_optimizer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/monitoring_cli.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/monitoring_cli.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/wizard.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/wizard.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/analytics_commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/analytics_commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_51",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_52",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_ext_53",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "cli/learn_commands.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "cli/learn_commands.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516666257
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a5be8a5749454b92911f60e8b3b85885",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/cli/helpers.py",
+                "line": 127,
+                "marker": "XXX",
+                "comment": "# Pattern 1: Direct match for XXX_YYY format"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516667155
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_9d23835c492b43c0b5b4bf0f94306730",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/cli/helpers.py",
+                "line": 139,
+                "marker": "XXX",
+                "comment": "# Pattern 3: Try to extract XXX_YYY pattern from filename"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516667155
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c3664d37299a4c308b11cfeb94971a1a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/gates.py",
+                "line": 170,
+                "marker": "TODO",
+                "comment": "Load sklearn artifacts while suppressing noisy compatibility warnings.\n\n    Security note (CWE-502): only invoked against artifacts written by this\n    project's own training pipeline to a fixed local"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516668380
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b1fa76f1d16e4b2ca73dd606ddea51d8",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/config.py",
+                "line": 1237,
+                "marker": "XXX",
+                "comment": "# --- Drift Auto-Remediation (US-XXX) ---"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516668433
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_3711dba5c6aa4cc18c328d772943e104",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/automation/meta_manager.py",
+                "line": 614,
+                "marker": "TODO",
+                "comment": "Build a Proposal from the diagnosis when no explicit proposer is given.\n\n        Resolution order:\n          1. If incident already carries `proposed_config_delta` (precomputed\n             upstream b"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516668650
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_724c7aa4e8d8412d9610ca77646be7d8",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/automation/learning_engine.py",
+                "line": 214,
+                "marker": "TODO",
+                "comment": "Read learnings.md, count patterns, promote those with 3+ occurrences.\n\n        TODO (Angle 2', 2026-05-10): when the outcomes-ledger renderer\n        starts populating the ``<!-- BUDDY_OUTCOMES_BEGIN "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516668678
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f405109b694e41398bf03225f8b895b9",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/utils/instrument_validation.py",
+                "line": 74,
+                "marker": "XXX",
+                "comment": "Normalize an instrument name to OANDA format.\n\n    Handles various input formats:\n    - \"EUR_USD\" -> \"EUR_USD\" (already normalized)\n    - \"eur_usd\" -> \"EUR_USD\" (lowercase)\n    - \"EUR-USD\" -> \"EUR_USD"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516669777
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_97bbb73e7cf34a8681738f106771a19b",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/utils/instrument_validation.py",
+                "line": 179,
+                "marker": "XXX",
+                "comment": "# Pattern 1: Direct match for XXX_YYY format"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516669779
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_59804e6f670442128d1c5af8a584ef50",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/utils/instrument_validation.py",
+                "line": 191,
+                "marker": "XXX",
+                "comment": "# Pattern 3: Try to extract XXX_YYY pattern from filename"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516669779
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d509291523d747cdb81b8276100e9ba6",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/wandb_keras_callback.py",
+                "line": 885,
+                "marker": "XXX",
+                "comment": "# See: https://github.com/wandb/wandb/issues/XXX"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670400
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a5ff04d426fc4e84be555c70f55ad22d",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 405,
+                "marker": "XXX",
+                "comment": "Get the correlation group for a given pair.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        \n    Returns:\n        CorrelationGroup if found, None otherwise"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_de121e5fe6ca48188b25c0037c70900b",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 487,
+                "marker": "XXX",
+                "comment": "Get the master pair for a given pair.\n    \n    If the pair is itself a master, returns itself.\n    If the pair is not in any group, returns 'EUR_GBP' as default.\n    \n    Args:\n        pair: Currency "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_62f5630e81264cc7bdc1e5b350e4135f",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 505,
+                "marker": "XXX",
+                "comment": "Get the best parameters for training/inference of a pair.\n    \n    This returns the master pair's optimized parameters, which transfer\n    well to all pairs in the correlation group.\n    \n    Args:\n  "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d12ed94aac614902bb923654036ebe44",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 531,
+                "marker": "XXX",
+                "comment": "Get parameters for transfer learning from master to target pair.\n    \n    Similar to get_best_params_for_pair but with option to keep original\n    instrument (for loading master model weights).\n    \n "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_fdbc03989ca04d5ca52abfe93f2bb82f",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 571,
+                "marker": "XXX",
+                "comment": "Get performance metrics for the master pair of a group.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        \n    Returns:\n        Dictionary with val_combined_score, val_direction_a"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8953bcc797f441a59dc882c9c09d6e59",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 586,
+                "marker": "XXX",
+                "comment": "Check if a pair is the master for its group.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        \n    Returns:\n        True if this pair is the master for its group"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f7adf0886ada4d3398581f54a40769f7",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+                "line": 641,
+                "marker": "XXX",
+                "comment": "Generate a configuration for a specific pair.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        output_format: 'dict', 'yaml', or 'json'\n        \n    Returns:\n        Configuratio"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516670721
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a6cb6af4a4b64419886dfa8c3acf617c",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/src/equity/fx_rates.py",
+                "line": 18,
+                "marker": "XXX",
+                "comment": "USD (home-ccy) value of 1 unit of the instrument's BASE currency.\n\n    OANDA units are denominated in the BASE currency (the left side of XXX_YYY),\n    so the home-currency exposure of ``units`` is ``"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516671243
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_40e6b7fffbf74c2b958b18207c3cf18d",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/scripts/experiment_em_carry.py",
+                "line": 2,
+                "marker": "XXX",
+                "comment": "EM-carry universe — the last genuinely-new lever in the edge search.\n\nThe majors factor book is dead post-QE (carry +0.09 noise, trend negative — see\nproject_pre2014_factor_verdict). The one untested "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516673125
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d2207600d80544bdbc0a55b5ca3916d7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/.kilocode/skills/skill-creator/scripts/init_skill.py",
+                "line": 57,
+                "marker": "TODO",
+                "comment": "## [TODO: Replace with the first main section based on chosen structure]"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516673383
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1d42e84c721143ffb0b152182c0bd842",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/.kilocode/skills/skill-creator/scripts/init_skill.py",
+                "line": 119,
+                "marker": "TODO",
+                "comment": "# TODO: Add actual script logic here"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516673383
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_27a2316ca38f4236ac9417ae160e955f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/tests/test_research_harness.py",
+                "line": 293,
+                "marker": "TODO",
+                "comment": "# longer a hardcoded TODO None either. It abstains (None) only when there"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516674243
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2cb9a9cd69fb4609bc9af47b961b1311",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/ml_engine/tests/test_research_harness.py",
+                "line": 393,
+                "marker": "TODO",
+                "comment": "# §4.5 — DSR-OOS(N=22) + Bonferroni block-bootstrap (real computation, not TODO)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516674243
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516683578
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_405232ce3d634cfd",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "edbfec5c0ba4db7a71d82ea57071033ba9276617",
+              "message": "docs: publish visual-rich Axiom 2.0 README (#65)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6f4147cd8e2948cda59a58af7d9c9f0c",
+              "result": "架构转折点: commit edbfec5c - docs: publish visual-rich Axiom 2.0 README (#65)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/ml_engine",
+                "commit": "edbfec5c0ba4db7a71d82ea57071033ba9276617",
+                "message": "docs: publish visual-rich Axiom 2.0 README (#65)",
+                "files_changed": 3355,
+                "insertions": 1842610,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516684619
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516686307
+        }
+      ],
+      "created_at": 1793516666256
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "ms_head_engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "ms_head_engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "trade_analyzer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "trade_analyzer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "modular_inference.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "modular_inference.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "mr_engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "mr_engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "position_sizing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "position_sizing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "feature_engineering.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "feature_engineering.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "modular_trainers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "modular_trainers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "multi_pair_inference.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "multi_pair_inference.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "oanda_practice.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "oanda_practice.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "ml_head_engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "ml_head_engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "confidence_calibration.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "confidence_calibration.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "mt_engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "mt_engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "fx_paper.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "fx_paper.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "mx_head_engine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "mx_head_engine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "trade_journal.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "trade_journal.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "improved_base_optimizer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "improved_base_optimizer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "llm_providers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "llm_providers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "buddy.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "buddy.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market_intelligence.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market_intelligence.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "pair_scanner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "pair_scanner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "buddy_intelligent_mode.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "buddy_intelligent_mode.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "online_retrainer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "online_retrainer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "self_refine.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "self_refine.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "buddy_scanner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "buddy_scanner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "rl_position_sizing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "rl_position_sizing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli_entry.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli_entry.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "memory_client.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "memory_client.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "risk_management.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "risk_management.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "news_features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "news_features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/fx_trading.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/fx_trading.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/training.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/training.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/risk_target_training.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/risk_target_training.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/buddy_helpers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/buddy_helpers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/argparser.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/argparser.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/calibration.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/calibration.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/meta_pipeline.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/meta_pipeline.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/tf_config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/tf_config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/training_monitor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/training_monitor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/training_ops.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/training_ops.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/models.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/models.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/model_management.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/model_management.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/buddy_scanning.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/buddy_scanning.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/io_utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/io_utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/legacy_commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/legacy_commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/candle_optimizer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/candle_optimizer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/monitoring_cli.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/monitoring_cli.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/wizard.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/wizard.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/analytics_commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/analytics_commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_51",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_52",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_ext_53",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "cli/learn_commands.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "cli/learn_commands.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516666257
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a5be8a5749454b92911f60e8b3b85885",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/cli/helpers.py",
+            "line": 127,
+            "marker": "XXX",
+            "comment": "# Pattern 1: Direct match for XXX_YYY format"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516667155
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_9d23835c492b43c0b5b4bf0f94306730",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/cli/helpers.py",
+            "line": 139,
+            "marker": "XXX",
+            "comment": "# Pattern 3: Try to extract XXX_YYY pattern from filename"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516667155
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c3664d37299a4c308b11cfeb94971a1a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/gates.py",
+            "line": 170,
+            "marker": "TODO",
+            "comment": "Load sklearn artifacts while suppressing noisy compatibility warnings.\n\n    Security note (CWE-502): only invoked against artifacts written by this\n    project's own training pipeline to a fixed local"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516668380
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b1fa76f1d16e4b2ca73dd606ddea51d8",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/config.py",
+            "line": 1237,
+            "marker": "XXX",
+            "comment": "# --- Drift Auto-Remediation (US-XXX) ---"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516668433
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_3711dba5c6aa4cc18c328d772943e104",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/automation/meta_manager.py",
+            "line": 614,
+            "marker": "TODO",
+            "comment": "Build a Proposal from the diagnosis when no explicit proposer is given.\n\n        Resolution order:\n          1. If incident already carries `proposed_config_delta` (precomputed\n             upstream b"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516668650
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_724c7aa4e8d8412d9610ca77646be7d8",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/scanner/automation/learning_engine.py",
+            "line": 214,
+            "marker": "TODO",
+            "comment": "Read learnings.md, count patterns, promote those with 3+ occurrences.\n\n        TODO (Angle 2', 2026-05-10): when the outcomes-ledger renderer\n        starts populating the ``<!-- BUDDY_OUTCOMES_BEGIN "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516668678
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f405109b694e41398bf03225f8b895b9",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/utils/instrument_validation.py",
+            "line": 74,
+            "marker": "XXX",
+            "comment": "Normalize an instrument name to OANDA format.\n\n    Handles various input formats:\n    - \"EUR_USD\" -> \"EUR_USD\" (already normalized)\n    - \"eur_usd\" -> \"EUR_USD\" (lowercase)\n    - \"EUR-USD\" -> \"EUR_USD"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516669777
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_97bbb73e7cf34a8681738f106771a19b",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/utils/instrument_validation.py",
+            "line": 179,
+            "marker": "XXX",
+            "comment": "# Pattern 1: Direct match for XXX_YYY format"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516669779
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_59804e6f670442128d1c5af8a584ef50",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/utils/instrument_validation.py",
+            "line": 191,
+            "marker": "XXX",
+            "comment": "# Pattern 3: Try to extract XXX_YYY pattern from filename"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516669779
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d509291523d747cdb81b8276100e9ba6",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/wandb_keras_callback.py",
+            "line": 885,
+            "marker": "XXX",
+            "comment": "# See: https://github.com/wandb/wandb/issues/XXX"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670400
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a5ff04d426fc4e84be555c70f55ad22d",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 405,
+            "marker": "XXX",
+            "comment": "Get the correlation group for a given pair.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        \n    Returns:\n        CorrelationGroup if found, None otherwise"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_de121e5fe6ca48188b25c0037c70900b",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 487,
+            "marker": "XXX",
+            "comment": "Get the master pair for a given pair.\n    \n    If the pair is itself a master, returns itself.\n    If the pair is not in any group, returns 'EUR_GBP' as default.\n    \n    Args:\n        pair: Currency "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_62f5630e81264cc7bdc1e5b350e4135f",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 505,
+            "marker": "XXX",
+            "comment": "Get the best parameters for training/inference of a pair.\n    \n    This returns the master pair's optimized parameters, which transfer\n    well to all pairs in the correlation group.\n    \n    Args:\n  "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d12ed94aac614902bb923654036ebe44",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 531,
+            "marker": "XXX",
+            "comment": "Get parameters for transfer learning from master to target pair.\n    \n    Similar to get_best_params_for_pair but with option to keep original\n    instrument (for loading master model weights).\n    \n "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_fdbc03989ca04d5ca52abfe93f2bb82f",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 571,
+            "marker": "XXX",
+            "comment": "Get performance metrics for the master pair of a group.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        \n    Returns:\n        Dictionary with val_combined_score, val_direction_a"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8953bcc797f441a59dc882c9c09d6e59",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 586,
+            "marker": "XXX",
+            "comment": "Check if a pair is the master for its group.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        \n    Returns:\n        True if this pair is the master for its group"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f7adf0886ada4d3398581f54a40769f7",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/training/correlation_group_config.py",
+            "line": 641,
+            "marker": "XXX",
+            "comment": "Generate a configuration for a specific pair.\n    \n    Args:\n        pair: Currency pair in format 'XXX_YYY'\n        output_format: 'dict', 'yaml', or 'json'\n        \n    Returns:\n        Configuratio"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516670721
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a6cb6af4a4b64419886dfa8c3acf617c",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/src/equity/fx_rates.py",
+            "line": 18,
+            "marker": "XXX",
+            "comment": "USD (home-ccy) value of 1 unit of the instrument's BASE currency.\n\n    OANDA units are denominated in the BASE currency (the left side of XXX_YYY),\n    so the home-currency exposure of ``units`` is ``"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516671243
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_40e6b7fffbf74c2b958b18207c3cf18d",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/scripts/experiment_em_carry.py",
+            "line": 2,
+            "marker": "XXX",
+            "comment": "EM-carry universe — the last genuinely-new lever in the edge search.\n\nThe majors factor book is dead post-QE (carry +0.09 noise, trend negative — see\nproject_pre2014_factor_verdict). The one untested "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516673125
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d2207600d80544bdbc0a55b5ca3916d7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/.kilocode/skills/skill-creator/scripts/init_skill.py",
+            "line": 57,
+            "marker": "TODO",
+            "comment": "## [TODO: Replace with the first main section based on chosen structure]"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516673383
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1d42e84c721143ffb0b152182c0bd842",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/.kilocode/skills/skill-creator/scripts/init_skill.py",
+            "line": 119,
+            "marker": "TODO",
+            "comment": "# TODO: Add actual script logic here"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516673383
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_27a2316ca38f4236ac9417ae160e955f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/tests/test_research_harness.py",
+            "line": 293,
+            "marker": "TODO",
+            "comment": "# longer a hardcoded TODO None either. It abstains (None) only when there"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516674243
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2cb9a9cd69fb4609bc9af47b961b1311",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/ml_engine/tests/test_research_harness.py",
+            "line": 393,
+            "marker": "TODO",
+            "comment": "# §4.5 — DSR-OOS(N=22) + Bonferroni block-bootstrap (real computation, not TODO)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516674243
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516683578
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_405232ce3d634cfd",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "edbfec5c0ba4db7a71d82ea57071033ba9276617",
+          "message": "docs: publish visual-rich Axiom 2.0 README (#65)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6f4147cd8e2948cda59a58af7d9c9f0c",
+          "result": "架构转折点: commit edbfec5c - docs: publish visual-rich Axiom 2.0 README (#65)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/ml_engine",
+            "commit": "edbfec5c0ba4db7a71d82ea57071033ba9276617",
+            "message": "docs: publish visual-rich Axiom 2.0 README (#65)",
+            "files_changed": 3355,
+            "insertions": 1842610,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516684619
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516686307
+    }
+  ],
+  "provenance": "external",
+  "source_label": "ml_engine",
+  "weight": 0.5,
+  "created_at": 1793516666256,
+  "source_id": "ml_engine",
+  "repo_url": "https://github.com/Raynergy-svg/ml_engine",
+  "commit": "edbfec5c0ba4db7a71d82ea57071033ba9276617",
+  "license": "",
+  "collected_at": 1793516686309
+}

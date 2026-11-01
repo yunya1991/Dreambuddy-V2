@@ -1,0 +1,1592 @@
+{
+  "tree_id": "dt_c4226edeb7e5466f",
+  "task": {
+    "target": "https://github.com/EventStore/EventStore",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_06493b6699164c05",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/EventStore/EventStore"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.Management/Prelude/ModulesExecuted.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.Management/Prelude/ModulesExecuted.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.Management/Prelude/Modules.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.Management/Prelude/Modules.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.Management/Prelude/1Prelude.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.Management/Prelude/1Prelude.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.Management/Prelude/Projections.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.Management/Prelude/Projections.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.Management.Tests/Queries/1Query.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.Management.Tests/Queries/1Query.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/state_with_null_result.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/state_with_null_result.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-balancer.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-balancer.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/event-data.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/event-data.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-closer.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-closer.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/with_result.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/with_result.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/by-category.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/by-category.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/config.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/config.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/client.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/client.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/resolver.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/resolver.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/xode/importCodePlugin.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/xode/importCodePlugin.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/xode/normalizeWhitespace.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/xode/normalizeWhitespace.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/xode/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/xode/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/xode/createImportCodeBlockRule.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/xode/createImportCodeBlockRule.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/xode/resolveImportCode.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/xode/resolveImportCode.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/replaceLink/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/replaceLink/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/markdown/linkCheck/index.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/markdown/linkCheck/index.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/lib/versioning.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/lib/versioning.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/lib/log.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/lib/log.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/lib/version.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/lib/version.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/lib/types.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/lib/types.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/lib/samples.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/lib/samples.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "docs/.vuepress/lib/externalPlaceholders.ts"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "docs/.vuepress/lib/externalPlaceholders.ts"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "samples/http-api/xbox-one-s-counter.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "samples/http-api/xbox-one-s-counter.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "samples/http-api/xbox-one-s-counter-outputState.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "samples/http-api/xbox-one-s-counter-outputState.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "samples/http-api/projections/update-projection-options.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "samples/http-api/projections/update-projection-options.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "samples/http-api/projections/shopping-cart-counter.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "samples/http-api/projections/shopping-cart-counter.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516580490
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_06493b6699164c05",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ecca18768fa806b0f9707512227e663022854d90",
+              "message": "Forward port of AI review feedback from #5805 (#5806)"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ba0801a3bb4a4d39bc253977cfdeb3b0",
+              "result": "架构转折点: commit ecca1876 - Forward port of AI review feedback from #5805 (#5806)",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/eventstore",
+                "commit": "ecca18768fa806b0f9707512227e663022854d90",
+                "message": "Forward port of AI review feedback from #5805 (#5806)",
+                "files_changed": 4860,
+                "insertions": 502920,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516580830
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516581352
+        }
+      ],
+      "created_at": 1793516580469
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.Management/Prelude/ModulesExecuted.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.Management/Prelude/ModulesExecuted.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.Management/Prelude/Modules.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.Management/Prelude/Modules.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.Management/Prelude/1Prelude.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.Management/Prelude/1Prelude.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.Management/Prelude/Projections.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.Management/Prelude/Projections.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.Management.Tests/Queries/1Query.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.Management.Tests/Queries/1Query.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/state_with_null_result.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/state_with_null_result.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-balancer.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-balancer.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/event-data.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/event-data.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-closer.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/account-closer.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/with_result.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/with_result.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/by-category.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/KurrentDB.Projections.JavaScript.Tests/Specs/by-category.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/config.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/config.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/client.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/client.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/resolver.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/resolver.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/xode/importCodePlugin.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/xode/importCodePlugin.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/xode/normalizeWhitespace.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/xode/normalizeWhitespace.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/xode/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/xode/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/xode/createImportCodeBlockRule.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/xode/createImportCodeBlockRule.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/xode/resolveImportCode.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/xode/resolveImportCode.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/replaceLink/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/replaceLink/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/markdown/linkCheck/index.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/markdown/linkCheck/index.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/lib/versioning.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/lib/versioning.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/lib/log.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/lib/log.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/lib/version.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/lib/version.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/lib/types.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/lib/types.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/lib/samples.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/lib/samples.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "docs/.vuepress/lib/externalPlaceholders.ts"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "docs/.vuepress/lib/externalPlaceholders.ts"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "samples/http-api/xbox-one-s-counter.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "samples/http-api/xbox-one-s-counter.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "samples/http-api/xbox-one-s-counter-outputState.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "samples/http-api/xbox-one-s-counter-outputState.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "samples/http-api/projections/update-projection-options.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "samples/http-api/projections/update-projection-options.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "samples/http-api/projections/shopping-cart-counter.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "samples/http-api/projections/shopping-cart-counter.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516580490
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_06493b6699164c05",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ecca18768fa806b0f9707512227e663022854d90",
+          "message": "Forward port of AI review feedback from #5805 (#5806)"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ba0801a3bb4a4d39bc253977cfdeb3b0",
+          "result": "架构转折点: commit ecca1876 - Forward port of AI review feedback from #5805 (#5806)",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/eventstore",
+            "commit": "ecca18768fa806b0f9707512227e663022854d90",
+            "message": "Forward port of AI review feedback from #5805 (#5806)",
+            "files_changed": 4860,
+            "insertions": 502920,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516580830
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516581352
+    }
+  ],
+  "provenance": "external",
+  "source_label": "eventstore",
+  "weight": 0.5,
+  "created_at": 1793516580469,
+  "source_id": "eventstore",
+  "repo_url": "https://github.com/EventStore/EventStore",
+  "commit": "ecca18768fa806b0f9707512227e663022854d90",
+  "license": "NOASSERTION",
+  "collected_at": 1793516581353
+}

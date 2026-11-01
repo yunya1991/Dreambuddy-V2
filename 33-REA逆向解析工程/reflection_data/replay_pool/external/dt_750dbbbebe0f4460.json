@@ -1,0 +1,442 @@
+{
+  "tree_id": "dt_750dbbbebe0f4460",
+  "task": {
+    "target": "https://github.com/nyro-github/HMM-MarketState",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_3d9195304e944270",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/nyro-github/HMM-MarketState"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "check_db.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "check_db.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/ensemble_analyzer.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/ensemble_analyzer.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/analyze_states.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/analyze_states.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/visualize_ensemble.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/visualize_ensemble.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/train_hmm.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/train_hmm.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/visualize_states.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/visualize_states.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/build_features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/build_features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627591
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_3d9195304e944270",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "4921863aa6cb55f001501e8e346d8c09d69a4cfb",
+              "message": "Refine HMM macro and micro state labels and add dual-pane ensemble visualization"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b42f51f11177456286444160ba328a9c",
+              "result": "架构转折点: commit 4921863a - Refine HMM macro and micro state labels and add dual-pane ensemble visualization",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/hmm-marketstate",
+                "commit": "4921863aa6cb55f001501e8e346d8c09d69a4cfb",
+                "message": "Refine HMM macro and micro state labels and add dual-pane ensemble visualization",
+                "files_changed": 23,
+                "insertions": 81542,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516627681
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516627883
+        }
+      ],
+      "created_at": 1793516627590
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "check_db.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "check_db.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/ensemble_analyzer.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/ensemble_analyzer.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/analyze_states.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/analyze_states.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/visualize_ensemble.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/visualize_ensemble.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/train_hmm.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/train_hmm.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/visualize_states.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/visualize_states.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/build_features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/build_features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627591
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_3d9195304e944270",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "4921863aa6cb55f001501e8e346d8c09d69a4cfb",
+          "message": "Refine HMM macro and micro state labels and add dual-pane ensemble visualization"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b42f51f11177456286444160ba328a9c",
+          "result": "架构转折点: commit 4921863a - Refine HMM macro and micro state labels and add dual-pane ensemble visualization",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/hmm-marketstate",
+            "commit": "4921863aa6cb55f001501e8e346d8c09d69a4cfb",
+            "message": "Refine HMM macro and micro state labels and add dual-pane ensemble visualization",
+            "files_changed": 23,
+            "insertions": 81542,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516627681
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516627883
+    }
+  ],
+  "provenance": "external",
+  "source_label": "hmm-marketstate",
+  "weight": 0.5,
+  "created_at": 1793516627590,
+  "source_id": "hmm-marketstate",
+  "repo_url": "https://github.com/nyro-github/HMM-MarketState",
+  "commit": "4921863aa6cb55f001501e8e346d8c09d69a4cfb",
+  "license": "",
+  "collected_at": 1793516627885
+}

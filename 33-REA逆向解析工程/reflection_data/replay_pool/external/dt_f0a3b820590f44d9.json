@@ -1,0 +1,534 @@
+{
+  "tree_id": "dt_f0a3b820590f44d9",
+  "task": {
+    "target": "https://github.com/LucasLarese/market-regime-detection",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_6c3856dc462c4478",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/LucasLarese/market-regime-detection"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/train.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/train.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/horizon_tests.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/horizon_tests.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/labels.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/labels.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/data_ingest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/data_ingest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/predict.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/predict.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/evaluate.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/evaluate.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/features.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/features.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/config.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/config.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636168
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_6c3856dc462c4478",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "3be608fe7a9348e0fda5d5f01912c12da7d5b6ca",
+              "message": "Update model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_279f26e9cefc4c41939a2ab2170c7f31",
+              "result": "架构转折点: commit 3be608fe - Update model.py",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/market-regime-detection-2",
+                "commit": "3be608fe7a9348e0fda5d5f01912c12da7d5b6ca",
+                "message": "Update model.py",
+                "files_changed": 27,
+                "insertions": 2094,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516636189
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516636205
+        }
+      ],
+      "created_at": 1793516636167
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/train.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/train.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/horizon_tests.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/horizon_tests.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/labels.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/labels.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/data_ingest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/data_ingest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/predict.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/predict.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/evaluate.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/evaluate.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/features.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/features.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/config.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/config.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636168
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_6c3856dc462c4478",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "3be608fe7a9348e0fda5d5f01912c12da7d5b6ca",
+          "message": "Update model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_279f26e9cefc4c41939a2ab2170c7f31",
+          "result": "架构转折点: commit 3be608fe - Update model.py",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/market-regime-detection-2",
+            "commit": "3be608fe7a9348e0fda5d5f01912c12da7d5b6ca",
+            "message": "Update model.py",
+            "files_changed": 27,
+            "insertions": 2094,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516636189
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516636205
+    }
+  ],
+  "provenance": "external",
+  "source_label": "market-regime-detection-2",
+  "weight": 0.5,
+  "created_at": 1793516636167,
+  "source_id": "market-regime-detection-2",
+  "repo_url": "https://github.com/LucasLarese/market-regime-detection",
+  "commit": "3be608fe7a9348e0fda5d5f01912c12da7d5b6ca",
+  "license": "",
+  "collected_at": 1793516636206
+}

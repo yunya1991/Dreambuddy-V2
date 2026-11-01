@@ -1,0 +1,304 @@
+{
+  "tree_id": "dt_cdebf57a24d14604",
+  "task": {
+    "target": "https://github.com/neo4j/graph-data-science",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_24af35dcc5314f23",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/neo4j/graph-data-science"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_24af35dcc5314f23",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "ml/ml-algo/src/test/resources/auc.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "ml/ml-algo/src/test/resources/auc.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516601924
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_24af35dcc5314f23",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "ml/ml-algo/src/test/resources/generate_predictions.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "ml/ml-algo/src/test/resources/generate_predictions.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516601924
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_24af35dcc5314f23",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "doc/server.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "doc/server.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516601924
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_24af35dcc5314f23",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "doc/extensions/custom-edit-url/custom-edit-url.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "doc/extensions/custom-edit-url/custom-edit-url.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516601924
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_24af35dcc5314f23",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "76a1681e4b48523e5bd2f656bc6226dc4727cf4b",
+              "message": "update published version to 2026.10 and next to 2026.11"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_776d3b67bff24d98a02658299a104b00",
+              "result": "架构转折点: commit 76a1681e - update published version to 2026.10 and next to 2026.11",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/graph-data-science",
+                "commit": "76a1681e4b48523e5bd2f656bc6226dc4727cf4b",
+                "message": "update published version to 2026.10 and next to 2026.11",
+                "files_changed": 6616,
+                "insertions": 699019,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516602575
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516603202
+        }
+      ],
+      "created_at": 1793516601858
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_24af35dcc5314f23",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "ml/ml-algo/src/test/resources/auc.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "ml/ml-algo/src/test/resources/auc.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516601924
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_24af35dcc5314f23",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "ml/ml-algo/src/test/resources/generate_predictions.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "ml/ml-algo/src/test/resources/generate_predictions.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516601924
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_24af35dcc5314f23",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "doc/server.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "doc/server.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516601924
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_24af35dcc5314f23",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "doc/extensions/custom-edit-url/custom-edit-url.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "doc/extensions/custom-edit-url/custom-edit-url.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516601924
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_24af35dcc5314f23",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "76a1681e4b48523e5bd2f656bc6226dc4727cf4b",
+          "message": "update published version to 2026.10 and next to 2026.11"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_776d3b67bff24d98a02658299a104b00",
+          "result": "架构转折点: commit 76a1681e - update published version to 2026.10 and next to 2026.11",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/graph-data-science",
+            "commit": "76a1681e4b48523e5bd2f656bc6226dc4727cf4b",
+            "message": "update published version to 2026.10 and next to 2026.11",
+            "files_changed": 6616,
+            "insertions": 699019,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516602575
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516603202
+    }
+  ],
+  "provenance": "external",
+  "source_label": "graph-data-science",
+  "weight": 0.5,
+  "created_at": 1793516601858,
+  "source_id": "graph-data-science",
+  "repo_url": "https://github.com/neo4j/graph-data-science",
+  "commit": "76a1681e4b48523e5bd2f656bc6226dc4727cf4b",
+  "license": "NOASSERTION",
+  "collected_at": 1793516603203
+}

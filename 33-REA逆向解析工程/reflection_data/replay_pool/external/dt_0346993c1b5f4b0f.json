@@ -1,0 +1,856 @@
+{
+  "tree_id": "dt_0346993c1b5f4b0f",
+  "task": {
+    "target": "https://github.com/taylorjmellon/market-regime-detection",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_f36109e490ca4395",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/taylorjmellon/market-regime-detection"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "test_loader.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "test_loader.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/feature_engineering.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/feature_engineering.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/regime_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/regime_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/hmm_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/hmm_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/backtest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/backtest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/regime_analysis.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/regime_analysis.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/data_loader.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/data_loader.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "src/clustering.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "src/clustering.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "results/crop_banner.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "results/crop_banner.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/src/feature_engineering.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/src/feature_engineering.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/src/hmm_model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/src/hmm_model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/src/utils.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/src/utils.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/src/backtest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/src/backtest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/src/data_loader.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/src/data_loader.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "market-regime-detection/src/clustering.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "market-regime-detection/src/clustering.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631751
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_f36109e490ca4395",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "ff35487adeb3033651099f934d65d61e0bfaad61",
+              "message": "Add HMM, backtest, and performance analysis modules"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_68763ce7e16542a884b4217bb2ff625c",
+              "result": "架构转折点: commit ff35487a - Add HMM, backtest, and performance analysis modules",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/market-regime-detection",
+                "commit": "ff35487adeb3033651099f934d65d61e0bfaad61",
+                "message": "Add HMM, backtest, and performance analysis modules",
+                "files_changed": 32,
+                "insertions": 12504,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516631796
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516631863
+        }
+      ],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "test_loader.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "test_loader.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/feature_engineering.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/feature_engineering.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/regime_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/regime_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/hmm_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/hmm_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/backtest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/backtest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/regime_analysis.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/regime_analysis.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/data_loader.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/data_loader.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "src/clustering.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "src/clustering.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "results/crop_banner.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "results/crop_banner.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/src/feature_engineering.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/src/feature_engineering.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/src/hmm_model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/src/hmm_model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/src/utils.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/src/utils.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/src/backtest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/src/backtest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/src/data_loader.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/src/data_loader.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "market-regime-detection/src/clustering.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "market-regime-detection/src/clustering.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631751
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_f36109e490ca4395",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "ff35487adeb3033651099f934d65d61e0bfaad61",
+          "message": "Add HMM, backtest, and performance analysis modules"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_68763ce7e16542a884b4217bb2ff625c",
+          "result": "架构转折点: commit ff35487a - Add HMM, backtest, and performance analysis modules",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/market-regime-detection",
+            "commit": "ff35487adeb3033651099f934d65d61e0bfaad61",
+            "message": "Add HMM, backtest, and performance analysis modules",
+            "files_changed": 32,
+            "insertions": 12504,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516631796
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516631863
+    }
+  ],
+  "provenance": "external",
+  "source_label": "market-regime-detection",
+  "weight": 0.5,
+  "created_at": 1793516631751,
+  "source_id": "market-regime-detection",
+  "repo_url": "https://github.com/taylorjmellon/market-regime-detection",
+  "commit": "ff35487adeb3033651099f934d65d61e0bfaad61",
+  "license": "",
+  "collected_at": 1793516631865
+}

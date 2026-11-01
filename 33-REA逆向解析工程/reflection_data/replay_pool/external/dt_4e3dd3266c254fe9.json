@@ -1,0 +1,442 @@
+{
+  "tree_id": "dt_4e3dd3266c254fe9",
+  "task": {
+    "target": "https://github.com/CodingCryptoTrading/dca-crypto-bot",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_f818ea17383f4905",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/CodingCryptoTrading/dca-crypto-bot"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "dca_bot.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "dca_bot.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/trade_strategies.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/trade_strategies.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/exchange.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/exchange.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/mail_notifier.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/mail_notifier.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/timing.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/timing.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/misc.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/misc.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "utils/stats_and_plots.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "utils/stats_and_plots.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516622985
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_f818ea17383f4905",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "af18b46accbf3e3179b123d22b919c2d4cfc1c26",
+              "message": "reported working on Kucoin"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f0dad2af68424985a520f6554de30367",
+              "result": "架构转折点: commit af18b46a - reported working on Kucoin",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/dca-crypto-bot",
+                "commit": "af18b46accbf3e3179b123d22b919c2d4cfc1c26",
+                "message": "reported working on Kucoin",
+                "files_changed": 27,
+                "insertions": 4612,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516623027
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516623041
+        }
+      ],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "dca_bot.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "dca_bot.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/trade_strategies.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/trade_strategies.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/exchange.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/exchange.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/mail_notifier.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/mail_notifier.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/timing.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/timing.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/misc.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/misc.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "utils/stats_and_plots.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "utils/stats_and_plots.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516622985
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_f818ea17383f4905",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "af18b46accbf3e3179b123d22b919c2d4cfc1c26",
+          "message": "reported working on Kucoin"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f0dad2af68424985a520f6554de30367",
+          "result": "架构转折点: commit af18b46a - reported working on Kucoin",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/dca-crypto-bot",
+            "commit": "af18b46accbf3e3179b123d22b919c2d4cfc1c26",
+            "message": "reported working on Kucoin",
+            "files_changed": 27,
+            "insertions": 4612,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516623027
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516623041
+    }
+  ],
+  "provenance": "external",
+  "source_label": "dca-crypto-bot",
+  "weight": 0.5,
+  "created_at": 1793516622985,
+  "source_id": "dca-crypto-bot",
+  "repo_url": "https://github.com/CodingCryptoTrading/dca-crypto-bot",
+  "commit": "af18b46accbf3e3179b123d22b919c2d4cfc1c26",
+  "license": "",
+  "collected_at": 1793516623043
+}

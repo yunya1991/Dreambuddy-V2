@@ -1,0 +1,6066 @@
+{
+  "tree_id": "dt_3e0b90b05b9747ec",
+  "task": {
+    "target": "https://github.com/Significant-Gravitas/AutoGPT",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_06120d0e04174df0",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/Significant-Gravitas/AutoGPT"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/cloudflare_worker.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/cloudflare_worker.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/notification.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/notification.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/batch_executor.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/batch_executor.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/exec.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/exec.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/db.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/db.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/platform_linking_manager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/platform_linking_manager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_7",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/ws.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/ws.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_8",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/check_db.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/check_db.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_9",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/check_store_data_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/check_store_data_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_10",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/check_store_data.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/check_store_data.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_11",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/app.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/app.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_12",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_13",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/scheduler.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/scheduler.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_14",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_15",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/rest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/rest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_16",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/publish_skills_catalog.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/publish_skills_catalog.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_17",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_18",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_19",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/oauth_tool.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/oauth_tool.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_20",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/store_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/store_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_21",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/rotate_key.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/rotate_key.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_22",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/render_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/render_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_23",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_24",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/generate_openapi_json.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/generate_openapi_json.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_25",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/main.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/main.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_26",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_27",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/rotate_key_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/rotate_key_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_28",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_29",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_30",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/chat.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/chat.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_31",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_32",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_33",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/store.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/store.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_34",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_db_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_db_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_35",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_db_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_db_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_36",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/banned_account_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/banned_account_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_37",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/conn_manager.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/conn_manager.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_38",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/public_metrics_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/public_metrics_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_39",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/ws_api_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/ws_api_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_40",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/conn_manager_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/conn_manager_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_41",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/ws_api_db_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/ws_api_db_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_42",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/rest_api_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/rest_api_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_43",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/rest_api.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/rest_api.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_44",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/paywall_routes_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/paywall_routes_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_45",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/conftest.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/conftest.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_46",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/model.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/model.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_47",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/conn_manager_integration_test.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/conn_manager_integration_test.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_48",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/__init__.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/__init__.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_49",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/test_helpers.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/test_helpers.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_ext_50",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "autogpt_platform/backend/backend/api/ws_api.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "autogpt_platform/backend/backend/api/ws_api.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516461258
+        },
+        {
+          "node_id": "dn_dec_0",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_8f6ce071239d4dd1beee2e6beebb42fc",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/external/v2/graphs.py",
+                "line": 255,
+                "marker": "FIXME",
+                "comment": "#     # FIXME: maybe only expose delete for library agents?"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516461501
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_1",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0d31d0d12b834e669ee582154af025b5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/orgs/db.py",
+                "line": 653,
+                "marker": "TODO",
+                "comment": "# TODO: Check APScheduler for active schedules owned by this user in this org"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516462166
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_2",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f35b96ce096c4688bbe1f32f78b8d2c7",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/orgs/invitation_routes.py",
+                "line": 80,
+                "marker": "TODO",
+                "comment": "# TODO: Send email via Postmark with invitation link"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516462252
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_3",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cebf787fc6564ba7b3a6b26b4e1fb930",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/store/db.py",
+                "line": 173,
+                "marker": "TODO",
+                "comment": "# TODO: commenting this out as we concerned about potential db load issues"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516463410
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_4",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c3bdc01ab0624d359b7f88f7683a4caa",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/graphs/routes.py",
+                "line": 398,
+                "marker": "TODO",
+                "comment": "# TODO: only return node-specific errors if user has access to graph"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516464084
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_5",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_12173482cd554ea8b59a8f3e049091a5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/library/db.py",
+                "line": 2830,
+                "marker": "TODO",
+                "comment": "# TODO: once we have open/closed sourced agents this needs to be enabled ~kcze"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516464374
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_6",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_bc2a76c0f56a46bc99b3c0ba5bcd71ef",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/integrations/router.py",
+                "line": 410,
+                "marker": "TODO",
+                "comment": "# TODO: Allow specifying `title` to set on `credentials`"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516464484
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_7",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_cf203b997b7f4fc686b1fc007eb08bec",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/integrations/router.py",
+                "line": 477,
+                "marker": "TODO",
+                "comment": "# TODO: make a bypass of this part of the OAuth handler"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516464484
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_8",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b149670952204110b84c2660428d2775",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/config.py",
+                "line": 637,
+                "marker": "TODO",
+                "comment": "# TODO: add xhigh when SDK support catches up"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516465453
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_9",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_05447155b205466998e6f22e7d6ce147",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream_events.py",
+                "line": 1,
+                "marker": "TODO",
+                "comment": "SSE events emitted when a dream pass produces operations.\n\nLives in its own module so ``response_model.py`` stays under the 300-line\ntarget. The event mirrors the ``data-status`` / ``data-cursor`` sha"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516465518
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_10",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d3dbeea706fe49f6ae95f9c1f1fa1e36",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream/apply.py",
+                "line": 132,
+                "marker": "TODO",
+                "comment": "Provenance string written into the MemoryEnvelope.\n\n    Format matches Graphiti audit §6.12 / TODO P-1.5 grain — encodes\n    the dream pass id and the phase so ratification can find originating\n    dr"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516466779
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_11",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_36da0ff295dd490cac09f5dba9eedad5",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream/schemas.py",
+                "line": 207,
+                "marker": "TODO",
+                "comment": "Phase 3 output — what apply.py writes back to the world.\n\n    Guardrails enforced by phase 3's prompt and double-checked in\n    apply.py:\n      * ≤ ``max_demotions_per_pass`` demotions per pass (runaw"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516466941
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_12",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_1de7665cf19b486aafe5867d362b162f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream/schemas.py",
+                "line": 302,
+                "marker": "TODO",
+                "comment": "Detailed per-operation rollup of a single dream pass.\n\n    Shape used by three downstream consumers:\n      1. The admin memory-visualizer UI (renders the per-edge detail).\n      2. AgentProbe eval sco"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516466941
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_13",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0318c293303d4b6dbf18ff9c12bc3ad6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/graphiti/communities.py",
+                "line": 1,
+                "marker": "TODO",
+                "comment": "Graphiti community detection + scheduled rebuilds.\n\nPer the audit (``dream/dreaming-graphiti.md`` §8 item 1), community\ndetection is \"not free\": Leiden / label-propagation over a non-trivial\ngraph is "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516470335
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_14",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7facb301b08b46ec8a1a4c3a9154da93",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/util/service.py",
+                "line": 172,
+                "marker": "HACK",
+                "comment": "# HACK: run the main event loop outside the main thread to disable Uvicorn's"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516471341
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_15",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5b3ffbbe3a914b278315e55d6a08685a",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/code_executor_helpers.py",
+                "line": 1,
+                "marker": "XXX",
+                "comment": "Helpers for injecting user-provided variables into sandboxed code.\n\nStrategy: serialize the variables to JSON, base64-encode that JSON text, and\npass the result through an environment variable (the da"
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516471827
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_16",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b01491537a224b15aff7d4c3876152fb",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/llm.py",
+                "line": 1193,
+                "marker": "TODO",
+                "comment": "# TODO: Make this dynamic"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516471959
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_17",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_c656095f72dc4816a198d3805d663831",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/code_executor.py",
+                "line": 262,
+                "marker": "TODO",
+                "comment": "# TODO : Add support to upload and download files"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516471989
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_18",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_237efd7d113c4714a13306992e574137",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/autopilot.py",
+                "line": 982,
+                "marker": "TODO",
+                "comment": "# TODO(#14244-f5): revisit together with run_agent's tree reset."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516472015
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_19",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_477a0e022d154cf89c33a92a5d1f0ad1",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/code_executor_test.py",
+                "line": 175,
+                "marker": "XXX",
+                "comment": "Regression test for the gap a maintainer identified in review: a\n        well-formed, validly-paired emoji must not come back out as raw\n        `\\uXXXX`-style escape text anywhere in the env payload."
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516472074
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_20",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a735ccbe757c42abbd8e0c60a620d6eb",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/test/test_text_encoder.py",
+                "line": 46,
+                "marker": "XXX",
+                "comment": "# Unicode characters should be escaped as \\uXXXX sequences"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516472776
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_21",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ec5e811fdd6948a891351ed599666bd6",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/notification_bus.py",
+                "line": 52,
+                "marker": "TODO",
+                "comment": "# TODO: remove once the onboarding/wallet rework lands and decides"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516474872
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_22",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e227c34a9cad4ac4a275bfb4e0e00589",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/model.py",
+                "line": 700,
+                "marker": "TODO",
+                "comment": "# TODO: move discrimination mechanism out of CredentialsField (frontend + backend)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516475087
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_23",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4dcffca37da3416d9b1cfb3529692c59",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/credit.py",
+                "line": 2872,
+                "marker": "TODO",
+                "comment": "Best-effort cancel of any active subs for the customer other than new_sub_id.\n\n    Called from the webhook handler after a new subscription becomes active. Failures\n    are logged but not raised so a "
+              },
+              "confidence": 0.9,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516475164
+            }
+          ],
+          "poe_score": 0.9,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_24",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_0f6db0fa9ebc4c9c9274072daa87dad3",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/credit.py",
+                "line": 1570,
+                "marker": "TODO",
+                "comment": "# TODO(org-billing): route personal orgs through OrgCreditModel once"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516475182
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_25",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_b813614fb45c40c8b4994d8cada8a14a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/sdk/cost_integration.py",
+                "line": 57,
+                "marker": "TODO",
+                "comment": "# TODO: Improve cost system to allow for costs witout a provider"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516475703
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_26",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_72b71783d1be439bab837360e8cf1575",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/executor/utils.py",
+                "line": 1558,
+                "marker": "TODO",
+                "comment": "# TODO: Consider storing nodes_to_skip in DB if we need to preserve it across resumes"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516476049
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_27",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_87f9a459ae994c2fbe2e19881375243a",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/integrations/webhooks/utils.py",
+                "line": 22,
+                "marker": "TODO",
+                "comment": "# TODO: add test to assert this matches the actual API route"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516476362
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_28",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4411b0ac8aab417cb188d91ea26c67e2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/integrations/webhooks/_manual_base.py",
+                "line": 21,
+                "marker": "TODO",
+                "comment": "# TODO: pass ingress_url to user in frontend"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516476363
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_29",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_46549d11c8814115933081d4c87ed47a",
+              "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/integrations/oauth/codex.py",
+                "line": 44,
+                "marker": "XXX",
+                "comment": "# device auth ids are `deviceauth_<hex>` and user codes are `XXXX-XXXXX`."
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516476425
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_30",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f5ce187810484275bd941c69371ce219",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/schema.py",
+                "line": 280,
+                "marker": "TODO",
+                "comment": "# TODO: either use MultiProvider throughout codebase as type for `llm_provider`, or"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477080
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_31",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_889a93f748ba4c1f9383c1cb54de4c97",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/anthropic.py",
+                "line": 273,
+                "marker": "HACK",
+                "comment": "# HACK: No official tokenizer is available for Claude 3"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477098
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_32",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_5530d8ecb0814516ba30f7798b63d104",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/anthropic.py",
+                "line": 513,
+                "marker": "TODO",
+                "comment": "# TODO: add support for image blocks"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477098
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_33",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_004b18a616de4faf86909862c7492094",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/multi.py",
+                "line": 66,
+                "marker": "TODO",
+                "comment": "# TODO: support embeddings"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477116
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_34",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_135716a9e89641e98606db05c55bf9fe",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/groq.py",
+                "line": 107,
+                "marker": "HACK",
+                "comment": "# HACK: No official tokenizer is available for Groq"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477117
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_35",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_70222f9d178c4368a3a63f12d167a234",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+                "line": 55,
+                "marker": "TODO",
+                "comment": "# TODO: implement 'seed' across forge.llm.providers"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477122
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_36",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_2a1a077bf7fc4eb6a032a0eaa0c5e3c2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+                "line": 110,
+                "marker": "TODO",
+                "comment": "# TODO: add and test support for embedding models"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477122
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_37",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_4460870ad3e543718a0a4414f9476577",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+                "line": 229,
+                "marker": "FIXME",
+                "comment": "# FIXME: add support for images through image_data completion kwarg"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477122
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_38",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e6599e66c0554e198129d65c264436de",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+                "line": 357,
+                "marker": "HACK",
+                "comment": "# t[\"function\"][\"arguments\"] = str(t[\"function\"][\"arguments\"])  # HACK"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477122
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_39",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6aae24ccf0014db09123066ffb6f30f1",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/components/image_gen/image_gen.py",
+                "line": 198,
+                "marker": "TODO",
+                "comment": "# TODO: integrate in `forge.llm.providers`(?)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477218
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_40",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_75298ff1a4994234b8de11587c586330",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/components/image_gen/image_gen.py",
+                "line": 210,
+                "marker": "TODO",
+                "comment": "# TODO: improve typing of size config item(s)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477218
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_41",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d09ace1309894563bba1d26581366802",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/models/json_schema.py",
+                "line": 18,
+                "marker": "TODO",
+                "comment": "# TODO: add docstrings"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477298
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_42",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_7fa80d0d2e7f40d3909abd5cba553674",
+              "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/test_s3_file_storage.py",
+                "line": 53,
+                "marker": "FIXME",
+                "comment": "# FIXME: remove the \"pyright: ignore\" comments after moving this test file to forge"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477343
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_43",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_dec17d39ec814136a05b77b9ee0505a2",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/gcs.py",
+                "line": 145,
+                "marker": "TODO",
+                "comment": "# TODO: get MIME type from file extension or binary content"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477348
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_44",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_38a81d3bb2c540e0b34d9e055c9c9448",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/base.py",
+                "line": 257,
+                "marker": "TODO",
+                "comment": "# TODO: Schedule write operation using asyncio.create_task (non-blocking)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477365
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_45",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_6cd184b2709b465b867daa29204b4873",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/base.py",
+                "line": 271,
+                "marker": "TODO",
+                "comment": "# TODO: Schedule write operation using asyncio.create_task (non-blocking)"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477365
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_46",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_d0d33b0fc783421fa276e21508dc0004",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/main.py",
+                "line": 448,
+                "marker": "TODO",
+                "comment": "# TODO: re-evaluate performance benefit of task-oriented profiles"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477476
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_47",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_143c816b42254809a9977b67b984a672",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/main.py",
+                "line": 490,
+                "marker": "TODO",
+                "comment": "# TODO: allow many-to-one relations of agents and workspaces"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477476
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_48",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_f414e437d80a479fabc33eea44e67e9f",
+              "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/agent_protocol_server.py",
+                "line": 138,
+                "marker": "TODO",
+                "comment": "# TODO: re-evaluate performance benefit of task-oriented profiles"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477483
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_dec_49",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_recover_decisions",
+            "params": {
+              "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_a3d67cef04da4305a90c7c2bf6355261",
+              "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+              "level": "observation",
+              "provenance": {
+                "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/agent_protocol_server.py",
+                "line": 204,
+                "marker": "HACK",
+                "comment": "# HACK: only for compatibility with AGBenchmark"
+              },
+              "confidence": 0.85,
+              "known_gaps": [
+                "注释仅是间接证据，需结合代码结构确认实际权衡"
+              ],
+              "observations": [],
+              "created_at": 1793516477483
+            }
+          ],
+          "poe_score": 0.85,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516494695
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_06120d0e04174df0",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "af21363c9e6477243174cc19a749b68eb2118625",
+              "message": "test(backend): the webhook-preset migration tests own the graph IDs they save"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_ba0537e1963248aeab650fe0ed721f69",
+              "result": "架构转折点: commit af21363c - test(backend): the webhook-preset migration tests own the graph IDs they save",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/autogpt",
+                "commit": "af21363c9e6477243174cc19a749b68eb2118625",
+                "message": "test(backend): the webhook-preset migration tests own the graph IDs they save",
+                "files_changed": 10274,
+                "insertions": 1963833,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516495894
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516498355
+        }
+      ],
+      "created_at": 1793516461249
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/cloudflare_worker.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/cloudflare_worker.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/notification.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/notification.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/batch_executor.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/batch_executor.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/exec.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/exec.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/db.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/db.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/platform_linking_manager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/platform_linking_manager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_7",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/ws.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/ws.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_8",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/check_db.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/check_db.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_9",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/check_store_data_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/check_store_data_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_10",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/check_store_data.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/check_store_data.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_11",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/app.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/app.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_12",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_13",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/scheduler.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/scheduler.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_14",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_15",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/rest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/rest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_16",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/publish_skills_catalog.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/publish_skills_catalog.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_17",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_18",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_19",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/oauth_tool.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/oauth_tool.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_20",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/store_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/store_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_21",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/rotate_key.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/rotate_key.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_22",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/render_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/render_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_23",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_24",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/generate_openapi_json.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/generate_openapi_json.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_25",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/main.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/main.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_26",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_27",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/rotate_key_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/rotate_key_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_28",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/mailerlite_backfill_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_29",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_30",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/chat.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/chat.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_31",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_32",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_33",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/store.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/store.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_34",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_db_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/onboarding_role_backfill_db_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_35",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_db_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/cli/posthog_audience_backfill_db_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_36",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/banned_account_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/banned_account_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_37",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/conn_manager.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/conn_manager.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_38",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/public_metrics_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/public_metrics_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_39",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/ws_api_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/ws_api_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_40",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/conn_manager_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/conn_manager_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_41",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/ws_api_db_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/ws_api_db_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_42",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/rest_api_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/rest_api_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_43",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/rest_api.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/rest_api.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_44",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/paywall_routes_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/paywall_routes_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_45",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/conftest.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/conftest.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_46",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/model.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/model.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_47",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/conn_manager_integration_test.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/conn_manager_integration_test.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_48",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/__init__.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/__init__.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_49",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/test_helpers.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/test_helpers.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_ext_50",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "autogpt_platform/backend/backend/api/ws_api.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "autogpt_platform/backend/backend/api/ws_api.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516461258
+    },
+    {
+      "node_id": "dn_dec_0",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_8f6ce071239d4dd1beee2e6beebb42fc",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/external/v2/graphs.py",
+            "line": 255,
+            "marker": "FIXME",
+            "comment": "#     # FIXME: maybe only expose delete for library agents?"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516461501
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_1",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0d31d0d12b834e669ee582154af025b5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/orgs/db.py",
+            "line": 653,
+            "marker": "TODO",
+            "comment": "# TODO: Check APScheduler for active schedules owned by this user in this org"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516462166
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_2",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f35b96ce096c4688bbe1f32f78b8d2c7",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/orgs/invitation_routes.py",
+            "line": 80,
+            "marker": "TODO",
+            "comment": "# TODO: Send email via Postmark with invitation link"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516462252
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_3",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cebf787fc6564ba7b3a6b26b4e1fb930",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/store/db.py",
+            "line": 173,
+            "marker": "TODO",
+            "comment": "# TODO: commenting this out as we concerned about potential db load issues"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516463410
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_4",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c3bdc01ab0624d359b7f88f7683a4caa",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/graphs/routes.py",
+            "line": 398,
+            "marker": "TODO",
+            "comment": "# TODO: only return node-specific errors if user has access to graph"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516464084
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_5",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_12173482cd554ea8b59a8f3e049091a5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/library/db.py",
+            "line": 2830,
+            "marker": "TODO",
+            "comment": "# TODO: once we have open/closed sourced agents this needs to be enabled ~kcze"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516464374
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_6",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_bc2a76c0f56a46bc99b3c0ba5bcd71ef",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/integrations/router.py",
+            "line": 410,
+            "marker": "TODO",
+            "comment": "# TODO: Allow specifying `title` to set on `credentials`"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516464484
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_7",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_cf203b997b7f4fc686b1fc007eb08bec",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/api/features/integrations/router.py",
+            "line": 477,
+            "marker": "TODO",
+            "comment": "# TODO: make a bypass of this part of the OAuth handler"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516464484
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_8",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b149670952204110b84c2660428d2775",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/config.py",
+            "line": 637,
+            "marker": "TODO",
+            "comment": "# TODO: add xhigh when SDK support catches up"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516465453
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_9",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_05447155b205466998e6f22e7d6ce147",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream_events.py",
+            "line": 1,
+            "marker": "TODO",
+            "comment": "SSE events emitted when a dream pass produces operations.\n\nLives in its own module so ``response_model.py`` stays under the 300-line\ntarget. The event mirrors the ``data-status`` / ``data-cursor`` sha"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516465518
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_10",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d3dbeea706fe49f6ae95f9c1f1fa1e36",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream/apply.py",
+            "line": 132,
+            "marker": "TODO",
+            "comment": "Provenance string written into the MemoryEnvelope.\n\n    Format matches Graphiti audit §6.12 / TODO P-1.5 grain — encodes\n    the dream pass id and the phase so ratification can find originating\n    dr"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516466779
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_11",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_36da0ff295dd490cac09f5dba9eedad5",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream/schemas.py",
+            "line": 207,
+            "marker": "TODO",
+            "comment": "Phase 3 output — what apply.py writes back to the world.\n\n    Guardrails enforced by phase 3's prompt and double-checked in\n    apply.py:\n      * ≤ ``max_demotions_per_pass`` demotions per pass (runaw"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516466941
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_12",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_1de7665cf19b486aafe5867d362b162f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/dream/schemas.py",
+            "line": 302,
+            "marker": "TODO",
+            "comment": "Detailed per-operation rollup of a single dream pass.\n\n    Shape used by three downstream consumers:\n      1. The admin memory-visualizer UI (renders the per-edge detail).\n      2. AgentProbe eval sco"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516466941
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_13",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0318c293303d4b6dbf18ff9c12bc3ad6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/copilot/graphiti/communities.py",
+            "line": 1,
+            "marker": "TODO",
+            "comment": "Graphiti community detection + scheduled rebuilds.\n\nPer the audit (``dream/dreaming-graphiti.md`` §8 item 1), community\ndetection is \"not free\": Leiden / label-propagation over a non-trivial\ngraph is "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516470335
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_14",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7facb301b08b46ec8a1a4c3a9154da93",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/util/service.py",
+            "line": 172,
+            "marker": "HACK",
+            "comment": "# HACK: run the main event loop outside the main thread to disable Uvicorn's"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516471341
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_15",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5b3ffbbe3a914b278315e55d6a08685a",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/code_executor_helpers.py",
+            "line": 1,
+            "marker": "XXX",
+            "comment": "Helpers for injecting user-provided variables into sandboxed code.\n\nStrategy: serialize the variables to JSON, base64-encode that JSON text, and\npass the result through an environment variable (the da"
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516471827
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_16",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b01491537a224b15aff7d4c3876152fb",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/llm.py",
+            "line": 1193,
+            "marker": "TODO",
+            "comment": "# TODO: Make this dynamic"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516471959
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_17",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_c656095f72dc4816a198d3805d663831",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/code_executor.py",
+            "line": 262,
+            "marker": "TODO",
+            "comment": "# TODO : Add support to upload and download files"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516471989
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_18",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_237efd7d113c4714a13306992e574137",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/autopilot.py",
+            "line": 982,
+            "marker": "TODO",
+            "comment": "# TODO(#14244-f5): revisit together with run_agent's tree reset."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516472015
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_19",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_477a0e022d154cf89c33a92a5d1f0ad1",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/code_executor_test.py",
+            "line": 175,
+            "marker": "XXX",
+            "comment": "Regression test for the gap a maintainer identified in review: a\n        well-formed, validly-paired emoji must not come back out as raw\n        `\\uXXXX`-style escape text anywhere in the env payload."
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516472074
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_20",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a735ccbe757c42abbd8e0c60a620d6eb",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/blocks/test/test_text_encoder.py",
+            "line": 46,
+            "marker": "XXX",
+            "comment": "# Unicode characters should be escaped as \\uXXXX sequences"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516472776
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_21",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ec5e811fdd6948a891351ed599666bd6",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/notification_bus.py",
+            "line": 52,
+            "marker": "TODO",
+            "comment": "# TODO: remove once the onboarding/wallet rework lands and decides"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516474872
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_22",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e227c34a9cad4ac4a275bfb4e0e00589",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/model.py",
+            "line": 700,
+            "marker": "TODO",
+            "comment": "# TODO: move discrimination mechanism out of CredentialsField (frontend + backend)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516475087
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_23",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4dcffca37da3416d9b1cfb3529692c59",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/credit.py",
+            "line": 2872,
+            "marker": "TODO",
+            "comment": "Best-effort cancel of any active subs for the customer other than new_sub_id.\n\n    Called from the webhook handler after a new subscription becomes active. Failures\n    are logged but not raised so a "
+          },
+          "confidence": 0.9,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516475164
+        }
+      ],
+      "poe_score": 0.9,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_24",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_0f6db0fa9ebc4c9c9274072daa87dad3",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/data/credit.py",
+            "line": 1570,
+            "marker": "TODO",
+            "comment": "# TODO(org-billing): route personal orgs through OrgCreditModel once"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516475182
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_25",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_b813614fb45c40c8b4994d8cada8a14a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/sdk/cost_integration.py",
+            "line": 57,
+            "marker": "TODO",
+            "comment": "# TODO: Improve cost system to allow for costs witout a provider"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516475703
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_26",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_72b71783d1be439bab837360e8cf1575",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/executor/utils.py",
+            "line": 1558,
+            "marker": "TODO",
+            "comment": "# TODO: Consider storing nodes_to_skip in DB if we need to preserve it across resumes"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516476049
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_27",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_87f9a459ae994c2fbe2e19881375243a",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/integrations/webhooks/utils.py",
+            "line": 22,
+            "marker": "TODO",
+            "comment": "# TODO: add test to assert this matches the actual API route"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516476362
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_28",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4411b0ac8aab417cb188d91ea26c67e2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/integrations/webhooks/_manual_base.py",
+            "line": 21,
+            "marker": "TODO",
+            "comment": "# TODO: pass ingress_url to user in frontend"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516476363
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_29",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_46549d11c8814115933081d4c87ed47a",
+          "result": "XXX 权衡痕迹: 硬编码或临时方案（暗示存在权衡但未完成）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/autogpt_platform/backend/backend/integrations/oauth/codex.py",
+            "line": 44,
+            "marker": "XXX",
+            "comment": "# device auth ids are `deviceauth_<hex>` and user codes are `XXXX-XXXXX`."
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516476425
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_30",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f5ce187810484275bd941c69371ce219",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/schema.py",
+            "line": 280,
+            "marker": "TODO",
+            "comment": "# TODO: either use MultiProvider throughout codebase as type for `llm_provider`, or"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477080
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_31",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_889a93f748ba4c1f9383c1cb54de4c97",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/anthropic.py",
+            "line": 273,
+            "marker": "HACK",
+            "comment": "# HACK: No official tokenizer is available for Claude 3"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477098
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_32",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_5530d8ecb0814516ba30f7798b63d104",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/anthropic.py",
+            "line": 513,
+            "marker": "TODO",
+            "comment": "# TODO: add support for image blocks"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477098
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_33",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_004b18a616de4faf86909862c7492094",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/multi.py",
+            "line": 66,
+            "marker": "TODO",
+            "comment": "# TODO: support embeddings"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477116
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_34",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_135716a9e89641e98606db05c55bf9fe",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/groq.py",
+            "line": 107,
+            "marker": "HACK",
+            "comment": "# HACK: No official tokenizer is available for Groq"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477117
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_35",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_70222f9d178c4368a3a63f12d167a234",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+            "line": 55,
+            "marker": "TODO",
+            "comment": "# TODO: implement 'seed' across forge.llm.providers"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477122
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_36",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_2a1a077bf7fc4eb6a032a0eaa0c5e3c2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+            "line": 110,
+            "marker": "TODO",
+            "comment": "# TODO: add and test support for embedding models"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477122
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_37",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_4460870ad3e543718a0a4414f9476577",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+            "line": 229,
+            "marker": "FIXME",
+            "comment": "# FIXME: add support for images through image_data completion kwarg"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477122
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_38",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e6599e66c0554e198129d65c264436de",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/llm/providers/llamafile/llamafile.py",
+            "line": 357,
+            "marker": "HACK",
+            "comment": "# t[\"function\"][\"arguments\"] = str(t[\"function\"][\"arguments\"])  # HACK"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477122
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_39",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6aae24ccf0014db09123066ffb6f30f1",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/components/image_gen/image_gen.py",
+            "line": 198,
+            "marker": "TODO",
+            "comment": "# TODO: integrate in `forge.llm.providers`(?)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477218
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_40",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_75298ff1a4994234b8de11587c586330",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/components/image_gen/image_gen.py",
+            "line": 210,
+            "marker": "TODO",
+            "comment": "# TODO: improve typing of size config item(s)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477218
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_41",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d09ace1309894563bba1d26581366802",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/models/json_schema.py",
+            "line": 18,
+            "marker": "TODO",
+            "comment": "# TODO: add docstrings"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477298
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_42",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_7fa80d0d2e7f40d3909abd5cba553674",
+          "result": "FIXME 权衡痕迹: 已知缺陷待修复（暗示存在技术债决策）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/test_s3_file_storage.py",
+            "line": 53,
+            "marker": "FIXME",
+            "comment": "# FIXME: remove the \"pyright: ignore\" comments after moving this test file to forge"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477343
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_43",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_dec17d39ec814136a05b77b9ee0505a2",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/gcs.py",
+            "line": 145,
+            "marker": "TODO",
+            "comment": "# TODO: get MIME type from file extension or binary content"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477348
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_44",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_38a81d3bb2c540e0b34d9e055c9c9448",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/base.py",
+            "line": 257,
+            "marker": "TODO",
+            "comment": "# TODO: Schedule write operation using asyncio.create_task (non-blocking)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477365
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_45",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_6cd184b2709b465b867daa29204b4873",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/forge/forge/file_storage/base.py",
+            "line": 271,
+            "marker": "TODO",
+            "comment": "# TODO: Schedule write operation using asyncio.create_task (non-blocking)"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477365
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_46",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_d0d33b0fc783421fa276e21508dc0004",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/main.py",
+            "line": 448,
+            "marker": "TODO",
+            "comment": "# TODO: re-evaluate performance benefit of task-oriented profiles"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477476
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_47",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_143c816b42254809a9977b67b984a672",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/main.py",
+            "line": 490,
+            "marker": "TODO",
+            "comment": "# TODO: allow many-to-one relations of agents and workspaces"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477476
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_48",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_f414e437d80a479fabc33eea44e67e9f",
+          "result": "TODO 权衡痕迹: 未来计划改动（暗示当前实现是过渡方案）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/agent_protocol_server.py",
+            "line": 138,
+            "marker": "TODO",
+            "comment": "# TODO: re-evaluate performance benefit of task-oriented profiles"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477483
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_dec_49",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_recover_decisions",
+        "params": {
+          "decision": "权衡决策：HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_a3d67cef04da4305a90c7c2bf6355261",
+          "result": "HACK 权衡痕迹: 非标准实现（暗示绕过了正常设计）",
+          "level": "observation",
+          "provenance": {
+            "file": "/tmp/rea_harvest_luke/autogpt/classic/original_autogpt/autogpt/app/agent_protocol_server.py",
+            "line": 204,
+            "marker": "HACK",
+            "comment": "# HACK: only for compatibility with AGBenchmark"
+          },
+          "confidence": 0.85,
+          "known_gaps": [
+            "注释仅是间接证据，需结合代码结构确认实际权衡"
+          ],
+          "observations": [],
+          "created_at": 1793516477483
+        }
+      ],
+      "poe_score": 0.85,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516494695
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_06120d0e04174df0",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "af21363c9e6477243174cc19a749b68eb2118625",
+          "message": "test(backend): the webhook-preset migration tests own the graph IDs they save"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_ba0537e1963248aeab650fe0ed721f69",
+          "result": "架构转折点: commit af21363c - test(backend): the webhook-preset migration tests own the graph IDs they save",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/autogpt",
+            "commit": "af21363c9e6477243174cc19a749b68eb2118625",
+            "message": "test(backend): the webhook-preset migration tests own the graph IDs they save",
+            "files_changed": 10274,
+            "insertions": 1963833,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516495894
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516498355
+    }
+  ],
+  "provenance": "external",
+  "source_label": "autogpt",
+  "weight": 0.5,
+  "created_at": 1793516461249,
+  "source_id": "autogpt",
+  "repo_url": "https://github.com/Significant-Gravitas/AutoGPT",
+  "commit": "af21363c9e6477243174cc19a749b68eb2118625",
+  "license": "NOASSERTION",
+  "collected_at": 1793516498357
+}

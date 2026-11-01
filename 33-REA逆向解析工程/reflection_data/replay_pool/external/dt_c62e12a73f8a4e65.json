@@ -1,0 +1,442 @@
+{
+  "tree_id": "dt_c62e12a73f8a4e65",
+  "task": {
+    "target": "https://github.com/xai-org/grok-build",
+    "goal": "extract_best_practice_path",
+    "patterns": []
+  },
+  "nodes": [
+    {
+      "node_id": "dn_9542ed7d7c2448f1",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "https://github.com/xai-org/grok-build"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_ext_0",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-shell/tests/memory_integration/run_tests.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-shell/tests/memory_integration/run_tests.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_ext_1",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-agent/scripts/encrypt_templates.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-agent/scripts/encrypt_templates.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_ext_2",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-pager/npm/grok/bin/grok-bootstrap.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-pager/npm/grok/bin/grok-bootstrap.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_ext_3",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-pager/npm/grok/bin/postinstall.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-pager/npm/grok/bin/postinstall.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_ext_4",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/assemble-platform-packages.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/assemble-platform-packages.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_ext_5",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/test-postinstall.js"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/test-postinstall.js"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_ext_6",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "fallback_scan",
+            "params": {
+              "path": "crates/codegen/xai-grok-hooks/examples/hooks/bin/no-recursive-grep-guard.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "type": "file",
+              "path": "crates/codegen/xai-grok-hooks/examples/hooks/bin/no-recursive-grep-guard.py"
+            }
+          ],
+          "poe_score": 0.3,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516611554
+        },
+        {
+          "node_id": "dn_nar_0",
+          "parent_id": "dn_9542ed7d7c2448f1",
+          "action": {
+            "analyzer": "s33_rea_narrative",
+            "params": {
+              "commit": "2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8",
+              "message": "Synced from monorepo"
+            }
+          },
+          "evidence_refs": [
+            {
+              "evidence_id": "ev_e89ca60b40d1483e968952ea6c867b2d",
+              "result": "架构转折点: commit 2bdd1d6a - Synced from monorepo",
+              "level": "derivation",
+              "provenance": {
+                "repo": "/tmp/rea_harvest_luke/grok-build",
+                "commit": "2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8",
+                "message": "Synced from monorepo",
+                "files_changed": 4487,
+                "insertions": 2123610,
+                "deletions": 0,
+                "analysis": "turning_point_detection"
+              },
+              "confidence": 0.75,
+              "known_gaps": [
+                "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+                "变更统计不含语义层面的架构变化"
+              ],
+              "observations": [],
+              "created_at": 1793516612263
+            }
+          ],
+          "poe_score": 0.75,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793516612876
+        }
+      ],
+      "created_at": 1793516611536
+    },
+    {
+      "node_id": "dn_ext_0",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-shell/tests/memory_integration/run_tests.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-shell/tests/memory_integration/run_tests.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_ext_1",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-agent/scripts/encrypt_templates.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-agent/scripts/encrypt_templates.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_ext_2",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-pager/npm/grok/bin/grok-bootstrap.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-pager/npm/grok/bin/grok-bootstrap.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_ext_3",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-pager/npm/grok/bin/postinstall.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-pager/npm/grok/bin/postinstall.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_ext_4",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/assemble-platform-packages.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/assemble-platform-packages.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_ext_5",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/test-postinstall.js"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-pager/npm/grok/scripts/test-postinstall.js"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_ext_6",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "fallback_scan",
+        "params": {
+          "path": "crates/codegen/xai-grok-hooks/examples/hooks/bin/no-recursive-grep-guard.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "type": "file",
+          "path": "crates/codegen/xai-grok-hooks/examples/hooks/bin/no-recursive-grep-guard.py"
+        }
+      ],
+      "poe_score": 0.3,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516611554
+    },
+    {
+      "node_id": "dn_nar_0",
+      "parent_id": "dn_9542ed7d7c2448f1",
+      "action": {
+        "analyzer": "s33_rea_narrative",
+        "params": {
+          "commit": "2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8",
+          "message": "Synced from monorepo"
+        }
+      },
+      "evidence_refs": [
+        {
+          "evidence_id": "ev_e89ca60b40d1483e968952ea6c867b2d",
+          "result": "架构转折点: commit 2bdd1d6a - Synced from monorepo",
+          "level": "derivation",
+          "provenance": {
+            "repo": "/tmp/rea_harvest_luke/grok-build",
+            "commit": "2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8",
+            "message": "Synced from monorepo",
+            "files_changed": 4487,
+            "insertions": 2123610,
+            "deletions": 0,
+            "analysis": "turning_point_detection"
+          },
+          "confidence": 0.75,
+          "known_gaps": [
+            "转折点判定基于 commit message 关键字 + 变更规模，可能漏检无关键字的转折",
+            "变更统计不含语义层面的架构变化"
+          ],
+          "observations": [],
+          "created_at": 1793516612263
+        }
+      ],
+      "poe_score": 0.75,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793516612876
+    }
+  ],
+  "provenance": "external",
+  "source_label": "grok-build",
+  "weight": 0.5,
+  "created_at": 1793516611536,
+  "source_id": "grok-build",
+  "repo_url": "https://github.com/xai-org/grok-build",
+  "commit": "2bdd1d6a6369de0e8c68132ea4539e9abd9e14a8",
+  "license": "Apache-2.0",
+  "collected_at": 1793516612878
+}
