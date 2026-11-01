@@ -98,6 +98,23 @@ def test_probe_systemd_timer_parses_trigger_and_result():
     assert out["result"] == "success"
 
 
+def test_probe_systemd_timer_parses_formatted_timestamp():
+    # systemd 新版（255+）LastTriggerUSec 输出本地格式化时间而非 µs 整数
+    # （云端实测："Sun 2026-11-01 02:05:01 CST"）；按本机本地时间解释。
+    import time as _time
+
+    runner = FakeRunner(
+        {
+            "systemctl show memory-cleanup.timer -p LastTriggerUSec --value": "Sun 2026-11-01 02:05:01 CST\n",
+            "systemctl show memory-cleanup.service": SYSTEMD_SHOW,
+        }
+    )
+    out = probe_systemd_timer("memory-cleanup.timer", runner=runner)
+    assert out["ok"] is True and out["triggered"] is True
+    expect = _time.mktime(_time.strptime("2026-11-01 02:05:01", "%Y-%m-%d %H:%M:%S"))
+    assert out["started_ts"] == expect
+
+
 def test_probe_systemd_timer_never_triggered():
     runner = FakeRunner(
         {

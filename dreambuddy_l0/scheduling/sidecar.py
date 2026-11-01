@@ -16,6 +16,7 @@ import os
 import plistlib
 import re
 import subprocess
+import time
 from typing import Any, Callable, Dict, List, Optional
 
 from .job_runs import JobRunRecorder, run_key
@@ -35,6 +36,29 @@ def _default_runner(cmd: List[str]) -> str:
     return (proc.stdout or "") + (proc.stderr or "")
 
 
+def _parse_systemd_timestamp(raw: str) -> Optional[float]:
+    """LastTriggerUSec 两种形态解析：µs 整数（旧版）或本地格式化时间（新版）。
+
+    systemd 新版直接输出本机本地时区时间（如 "Sun 2026-11-01 02:05:01 CST"），
+    时区缩写不可靠（CST 歧义），故去掉星期/时区后缀按本机本地时间解释
+    （探针与 systemctl 同机运行，口径一致）。
+    """
+    text = (raw or "").strip()
+    if not text or text in ("0", "n/a"):
+        return None
+    try:
+        usec = int(text)
+        return usec / 1_000_000.0 if usec > 0 else None
+    except ValueError:
+        pass
+    body = re.sub(r"^[A-Za-z]{3}\s+", "", text)
+    body = re.sub(r"\s+[A-Za-z]{2,6}$", "", body)
+    try:
+        return time.mktime(time.strptime(body, "%Y-%m-%d %H:%M:%S"))
+    except (ValueError, OverflowError):
+        return None
+
+
 # ── systemd timer 探针 ──────────────────────────────────────────────────────
 def probe_systemd_timer(
     timer_unit: str, *, runner: Optional[Runner] = None, service_unit: str = ""
@@ -51,13 +75,13 @@ def probe_systemd_timer(
     }
     try:
         raw = runner(["systemctl", "show", timer_unit, "-p", "LastTriggerUSec", "--value"])
-        usec = int((raw or "").strip() or "0")
-        if usec <= 0:
+        started_ts = _parse_systemd_timestamp(raw)
+        if started_ts is None or started_ts <= 0:
             out["ok"] = True
             out["reason"] = "never_triggered"
             return out
         out["triggered"] = True
-        out["started_ts"] = usec / 1_000_000.0
+        out["started_ts"] = started_ts
         svc = service_unit or timer_unit.replace(".timer", ".service")
         show = runner(["systemctl", "show", svc, "-p", "ExecMainStatus", "-p", "Result"])
         props = {}
