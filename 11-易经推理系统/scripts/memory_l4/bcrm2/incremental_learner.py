@@ -14,15 +14,15 @@ BCRM理论映射:
   4. 再训练触发机制
 """
 
-import sqlite3
 import json
 import os
 import shutil
+import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
-import pandas as pd
 
 from .dialectical_ml_engine import DialecticalMLEngine
 
@@ -107,31 +107,34 @@ class TradeDatabase:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR IGNORE INTO trades (
                     symbol, direction, entry_time, exit_time,
                     entry_price, exit_price, pnl_pct, hold_bars,
                     exit_reason, confidence, hexagram, upper_gua,
                     lower_gua, position_factor, model_version, fold_id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                trade_data.get("symbol", ""),
-                trade_data.get("direction", 0),
-                trade_data.get("entry_time", ""),
-                trade_data.get("exit_time", ""),
-                trade_data.get("entry_price", 0),
-                trade_data.get("exit_price", 0),
-                trade_data.get("pnl_pct", 0),
-                trade_data.get("hold_bars", 0),
-                trade_data.get("exit_reason", ""),
-                trade_data.get("confidence", 0),
-                trade_data.get("hexagram", ""),
-                trade_data.get("upper_gua", ""),
-                trade_data.get("lower_gua", ""),
-                trade_data.get("position_factor", 1.0),
-                trade_data.get("model_version", ""),
-                trade_data.get("fold_id", 0),
-            ))
+            """,
+                (
+                    trade_data.get("symbol", ""),
+                    trade_data.get("direction", 0),
+                    trade_data.get("entry_time", ""),
+                    trade_data.get("exit_time", ""),
+                    trade_data.get("entry_price", 0),
+                    trade_data.get("exit_price", 0),
+                    trade_data.get("pnl_pct", 0),
+                    trade_data.get("hold_bars", 0),
+                    trade_data.get("exit_reason", ""),
+                    trade_data.get("confidence", 0),
+                    trade_data.get("hexagram", ""),
+                    trade_data.get("upper_gua", ""),
+                    trade_data.get("lower_gua", ""),
+                    trade_data.get("position_factor", 1.0),
+                    trade_data.get("model_version", ""),
+                    trade_data.get("fold_id", 0),
+                ),
+            )
             conn.commit()
             return cursor.lastrowid
         except Exception:
@@ -147,31 +150,34 @@ class TradeDatabase:
 
         try:
             for trade in trades:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT OR IGNORE INTO trades (
                         symbol, direction, entry_time, exit_time,
                         entry_price, exit_price, pnl_pct, hold_bars,
                         exit_reason, confidence, hexagram, upper_gua,
                         lower_gua, position_factor, model_version, fold_id
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    trade.get("symbol", ""),
-                    trade.get("direction", 0),
-                    trade.get("entry_time", ""),
-                    trade.get("exit_time", ""),
-                    trade.get("entry_price", 0),
-                    trade.get("exit_price", 0),
-                    trade.get("pnl_pct", 0),
-                    trade.get("hold_bars", 0),
-                    trade.get("exit_reason", ""),
-                    trade.get("confidence", 0),
-                    trade.get("hexagram", ""),
-                    trade.get("upper_gua", ""),
-                    trade.get("lower_gua", ""),
-                    trade.get("position_factor", 1.0),
-                    trade.get("model_version", ""),
-                    trade.get("fold_id", 0),
-                ))
+                """,
+                    (
+                        trade.get("symbol", ""),
+                        trade.get("direction", 0),
+                        trade.get("entry_time", ""),
+                        trade.get("exit_time", ""),
+                        trade.get("entry_price", 0),
+                        trade.get("exit_price", 0),
+                        trade.get("pnl_pct", 0),
+                        trade.get("hold_bars", 0),
+                        trade.get("exit_reason", ""),
+                        trade.get("confidence", 0),
+                        trade.get("hexagram", ""),
+                        trade.get("upper_gua", ""),
+                        trade.get("lower_gua", ""),
+                        trade.get("position_factor", 1.0),
+                        trade.get("model_version", ""),
+                        trade.get("fold_id", 0),
+                    ),
+                )
             conn.commit()
             return len(trades)
         except Exception:
@@ -180,30 +186,34 @@ class TradeDatabase:
         finally:
             conn.close()
 
-    def save_model_version(self, version_id: str, symbol: str,
-                          metrics: Dict, notes: str = "") -> bool:
+    def save_model_version(
+        self, version_id: str, symbol: str, metrics: Dict, notes: str = ""
+    ) -> bool:
         """保存模型版本"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO model_versions (
                     version_id, symbol, created_at, sharpe_ratio,
                     win_rate, total_trades, train_bars, feature_count, status, notes
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                version_id,
-                symbol,
-                datetime.now().isoformat(),
-                metrics.get("sharpe_ratio", 0),
-                metrics.get("win_rate", 0),
-                metrics.get("total_trades", 0),
-                metrics.get("train_bars", 0),
-                metrics.get("feature_count", 0),
-                "active",
-                notes,
-            ))
+            """,
+                (
+                    version_id,
+                    symbol,
+                    datetime.now().isoformat(),
+                    metrics.get("sharpe_ratio", 0),
+                    metrics.get("win_rate", 0),
+                    metrics.get("total_trades", 0),
+                    metrics.get("train_bars", 0),
+                    metrics.get("feature_count", 0),
+                    "active",
+                    notes,
+                ),
+            )
             conn.commit()
             return True
         except Exception:
@@ -214,47 +224,36 @@ class TradeDatabase:
 
     def get_model_versions(self, symbol: str = None) -> List[Dict]:
         """获取模型版本列表"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        from ._store_port import fetch_table_rows  # C5 第四批：只读收编（默认 legacy）
 
-        try:
-            if symbol:
-                cursor.execute("SELECT * FROM model_versions WHERE symbol = ? ORDER BY created_at DESC", (symbol,))
-            else:
-                cursor.execute("SELECT * FROM model_versions ORDER BY created_at DESC")
-
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in rows]
-        except Exception:
-            return []
-        finally:
-            conn.close()
+        filters = {"symbol": symbol} if symbol else None
+        return fetch_table_rows(
+            self.db_path,
+            "model_versions",
+            "BCRM_LEARNER_STORE_PORT",
+            filters=filters,
+            order_by="created_at DESC",
+            columns="*",
+        )
 
     def get_latest_version(self, symbol: str) -> Optional[Dict]:
         """获取最新模型版本"""
         versions = self.get_model_versions(symbol)
         return versions[0] if versions else None
 
-    def get_trades_for_retraining(self, symbol: str,
-                                  min_trades: int = 100) -> List[Dict]:
+    def get_trades_for_retraining(self, symbol: str, min_trades: int = 100) -> List[Dict]:
         """获取用于再训练的交易数据"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        from ._store_port import fetch_table_rows  # C5 第四批：只读收编（默认 legacy）
 
-        try:
-            cursor.execute("""
-                SELECT * FROM trades WHERE symbol = ?
-                ORDER BY entry_time DESC LIMIT ?
-            """, (symbol, min_trades * 2))
-
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            return [dict(zip(columns, row)) for row in rows]
-        except Exception:
-            return []
-        finally:
-            conn.close()
+        return fetch_table_rows(
+            self.db_path,
+            "trades",
+            "BCRM_LEARNER_STORE_PORT",
+            filters={"symbol": symbol},
+            order_by="entry_time DESC",
+            limit=min_trades * 2,
+            columns="*",
+        )
 
     def get_recent_performance(self, symbol: str, days: int = 30) -> Dict:
         """获取最近一段时间的模型表现"""
@@ -262,17 +261,20 @@ class TradeDatabase:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT COUNT(*) as n_trades,
                        AVG(pnl_pct) as avg_pnl,
                        SUM(CASE WHEN pnl_pct > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as win_rate
                 FROM trades WHERE symbol = ?
-            """, (symbol,))
+            """,
+                (symbol,),
+            )
 
             row = cursor.fetchone()
             if row:
                 columns = [desc[0] for desc in cursor.description]
-                return dict(zip(columns, row))
+                return dict(zip(columns, row, strict=True))
             return {}
         except Exception:
             return {}
@@ -293,8 +295,14 @@ class ModelVersionManager:
         """获取版本目录"""
         return os.path.join(self.base_dir, symbol, version_id)
 
-    def save_version(self, engine: DialecticalMLEngine, symbol: str,
-                     version_id: str, metrics: Dict, notes: str = "") -> bool:
+    def save_version(
+        self,
+        engine: DialecticalMLEngine,
+        symbol: str,
+        version_id: str,
+        metrics: Dict,
+        notes: str = "",
+    ) -> bool:
         """保存模型版本"""
         version_dir = self.get_version_dir(symbol, version_id)
         os.makedirs(version_dir, exist_ok=True)
@@ -323,7 +331,9 @@ class ModelVersionManager:
 
         return True
 
-    def load_version(self, symbol: str, version_id: str = "latest") -> Optional[DialecticalMLEngine]:
+    def load_version(
+        self, symbol: str, version_id: str = "latest"
+    ) -> Optional[DialecticalMLEngine]:
         """加载模型版本"""
         if version_id == "latest":
             version_dir = os.path.join(self.base_dir, symbol, "latest")
@@ -368,14 +378,17 @@ class ModelVersionManager:
                         meta = json.load(f)
                     versions.append(meta)
                 else:
-                    versions.append({
-                        "version_id": item,
-                        "symbol": symbol,
-                        "created_at": datetime.fromtimestamp(
-                            os.path.getctime(item_path)).isoformat(),
-                        "metrics": {},
-                        "notes": "",
-                    })
+                    versions.append(
+                        {
+                            "version_id": item,
+                            "symbol": symbol,
+                            "created_at": datetime.fromtimestamp(
+                                os.path.getctime(item_path)
+                            ).isoformat(),
+                            "metrics": {},
+                            "notes": "",
+                        }
+                    )
 
         return sorted(versions, key=lambda x: x["created_at"], reverse=True)
 
@@ -415,10 +428,10 @@ class IncrementalLearner:
         self,
         db_path: str = None,
         model_dir: str = None,
-        retrain_trade_threshold: int = 100,    # 积累N笔交易触发再训练
+        retrain_trade_threshold: int = 100,  # 积累N笔交易触发再训练
         retrain_win_rate_threshold: float = 0.5,  # 胜率低于此值触发再训练
-        retrain_sharpe_threshold: float = 1.0,    # 夏普低于此值触发再训练
-        max_versions: int = 10,                 # 保留最多N个版本
+        retrain_sharpe_threshold: float = 1.0,  # 夏普低于此值触发再训练
+        max_versions: int = 10,  # 保留最多N个版本
     ):
         self.db = TradeDatabase(db_path)
         self.version_manager = ModelVersionManager(model_dir)
@@ -536,7 +549,7 @@ class IncrementalLearner:
             return
 
         # 删除最旧的版本
-        versions_to_delete = sorted(versions, key=lambda x: x["created_at"])[:-self.max_versions]
+        versions_to_delete = sorted(versions, key=lambda x: x["created_at"])[: -self.max_versions]
         for v in versions_to_delete:
             version_dir = self.version_manager.get_version_dir(symbol, v["version_id"])
             if os.path.exists(version_dir):

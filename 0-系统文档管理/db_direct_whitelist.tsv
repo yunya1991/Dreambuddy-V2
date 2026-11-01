@@ -11,8 +11,9 @@
 10-经典指标系统/ml_trade_service.py	sqlite3	2
 11-易经推理系统/scripts/memory_l4/_probe_sqlite_records.py	sqlite3	1
 11-易经推理系统/scripts/memory_l4/backtest_five_domain_v2.py	sqlite3	3
-11-易经推理系统/scripts/memory_l4/bcrm2/incremental_learner.py	sqlite3	7
-11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py	sqlite3	4
+11-易经推理系统/scripts/memory_l4/bcrm2/_store_port.py	sqlite3	3
+11-易经推理系统/scripts/memory_l4/bcrm2/incremental_learner.py	sqlite3	5
+11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py	sqlite3	2
 11-易经推理系统/scripts/memory_l4/bcrm2/scripts/backfill_fma_shadow.py	sqlite3	3
 11-易经推理系统/scripts/memory_l4/bcrm2/storage.py	sqlite3	1
 11-易经推理系统/scripts/memory_l4/five_domain_ic_analysis.py	sqlite3	5
@@ -79,6 +80,7 @@
 40-周期神经网络系统/scripts/risk_guards.py	sqlite3	2
 43-战略承接推演层/strategic_extension/sentiment_channel.py	psycopg2	2
 43-战略承接推演层/strategic_extension/sentiment_channel.py	sqlite3	1
+44-三端协作架构系统/shared/tests/test_c5_bcrm2_store_port.py	sqlite3	2
 44-三端协作架构系统/shared/tests/test_c5_five_domain_store_port.py	sqlite3	3
 7-产物中台/系统研究索引体系/prisma/scripts/etl_worker.py	psycopg2	1
 9-基本面分析/backend/src/_embedded_ml_trade_service_source.py	sqlite3	2

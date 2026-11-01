@@ -20,14 +20,15 @@ P1 核心组件：为回测和实盘提供统一的宏观数据入口。
   7. 币安 Web3 Social Hype — 仅当前排行榜
   8. 币安 Web3 Smart Money — 仅当前信号
 """
+
 from __future__ import annotations
 
+import logging
 import sqlite3
 import time
-import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -40,26 +41,61 @@ logger = logging.getLogger(__name__)
 # symbol 映射表
 # ============================================================
 _COINGECKO_ID_MAP = {
-    "BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "BNB": "binancecoin",
-    "XRP": "ripple", "DOGE": "dogecoin", "ADA": "cardano", "AVAX": "avalanche-2",
-    "LINK": "chainlink", "DOT": "polkadot", "LTC": "litecoin", "ARB": "arbitrum",
-    "OP": "optimism", "UNI": "uniswap", "SUI": "sui", "SEI": "sei-network",
-    "TON": "the-open-network", "OKB": "okb", "HYPE": "hyperliquid",
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "SOL": "solana",
+    "BNB": "binancecoin",
+    "XRP": "ripple",
+    "DOGE": "dogecoin",
+    "ADA": "cardano",
+    "AVAX": "avalanche-2",
+    "LINK": "chainlink",
+    "DOT": "polkadot",
+    "LTC": "litecoin",
+    "ARB": "arbitrum",
+    "OP": "optimism",
+    "UNI": "uniswap",
+    "SUI": "sui",
+    "SEI": "sei-network",
+    "TON": "the-open-network",
+    "OKB": "okb",
+    "HYPE": "hyperliquid",
 }
 
 _OKX_INST_MAP = {
-    "BTC": "BTC-USDT-SWAP", "ETH": "ETH-USDT-SWAP", "SOL": "SOL-USDT-SWAP",
-    "BNB": "BNB-USDT-SWAP", "XRP": "XRP-USDT-SWAP", "DOGE": "DOGE-USDT-SWAP",
-    "ADA": "ADA-USDT-SWAP", "AVAX": "AVAX-USDT-SWAP", "LINK": "LINK-USDT-SWAP",
-    "DOT": "DOT-USDT-SWAP", "UNI": "UNI-USDT-SWAP", "ARB": "ARB-USDT-SWAP",
-    "OP": "OP-USDT-SWAP", "LTC": "LTC-USDT-SWAP",
+    "BTC": "BTC-USDT-SWAP",
+    "ETH": "ETH-USDT-SWAP",
+    "SOL": "SOL-USDT-SWAP",
+    "BNB": "BNB-USDT-SWAP",
+    "XRP": "XRP-USDT-SWAP",
+    "DOGE": "DOGE-USDT-SWAP",
+    "ADA": "ADA-USDT-SWAP",
+    "AVAX": "AVAX-USDT-SWAP",
+    "LINK": "LINK-USDT-SWAP",
+    "DOT": "DOT-USDT-SWAP",
+    "UNI": "UNI-USDT-SWAP",
+    "ARB": "ARB-USDT-SWAP",
+    "OP": "OP-USDT-SWAP",
+    "LTC": "LTC-USDT-SWAP",
 }
 
 _LLAMA_CHAIN_MAP = {
-    "BTC": "Bitcoin", "ETH": "Ethereum", "SOL": "Solana", "BNB": "BSC",
-    "AVAX": "Avalanche", "ARB": "Arbitrum", "OP": "Optimism", "DOT": "Polkadot",
-    "MATIC": "Polygon", "LTC": "Litecoin", "XRP": "XRP", "DOGE": "Dogecoin",
-    "ADA": "Cardano", "SUI": "Sui", "TON": "Toncoin", "UNI": "Ethereum",
+    "BTC": "Bitcoin",
+    "ETH": "Ethereum",
+    "SOL": "Solana",
+    "BNB": "BSC",
+    "AVAX": "Avalanche",
+    "ARB": "Arbitrum",
+    "OP": "Optimism",
+    "DOT": "Polkadot",
+    "MATIC": "Polygon",
+    "LTC": "Litecoin",
+    "XRP": "XRP",
+    "DOGE": "Dogecoin",
+    "ADA": "Cardano",
+    "SUI": "Sui",
+    "TON": "Toncoin",
+    "UNI": "Ethereum",
 }
 
 
@@ -81,10 +117,12 @@ class MacroDataFetcher:
 
     def __init__(self, cache_dir: Optional[Path] = None, timeout: int = 10):
         self._session = requests.Session()
-        self._session.headers.update({
-            "User-Agent": "DreamBuddy-MacroFetcher/1.0",
-            "Accept": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "User-Agent": "DreamBuddy-MacroFetcher/1.0",
+                "Accept": "application/json",
+            }
+        )
         self.timeout = timeout
 
         if cache_dir is None:
@@ -128,9 +166,7 @@ class MacroDataFetcher:
             return None
         try:
             conn = sqlite3.connect(str(path))
-            df = pd.read_sql(
-                f"SELECT * FROM {source} ORDER BY timestamp", conn
-            )
+            df = pd.read_sql(f"SELECT * FROM {source} ORDER BY timestamp", conn)
             conn.close()
             if df.empty:
                 return None
@@ -181,7 +217,9 @@ class MacroDataFetcher:
         df = df.set_index("timestamp").sort_index()
 
         # 计算 7d 趋势
-        df["fear_greed_trend_7d"] = df["fear_greed_index"] - df["fear_greed_index"].rolling(7, min_periods=1).mean()
+        df["fear_greed_trend_7d"] = (
+            df["fear_greed_index"] - df["fear_greed_index"].rolling(7, min_periods=1).mean()
+        )
         return df
 
     def fetch_funding_rate_history(self, symbol: str, days: int = 365) -> pd.DataFrame:
@@ -387,7 +425,6 @@ class MacroDataFetcher:
             return pd.DataFrame()
 
         mc_list = data.get("market_caps", [])
-        prices = data.get("prices", [])
 
         if not mc_list:
             return pd.DataFrame()
@@ -558,8 +595,10 @@ class MacroDataFetcher:
             combined = MacroDataFetcher._raw_cache[cache_key]
             aligned = self.align_to_klines(combined, kline_index, lookahead_guard=1)
             if verbose:
-                print(f"  [MacroDataFetcher] {sym}: 内存缓存命中, "
-                      f"对齐后 {len(aligned.columns)} 列, {aligned.notna().sum().sum()} 个有效值")
+                print(
+                    f"  [MacroDataFetcher] {sym}: 内存缓存命中, "
+                    f"对齐后 {len(aligned.columns)} 列, {aligned.notna().sum().sum()} 个有效值"
+                )
             return aligned
 
         all_dfs: List[pd.DataFrame] = []
@@ -725,8 +764,10 @@ class MacroDataFetcher:
 
         ok_count = sum(1 for v in source_status.values() if v == "ok")
         if verbose:
-            print(f"  [MacroDataFetcher] {sym}: {ok_count}/{len(source_status)} 源成功, "
-                  f"对齐后 {len(aligned.columns)} 列, {aligned.notna().sum().sum()} 个有效值")
+            print(
+                f"  [MacroDataFetcher] {sym}: {ok_count}/{len(source_status)} 源成功, "
+                f"对齐后 {len(aligned.columns)} 列, {aligned.notna().sum().sum()} 个有效值"
+            )
 
         return aligned
 
@@ -750,7 +791,9 @@ class MacroDataFetcher:
         import json as _json_mod
 
         try:
-            from scripts.memory_l4.five_domain_sqlite_reader import DEFAULT_DB_PATH  # 复用已解析路径
+            from scripts.memory_l4.five_domain_sqlite_reader import (
+                DEFAULT_DB_PATH,
+            )  # 复用已解析路径
         except Exception:
             # fallback：与 DEFAULT_DB_PATH 相同逻辑计算
             _THIS_DIR = Path(__file__).resolve().parents[3]
@@ -760,17 +803,24 @@ class MacroDataFetcher:
         if isinstance(dbp, Path):
             dbp = str(dbp)
         import os as _os_mod
+
         if not dbp or not _os_mod.path.exists(dbp):
             return pd.DataFrame()
 
+        # C5 第四批：只读收编（默认 legacy 直连，开关 BCRM_MACRO_STORE_PORT=1 才走 port）
         try:
-            conn = sqlite3.connect(f"file:{dbp}?mode=ro", uri=True)
-            rows = conn.execute(
-                "SELECT source, sub_category, metrics, timestamp, id "
-                "FROM records WHERE source IN ('panewslab','theblockbeats_dataview') "
-                "ORDER BY id DESC"
-            ).fetchall()
-            conn.close()
+            try:
+                from ._store_port import fetch_records_by_sources
+            except ImportError:
+                from _store_port import fetch_records_by_sources
+
+            rows = fetch_records_by_sources(
+                dbp,
+                ("panewslab", "theblockbeats_dataview"),
+                switch="BCRM_MACRO_STORE_PORT",
+                columns="source, sub_category, metrics, timestamp, id",
+                as_tuple=True,
+            )
         except Exception as e:
             logger.debug(f"MacroDataFetcher panewslab sqlite 读取失败: {e}")
             return pd.DataFrame()
@@ -834,6 +884,7 @@ class MacroDataFetcher:
         # 检查名：blockbeats_pulse_index 等）—— 直接再调一次 reader 拿派生 dict 合并。
         try:
             from scripts.memory_l4.five_domain_sqlite_reader import read_macro_from_sqlite
+
             derived = read_macro_from_sqlite(dbp) or {}
             for k, v in derived.items():
                 if isinstance(v, bool):
@@ -902,26 +953,38 @@ class MacroDataFetcher:
         if isinstance(dbp, Path):
             dbp = str(dbp)
         import os as _os_mod
+
         if not dbp or not _os_mod.path.exists(dbp):
             return pd.DataFrame()
 
         # 新采集器 source 列表
         new_sources = (
-            "fear_greed", "etf_flow", "deribit", "cftc_cot",
-            "blockchain_info", "fear_greed_enhanced", "blockscout",
-            "google_trends", "cryptopanic", "defillama",
+            "fear_greed",
+            "etf_flow",
+            "deribit",
+            "cftc_cot",
+            "blockchain_info",
+            "fear_greed_enhanced",
+            "blockscout",
+            "google_trends",
+            "cryptopanic",
+            "defillama",
         )
-        placeholders = ",".join("?" * len(new_sources))
-
+        # C5 第四批：只读收编（默认 legacy 直连，开关 BCRM_MACRO_STORE_PORT=1 才走 port）
+        # columns 末尾追加 id：保证两模式均按 id DESC 排序（调用方只用 r[0..3]）
         try:
-            conn = sqlite3.connect(f"file:{dbp}?mode=ro", uri=True)
-            rows = conn.execute(
-                f"SELECT source, sub_category, metrics, timestamp FROM records "
-                f"WHERE source IN ({placeholders}) "
-                f"ORDER BY id DESC",
+            try:
+                from ._store_port import fetch_records_by_sources
+            except ImportError:
+                from _store_port import fetch_records_by_sources
+
+            rows = fetch_records_by_sources(
+                dbp,
                 new_sources,
-            ).fetchall()
-            conn.close()
+                switch="BCRM_MACRO_STORE_PORT",
+                columns="source, sub_category, metrics, timestamp, id",
+                as_tuple=True,
+            )
         except Exception as e:
             logger.debug(f"MacroDataFetcher new_sources sqlite 读取失败: {e}")
             return pd.DataFrame()
