@@ -14,6 +14,36 @@
 - 签名与 Merkle 根留待 P4-1
 - commit: `5a8af5021d`
 
+### P3-2 部署流水线卡点
+- 新增 `deploy/preflight-eval-gate.sh`：直接以 `evalctl enforce --kind deploy` 退出码判定（0 放行 / 2 拦截 / 3 INCONCLUSIVE / 4 异常），禁止解析日志
+- 接入 `31-分布式计算部署/phase1/update.sh`（G4 之后、git pull 之前）与 `deploy/deploy.sh`（Phase 2.5）；45 模块缺失时 FAIL-OPEN 告警
+- 影子模式（`gate.shadow=true`）只记 `SHADOW_WOULD_BLOCK` 并退出 0；转实盘后同一脚本即阻断，无需改脚本
+- 实测：`EVAL_ID=demo-eval-001` 影子观测退出 0（`unknown_eval_id` 记入审计）
+- commit: `4961aa8335`
+
+### P3-3 L0 沉淀卡点
+- 新增 `integrations/l0_gate.py`：`build_settle_gate(enforcer)` 适配 `L0Foundation.settle` 的 `(allowed, info)` 契约
+- `L0Foundation.settle(result, context, gate=...)` 可选注入；未通过不沉淀，门禁自身异常 fail-closed（与数据源 FAIL-OPEN 区分）
+- 顺带修复 `_settle_case` 引用未定义 `context` 的历史缺陷（此前案例沉淀被 try/except 静默吞掉）
+- 测试：34 新增 3 个注入用例（放行 / 拦截 / 异常 fail-closed）
+- commit: `f74e3c0be6`
+
+### P3-4 27 双凭证校验
+- 新增 `integrations/approvals.py`：按 JSONL 文件契约读取 27 台账（`id` / `decision` / `ts` ms），`decision ∈ {approve, approved, ok, pass, yes}` 且 24h 内有效（与 27 `_approval_ok` 对齐）；路径 `EVAL_APPROVALS_LOG`，无路径/文件缺失/坏行/读异常一律不通过（fail-closed）
+- `Enforcer(require_approval=True)`：27 审批缺失、过期、查询器未装配或查询异常均拒绝，与 45 凭证互不豁免；CLI 暴露 `--approval-id` / `--require-approval`
+- 测试：16 个用例；integrations/approvals.py 覆盖率 100%
+- commit: `02e3d036ac`
+
+### P3-5 审计全链路验证
+- 新增 `storage/audit.py`：门禁裁决 JSONL 审计（`artifacts/audit/enforcement.jsonl`，自动补 `at`、最新在前查询、坏行跳过）
+- 新增 `core/audit_trace.py`：一次汇总 `request → run → items → evidence → report → enforcements`，`cancelled` 字段反映取消/回滚，不伪造状态历史
+- CLI 新增 `evalctl audit --eval-id`；`enforce` 每次裁决自动落审计
+- 测试：5 + 14 + 8 用例；audit_trace 覆盖率 100%、enforcement 94%、storage/audit 89%
+- commit: `02e3d036ac`
+
+### P3 汇总
+- 45 全量：518 用例全绿（2 个 PG 集成用例因未设 `EVAL_PG_DSN` 跳过）；核心覆盖率 95%
+
 ## [0.3.0] — 2026-11-01 — P2 评测器接入（P2-1~P2-9 已交付）
 
 ### P2-1 通用准入验证器（E3 三层）
