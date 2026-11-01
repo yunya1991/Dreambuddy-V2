@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-11-01T15:32:50",
+  "dry_run": true,
+  "elapsed_s": 0.1,
+  "roots": [
+    "33-REA逆向解析工程"
+  ],
+  "steps": [
+    {
+      "name": "scan",
+      "cmd": [
+        "sync_external_sources.py",
+        "--roots",
+        "33-REA逆向解析工程",
+        "--max-new",
+        "50",
+        "--dry-run"
+      ],
+      "returncode": 0,
+      "elapsed_s": 0.1,
+      "stdout_tail": "[sync] docs_scanned=24\n[sync] urls_found=142\n[sync] new=0 updated=97 skipped=45 total=142\n[sync] report=33-REA逆向解析工程/reflection_data/sync_reports/2026-11-01.json",
+      "stderr_tail": ""
+    },
+    {
+      "name": "merge",
+      "cmd": [
+        "merge_external_inbox.py",
+        "--dry-run"
+      ],
+      "returncode": 0,
+      "elapsed_s": 0.1,
+      "stdout_tail": "[merge] inbox_files=1 inbox_sources=45\n[merge] added=0 updated=0 skipped=45 id_conflict=0 changed=False report=merge-2026-11-01.json",
+      "stderr_tail": ""
+    }
+  ],
+  "inject": {
+    "enabled": false
+  },
+  "mem_start_mb": null,
+  "mem_total_mb": null,
+  "mem_end_mb": null
+}

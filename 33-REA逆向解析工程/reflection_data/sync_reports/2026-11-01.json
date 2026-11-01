@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-11-01T15:43:26",
+  "dry_run": true,
+  "roots": [
+    "."
+  ],
+  "docs_scanned": 3969,
+  "urls_found": 142,
+  "total_sources": 143,
+  "new": 0,
+  "updated": 0,
+  "skipped": 142,
+  "truncated": false,
+  "new_items": [],
+  "updated_items": [],
+  "archived": []
+}

@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-11-01T15:32:44",
+  "dry_run": true,
+  "limit": 5,
+  "stale_days": 30,
+  "checked": 5,
+  "targets": 5,
+  "verified_ok": 0,
+  "admissible": 0,
+  "errors": [],
+  "paused_memory": false,
+  "mem_available_mb": null,
+  "mem_total_mb": null,
+  "mem_peak_available_mb": null,
+  "items": [
+    {
+      "id": "Calibration-Neural-SDEs",
+      "location": "https://github.com/evaflonner/Calibration-of-Neural-SDEs-using-Bayesian-Methods",
+      "skipped": "offline"
+    },
+    {
+      "id": "ElegantRL",
+      "location": "https://github.com/AI4Finance-Foundation/ElegantRL",
+      "skipped": "offline"
+    },
+    {
+      "id": "FinBERT",
+      "location": "https://github.com/yya518/FinBERT",
+      "skipped": "offline"
+    },
+    {
+      "id": "FinGPT",
+      "location": "https://github.com/AI4Finance-Foundation/FinGPT",
+      "skipped": "offline"
+    },
+    {
+      "id": "FinRL",
+      "location": "https://github.com/AI4Finance-Foundation/FinRL",
+      "skipped": "offline"
+    }
+  ]
+}

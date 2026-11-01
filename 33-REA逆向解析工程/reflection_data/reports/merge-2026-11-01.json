@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-11-01T15:32:50",
+  "dry_run": true,
+  "inbox_files": [
+    "reflection_data/inbox/external_sources.local.json"
+  ],
+  "content_hash_before": "d56c4767b36c8924c393a491bb27b121c1a09c00bec9eae893a853413e0a24b6",
+  "content_hash_after": "d56c4767b36c8924c393a491bb27b121c1a09c00bec9eae893a853413e0a24b6",
+  "changed": false,
+  "total_sources": 142,
+  "archived": [],
+  "added": 0,
+  "updated": 0,
+  "skipped": 45,
+  "category_conflict": 0,
+  "id_conflict": 0,
+  "retired": 0,
+  "new_ids": []
+}
