@@ -166,7 +166,7 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 | C4a | **19-DAL 补 PG adapter（新增前置，评审 P0-8）**：现状后端只有 `json_legacy / dual_write / sqlite_unified`（`di.py:15-17`），**没有 PG 实现**，C4 原"收编进 DAL"无从落地。先实现 `Postgres*Repository` + 契约测试（含类型映射、事务、分页） | 19-DAL | PG 后端可读写；与 json_legacy 字段级一致 |
 | C4b | **`dc_pg` 收编**：39 `scripts/dc_pg.py` 的能力搬到 19-DAL PG adapter，保留旧名薄壳（保返回结构 + 保 FAIL-OPEN，调用方零改动）；比对口径=字段级 + 样本量 + 阈值，禁止只比条数 | 19-DAL + 39 薄壳 | 调用方零改动；抽样比对达阈值 |
 | C5 | **热点目录收编（独立轨道，第一批）**：11-易经推理系统 的 61 处直连按模块分批改走 `Store` port（每批一个模块，开关按**文件/进程**粒度）。**前置**：DualWrite 现状新库写失败仅 `warning`、影子比对只比 `len()`（`di.py:177`）→ 必须先补**字段级 diff + diff 率门槛 + per-repo 读开关**（现 `READ_SOURCE` 是全局 env），否则切读会假 MATCH。**且 11 是实盘宿主（`yijing_trading`），只读查询先行、写路径暂缓**，改后需重启实盘的批次单列窗口 | 11 系统 + 19-DAL | 每批回归通过；开关关闭回到旧路径；shadow diff 率低于阈值才允许切读 |
-| C6 | **能力声明**：`capabilities.yaml` 覆盖五能力（provides/requirements/health_cmd/port），**文件 + CI 校验为唯一事实源**（不加载运行时注册表） | `0-系统文档管理/capabilities.yaml` + 校验脚本 | 五能力声明完整；校验可拦截漂移 |
+| C6 | **能力声明**：`capabilities.yaml` 覆盖五能力（provides/requirements/health_cmd/port），**文件 + CI 校验为唯一事实源**（不加载运行时注册表） | `0-系统文档管理/capabilities.yaml` + 校验脚本 | 五能力声明完整；校验可拦截漂移 | **✅ 2026-11-01 已落地**：`capabilities.yaml`（五能力/15 条 provides）+ `scripts/validate_capabilities.py`（port/impl 漂移检测）+ 9 条契约测试 + `l0-contracts` CI 阻断步骤 |
 
 ### P2 — P2-A 事件互通 + 调度可见
 
@@ -218,6 +218,7 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 - [ ] **G0 门禁（开工前置）**：G0-1~G0-8 全关闭（密钥轮换、配置外置、CI 阻断 job 变红、健康检查 `--record-good`、DDL 唯一 owner、日志/磁盘上限、认知幂等字段）
 - [ ] P0 后：公共门面可被新代码调用且 4 处既有调用方行为零变化；6 port + 6 fake 契约测试**在阻断 job 中通过**；直连基线报告可产出；**`unified_search` 经 `Search` port 可用（"打通"第一成果），且全后端故障返回显式错误码**
 - [ ] P1 后：19-DAL PG adapter 落地且 `dc_pg` 收编后调用方零改动（字段级比对达阈值）；五能力声明可机器读取且校验可拦截漂移；11 系统第一批直连收编（独立轨道）启动
+- [x] **C6 能力声明已落地（2026-11-01）**：五能力声明可机器读取；`validate_capabilities.py` 可拦截 port/impl 漂移；接入 `l0-contracts` 阻断 job
 - [ ] P2 后：一次采集可产出可 recall 的认知记录且重复执行不重复写入（`external_id` 生效）；三条链路有 `job_runs` 记录且幂等生效（UTC 窗口）；grep 门禁可拦截新增直连
 - [ ] P3 后：检索可触发可追踪任务；health 含五能力 + 调度分项；**每端各 1 个**非实盘周期任务在 `job_runs` 可见
 - [ ] 全量回归：pytest 无新增失败；tsc 0 errors；云端健康检查通过；实盘进程生命周期未改变

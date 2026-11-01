@@ -1,0 +1,101 @@
+# C6 能力声明 —— L0 五能力唯一事实源（SPEC-L0 §6 / SPEC-C L0-I）
+# 硬约束：本文件为机器可读声明；scripts/validate_capabilities.py + CI（l0-contracts）
+# 为唯一门禁；不加载 DreamOS 运行时 CapabilityRegistry（跨进程不可行）。
+# 字段沿用 CapabilitySpec：capability_id / category / requirements / status / degraded_reason。
+schema_version: "1.0"
+
+capabilities:
+  - capability_id: l0.cognition
+    category: memory
+    name: 广义认知系统
+    description: MCP recall/record/verify/stats/health（认知四层闭环对外接口）
+    port: memory
+    provides:
+      - name: recall
+        impl: 4-MEMORY/9-工具与接口/cognitive_mcp_server.py::recall
+      - name: record
+        impl: 4-MEMORY/9-工具与接口/cognitive_mcp_server.py::record
+      - name: verify
+        impl: 4-MEMORY/9-工具与接口/cognitive_mcp_server.py::verify
+      - name: stats
+        impl: 4-MEMORY/9-工具与接口/cognitive_mcp_server.py::stats
+      - name: health
+        impl: 4-MEMORY/9-工具与接口/cognitive_mcp_server.py::health
+    consumes: []
+    health_cmd: python3 -c "import os; print('ok' if os.path.exists('4-MEMORY/data/cognitive_memory.db') else 'missing')"
+    requirements: []
+    status: available
+    degraded_reason: ""
+    tags: [cognition, mcp, c1-c4]
+
+  - capability_id: l0.data
+    category: data
+    name: 数据采集系统
+    description: BaseCollector + Registry + dispatcher 路由 + scheduler 主循环
+    port: collector
+    provides:
+      - name: BaseCollector.fetch
+        impl: 18-数据获取中心/data_center/collectors/_base.py::def fetch
+      - name: Registry.register
+        impl: 18-数据获取中心/data_center/core/registry.py::def register
+      - name: collect_once
+        impl: 18-数据获取中心/data_center/scheduler.py::def collect_once
+    consumes: [l0.store]
+    health_cmd: python3 -c "import os; print('ok' if os.path.exists('18-数据获取中心/data_center/scheduler.py') else 'missing')"
+    requirements: [l0.store]
+    status: available
+    degraded_reason: ""
+    tags: [data, collector, scheduler]
+
+  - capability_id: l0.search
+    category: search
+    name: 检索系统
+    description: unified_search 经 Search port 路由 41 索引 / Chroma RAG / 认知 recall
+    port: search
+    provides:
+      - name: SearchAPI.search
+        impl: 41-文件索引系统/api/search_api.py::class SearchAPI
+      - name: unified_search
+        impl: dreambuddy_l0/search/unified.py::class UnifiedSearch
+    consumes: [l0.cognition, l0.store]
+    health_cmd: python3 -c "import os; print('ok' if os.path.exists('dreambuddy_l0/search/unified.py') else 'missing')"
+    requirements: [l0.cognition]
+    status: degraded
+    degraded_reason: 41 索引为外部部署需探活；Chroma/recall 依赖本地库，单后端故障时降级返回其余结果
+    tags: [search, unified, rag]
+
+  - capability_id: l0.store
+    category: storage
+    name: PG 数据存储管理
+    description: sink_postgres 读写接口 + SQLite→PG 迁移框架
+    port: store
+    provides:
+      - name: sink_postgres.write
+        impl: 18-数据获取中心/data_center/storage/sink_postgres.py::def write
+      - name: sink_postgres.read_all
+        impl: 18-数据获取中心/data_center/storage/sink_postgres.py::def read_all
+      - name: sink_postgres.query_records
+        impl: 18-数据获取中心/data_center/storage/sink_postgres.py::def query_records
+      - name: sink_postgres.latest_records
+        impl: 18-数据获取中心/data_center/storage/sink_postgres.py::def latest_records
+    consumes: []
+    health_cmd: python3 -c "import os; print('ok' if os.path.exists('18-数据获取中心/data_center/storage/sink_postgres.py') else 'missing')"
+    requirements: []
+    status: available
+    degraded_reason: ""
+    tags: [storage, postgres, dal]
+
+  - capability_id: l0.rea
+    category: analysis
+    name: REA 逆向解析能力
+    description: PythonAnalyzer.analyze → AnalyzeResult + Evidence（Evidence-First 事实分级）
+    port: analysis
+    provides:
+      - name: PythonAnalyzer.analyze
+        impl: 33-REA逆向解析工程/core/python_analyzer.py::class PythonAnalyzer
+    consumes: []
+    health_cmd: python3 -c "import os; print('ok' if os.path.exists('33-REA逆向解析工程/core/python_analyzer.py') else 'missing')"
+    requirements: []
+    status: available
+    degraded_reason: ""
+    tags: [rea, analysis, evidence]
