@@ -17,17 +17,21 @@
        upstream_unavailable, cognitive_unavailable, fetch_error}。
 
 settle(result, context) 复用已落地分流（案例库 jsonl + 认知价值 record），FAIL-OPEN。
+可选 `gate=callable(context) -> (allowed, info)` 注入 45 门禁卡点（P3-3）：无有效凭证拒绝沉淀；
+门禁自身异常按 fail-closed 处理（不沉淀），与数据源 FAIL-OPEN 语义区分。
 """
+
 from __future__ import annotations
 
 import glob
 import json
 import os
 import re
-import sys
 import urllib.request
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+SettleGate = Callable[[Dict[str, Any]], Tuple[bool, Dict[str, Any]]]
 
 # ============================================================
 # 路径注册表（相对项目根；core/l0_foundation.py 位于 <root>/34-前端应用训练系统/core/）
@@ -48,6 +52,7 @@ def _load_dc_pg():
     global _dc_pg_module
     if _dc_pg_module is None:
         import importlib.util as _ilu
+
         _spec = _ilu.spec_from_file_location("dreambuddy_dc_pg", _DC_PG_PATH)
         _mod = _ilu.module_from_spec(_spec)
         _spec.loader.exec_module(_mod)
@@ -57,10 +62,18 @@ def _load_dc_pg():
 
 # G0-2：41 外部部署路径外置为配置（环境变量 FIS_P0_HOME，本地/云端差异只在配置）
 _FIS_P0_HOME = os.environ.get("FIS_P0_HOME", "/home/ubuntu/fis-p0")
-_EVOLUTION_LOG = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
-                  "logs", "evolution_pipeline.log")
-_EVOLUTION_SNAPSHOT = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
-                       "gene_data", "evolution_snapshots.json")
+_EVOLUTION_LOG = (
+    "23-四层闭环自进化交易架构",
+    "dreambuddy_evolution",
+    "logs",
+    "evolution_pipeline.log",
+)
+_EVOLUTION_SNAPSHOT = (
+    "23-四层闭环自进化交易架构",
+    "dreambuddy_evolution",
+    "gene_data",
+    "evolution_snapshots.json",
+)
 _BCRM2_SUMMARY = ("11-易经推理系统", "data", "bcrm2", "bcrm2_hourly_summary.json")
 _BDSM_DIR = ("11-易经推理系统", ".workbuddy", "bdsm")
 _TRADER_DIR = ("11-易经推理系统", "data", "polling_trader")
@@ -81,8 +94,9 @@ _ASSET_KEYS = ("crypto_usdt", "us_stock", "precious_metal")
 # ============================================================
 
 
-def _envelope(data: Any, source: str, *, degraded: bool = False,
-              meta: Optional[Dict] = None) -> Dict[str, Any]:
+def _envelope(
+    data: Any, source: str, *, degraded: bool = False, meta: Optional[Dict] = None
+) -> Dict[str, Any]:
     return {
         "ok": not degraded,
         "data": data,
@@ -93,8 +107,7 @@ def _envelope(data: Any, source: str, *, degraded: bool = False,
     }
 
 
-def _degraded(source: str, reason: str, error: str = "",
-              data: Any = None) -> Dict[str, Any]:
+def _degraded(source: str, reason: str, error: str = "", data: Any = None) -> Dict[str, Any]:
     meta: Dict[str, Any] = {"reason": reason}
     if error:
         meta["error"] = str(error)
@@ -104,6 +117,7 @@ def _degraded(source: str, reason: str, error: str = "",
 # ============================================================
 # L0Foundation
 # ============================================================
+
 
 class L0Foundation:
     """L0 数据访问抽象（scope → 数据源 fetcher 注册表）。"""
@@ -123,9 +137,14 @@ class L0Foundation:
         "docs.search": "_fetch_docs_search",  # B1（41 SPEC §13.2）：41 recall 文档上下文供给
     }
 
-    def __init__(self, root: Optional[str] = None, *,
-                 okx_base: str = OKX_BASE, okx_backup: str = OKX_BACKUP,
-                 http_timeout: float = 5.0):
+    def __init__(
+        self,
+        root: Optional[str] = None,
+        *,
+        okx_base: str = OKX_BASE,
+        okx_backup: str = OKX_BACKUP,
+        http_timeout: float = 5.0,
+    ):
         self.root = root or _PROJECT_ROOT
         self.okx_base = okx_base
         self.okx_backup = okx_backup
@@ -147,13 +166,30 @@ class L0Foundation:
         except Exception as e:  # 防御纵深：fetcher 内部漏网异常也不得抛给 L1
             return _degraded(scope, "fetch_error", f"{type(e).__name__}: {e}")
 
-    def settle(self, result: Optional[Dict], context: Optional[Dict] = None) -> None:
-        """工作后沉淀（已落地能力复用）：成功→案例库；有价值发现→认知系统。FAIL-OPEN。"""
+    def settle(
+        self,
+        result: Optional[Dict],
+        context: Optional[Dict] = None,
+        *,
+        gate: Optional[SettleGate] = None,
+    ) -> None:
+        """工作后沉淀（已落地能力复用）：成功→案例库；有价值发现→认知系统。FAIL-OPEN。
+
+        gate（P3-3 45 门禁）：返回 (allowed, info)；未通过则不沉淀。
+        门禁异常按 fail-closed（拒绝沉淀），避免无凭证沉淀。
+        """
         context = context or {}
+        if gate is not None:
+            try:
+                allowed, _info = gate(context)
+            except Exception:
+                allowed = False
+            if not allowed:
+                return
         intent = context.get("intent", "")
         message = context.get("message", "")
         try:
-            self._settle_case(intent, message, result)
+            self._settle_case(intent, message, result, context)
         except Exception:
             pass
         try:
@@ -169,6 +205,7 @@ class L0Foundation:
         """
         import json as _json
         import subprocess as _sp
+
         src_tag = "fis_docs_search"
         query = params.get("query")
         if not query:
@@ -176,10 +213,14 @@ class L0Foundation:
         limit = int(params.get("limit", 5))
         try:
             proc = _sp.run(
-                [os.path.join(_FIS_P0_HOME, ".venv/bin/python"),
-                 os.path.join(_FIS_P0_HOME, "scripts/search_cli.py")],
+                [
+                    os.path.join(_FIS_P0_HOME, ".venv/bin/python"),
+                    os.path.join(_FIS_P0_HOME, "scripts/search_cli.py"),
+                ],
                 input=_json.dumps({"cmd": "recall", "query": str(query), "limit": limit}),
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
                 env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
             )
             res = _json.loads(proc.stdout or "{}")
@@ -357,8 +398,11 @@ class L0Foundation:
             m = pat.search(line)
             if m:
                 latest = {
-                    "total": int(m.group(1)), "IDLE": int(m.group(2)), "ARMED": int(m.group(3)),
-                    "TRIGGERED": int(m.group(4)), "CLOSED": int(m.group(5)),
+                    "total": int(m.group(1)),
+                    "IDLE": int(m.group(2)),
+                    "ARMED": int(m.group(3)),
+                    "TRIGGERED": int(m.group(4)),
+                    "CLOSED": int(m.group(5)),
                     "history_triggered": int(m.group(6)),
                 }
         if not latest:
@@ -395,8 +439,7 @@ class L0Foundation:
             except Exception as e:
                 last_error = str(e)
                 continue
-        return _degraded(f"{self.okx_base}/{self.okx_backup}",
-                         "upstream_unavailable", last_error)
+        return _degraded(f"{self.okx_base}/{self.okx_backup}", "upstream_unavailable", last_error)
 
     # -------- scope: cognitive.recall --------
 
@@ -406,26 +449,29 @@ class L0Foundation:
         if cog_path not in os.sys.path:
             os.sys.path.insert(0, cog_path)
         from cognitive_loop_entry import get_cle
+
         return get_cle()
 
     def _fetch_cognitive_recall(self, params: Dict) -> Dict[str, Any]:
         context = params.get("context")
         if not context:
-            return _degraded("cognitive-loop-entry", "invalid_params",
-                             "missing param: context")
+            return _degraded("cognitive-loop-entry", "invalid_params", "missing param: context")
         top_k = int(params.get("top_k", 5))
         min_quality = params.get("min_quality", "C")
         try:
             cle = self._load_cle()
             memories = cle.recall(context, top_k=top_k, min_quality=min_quality)
         except Exception as e:
-            return _degraded("cognitive-loop-entry", "cognitive_unavailable",
-                             f"{type(e).__name__}: {e}", data=[])
+            return _degraded(
+                "cognitive-loop-entry", "cognitive_unavailable", f"{type(e).__name__}: {e}", data=[]
+            )
         return _envelope(list(memories or []), "cognitive-loop-entry")
 
     # -------- settle 分流（从 L1 执行器上收，行为保持一致，FAIL-OPEN） --------
 
-    def _settle_case(self, intent: str, message: str, result: Optional[Dict]) -> None:
+    def _settle_case(
+        self, intent: str, message: str, result: Optional[Dict], context: Optional[Dict] = None
+    ) -> None:
         """成功执行的 query→answer 对写入案例库（统计学习回路）。"""
         if not result or not result.get("success") or result.get("degraded"):
             return
@@ -438,6 +484,7 @@ class L0Foundation:
             "data": result.get("data"),
         }
         # P1.5 扩展字段（spec §9.1）：意图系统域 complexity/entities 透传
+        context = context or {}
         for _k in ("complexity", "entities"):
             if context.get(_k) is not None:
                 case[_k] = context[_k]
@@ -465,17 +512,17 @@ class L0Foundation:
             if isinstance(metrics, dict):
                 numeric = [v for v in metrics.values() if isinstance(v, (int, float))]
                 if numeric and all(v == 0 for v in numeric):
-                    return (f"数据源的坑: {data.get('source', '?')} 数值字段全为 0"
-                            f"（sub_category={data.get('sub_category', '?')}），数据质量存疑")
+                    return (
+                        f"数据源的坑: {data.get('source', '?')} 数值字段全为 0"
+                        f"（sub_category={data.get('sub_category', '?')}），数据质量存疑"
+                    )
         return None
 
-    def _settle_cognitive_valuable(self, intent: str, message: str,
-                                   result: Optional[Dict]) -> None:
+    def _settle_cognitive_valuable(self, intent: str, message: str, result: Optional[Dict]) -> None:
         finding = self._detect_valuable_finding(result)
         if not finding:
             return
-        self._record_cognitive(
-            f"[L1探索发现] intent={intent} | 问法: {message} | {finding}")
+        self._record_cognitive(f"[L1探索发现] intent={intent} | 问法: {message} | {finding}")
 
     def _record_cognitive(self, content: str, intent: str = "") -> None:
         cle = self._load_cle()

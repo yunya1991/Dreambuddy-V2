@@ -8,16 +8,16 @@ GREEN 阶段：实现 10 scope 注册表 + 统一信封 {ok,data,source,timestam
 
 测试全部使用 tmp_path 构造假项目根，不依赖真实子系统数据、不发起真实网络请求。
 """
+
 import json
 import os
 import sys
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # 18 中心已迁移 PostgreSQL，测试需 mock 39 模块统一 PG 辅助模块
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), "..", "..", "39-金融语义蒸馏系统", "scripts"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "..", "..", "39-金融语义蒸馏系统", "scripts")
+)
 
 
 ENVELOPE_KEYS = {"ok", "data", "source", "timestamp", "degraded", "meta"}
@@ -25,6 +25,7 @@ ENVELOPE_KEYS = {"ok", "data", "source", "timestamp", "degraded", "meta"}
 
 def _make_l0(tmp_path):
     from core.l0_foundation import L0Foundation
+
     return L0Foundation(root=str(tmp_path))
 
 
@@ -39,13 +40,16 @@ def _write(tmp_path, *parts, content=""):
 # 1. 模块导入
 # ============================================================
 
+
 class TestModuleImport:
     def test_import_l0_foundation(self):
         from core.l0_foundation import L0Foundation
+
         assert callable(L0Foundation)
 
     def test_import_get_l0_singleton(self):
         from core.l0_foundation import get_l0
+
         l0_a = get_l0()
         l0_b = get_l0()
         assert l0_a is l0_b
@@ -54,6 +58,7 @@ class TestModuleImport:
 
     def test_scope_registry_has_ten_scopes(self):
         from core.l0_foundation import L0Foundation
+
         l0 = L0Foundation(root="/nonexistent-root-for-test")
         for scope in (
             "datacenter.record",
@@ -73,6 +78,7 @@ class TestModuleImport:
 # ============================================================
 # 2. 信封契约 + FAIL-OPEN
 # ============================================================
+
 
 class TestEnvelopeContract:
     def test_unknown_scope_degrades_not_raises(self, tmp_path):
@@ -109,6 +115,7 @@ class TestEnvelopeContract:
 # 3. datacenter.record（18 中心 PostgreSQL，经 dc_pg 查询）
 # ============================================================
 
+
 class TestDatacenterRecord:
     """mock dc_pg.fetch_latest_by_source，不依赖真实 PostgreSQL。"""
 
@@ -126,10 +133,18 @@ class TestDatacenterRecord:
         monkeypatch.setattr(dc_pg, "fetch_latest_by_source", _fake_fetch)
 
     def test_returns_latest_row_with_parsed_metrics(self, tmp_path, monkeypatch):
-        self._mock_rows(monkeypatch, [
-            {"source": "fred", "category": "macro", "sub_category": "cpi",
-             "timestamp": "2026-10-16T00:00:00", "metrics": {"cpi": 3.1}},
-        ])
+        self._mock_rows(
+            monkeypatch,
+            [
+                {
+                    "source": "fred",
+                    "category": "macro",
+                    "sub_category": "cpi",
+                    "timestamp": "2026-10-16T00:00:00",
+                    "metrics": {"cpi": 3.1},
+                },
+            ],
+        )
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
         assert env["ok"] is True and env["degraded"] is False
         d = env["data"]
@@ -145,27 +160,43 @@ class TestDatacenterRecord:
     def test_pg_unreachable_returns_none_not_degraded(self, tmp_path, monkeypatch):
         # FAIL-OPEN：PostgreSQL 不可达 → dc_pg 返回 None → 空数据信封，不降级
         import dc_pg
-        monkeypatch.setattr(dc_pg, "fetch_latest_by_source",
-                           lambda s, sub_category=None: None)
+
+        monkeypatch.setattr(dc_pg, "fetch_latest_by_source", lambda s, sub_category=None: None)
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
         assert env["degraded"] is False
         assert env["data"] is None
 
     def test_no_matching_row_returns_none(self, tmp_path, monkeypatch):
-        self._mock_rows(monkeypatch, [
-            {"source": "fred", "category": "macro", "sub_category": "cpi",
-             "timestamp": "2026-10-16", "metrics": {"cpi": 3.1}},
-        ])
+        self._mock_rows(
+            monkeypatch,
+            [
+                {
+                    "source": "fred",
+                    "category": "macro",
+                    "sub_category": "cpi",
+                    "timestamp": "2026-10-16",
+                    "metrics": {"cpi": 3.1},
+                },
+            ],
+        )
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "coinglass"})
         assert env["degraded"] is False
         assert env["data"] is None
 
     def test_raw_string_metrics_passthrough(self, tmp_path, monkeypatch):
         # dc_pg 对无法解析的 metrics 字符串原样透传
-        self._mock_rows(monkeypatch, [
-            {"source": "fred", "category": "macro", "sub_category": "cpi",
-             "timestamp": "2026-10-16", "metrics": "not-json"},
-        ])
+        self._mock_rows(
+            monkeypatch,
+            [
+                {
+                    "source": "fred",
+                    "category": "macro",
+                    "sub_category": "cpi",
+                    "timestamp": "2026-10-16",
+                    "metrics": "not-json",
+                },
+            ],
+        )
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
         assert env["data"]["metrics"] == "not-json"
 
@@ -174,17 +205,26 @@ class TestDatacenterRecord:
 # 4. evolution.contradiction（23 系统矛盾日志）
 # ============================================================
 
+
 class TestEvolutionContradiction:
-    LOG_REL = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
-               "logs", "evolution_pipeline.log")
+    LOG_REL = (
+        "23-四层闭环自进化交易架构",
+        "dreambuddy_evolution",
+        "logs",
+        "evolution_pipeline.log",
+    )
 
     def test_parses_dimensions_last_occurrence_wins(self, tmp_path):
-        _write(tmp_path, *self.LOG_REL, content=(
-            "noise line\n"
-            "2026-10-16 [Contradiction] dim=C1 dir=long strength=0.50 extra\n"
-            "2026-10-16 [Contradiction] dim=C2 dir=short strength=0.80\n"
-            "2026-10-16 [Contradiction] dim=C1 dir=neutral strength=0.72\n"
-        ))
+        _write(
+            tmp_path,
+            *self.LOG_REL,
+            content=(
+                "noise line\n"
+                "2026-10-16 [Contradiction] dim=C1 dir=long strength=0.50 extra\n"
+                "2026-10-16 [Contradiction] dim=C2 dir=short strength=0.80\n"
+                "2026-10-16 [Contradiction] dim=C1 dir=neutral strength=0.72\n"
+            ),
+        )
         env = _make_l0(tmp_path).fetch_context("evolution.contradiction")
         assert env["degraded"] is False
         dims = env["data"]["dims"]
@@ -207,9 +247,14 @@ class TestEvolutionContradiction:
 # 5. evolution.snapshot（23 系统快照 JSON）
 # ============================================================
 
+
 class TestEvolutionSnapshot:
-    SNAP_REL = ("23-四层闭环自进化交易架构", "dreambuddy_evolution",
-                "gene_data", "evolution_snapshots.json")
+    SNAP_REL = (
+        "23-四层闭环自进化交易架构",
+        "dreambuddy_evolution",
+        "gene_data",
+        "evolution_snapshots.json",
+    )
 
     def test_returns_snapshot_dict(self, tmp_path):
         snap = {"BTC": {"dimension_predictions": {"C1": "long"}, "action": "long"}}
@@ -239,6 +284,7 @@ class TestEvolutionSnapshot:
 # 6. yijing.bcrm2（11 系统 BCRM2 小时汇总）
 # ============================================================
 
+
 class TestBcrm2:
     PATH_REL = ("11-易经推理系统", "data", "bcrm2", "bcrm2_hourly_summary.json")
 
@@ -263,6 +309,7 @@ class TestBcrm2:
 # 7. yijing.bdsm（11 系统 BDSM 快照，glob 最新）
 # ============================================================
 
+
 class TestBdsm:
     DIR_REL = ("11-易经推理系统", ".workbuddy", "bdsm")
 
@@ -270,12 +317,24 @@ class TestBdsm:
         d = tmp_path.joinpath(*self.DIR_REL)
         d.mkdir(parents=True)
         (d / "bdsm_snapshot_20261015.json").write_text(
-            json.dumps({"coins": {"BTC": {"available": False, "score": 0.1}}}), encoding="utf-8")
+            json.dumps({"coins": {"BTC": {"available": False, "score": 0.1}}}), encoding="utf-8"
+        )
         (d / "bdsm_snapshot_20261016.json").write_text(
-            json.dumps({"coins": {"ETH": {"available": True, "score": 0.83,
-                                          "rank": "A", "phase": "growth",
-                                          "valuation_percentile": 65}}}),
-            encoding="utf-8")
+            json.dumps(
+                {
+                    "coins": {
+                        "ETH": {
+                            "available": True,
+                            "score": 0.83,
+                            "rank": "A",
+                            "phase": "growth",
+                            "valuation_percentile": 65,
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
         env = _make_l0(tmp_path).fetch_context("yijing.bdsm")
         assert env["degraded"] is False
         assert "ETH" in env["data"]["coins"]
@@ -298,19 +357,25 @@ class TestBdsm:
 # 8. yijing.strategic（11 系统 polling_trader 战略层影子日志）
 # ============================================================
 
+
 class TestStrategic:
     DIR_REL = ("11-易经推理系统", "data", "polling_trader")
 
     def test_parses_asset_veto_states(self, tmp_path):
-        rec = {"msg": "2026 [战略层影子] dimension_veto | crypto_usdt=LONG|us_stock=NEUTRAL|precious_metal=SHORT"}
+        rec = {
+            "msg": "2026 [战略层影子] dimension_veto | crypto_usdt=LONG|us_stock=NEUTRAL|precious_metal=SHORT"
+        }
         noise = {"msg": "unrelated line"}
         f = tmp_path.joinpath(*self.DIR_REL, "trader_20261016.jsonl")
         f.parent.mkdir(parents=True)
         f.write_text(
-            json.dumps(noise, ensure_ascii=False) + "\n"
+            json.dumps(noise, ensure_ascii=False)
+            + "\n"
             + "not-json-line\n"
-            + json.dumps(rec, ensure_ascii=False) + "\n",
-            encoding="utf-8")
+            + json.dumps(rec, ensure_ascii=False)
+            + "\n",
+            encoding="utf-8",
+        )
         env = _make_l0(tmp_path).fetch_context("yijing.strategic")
         assets = env["data"]["assets"]
         assert assets == {"crypto_usdt": "LONG", "us_stock": "NEUTRAL", "precious_metal": "SHORT"}
@@ -337,13 +402,21 @@ class TestStrategic:
 # 9. event.state（11 系统事件驱动状态）
 # ============================================================
 
+
 class TestEventState:
     PATH_REL = ("11-易经推理系统", "data", "event_driven_state.json")
 
     def test_returns_state_with_signal(self, tmp_path):
-        state = {"updated_at": "2026-10-16T10:00:00",
-                 "signal": {"event_type": "fomc", "event_phase": "meeting",
-                            "signal": "neutral", "strength": 0.5, "confidence": 0.6}}
+        state = {
+            "updated_at": "2026-10-16T10:00:00",
+            "signal": {
+                "event_type": "fomc",
+                "event_phase": "meeting",
+                "signal": "neutral",
+                "strength": 0.5,
+                "confidence": 0.6,
+            },
+        }
         _write(tmp_path, *self.PATH_REL, content=json.dumps(state))
         env = _make_l0(tmp_path).fetch_context("event.state")
         assert env["data"]["signal"]["event_type"] == "fomc"
@@ -364,6 +437,7 @@ class TestEventState:
 # 10. riskcontrol.trailing（16 系统 trailing runner 日志）
 # ============================================================
 
+
 class TestRiskControl:
     DIR_REL = ("16-调控系统", "logs")
 
@@ -375,8 +449,14 @@ class TestRiskControl:
         _write(tmp_path, *self.DIR_REL, "trailing_runner_20261016.log", content=content)
         env = _make_l0(tmp_path).fetch_context("riskcontrol.trailing")
         p = env["data"]["positions"]
-        assert p == {"total": 3, "IDLE": 0, "ARMED": 2, "TRIGGERED": 1,
-                     "CLOSED": 0, "history_triggered": 6}
+        assert p == {
+            "total": 3,
+            "IDLE": 0,
+            "ARMED": 2,
+            "TRIGGERED": 1,
+            "CLOSED": 0,
+            "history_triggered": 6,
+        }
 
     def test_missing_dir_degrades(self, tmp_path):
         env = _make_l0(tmp_path).fetch_context("riskcontrol.trailing")
@@ -398,10 +478,13 @@ class TestRiskControl:
 # 11. market.ticker（OKX 公开行情，主备双源）
 # ============================================================
 
+
 class TestMarketTicker:
     def _ticker(self, last="63000", open24h="62000"):
-        return {"code": "0", "data": [{"last": last, "open24h": open24h,
-                                       "high24h": "64000", "low24h": "61000"}]}
+        return {
+            "code": "0",
+            "data": [{"last": last, "open24h": open24h, "high24h": "64000", "low24h": "61000"}],
+        }
 
     def test_primary_source_success(self, tmp_path, monkeypatch):
         l0 = _make_l0(tmp_path)
@@ -431,8 +514,11 @@ class TestMarketTicker:
 
     def test_both_sources_fail_degrades(self, tmp_path, monkeypatch):
         l0 = _make_l0(tmp_path)
-        monkeypatch.setattr(l0, "_http_get_json",
-                            lambda url, timeout=5: (_ for _ in ()).throw(RuntimeError("net down")))
+        monkeypatch.setattr(
+            l0,
+            "_http_get_json",
+            lambda url, timeout=5: (_ for _ in ()).throw(RuntimeError("net down")),
+        )
         env = l0.fetch_context("market.ticker", {"symbol": "BTC"})
         assert env["degraded"] is True
         assert env["data"] is None
@@ -456,6 +542,7 @@ class TestMarketTicker:
 # 12. cognitive.recall（4-MEMORY 认知系统，FAIL-OPEN）
 # ============================================================
 
+
 class TestCognitiveRecall:
     def test_returns_memories_from_cle(self, tmp_path, monkeypatch):
         l0 = _make_l0(tmp_path)
@@ -465,8 +552,9 @@ class TestCognitiveRecall:
                 return [{"score": 0.82, "content": "hit1"}, {"score": 0.5, "content": "hit2"}]
 
         monkeypatch.setattr(l0, "_load_cle", lambda: _FakeCle())
-        env = l0.fetch_context("cognitive.recall",
-                               {"context": "L0 测试", "top_k": 3, "min_quality": "C"})
+        env = l0.fetch_context(
+            "cognitive.recall", {"context": "L0 测试", "top_k": 3, "min_quality": "C"}
+        )
         assert env["degraded"] is False
         assert len(env["data"]) == 2
         assert env["data"][0]["score"] == 0.82
@@ -493,6 +581,7 @@ class TestCognitiveRecall:
 # 13. settle 分流（已落地能力挂到 L0，行为不变，FAIL-OPEN）
 # ============================================================
 
+
 class TestSettle:
     CASE_REL = ("34-前端应用训练系统", "l1_case_store.jsonl")
 
@@ -517,6 +606,40 @@ class TestSettle:
 
     def test_settle_never_raises(self, tmp_path, monkeypatch):
         l0 = _make_l0(tmp_path)
-        monkeypatch.setattr(l0, "_append_case", lambda *a, **k: (_ for _ in ()).throw(OSError("ro fs")))
+        monkeypatch.setattr(
+            l0, "_append_case", lambda *a, **k: (_ for _ in ()).throw(OSError("ro fs"))
+        )
         # 不抛错即通过
         l0.settle({"success": True, "answer": "a"}, {"intent": "x", "message": "y"})
+
+    # -------- P3-3：45 门禁卡点（可选注入，默认不启用） --------
+
+    def test_gate_allowed_settles(self, tmp_path):
+        l0 = _make_l0(tmp_path)
+        l0._record_cognitive = lambda *a, **k: None
+        seen = []
+
+        def _gate(context):
+            seen.append(context)
+            return True, {"decision": "PASS"}
+
+        l0.settle({"success": True, "answer": "ans"}, {"intent": "data_query"}, gate=_gate)
+        assert len(seen) == 1
+        assert tmp_path.joinpath(*self.CASE_REL).exists()
+
+    def test_gate_blocked_skips_settle(self, tmp_path):
+        l0 = _make_l0(tmp_path)
+        l0._record_cognitive = lambda *a, **k: None
+        result = {"success": True, "answer": "ans"}
+        l0.settle(result, {"intent": "data_query"}, gate=lambda _c: (False, {"decision": "BLOCK"}))
+        assert not tmp_path.joinpath(*self.CASE_REL).exists()
+
+    def test_gate_error_is_fail_closed(self, tmp_path):
+        l0 = _make_l0(tmp_path)
+        l0._record_cognitive = lambda *a, **k: None
+
+        def _boom(_context):
+            raise RuntimeError("gate down")
+
+        l0.settle({"success": True, "answer": "ans"}, {"intent": "data_query"}, gate=_boom)
+        assert not tmp_path.joinpath(*self.CASE_REL).exists()
