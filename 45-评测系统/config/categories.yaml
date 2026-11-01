@@ -1,0 +1,23 @@
+# categories.yaml — 类别↔对象类型映射 + 门禁模式（P0-4）
+# ==========================================================
+# 依据 SPEC v1.0：
+# - §5.1 金融类（交易策略/交易服务）→ finance: strategy / service
+# - §5.2 AI 类（模型训练、AI 工程）→ ai: model / service
+# - §5.3 技术工程类（代码工程、数据管理、知识沉淀）
+#     → engineering: code_artifact / dataset / knowledge
+# - §13.1 受理即拒条件：类别与 object_type 不匹配
+#
+# gate.shadow：影子模式开关（用户硬要求：开发完成后初期先影子模式运行，
+# 只受理不拦截，确保质量后再转实盘强制门禁）。
+version: "CAT-2026Q4@1"
+
+categories:
+  finance:
+    object_types: [strategy, service]
+  ai:
+    object_types: [model, service]
+  engineering:
+    object_types: [code_artifact, dataset, knowledge]
+
+gate:
+  shadow: true
