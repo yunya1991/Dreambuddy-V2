@@ -9469,13 +9469,26 @@ class PollingTrader:
             if confirmed:
                 self._clear_exit_confirm(coin, self.EXIT_ACT_EV_FORCE_CLOSE)
                 reason = f"ev_force_close|ev={ev:.3f}<{force_below:.2f}|cnt={cnt}"
-                self._handle_close_position(
-                    inst_id=inst_id, coin=coin, pos_side=pos_side,
-                    exit_price=current_price, exit_reason=reason,
-                    pnl=upl, pnl_pct=upl_ratio,
+                # 幽灵仓位修复：先真实市价平仓，成交确认后才记账（对齐 yijing FORCE_CLOSE 范式）
+                if pos_side == "long":
+                    _r = self.okx_client.market_close_long(inst_id, reason=reason)
+                else:
+                    _r = self.okx_client.market_close_short(inst_id, reason=reason)
+                if _r.get("ok") or _r.get("dry_run"):
+                    self._handle_close_position(
+                        inst_id=inst_id, coin=coin, pos_side=pos_side,
+                        exit_price=current_price, exit_reason=reason,
+                        pnl=upl, pnl_pct=upl_ratio,
+                    )
+                    return {"tier": "FORCE_CLOSE", "ev": ev, "subs": subs,
+                            "action": f"closed|{reason}"}
+                self._log(
+                    f"[{coin}] EV FORCE_CLOSE 市价平仓失败，保留持仓与OCO保护: "
+                    f"{_r.get('error', _r.get('msg', 'unknown'))}",
+                    "ERROR",
                 )
-                return {"tier": "FORCE_CLOSE", "ev": ev, "subs": subs,
-                        "action": f"closed|{reason}"}
+                return {"tier": "FORCE_CLOSE_FAILED", "ev": ev, "subs": subs,
+                        "action": f"close_failed|{reason}"}
             else:
                 self._log(
                     f"[{coin}] EV={ev:.3f} T1 FORCE_CLOSE 1/"
@@ -9983,6 +9996,20 @@ class PollingTrader:
         exit_price = float(top1.get("mark_price") or top1.get("inference", {}).get("price") or 0.0)
         upl_ratio = float(top1.get("upl_ratio", 0.0))
         reason = f"ranked_tp|gap={gap_ratio:.2f}≥{gap_threshold:.2f}|top1={coin}|cnt={cnt}"
+
+        # 幽灵仓位修复：先真实市价平仓，成交确认后才记账（对齐 yijing FORCE_CLOSE 范式）
+        if pos_side == "long":
+            _r = self.okx_client.market_close_long(inst_id, reason=reason)
+        else:
+            _r = self.okx_client.market_close_short(inst_id, reason=reason)
+        if not (_r.get("ok") or _r.get("dry_run")):
+            self._log(
+                f"[{coin}] ranked_tp 市价平仓失败，保留持仓与OCO保护: "
+                f"{_r.get('error', _r.get('msg', 'unknown'))}",
+                "ERROR",
+            )
+            return {"triggered": False, "reason": f"CLOSE_FAILED|{reason}",
+                    "gap_ratio": gap_ratio, "top1_idx": top1_idx}
 
         self._handle_close_position(
             inst_id=inst_id, coin=coin, pos_side=pos_side,
@@ -14750,11 +14777,23 @@ class PollingTrader:
                                     f"{n_prep}/{n}={rate:.2f}≥{prep_rate:.2f} → 执行离场",
                                     "WARN",
                                 )
-                                self._handle_close_position(
-                                    inst_id=inst_id, coin=coin, pos_side=pos_side,
-                                    exit_price=exit_price, exit_reason=reason,
-                                    pnl=upl, pnl_pct=upl_ratio,
-                                )
+                                # 幽灵仓位修复：先真实市价平仓，成交确认后才记账（对齐 yijing FORCE_CLOSE 范式）
+                                if pos_side == "long":
+                                    _r = self.okx_client.market_close_long(inst_id, reason=reason)
+                                else:
+                                    _r = self.okx_client.market_close_short(inst_id, reason=reason)
+                                if _r.get("ok") or _r.get("dry_run"):
+                                    self._handle_close_position(
+                                        inst_id=inst_id, coin=coin, pos_side=pos_side,
+                                        exit_price=exit_price, exit_reason=reason,
+                                        pnl=upl, pnl_pct=upl_ratio,
+                                    )
+                                else:
+                                    self._log(
+                                        f"[{coin}] S3 PREP_EXIT 市价平仓失败，保留持仓与OCO保护: "
+                                        f"{_r.get('error', _r.get('msg', 'unknown'))}",
+                                        "ERROR",
+                                    )
                                 return  # S3 强制离场 → 跳过后续所有离场分支
                             else:
                                 self._log(
