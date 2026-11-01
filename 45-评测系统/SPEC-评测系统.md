@@ -319,8 +319,8 @@ evaluator:
   entrypoint: evaluators.finance.backtest:BacktestEvaluator
   inputs: [object_ref, env_manifest, dataset_ref, split_ref]
   outputs: [EvalItem]
-  hard_items: [F-H1, F-H2, F-H3, F-H4, F-H5, F-H6]
-  weighted_items: [F-W1, F-W2, F-W3, F-W4, F-W5, F-W6]
+  hard_items: [F-H1, F-H2, F-H3, F-H4, F-H5, F-H6, F-H7]
+  weighted_items: [F-W1, F-W2, F-W3, F-W4, F-W5]
   budget_ms: 1800000
   sandbox: required|forbidden
   side_effects: none|isolated
