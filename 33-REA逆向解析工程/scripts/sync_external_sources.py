@@ -39,7 +39,7 @@ URL_RE = re.compile(r"https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)")
 SKIP_OWNER = {"topics", "search", "features", "about", "login", "orgs", "sponsors"}
 # 占位符 / 自引用仓库：不是外部项目
 PLACEHOLDER_OWNERS = {"your-username", "your-org", "your-name", "org", "owner", "user", "example"}
-SELF_REPOS = {"yunya1991/dreambuddy-v2"}
+SELF_OWNERS = {"yunya1991"}  # 本系统自有仓库，不是外部项目
 # 依赖库文档目录：其中的 GitHub 链接是第三方依赖，不是本系统调研结论
 NOISE_MARKERS = (
     "node_modules", ".venv", "site-packages", "/dist/", "/build/", ".git/",
@@ -116,12 +116,11 @@ def extract_urls(docs: list[Path]) -> list[tuple[str, str, str]]:
         except OSError:
             continue
         for m in URL_RE.finditer(text):
-            owner, repo = m.group(1), m.group(2)
+            owner, repo = m.group(1), re.sub(r"\.git$", "", m.group(2))
             if owner.lower() in SKIP_OWNER or owner.lower() in PLACEHOLDER_OWNERS:
                 continue
-            if f"{owner}/{repo}".lower() in SELF_REPOS:
+            if owner.lower() in SELF_OWNERS:
                 continue
-            repo = re.sub(r"\.git$", "", repo)
             loc = f"https://github.com/{owner}/{repo}"
             key = _norm(loc)
             if key not in found:
@@ -251,6 +250,15 @@ def main() -> int:
     dims = data["dimensions"]
     existing = {_norm(s["location"]): s for s in data["sources"]}
     taken_ids = {s["id"] for s in data["sources"]}
+    # 幂等：已在本 inbox 中的条目不再重复提案
+    if INBOX_FILE.exists():
+        try:
+            prev = json.loads(INBOX_FILE.read_text(encoding="utf-8"))
+            for s in prev.get("sources", []):
+                existing.setdefault(_norm(s["location"]), s)
+                taken_ids.add(s["id"])
+        except (OSError, ValueError, KeyError):
+            pass
 
     new_items, updated, skipped = [], [], 0
     for loc, owner_repo, doc_path in found:

@@ -1,6 +1,6 @@
 {
   "generator": "local",
-  "generated_at": "2026-11-01T13:57:57",
+  "generated_at": "2026-11-01T14:06:57",
   "base_schema": "2.1",
   "sources": [
     {
@@ -300,31 +300,6 @@
       "extract_target": "待人工补全（自动抽取，未评估架构映射）",
       "size_cap_mb": 50,
       "discovered_from": "10-经典指标系统/frontend/README.md",
-      "discovered_at": "2026-11-01",
-      "verified": false
-    },
-    {
-      "id": "dream-multiskill-v2",
-      "category": "dsh",
-      "level": "candidate",
-      "priority": "P3",
-      "wave": 4,
-      "source_type": "github_repo",
-      "location": "https://github.com/yunya1991/dream-multiskill-v2",
-      "label": "yunya1991/dream-multiskill-v2",
-      "language": "unknown",
-      "license": "unknown",
-      "patterns": [
-        "src",
-        "docs"
-      ],
-      "expected_analyzers": [
-        "architecture_pattern_detector",
-        "python_analyzer"
-      ],
-      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
-      "size_cap_mb": 50,
-      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
       "discovered_at": "2026-11-01",
       "verified": false
     },
@@ -1150,31 +1125,6 @@
       "extract_target": "待人工补全（自动抽取，未评估架构映射）",
       "size_cap_mb": 50,
       "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/textbrewer.md",
-      "discovered_at": "2026-11-01",
-      "verified": false
-    },
-    {
-      "id": "dreambuddy-v2",
-      "category": "finance_models",
-      "level": "candidate",
-      "priority": "P3",
-      "wave": 4,
-      "source_type": "github_repo",
-      "location": "https://github.com/yunya1991/Dreambuddy-V2",
-      "label": "yunya1991/Dreambuddy-V2",
-      "language": "unknown",
-      "license": "unknown",
-      "patterns": [
-        "src",
-        "docs"
-      ],
-      "expected_analyzers": [
-        "architecture_pattern_detector",
-        "python_analyzer"
-      ],
-      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
-      "size_cap_mb": 50,
-      "discovered_from": "acceptance_bundles/20261013_git-sync-27commits/wrapup_report.md",
       "discovered_at": "2026-11-01",
       "verified": false
     }
