@@ -1,15 +1,22 @@
 {
-  "generated_at": "2026-11-01T14:11:04",
+  "generated_at": "2026-11-01T14:49:48",
   "apply": true,
   "inject": true,
   "inbox_total": 45,
-  "qualified": 16,
-  "candidate": 6,
+  "qualified": 22,
+  "candidate": 0,
   "reject": 23,
-  "merged": 16,
+  "merged": 0,
   "injected": [],
+  "rejected_items": [
+    {
+      "source": "https://github.com/ymcui/Chinese-BERT-wwm",
+      "stage": "E2-quality",
+      "effective_nodes": 0
+    }
+  ],
   "errors": [],
-  "mem_available_mb": 11463.04296875,
+  "mem_available_mb": 11472.38671875,
   "items": [
     {
       "id": "sample-langgraph-strands-market-analysis",
@@ -75,8 +82,8 @@
       "id": "scaling-verification",
       "location": "https://github.com/HazyResearch/scaling-verification",
       "category": "llm_training",
-      "level": "candidate",
-      "reason": "stars=33<300",
+      "level": "qualified",
+      "reason": "promoted_candidate(stars=33<300)",
       "stars": 33,
       "language": "Python",
       "license": "MIT"
@@ -85,8 +92,8 @@
       "id": "robomonkey",
       "location": "https://github.com/robomonkey-vla/RoboMonkey",
       "category": "llm_training",
-      "level": "candidate",
-      "reason": "stars=47<300",
+      "level": "qualified",
+      "reason": "promoted_candidate(stars=47<300)",
       "stars": 47,
       "language": "Python",
       "license": "MIT"
@@ -265,8 +272,8 @@
       "id": "btc-enhanced-dca",
       "location": "https://github.com/Eumenides-K/btc-enhanced-dca",
       "category": "finance_models",
-      "level": "candidate",
-      "reason": "stars=0<300",
+      "level": "qualified",
+      "reason": "promoted_candidate(stars=0<300)",
       "stars": 0,
       "language": "Python",
       "license": "MIT"
@@ -295,8 +302,8 @@
       "id": "mefai-autotrade",
       "location": "https://github.com/mefai-dev/mefai-autotrade",
       "category": "finance_models",
-      "level": "candidate",
-      "reason": "stars=10<300",
+      "level": "qualified",
+      "reason": "promoted_candidate(stars=10<300)",
       "stars": 10,
       "language": "Python",
       "license": "Apache-2.0"
@@ -335,8 +342,8 @@
       "id": "lob-regime-scanner",
       "location": "https://github.com/CameronScarpati/lob-regime-scanner",
       "category": "finance_models",
-      "level": "candidate",
-      "reason": "stars=19<300",
+      "level": "qualified",
+      "reason": "promoted_candidate(stars=19<300)",
       "stars": 19,
       "language": "Python",
       "license": "MIT"
@@ -385,8 +392,8 @@
       "id": "trading-bot",
       "location": "https://github.com/EliasAbouKhater/trading-bot",
       "category": "finance_models",
-      "level": "candidate",
-      "reason": "stars=0<300",
+      "level": "qualified",
+      "reason": "promoted_candidate(stars=0<300)",
       "stars": 0,
       "language": "Python",
       "license": "MIT"

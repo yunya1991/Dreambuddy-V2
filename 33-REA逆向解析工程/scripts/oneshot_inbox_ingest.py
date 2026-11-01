@@ -119,6 +119,11 @@ def main() -> int:
         action="store_true",
         help="复用当日评估报告，不再调用 GitHub API（避免 60 次/小时限流）",
     )
+    ap.add_argument(
+        "--promote-candidates",
+        action="store_true",
+        help="把 candidate（语言/许可已通过、仅 stars 不足）升为 qualified 并注入",
+    )
     args = ap.parse_args()
 
     if not mem_gate():
@@ -157,6 +162,9 @@ def main() -> int:
             }
             log(f"{level:9s} {owner_repo:42s} {reason}")
         evaluated.append(rec)
+        if args.promote_candidates and rec["level"] == "candidate":
+            rec["level"] = "qualified"
+            rec["reason"] = f"promoted_candidate({rec['reason']})"
         results[rec["level"]].append(rec)
 
     merged = 0
@@ -196,13 +204,14 @@ def main() -> int:
         os.replace(tmp, SOURCES_JSON)
         log(f"merged_into_main={merged} total={len(data['sources'])}")
 
-    injected, errors = [], []
+    injected, rejected, errors = [], [], []
     if args.inject and results["qualified"]:
         from core.reflection.harvest import ExternalHarvester, HarvestSource
         from core.reflection.replay_simulator import ReplayPool
 
         pool = ReplayPool("reflection_data/replay_pool")
-        harvester = ExternalHarvester(pool, work_dir="/tmp/rea_harvest")
+        work_dir = os.environ.get("REA_HARVEST_WORK", "/tmp/rea_harvest")
+        harvester = ExternalHarvester(pool, work_dir=work_dir)
         existing_labels = {t.source_label for t in pool.list_trees("external")}
         todo = [r for r in results["qualified"] if r["id"] not in existing_labels][
             : args.inject_max
@@ -214,14 +223,22 @@ def main() -> int:
                 break
             chunk = todo[i : i + max(1, args.batch)]
             sources = [
-                HarvestSource(source_type="github_repo", location=r["location"], label=r["id"])
+                HarvestSource(
+                    source_type="github_repo",
+                    location=r["location"],
+                    label=r["id"],
+                    license=r.get("license") or "",
+                )
                 for r in chunk
             ]
             outcome = harvester.harvest(sources)
-            injected.extend(t.source_label for t in outcome.injected_trees)
+            injected.extend(r["id"] for r in chunk if outcome.injected_trees)
+            rejected.extend(outcome.rejected)
             errors.extend(str(e) for e in outcome.errors)
             log(
-                f"batch={i//max(1,args.batch)+1} injected={len(outcome.injected_trees)} errors={len(outcome.errors)}"
+                f"batch={i//max(1,args.batch)+1} injected={len(outcome.injected_trees)} "
+                f"rejected={len(outcome.rejected)} errors={len(outcome.errors)} "
+                f"{outcome.rejected[0] if outcome.rejected else ''}"
             )
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -235,6 +252,7 @@ def main() -> int:
         "reject": len(results["reject"]),
         "merged": merged,
         "injected": injected,
+        "rejected_items": rejected,
         "errors": errors,
         "mem_available_mb": mem_available_mb(),
         "items": evaluated,
