@@ -30,6 +30,22 @@ def _registry():
     return load_registry(REGISTRY_PATH)
 
 
+def _run(tk, window, state, started, finished=0.0, error=""):
+    return {
+        "id": f"{tk}@{window}",
+        "run_id": f"{tk}@{window}",
+        "task_key": tk,
+        "logical_window": window,
+        "state": state,
+        "attempts": 1,
+        "started_at": float(started),
+        "heartbeat_at": float(started),
+        "finished_at": float(finished),
+        "error": error,
+        "detail": {},
+    }
+
+
 class FakeRunner:
     """按命令前缀映射 stdout 的 fake 执行器。"""
 
@@ -208,6 +224,29 @@ def test_sync_sidecar_idempotent_within_window():
     out, _ = _sync("os.memory-cleanup.cloud", runner, store)
     assert out["recorded"] is False and out["reason"] == "duplicate"
     assert len(store.query("job_runs", limit=10)["rows"]) == 1
+
+
+def test_sync_sidecar_upgrades_audit_missed_run_row():
+    # 审计先行写入 missed_run（当时无证据）；旁路后到证据应升级为真实终态
+    store = FakeStore()
+    ts = 1793503200.0
+    window = int(ts // 21600)
+    store.write(
+        "job_runs",
+        data=_run("os.memory-cleanup.cloud", window, "missed_run", ts),
+        idempotency_key=f"os.memory-cleanup.cloud@{window}",
+    )
+    runner = FakeRunner(
+        {
+            "systemctl show memory-cleanup.timer -p LastTriggerUSec --value": "1793503200000000\n",
+            "systemctl show memory-cleanup.service": SYSTEMD_SHOW,
+        }
+    )
+    out, _ = _sync("os.memory-cleanup.cloud", runner, store)
+    assert out["recorded"] is True
+    rows = store.query("job_runs", limit=10)["rows"]
+    assert len(rows) == 1
+    assert rows[0]["state"] == "succeeded"
 
 
 def test_sync_sidecar_failed_run_recorded_as_failed():

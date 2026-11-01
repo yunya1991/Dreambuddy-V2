@@ -211,7 +211,10 @@ def sync_sidecar(
         window = window_index(started_ts, spec.window_sec)
         rid = run_key(spec.task_key, window)
         res = recorder.store.query(recorder.table, filters={"run_id": rid}, limit=2) or {}
-        if res.get("rows"):
+        rows = res.get("rows") or []
+        # 审计先行写入的 missed_run 只是"当时无证据"，旁路后到证据应升级为真实状态；
+        # 其余状态（succeeded/failed/pending/...）一律幂等跳过。
+        if rows and rows[0].get("state") != "missed_run":
             return {
                 "degraded": False,
                 "error_code": "",
