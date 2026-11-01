@@ -32,6 +32,7 @@ from core.gateway import (
     MissingIdempotencyKeyError,
     RequestValidationError,
 )
+from core.metrics import Metrics
 from core.registry import ThresholdRegistry
 from core.reporter import Reporter
 from core.runner import Runner
@@ -51,6 +52,7 @@ def create_app(
     gateway: Gateway | None = None,
     reporter: Reporter | None = None,
     runner: Runner | None = None,
+    metrics: Metrics | None = None,
 ) -> FastAPI:
     """应用工厂：默认内存装配（本地空跑/单测）；生产注入 PgRepo 装配。
 
@@ -63,12 +65,15 @@ def create_app(
         gateway = Gateway(store=repo, categories=CategoriesConfig.load())
     if reporter is None:
         reporter = Reporter(repo=repo, thresholds=ThresholdRegistry.load())
+    if metrics is None:
+        metrics = Metrics(repo=repo, shadow=gateway.gate_shadow)
 
     app = FastAPI(title="45-评测系统", version="1.0.0")
     app.state.repo = repo
     app.state.gateway = gateway
     app.state.reporter = reporter
     app.state.runner = runner
+    app.state.metrics = metrics
 
     # ---------- 错误映射 ----------
 
@@ -103,6 +108,22 @@ def create_app(
             "status": result.status,
             "spec_hash": result.spec_hash,
         }
+
+    # ---------- 灰度观测指标（§17 / P1-5） ----------
+    # 必须在 {{eval_id}} 路由之前注册，否则 "metrics" 会被当作 eval_id
+
+    @app.get(f"{API_PREFIX}/metrics")
+    def get_metrics(
+        from_: str | None = Query(default=None, alias="from"),
+        to: str | None = Query(default=None),
+    ) -> JSONResponse:
+        from_dt, err = _parse_dt("from", from_)
+        if err:
+            return err
+        to_dt, err = _parse_dt("to", to)
+        if err:
+            return err
+        return JSONResponse(status_code=200, content=metrics.snapshot(from_dt=from_dt, to_dt=to_dt))
 
     # ---------- 查询（§13.2） ----------
 
@@ -162,9 +183,9 @@ def create_app(
         items = []
         for row in rows:
             item = dict(row)
-            created = item.get("created_at")
-            if isinstance(created, datetime):
-                item["created_at"] = zulu(created)
+            for field in ("created_at", "decided_at"):
+                if isinstance(item.get(field), datetime):
+                    item[field] = zulu(item[field])
             items.append(item)
         return JSONResponse(status_code=200, content={"items": items, "count": len(items)})
 

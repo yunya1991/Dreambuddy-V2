@@ -26,6 +26,7 @@ from typing import Any, Callable, Protocol
 from storage.repo import EvalRepo
 
 from core.callbacks import CallbackDispatcher, ShadowDispatcher
+from core.metrics import Metrics
 from core.reporter import Reporter
 
 logger = logging.getLogger(__name__)
@@ -140,6 +141,7 @@ class Runner:
         sleeper: Callable[[float], None] | None = None,
         poll_interval: float = 0.1,
         dispatcher: CallbackDispatcher | None = None,
+        metrics: Metrics | None = None,
     ) -> None:
         self._repo = repo
         self._reporter = reporter
@@ -151,6 +153,7 @@ class Runner:
         self._poll_interval = poll_interval
         # 默认影子分发：未显式装配时绝不触发下游回调（P1-3 安全默认）
         self._dispatcher = dispatcher or ShadowDispatcher()
+        self._metrics = metrics
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -179,7 +182,11 @@ class Runner:
         eval_id = self._queue.get(timeout=timeout)
         if eval_id is None:
             return None
-        return self._execute(eval_id)
+        started = time.monotonic()
+        outcome = self._execute(eval_id)
+        if outcome is not None and self._metrics is not None:
+            self._metrics.record_run(outcome, int((time.monotonic() - started) * 1000))
+        return outcome
 
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():

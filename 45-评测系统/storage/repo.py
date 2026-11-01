@@ -322,6 +322,7 @@ class InMemoryRepo(InMemoryEvalRequestStore):
                     "status": r.status,
                     "verdict": row_verdict,
                     "created_at": r.created_at,
+                    "decided_at": report_row["decided_at"] if report_row else None,
                 }
             )
         rows.sort(key=lambda x: x["created_at"], reverse=True)
@@ -485,7 +486,7 @@ class PgRepo:  # pragma: no cover — PG 专属实现，本地无库；集成用
     ) -> list[dict[str, Any]]:
         sql = """
             SELECT r.eval_id, r.submitter, r.category, r.object_type, r.purpose,
-                   r.priority, r.status, p.verdict, r.created_at
+                   r.priority, r.status, p.verdict, p.decided_at, r.created_at
             FROM eval_requests r
             LEFT JOIN eval_reports p ON p.eval_id = r.eval_id
             WHERE (CAST(%s AS text) IS NULL OR r.submitter = %s)
