@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/contracts/schemas/eval_spec.v1.json",
+  "title": "EvalSpec v1",
+  "description": "评测规格（SPEC-45 §3.1）：版本化不可变对象，任何字段变更必须升版本",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec_id",
+    "version",
+    "category",
+    "object_type",
+    "evaluator_ref",
+    "scorers",
+    "thresholds_ref",
+    "created_by"
+  ],
+  "properties": {
+    "spec_id": {
+      "type": "string",
+      "pattern": "^EVS-\\d{8}-\\d{4}$",
+      "description": "评测规格唯一标识，如 EVS-20261101-0001"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "语义化版本；任何字段变更递增"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["finance", "ai", "engineering"]
+    },
+    "object_type": {
+      "type": "string",
+      "enum": ["strategy", "model", "service", "code_artifact", "dataset", "knowledge"]
+    },
+    "dataset_ref": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$",
+      "description": "数据集@版本，可为空（非数据集类评测）"
+    },
+    "split_ref": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$",
+      "description": "切分清单@版本（防泄漏）"
+    },
+    "evaluator_ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$",
+      "description": "评测器@版本，如 EV-finance.backtest@1.2.0"
+    },
+    "scorers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["primary", "secondary"]
+          }
+        }
+      }
+    },
+    "thresholds_ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$",
+      "description": "阈值注册表版本，如 TH-2026Q4@1"
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "temperature", "repeats"],
+      "properties": {
+        "seed": { "type": "integer" },
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "repeats": { "type": "integer", "minimum": 1 }
+      },
+      "default": { "seed": 42, "temperature": 0.0, "repeats": 1 }
+    },
+    "env_ref": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$"
+    },
+    "created_by": { "type": "string", "minLength": 1 },
+    "approved_by": { "type": ["string", "null"] }
+  }
+}

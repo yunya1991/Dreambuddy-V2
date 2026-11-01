@@ -91,6 +91,7 @@ class TaskRegistry:
         missed_streak_alert: int = 3,
         window_timezone: str = "UTC",
         schema_version: str = "1.0",
+        search_triggers: Optional[List[Dict[str, str]]] = None,
     ) -> None:
         self._specs = {s.task_key: s for s in specs}
         self.late_tolerance_sec = int(late_tolerance_sec)
@@ -98,6 +99,8 @@ class TaskRegistry:
         self.missed_streak_alert = int(missed_streak_alert)
         self.window_timezone = window_timezone
         self.schema_version = schema_version
+        # C11：检索命中 → task_key 映射（ref 前缀规则）
+        self.search_triggers = [dict(r) for r in (search_triggers or [])]
 
     @classmethod
     def from_dicts(cls, rows: List[Dict[str, Any]]) -> "TaskRegistry":
@@ -135,4 +138,12 @@ def load_registry(path: Optional[str] = None) -> TaskRegistry:
     reg.missed_streak_alert = int(doc.get("missed_streak_alert", 3))
     reg.window_timezone = str(doc.get("window_timezone", "UTC"))
     reg.schema_version = str(doc.get("schema_version", "1.0"))
+    triggers: List[Dict[str, str]] = []
+    for raw in doc.get("search_triggers") or []:
+        if not isinstance(raw, dict) or not raw.get("match") or not raw.get("task_key"):
+            raise ValueError(f"search_triggers 项缺 match/task_key: {raw}")
+        if reg.get(str(raw["task_key"])) is None:
+            raise ValueError(f"search_triggers 引用未注册 task_key: {raw['task_key']}")
+        triggers.append({"match": str(raw["match"]), "task_key": str(raw["task_key"])})
+    reg.search_triggers = triggers
     return reg

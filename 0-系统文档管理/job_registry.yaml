@@ -68,3 +68,14 @@ tasks:
     retry: 0
     enabled: true
     fallback: skip
+
+# C11 检索触发任务（SPEC-L0 §6 C11）：ref 前缀 → task_key。
+# 命中即排 pending job；去重窗口内同一 ref 不重复；并发受 task max_concurrency 限制；
+# FAIL-OPEN；跨界通知不启用（P3 事件表评审前）。
+search_triggers:
+  # 命中 18 数据中心文档 → 排本地采集 job
+  - match: "18-数据采集与数据中心"
+    task_key: dc.collect.local
+  # 命中 41 索引系统文档 → 排云端索引对账 job
+  - match: "41-文件索引系统"
+    task_key: index.reconcile.cloud

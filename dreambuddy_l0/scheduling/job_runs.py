@@ -85,6 +85,38 @@ class JobRunRecorder:
             row["error_code"] = "store_unavailable"
         return row
 
+    def enqueue(
+        self,
+        task_key: str,
+        *,
+        window: int,
+        now: float,
+        detail: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """控制面排 job（C11）：state=pending，等数据面执行器认领，不得冒充 running。"""
+        spec = self.registry.get(task_key)
+        if spec is None:
+            raise ValueError(f"未注册的 task_key: {task_key}")
+        rid = run_key(spec.task_key, window)
+        row = {
+            "id": rid,
+            "run_id": rid,
+            "task_key": spec.task_key,
+            "logical_window": int(window),
+            "state": "pending",
+            "attempts": 0,
+            "started_at": float(now),
+            "heartbeat_at": 0.0,
+            "finished_at": 0.0,
+            "error": "",
+            "detail": detail or {},
+        }
+        ok = self.store.write(self.table, data=row, idempotency_key=rid)
+        row["persisted"] = bool(ok)
+        if not ok:
+            row["error_code"] = "store_unavailable"
+        return row
+
     def heartbeat(self, run_id: str, *, now: float) -> Optional[Dict[str, Any]]:
         row = self._find(run_id)
         if row is None:

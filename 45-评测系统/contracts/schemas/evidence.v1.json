@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/contracts/schemas/evidence.v1.json",
+  "title": "Evidence v1",
+  "description": "证据链条目（SPEC-45 §12 evidence 表 / §14.4 哈希链）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_id",
+    "run_id",
+    "sha256",
+    "uri",
+    "prev_hash",
+    "hash",
+    "created_at"
+  ],
+  "properties": {
+    "evidence_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "证据内容哈希"
+    },
+    "uri": {
+      "type": "string",
+      "minLength": 1,
+      "description": "证据包存储位置（WORM 桶，库内只存 URI+哈希）"
+    },
+    "prev_hash": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "链上一条证据哈希；首条为 null"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "链哈希 = sha256(prev_hash || sha256 || uri 等规范化字段)"
+    },
+    "signed_by": {
+      "type": ["string", "null"],
+      "description": "签名主体；P0 未启用签名时为 null（P4-1 启用）"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$"
+    }
+  }
+}

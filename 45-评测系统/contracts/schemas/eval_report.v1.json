@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dreambuddy.local/contracts/schemas/eval_report.v1.json",
+  "title": "EvalReport v1",
+  "description": "评测报告（SPEC-45 §2.1 Evidence-First / §4 判定语义 / §13.2 查询契约）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eval_id",
+    "run_id",
+    "spec_hash",
+    "verdict",
+    "items",
+    "block_reasons",
+    "evidence",
+    "thresholds_version",
+    "evaluated_at"
+  ],
+  "properties": {
+    "eval_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "spec_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256(canonical_json(EvalSpec))"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["PASS", "BLOCK", "INCONCLUSIVE"]
+    },
+    "score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "加权合成分 0.0–1.0"
+    },
+    "n": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "样本量（加权项必填）"
+    },
+    "ci": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["lower", "upper", "method"],
+      "properties": {
+        "lower": { "type": "number" },
+        "upper": { "type": "number" },
+        "method": {
+          "type": "string",
+          "enum": ["wilson", "bootstrap", "cluster_bootstrap", "normal", "none"]
+        }
+      },
+      "description": "合成分置信区间；门禁判 CI 下界（§2.4）"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "kind", "status"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "kind": {
+            "type": "string",
+            "enum": ["hard", "weighted", "reference"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PASS", "BLOCK", "INCONCLUSIVE", "TIMEOUT", "SKIPPED"]
+          },
+          "score": { "type": ["number", "null"] },
+          "n": { "type": ["integer", "null"], "minimum": 0 },
+          "ci_lower": { "type": ["number", "null"] },
+          "ci_upper": { "type": ["number", "null"] },
+          "weight": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "evidence_id": { "type": ["string", "null"] },
+          "detail": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "block_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "sha256"],
+      "properties": {
+        "uri": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "thresholds_version": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.\\-]*@[A-Za-z0-9.\\-]+$"
+    },
+    "baseline_run_id": { "type": ["string", "null"] },
+    "baseline_diff": {
+      "type": ["number", "null"],
+      "description": "与基线 Run 的分差（95%CI 下界 < 0 判回归，§8.3）"
+    },
+    "sla": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["budget_ms", "elapsed_ms", "degraded"],
+      "properties": {
+        "budget_ms": { "type": "integer", "minimum": 0 },
+        "elapsed_ms": { "type": "integer", "minimum": 0 },
+        "degraded": { "type": "boolean" }
+      }
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "expires_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$",
+      "description": "凭证有效期（默认判定后 7 天，§4）"
+    }
+  }
+}
