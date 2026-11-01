@@ -36,7 +36,7 @@
 - `scorers/model/calibration.py` 新增 `krippendorff_alpha_ordinal`：按 rubric 等级顺序计算序数 δ²（累积频率），相邻分歧惩罚小于跨级分歧
 - 测试：29 个用例（重叠比例 15%/越界拒绝、双标子集与 seed 确定性、盲测泄漏拒绝、一致/分歧/仲裁校验、α 跌破下限判 INCONCLUSIVE、重叠不足、ordinal α 强于 nominal、仲裁计入最终分、未决样本剔除、工时/成本/脱敏、rubric 绑定）；scorers/human/workflow.py 覆盖率 95%
 - 顺带修复 MinIO 缺依赖用例的环境依赖（`9d552907af`）
-- commit: `<待回填>`
+- commit: `37d9d70e05`
 
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
