@@ -5,24 +5,23 @@
 按 §七 落地优先级排序：P1天 → P2地 → P3将 → P4道 → P5法 → P0全局。
 严格对齐 spec：2026-08-21-sunzi-five-domains-evaluation.md §三逐维打分详解。
 """
-import pytest
-import numpy as np
-from unittest.mock import MagicMock, patch
-from pathlib import Path
+
 import sys
+from pathlib import Path
+from unittest.mock import MagicMock
 
 # 确保能 import 同级模块
 _HERE = Path(__file__).resolve().parent
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from strategy_algo_layer import ASSET_CLASSES, DEFAULT_NEUTRAL_SCORES, _normalize_0_100
-from five_domain_feature_computer import FiveDomainFeatureComputer
-
+from five_domain_feature_computer import FiveDomainFeatureComputer  # noqa: E402
+from strategy_algo_layer import ASSET_CLASSES, DEFAULT_NEUTRAL_SCORES  # noqa: E402
 
 # =====================================================================
 # P0 全局：compute() 返回结构 + fail-open + 开关
 # =====================================================================
+
 
 class TestComputeStructure:
     """P0-1: compute() 返回所有资产类的五维评分。"""
@@ -61,8 +60,9 @@ class TestFailOpen:
         result = computer.compute()
         for cls in ASSET_CLASSES:
             for domain, expected in DEFAULT_NEUTRAL_SCORES.items():
-                assert result[cls][domain] == expected, \
-                    f"{cls}.{domain}={result[cls][domain]} != 中性默认 {expected}"
+                assert (
+                    result[cls][domain] == expected
+                ), f"{cls}.{domain}={result[cls][domain]} != 中性默认 {expected}"
 
     def test_exception_returns_neutral_defaults(self):
         """compute() 内部异常时返回中性默认值（fail-open）。"""
@@ -78,6 +78,7 @@ class TestFailOpen:
 # =====================================================================
 # P1 天维度：日历季节性 / 美林时钟 / 波动率周期 / 流动性周期
 # =====================================================================
+
 
 class TestTianCalendar:
     """P1-1: 日历季节性 Q1/Q4 效应。"""
@@ -167,6 +168,7 @@ class TestTianLiquidityCycle:
 # P2 地维度：regime代理 / 弹簧力场MA / 六种地形 / 盘整 / FTD / MA200
 # =====================================================================
 
+
 class TestDiRegime:
     """P2-1: 后置层 regime→分数映射。"""
 
@@ -211,17 +213,13 @@ class TestDiConsolidation:
     def test_low_amplitude_consolidation(self):
         """低振幅/ATR → 盘整 → 评分 < 50。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_consolidation_duration(
-            {"price_amplitude": 1.0, "atr": 1.0}
-        )
+        score = computer._compute_consolidation_duration({"price_amplitude": 1.0, "atr": 1.0})
         assert score < 50, f"盘整应 < 50, got {score}"
 
     def test_high_amplitude_trend(self):
         """高振幅/ATR → 趋势 → 评分 > 60。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_consolidation_duration(
-            {"price_amplitude": 5.0, "atr": 1.0}
-        )
+        score = computer._compute_consolidation_duration({"price_amplitude": 5.0, "atr": 1.0})
         assert score > 60, f"趋势应 > 60, got {score}"
 
 
@@ -247,17 +245,13 @@ class TestDiMA200Distance:
     def test_above_ma200_high_score(self):
         """价格在MA200上方远 → 高分。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_ma200_distance(
-            {"ma200_distance_percentile": 0.9}
-        )
+        score = computer._compute_ma200_distance({"ma200_distance_percentile": 0.9})
         assert score > 60, f"MA200上方远应 > 60, got {score}"
 
     def test_below_ma200_low_score(self):
         """价格在MA200下方远 → 低分。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_ma200_distance(
-            {"ma200_distance_percentile": 0.1}
-        )
+        score = computer._compute_ma200_distance({"ma200_distance_percentile": 0.1})
         assert score < 40, f"MA200下方远应 < 40, got {score}"
 
 
@@ -293,19 +287,20 @@ class TestDiTerrainClassification:
 # P3 将维度：智/信/仁/勇/严 五维自省评分
 # =====================================================================
 
+
 class TestJiangZhi:
     """P3-1: 智（因子覆盖度/回测完整度）。"""
 
     def test_high_coverage_high_score(self):
         """因子覆盖度高 → 评分 > 60。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_zhi({"factor_coverage_pct": 0.9})
+        score = computer._compute_zhi({"factor_coverage_pct": 0.9}, "crypto_usdt")
         assert score > 60, f"高覆盖度应 > 60, got {score}"
 
     def test_no_data_neutral(self):
         """无数据 → 中性 50。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_zhi(None)
+        score = computer._compute_zhi(None, "crypto_usdt")
         assert score == 50
 
 
@@ -315,13 +310,13 @@ class TestJiangXin:
     def test_good_stats_high_score(self):
         """高胜率+高盈亏比 → 评分 > 60。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_xin({"win_rate": 0.6, "profit_factor": 2.0})
+        score = computer._compute_xin({"win_rate": 0.6, "profit_factor": 2.0}, "crypto_usdt")
         assert score > 60, f"好统计应 > 60, got {score}"
 
     def test_poor_stats_low_score(self):
         """低胜率+低盈亏比 → 评分 < 50。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_xin({"win_rate": 0.3, "profit_factor": 0.8})
+        score = computer._compute_xin({"win_rate": 0.3, "profit_factor": 0.8}, "crypto_usdt")
         assert score < 50, f"差统计应 < 50, got {score}"
 
 
@@ -331,13 +326,17 @@ class TestJiangRen:
     def test_safe_risk_high_score(self):
         """单笔≤2%+连续亏损降仓启用 → 评分 > 60。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_ren({"position_pct": 0.01, "max_consecutive_losses": 3})
+        score = computer._compute_ren(
+            {"position_pct": 0.01, "max_consecutive_losses": 3}, "crypto_usdt"
+        )
         assert score > 60, f"安全风险应 > 60, got {score}"
 
     def test_unsafe_risk_low_score(self):
         """连续亏损降仓禁用(999) → 评分 < 50。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_ren({"position_pct": 0.20, "max_consecutive_losses": 999})
+        score = computer._compute_ren(
+            {"position_pct": 0.20, "max_consecutive_losses": 999}, "crypto_usdt"
+        )
         assert score < 50, f"不安全风险应 < 50, got {score}"
 
 
@@ -347,25 +346,36 @@ class TestJiangYan:
     def test_all_rules_present(self):
         """4项硬规则全有 → 评分 > 80。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_yan({
-            "has_stop_loss": True, "has_drawdown_limit": True,
-            "has_daily_trade_limit": True, "has_position_cap": True,
-        })
+        score = computer._compute_yan(
+            {
+                "has_stop_loss": True,
+                "has_drawdown_limit": True,
+                "has_daily_trade_limit": True,
+                "has_position_cap": True,
+            },
+            "crypto_usdt",
+        )
         assert score >= 80, f"全规则应≥80, got {score}"
 
     def test_missing_daily_trade_limit(self):
         """缺单日交易次数上限 → 评分 = 75。"""
         computer = FiveDomainFeatureComputer(enable=True)
-        score = computer._compute_yan({
-            "has_stop_loss": True, "has_drawdown_limit": True,
-            "has_daily_trade_limit": False, "has_position_cap": True,
-        })
+        score = computer._compute_yan(
+            {
+                "has_stop_loss": True,
+                "has_drawdown_limit": True,
+                "has_daily_trade_limit": False,
+                "has_position_cap": True,
+            },
+            "crypto_usdt",
+        )
         assert score == 75, f"缺1项应=75, got {score}"
 
 
 # =====================================================================
 # P4 道维度：大周期位置 / 外部数据fail-open / 三层道架构
 # =====================================================================
+
 
 class TestDaoCycle4Y:
     """P4-1: 4年大周期锚点 t_rel 位置评分。"""
@@ -405,6 +415,7 @@ class TestDaoFailOpen:
 # P5 法维度：策略库完备性 / 回测验证 / 复盘迭代
 # =====================================================================
 
+
 class TestFaCompleteness:
     """P5-1: 策略库完备性。"""
 
@@ -412,8 +423,17 @@ class TestFaCompleteness:
         """6类策略全实现 → 评分 100。"""
         computer = FiveDomainFeatureComputer(enable=True)
         score = computer._compute_strategy_completeness(
-            {"implemented_strategies": ["trend", "mean_revert", "breakout",
-                                        "momentum", "hedge", "emergency"]}
+            {
+                "implemented_strategies": [
+                    "trend",
+                    "mean_revert",
+                    "breakout",
+                    "momentum",
+                    "hedge",
+                    "emergency",
+                ]
+            },
+            "crypto_usdt",
         )
         assert score == 100, f"全实现应=100, got {score}"
 
@@ -421,7 +441,8 @@ class TestFaCompleteness:
         """3类策略实现 → 评分 50。"""
         computer = FiveDomainFeatureComputer(enable=True)
         score = computer._compute_strategy_completeness(
-            {"implemented_strategies": ["trend", "breakout", "emergency"]}
+            {"implemented_strategies": ["trend", "breakout", "emergency"]},
+            "crypto_usdt",
         )
         assert score == 50, f"3类应=50, got {score}"
 
@@ -433,7 +454,8 @@ class TestFaBacktest:
         """夏普>1.5+回撤<20% → 评分 > 60。"""
         computer = FiveDomainFeatureComputer(enable=True)
         score = computer._compute_backtest_verification(
-            {"backtest_metrics": {"sharpe": 2.0, "max_drawdown": 0.1}}
+            {"backtest_metrics": {"sharpe": 2.0, "max_drawdown": 0.1}},
+            "crypto_usdt",
         )
         assert score > 60, f"好回测应 > 60, got {score}"
 
@@ -441,7 +463,8 @@ class TestFaBacktest:
         """夏普<0.5+回撤>50% → 评分 < 40。"""
         computer = FiveDomainFeatureComputer(enable=True)
         score = computer._compute_backtest_verification(
-            {"backtest_metrics": {"sharpe": 0.3, "max_drawdown": 0.6}}
+            {"backtest_metrics": {"sharpe": 0.3, "max_drawdown": 0.6}},
+            "crypto_usdt",
         )
         assert score < 40, f"差回测应 < 40, got {score}"
 
@@ -453,7 +476,8 @@ class TestFaReview:
         """有复盘周期+策略退役 → 评分 100。"""
         computer = FiveDomainFeatureComputer(enable=True)
         score = computer._compute_review_iteration(
-            {"has_review_cycle": True, "has_strategy_retirement": True}
+            {"has_review_cycle": True, "has_strategy_retirement": True},
+            "crypto_usdt",
         )
         assert score == 100, f"全有应=100, got {score}"
 
@@ -461,7 +485,8 @@ class TestFaReview:
         """无复盘 → 评分 0。"""
         computer = FiveDomainFeatureComputer(enable=True)
         score = computer._compute_review_iteration(
-            {"has_review_cycle": False, "has_strategy_retirement": False}
+            {"has_review_cycle": False, "has_strategy_retirement": False},
+            "crypto_usdt",
         )
         assert score == 0, f"无复盘应=0, got {score}"
 
@@ -469,6 +494,7 @@ class TestFaReview:
 # =====================================================================
 # P6 三类资产五维特征差异化（修复问题1：差异化权重空转）
 # =====================================================================
+
 
 class TestPerClassCoinDataDifferentiation:
     """P6-1: compute() 须按资产类读取分层 coin_data，输出差异化 five_scores。"""
@@ -505,8 +531,8 @@ class TestPerClassCoinDataDifferentiation:
         # 新版：按资产类分层，每类有独立市场参数
         layered_coin_data = {
             "crypto_usdt": {
-                "cycle4y_t_rel": 0.15,      # BTC减半周期：底部区域
-                "merrill_phase": "RECOVERY",# 复苏：利好加密
+                "cycle4y_t_rel": 0.15,  # BTC减半周期：底部区域
+                "merrill_phase": "RECOVERY",  # 复苏：利好加密
                 "atr_percentile": 0.70,
                 "liquidity_score": 0.65,
                 "regime": "trend_up",
@@ -517,8 +543,8 @@ class TestPerClassCoinDataDifferentiation:
                 "ma200_distance_percentile": 0.70,
             },
             "us_stock": {
-                "cycle4y_t_rel": 0.55,      # 美股总统周期：中段
-                "merrill_phase": "OVERHEAT",# 过热：美股承压
+                "cycle4y_t_rel": 0.55,  # 美股总统周期：中段
+                "merrill_phase": "OVERHEAT",  # 过热：美股承压
                 "atr_percentile": 0.40,
                 "liquidity_score": 0.50,
                 "regime": "ranging",
@@ -529,8 +555,8 @@ class TestPerClassCoinDataDifferentiation:
                 "ma200_distance_percentile": 0.45,
             },
             "precious_metal": {
-                "cycle4y_t_rel": 0.35,      # 黄金：中段偏下
-                "merrill_phase": "STAGFLATION", # 滞胀：黄金避险利好
+                "cycle4y_t_rel": 0.35,  # 黄金：中段偏下
+                "merrill_phase": "STAGFLATION",  # 滞胀：黄金避险利好
                 "atr_percentile": 0.50,
                 "liquidity_score": 0.55,
                 "regime": "breakout",
@@ -574,12 +600,14 @@ class TestPerClassCoinDataDifferentiation:
 # P7 开关描述辅助函数（修复问题2：初始化日志描述不准确）
 # =====================================================================
 
+
 class TestSubswitchDescriptor:
     """P7-1: 7子开关开启状态 → 日志描述生成（修复「7子开关全False」描述bug）。"""
 
     def test_all_7_subswitches_false_descriptor(self):
         """7子开关全False → 描述包含「全False」和「下游零影响」。"""
         from strategy_algo_layer import StrategyAlgoConfig
+
         cfg = StrategyAlgoConfig(
             enable_strategy_layer=True,
             enable_five_domain=False,
@@ -594,6 +622,7 @@ class TestSubswitchDescriptor:
             enable_five_domain_ol=False,
         )
         from five_domain_feature_computer import describe_five_domain_subswitches
+
         desc = describe_five_domain_subswitches(cfg)
         assert "7子开关全False" in desc, f"描述应含'7子开关全False', got: {desc}"
         assert "下游零影响" in desc, f"描述应含'下游零影响', got: {desc}"
@@ -601,12 +630,13 @@ class TestSubswitchDescriptor:
     def test_style_mask_only_true_descriptor(self):
         """仅enable_five_domain_style_mask=True（当前生产配置）→ 描述包含具体开关，不得写'全False'。"""
         from strategy_algo_layer import StrategyAlgoConfig
+
         cfg = StrategyAlgoConfig(
             enable_strategy_layer=True,
             enable_five_domain=False,
             enable_five_domain_shadow_mode=True,
             enable_five_domain_war_state=False,
-            enable_five_domain_style_mask=True,   # B1 单独开启
+            enable_five_domain_style_mask=True,  # B1 单独开启
             enable_five_domain_position_cap=False,
             enable_five_domain_cross_asset=False,
             enable_five_domain_dimensio=False,
@@ -614,30 +644,31 @@ class TestSubswitchDescriptor:
             enable_five_domain_ol=False,
         )
         from five_domain_feature_computer import describe_five_domain_subswitches
+
         desc = describe_five_domain_subswitches(cfg)
-        assert "全False" not in desc, (
-            f"style_mask=True时描述不应出现'全False'，got: {desc}"
-        )
-        assert "style_mask" in desc.lower() or "B1" in desc, (
-            f"描述应包含style_mask/B1标识，got: {desc}"
-        )
+        assert "全False" not in desc, f"style_mask=True时描述不应出现'全False'，got: {desc}"
+        assert (
+            "style_mask" in desc.lower() or "B1" in desc
+        ), f"描述应包含style_mask/B1标识，got: {desc}"
 
     def test_multiple_subswitches_true_lists_names(self):
         """多子开关True → 描述列出所有开启项名称。"""
         from strategy_algo_layer import StrategyAlgoConfig
+
         cfg = StrategyAlgoConfig(
             enable_strategy_layer=True,
             enable_five_domain=False,
             enable_five_domain_shadow_mode=True,
-            enable_five_domain_war_state=True,    # B2
-            enable_five_domain_style_mask=True,   # B1
-            enable_five_domain_position_cap=True, # B3
+            enable_five_domain_war_state=True,  # B2
+            enable_five_domain_style_mask=True,  # B1
+            enable_five_domain_position_cap=True,  # B3
             enable_five_domain_cross_asset=False,
             enable_five_domain_dimensio=False,
             enable_five_domain_front_layer_band=False,
             enable_five_domain_ol=False,
         )
         from five_domain_feature_computer import describe_five_domain_subswitches
+
         desc = describe_five_domain_subswitches(cfg)
         assert "war_state" in desc.lower() or "B2" in desc
         assert "style_mask" in desc.lower() or "B1" in desc
