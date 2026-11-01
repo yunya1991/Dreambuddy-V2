@@ -173,7 +173,7 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 | # | 项 | 落点 | 验收 |
 |---|---|---|---|
 | C8 | **事件互通（默认回调，不建跨库 outbox）**：`job_runs` 状态转移后同进程回调 → 认知 record（以 `external_id=run_id` 幂等）。**开工前置 = G0-8**（认知表 `external_id` 唯一索引 + `record(idempotency_key)`），并先把 `record()` 触发 41 重建改为批量/去抖（评审 P0-7/P0-11）；REA/检索等非调度来源在 P3 再评估单表事件（与认知同库、dispatcher 在认知进程内） | 18 scheduler + 认知 MCP | 一次采集可 recall 到事件；重复执行不产生重复记忆；消费失败不阻断主流程；record 不触发实时重建 |
-| C9 | **任务注册表 + `job_runs`**：声明式任务清单，**先纳管云端三条真实链路**——`datacenter-scheduler.service`（18 采集）、`datacenter-backfill.timer`（每小时 :15）、41 索引 `crontab`（每小时对账）；本地对应 `datacenter`/`dc-scheduler`。**窗口统一 UTC**、迟到容忍 5min、跨窗拆 run、`missed_run` 记录、**连续 3 窗无 run 告警**（评审 P0-10） | 18 + 公共调度模块 | 任务可在注册表查询；每次执行有 run 记录；幂等 run key 生效；**云端裸 crontab 归零**；模拟时钟跳变/重启后无重复 run | **✅ 2026-11-01 已落地（本地侧）**：`0-系统文档管理/job_registry.yaml`（四任务/UTC/5min/90d）+ `dreambuddy_l0/scheduling/`（registry/windows/job_runs/cli）+ `dreambuddy_l0/adapters/jsonl.py`；18 `dc-scheduler` 每窗口幂等心跳记账；19 条契约测试入阻断 job。**待云端复核**：41 cron→`index-reconcile.timer` 迁移与三段真实 run 证据 |
+| C9 | **任务注册表 + `job_runs`**：声明式任务清单，**先纳管云端三条真实链路**——`datacenter-scheduler.service`（18 采集）、`datacenter-backfill.timer`（每小时 :15）、41 索引 `crontab`（每小时对账）；本地对应 `datacenter`/`dc-scheduler`。**窗口统一 UTC**、迟到容忍 5min、跨窗拆 run、`missed_run` 记录、**连续 3 窗无 run 告警**（评审 P0-10） | 18 + 公共调度模块 | 任务可在注册表查询；每次执行有 run 记录；幂等 run key 生效；**云端裸 crontab 归零**；模拟时钟跳变/重启后无重复 run | **✅ 2026-11-01 已落地（本地 + 云端）**：`0-系统文档管理/job_registry.yaml`（四任务/UTC/5min/90d）+ `dreambuddy_l0/scheduling/`（registry/windows/job_runs/cli）+ `dreambuddy_l0/adapters/jsonl.py`；18 `dc-scheduler` 每窗口幂等心跳记账；20 条契约测试入阻断 job。**云端复核通过**：`/var/lib/dreambuddy/job_runs.jsonl` 三段真实 run（`dc.collect.cloud@5978425/5978426/5978427`、`dc.backfill.cloud@498202`、`index.reconcile.cloud@498202`，均 succeeded）；41 裸 crontab 行已删除（`sudo -u ubuntu crontab -l` 为空），改由 `index-reconcile.timer`（`*:00`）承载；新增 `job-runs-audit.timer`（`*:05`，`audit --host cloud` + `prune`）承载 missed_run 审计与 90 天保留。**密码来源修正**：`dreambuddy-pg` 的 `POSTGRES_PASSWORD` 与库内真实口令不一致，41 改用 `EnvironmentFile=/etc/dreambuddy-pg.env` |
 | C10 | **直连门禁 enforce**（承接 SPEC-B B5，先 report-only 2 周再切 enforce）。**降级说明**（评审 P0-6）：包化前用 grep 门禁 + 白名单，import-linter 待 `dreambuddy_l0/` 包化完成后再启用 | CI | report-only 报告产出；enforce 后白名单外新增直连 CI 失败 |
 
 ### P3 — P3-A 联调与可视
@@ -220,7 +220,7 @@ G0 是**开工前置**，六条硬规则是**全程约束**；G0 未关闭时，
 - [ ] P1 后：19-DAL PG adapter 落地且 `dc_pg` 收编后调用方零改动（字段级比对达阈值）；五能力声明可机器读取且校验可拦截漂移；11 系统第一批直连收编（独立轨道）启动
 - [x] **C6 能力声明已落地（2026-11-01）**：五能力声明可机器读取；`validate_capabilities.py` 可拦截 port/impl 漂移；接入 `l0-contracts` 阻断 job
 - [x] **G0-8 已关闭（2026-11-01）**：`external_id` 幂等（含存量库迁移）+ `record(idempotency_key=)` 契约入口 + P0-11 索引重建去抖；C8 开工前置解除（另有 9 条契约测试入阻断 job）
-- [x] **C9 本地侧已落地（2026-11-01）**：任务注册表可查询；幂等 run key / UTC 窗口 / 5min 容忍 / 跨窗拆 run / missed_run+连续 3 窗告警 / 90 天保留均有契约测试；job_runs 只经 Store/Event port 落库（JSONL adapter，PG adapter 待 C4a）。云端三段真实 run 与 41 cron→timer 归零待复跑
+- [x] **C9 本地 + 云端已落地（2026-11-01）**：任务注册表可查询；幂等 run key / UTC 窗口 / 5min 容忍 / 跨窗拆 run / missed_run+连续 3 窗告警 / 90 天保留均有契约测试；job_runs 只经 Store/Event port 落库（JSONL adapter，PG adapter 待 C4a）；`audit(host=)` 限定本机任务，避免云端误判 local 任务缺失。云端三段真实 run 已复跑（见 §6 C9 行证据），41 cron→`index-reconcile.timer` 归零完成，`job-runs-audit.timer` 每小时审计+保留
 - [ ] P2 后：一次采集可产出可 recall 的认知记录且重复执行不重复写入（`external_id` 生效）；三条链路有 `job_runs` 记录且幂等生效（UTC 窗口）；grep 门禁可拦截新增直连
 - [ ] P3 后：检索可触发可追踪任务；health 含五能力 + 调度分项；**每端各 1 个**非实盘周期任务在 `job_runs` 可见
 - [ ] 全量回归：pytest 无新增失败；tsc 0 errors；云端健康检查通过；实盘进程生命周期未改变
