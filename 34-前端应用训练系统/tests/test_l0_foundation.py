@@ -12,6 +12,7 @@ GREEN 阶段：实现 10 scope 注册表 + 统一信封 {ok,data,source,timestam
 import json
 import os
 import sys
+import types
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # 18 中心已迁移 PostgreSQL，测试需 mock 39 模块统一 PG 辅助模块
@@ -119,9 +120,17 @@ class TestEnvelopeContract:
 class TestDatacenterRecord:
     """mock dc_pg.fetch_latest_by_source，不依赖真实 PostgreSQL。"""
 
-    def _mock_rows(self, monkeypatch, rows):
-        import dc_pg
+    def _patch_dc_pg(self, monkeypatch, fetch):
+        """G0-3 后 dc_pg 按文件路径延迟加载，须替换 _load_dc_pg 而非 sys.modules 里的 dc_pg。"""
+        import core.l0_foundation as l0_mod
 
+        monkeypatch.setattr(
+            l0_mod,
+            "_load_dc_pg",
+            lambda: types.SimpleNamespace(fetch_latest_by_source=fetch),
+        )
+
+    def _mock_rows(self, monkeypatch, rows):
         def _fake_fetch(source, sub_category=None):
             for r in rows:
                 if r["source"] == source and (
@@ -130,7 +139,7 @@ class TestDatacenterRecord:
                     return r
             return None
 
-        monkeypatch.setattr(dc_pg, "fetch_latest_by_source", _fake_fetch)
+        self._patch_dc_pg(monkeypatch, _fake_fetch)
 
     def test_returns_latest_row_with_parsed_metrics(self, tmp_path, monkeypatch):
         self._mock_rows(
@@ -159,9 +168,7 @@ class TestDatacenterRecord:
 
     def test_pg_unreachable_returns_none_not_degraded(self, tmp_path, monkeypatch):
         # FAIL-OPEN：PostgreSQL 不可达 → dc_pg 返回 None → 空数据信封，不降级
-        import dc_pg
-
-        monkeypatch.setattr(dc_pg, "fetch_latest_by_source", lambda s, sub_category=None: None)
+        self._patch_dc_pg(monkeypatch, lambda s, sub_category=None: None)
         env = _make_l0(tmp_path).fetch_context("datacenter.record", {"source": "fred"})
         assert env["degraded"] is False
         assert env["data"] is None
