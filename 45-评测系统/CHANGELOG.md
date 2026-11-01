@@ -3,6 +3,18 @@
 > 记录方式：里程碑 + 变更条目 + 提交哈希；对应 PLAN 任务编号。
 > 根门禁（PLAN §2.6）：45 自身变更 = pytest 全绿 + 人工评审 + 本 CHANGELOG 更新，不调用自身评测器。
 
+## [0.5.0] — 2026-11-01 — P4 世界级加固
+
+### P4-1 证据签名与 Merkle 根
+- 新增 `storage/evidence.py`：`chain_hash`（与 reporter 既有公式一致）、`append_entry`（自动链接 prev_hash）、`verify_chain`（逐条重算 + 前向链接校验，篡改/断链/乱序检出）
+- `merkle_root` 按 RFC 6962 思路：空树 `SHA256("")`、叶子 `H(0x00||hash)`、节点 `H(0x01||L||R)`、奇数叶按最大 2 的幂切分；顺序敏感
+- `build_bundle` / `verify_bundle`：证据包 = 证据链 + 报告 JSON + Merkle 根 + HMAC-SHA256 签名，可离线验证（版本/链/链头/根/报告哈希/签名六重校验，fail-closed）
+- 签名密钥仅由 `EVAL_EVIDENCE_KEY` 注入，签名主体由 `EVAL_EVIDENCE_SIGNER` 标注；`Reporter(signed_by=...)` 使证据链条目携带签名主体
+- CLI 新增 `evalctl evidence --eval-id --out` 与 `evalctl evidence --verify <bundle> [--require-signature]`（0 通过 / 4 失败）
+- 测试：26 个用例（链链路、字段篡改、断链乱序、Merkle 空/单/双/奇/顺序、包篡改四类、错密钥、缺密钥、CLI 构建与验证）；storage/evidence.py 覆盖率 96%
+- 签名采用 HMAC-SHA256（§13.3 同族）；Sigstore/in-toto 与 WORM 留待 P4-2 及后续升级
+- commit: `PENDING`
+
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
 ### P3-1 凭证签发与校验

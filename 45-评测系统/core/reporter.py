@@ -26,14 +26,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from jsonschema import Draft202012Validator
+from storage.evidence import append_entry
 from storage.repo import (
     CREDENTIAL_TTL_DAYS,
     EvalItemRecord,
     EvalRepo,
     EvalRunRecord,
     EvidenceRow,
-    canonical_json,
-    sha256_hex,
     zulu,
 )
 
@@ -59,10 +58,12 @@ class Reporter:
         thresholds: ThresholdRegistry,
         clock: Callable[[], datetime] | None = None,
         schema_path: str | Path = REPORT_SCHEMA_PATH,
+        signed_by: str | None = None,
     ) -> None:
         self._repo = repo
         self._thresholds = thresholds
         self._clock = clock or (lambda: datetime.now(timezone.utc))
+        self._signed_by = signed_by
         schema = json.loads(Path(schema_path).read_text(encoding="utf-8"))
         self._validator = Draft202012Validator(schema)
 
@@ -103,7 +104,6 @@ class Reporter:
 
         self._repo.insert_run(run)
         evidence = self._build_evidence(run, items)
-        self._repo.insert_evidence(evidence)
         if items:
             self._repo.insert_items(items)
 
@@ -147,24 +147,14 @@ class Reporter:
         return report
 
     def _build_evidence(self, run: EvalRunRecord, items: list[EvalItemRecord]) -> EvidenceRow:
-        """证据链条目：content 规范化哈希 + prev 链哈希（§14.4）。"""
-        content = canonical_json({"run": asdict(run), "items": [asdict(i) for i in items]})
-        content_sha = sha256_hex(content)
-        seq = self._repo.count_evidence(run.run_id) + 1
-        evidence_id = f"EVD-{run.run_id}-{seq:02d}"
+        """证据链条目：规范化哈希 + prev 链哈希（§14.4，P4-1 起可带签名主体）。"""
         # TODO(P4-2): WORM 对象存储落地后替换 local:// 占位 URI
-        uri = f"local://evidence/{evidence_id}"
-        prev_hash = self._repo.latest_evidence_hash(run.run_id)
-        chain_hash = sha256_hex(f"{prev_hash or 'null'}|{content_sha}|{uri}")
-        return EvidenceRow(
-            evidence_id=evidence_id,
-            run_id=run.run_id,
-            sha256=content_sha,
-            uri=uri,
-            prev_hash=prev_hash,
-            hash=chain_hash,
-            signed_by=None,  # P4-1 启用签名
-            created_at=self._clock(),
+        return append_entry(
+            self._repo,
+            run.run_id,
+            {"run": asdict(run), "items": [asdict(i) for i in items]},
+            signed_by=self._signed_by,
+            clock=self._clock,
         )
 
 

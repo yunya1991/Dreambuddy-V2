@@ -615,6 +615,7 @@ exit 0 = PASS | 2 = BLOCK | 3 = INCONCLUSIVE | 4 = ERROR
 - 每条证据存 `sha256 + prev_hash`，形成链；日终生成 Merkle 根（RFC 6962 思路）
 - 证据包可离线验证：哈希链 + 签名 + 报告 JSON
 - 对象存储 MinIO Object Lock（compliance 模式），保留期与审计要求一致
+- 落地：`storage/evidence.py`（链/根/包）+ `evalctl evidence --eval-id --out` 构建、`evalctl evidence --verify <bundle> [--require-signature]` 离线验证（退出码 0/4）；签名密钥仅由 `EVAL_EVIDENCE_KEY` 注入，签名主体由 `EVAL_EVIDENCE_SIGNER` 标注
 
 ### 14.5 可观测性
 
