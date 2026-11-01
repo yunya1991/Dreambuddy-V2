@@ -209,10 +209,12 @@ class SubmitResult:
     spec_hash: str
 
 
-def _spec_hash_placeholder(spec_id: str) -> str:
+def spec_hash_placeholder(spec_id: str) -> str:
     """占位 spec_hash：spec 注册表（P2-9）落地前以 spec_id 规范化哈希代替。
 
     TODO(P2-9): 改为 sha256(canonical_json(EvalSpec))（§3.1）。
+    注意：PgRepo 读取 eval_requests 时按本规则重算 spec_hash（§12 表中无该列），
+    两处的确定性一致是幂等回放的前提。
     """
     canonical = json.dumps(
         {"spec_id": spec_id}, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -270,7 +272,7 @@ class Gateway:
         day = now.strftime("%Y%m%d")
         seq = self._store.count_for_day(day) + 1
         eval_id = f"EV-{day}-{seq:06d}"
-        spec_hash = _spec_hash_placeholder(payload["spec_id"])
+        spec_hash = spec_hash_placeholder(payload["spec_id"])
 
         record = EvalRequestRecord(
             eval_id=eval_id,
