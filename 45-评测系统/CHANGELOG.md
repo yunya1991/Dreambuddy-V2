@@ -29,7 +29,7 @@
 - CLI 新增 `evalctl sandbox --check`（策略合法性 + runtime 可用性；0 通过 / 4 拒绝），支持 `--config` / `EVAL_SANDBOX_CONFIG`
 - 测试：29 个用例（10 类逃逸用例、硬化参数、挂载只读、strict 缺 runsc 拒绝、非 strict 降级、docker/none/未知 runtime 路由、CLI 三态）；core/sandbox.py 覆盖率 97%
 - 编译类开销 ≤20% 属云端实测门（本机无 runsc，未在本轮测量；strict 下不会静默直跑）
-- commit: `PENDING`
+- commit: `fa8a75e72a`
 
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
