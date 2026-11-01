@@ -12,6 +12,7 @@ launchd 托管：
 
 日志：logs/scheduler.log（launchd 标准输出）+ logs/scheduler.err.log（标准错误）
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,9 @@ if _CLEANING_DIR.exists() and str(_CLEANING_DIR) not in sys.path:
 _BACKFILL_DIR = _REPO_ROOT / "19-数据访问层" / "scripts"
 if _BACKFILL_DIR.exists() and str(_BACKFILL_DIR) not in sys.path:
     sys.path.insert(0, str(_BACKFILL_DIR))
+# C9 调度记账（dreambuddy_l0 顶层包）
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from data_center import DataCenter  # noqa: E402
 from data_center.monitoring.quality import QualityChecker  # noqa: E402
@@ -60,15 +64,48 @@ def _setup_logging() -> None:
     )
 
 
+def _build_recorder():
+    """C9：构造 job_runs 记账器（经 L0 Store/Event port，失败则降级为 None）。"""
+    if os.environ.get("JOB_RUNS_ENABLED", "1") != "1":
+        return None
+    try:
+        from dreambuddy_l0.adapters.jsonl import JsonlEvent, JsonlStore
+        from dreambuddy_l0.scheduling import JobRunRecorder, load_registry
+
+        path = os.environ.get("JOB_RUNS_PATH") or str(LOGS_DIR / "job_runs.jsonl")
+        return JobRunRecorder(
+            store=JsonlStore(path), event=JsonlEvent(path), registry=load_registry()
+        )
+    except Exception as e:
+        logger.error("job_runs 记账器初始化失败（降级为不记账）: %s: %s", type(e).__name__, e)
+        return None
+
+
+def _run_task_key() -> str:
+    """本地/云端分别对应注册表中的 dc.collect.local / dc.collect.cloud。"""
+    explicit = os.environ.get("JOB_TASK_KEY")
+    if explicit:
+        return explicit
+    return (
+        "dc.collect.cloud"
+        if os.environ.get("DATA_CENTER_BACKEND") == "postgres"
+        else "dc.collect.local"
+    )
+
+
 def _build_scheduler() -> CollectionScheduler:
     """构造调度器：DataCenter + SqliteSink + QualityChecker + 默认任务清单。"""
     dc = DataCenter()
     sink = get_sink(DB_PATH)
     quality = QualityChecker()
     sched = CollectionScheduler(
-        dc=dc, sink=sink, quality=quality,
+        dc=dc,
+        sink=sink,
+        quality=quality,
         tasks=CollectionScheduler.default_tasks(),
         alerts_router=dc.monitoring.alerts,  # 复用 DataCenter 默认 AlertRouter
+        run_recorder=_build_recorder(),
+        run_task_key=_run_task_key(),
     )
     return sched
 
@@ -80,7 +117,9 @@ def _run_once(sched: CollectionScheduler) -> None:
         metric = sched.collect_once(task)
         logger.info(
             "  → status=%s duration=%.1fms records=%d err=%s",
-            metric.status, metric.duration_ms, metric.records_count,
+            metric.status,
+            metric.duration_ms,
+            metric.records_count,
             metric.error_type or "-",
         )
 
@@ -122,8 +161,14 @@ def main() -> int:
     if "--dry-run" in args:
         logger.info("=== DRY RUN: %d 个任务 ===", len(sched.tasks))
         for t in sched.tasks:
-            logger.info("  - %s: %s/%s params=%s interval=%ds",
-                        t.name, t.category, t.source, t.params, t.interval_sec)
+            logger.info(
+                "  - %s: %s/%s params=%s interval=%ds",
+                t.name,
+                t.category,
+                t.source,
+                t.params,
+                t.interval_sec,
+            )
         return 0
 
     if "--once" in args:

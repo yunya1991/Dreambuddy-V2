@@ -1,0 +1,70 @@
+# C9 任务注册表 —— L0-S 调度层唯一事实源（SPEC-L0 §6 C9）
+# 硬约束：
+#   1. 逻辑窗口统一 UTC，禁用本地时区；
+#   2. 迟到容忍 5min（late_tolerance_sec=300），超时后才判 missed_run；
+#   3. 跨窗执行的 run 按窗口边界拆分多条 run 记录；
+#   4. 连续 3 窗无 run 触发 scheduling.missing_run 告警；
+#   5. job_runs 保留 90 天，禁无界增长；
+#   6. 只纳管非实盘链路；dreamos / yijing_trading / v15 / trailing-stop-runner /
+#      yijing_live_300s 禁止改 ExecStart 或 plist，只走 C13 只读旁路。
+schema_version: "1.0"
+window_timezone: UTC
+late_tolerance_sec: 300
+retention_days: 90
+missed_streak_alert: 3
+
+tasks:
+  # 云端：18 采集（datacenter-scheduler.service，常驻进程，5min 心跳窗口）
+  - task_key: dc.collect.cloud
+    carrier: systemd
+    unit: datacenter-scheduler.service
+    host: cloud
+    schedule: "interval:1"
+    window_sec: 300
+    timeout_sec: 900
+    max_concurrency: 1
+    retry: 0
+    enabled: true
+    fallback: skip
+
+  # 云端：18→19 回填（datacenter-backfill.timer，每小时 :15）
+  - task_key: dc.backfill.cloud
+    carrier: systemd-timer
+    unit: datacenter-backfill.timer
+    host: cloud
+    schedule: "cron:15 * * * *"
+    window_sec: 3600
+    timeout_sec: 1800
+    max_concurrency: 1
+    retry: 1
+    enabled: true
+    fallback: skip
+
+  # 云端：41 索引每小时对账（原 ubuntu 裸 crontab，迁到 systemd timer）
+  - task_key: index.reconcile.cloud
+    carrier: systemd-timer
+    unit: index-reconcile.timer
+    host: cloud
+    schedule: "cron:0 * * * *"
+    window_sec: 3600
+    timeout_sec: 1800
+    max_concurrency: 1
+    retry: 1
+    enabled: true
+    fallback: skip
+    legacy_carrier: crontab
+
+  # 本地：18 采集（launchd 两个 label 指向同一脚本，别名登记）
+  - task_key: dc.collect.local
+    carrier: launchd
+    unit: com.dreambuddy.data-center-scheduler
+    alias_units:
+      - com.dreambuddy.dc-scheduler
+    host: local
+    schedule: "interval:1"
+    window_sec: 300
+    timeout_sec: 900
+    max_concurrency: 1
+    retry: 0
+    enabled: true
+    fallback: skip

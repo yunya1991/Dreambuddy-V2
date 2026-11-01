@@ -56,6 +56,8 @@ class CollectionScheduler:
         tasks: list[CollectionTask],
         alerts_router: Optional[AlertRouter] = None,
         backfill_interval_sec: int = 600,
+        run_recorder=None,
+        run_task_key: str = "dc.collect.local",
     ) -> None:
         self.dc = dc
         self.sink = sink
@@ -63,6 +65,9 @@ class CollectionScheduler:
         self.tasks = tasks
         self.alerts_router = alerts_router
         self.backfill_interval_sec = backfill_interval_sec
+        self._run_recorder = run_recorder
+        self._run_task_key = run_task_key
+        self._last_run_window: Optional[int] = None
         self._thread: Optional[threading.Thread] = None
         self._stop_flag = threading.Event()
         self._last_run: dict[str, float] = {}  # task.name -> last ts
@@ -182,7 +187,29 @@ class CollectionScheduler:
                 except Exception:
                     pass
                 self._last_backfill = time.time()
+            self._record_window_heartbeat(now)
             self._stop_flag.wait(1.0)  # 1 秒 tick
+
+    def _record_window_heartbeat(self, now: float) -> None:
+        """C9：每个 UTC 逻辑窗口记一条 run（幂等 run key，重启/时钟跳变不重复）。"""
+        if self._run_recorder is None:
+            return
+        try:
+            spec = self._run_recorder.registry.get(self._run_task_key)
+            if spec is None:
+                return
+            idx = int(now // spec.window_sec)
+            if idx == self._last_run_window:
+                return
+            self._run_recorder.record_run(
+                self._run_task_key, started_ts=now, finished_ts=time.time()
+            )
+            self._last_run_window = idx
+        except Exception:
+            # FAIL-OPEN：记账失败只打 ERROR，不阻断采集（SPEC-L0 §8 C9）
+            import logging
+
+            logging.getLogger("dc.scheduler").error("job_runs 记账失败", exc_info=True)
 
     @staticmethod
     def _run_backfill() -> None:
