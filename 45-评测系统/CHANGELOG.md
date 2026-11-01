@@ -38,6 +38,14 @@
 - 顺带修复 MinIO 缺依赖用例的环境依赖（`9d552907af`）
 - commit: `37d9d70e05`
 
+### P4-5 SLO 看板与告警
+- 新增 `core/slo.py`：9 项 KPI（API 可用性 / 受理 p95 / L1 p95 / SLA 达标率 / 误拦截率 Wilson 上界 / 证据完整率 / 同 spec 复算一致率 / 分支覆盖率 / 队列积压）；缺失信号记 `no_data`，不填 0 伪装达标
+- 队列积压由 `Metrics` 自动推导；其余 8 项为外部实测信号（`--signals` JSON 注入）
+- 告警：积压 ≥ 阈值（默认 10）→ warning；SLA 达标率 <90% → critical（SPEC §14.5）；灰度期 SLA 目标 90%、正式期 95%
+- `config/slo.yaml` 可覆盖目标与告警阈值；CLI 新增 `evalctl slo [--signals] [--config]`（输出 JSON，退出码 0；信号/配置非法 → 4）
+- 测试：14 个用例（9 项 KPI 定义、空仓、积压告警、SLA 告警、灰度目标、信号填充、缺失 no_data、未知信号拒绝、配置默认/覆盖、CLI 三态）；core/slo.py 覆盖率 93%
+- commit: `<待回填>`
+
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
 ### P3-1 凭证签发与校验

@@ -1,0 +1,8 @@
+# SLO 目标与告警阈值（P4-5，SPEC §17 + §14.5）
+# 正式期目标 95%，灰度期（gate.shadow=true）目标 90%
+sla_target: 0.95
+gray_sla_target: 0.90
+# 队列积压达到该值告警（SPEC §14.5：积压 >10 触发）
+backlog_threshold: 10
+# SLA 达标率低于该值触发 critical 告警
+sla_alert_threshold: 0.90

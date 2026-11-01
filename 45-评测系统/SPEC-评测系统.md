@@ -626,6 +626,7 @@ exit 0 = PASS | 2 = BLOCK | 3 = INCONCLUSIVE | 4 = ERROR
 - 日志：结构化 JSON，含 eval_id/run_id/item_id，禁止打印密钥与样本内容
 - OpenLineage：Run START/COMPLETE facet 登记数据血缘；报告 URI 登记 41 索引
 - 告警：队列积压 >10 或 SLA 达标率 <90% 触发
+- 落地：`core/slo.py`（9 项 KPI 看板 + `no_data` 显式标注 + 积压/SLA 告警）+ `config/slo.yaml`（灰度 90% / 正式 95% / 告警阈值可配）+ `evalctl slo [--signals] [--config]`
 
 ### 14.6 备份与容灾
 

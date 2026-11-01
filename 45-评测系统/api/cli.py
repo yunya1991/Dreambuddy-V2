@@ -104,6 +104,10 @@ def _build_parser() -> argparse.ArgumentParser:
     sandbox.add_argument(
         "--config", default=None, help="sandbox.yaml 路径（默认 config/sandbox.yaml）"
     )
+
+    slo = sub.add_parser("slo", help="SLO 看板与告警：9 项 KPI + 积压/SLA 告警（P4-5）")
+    slo.add_argument("--signals", default=None, help="外部 KPI 信号 JSON 文件")
+    slo.add_argument("--config", default=None, help="slo.yaml 路径（默认 config/slo.yaml）")
     return parser
 
 
@@ -131,6 +135,8 @@ def main(
         return _evidence(args, repo, out)
     if args.command == "sandbox":
         return _sandbox(args, out)
+    if args.command == "slo":
+        return _slo(args, repo, shadow, out)
     print(f"未知命令: {args.command}", file=out)
     return EXIT_ERROR
 
@@ -334,6 +340,24 @@ def _sandbox(args: argparse.Namespace, out: Any) -> int:
         return EXIT_ERROR
     print(json.dumps(result, ensure_ascii=False), file=out)
     return EXIT_PASS if result["ok"] else EXIT_ERROR
+
+
+def _slo(args: argparse.Namespace, repo: EvalRepo, shadow: bool | None, out: Any) -> int:
+    """SLO 看板（P4-5）：9 项 KPI + 积压/SLA 告警；信号文件非法即报错。"""
+    from core.slo import SLOConfig, SLODashboard
+
+    try:
+        config = SLOConfig.load(args.config) if args.config else SLOConfig.load()
+        signals = None
+        if args.signals:
+            with open(args.signals, encoding="utf-8") as handle:
+                signals = json.load(handle)
+        snapshot = SLODashboard(repo=repo, config=config, shadow=shadow).snapshot(signals=signals)
+    except (OSError, TypeError, ValueError) as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=out)
+        return EXIT_ERROR
+    print(json.dumps(snapshot, ensure_ascii=False), file=out)
+    return EXIT_PASS
 
 
 if __name__ == "__main__":  # pragma: no cover
