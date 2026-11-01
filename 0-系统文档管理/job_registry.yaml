@@ -69,6 +69,32 @@ tasks:
     enabled: true
     fallback: skip
 
+  # 本地：dbsync 镜像（C13 只读旁路，禁改 plist；StartInterval=600 与窗口对齐）
+  - task_key: os.dbsync.local
+    carrier: launchd
+    unit: com.dreambuddy.dbsync
+    host: local
+    schedule: "interval:600"
+    window_sec: 600
+    timeout_sec: 300
+    max_concurrency: 1
+    retry: 0
+    enabled: true
+    fallback: skip
+
+  # 云端：memory-cleanup（C13 只读旁路，禁改 ExecStart；6h 周期与窗口对齐）
+  - task_key: os.memory-cleanup.cloud
+    carrier: systemd-timer
+    unit: memory-cleanup.timer
+    host: cloud
+    schedule: "interval:21600"
+    window_sec: 21600
+    timeout_sec: 1800
+    max_concurrency: 1
+    retry: 0
+    enabled: true
+    fallback: skip
+
 # C11 检索触发任务（SPEC-L0 §6 C11）：ref 前缀 → task_key。
 # 命中即排 pending job；去重窗口内同一 ref 不重复；并发受 task max_concurrency 限制；
 # FAIL-OPEN；跨界通知不启用（P3 事件表评审前）。

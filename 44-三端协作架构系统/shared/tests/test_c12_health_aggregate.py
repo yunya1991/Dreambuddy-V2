@@ -343,7 +343,7 @@ def test_health_host_filter_local_only_local():
         runner=FakeRunner([]),
     )
     keys = set(out["scheduling"]["tasks"])
-    assert keys == {"dc.collect.local"}
+    assert keys == {"dc.collect.local", "os.dbsync.local"}
 
 
 # ── 接入 cognitive MCP health（两端同口径出口）─────────────────────────────

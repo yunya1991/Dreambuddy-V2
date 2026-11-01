@@ -66,6 +66,14 @@ def main(argv: List[str] | None = None) -> int:
     p_prune = sub.add_parser("prune")
     p_prune.add_argument("--now", type=float, default=None)
 
+    p_sidecar = sub.add_parser("sidecar")
+    p_sidecar.add_argument("--task-key", required=True)
+    p_sidecar.add_argument(
+        "--plist",
+        default="",
+        help="launchd plist 路径（默认 ~/Library/LaunchAgents/<label>.plist）",
+    )
+
     args = parser.parse_args(argv)
     rec = _recorder(args)
     now = time.time() if getattr(args, "now", None) is None else args.now
@@ -116,6 +124,18 @@ def main(argv: List[str] | None = None) -> int:
 
     if args.cmd == "prune":
         _print(rec.prune(now_ts=now))
+        return 0
+
+    if args.cmd == "sidecar":
+        from .sidecar import sync_sidecar
+
+        _print(
+            sync_sidecar(
+                args.task_key,
+                recorder=rec,
+                plist_path=args.plist or None,
+            )
+        )
         return 0
 
     return 2
