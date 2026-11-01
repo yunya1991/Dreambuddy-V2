@@ -43,6 +43,12 @@
 - 测试：13 个用例；evaluators+scorers 覆盖率 95%
 - commit: `0ce8af2afb`
 
+### P2-7 工程-扫描与追溯
+- 新增 `evaluators/engineering/scan.py`：E-H1 秘密泄露、E-H2 漏洞（CRITICAL / HIGH 有修复版本）、E-H3 三方一致（build digest ↔ SBOM + attestation）、E-H5 旁路痕迹（8 条模式）
+- 四个 hard item 各自出分；命中即 BLOCK
+- 测试：14 个用例（含 6 类旁路痕迹参数化）；engineering 覆盖率 100%
+- commit: `待填`
+
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
 
 ### P1-1 env_manifest 语义校验器
