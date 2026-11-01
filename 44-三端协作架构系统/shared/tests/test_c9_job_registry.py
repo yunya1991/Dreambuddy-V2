@@ -215,6 +215,24 @@ def test_missed_run_and_three_window_alert():
     assert len(store.query("job_runs", filters=mv)["rows"]) == 3
 
 
+def test_audit_scoped_by_host_ignores_other_host_tasks():
+    """云端审计只能判定本机任务，否则 local 任务会被误判为连续缺失。"""
+    store, event = FakeStore(), FakeEvent()
+    rec = JobRunRecorder(store=store, event=event, registry=load_registry(REGISTRY_PATH))
+    now_ts = (104 * 300) + 300 + 1
+    r = rec.audit(now_ts=now_ts, host="cloud")
+    assert "dc.collect.cloud" in r["missed"]
+    assert "dc.collect.local" not in r["missed"]
+    mv = {"task_key": "dc.collect.local", "state": "missed_run"}
+    assert store.query("job_runs", filters=mv)["rows"] == []
+    local_events = [
+        e
+        for e in event.consume(event_type="scheduling.missing_run")["events"]
+        if e["payload"].get("task_key") == "dc.collect.local"
+    ]
+    assert local_events == []
+
+
 def test_audit_fail_open_when_store_unavailable():
     class BoomStore(FakeStore):
         def query(self, *a, **kw):

@@ -61,6 +61,7 @@ def main(argv: List[str] | None = None) -> int:
 
     p_audit = sub.add_parser("audit")
     p_audit.add_argument("--now", type=float, default=None)
+    p_audit.add_argument("--host", default="", help="只审计该主机的任务，如 cloud / local")
 
     p_prune = sub.add_parser("prune")
     p_prune.add_argument("--now", type=float, default=None)
@@ -110,7 +111,7 @@ def main(argv: List[str] | None = None) -> int:
         return code
 
     if args.cmd == "audit":
-        _print(rec.audit(now_ts=now))
+        _print(rec.audit(now_ts=now, host=args.host))
         return 0
 
     if args.cmd == "prune":

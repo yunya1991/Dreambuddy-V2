@@ -133,12 +133,19 @@ class JobRunRecorder:
         return rows
 
     # ── missed_run 审计 ──────────────────────────────────────────────
-    def audit(self, *, now_ts: float, since_ts: Optional[float] = None) -> Dict[str, Any]:
-        """扫描已关闭但无 run 的窗口；连续 >=3 窗触发 missing_run 告警。"""
+    def audit(
+        self, *, now_ts: float, since_ts: Optional[float] = None, host: str = ""
+    ) -> Dict[str, Any]:
+        """扫描已关闭但无 run 的窗口；连续 >=3 窗触发 missing_run 告警。
+
+        host 非空时只审计该主机的任务（云端审计不得把 local 任务误判为缺失）。
+        """
         try:
             missed: Dict[str, List[int]] = {}
             alerts = 0
             for spec in self.registry.list(enabled_only=True):
+                if host and spec.host != host:
+                    continue
                 rows = self._query(filters={"task_key": spec.task_key})
                 have = {
                     int(r.get("logical_window", -1)) for r in rows if r.get("state") != "missed_run"
