@@ -22,7 +22,7 @@
 - 新增 `evaluators/finance/availability.py`：5 类故障模板（pod-kill / 网络延迟 / 交易所 API 超时 / DB 主备切换 / 磁盘写满）+ 目标占位符渲染 + 可注入执行器
 - 出分 F-H2 hard item：订单 RPO=0、订单 RTO≤30s、行情 RTO≤60s；缺故障类型 / 未恢复 / 证据不全 → BLOCK
 - 测试：20 个用例；evaluators 覆盖率 94%
-- commit: `待填`
+- commit: `fbdfc62871`
 
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
 
