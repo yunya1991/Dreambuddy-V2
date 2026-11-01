@@ -49,11 +49,14 @@ import logging
 import os
 import re
 import sys
-import time
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+
+if TYPE_CHECKING:
+    from cognitive_interfaces import RecallResult
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +80,7 @@ VOYAGER_CONSECUTIVE_JSONL: Path = _ARTIFACTS_DIR / "voyager_consecutive.jsonl"
 DRAFT_REVIEW_QUEUE_DIR: Path = _ARTIFACTS_DIR / "solution_path_drafts" / "review_queue"
 DRAFT_REVIEW_INDEX_PATH: Path = _ARTIFACTS_DIR / "solution_path_drafts" / "review_queue_index.json"
 # bayesian 记忆单元文件（用于测试兼容 & 写入 voyager_scores 扩展字段到总记忆）
-BAYESIAN_MEMORY_FILE_DEFAULT: Path = (
-    _MEMORY_ROOT / "2-交易记忆单元" / "bayesian_memories.json"
-)
+BAYESIAN_MEMORY_FILE_DEFAULT: Path = _MEMORY_ROOT / "2-交易记忆单元" / "bayesian_memories.json"
 
 VOYAGER_LOCK = threading.RLock()
 
@@ -94,19 +95,34 @@ VOYAGER_DRAFT_THRESHOLD_CONSECUTIVE = 3
 VOYAGER_DRAFT_THRESHOLD_OVERALL = 0.7
 VOYAGER_DRAFT_DEDUP_WINDOW_DAYS = 7
 
-_TRD_TAGS: Set[str] = {"trading", "backtest", "execution", "strategy", "strategy-research",
-                       "strategy-synthesis", "pnl", "sharpe", "drawdown", "okx",
-                       "polling", "polling_trader", "market", "trader"}
+_TRD_TAGS: Set[str] = {
+    "trading",
+    "backtest",
+    "execution",
+    "strategy",
+    "strategy-research",
+    "strategy-synthesis",
+    "pnl",
+    "sharpe",
+    "drawdown",
+    "okx",
+    "polling",
+    "polling_trader",
+    "market",
+    "trader",
+}
 
 # B3: recall SLA 延迟预算（SPEC §3.5：交易场景 recall ≤ 200ms，超限告警 FAIL-OPEN）
 RECALL_SLA_MS: float = 200.0
 
 
 def _voyager_ensure_dirs() -> None:
-    for d in (VOYAGER_MEMORY_EXTRA_PATH.parent,
-              VOYAGER_CONSECUTIVE_JSONL.parent,
-              DRAFT_REVIEW_QUEUE_DIR,
-              DRAFT_REVIEW_INDEX_PATH.parent):
+    for d in (
+        VOYAGER_MEMORY_EXTRA_PATH.parent,
+        VOYAGER_CONSECUTIVE_JSONL.parent,
+        DRAFT_REVIEW_QUEUE_DIR,
+        DRAFT_REVIEW_INDEX_PATH.parent,
+    ):
         try:
             Path(d).mkdir(parents=True, exist_ok=True)
         except Exception:
@@ -162,6 +178,7 @@ class CognitiveLoopEntry:
         self._distill_engine = None
         if enable_distill:
             from dynamic_distill_engine import DynamicDistillEngine
+
             memory_root = _SCRIPT_DIR.parent
             self._distill_engine = DynamicDistillEngine(
                 memory_root=memory_root,
@@ -180,65 +197,80 @@ class CognitiveLoopEntry:
 
         # 初始化压缩引擎
         from consolidation_engine import ConsolidationEngine
+
         self._consolidation_engine = ConsolidationEngine(memory_root=_SCRIPT_DIR.parent)
 
         # 初始化版本控制
         from memory_version_control import MemoryVersionControl
+
         self._version_control = MemoryVersionControl(memory_root=_SCRIPT_DIR.parent)
 
         # 初始化工作记忆（修复：原遗漏导致 process_block 注入永远失败）
         from working_memory_manager import WorkingMemoryManager
+
         self.working_memory = WorkingMemoryManager()
 
         # P1-1: 初始化 Recall Memory 缓存层（三层记忆中间层）
         from recall_memory_cache import RecallMemoryCache
+
         recall_cache_path = _SCRIPT_DIR.parent / "data" / "recall_cache.json"
         self.recall_cache = RecallMemoryCache(cache_path=recall_cache_path)
 
         # P1-3: 初始化双时序知识图（valid_time + transaction_time + invalidated_by）
         from temporal_memory_graph import TemporalMemoryGraph
+
         temporal_graph_path = _SCRIPT_DIR.parent / "data" / "temporal_graph.json"
         self.temporal_graph = TemporalMemoryGraph(graph_path=temporal_graph_path)
 
         # P3-8: 初始化 FIBO 语义本体（文件索引→语义图，类层级+多跳查询）
         from fibo_ontology import FIBOOntology
+
         fibo_path = _SCRIPT_DIR.parent / "data" / "fibo_ontology.json"
         self.fibo_ontology = FIBOOntology(ontology_path=fibo_path)
 
         # P2-4: 初始化 SKILL 自验证入库门（Voyager 式 verify-before-commit）
         from skill_verification_gate import SkillVerificationGate
+
         self.skill_gate = SkillVerificationGate()
 
         # P2-5: 初始化 GraphRAG 社区检测（Leiden 风格社区 + 分层摘要）
         from graphrag_community import GraphRAGCommunity
+
         self.graphrag = GraphRAGCommunity()
 
         # P2-6: 初始化 CodeQL 语义分析（AST → 语义级数据流 + 污点追踪）
         from codeql_semantic import CodeQLSemanticAnalyzer
+
         self.codeql = CodeQLSemanticAnalyzer()
 
         # P3-1: 初始化 GWT 全局工作空间广播总线（跨子系统信息广播）
         from workspace_bus import WorkspaceBus
+
         self.workspace_bus = WorkspaceBus()
 
         # P3-2: 初始化 HOT Self-Model 高阶自我监控（置信度校准+矛盾检测+错误监测）
         from self_model import SelfModel
+
         self.self_model = SelfModel()
 
         # P3-4: 初始化预测误差门控 record（Friston 自由能 + 记忆再巩固边界）
         from prediction_error_gate import PredictionErrorGate
+
         self.prediction_error_gate = PredictionErrorGate()
 
         # P3-5: 初始化 Alpha Decay 自动门禁（策略级半衰期衰减检测）
         from alpha_decay_gate import AlphaDecayGate
+
         self.alpha_decay_gate = AlphaDecayGate()
 
         # P3-6: 初始化 Reflection Node（调度链末尾 LLM-judge 反思回环）
         from reflection_node import ReflectionNode
+
         self.reflection_node = ReflectionNode()
 
         # P3-3: 初始化 FOK/JOL 元认知 Harness（执行前 FOK 预评估 + 执行后 JOL）
         from fok_jol_harness import MetacogHarness
+
         self.metacog_harness = MetacogHarness()
 
         # L4 接线：ReflectionNode 订阅 WorkspaceBus（反思回环自动消费广播）
@@ -249,23 +281,26 @@ class CognitiveLoopEntry:
 
         # L4 状态聚合：捕获每次 recall/record/verify 的元认知输出，供前端/训练系统查询
         self._l4_state: Dict[str, Any] = {
-            "fok": None,          # FOK 预评估结果
-            "jol": None,          # JOL 学习评估结果
+            "fok": None,  # FOK 预评估结果
+            "jol": None,  # JOL 学习评估结果
             "prediction_error": None,  # 预测误差门控结果
-            "reflection": None,   # 反思裁决结果
+            "reflection": None,  # 反思裁决结果
             "broadcast_count": 0,  # WorkspaceBus 广播计数
         }
 
         # P3-7: 初始化 Transactive Memory 索引（"谁擅长什么" agent profile）
         from transactive_memory import TransactiveMemory
+
         self.transactive_memory = TransactiveMemory()
 
         # P1-4: 初始化 ACT-R 激活模型（频率+衰减+相关度排序）
         from actr_activation import ACTRActivation
+
         self.actr = ACTRActivation()
 
         # P1-7: 初始化因果推理引擎（pgmpy 可选依赖，do-calculus + 因果发现）
         from causal_inference_engine import CausalInferenceEngine
+
         causal_graph_path = _SCRIPT_DIR.parent / "data" / "causal_graph.json"
         self.causal_engine = CausalInferenceEngine(graph_path=causal_graph_path)
 
@@ -273,6 +308,7 @@ class CognitiveLoopEntry:
         # SPEC §2.3.4 P0-3 + §3.3：33-REA → Ledger → record 闭环
         # db_path 跟随 storage_path 同目录，避免测试间互相污染
         from evidence_ledger import EvidenceLedger
+
         evidence_ledger_path = Path(storage_path).parent / "evidence_ledger.db"
         self.evidence_ledger = EvidenceLedger(db_path=evidence_ledger_path)
 
@@ -323,7 +359,8 @@ class CognitiveLoopEntry:
             # （SKILL 检索非核心，导入失败/异常均降级为空结果）
             def _skill_search_fn(context: str, top_k: int):
                 try:
-                    from skill_indexer import scan_skills, _match_score
+                    from skill_indexer import _match_score, scan_skills
+
                     entries = scan_skills()
                     scored = [(e, _match_score(context, e)) for e in entries]
                     scored.sort(key=lambda x: x[1], reverse=True)
@@ -335,6 +372,7 @@ class CognitiveLoopEntry:
             def _knowledge_rag_fn(context: str, top_k: int):
                 try:
                     from hybrid_retriever import search_with_feedback
+
                     raw = search_with_feedback(context, top_k=top_k)
                     if isinstance(raw, dict):
                         return list(raw.get("results", []))
@@ -352,8 +390,9 @@ class CognitiveLoopEntry:
     # 认知层：检索
     # ============================================================
 
-    def recall(self, context: str, top_k: int = 5, min_quality: str = "C",
-               sort_mode: str = "score") -> List[Dict[str, Any]]:
+    def recall(
+        self, context: str, top_k: int = 5, min_quality: str = "C", sort_mode: str = "score"
+    ) -> List[Dict[str, Any]]:
         """
         检索相关记忆（处理代码问题前调用）。
 
@@ -532,9 +571,9 @@ class CognitiveLoopEntry:
         # FAIL-OPEN：任何 L4 异常不影响 recall 返回
         try:
             from workspace_bus import WorkspaceContent
+
             avg_score = (
-                sum(r.get("score", 0.0) or 0.0 for r in dicts) / len(dicts)
-                if dicts else 0.0
+                sum(r.get("score", 0.0) or 0.0 for r in dicts) / len(dicts) if dicts else 0.0
             )
             wc = WorkspaceContent(
                 intent={"type": "recall", "query": context},
@@ -559,7 +598,9 @@ class CognitiveLoopEntry:
                 self._recall_stats["sla_breaches"] += 1
                 logger.warning(
                     "recall SLA breach: %.1fms > %.0fms (context=%s)",
-                    latency_ms, RECALL_SLA_MS, context[:80],
+                    latency_ms,
+                    RECALL_SLA_MS,
+                    context[:80],
                 )
         except Exception:
             pass  # FAIL-OPEN：埋点失败不影响 recall 结果
@@ -570,24 +611,32 @@ class CognitiveLoopEntry:
         # 文档命中带 channel=doc 标记，不回写 recall_cache，不挤占记忆通道 top_k。
         try:
             import json as _json
-            import subprocess as _sp
             import os as _os
+            import subprocess as _sp
+
             _proc = _sp.run(
-                ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                [
+                    "/home/ubuntu/fis-p0/.venv/bin/python",
+                    "/home/ubuntu/fis-p0/scripts/search_cli.py",
+                ],
                 input=_json.dumps({"cmd": "recall", "query": str(context), "limit": 3}),
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
                 env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
             )
             _res = _json.loads(_proc.stdout or "{}")
             if _res.get("success") and _res.get("hits"):
                 for _h in _res["hits"][:3]:
-                    dicts.append({
-                        "id": "fis-doc:" + str(_h.get("path", "")),
-                        "content": _h.get("snippet", ""),
-                        "score": float(_h.get("score", 0.0)),
-                        "channel": "doc",
-                        "source": "fis-recall",
-                    })
+                    dicts.append(
+                        {
+                            "id": "fis-doc:" + str(_h.get("path", "")),
+                            "content": _h.get("snippet", ""),
+                            "score": float(_h.get("score", 0.0)),
+                            "channel": "doc",
+                            "source": "fis-recall",
+                        }
+                    )
         except Exception:
             pass  # FAIL-OPEN：41 文档通道失败不影响记忆通道返回
         # ---------- END D6 ----------
@@ -597,8 +646,9 @@ class CognitiveLoopEntry:
     # P2-1: 记忆路由器 — Intent-Engine → 三库加权召回
     # ============================================================
 
-    def route(self, intent_result: dict, top_k: int = 5,
-              route_mode: str = "auto") -> "RecallResult":
+    def route(
+        self, intent_result: dict, top_k: int = 5, route_mode: str = "auto"
+    ) -> "RecallResult":
         """委托给 IntentRouter，实现三库加权召回。
 
         SPEC §2.4.1 + §2.4.2 + §2.4.3 + §4.3 P2-1/P2-2/P2-3：
@@ -619,11 +669,10 @@ class CognitiveLoopEntry:
             RecallResult 含 memories/skills/knowledge/confidence
         """
         if self._intent_router is not None:
-            return self._intent_router.route(
-                intent_result, top_k=top_k, route_mode=route_mode
-            )
+            return self._intent_router.route(intent_result, top_k=top_k, route_mode=route_mode)
         # FAIL-OPEN：路由器不可用 → 返回空 RecallResult
         from cognitive_interfaces import RecallResult
+
         return RecallResult()
 
     def get_recall_stats(self) -> Dict[str, Any]:
@@ -689,7 +738,9 @@ class CognitiveLoopEntry:
         try:
             result["prediction_error_gate"] = {
                 "pe_threshold": getattr(self.prediction_error_gate, "_pe_threshold", None),
-                "base_level_boundary": getattr(self.prediction_error_gate, "_base_level_boundary", None),
+                "base_level_boundary": getattr(
+                    self.prediction_error_gate, "_base_level_boundary", None
+                ),
                 "last_result": self._l4_state.get("prediction_error"),
             }
         except Exception:
@@ -777,6 +828,7 @@ class CognitiveLoopEntry:
         """
         try:
             from fsrs_forgetting_scheduler import FSRSForgettingScheduler
+
             scheduler = FSRSForgettingScheduler(grace_period_days=grace_period_days)
 
             # 从 SQLite 加载所有记忆
@@ -788,16 +840,19 @@ class CognitiveLoopEntry:
                         "verify_count, updated_at FROM memories"
                     ).fetchall()
                 import json as _json
+
                 for row in rows:
-                    memories.append({
-                        "id": row[0],
-                        "content": row[1],
-                        "quality_level": row[2],
-                        "confidence": row[3],
-                        "tags": _json.loads(row[4]) if row[4] else [],
-                        "verify_count": row[5] or 0,
-                        "updated_at": row[6] or "",
-                    })
+                    memories.append(
+                        {
+                            "id": row[0],
+                            "content": row[1],
+                            "quality_level": row[2],
+                            "confidence": row[3],
+                            "tags": _json.loads(row[4]) if row[4] else [],
+                            "verify_count": row[5] or 0,
+                            "updated_at": row[6] or "",
+                        }
+                    )
             except Exception:
                 pass
 
@@ -890,7 +945,11 @@ class CognitiveLoopEntry:
                 ql = (r.get("quality_level") or "").strip().upper()
                 vc = r.get("verify_count") or 0
                 if not vc:
-                    meta_vc = (r.get("metadata") or {}).get("verify_count", 0) if isinstance(r.get("metadata"), dict) else 0
+                    meta_vc = (
+                        (r.get("metadata") or {}).get("verify_count", 0)
+                        if isinstance(r.get("metadata"), dict)
+                        else 0
+                    )
                     vc = meta_vc
                 # 「资深」豁免：S/A 级或 vc≥3
                 if ql in ("S", "A"):
@@ -925,7 +984,9 @@ class CognitiveLoopEntry:
             meta["error"] = f"top_level_exception: {type(e).__name__}: {e}"
             return meta
 
-    def search(self, query: str, top_k: int = 5, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, top_k: int = 5, tags: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
         """语义搜索记忆"""
         results = self._vm.search(
             query,
@@ -996,12 +1057,20 @@ class CognitiveLoopEntry:
         # Phase1：VOYAGER 评分持久化 + 写入 bayesian 扩展字段（FAIL-OPEN 包裹）
         try:
             scores = _voyager_compute_scores(
-                content=content, tags=tags_list, source=source,
-                explicit=voyager_scores, enable_auto=enable_voyager_auto,
+                content=content,
+                tags=tags_list,
+                source=source,
+                explicit=voyager_scores,
+                enable_auto=enable_voyager_auto,
             )
-            _voyager_persist_extra(memory_id=memory_id, domain=domain,
-                                   scores=scores, tags=tags_list, content=content,
-                                   source=source)
+            _voyager_persist_extra(
+                memory_id=memory_id,
+                domain=domain,
+                scores=scores,
+                tags=tags_list,
+                content=content,
+                source=source,
+            )
         except Exception as _e:
             logger.debug("VOYAGER record 附加持久化失败（FAIL-OPEN 忽略）: %s", _e)
 
@@ -1009,6 +1078,7 @@ class CognitiveLoopEntry:
         # SPEC §2.3.4：每条 AI 产出的代码/决策必须带 Evidence Ledger receipt
         try:
             from evidence_ledger import EvidenceEntry
+
             entry = EvidenceEntry(
                 subject="record",
                 relation="记录了",
@@ -1051,6 +1121,7 @@ class CognitiveLoopEntry:
 
         try:
             from workspace_bus import WorkspaceContent
+
             wc = WorkspaceContent(
                 intent={"type": "record", "memory_id": memory_id},
                 confidence=confidence,
@@ -1064,11 +1135,17 @@ class CognitiveLoopEntry:
         # ---------- D5（41 SPEC §13.4）：41 update() 向量化触发器 ----------
         # 记忆落盘后异步触发 41 增量更新（Popen 非阻塞，不等待完成；FAIL-OPEN 不影响 record 返回）
         try:
-            import subprocess as _sp
             import os as _os
+            import subprocess as _sp
+
             _p = _sp.Popen(
-                ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
-                stdin=_sp.PIPE, stdout=_sp.DEVNULL, stderr=_sp.DEVNULL,
+                [
+                    "/home/ubuntu/fis-p0/.venv/bin/python",
+                    "/home/ubuntu/fis-p0/scripts/search_cli.py",
+                ],
+                stdin=_sp.PIPE,
+                stdout=_sp.DEVNULL,
+                stderr=_sp.DEVNULL,
                 env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
             )
             _p.stdin.write(json.dumps({"cmd": "update"}).encode("utf-8"))
@@ -1082,8 +1159,9 @@ class CognitiveLoopEntry:
     # 实践层：验证与更新
     # ============================================================
 
-    def verify(self, memory_id: str, success: bool = True,
-               known_gaps_update: Optional[List[str]] = None) -> Dict[str, Any]:
+    def verify(
+        self, memory_id: str, success: bool = True, known_gaps_update: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """
         A8 校验验证 — 更新记忆置信度并可能触发蒸馏（Phase1 扩展：连续成功计数 → AUTO 草案）。
 
@@ -1127,7 +1205,8 @@ class CognitiveLoopEntry:
             approx = 0.0
             try:
                 approx = _voyager_approx_overall_from_mem(
-                    {"confidence": 0.4, "quality_level": "C", "verify_count": 1})
+                    {"confidence": 0.4, "quality_level": "C", "verify_count": 1}
+                )
             except Exception:
                 approx = 0.25
             return {
@@ -1140,10 +1219,17 @@ class CognitiveLoopEntry:
                 "new_confidence": 0.4,
                 "quality_changed": False,
                 "distill_may_triggered": False,
-                "voyager": {"memory_id": memory_id, "consecutive_positive_count": 0,
-                            "meets_draft_threshold": False, "auto_draft_generated": False,
-                            "draft_id": None, "draft_path": None,
-                            "domain": None, "tags": [], "voyager_overall": round(approx, 4)},
+                "voyager": {
+                    "memory_id": memory_id,
+                    "consecutive_positive_count": 0,
+                    "meets_draft_threshold": False,
+                    "auto_draft_generated": False,
+                    "draft_id": None,
+                    "draft_path": None,
+                    "domain": None,
+                    "tags": [],
+                    "voyager_overall": round(approx, 4),
+                },
                 # P1-L1-2b: PoE enforcement
                 "poe_trust": poe_trust,
                 "receipt_hash": receipt_hash,
@@ -1202,28 +1288,38 @@ class CognitiveLoopEntry:
             tags_effective = list(extra.get("tags") or voyager_report["tags"])
             domain = extra.get("domain") or None
             scores = extra.get("scores") or {}
-            overall = float(scores.get("overall") if isinstance(scores, dict)
-                            and scores.get("overall") is not None
-                            else (_voyager_approx_overall_from_mem(mem)
-                                  if (not isinstance(scores, dict) or "overall" not in scores)
-                                  else 0.0))
+            overall = float(
+                scores.get("overall")
+                if isinstance(scores, dict) and scores.get("overall") is not None
+                else (
+                    _voyager_approx_overall_from_mem(mem)
+                    if (not isinstance(scores, dict) or "overall" not in scores)
+                    else 0.0
+                )
+            )
             voyager_report["domain"] = domain
             voyager_report["tags"] = tags_effective
             voyager_report["voyager_overall"] = round(float(overall or 0.0), 4)
 
             # 写 verify 流水 → 按 domain+tags 分组算 recent N success
             consecutive = _voyager_append_verify_and_count(
-                memory_id=memory_id, domain=domain, tags=tags_effective,
-                success=bool(success), overall=voyager_report["voyager_overall"],
+                memory_id=memory_id,
+                domain=domain,
+                tags=tags_effective,
+                success=bool(success),
+                overall=voyager_report["voyager_overall"],
             )
             voyager_report["consecutive_positive_count"] = consecutive
-            meets = (consecutive >= VOYAGER_DRAFT_THRESHOLD_CONSECUTIVE
-                     and voyager_report["voyager_overall"] >= VOYAGER_DRAFT_THRESHOLD_OVERALL)
+            meets = (
+                consecutive >= VOYAGER_DRAFT_THRESHOLD_CONSECUTIVE
+                and voyager_report["voyager_overall"] >= VOYAGER_DRAFT_THRESHOLD_OVERALL
+            )
             voyager_report["meets_draft_threshold"] = meets
 
             if meets:
                 generated, draft_id, draft_path = _voyager_try_generate_draft(
-                    domain=domain, tags=tags_effective,
+                    domain=domain,
+                    tags=tags_effective,
                     overall_threshold=VOYAGER_DRAFT_THRESHOLD_OVERALL,
                     dedup_window_days=VOYAGER_DRAFT_DEDUP_WINDOW_DAYS,
                 )
@@ -1266,12 +1362,15 @@ class CognitiveLoopEntry:
         # verify 是记忆质量的真实反馈，触发反思回环并广播到全局工作空间
         # FAIL-OPEN：任何异常不影响 verify 返回
         try:
-            reflection = self.reflection_node.reflect({
-                "success": success,
-                "error": None if success else "verify reported failure",
-            })
+            reflection = self.reflection_node.reflect(
+                {
+                    "success": success,
+                    "error": None if success else "verify reported failure",
+                }
+            )
             self._l4_state["reflection"] = reflection
             from workspace_bus import WorkspaceContent
+
             wc = WorkspaceContent(
                 intent={"type": "verify", "memory_id": memory_id},
                 confidence=round(new_confidence, 4),
@@ -1337,13 +1436,15 @@ class CognitiveLoopEntry:
                 # sample 模式只在有 receipt 时才抽样跳过
                 # 先快速查 receipt 是否存在（不跑全量）
                 receipt = self.evidence_ledger.get_receipt_for(
-                    subject="record", object_id=memory_id,
+                    subject="record",
+                    object_id=memory_id,
                 )
                 if not receipt:
                     # 无 receipt → 不能被 sample 模式信任
                     return (False, None)
                 # 有 receipt → 10% 概率重跑 light 验证（抽样重验）
                 import random
+
                 if random.random() < self._sample_reverify_probability:
                     # 10% 概率重跑 light 验证（receipt 已查到，信任）
                     # 失效条件 6：抽样重验失败 → 信任降级
@@ -1354,7 +1455,8 @@ class CognitiveLoopEntry:
 
             # light 模式（默认）：索引查询 receipt 存在性
             receipt = self.evidence_ledger.get_receipt_for(
-                subject="record", object_id=memory_id,
+                subject="record",
+                object_id=memory_id,
             )
             if receipt:
                 return (True, receipt)
@@ -1459,7 +1561,11 @@ class CognitiveLoopEntry:
         """健康检查"""
         return {
             "memory": self._vm.healthcheck(),
-            "distill": self._distill_engine.healthcheck() if self._distill_engine else {"status": "disabled"},
+            "distill": (
+                self._distill_engine.healthcheck()
+                if self._distill_engine
+                else {"status": "disabled"}
+            ),
             "consolidation": self._consolidation_engine.healthcheck(),
         }
 
@@ -1522,7 +1628,9 @@ class CognitiveLoopEntry:
     # 版本控制（MemOS 风格）
     # ============================================================
 
-    def vc_commit(self, message: str, author: str = "trae", allow_empty: bool = False) -> Dict[str, Any]:
+    def vc_commit(
+        self, message: str, author: str = "trae", allow_empty: bool = False
+    ) -> Dict[str, Any]:
         """
         创建版本快照。
 
@@ -1543,7 +1651,9 @@ class CognitiveLoopEntry:
         """查看版本历史"""
         return self._version_control.log(limit=limit)
 
-    def vc_diff(self, commit_a: str, commit_b: str, file_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    def vc_diff(
+        self, commit_a: str, commit_b: str, file_filter: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """对比版本间差异"""
         return self._version_control.diff(commit_a, commit_b, file_filter=file_filter)
 
@@ -1665,10 +1775,9 @@ def _voyager_compute_scores(
     if explicit:
         merged = {k: _clamp01(explicit.get(k)) for k in VOYAGER_DIM_WEIGHTS}
     else:
-        merged = {k: 0.0 for k in VOYAGER_DIM_WEIGHTS}
+        merged = dict.fromkeys(VOYAGER_DIM_WEIGHTS, 0.0)
     need_auto = enable_auto and (
-        explicit is None
-        or any(merged.get(dim) in (None, 0.0) for dim in VOYAGER_DIM_WEIGHTS)
+        explicit is None or any(merged.get(dim) in (None, 0.0) for dim in VOYAGER_DIM_WEIGHTS)
     )
     if need_auto:
         auto = _voyager_auto_scores(content=content, tags=tags or [], source=source or "")
@@ -1684,9 +1793,14 @@ def _voyager_compute_scores(
     return merged
 
 
-def _voyager_persist_extra(memory_id: str, domain: Optional[str],
-                          scores: Dict[str, float], tags: List[str],
-                          content: str, source: str) -> None:
+def _voyager_persist_extra(
+    memory_id: str,
+    domain: Optional[str],
+    scores: Dict[str, float],
+    tags: List[str],
+    content: str,
+    source: str,
+) -> None:
     """持久化 {memory_id: {domain, scores, tags, content_preview, source, ts}}。
 
     同时尝试更新 bayesian_memories.json 对应记忆项的 voyager_scores 扩展字段。
@@ -1716,15 +1830,21 @@ def _voyager_persist_extra(memory_id: str, domain: Optional[str],
 
     # Bayesian 更新（单独 try 隔离）
     try:
-        _bayesian_update_scores(memory_id, scores, tags=tags, domain=domain,
-                                content=content, source=source)
+        _bayesian_update_scores(
+            memory_id, scores, tags=tags, domain=domain, content=content, source=source
+        )
     except Exception:
         pass
 
 
-def _bayesian_update_scores(memory_id: str, scores: Dict[str, float],
-                            tags: List[str], domain: Optional[str],
-                            content: str, source: str) -> None:
+def _bayesian_update_scores(
+    memory_id: str,
+    scores: Dict[str, float],
+    tags: List[str],
+    domain: Optional[str],
+    content: str,
+    source: str,
+) -> None:
     """给 bayesian_memories.json 中对应 memory_id 追加 voyager_scores 扩展字段。
 
     匹配逻辑：
@@ -1771,23 +1891,25 @@ def _bayesian_update_scores(memory_id: str, scores: Dict[str, float],
     # 3) 没匹配到任何一条 → 追加新记忆记录（仅写 voyager_scores + 最小字段）
     if not matched_exact and not changed:
         now = datetime.now(timezone.utc).isoformat()
-        db["memories"].append({
-            "memory_id": memory_id,
-            "content": str(content or ""),
-            "category": "lesson",
-            "confidence": 0.3,
-            "quality_level": "C",
-            "verify_count": 0,
-            "conflict_count": 0,
-            "beta_alpha": 1,
-            "beta_beta": 1,
-            "created_at": now,
-            "last_updated": now,
-            "source": str(source or "cognitive-loop-entry"),
-            "tags": list(tags or []),
-            "domain": domain,
-            "voyager_scores": dict(scores),
-        })
+        db["memories"].append(
+            {
+                "memory_id": memory_id,
+                "content": str(content or ""),
+                "category": "lesson",
+                "confidence": 0.3,
+                "quality_level": "C",
+                "verify_count": 0,
+                "conflict_count": 0,
+                "beta_alpha": 1,
+                "beta_beta": 1,
+                "created_at": now,
+                "last_updated": now,
+                "source": str(source or "cognitive-loop-entry"),
+                "tags": list(tags or []),
+                "domain": domain,
+                "voyager_scores": dict(scores),
+            }
+        )
         changed = True
     if changed:
         try:
@@ -1810,9 +1932,9 @@ def _voyager_load_extra() -> Dict[str, Any]:
         return {}
 
 
-def _bayesian_find_memory_fallback(memory_id: Optional[str],
-                                   content_hint: Optional[str] = None
-                                   ) -> Optional[Dict[str, Any]]:
+def _bayesian_find_memory_fallback(
+    memory_id: Optional[str], content_hint: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
     """SQLite VectorMemory 查不到时，从 BAYESIAN_MEMORY_FILE_DEFAULT JSON 找老记忆。
 
     匹配优先级：
@@ -1848,8 +1970,9 @@ def _bayesian_find_memory_fallback(memory_id: Optional[str],
                         continue
                     mc80 = str(m.get("content") or "")[:80].strip().lower()
                     if mc80 and mc80 == hint80:
-                        mid = str(m.get("memory_id") or m.get("id")
-                                  or memory_id or "BAYESIAN-FALLBACK")
+                        mid = str(
+                            m.get("memory_id") or m.get("id") or memory_id or "BAYESIAN-FALLBACK"
+                        )
                         return _bayesian_to_vm_shape(m, fallback_id=mid)
     except Exception:
         return None
@@ -1886,8 +2009,9 @@ def _voyager_approx_overall_from_mem(mem: Dict[str, Any]) -> float:
 
 
 def _domain_tags_key(domain: Optional[str], tags: List[str]) -> str:
-    return "{}::{}".format(domain or "__NO_DOMAIN__",
-                           ",".join(sorted(set(str(t) for t in (tags or []))))[:500])
+    return "{}::{}".format(
+        domain or "__NO_DOMAIN__", ",".join(sorted({str(t) for t in (tags or [])}))[:500]
+    )
 
 
 def _voyager_append_verify_and_count(
@@ -1950,7 +2074,7 @@ def _voyager_find_draft_base_memories(
     limit: int = 3,
 ) -> List[Dict[str, Any]]:
     """从 voyager 流水 + extra 中找 同 domain+tags 的 最近 3 条 success=True 且 overall≥thr 的 记忆
-   （按 overall 降序取 top limit，要求 3 条 distinct memory_id 才行，否则返回空）。"""
+    （按 overall 降序取 top limit，要求 3 条 distinct memory_id 才行，否则返回空）。"""
     jpath = Path(VOYAGER_CONSECUTIVE_JSONL)
     if not jpath.exists():
         return []
@@ -1992,8 +2116,9 @@ def _voyager_find_draft_base_memories(
     return top
 
 
-def _voyager_has_recent_pending_draft(domain: Optional[str], tags: List[str],
-                                      window_days: int) -> bool:
+def _voyager_has_recent_pending_draft(
+    domain: Optional[str], tags: List[str], window_days: int
+) -> bool:
     """审核队列中 最近 window_days 天 同 domain+tags 的 PENDING 草案 → True（去重）。"""
     dq = Path(DRAFT_REVIEW_QUEUE_DIR)
     if not dq.exists():
@@ -2016,8 +2141,8 @@ def _voyager_has_recent_pending_draft(domain: Optional[str], tags: List[str],
         if _domain_tags_key(*dtags) == target_key:
             return True
         # 标签 Jaccard ≥0.5 近似同 topic 也去重（避免近似重复草案）
-        src_tags = set(str(t) for t in tags or [])
-        dst_tags = set(str(t) for t in (d.get("tags") or []))
+        src_tags = {str(t) for t in tags or []}
+        dst_tags = {str(t) for t in (d.get("tags") or [])}
         dst_tags.discard("solution_path")
         dst_tags.discard("auto-draft")
         dst_tags.discard("review-required")
@@ -2032,12 +2157,32 @@ def _voyager_has_recent_pending_draft(domain: Optional[str], tags: List[str],
 
 def _infer_parent_template_id(tags: List[str]) -> str:
     """依据 tag 粗略映射父级 template_id（不命中返回 none）。"""
-    lower = set(str(t).lower() for t in (tags or []))
-    if any(x in lower for x in ("strategy-research", "strategy-synthesis", "backtest",
-                                "t1-", "t0-", "strategy_directive")):
+    lower = {str(t).lower() for t in (tags or [])}
+    if any(
+        x in lower
+        for x in (
+            "strategy-research",
+            "strategy-synthesis",
+            "backtest",
+            "t1-",
+            "t0-",
+            "strategy_directive",
+        )
+    ):
         return "t1-strategy-synthesis"
-    if any(x in lower for x in ("execution", "trade", "t2-", "okx", "polling_trader",
-                                "entry", "stop-loss", "martin")):
+    if any(
+        x in lower
+        for x in (
+            "execution",
+            "trade",
+            "t2-",
+            "okx",
+            "polling_trader",
+            "entry",
+            "stop-loss",
+            "martin",
+        )
+    ):
         return "t2-trade-execution"
     if any(x in lower for x in ("risk", "gatekeeper", "t3-", "max_drawdown", "熔断")):
         return "t3-risk-gatekeeper"
@@ -2068,7 +2213,7 @@ def _voyager_try_generate_draft(
 
     now_ts = int(datetime.now(timezone.utc).timestamp() * 1000)
     # 前缀判定：TRD vs DEV
-    tag_lower = set(str(t).lower() for t in (tags or []))
+    tag_lower = {str(t).lower() for t in (tags or [])}
     is_trd = bool(tag_lower & _TRD_TAGS)
     prefix = "APP-TRD-AUTO" if is_trd else "APP-DEV-AUTO"
     draft_id = f"{prefix}-{now_ts}"
@@ -2080,8 +2225,11 @@ def _voyager_try_generate_draft(
     step_pool: List[str] = []
     for b in base:
         c = b.get("content") or ""
-        for m in re.finditer(r"(步骤\s*\d*[:：]?[^\n]{4,90}|Step\s*\d+[:：]?[^\n]{4,90}|"
-                            r"[①②③④⑤⑥⑦⑧⑨⑩][^\n]{4,90})", c):
+        for m in re.finditer(
+            r"(步骤\s*\d*[:：]?[^\n]{4,90}|Step\s*\d+[:：]?[^\n]{4,90}|"
+            r"[①②③④⑤⑥⑦⑧⑨⑩][^\n]{4,90})",
+            c,
+        ):
             step = re.sub(r"\s+", " ", m.group(0)).strip(" -:：")
             if step and step not in step_pool:
                 step_pool.append(step)
@@ -2094,20 +2242,19 @@ def _voyager_try_generate_draft(
         description = description[:277] + "…"
 
     base_avg = round(sum(float(b["overall"]) for b in base) / len(base), 4)
-    extra_tags = (
-        ["solution_path", "auto-draft", "review-required"]
-        + list({str(t) for t in (tags or [])} - {"solution_path", "auto-draft", "review-required"})
+    extra_tags = ["solution_path", "auto-draft", "review-required"] + list(
+        {str(t) for t in (tags or [])} - {"solution_path", "auto-draft", "review-required"}
     )
     doc: Dict[str, Any] = {
         "template_id": draft_id,
         "name": f"AUTO DRAFT: {domain or 'general'} / "
-                + (",".join(list(dict.fromkeys(tags or []))[:4]) or "untagged")
-                + " 连续验证路径",
+        + (",".join(list(dict.fromkeys(tags or []))[:4]) or "untagged")
+        + " 连续验证路径",
         "steps": steps,
         "description": description or "<三条基础记忆摘要，人工补充>",
-        "confidence": 0.3,                    # 硬降级：永远 0.3
+        "confidence": 0.3,  # 硬降级：永远 0.3
         "verify_count": 0,
-        "quality_level": "C",                 # 硬降级：永远 C
+        "quality_level": "C",  # 硬降级：永远 C
         "source": "voyager-auto-draft",
         "tags": extra_tags,
         "layer": "applied",
@@ -2145,17 +2292,19 @@ def _voyager_try_generate_draft(
             except Exception:
                 index = {"entries": []}
         index.setdefault("entries", [])
-        index["entries"].append({
-            "draft_id": draft_id,
-            "path": str(draft_path),
-            "domain": domain,
-            "tags": list(tags or []),
-            "base_memory_ids_count": len(base),
-            "base_avg_overall": base_avg,
-            "created_at": doc["metadata"]["draft_created_at"],
-            "review_status": "PENDING",
-            "is_trd": is_trd,
-        })
+        index["entries"].append(
+            {
+                "draft_id": draft_id,
+                "path": str(draft_path),
+                "domain": domain,
+                "tags": list(tags or []),
+                "base_memory_ids_count": len(base),
+                "base_avg_overall": base_avg,
+                "created_at": doc["metadata"]["draft_created_at"],
+                "review_status": "PENDING",
+                "is_trd": is_trd,
+            }
+        )
         ipath.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
         pass
@@ -2165,6 +2314,7 @@ def _voyager_try_generate_draft(
 # ============================================================
 # CLI 接口
 # ============================================================
+
 
 def _format_memories(memories: List[Dict]) -> str:
     """格式化记忆列表输出"""
@@ -2268,7 +2418,7 @@ def main():
     p_vc_rollback.add_argument("--force", action="store_true", help="确认回滚")
     p_vc_rollback.add_argument("--no-backup", action="store_true", help="不创建备份")
 
-    p_vc_status = p_vc_sub.add_parser("status", help="查看工作区状态")
+    p_vc_sub.add_parser("status", help="查看工作区状态")
     p_vc_show = p_vc_sub.add_parser("show", help="查看 commit 详情")
     p_vc_show.add_argument("commit_id")
 
@@ -2283,14 +2433,14 @@ def main():
     try:
         if args.command == "recall":
             memories = cle.recall(args.context, top_k=args.top_k, min_quality=args.min_quality)
-            print(f"\n🔍 检索: \"{args.context}\"")
+            print(f'\n🔍 检索: "{args.context}"')
             print(f"   结果: {len(memories)} 条\n")
             print(_format_memories(memories))
 
         elif args.command == "search":
             tags = args.tags.split(",") if args.tags else None
             memories = cle.search(args.query, top_k=args.top_k, tags=tags)
-            print(f"\n🔍 搜索: \"{args.query}\"")
+            print(f'\n🔍 搜索: "{args.query}"')
             print(f"   结果: {len(memories)} 条\n")
             print(_format_memories(memories))
 
@@ -2303,7 +2453,7 @@ def main():
                 tags=tags,
                 source=args.source,
             )
-            print(f"\n✅ 记录成功")
+            print("\n✅ 记录成功")
             print(f"   ID: {mid}")
             print(f"   质量: {args.quality}")
             print(f"   置信度: {args.confidence}")
@@ -2317,7 +2467,7 @@ def main():
                 print(f"   质量: {result['old_quality']} → {result['new_quality']}")
                 print(f"   置信度: {result['old_confidence']} → {result['new_confidence']}")
                 if result.get("distill_may_triggered"):
-                    print(f"   🔄 可能触发蒸馏")
+                    print("   🔄 可能触发蒸馏")
             else:
                 print(f"   错误: {result.get('error')}")
 
@@ -2348,13 +2498,13 @@ def main():
 
         elif args.command == "stats":
             stats = cle.stats()
-            print(f"\n📊 记忆系统统计")
+            print("\n📊 记忆系统统计")
             print(f"   总记忆: {stats['memory']['total_memories']}")
             print(f"   引擎: {stats['memory']['engine']}")
             print(f"   质量分布: {stats['memory']['quality_distribution']}")
             if stats.get("distill"):
                 d = stats["distill"]
-                print(f"\n   蒸馏统计:")
+                print("\n   蒸馏统计:")
                 print(f"     事件接收: {d.get('events_received', 0)}")
                 print(f"     蒸馏触发: {d.get('distill_triggered', 0)}")
                 print(f"     蒸馏成功: {d.get('distill_succeeded', 0)}")
@@ -2365,20 +2515,24 @@ def main():
 
         elif args.command == "health":
             health = cle.healthcheck()
-            print(f"\n❤️  健康检查")
+            print("\n❤️  健康检查")
             print(f"   记忆: {health['memory']['status']}")
             print(f"   蒸馏: {health['distill']['status']}")
             print(f"   压缩: {health['consolidation']['status']}")
-            cap = health['consolidation']['capacity']
-            print(f"   Tier 0: {cap['tier0']['chars']}/{cap['tier0']['max_chars']} ({cap['tier0']['usage']})")
-            print(f"   Tier 1: {cap['tier1']['chars']}/{cap['tier1']['max_chars']} ({cap['tier1']['usage']})")
+            cap = health["consolidation"]["capacity"]
+            print(
+                f"   Tier 0: {cap['tier0']['chars']}/{cap['tier0']['max_chars']} ({cap['tier0']['usage']})"
+            )
+            print(
+                f"   Tier 1: {cap['tier1']['chars']}/{cap['tier1']['max_chars']} ({cap['tier1']['usage']})"
+            )
 
         elif args.command == "consolidate":
             report = cle.consolidate(force=args.force)
-            print(f"\n📦 记忆压缩")
+            print("\n📦 记忆压缩")
             print(f"   触发: {'是' if report['consolidated'] else '否'}")
             print(f"   Tier: {report['tier']}")
-            if report['consolidated']:
+            if report["consolidated"]:
                 print(f"   压缩前: {report['before_chars']} 字符 ({report['before_usage']})")
                 print(f"   压缩后: {report['after_chars']} 字符 ({report['after_usage']})")
                 print(f"   扫描: {report['items_scanned']} 条")
@@ -2386,12 +2540,12 @@ def main():
                 print(f"   压缩: {report['items_compressed']} 条")
                 print(f"   合并: {report['items_merged']} 条")
                 print(f"   归档: {report['items_archived']} 条")
-            for detail in report.get('details', []):
+            for detail in report.get("details", []):
                 print(f"   {detail}")
 
         elif args.command == "scan":
             report = cle.scan_archive_candidates()
-            print(f"\n🔍 归档候选扫描（不执行压缩）")
+            print("\n🔍 归档候选扫描（不执行压缩）")
             print(f"   Tier1 容量: {report['tier1_chars']} 字符 ({report['tier1_usage']})")
             print(f"   扫描条目: {report['total_items_scanned']}")
             print(f"   归档候选: {report['total_candidates']}")
@@ -2399,16 +2553,18 @@ def main():
             print(f"   预计压缩后: {report['projected_usage_after']}")
             print(f"   可达阈值: {'是 ✅' if report['would_resolve_threshold'] else '否 ❌'}")
             by_type = report["candidates_by_type"]
-            print(f"\n   按类型:")
+            print("\n   按类型:")
             print(f"     content_defect:    {len(by_type['content_defect'])} 条")
             print(f"     outdated_case:     {len(by_type['outdated_case'])} 条")
             print(f"     cross_duplicate:   {len(by_type['cross_duplicate'])} 条")
             print(f"     low_value_detail:  {len(by_type['low_value_detail'])} 条")
             if report["candidates"]:
-                print(f"\n   候选清单:")
+                print("\n   候选清单:")
                 for c in report["candidates"]:
                     print(f"     [{c['reason_type']}] {c['item_id']}: {c['title']}")
-                    print(f"       {c['file_path']} | {c['current_quality']}→{c['suggested_quality']} | 可释放 {c['potential_saving']} 字符")
+                    print(
+                        f"       {c['file_path']} | {c['current_quality']}→{c['suggested_quality']} | 可释放 {c['potential_saving']} 字符"
+                    )
                     print(f"       原因: {c['reason_detail']}")
 
         elif args.command == "archive":
@@ -2431,7 +2587,7 @@ def main():
             print(f"   预览归档: {report['total_dry_run']} 条")
             print(f"   跳过: {report['total_skipped']} 条")
             if report["results"]:
-                print(f"\n   归档详情:")
+                print("\n   归档详情:")
                 for r in report["results"]:
                     status_icon = "✅" if r["status"] == "archived" else "👁️"
                     print(f"     {status_icon} [{r['reason_type']}] {r['item_id']}: {r['title']}")
@@ -2445,11 +2601,13 @@ def main():
                 return 1
 
             if args.vc_command == "commit":
-                result = cle.vc_commit(args.message, author=args.author, allow_empty=args.allow_empty)
+                result = cle.vc_commit(
+                    args.message, author=args.author, allow_empty=args.allow_empty
+                )
                 if not result.get("committed"):
                     print(f"未创建 commit: {result.get('reason', '未知原因')}")
                     return 1
-                print(f"✅ 提交成功")
+                print("✅ 提交成功")
                 print(f"   commit: {result['commit_id'][:8]}")
                 print(f"   消息: {result['message']}")
 
@@ -2461,9 +2619,18 @@ def main():
                 print(f"📚 版本历史（共 {len(entries)} 条）\n")
                 for entry in entries:
                     changes = entry["changes"]
-                    change_str = " ".join(
-                        f"{p}{n}" for p, n in [("+", changes["added"]), ("~", changes["modified"]), ("-", changes["removed"])] if n
-                    ) or "无变更"
+                    change_str = (
+                        " ".join(
+                            f"{p}{n}"
+                            for p, n in [
+                                ("+", changes["added"]),
+                                ("~", changes["modified"]),
+                                ("-", changes["removed"]),
+                            ]
+                            if n
+                        )
+                        or "无变更"
+                    )
                     print(f"  {entry['short_id']}  {entry['timestamp'][:19]}  [{entry['author']}]")
                     print(f"           {entry['message']}")
                     print(f"           文件: {entry['file_count']} | 变更: {change_str}")
@@ -2476,17 +2643,23 @@ def main():
                 else:
                     print(f"📊 差异: {args.commit_a[:8]} → {args.commit_b[:8]}\n")
                     for d in diffs:
-                        icon = {"added": "➕", "modified": "📝", "removed": "➖"}.get(d["status"], "?")
-                        print(f"{icon} {d['file']} ({d['status']}) +{d['added_lines']} -{d['removed_lines']}")
+                        icon = {"added": "➕", "modified": "📝", "removed": "➖"}.get(
+                            d["status"], "?"
+                        )
+                        print(
+                            f"{icon} {d['file']} ({d['status']}) +{d['added_lines']} -{d['removed_lines']}"
+                        )
 
             elif args.vc_command == "rollback":
                 if not args.force:
                     print("❌ 回滚需要 --force 参数确认")
                     return 1
                 result = cle.vc_rollback(args.commit_id, create_backup=not args.no_backup)
-                print(f"✅ 回滚成功")
+                print("✅ 回滚成功")
                 print(f"   目标: {result['rolled_back_to_short']}")
-                print(f"   备份: {result['backup_commit_id'][:8] if result['backup_commit_id'] else '无'}")
+                print(
+                    f"   备份: {result['backup_commit_id'][:8] if result['backup_commit_id'] else '无'}"
+                )
                 print(f"   恢复文件: {len(result['restored_files'])} 个")
 
             elif args.vc_command == "status":
@@ -2494,7 +2667,7 @@ def main():
                 if not status.get("has_commits"):
                     print(status.get("message", "还没有任何 commit"))
                     return 1
-                print(f"📊 工作区状态")
+                print("📊 工作区状态")
                 print(f"   最新 commit: {status['latest_commit']}")
                 print(f"   消息: {status['latest_message']}")
                 print(f"   状态: {'✅ 干净' if status['is_clean'] else '⚠️ 有未提交变更'}")
@@ -2505,7 +2678,7 @@ def main():
 
             elif args.vc_command == "show":
                 info = cle.vc_show(args.commit_id)
-                print(f"📋 Commit 详情")
+                print("📋 Commit 详情")
                 print(f"   ID: {info['short_id']}")
                 print(f"   时间: {info['timestamp'][:19]}")
                 print(f"   作者: {info['author']}")
@@ -2547,6 +2720,7 @@ def reset_cle():
 # ============================================================
 # P3: 交易系统编程式召回 — 供 A 系列 Cron 执行前注入认知召回
 # ============================================================
+
 
 def trading_recall(
     context: str,
@@ -2606,7 +2780,7 @@ def trading_recall(
         memories = cle.recall(context, top_k=top_k_mem, min_quality="C")
 
         # 2) 元认知流程（T 系列 Skill）+ 应用认知流程
-        from cognitive_superpowers import SkillLoader, ProcessTemplateRegistry
+        from cognitive_superpowers import ProcessTemplateRegistry, SkillLoader
 
         loader = SkillLoader()
         registry = ProcessTemplateRegistry()
@@ -2674,10 +2848,17 @@ def _publish_cognitive_recall_broadcast(
     各模块（AB-Trading 等）可并行获取。
     """
     try:
-        from datetime import datetime
         # 动态导入 shared_memory_bus（避免硬依赖）
         import importlib
-        bus_path = Path(__file__).resolve().parents[2] / "11-易经推理系统" / "scripts" / "memory_l4" / "shared_memory_bus.py"
+        from datetime import datetime
+
+        bus_path = (
+            Path(__file__).resolve().parents[2]
+            / "11-易经推理系统"
+            / "scripts"
+            / "memory_l4"
+            / "shared_memory_bus.py"
+        )
         if not bus_path.exists():
             return
         spec = importlib.util.spec_from_file_location("shared_memory_bus", bus_path)
@@ -2688,7 +2869,9 @@ def _publish_cognitive_recall_broadcast(
 
         # 构造广播 payload
         recall_summary = f"memories={recall_result.get('count', 0)}, meta={len(recall_result.get('processes', {}).get('meta', []))}"
-        suggested_skills = [m.get("skill_id", "") for m in recall_result.get("processes", {}).get("meta", [])]
+        suggested_skills = [
+            m.get("skill_id", "") for m in recall_result.get("processes", {}).get("meta", [])
+        ]
 
         bus_module.publish_shared_memory_event(
             snapshot_ts=datetime.now().astimezone().isoformat(timespec="seconds"),
