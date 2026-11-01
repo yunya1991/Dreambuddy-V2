@@ -27,6 +27,7 @@ from core.gateway import (
     CATEGORIES,
     CategoriesConfig,
     CategoryMismatchError,
+    EnvManifestError,
     Gateway,
     MissingIdempotencyKeyError,
     RequestValidationError,
@@ -74,6 +75,10 @@ def create_app(
 
     @app.exception_handler(CategoryMismatchError)
     async def _mismatch(_req: Request, exc: CategoryMismatchError) -> JSONResponse:
+        return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+    @app.exception_handler(EnvManifestError)
+    async def _env_manifest(_req: Request, exc: EnvManifestError) -> JSONResponse:
         return JSONResponse(status_code=400, content={"detail": str(exc)})
 
     # ---------- 提交（§13.1） ----------

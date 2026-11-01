@@ -11,7 +11,8 @@ gateway.py — 评测受理网关（P0-4）
 边界：
 - spec_hash 当前为占位实现（sha256({"spec_id": ...})）；
   TODO(P2-9)：spec 注册表落地后改为 sha256(canonical_json(EvalSpec))（§3.1）
-- env_manifest 的 endpoints 可达性校验属 P1-1，本阶段仅做 schema 存在性校验
+- env_manifest 语义校验（endpoints 可达性 / 明文密钥）由 P1-1 的
+  core/validators.py 提供：实盘（gate.shadow=false）硬拒，影子只告警
 - 存储为 EvalRequestStore 接口；P0-4 提供内存实现供单测，
   P0-5 由 storage/repo.py 提供 PostgreSQL 实现
 """
@@ -28,6 +29,8 @@ from typing import Any, Callable, Protocol
 
 import yaml
 from jsonschema import Draft202012Validator
+
+from core.validators import EnvManifestError, EnvManifestValidator  # noqa: F401 — 对外统一导出
 
 logger = logging.getLogger(__name__)
 
@@ -234,12 +237,15 @@ class Gateway:
         categories: CategoriesConfig,
         schema_path: str | Path = SCHEMA_PATH,
         clock: Callable[[], datetime] | None = None,
+        prober: Callable[[str], bool] | None = None,
     ) -> None:
         self._store = store
         self._categories = categories
         schema = json.loads(Path(schema_path).read_text(encoding="utf-8"))
         self._validator = Draft202012Validator(schema)
         self._clock = clock or (lambda: datetime.now(timezone.utc))
+        # 实盘（shadow=false）硬拒；影子只告警（P1-3 只受理不拦截）
+        self._env_validator = EnvManifestValidator(strict=not categories.gate_shadow, prober=prober)
 
     @property
     def gate_shadow(self) -> bool:
@@ -253,6 +259,7 @@ class Gateway:
         idempotency_key = str(idempotency_key).strip()
 
         self._validate_schema(payload)
+        self._env_validator.enforce(payload["env_manifest"])
         self._validate_category(payload["category"], payload["object_type"])
 
         existing = self._store.get_by_idempotency_key(idempotency_key)
