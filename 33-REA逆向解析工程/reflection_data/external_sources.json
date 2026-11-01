@@ -2858,6 +2858,627 @@
       "verified": true,
       "stars": 0,
       "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "sample-langgraph-strands-market-analysis",
+      "category": "dreamos",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/aws-samples/sample-langgraph-strands-market-analysis",
+      "label": "aws-samples/sample-langgraph-strands-market-analysis",
+      "language": "Python",
+      "license": "MIT-0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/ai-trading-observability-selfhealing-research.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 3,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "autogpt",
+      "category": "dreamos",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/Significant-Gravitas/AutoGPT",
+      "label": "Significant-Gravitas/AutoGPT",
+      "language": "Python",
+      "license": "NOASSERTION",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/ai-trading-observability-selfhealing-research.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 187852,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "dexter",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/virattt/dexter",
+      "label": "virattt/dexter",
+      "language": "TypeScript",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/ai-trading-observability-selfhealing-research.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 27741,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "agent-skill-router",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/paulpas/agent-skill-router",
+      "label": "paulpas/agent-skill-router",
+      "language": "TypeScript",
+      "license": "NOASSERTION",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/distributed-core-logic-research-report.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 9,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "lean",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/QuantConnect/Lean",
+      "label": "QuantConnect/Lean",
+      "language": "C#",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 22333,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "vectorbt",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/polakowo/vectorbt",
+      "label": "polakowo/vectorbt",
+      "language": "Python",
+      "license": "NOASSERTION",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 9619,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "evidently",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/evidentlyai/evidently",
+      "label": "evidentlyai/evidently",
+      "language": "Jupyter Notebook",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 8028,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "whylogs",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/whylabs/whylogs",
+      "label": "whylabs/whylogs",
+      "language": "Jupyter Notebook",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 2837,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "eventstore",
+      "category": "database",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/EventStore/EventStore",
+      "label": "EventStore/EventStore",
+      "language": "C#",
+      "license": "NOASSERTION",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 5881,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "kafka",
+      "category": "database",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/apache/kafka",
+      "label": "apache/kafka",
+      "language": "Java",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 34105,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "graph-data-science",
+      "category": "database",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/neo4j/graph-data-science",
+      "label": "neo4j/graph-data-science",
+      "language": "Java",
+      "license": "NOASSERTION",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/constraints/qmm/qmm-v5-vision.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 826,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "grok-build",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/xai-org/grok-build",
+      "label": "xai-org/grok-build",
+      "language": "Rust",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "11-易经推理系统/docs/superpowers/specs/2026-07-22-grok-build-p0-integration-design.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 27638,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "dcai",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/cerebrux/DCAi",
+      "label": "cerebrux/DCAi",
+      "language": null,
+      "license": "AGPL-3.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/dcai.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 4,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "superpowers-evals",
+      "category": "dsh",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/prime-radiant-inc/superpowers-evals",
+      "label": "prime-radiant-inc/superpowers-evals",
+      "language": "TypeScript",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/superpowers-evals.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 142,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "dca-crypto-bot",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/CodingCryptoTrading/dca-crypto-bot",
+      "label": "CodingCryptoTrading/dca-crypto-bot",
+      "language": "Python",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/dca-crypto-bot.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 30,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "hmm-marketstate",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/nyro-github/HMM-MarketState",
+      "label": "nyro-github/HMM-MarketState",
+      "language": "Python",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/hmm-marketstate.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 0,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "market-regime-detection",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/taylorjmellon/market-regime-detection",
+      "label": "taylorjmellon/market-regime-detection",
+      "language": "Python",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/market-regime-detection-2.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 5,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "market-regime-detection-2",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/LucasLarese/market-regime-detection",
+      "label": "LucasLarese/market-regime-detection",
+      "language": "Jupyter Notebook",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/market-regime-detection.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 0,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "market_regime_detection",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/k3tikvats/market_regime_detection",
+      "label": "k3tikvats/market_regime_detection",
+      "language": "Python",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/market_regime_detection.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 3,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "ml_engine",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/Raynergy-svg/ml_engine",
+      "label": "Raynergy-svg/ml_engine",
+      "language": "Python",
+      "license": null,
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/ml_engine.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 1,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "bert",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/google-research/bert",
+      "label": "google-research/bert",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/bert.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 40038,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "hfl-anthology",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/ymcui/HFL-Anthology",
+      "label": "ymcui/HFL-Anthology",
+      "language": "Markdown",
+      "license": "CC-BY-SA-4.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/hfl-anthology.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 378,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "macbert",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/ymcui/MacBERT",
+      "label": "ymcui/MacBERT",
+      "language": null,
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/llm_training/macbert.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 726,
+      "last_checked_at": "2026-11-01"
     }
   ]
 }
