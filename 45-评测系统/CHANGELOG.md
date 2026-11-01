@@ -21,7 +21,7 @@
 - `archive_bundle` 将证据包写入 `evidence/<eval_id>.json` 并回填 `uri/sha256/version_id/retention_until`；CLI `evalctl evidence --archive` 完成归档接线
 - 安全：对象 key 拒绝绝对路径与 `..` 穿越；未知 mode / MinIO 缺依赖均报错，不静默降级
 - 测试：22 个用例（读写回环、只读权限、锁内覆盖/删除拒绝、到期后版本追加、穿越拒绝、策略默认与覆盖、YAML 加载、装配失败闭合、归档与 CLI 归档）；storage/object_store.py 覆盖率 98%
-- commit: `PENDING`
+- commit: `f9cd70d325`
 
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
