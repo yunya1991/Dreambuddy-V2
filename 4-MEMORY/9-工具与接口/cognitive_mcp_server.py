@@ -40,8 +40,7 @@ _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from cognitive_loop_entry import CognitiveLoopEntry, get_cle, reset_cle
-
+from cognitive_loop_entry import CognitiveLoopEntry, get_cle, reset_cle  # noqa: E402
 
 # ============================================================
 # MCP Server Info
@@ -207,6 +206,7 @@ def _get_skill_loader():
     global _skill_loader_instance
     if _skill_loader_instance is None:
         from cognitive_superpowers import SkillLoader
+
         _skill_loader_instance = SkillLoader()
     return _skill_loader_instance
 
@@ -238,12 +238,12 @@ def _load_skill_indexer():
     _skill_indexer_loaded = True
     try:
         si_dir = (
-            _SCRIPT_DIR.parents[1]
-            / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
+            _SCRIPT_DIR.parents[1] / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
         )
         if str(si_dir) not in sys.path:
             sys.path.insert(0, str(si_dir))
         import skill_indexer as _si  # type: ignore[import-not-found]
+
         _skill_indexer_module = _si
     except Exception:
         _skill_indexer_module = None
@@ -274,6 +274,7 @@ def _find_skill_dir_by_name(skill_id: str):
 # ============================================================
 # Tool Handlers
 # ============================================================
+
 
 def _handle_recall(args: Dict[str, Any]) -> str:
     context = args.get("context", "")
@@ -306,15 +307,17 @@ def _handle_recall(args: Dict[str, Any]) -> str:
             # retrieve 返回 {"meta": [(SuperpowersSkill, score, reason), ...], "applied": []}
             meta_list = []
             md_parts = []
-            for (skill, score, reason) in proc_result.get("meta", []):
-                meta_list.append({
-                    "skill_id": skill.skill_id,
-                    "display_name": skill.display_name,
-                    "match_score": round(score, 2),
-                    "match_reason": reason,
-                    "hard_gates": skill.hard_gates,
-                    "localized": skill.localized,
-                })
+            for skill, score, reason in proc_result.get("meta", []):
+                meta_list.append(
+                    {
+                        "skill_id": skill.skill_id,
+                        "display_name": skill.display_name,
+                        "match_score": round(score, 2),
+                        "match_reason": reason,
+                        "hard_gates": skill.hard_gates,
+                        "localized": skill.localized,
+                    }
+                )
                 md_parts.append(
                     f"### [{skill.skill_id}] {skill.display_name}\n"
                     f"- 匹配度: {score:.2f}\n- {reason}"
@@ -336,8 +339,10 @@ def _handle_recall(args: Dict[str, Any]) -> str:
         except Exception as e:
             # process 检索失败不影响 memories 返回（GC6 异常隔离）
             response["processes"] = {
-                "meta": [], "applied": [],
-                "process_block_markdown": "", "error": str(e),
+                "meta": [],
+                "applied": [],
+                "process_block_markdown": "",
+                "error": str(e),
             }
 
     return json.dumps(response, ensure_ascii=False)
@@ -406,7 +411,11 @@ def _handle_record(args: Dict[str, Any]) -> str:
     confidence_score = args.get("confidence_score")
     if confidence_score is None:
         confidence_score = {
-            "S": 0.95, "A": 0.70, "B": 0.40, "C": 0.20, "D": 0.10,
+            "S": 0.95,
+            "A": 0.70,
+            "B": 0.40,
+            "C": 0.20,
+            "D": 0.10,
         }.get(quality_level, 0.3)
 
     tags = [t.strip() for t in tags_str.split(",")] if tags_str else []
@@ -462,16 +471,19 @@ def _handle_record(args: Dict[str, Any]) -> str:
     except Exception:
         pass  # FAIL-OPEN
 
-    return json.dumps({
-        "memory_id": memory_id,
-        "status": "recorded",
-        "triggered_skills": triggered_skills,
-        "skill_links": skill_links,
-        "knowledge_ingest_required": knowledge_ingest_required,
-        "receipt_hash": receipt_hash,
-        # L4: 预测误差门控结果（高误差记忆可能已被升级为 B 级）
-        "l4": _l4_snapshot(),
-    }, ensure_ascii=False)
+    return json.dumps(
+        {
+            "memory_id": memory_id,
+            "status": "recorded",
+            "triggered_skills": triggered_skills,
+            "skill_links": skill_links,
+            "knowledge_ingest_required": knowledge_ingest_required,
+            "receipt_hash": receipt_hash,
+            # L4: 预测误差门控结果（高误差记忆可能已被升级为 B 级）
+            "l4": _l4_snapshot(),
+        },
+        ensure_ascii=False,
+    )
 
 
 def _handle_verify(args: Dict[str, Any]) -> str:
@@ -480,7 +492,9 @@ def _handle_verify(args: Dict[str, Any]) -> str:
     known_gaps_update = args.get("known_gaps_update")
 
     result = _get_cle().verify(
-        memory_id, success=success, known_gaps_update=known_gaps_update,
+        memory_id,
+        success=success,
+        known_gaps_update=known_gaps_update,
     )
 
     # P0-1：触发 verify_hook，更新 confidence + shadow→active 升级（FAIL-OPEN）
@@ -498,7 +512,10 @@ def _handle_verify(args: Dict[str, Any]) -> str:
                         if memory_id in entry.cognitive_links:
                             skill_dir = _find_skill_dir_by_name(entry.name)
                             hook_result = si.verify_hook(
-                                entry.name, success, entries, skill_dir,
+                                entry.name,
+                                success,
+                                entries,
+                                skill_dir,
                             )
                             skill_hooks.append(hook_result)
                     except Exception:
@@ -522,6 +539,26 @@ def _handle_stats(args: Dict[str, Any]) -> str:
 
 def _handle_health(args: Dict[str, Any]) -> str:
     result = _get_cle().healthcheck()
+    # C12：job_runs + 五能力 health_cmd 聚合（FAIL-OPEN，不拖垮认知基础健康）
+    try:
+        import os as _os
+        import sys as _sys
+
+        _repo_root = _os.path.abspath(
+            _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..")
+        )
+        if _repo_root not in _sys.path:
+            _sys.path.insert(0, _repo_root)
+        from dreambuddy_l0.scheduling.health import collect_l0_health
+
+        result["l0"] = collect_l0_health(repo_root=_repo_root)
+    except Exception as exc:
+        result["l0"] = {
+            "ok": False,
+            "degraded": True,
+            "error_code": "l0_health_unavailable",
+            "reason": f"{type(exc).__name__}: {exc}",
+        }
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -537,34 +574,46 @@ def _handle_l4_status(args: Dict[str, Any]) -> str:
 
 def _handle_unified_search(args: Dict[str, Any]) -> str:
     """C7 统一检索：经 Search port 分发三后端（41/Chroma/recall），FAIL-OPEN。"""
-    import sys as _sys
     import os as _os
-    _repo_root = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", ".."))
+    import sys as _sys
+
+    _repo_root = _os.path.abspath(
+        _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..")
+    )
     if _repo_root not in _sys.path:
         _sys.path.insert(0, _repo_root)
     from dreambuddy_l0.search import get_unified_search
+
     query = str(args.get("query", ""))
     if not query:
-        return json.dumps({"ok": False, "error_code": "invalid", "error": "missing query"}, ensure_ascii=False)
+        return json.dumps(
+            {"ok": False, "error_code": "invalid", "error": "missing query"}, ensure_ascii=False
+        )
     top_k = int(args.get("top_k", 5))
     sources = args.get("sources") or None
     result = get_unified_search().search(query, sources=sources, top_k=top_k)
     return json.dumps(result, ensure_ascii=False)
 
 
-TOOL_DEFINITIONS.append({
-    "name": "unified_search",
-    "description": "C7 统一检索：经 Search port 分发三后端（41-SearchAPI/ChromaDB RAG/认知 recall），分数归一化合并去重。单后端失败自动降级其余；全后端不可用返回 error_code=all_sources_unavailable。",
-    "inputSchema": {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "检索关键词"},
-            "top_k": {"type": "integer", "description": "返回结果数（默认5）", "default": 5},
-            "sources": {"type": "array", "items": {"type": "string"}, "description": "限定后端列表（search41/chroma/recall），默认全部"},
+TOOL_DEFINITIONS.append(
+    {
+        "name": "unified_search",
+        "description": "C7 统一检索：经 Search port 分发三后端（41-SearchAPI/ChromaDB RAG/认知 recall），分数归一化合并去重。单后端失败自动降级其余；全后端不可用返回 error_code=all_sources_unavailable。",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "检索关键词"},
+                "top_k": {"type": "integer", "description": "返回结果数（默认5）", "default": 5},
+                "sources": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "限定后端列表（search41/chroma/recall），默认全部",
+                },
+            },
+            "required": ["query"],
         },
-        "required": ["query"],
-    },
-})
+    }
+)
 
 TOOL_NAMES.add("unified_search")
 TOOL_NAMES.add("l4_status")
@@ -583,10 +632,11 @@ TOOL_HANDLERS = {
 # JSON-RPC 2.0 Handler
 # ============================================================
 
+
 def handle_jsonrpc(request: Dict[str, Any]) -> Dict[str, Any]:
     """
     处理单个JSON-RPC 2.0请求。
-    
+
     支持的method:
       - initialize: MCP握手
       - tools/list: 列出可用工具
@@ -688,6 +738,7 @@ def handle_jsonrpc(request: Dict[str, Any]) -> Dict[str, Any]:
 # stdio Server Loop
 # ============================================================
 
+
 def run_server():
     """
     MCP stdio server主循环。
@@ -737,7 +788,7 @@ def _warmup_process_cli(context: str) -> int:
         if not markdown:
             # SkillLoader.retrieve 不返回 process_block_markdown 时，从 meta 自行拼装
             md_parts = []
-            for (sk, sc, rsns) in results.get("meta", []):
+            for sk, sc, _rsns in results.get("meta", []):
                 md_parts.append(f"### [{sk.skill_id}] {sk.display_name}\n- 匹配度: {sc:.2f}")
             markdown = "\n\n".join(md_parts)
         if markdown and hasattr(wm, "load_process_block"):
@@ -749,6 +800,7 @@ def _warmup_process_cli(context: str) -> int:
 
 if __name__ == "__main__":
     import sys
+
     # 支持 --recall-context 参数（SessionStart hook 调用）
     # 用法: python3 cognitive_mcp_server.py --recall-context "会话上下文"
     # 输出: 相关记忆的 Markdown 文本（注入到 IDE 会话上下文）
@@ -778,7 +830,9 @@ if __name__ == "__main__":
                         print(f"  - 标签: {tags}")
                 print("\n*(来自认知记忆系统，基于当前会话上下文自动检索)*\n")
             else:
-                print("\n<!-- 认知系统：当前无相关记忆可注入。请在任务前主动调用 recall 工具。 -->\n")
+                print(
+                    "\n<!-- 认知系统：当前无相关记忆可注入。请在任务前主动调用 recall 工具。 -->\n"
+                )
         except Exception as e:
             # hook 失败不阻塞 IDE 会话
             print(f"<!-- 认知注入失败: {e} -->", file=sys.stderr)
