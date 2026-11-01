@@ -53,7 +53,7 @@
 - CLI 新增 `evalctl baseline [--baseline --candidate] [--config] [--tolerance] [--out]`（退出码 0 OK / 2 REGRESSION / 3 INCONCLUSIVE / 4 ERROR）
 - 新增 `deploy/quarterly-baseline.sh`：季度定时包装（直接以退出码判定，报告落 `artifacts/baseline/<YYYYMMDD>.json`）
 - 测试：17 个用例（点估计下降但 CI 下界不破容差的区分、容差放宽、配对不足、缺失项、golden set 汇总三态、配置校验、CLI 四态）；core/baseline.py 覆盖率 91%
-- commit: `<待回填>`
+- commit: `97fc4849d8`
 
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
