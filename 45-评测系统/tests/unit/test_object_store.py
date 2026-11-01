@@ -181,7 +181,9 @@ def test_build_store_custom_retention_config(tmp_path: Path, clock: Clock):
     assert store.policy.days_for("evidence") == 10
 
 
-def test_build_store_minio_without_dependency_fails_closed(tmp_path: Path):
+def test_build_store_minio_without_dependency_fails_closed(tmp_path: Path, monkeypatch):
+    # 模拟 minio SDK 缺失（不依赖本机是否安装，避免真实联网）
+    monkeypatch.setitem(sys.modules, "minio", None)
     with pytest.raises(ObjectStoreError) as exc:
         build_store(env={"EVAL_WORM_MODE": "minio", "EVAL_WORM_ENDPOINT": "minio:9000"})
     assert "minio_missing" in str(exc.value)
