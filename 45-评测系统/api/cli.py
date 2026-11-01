@@ -87,6 +87,9 @@ def _build_parser() -> argparse.ArgumentParser:
     evidence = sub.add_parser("evidence", help="证据包构建 / 离线验证（P4-1）")
     evidence.add_argument("--eval-id", default=None, help="构建证据包所用 eval_id")
     evidence.add_argument("--out", default=None, help="证据包落盘路径（JSON）")
+    evidence.add_argument(
+        "--archive", action="store_true", help="将证据包写入 WORM 对象存储（P4-2）"
+    )
     evidence.add_argument("--verify", default=None, metavar="BUNDLE", help="离线验证本地证据包")
     evidence.add_argument(
         "--require-signature",
@@ -276,6 +279,20 @@ def _evidence(args: argparse.Namespace, repo: EvalRepo, out: Any) -> int:
         Path(args.out).write_text(
             json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8"
         )
+
+    archived = None
+    if args.archive:
+        from storage.object_store import ObjectStoreError, archive_bundle, build_store
+
+        try:
+            archived = archive_bundle(build_store(), bundle, eval_id=args.eval_id)
+        except ObjectStoreError as exc:
+            print(
+                json.dumps({"eval_id": args.eval_id, "error": str(exc)}, ensure_ascii=False),
+                file=out,
+            )
+            return EXIT_ERROR
+
     print(
         json.dumps(
             {
@@ -285,6 +302,7 @@ def _evidence(args: argparse.Namespace, repo: EvalRepo, out: Any) -> int:
                 "merkle_root": bundle["merkle_root"],
                 "signed_by": (bundle["signature"] or {}).get("signed_by"),
                 "out": args.out,
+                "archive": archived,
             },
             ensure_ascii=False,
         ),

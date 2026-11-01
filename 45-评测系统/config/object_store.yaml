@@ -1,0 +1,10 @@
+# WORM 对象存储（SPEC §14.4/§15）
+# mode: local = 文件系统对象锁（单机）；minio = MinIO Object Lock（需 minio 依赖）
+mode: local
+root: artifacts/worm
+bucket: eval-evidence
+# 保留期按类别分级（天）：报告 ≥3 年、证据 ≥1 年、审计 ≥1 年
+retention_days:
+  evidence: 365
+  report: 1095
+  audit: 365

@@ -615,6 +615,7 @@ exit 0 = PASS | 2 = BLOCK | 3 = INCONCLUSIVE | 4 = ERROR
 - 每条证据存 `sha256 + prev_hash`，形成链；日终生成 Merkle 根（RFC 6962 思路）
 - 证据包可离线验证：哈希链 + 签名 + 报告 JSON
 - 对象存储 MinIO Object Lock（compliance 模式），保留期与审计要求一致
+- 落地：`storage/object_store.py`（`LocalWormStore` 文件系统对象锁 / `MinioWormStore` 服务端对象锁）；`config/object_store.yaml` 配置 `mode` 与 `retention_days`（默认证据 365 / 报告 1095 / 审计 365 天），环境变量 `EVAL_WORM_MODE` / `EVAL_WORM_ROOT` / `EVAL_WORM_ENDPOINT` / `EVAL_WORM_BUCKET` 覆盖；`evalctl evidence --archive` 将证据包归档为 `evidence/<eval_id>.json`（保留期内禁止覆盖/删除，MinIO 模式缺依赖 fail-closed）
 - 落地：`storage/evidence.py`（链/根/包）+ `evalctl evidence --eval-id --out` 构建、`evalctl evidence --verify <bundle> [--require-signature]` 离线验证（退出码 0/4）；签名密钥仅由 `EVAL_EVIDENCE_KEY` 注入，签名主体由 `EVAL_EVIDENCE_SIGNER` 标注
 
 ### 14.5 可观测性
