@@ -16,7 +16,7 @@
 - 新增 `evaluators/common/split.py`：purged_kfold（标签窗口重叠剔除 + 测试后 embargo）、walk_forward（扩展窗口 + 尾部 purge）
 - `verify_no_leakage` 对生成切分返回空、对人工泄漏样例返回违规（PLAN P2-2 验收）
 - 测试：22 个用例（含参数校验与精确索引断言）
-- commit: `待填`
+- commit: `11962b90d4`
 
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
 
