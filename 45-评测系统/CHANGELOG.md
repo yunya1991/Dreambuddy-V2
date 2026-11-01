@@ -46,6 +46,15 @@
 - 测试：14 个用例（9 项 KPI 定义、空仓、积压告警、SLA 告警、灰度目标、信号填充、缺失 no_data、未知信号拒绝、配置默认/覆盖、CLI 三态）；core/slo.py 覆盖率 93%
 - commit: `bdc49e579c`
 
+### P4-6 季度 baseline 回归
+- 新增 `core/baseline.py`：`compare_reports`（逐项 `baseline_diff` + 配对差 bootstrap 95% CI，seed=42 / 1000 次重采样；`ci_lower < -tolerance` 才判退化，不用点估计）、`build_regression_report`（按 golden set 汇总，verdict ∈ OK / REGRESSION / INCONCLUSIVE）
+- 配对项 <2 或缺失项 → INCONCLUSIVE 并列出 `insufficient_samples` / `missing_in_*`，不妄称回归；逐项 diff 不改变主 verdict（§8.3）
+- `config/baseline.yaml`：`tolerance` 默认 0.0 + `cases`（`name` / `baseline_eval_id` / `candidate_eval_id` / 可选 `tolerance`），未知字段与类型非法均报错
+- CLI 新增 `evalctl baseline [--baseline --candidate] [--config] [--tolerance] [--out]`（退出码 0 OK / 2 REGRESSION / 3 INCONCLUSIVE / 4 ERROR）
+- 新增 `deploy/quarterly-baseline.sh`：季度定时包装（直接以退出码判定，报告落 `artifacts/baseline/<YYYYMMDD>.json`）
+- 测试：17 个用例（点估计下降但 CI 下界不破容差的区分、容差放宽、配对不足、缺失项、golden set 汇总三态、配置校验、CLI 四态）；core/baseline.py 覆盖率 91%
+- commit: `<待回填>`
+
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
 ### P3-1 凭证签发与校验

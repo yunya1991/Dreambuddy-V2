@@ -108,6 +108,17 @@ def _build_parser() -> argparse.ArgumentParser:
     slo = sub.add_parser("slo", help="SLO 看板与告警：9 项 KPI + 积压/SLA 告警（P4-5）")
     slo.add_argument("--signals", default=None, help="外部 KPI 信号 JSON 文件")
     slo.add_argument("--config", default=None, help="slo.yaml 路径（默认 config/slo.yaml）")
+
+    baseline = sub.add_parser("baseline", help="季度 baseline 回归报告（P4-6）")
+    baseline.add_argument("--baseline", dest="baseline_eval_id", default=None, help="基线 eval_id")
+    baseline.add_argument(
+        "--candidate", dest="candidate_eval_id", default=None, help="候选 eval_id"
+    )
+    baseline.add_argument(
+        "--config", default=None, help="baseline.yaml 路径（默认 config/baseline.yaml）"
+    )
+    baseline.add_argument("--tolerance", type=float, default=None, help="回归容差（默认取配置）")
+    baseline.add_argument("--out", default=None, help="回归报告输出路径（JSON）")
     return parser
 
 
@@ -137,6 +148,8 @@ def main(
         return _sandbox(args, out)
     if args.command == "slo":
         return _slo(args, repo, shadow, out)
+    if args.command == "baseline":
+        return _baseline(args, repo, out)
     print(f"未知命令: {args.command}", file=out)
     return EXIT_ERROR
 
@@ -358,6 +371,54 @@ def _slo(args: argparse.Namespace, repo: EvalRepo, shadow: bool | None, out: Any
         return EXIT_ERROR
     print(json.dumps(snapshot, ensure_ascii=False), file=out)
     return EXIT_PASS
+
+
+def _baseline(args: argparse.Namespace, repo: EvalRepo, out: Any) -> int:
+    """季度 baseline 回归（P4-6）：单对直比或按 golden set 配置批量生成报告。"""
+    from core.baseline import BaselineConfig, BaselineError, GoldenCase, build_regression_report
+
+    verdict_codes = {"OK": EXIT_PASS, "REGRESSION": EXIT_BLOCK, "INCONCLUSIVE": EXIT_INCONCLUSIVE}
+    try:
+        if args.baseline_eval_id or args.candidate_eval_id:
+            if not (args.baseline_eval_id and args.candidate_eval_id):
+                raise BaselineError("--baseline 与 --candidate 必须成对提供")
+            tolerance = 0.0 if args.tolerance is None else args.tolerance
+            config = BaselineConfig(
+                tolerance=tolerance,
+                cases=(
+                    GoldenCase(
+                        "adhoc", args.baseline_eval_id, args.candidate_eval_id, args.tolerance
+                    ),
+                ),
+            )
+        else:
+            config = BaselineConfig.load(args.config) if args.config else BaselineConfig.load()
+            if args.tolerance is not None:
+                config = BaselineConfig(tolerance=args.tolerance, cases=config.cases)
+            if not config.cases:
+                raise BaselineError("未提供 --baseline/--candidate，且配置没有任何 cases")
+
+        reports: dict[str, Any] = {}
+        for case in config.cases:
+            for eval_id in (case.baseline_eval_id, case.candidate_eval_id):
+                if eval_id in reports:
+                    continue
+                report = repo.get_report(eval_id)
+                if report is None:
+                    raise BaselineError(f"未知 eval_id：{eval_id}")
+                reports[eval_id] = report
+
+        payload = build_regression_report(config, reports)
+        if args.out:
+            Path(args.out).write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
+    except (OSError, TypeError, ValueError, LookupError) as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=out)
+        return EXIT_ERROR
+
+    print(json.dumps(payload, ensure_ascii=False), file=out)
+    return verdict_codes[payload["verdict"]]
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -1,0 +1,11 @@
+# 季度 golden set 回归配置（P4-6，SPEC §8.3 / §8.5）
+# 每个 case 指向同一 golden 样本集下的基线版本与候选版本 eval_id。
+# tolerance 为该 case 的容差（模型裁判建议 0.05；确定性指标 0.0）。
+tolerance: 0.0
+cases: []
+# 示例：
+# cases:
+#   - name: finance-core
+#     baseline_eval_id: EV-20261101-000001
+#     candidate_eval_id: EV-20261101-000002
+#     tolerance: 0.0

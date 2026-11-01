@@ -406,6 +406,7 @@ class Evaluator(Protocol):
 - 每次评测绑定 `baseline_run_id`（上一通过版本）
 - 回归 = 新分与基线差的 95%CI 下界 < 0（确有退化），而非点估计下降
 - 回归项单独列出 `baseline_diff`，不改变主 verdict，但写入报告与告警
+- 落地：`core/baseline.py`（`compare_reports` 以配对差的 bootstrap（seed=42 / 1000 次重采样）95% CI 下界判定，`ci_lower < -tolerance` 才算退化；逐项 `baseline_diff` 分 regressed/improved/unchanged/missing_*，不改主 verdict；配对项 <2 判 INCONCLUSIVE）；`config/baseline.yaml` 定义 golden set（cases + 容差，缺文件回空配置）；`evalctl baseline --baseline --candidate`（0 OK / 2 REGRESSION / 3 INCONCLUSIVE / 4 ERROR）与 `deploy/quarterly-baseline.sh` 承接季度定时复核
 
 ### 8.4 容差与 flaky
 
