@@ -124,6 +124,11 @@ def main() -> int:
         action="store_true",
         help="把 candidate（语言/许可已通过、仅 stars 不足）升为 qualified 并注入",
     )
+    ap.add_argument(
+        "--promote-rejects",
+        action="store_true",
+        help="把 reject（语言/许可/归档不符）也强制升为 qualified 并注入（只做结构抽取）",
+    )
     args = ap.parse_args()
 
     if not mem_gate():
@@ -165,6 +170,9 @@ def main() -> int:
         if args.promote_candidates and rec["level"] == "candidate":
             rec["level"] = "qualified"
             rec["reason"] = f"promoted_candidate({rec['reason']})"
+        if args.promote_rejects and rec["level"] == "reject":
+            rec["level"] = "qualified"
+            rec["reason"] = f"promoted_reject({rec['reason']})"
         results[rec["level"]].append(rec)
 
     merged = 0
