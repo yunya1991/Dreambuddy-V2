@@ -8,11 +8,10 @@
 输出：
     runtime/five_domain_ic_report.csv
 """
+
 from __future__ import annotations
 
 import json
-import os
-import sqlite3
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -29,13 +28,12 @@ _REPORT_CSV = _RUNTIME / "five_domain_ic_report.csv"
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from five_domain_sqlite_reader import (  # noqa: E402
-    read_three_classes_from_sqlite,
-    _compute_merrill,
-    _compute_liquidity_score,
-)
+import _five_domain_store_port as _fd_port  # noqa: E402  # C5 第五批：读路径 Store port 收编
 from five_domain_feature_computer import FiveDomainFeatureComputer  # noqa: E402
-
+from five_domain_sqlite_reader import (  # noqa: E402
+    _compute_liquidity_score,
+    _compute_merrill,
+)
 
 # ============================================================
 # 子指标原始值映射（coin_data 字段名 → 子指标名）
@@ -59,7 +57,7 @@ SUBINDICATOR_MAP = {
         "spring_force_score": "弹簧力场MA",
     },
     "jiang": {},  # system_state 因子，不做 IC
-    "fa": {},     # system_state 因子，不做 IC
+    "fa": {},  # system_state 因子，不做 IC
 }
 
 # 资产类 → 收益标的
@@ -94,18 +92,23 @@ def _get_daily_snapshots(db_path: Path) -> List[Tuple[str, Dict[str, Dict[str, A
     if not db_path.exists():
         return []
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
-        # 获取所有有记录的日期
-        rows = conn.execute(
-            "SELECT DISTINCT date(timestamp) as d FROM records "
-            "WHERE source IN ('fred','yfinance','panewslab','theblockbeats_dataview',"
-            "'fear_greed','gold_supply_demand','stablecoin_transparency','defillama',"
-            "'etherscan','ccxt') "
-            "ORDER BY d"
-        ).fetchall()
-        dates = [r["d"] for r in rows]
-        conn.close()
+        # 获取所有有记录的日期（C5 第五批：FD_IC_STORE_PORT=1 走 Store port）
+        dates = _fd_port.fetch_distinct_dates(
+            str(db_path),
+            (
+                "fred",
+                "yfinance",
+                "panewslab",
+                "theblockbeats_dataview",
+                "fear_greed",
+                "gold_supply_demand",
+                "stablecoin_transparency",
+                "defillama",
+                "etherscan",
+                "ccxt",
+            ),
+            switch="FD_IC_STORE_PORT",
+        )
     except Exception:
         return []
 
@@ -130,14 +133,27 @@ def _build_snapshot_for_date(db_path: Path, target_date: str) -> Dict[str, Dict[
         return {}
 
     shared_fields = (
-        "vix_close", "fedfunds_rate", "m2_yoy_pct", "fed_balance_sheet_trillion",
-        "us_cpi_yoy_pct", "us_indpro_yoy_pct", "policy_sentiment_score",
-        "liquidity_score", "merrill_phase", "atr_percentile_proxy",
-        "stablecoin_change_rate", "stablecoin_mcap_bln", "yield_10y_2y",
-        "fear_greed_norm", "blockbeats_sentiment_norm",
-        "blockbeats_signal_dao_avg", "blockbeats_signal_tian_avg",
-        "blockbeats_signal_di_avg", "blockbeats_signal_jiang_avg",
-        "blockbeats_inflow_top10_total_usd", "gold_supply_demand_balance_t",
+        "vix_close",
+        "fedfunds_rate",
+        "m2_yoy_pct",
+        "fed_balance_sheet_trillion",
+        "us_cpi_yoy_pct",
+        "us_indpro_yoy_pct",
+        "policy_sentiment_score",
+        "liquidity_score",
+        "merrill_phase",
+        "atr_percentile_proxy",
+        "stablecoin_change_rate",
+        "stablecoin_mcap_bln",
+        "yield_10y_2y",
+        "fear_greed_norm",
+        "blockbeats_sentiment_norm",
+        "blockbeats_signal_dao_avg",
+        "blockbeats_signal_tian_avg",
+        "blockbeats_signal_di_avg",
+        "blockbeats_signal_jiang_avg",
+        "blockbeats_inflow_top10_total_usd",
+        "gold_supply_demand_balance_t",
     )
 
     def _build(template_cls: str) -> Dict[str, Any]:
@@ -174,19 +190,27 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
     """
     result: Dict[str, Any] = {}
     try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT source, sub_category, metrics, raw, timestamp, id "
-            "FROM records WHERE source IN "
-            "('fred','yfinance','ccxt','defillama','etherscan','tavily',"
-            "'theblockbeats_dataview','panewslab','stablecoin_transparency',"
-            "'odaily_newsflash','fear_greed','gold_supply_demand') "
-            "AND date(timestamp) <= ? "
-            "ORDER BY id DESC",
-            (target_date,),
-        ).fetchall()
-        conn.close()
+        # C5 第五批：FD_IC_STORE_PORT=1 走 Store port（date(timestamp) <= ? 过滤）
+        rows = _fd_port.fetch_rows_by_sources_until(
+            str(db_path),
+            (
+                "fred",
+                "yfinance",
+                "ccxt",
+                "defillama",
+                "etherscan",
+                "tavily",
+                "theblockbeats_dataview",
+                "panewslab",
+                "stablecoin_transparency",
+                "odaily_newsflash",
+                "fear_greed",
+                "gold_supply_demand",
+            ),
+            target_date,
+            switch="FD_IC_STORE_PORT",
+            use_date_func=True,
+        )
     except Exception:
         return result
 
@@ -206,9 +230,13 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
     # FRED（回补数据用 sub_category=CPIAUCSL，带 yoy_pct；兼容 history 路由）
     result["fedfunds_rate"] = _metric("fred", "FEDFUNDS").get("value")
     cpi = _metric("fred", "CPIAUCSL")
-    result["us_cpi_yoy_pct"] = cpi.get("yoy_pct") or _metric("fred", "CPIAUCSL_history").get("yoy_pct")
+    result["us_cpi_yoy_pct"] = cpi.get("yoy_pct") or _metric("fred", "CPIAUCSL_history").get(
+        "yoy_pct"
+    )
     indpro = _metric("fred", "INDPRO")
-    result["us_indpro_yoy_pct"] = indpro.get("yoy_pct") or _metric("fred", "INDPRO_history").get("yoy_pct")
+    result["us_indpro_yoy_pct"] = indpro.get("yoy_pct") or _metric("fred", "INDPRO_history").get(
+        "yoy_pct"
+    )
     m2 = _metric("fred", "M2SL")
     result["m2_yoy_pct"] = m2.get("yoy_pct") or _metric("fred", "M2SL_history").get("yoy_pct")
     walcl = _metric("fred", "WALCL")
@@ -243,15 +271,16 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
     # 若 current 无值，从 stablecoin_hist_{usdt,usdc} 的 timeseries 按 target_date 取
     if stablecoin_total is None:
         try:
-            conn2 = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            conn2.row_factory = sqlite3.Row
             hist_bln = 0.0
             for sym in ("usdt", "usdc"):
-                hrow = conn2.execute(
-                    "SELECT timeseries FROM records WHERE source='stablecoin_transparency' "
-                    "AND sub_category=? ORDER BY id DESC LIMIT 1",
-                    (f"stablecoin_hist_{sym}",),
-                ).fetchone()
+                # C5 第五批：FD_IC_STORE_PORT=1 走 Store port
+                hrow = _fd_port.fetch_latest_row(
+                    str(db_path),
+                    "stablecoin_transparency",
+                    f"stablecoin_hist_{sym}",
+                    columns="timeseries",
+                    switch="FD_IC_STORE_PORT",
+                )
                 if hrow:
                     ts = _safe_json(hrow["timeseries"])
                     # 找 target_date 或之前最近的点
@@ -263,7 +292,6 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
                                 break
             if hist_bln > 0:
                 stablecoin_total = round(hist_bln, 4)
-            conn2.close()
         except Exception:
             pass
 
@@ -273,15 +301,16 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
     # 变化率：从 stablecoin_hist timeseries 计算
     if result.get("stablecoin_change_rate") is None and stablecoin_total is not None:
         try:
-            conn2 = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            conn2.row_factory = sqlite3.Row
             vals_by_date = {}
             for sym in ("usdt", "usdc"):
-                hrow = conn2.execute(
-                    "SELECT timeseries FROM records WHERE source='stablecoin_transparency' "
-                    "AND sub_category=? ORDER BY id DESC LIMIT 1",
-                    (f"stablecoin_hist_{sym}",),
-                ).fetchone()
+                # C5 第五批：FD_IC_STORE_PORT=1 走 Store port
+                hrow = _fd_port.fetch_latest_row(
+                    str(db_path),
+                    "stablecoin_transparency",
+                    f"stablecoin_hist_{sym}",
+                    columns="timeseries",
+                    switch="FD_IC_STORE_PORT",
+                )
                 if hrow:
                     ts = _safe_json(hrow["timeseries"])
                     for pt in ts:
@@ -289,7 +318,6 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
                         v = pt.get("circulating_usd_bln")
                         if d and isinstance(v, (int, float)):
                             vals_by_date[d] = vals_by_date.get(d, 0.0) + float(v)
-            conn2.close()
             if vals_by_date:
                 dates_sorted = sorted(vals_by_date.keys())
                 cur = vals_by_date.get(target_date)
@@ -302,6 +330,7 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
                 if cur:
                     # 找 7 天前的值
                     from datetime import datetime, timedelta
+
                     td = datetime.strptime(target_date, "%Y-%m-%d")
                     week_ago = (td - timedelta(days=7)).strftime("%Y-%m-%d")
                     prev = vals_by_date.get(week_ago)
@@ -322,9 +351,15 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
         result["merrill_phase"] = _compute_merrill(cpi_yoy, indpro_yoy)
 
     # 流动性评分
-    if any(result.get(k) is not None for k in ("fedfunds_rate", "m2_yoy_pct", "fed_balance_sheet_trillion")):
+    if any(
+        result.get(k) is not None
+        for k in ("fedfunds_rate", "m2_yoy_pct", "fed_balance_sheet_trillion")
+    ):
         result["liquidity_score"] = _compute_liquidity_score(
-            result.get("fedfunds_rate"), result.get("m2_yoy_pct"), result.get("fed_balance_sheet_trillion"))
+            result.get("fedfunds_rate"),
+            result.get("m2_yoy_pct"),
+            result.get("fed_balance_sheet_trillion"),
+        )
 
     # BlockBeats
     bb_pulse = _metric("theblockbeats_dataview", "bottom_pulse_index")
@@ -335,7 +370,12 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
             result["policy_sentiment_score"] = result["blockbeats_sentiment_norm"]
 
     signal_map: Dict[str, list] = {}
-    for sub in ("bottom_signal_tian", "bottom_signal_jiang", "bottom_signal_di", "bottom_signal_dao"):
+    for sub in (
+        "bottom_signal_tian",
+        "bottom_signal_jiang",
+        "bottom_signal_di",
+        "bottom_signal_dao",
+    ):
         m = _metric("theblockbeats_dataview", sub)
         dim = m.get("five_dimension")
         sc = m.get("score")
@@ -347,19 +387,14 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
 
     # Top10 净流入
     try:
-        conn2 = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        conn2.row_factory = sqlite3.Row
-        top = conn2.execute(
-            "SELECT id FROM records WHERE source='theblockbeats_dataview' "
-            "AND sub_category='top10_inflow_di' AND date(timestamp) <= ? "
-            "ORDER BY id DESC LIMIT 1", (target_date,),
-        ).fetchone()
+        # C5 第五批：FD_IC_STORE_PORT=1 走 Store port（date(timestamp) <= ? 过滤）
+        top, inflow_rows = _fd_port.fetch_top10_inflow_until(
+            str(db_path),
+            target_date,
+            switch="FD_IC_STORE_PORT",
+            use_date_func=True,
+        )
         if top:
-            inflow_rows = conn2.execute(
-                "SELECT metrics FROM records WHERE source='theblockbeats_dataview' "
-                "AND sub_category='top10_inflow_di' AND id >= ? AND id <= ? ORDER BY id DESC",
-                (max(0, top["id"] - 50), top["id"]),
-            ).fetchall()
             seen = set()
             total_usd = 0.0
             for r in inflow_rows:
@@ -372,7 +407,6 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
                 if isinstance(usd, (int, float)):
                     total_usd += float(usd)
             result["blockbeats_inflow_top10_total_usd"] = round(total_usd, 2)
-        conn2.close()
     except Exception:
         pass
 
@@ -383,7 +417,7 @@ def _read_macro_for_date(db_path: Path, target_date: str) -> Dict[str, Any]:
         result["fear_greed_norm"] = round(float(fg_val) / 100.0, 4)
 
     # gold_supply_demand
-    for (src, sub), rec in latest.items():
+    for (src, _sub), rec in latest.items():
         if src == "gold_supply_demand":
             gsd = _safe_json(rec["metrics"])
             bal = gsd.get("supply_demand_balance")
@@ -410,10 +444,16 @@ def _fetch_yf_returns(symbol: str, days: int = 250) -> Dict[str, float]:
     """
     try:
         import yfinance as yf
+
         end = datetime.now()
         start = end - timedelta(days=days + 60)
-        df = yf.download(symbol, start=start.strftime("%Y-%m-%d"),
-                         end=end.strftime("%Y-%m-%d"), progress=False, auto_adjust=True)
+        df = yf.download(
+            symbol,
+            start=start.strftime("%Y-%m-%d"),
+            end=end.strftime("%Y-%m-%d"),
+            progress=False,
+            auto_adjust=True,
+        )
         if df.empty:
             return {}
         # 处理 MultiIndex columns
@@ -445,6 +485,7 @@ def _compute_rank_ic(factor: np.ndarray, forward_ret: np.ndarray) -> float:
         return 0.0
     # rank
     from scipy.stats import spearmanr
+
     try:
         ic, _ = spearmanr(f, r)
         return float(ic) if not np.isnan(ic) else 0.0
@@ -485,12 +526,12 @@ def analyze_ic() -> List[Dict[str, Any]]:
         prices[cls] = _fetch_yf_returns(symbol, days=max(n_days + 30, 250))
         print(f"[IC] {cls}({symbol}) 价格点数: {len(prices[cls])}")
 
-    computer = FiveDomainFeatureComputer(enable=True)
+    _ = FiveDomainFeatureComputer(enable=True)  # 保留构造语义（原赋值未使用）
 
     # 收集每个子指标的 (factor_value, forward_return) 对
     factor_returns: Dict[str, List[Tuple[float, float]]] = {}
 
-    for i, (date_str, coin_data_by_cls) in enumerate(snapshots):
+    for _i, (date_str, coin_data_by_cls) in enumerate(snapshots):
         # 计算未来 7 日收益
         for cls in ASSET_RETURN_MAP:
             cd = coin_data_by_cls.get(cls, {})
@@ -534,22 +575,36 @@ def analyze_ic() -> List[Dict[str, Any]]:
         if len(pairs) < WINDOW:
             # 样本不足，用全样本单期 IC
             if len(pairs) < 5:
-                report_rows.append({
-                    "asset_class": cls, "dimension": dim, "subindicator": name,
-                    "n_samples": len(pairs), "rank_ic": None, "ic_mean": None,
-                    "ic_ir": None, "significant": False,
-                    "note": "样本<5，无法计算IC",
-                })
+                report_rows.append(
+                    {
+                        "asset_class": cls,
+                        "dimension": dim,
+                        "subindicator": name,
+                        "n_samples": len(pairs),
+                        "rank_ic": None,
+                        "ic_mean": None,
+                        "ic_ir": None,
+                        "significant": False,
+                        "note": "样本<5，无法计算IC",
+                    }
+                )
             else:
                 factors = np.array([p[0] for p in pairs])
                 rets = np.array([p[1] for p in pairs])
                 ic = _compute_rank_ic(factors, rets)
-                report_rows.append({
-                    "asset_class": cls, "dimension": dim, "subindicator": name,
-                    "n_samples": len(pairs), "rank_ic": round(ic, 4),
-                    "ic_mean": round(ic, 4), "ic_ir": 0.0, "significant": False,
-                    "note": f"样本<{WINDOW}，IC_IR无法计算",
-                })
+                report_rows.append(
+                    {
+                        "asset_class": cls,
+                        "dimension": dim,
+                        "subindicator": name,
+                        "n_samples": len(pairs),
+                        "rank_ic": round(ic, 4),
+                        "ic_mean": round(ic, 4),
+                        "ic_ir": 0.0,
+                        "significant": False,
+                        "note": f"样本<{WINDOW}，IC_IR无法计算",
+                    }
+                )
             continue
 
         # 滚动窗口计算多期 IC
@@ -557,8 +612,8 @@ def analyze_ic() -> List[Dict[str, Any]]:
         rets = np.array([p[1] for p in pairs])
         ic_series = []
         for i in range(WINDOW, len(factors) + 1):
-            window_f = factors[i - WINDOW:i]
-            window_r = rets[i - WINDOW:i]
+            window_f = factors[i - WINDOW : i]
+            window_r = rets[i - WINDOW : i]
             ic = _compute_rank_ic(window_f, window_r)
             if ic != 0.0:  # 跳过常数因子窗口
                 ic_series.append(ic)
@@ -566,13 +621,19 @@ def analyze_ic() -> List[Dict[str, Any]]:
         # 全样本 IC
         full_ic = _compute_rank_ic(factors, rets)
         significant = abs(ic_mean) > 0.03 and abs(ic_ir) > 0.5
-        report_rows.append({
-            "asset_class": cls, "dimension": dim, "subindicator": name,
-            "n_samples": len(pairs), "rank_ic": round(full_ic, 4),
-            "ic_mean": round(ic_mean, 4), "ic_ir": round(ic_ir, 4),
-            "significant": significant,
-            "note": "有效" if significant else "不显著",
-        })
+        report_rows.append(
+            {
+                "asset_class": cls,
+                "dimension": dim,
+                "subindicator": name,
+                "n_samples": len(pairs),
+                "rank_ic": round(full_ic, 4),
+                "ic_mean": round(ic_mean, 4),
+                "ic_ir": round(ic_ir, 4),
+                "significant": significant,
+                "note": "有效" if significant else "不显著",
+            }
+        )
 
     return report_rows
 
@@ -580,7 +641,13 @@ def analyze_ic() -> List[Dict[str, Any]]:
 def _categorical_to_numeric(field: str, val: str) -> Optional[float]:
     """将分类字段映射为数值。"""
     merrill_map = {"RECOVERY": 0.25, "EXPANSION": 0.50, "STAGFLATION": 0.75, "DEFLATION": 1.0}
-    regime_map = {"trend_up": 0.2, "breakout": 0.4, "ranging": 0.5, "high_volatility": 0.7, "trend_down": 0.9}
+    regime_map = {
+        "trend_up": 0.2,
+        "breakout": 0.4,
+        "ranging": 0.5,
+        "high_volatility": 0.7,
+        "trend_down": 0.9,
+    }
     if field == "merrill_phase":
         return merrill_map.get(val, 0.5)
     if field == "regime":
@@ -592,11 +659,26 @@ def save_report(rows: List[Dict[str, Any]]) -> Path:
     """保存 IC 报告到 CSV。"""
     _RUNTIME.mkdir(parents=True, exist_ok=True)
     import csv
+
     with open(_REPORT_CSV, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()) if rows else [
-            "asset_class", "dimension", "subindicator", "n_samples",
-            "rank_ic", "ic_mean", "ic_ir", "significant", "note"
-        ])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=(
+                list(rows[0].keys())
+                if rows
+                else [
+                    "asset_class",
+                    "dimension",
+                    "subindicator",
+                    "n_samples",
+                    "rank_ic",
+                    "ic_mean",
+                    "ic_ir",
+                    "significant",
+                    "note",
+                ]
+            ),
+        )
         writer.writeheader()
         writer.writerows(rows)
     return _REPORT_CSV
@@ -607,7 +689,9 @@ def print_summary(rows: List[Dict[str, Any]]) -> None:
     print("\n" + "=" * 80)
     print("战略层五域因子 IC 检验报告")
     print("=" * 80)
-    print(f"{'资产类':<15}{'维度':<6}{'子指标':<14}{'样本':>6}{'RankIC':>8}{'IC_IR':>8}{'显著性':>8}")
+    print(
+        f"{'资产类':<15}{'维度':<6}{'子指标':<14}{'样本':>6}{'RankIC':>8}{'IC_IR':>8}{'显著性':>8}"
+    )
     print("-" * 80)
     sig_count = 0
     for r in sorted(rows, key=lambda x: (x["asset_class"], x["dimension"], x["subindicator"])):
@@ -616,11 +700,13 @@ def print_summary(rows: List[Dict[str, Any]]) -> None:
         sig = "✅" if r["significant"] else "❌"
         if r["significant"]:
             sig_count += 1
-        print(f"{r['asset_class']:<15}{r['dimension']:<6}{r['subindicator']:<14}"
-              f"{r['n_samples']:>6}{ic_str:>8}{ir_str:>8}{sig:>8}")
+        print(
+            f"{r['asset_class']:<15}{r['dimension']:<6}{r['subindicator']:<14}"
+            f"{r['n_samples']:>6}{ic_str:>8}{ir_str:>8}{sig:>8}"
+        )
     print("-" * 80)
     print(f"显著因子数: {sig_count} / {len(rows)}")
-    print(f"显著性阈值: |RankIC|>0.03 且 |IC_IR|>0.5")
+    print("显著性阈值: |RankIC|>0.03 且 |IC_IR|>0.5")
     print(f"报告路径: {_REPORT_CSV}")
     print("=" * 80)
 

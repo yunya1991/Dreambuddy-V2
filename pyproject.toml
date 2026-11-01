@@ -80,6 +80,9 @@ extend-exclude = '''
   | migrations/
 )
 '''
+# C5 第五批：legacy 模块级执行回测脚本（不可 import 回归），全量重排风险大于收益；
+# force-exclude 使显式传入的暂存文件也排除（pre-commit black hook 场景）。
+force-exclude = '''11-易经推理系统/scripts/memory_l4/backtest_five_domain_v2\.py'''
 
 [tool.ruff]
 target-version = "py310"
@@ -119,6 +122,15 @@ ignore = [
     "E501",  # line too long (handled by black)
     "B008",  # Do not perform function call in argument defaults
     "C901",  # too complex (handled by radon)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# C5 第五批：legacy 模块级执行回测脚本（不可 import 回归），存量风格不重排，仅保证新改动语义等价
+"11-易经推理系统/scripts/memory_l4/backtest_five_domain_v2.py" = [
+    "E701", "E702",  # 存量单行多语句风格
+    "I001",          # 存量 import 排序（模块级执行顺序敏感）
+    "F401",          # 存量未使用 import
+    "F541", "B007", "B905", "C420",
 ]
 
 [tool.ruff.lint.isort]

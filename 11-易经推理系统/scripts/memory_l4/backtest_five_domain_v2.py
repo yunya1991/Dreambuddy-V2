@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import sys
 from collections import Counter, defaultdict
 from copy import deepcopy
@@ -350,6 +349,7 @@ DB_PATH = SYS_PROJ / "18-数据获取中心" / "data_center.db"
 assert DB_PATH.exists(), f"真五维DB不存在: {DB_PATH}"
 
 # 导入 SQLite reader 内部辅助 + FeatureComputer
+from scripts.memory_l4 import _five_domain_store_port as _fd_port  # noqa: E402  # C5 第五批
 from scripts.memory_l4.five_domain_sqlite_reader import (  # noqa: E402
     _compute_liquidity_score,
     _compute_merrill,
@@ -384,18 +384,15 @@ def _build_timeseries_expansion_index(db_path: Path) -> Dict[str, Any]:
     """
     result: Dict[str, Any] = {"stablecoin_by_date": {}, "overview_by_date": {},
                               "slow_latest": {}}
-    try:
-        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
-    except Exception:
-        return result
 
     # 1) stablecoin_hist_{usdt,usdc} — DeFiLlama 透明度日档 365 天日级（dao 核心代理 100% 非 NAN 骨架）
+    # C5 第五批：FD_BT5_STORE_PORT=1 走 Store port
     try:
         for sub, key in (("stablecoin_hist_usdt", "usdt_bln"), ("stablecoin_hist_usdc", "usdc_bln")):
-            r = conn.execute(
-                "SELECT timeseries FROM records WHERE source='stablecoin_transparency' "
-                "AND sub_category=? ORDER BY id DESC LIMIT 1", (sub,)).fetchone()
+            r = _fd_port.fetch_latest_row(
+                db_path, "stablecoin_transparency", sub,
+                columns="timeseries", switch="FD_BT5_STORE_PORT",
+            )
             if not r or not r["timeseries"]:
                 continue
             ts = r["timeseries"]
@@ -432,10 +429,12 @@ def _build_timeseries_expansion_index(db_path: Path) -> Dict[str, Any]:
         pass
 
     # 2) overview_market.overview_trends.series — 30 天 5 板块（地/天 维度情绪/TVL 代理）
+    # C5 第五批：FD_BT5_STORE_PORT=1 走 Store port
     try:
-        r = conn.execute(
-            "SELECT raw FROM records WHERE source='panewslab' AND sub_category='overview_market' "
-            "ORDER BY id DESC LIMIT 1").fetchone()
+        r = _fd_port.fetch_latest_row(
+            db_path, "panewslab", "overview_market",
+            columns="raw", switch="FD_BT5_STORE_PORT",
+        )
         if r and r["raw"]:
             raw = r["raw"]
             if isinstance(raw, (bytes, bytearray)):
@@ -474,11 +473,12 @@ def _build_timeseries_expansion_index(db_path: Path) -> Dict[str, Any]:
             ("stablecoin_transparency", "tether_current"),
             ("stablecoin_transparency", "usdc_current"),
         ]
-        cur = conn.cursor()
+        # C5 第五批：FD_BT5_STORE_PORT=1 走 Store port
+        slow_rows = _fd_port.fetch_latest_rows_for_pairs(
+            db_path, slow_keys, columns="metrics, raw", switch="FD_BT5_STORE_PORT",
+        )
         for src, sub in slow_keys:
-            r = cur.execute(
-                "SELECT metrics, raw FROM records WHERE source=? AND sub_category=? "
-                "ORDER BY id DESC LIMIT 1", (src, sub)).fetchone()
+            r = slow_rows.get((src, sub))
             if not r:
                 continue
             m_raw = r["metrics"]
@@ -506,10 +506,6 @@ def _build_timeseries_expansion_index(db_path: Path) -> Dict[str, Any]:
               f"({', '.join(sorted(result['slow_latest'].keys()))})")
     except Exception as e:
         print(f"  [ts_expand] slow_latest 构建异常（忽略，fail-open）: {e}")
-    try:
-        conn.close()
-    except Exception:
-        pass
 
     # 打印覆盖范围证据（对齐 project memory 三要素打印要求）
     sc_days = result["stablecoin_by_date"]
@@ -539,21 +535,20 @@ def build_macro_snapshot_for_date(db_path: Path, target_date_str: str,
         panewslab 快照时的按日回溯，None 命中则保持快照语义（不引入未来信息）。
     """
     result: Dict[str, Any] = {}
-    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(
-        "SELECT source, sub_category, metrics, raw, timestamp, id FROM records "
-        "WHERE source IN ('fred','yfinance','ccxt','defillama','etherscan','tavily',"
-        "'theblockbeats_dataview','panewslab','stablecoin_transparency') AND timestamp <= ? "
-        "ORDER BY id DESC",
-        (target_date_str + "T23:59:59",),
-    ).fetchall()
+    # C5 第五批：FD_BT5_STORE_PORT=1 走 Store port（timestamp <= ? 过滤）
+    rows = _fd_port.fetch_rows_by_sources_until(
+        db_path,
+        ("fred", "yfinance", "ccxt", "defillama", "etherscan", "tavily",
+         "theblockbeats_dataview", "panewslab", "stablecoin_transparency"),
+        target_date_str + "T23:59:59",
+        switch="FD_BT5_STORE_PORT",
+        use_date_func=False,
+    )
     # 去重保留每个(src,sub)在目标日期前的最新记录
-    latest: Dict[tuple, sqlite3.Row] = {}
+    latest: Dict[tuple, Any] = {}
     for r in rows:
         key = (r["source"], r["sub_category"])
         if key not in latest: latest[key] = r
-    conn.close()
 
     # slow_latest fallback（慢变量 forward fill，符合 project memory 铁律）
     sl = (ts_expand or {}).get("slow_latest", {}) if isinstance(ts_expand, dict) else {}
@@ -697,17 +692,11 @@ def build_macro_snapshot_for_date(db_path: Path, target_date_str: str,
         if tw>0: result["blockbeats_signal_overall"] = round(ts/tw,4)
     # top10 inflow
     try:
-        conn2 = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True); conn2.row_factory = sqlite3.Row
-        top = conn2.execute(
-            "SELECT id FROM records WHERE source='theblockbeats_dataview' AND sub_category='top10_inflow_di' "
-            "AND timestamp <= ? ORDER BY id DESC LIMIT 1",
-            (target_date_str + "T23:59:59",),).fetchone()
-        inflow = []
-        if top:
-            inflow = conn2.execute(
-                "SELECT metrics FROM records WHERE source='theblockbeats_dataview' AND sub_category='top10_inflow_di' "
-                "AND id >= ? AND id <= ? ORDER BY id DESC", (max(0,top["id"]-50), top["id"])).fetchall()
-        conn2.close()
+        # C5 第五批：FD_BT5_STORE_PORT=1 走 Store port（timestamp <= ? 过滤）
+        top, inflow = _fd_port.fetch_top10_inflow_until(
+            db_path, target_date_str + "T23:59:59",
+            switch="FD_BT5_STORE_PORT", use_date_func=False,
+        )
         if inflow:
             syms=[]; amts=[]; total=0.; seen=set()
             for r in inflow:

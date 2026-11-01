@@ -212,4 +212,252 @@ def fetch_top10_inflow_batch(
         conn.close()
 
 
-__all__ = ["RecordsStorePort", "fetch_rows_by_sources", "fetch_top10_inflow_batch"]
+def fetch_distinct_dates(
+    db_path: str, sources: Sequence[str], switch: str = "FD_IC_STORE_PORT"
+) -> List[str]:
+    """DISTINCT date(timestamp) 升序日期列表（five_domain_ic_analysis._get_daily_snapshots）。
+
+    开关打开 → 走 RecordsStorePort（FAIL-OPEN 返回 []）；默认 legacy 直连
+    （原 SQL 原样保留，异常上抛，由调用方 try 兜底）。
+    """
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            r = port.query(
+                "records",
+                columns="DISTINCT date(timestamp) AS d",
+                sql_where="source IN (" + ",".join("?" * len(sources)) + ")",
+                sql_params=tuple(sources),
+                order_by="d ASC",
+                limit=1000000,
+            )
+            return [row["d"] for row in (r.get("rows") or []) if row.get("d")]
+        except Exception:
+            return []  # FAIL-OPEN
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT date(timestamp) as d FROM records WHERE source IN ("
+            + ",".join("?" * len(sources))
+            + ") ORDER BY d",
+            tuple(sources),
+        ).fetchall()
+        return [r["d"] for r in rows]
+    finally:
+        conn.close()
+
+
+def fetch_rows_by_sources_until(
+    db_path: str,
+    sources: Sequence[str],
+    max_ts: str,
+    switch: str = "FD_IC_STORE_PORT",
+    use_date_func: bool = True,
+) -> List[Any]:
+    """主读取 + 时间上界过滤（ic_analysis._read_macro_for_date / backtest.build_macro_snapshot_for_date）。
+
+    use_date_func=True  → date(timestamp) <= ?（ic_analysis 形态，max_ts 为日期串）
+    use_date_func=False → timestamp <= ?（backtest 形态，max_ts 为 "YYYY-MM-DDT23:59:59"）
+    开关打开 → 走 RecordsStorePort（FAIL-OPEN 返回 []）；默认 legacy 直连（异常上抛）。
+    """
+    ts_filter = "date(timestamp) <= ?" if use_date_func else "timestamp <= ?"
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            r = port.query(
+                "records",
+                columns=_MACRO_COLUMNS,
+                sql_where="source IN (" + ",".join("?" * len(sources)) + ") AND " + ts_filter,
+                sql_params=tuple(sources) + (max_ts,),
+                order_by="id DESC",
+                limit=1000000,
+            )
+            return r.get("rows") or []
+        except Exception:
+            return []  # FAIL-OPEN
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        return conn.execute(
+            "SELECT "
+            + _MACRO_COLUMNS
+            + " FROM records WHERE source IN ("
+            + ",".join("?" * len(sources))
+            + ") AND "
+            + ts_filter
+            + " ORDER BY id DESC",
+            tuple(sources) + (max_ts,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+
+def fetch_latest_row(
+    db_path: str,
+    source: str,
+    sub_category: str,
+    columns: str = "*",
+    switch: str = "FD_IC_STORE_PORT",
+) -> Optional[Dict[str, Any]]:
+    """(source, sub_category) 最新 1 行指定列（stablecoin_hist timeseries / overview raw 等）。
+
+    开关打开 → 走 RecordsStorePort（FAIL-OPEN 返回 None）；默认 legacy 直连（异常上抛）。
+    """
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            rows = (
+                port.query(
+                    "records",
+                    filters={"source": source, "sub_category": sub_category},
+                    columns=columns,
+                    limit=1,
+                    order_by="id DESC",
+                ).get("rows")
+                or []
+            )
+            return rows[0] if rows else None
+        except Exception:
+            return None  # FAIL-OPEN
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            "SELECT "
+            + columns
+            + " FROM records WHERE source=? AND sub_category=? ORDER BY id DESC LIMIT 1",
+            (source, sub_category),
+        ).fetchone()
+        return row
+    finally:
+        conn.close()
+
+
+def fetch_latest_rows_for_pairs(
+    db_path: str,
+    pairs: Sequence[Tuple[str, str]],
+    columns: str = "metrics, raw",
+    switch: str = "FD_BT5_STORE_PORT",
+) -> Dict[Tuple[str, str], Any]:
+    """批量取 (source, sub_category) 最新行（backtest slow_latest 慢变量缓存，共享单连接）。
+
+    返回 {(src, sub): row}，仅含存在的行。开关打开 → 走 RecordsStorePort
+    （FAIL-OPEN 返回 {}）；默认 legacy 直连（异常上抛）。
+    """
+    result: Dict[Tuple[str, str], Any] = {}
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            for src, sub in pairs:
+                rows = (
+                    port.query(
+                        "records",
+                        filters={"source": src, "sub_category": sub},
+                        columns=columns,
+                        limit=1,
+                        order_by="id DESC",
+                    ).get("rows")
+                    or []
+                )
+                if rows:
+                    result[(src, sub)] = rows[0]
+            return result
+        except Exception:
+            return {}  # FAIL-OPEN
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.cursor()
+        for src, sub in pairs:
+            r = cur.execute(
+                "SELECT "
+                + columns
+                + " FROM records WHERE source=? AND sub_category=? ORDER BY id DESC LIMIT 1",
+                (src, sub),
+            ).fetchone()
+            if r:
+                result[(src, sub)] = r
+        return result
+    finally:
+        conn.close()
+
+
+def fetch_top10_inflow_until(
+    db_path: str,
+    max_ts: str,
+    switch: str = "FD_IC_STORE_PORT",
+    use_date_func: bool = True,
+    window: int = 50,
+) -> Tuple[Optional[Any], List[Any]]:
+    """top10_inflow_di 带时间上界的同批次行：(最新行, 区间内行列表)，无数据 (None, [])。
+
+    use_date_func=True → date(timestamp) <= ?（ic_analysis）；False → timestamp <= ?（backtest）。
+    开关打开 → 走 RecordsStorePort（FAIL-OPEN 返回 (None, [])）；默认 legacy 直连（异常上抛）。
+    """
+    ts_filter = "date(timestamp) <= ?" if use_date_func else "timestamp <= ?"
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            top_rows = (
+                port.query(
+                    "records",
+                    filters={"source": "theblockbeats_dataview", "sub_category": "top10_inflow_di"},
+                    columns="id",
+                    sql_where=ts_filter,
+                    sql_params=(max_ts,),
+                    limit=1,
+                    order_by="id DESC",
+                ).get("rows")
+                or []
+            )
+            if not top_rows:
+                return None, []
+            top = top_rows[0]
+            min_id = max(0, int(top["id"]) - window)
+            rows = (
+                port.query(
+                    "records",
+                    filters={"source": "theblockbeats_dataview", "sub_category": "top10_inflow_di"},
+                    columns="metrics",
+                    sql_where="id >= ? AND id <= ?",
+                    sql_params=(min_id, int(top["id"])),
+                    limit=window + 1,
+                    order_by="id DESC",
+                ).get("rows")
+                or []
+            )
+            return top, rows
+        except Exception:
+            return None, []  # FAIL-OPEN
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        top = conn.execute(
+            "SELECT id FROM records WHERE source='theblockbeats_dataview' "
+            "AND sub_category='top10_inflow_di' AND " + ts_filter + " "
+            "ORDER BY id DESC LIMIT 1",
+            (max_ts,),
+        ).fetchone()
+        if not top:
+            return None, []
+        rows = conn.execute(
+            "SELECT metrics FROM records WHERE source='theblockbeats_dataview' "
+            "AND sub_category='top10_inflow_di' AND id >= ? AND id <= ? ORDER BY id DESC",
+            (max(0, int(top["id"]) - window), int(top["id"])),
+        ).fetchall()
+        return top, rows
+    finally:
+        conn.close()
+
+
+__all__ = [
+    "RecordsStorePort",
+    "fetch_rows_by_sources",
+    "fetch_top10_inflow_batch",
+    "fetch_distinct_dates",
+    "fetch_rows_by_sources_until",
+    "fetch_latest_row",
+    "fetch_latest_rows_for_pairs",
+    "fetch_top10_inflow_until",
+]

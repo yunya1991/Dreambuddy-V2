@@ -10,14 +10,12 @@
 10-经典指标系统/classic_pipeline/strategy_factory/registry.py	sqlite3	1
 10-经典指标系统/ml_trade_service.py	sqlite3	2
 11-易经推理系统/scripts/memory_l4/_probe_sqlite_records.py	sqlite3	1
-11-易经推理系统/scripts/memory_l4/backtest_five_domain_v2.py	sqlite3	3
 11-易经推理系统/scripts/memory_l4/bcrm2/_store_port.py	sqlite3	3
 11-易经推理系统/scripts/memory_l4/bcrm2/incremental_learner.py	sqlite3	5
 11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py	sqlite3	2
 11-易经推理系统/scripts/memory_l4/bcrm2/scripts/backfill_fma_shadow.py	sqlite3	3
 11-易经推理系统/scripts/memory_l4/bcrm2/storage.py	sqlite3	1
-11-易经推理系统/scripts/memory_l4/five_domain_ic_analysis.py	sqlite3	5
-11-易经推理系统/scripts/memory_l4/_five_domain_store_port.py	sqlite3	3
+11-易经推理系统/scripts/memory_l4/_five_domain_store_port.py	sqlite3	8
 11-易经推理系统/scripts/memory_l4/force_vector/_store_port.py	sqlite3	5
 11-易经推理系统/scripts/memory_l4/kg_store.py	sqlite3	1
 11-易经推理系统/scripts/memory_l4/tests/test_coin_fundamental_event_timeline.py	sqlite3	1
@@ -82,6 +80,7 @@
 43-战略承接推演层/strategic_extension/sentiment_channel.py	sqlite3	1
 44-三端协作架构系统/shared/tests/test_c5_bcrm2_store_port.py	sqlite3	2
 44-三端协作架构系统/shared/tests/test_c5_five_domain_store_port.py	sqlite3	3
+44-三端协作架构系统/shared/tests/test_c5_five_domain_ic_bt_store_port.py	sqlite3	1
 7-产物中台/系统研究索引体系/prisma/scripts/etl_worker.py	psycopg2	1
 9-基本面分析/backend/src/_embedded_ml_trade_service_source.py	sqlite3	2
 experiments/ab-trading/core/modules/data_center_adapter.py	sqlite3	2
