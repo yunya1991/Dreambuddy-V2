@@ -96,6 +96,14 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="离线验证时必须带签名（缺签名即失败）",
     )
+
+    sandbox = sub.add_parser("sandbox", help="gVisor 沙箱运行环境检查（P4-3）")
+    sandbox.add_argument(
+        "--check", action="store_true", help="校验 sandbox.yaml 与 runsc/docker 可用性"
+    )
+    sandbox.add_argument(
+        "--config", default=None, help="sandbox.yaml 路径（默认 config/sandbox.yaml）"
+    )
     return parser
 
 
@@ -121,6 +129,8 @@ def main(
         return _audit(args, repo, audit_log, out)
     if args.command == "evidence":
         return _evidence(args, repo, out)
+    if args.command == "sandbox":
+        return _sandbox(args, out)
     print(f"未知命令: {args.command}", file=out)
     return EXIT_ERROR
 
@@ -309,6 +319,21 @@ def _evidence(args: argparse.Namespace, repo: EvalRepo, out: Any) -> int:
         file=out,
     )
     return EXIT_PASS
+
+
+def _sandbox(args: argparse.Namespace, out: Any) -> int:
+    """沙箱运行环境检查（P4-3）：策略合法性 + runtime 可用性，fail-closed。"""
+    from core.sandbox import SandboxError, SandboxPolicy, check_runtime
+
+    config_path = args.config or os.environ.get("EVAL_SANDBOX_CONFIG")
+    try:
+        policy = SandboxPolicy.load(config_path) if config_path else SandboxPolicy.load()
+        result = check_runtime(policy)
+    except SandboxError as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=out)
+        return EXIT_ERROR
+    print(json.dumps(result, ensure_ascii=False), file=out)
+    return EXIT_PASS if result["ok"] else EXIT_ERROR
 
 
 if __name__ == "__main__":  # pragma: no cover

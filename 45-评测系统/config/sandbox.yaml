@@ -1,0 +1,15 @@
+# gVisor 沙箱运行配置（SPEC §14.3 / PLAN P4-3）
+# runtime: gvisor = Docker + runsc（默认）；docker = 仅 Docker（降级观测）；none = 不沙箱（仅本地调试）
+runtime: gvisor
+strict: true                # strict=true 时 runsc/docker 缺失即 fail-closed
+cpu: 1.0                    # vCPU 配额
+memory: 2g                  # 内存上限
+pids: 256                   # 进程数上限
+timeout_s: 1800             # 执行超时（秒），超时 kill
+network: none               # none = 无网络；allowlist = 仅 network_allowlist
+network_allowlist: []
+read_only_rootfs: true
+run_as_non_root: true
+user: "65534:65534"
+mount_allowlist:            # 唯一允许的宿主挂载前缀（object_ref 工作目录）
+  - /tmp/eval-work

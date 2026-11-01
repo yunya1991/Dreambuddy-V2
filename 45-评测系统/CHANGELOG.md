@@ -23,6 +23,14 @@
 - 测试：22 个用例（读写回环、只读权限、锁内覆盖/删除拒绝、到期后版本追加、穿越拒绝、策略默认与覆盖、YAML 加载、装配失败闭合、归档与 CLI 归档）；storage/object_store.py 覆盖率 98%
 - commit: `f9cd70d325`
 
+### P4-3 gVisor 沙箱
+- 新增 `config/sandbox.yaml`：`runtime: gvisor` + `strict: true`（缺 runsc 即 fail-closed），cpu=1 / mem=2g / pids=256 / timeout=1800s / network=none / 只读 rootfs / 非 root / `mount_allowlist=/tmp/eval-work`
+- 新增 `core/sandbox.py`：`SandboxPolicy.load`、`validate_request`（逃逸拦截：特权容器、Docker socket、宿主根、/proc /sys /dev、host 网络、root 用户、未登记挂载、非只读挂载、缺镜像/命令）、`build_command`（runsc + 只读 + 非 root + cap-drop ALL + no-new-privileges + cpu/mem/pids 配额 + tmpfs）、`check_runtime`（gvisor/docker/none 路由）
+- CLI 新增 `evalctl sandbox --check`（策略合法性 + runtime 可用性；0 通过 / 4 拒绝），支持 `--config` / `EVAL_SANDBOX_CONFIG`
+- 测试：29 个用例（10 类逃逸用例、硬化参数、挂载只读、strict 缺 runsc 拒绝、非 strict 降级、docker/none/未知 runtime 路由、CLI 三态）；core/sandbox.py 覆盖率 97%
+- 编译类开销 ≤20% 属云端实测门（本机无 runsc，未在本轮测量；strict 下不会静默直跑）
+- commit: `PENDING`
+
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
 ### P3-1 凭证签发与校验

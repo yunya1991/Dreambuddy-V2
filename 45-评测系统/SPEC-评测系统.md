@@ -609,6 +609,7 @@ exit 0 = PASS | 2 = BLOCK | 3 = INCONCLUSIVE | 4 = ERROR
 - rootfs 只读 + tmpfs；非 root + seccomp；`network=none` 仅 allowlist
 - 密钥通过 `secret_ref` 运行时注入，日志与证据脱敏
 - 工程类评测在沙箱内拉取 object_ref，禁止使用提交方预置产物
+- 落地：`config/sandbox.yaml` + `core/sandbox.py`（策略加载 / `validate_request` 逃逸拦截 / `build_command` 硬化命令 / `check_runtime`）；`evalctl sandbox --check` 校验 runsc/docker 可用性（strict 缺失退出 4）；编译类开销 ≤20% 为云端实测门（本机无 runsc 时 strict 直接 fail-closed，不静默降级）
 
 ### 14.4 证据链
 
