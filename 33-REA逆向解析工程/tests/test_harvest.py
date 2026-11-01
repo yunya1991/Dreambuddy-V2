@@ -8,9 +8,9 @@ import tempfile
 import unittest
 
 from core.reflection.harvest import (
+    VERIFY_PASS_THRESHOLD,
     ExternalHarvester,
     HarvestSource,
-    VERIFY_PASS_THRESHOLD,
 )
 from core.reflection.replay_simulator import ReplayPool
 
@@ -74,19 +74,24 @@ class TestHarvest(unittest.TestCase):
         os.makedirs(shell, exist_ok=True)
         with open(os.path.join(shell, "only.py"), "w", encoding="utf-8") as f:
             f.write("x = 1\n")
-        out = self.harvester.harvest([
-            HarvestSource(source_type="local_path", location=shell, label="shell"),
-        ])
+        out = self.harvester.harvest(
+            [
+                HarvestSource(source_type="local_path", location=shell, label="shell"),
+            ]
+        )
         self.assertEqual(len(out.injected_trees), 0)
         self.assertEqual(out.rejected[0]["stage"], "E2-quality")
         self.assertEqual(self.pool.count("external"), 0)
 
     def test_e4_metadata_backfilled(self):
         """注入树回填 repo_url / license / collected_at（SPEC A2）。"""
-        out = self.harvester.harvest([
-            HarvestSource(source_type="local_path", location=self.src_dir,
-                          label="sample", license="MIT"),
-        ])
+        out = self.harvester.harvest(
+            [
+                HarvestSource(
+                    source_type="local_path", location=self.src_dir, label="sample", license="MIT"
+                ),
+            ]
+        )
         self.assertEqual(len(out.injected_trees), 1)
         tree = self.pool.list_trees("external")[0]
         self.assertEqual(tree.source_id, "sample")
@@ -95,10 +100,12 @@ class TestHarvest(unittest.TestCase):
         self.assertGreater(tree.collected_at, 0)
 
     def test_full_pipeline_fail_open(self):
-        out = self.harvester.harvest([
-            HarvestSource(source_type="local_path", location=self.src_dir, label="sample"),
-            HarvestSource(source_type="local_path", location="/nonexistent/xyz", label="bad"),
-        ])
+        out = self.harvester.harvest(
+            [
+                HarvestSource(source_type="local_path", location=self.src_dir, label="sample"),
+                HarvestSource(source_type="local_path", location="/nonexistent/xyz", label="bad"),
+            ]
+        )
         self.assertTrue(out.ok)  # FAIL-OPEN：坏源不产生 error
         self.assertEqual(len(out.injected_trees), 1)
         self.assertEqual(len(out.rejected), 1)

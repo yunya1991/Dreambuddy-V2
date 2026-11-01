@@ -42,57 +42,185 @@ PLACEHOLDER_OWNERS = {"your-username", "your-org", "your-name", "org", "owner", 
 SELF_OWNERS = {"yunya1991"}  # 本系统自有仓库，不是外部项目
 # 依赖库文档目录：其中的 GitHub 链接是第三方依赖，不是本系统调研结论
 NOISE_MARKERS = (
-    "node_modules", ".venv", "site-packages", "/dist/", "/build/", ".git/",
-    "third_party", "vendor", ".trae-cn", "package-lock", "pnpm-lock", "yarn.lock",
+    "node_modules",
+    ".venv",
+    "site-packages",
+    "/dist/",
+    "/build/",
+    ".git/",
+    "third_party",
+    "vendor",
+    ".trae-cn",
+    "package-lock",
+    "pnpm-lock",
+    "yarn.lock",
 )
 
 # 归类关键词（owner/repo 全名命中，按顺序优先匹配更具体类目）
 CATEGORY_RULES: dict[str, list[str]] = {
     "reverse_engineering": [
-        "code2flow", "pydeps", "pycg", "ast-grep", "pyright", "semgrep", "tree-sitter",
-        "call-graph", "reverse", "decompil",
+        "code2flow",
+        "pydeps",
+        "pycg",
+        "ast-grep",
+        "pyright",
+        "semgrep",
+        "tree-sitter",
+        "call-graph",
+        "reverse",
+        "decompil",
     ],
     "dsh": [
-        "mcp", "pluggy", "stevedore", "semantic-kernel", "aider", "superpowers",
-        "harness", "skill", "subagent", "claude-code", "browser-use", "browser-skill",
-        "agent-skill-router", "grok-build", "hermes-agent",
+        "mcp",
+        "pluggy",
+        "stevedore",
+        "semantic-kernel",
+        "aider",
+        "superpowers",
+        "harness",
+        "skill",
+        "subagent",
+        "claude-code",
+        "browser-use",
+        "browser-skill",
+        "agent-skill-router",
+        "grok-build",
+        "hermes-agent",
     ],
     "dreamos": [
-        "langgraph", "temporal", "autogen", "dagster", "airflow", "prefect", "crewai",
-        "openhands", "metagpt", "ufo", "swarm", "swe-agent", "agent-os", "autogpt",
+        "langgraph",
+        "temporal",
+        "autogen",
+        "dagster",
+        "airflow",
+        "prefect",
+        "crewai",
+        "openhands",
+        "metagpt",
+        "ufo",
+        "swarm",
+        "swe-agent",
+        "agent-os",
+        "autogpt",
         "auto-gpt",
     ],
     "search_engine": [
-        "whoosh", "bm25", "llama_index", "llama-index", "graphrag", "txtai", "langchain",
-        "retrieval", "rag", "vector-search", "search-engine",
+        "whoosh",
+        "bm25",
+        "llama_index",
+        "llama-index",
+        "graphrag",
+        "txtai",
+        "langchain",
+        "retrieval",
+        "rag",
+        "vector-search",
+        "search-engine",
     ],
     "database": [
-        "sqlite", "sqlalchemy", "chroma", "duckdb", "postgres", "clickhouse", "lancedb",
-        "database", "orm", "kafka", "eventstore", "event-store", "neo4j",
-        "graph-data-science", "feast",
+        "sqlite",
+        "sqlalchemy",
+        "chroma",
+        "duckdb",
+        "postgres",
+        "clickhouse",
+        "lancedb",
+        "database",
+        "orm",
+        "kafka",
+        "eventstore",
+        "event-store",
+        "neo4j",
+        "graph-data-science",
+        "feast",
     ],
     "data_acquisition": [
-        "dlt", "airbyte", "openbb", "scrapy", "akshare", "tavily", "ingest", "etl",
-        "collector", "crawler",
+        "dlt",
+        "airbyte",
+        "openbb",
+        "scrapy",
+        "akshare",
+        "tavily",
+        "ingest",
+        "etl",
+        "collector",
+        "crawler",
     ],
     "cognitive_system": [
-        "letta", "mem0", "dspy", "reflexion", "cognitive", "memory", "rasa", "knowledge-graph",
+        "letta",
+        "mem0",
+        "dspy",
+        "reflexion",
+        "cognitive",
+        "memory",
+        "rasa",
+        "knowledge-graph",
     ],
     "frontend": [
-        "zustand", "shadcn", "vite", "tanstack", "next.js", "nextjs", "react", "vue",
-        "frontend", "tailwind",
+        "zustand",
+        "shadcn",
+        "vite",
+        "tanstack",
+        "next.js",
+        "nextjs",
+        "react",
+        "vue",
+        "frontend",
+        "tailwind",
     ],
     "llm_training": [
-        "peft", "unsloth", "axolotl", "lightning", "vllm", "transformers", "timesfm",
-        "nixtla", "time-moe", "moment", "neural-sde", "signature", "signatory", "bert",
-        "finbert", "fingpt", "llm", "training", "finetune",
-        "ymcui", "macbert", "electra", "xlnet", "textbrewer", "hfl", "chinese-bert",
+        "peft",
+        "unsloth",
+        "axolotl",
+        "lightning",
+        "vllm",
+        "transformers",
+        "timesfm",
+        "nixtla",
+        "time-moe",
+        "moment",
+        "neural-sde",
+        "signature",
+        "signatory",
+        "bert",
+        "finbert",
+        "fingpt",
+        "llm",
+        "training",
+        "finetune",
+        "ymcui",
+        "macbert",
+        "electra",
+        "xlnet",
+        "textbrewer",
+        "hfl",
+        "chinese-bert",
     ],
     "finance_models": [
-        "backtrader", "jesse", "freqtrade", "vnpy", "qlib", "finrl", "tradingagents",
-        "finrobot", "hedge-fund", "regime", "skfolio", "causalml", "nautilus", "finclaw",
-        "trading", "quant", "portfolio", "alpha",
-        "vectorbt", "darts", "statsmodels", "evidently", "whylogs", "market-regime",
+        "backtrader",
+        "jesse",
+        "freqtrade",
+        "vnpy",
+        "qlib",
+        "finrl",
+        "tradingagents",
+        "finrobot",
+        "hedge-fund",
+        "regime",
+        "skfolio",
+        "causalml",
+        "nautilus",
+        "finclaw",
+        "trading",
+        "quant",
+        "portfolio",
+        "alpha",
+        "vectorbt",
+        "darts",
+        "statsmodels",
+        "evidently",
+        "whylogs",
+        "market-regime",
     ],
 }
 
@@ -140,7 +268,11 @@ def classify(owner_repo: str, doc_path: str) -> str:
         return "finance_models"
     best = max(scores.values())
     winners = [c for c, v in scores.items() if v == best]
-    return winners[0] if len(winners) == 1 else ("finance_models" if "finance_models" in winners else winners[0])
+    return (
+        winners[0]
+        if len(winners) == 1
+        else ("finance_models" if "finance_models" in winners else winners[0])
+    )
 
 
 def make_id(owner_repo: str, taken: set[str]) -> str:
@@ -226,19 +358,22 @@ verified: false
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--roots", nargs="*", default=DEFAULT_ROOTS)
-    ap.add_argument("--emit-inbox", action="store_true",
-                    help="本地模式：只写 inbox 提案，不改主清单（主清单唯一写者是云端）")
+    ap.add_argument(
+        "--emit-inbox",
+        action="store_true",
+        help="本地模式：只写 inbox 提案，不改主清单（主清单唯一写者是云端）",
+    )
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--max-new", type=int, default=50, help="单次新增上限（超出告警并截断）")
     args = ap.parse_args()
-    unattended = True  # D4：无人值守，不再设人工确认门禁
 
     docs: list[Path] = []
     for root in args.roots:
         root_path = PROJECT_ROOT / root if not os.path.isabs(root) else Path(root)
         if root_path.is_dir():
             docs.extend(
-                d for d in sorted(root_path.rglob("*.md"))
+                d
+                for d in sorted(root_path.rglob("*.md"))
                 if not any(k in str(d) for k in NOISE_MARKERS)
             )
     _log(f"docs_scanned={len(docs)}")
@@ -326,14 +461,18 @@ def main() -> int:
         "updated": len(updated),
         "skipped": skipped,
         "truncated": truncated,
-        "new_items": [{"id": e["id"], "location": e["location"], "category": e["category"]} for e in new_items],
+        "new_items": [
+            {"id": e["id"], "location": e["location"], "category": e["category"]} for e in new_items
+        ],
         "updated_items": updated,
         "archived": archived,
     }
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     report_path = REPORT_DIR / f"{dt.date.today().isoformat()}.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    _log(f"new={len(new_items)} updated={len(updated)} skipped={skipped} total={len(data['sources'])}")
+    _log(
+        f"new={len(new_items)} updated={len(updated)} skipped={skipped} total={len(data['sources'])}"
+    )
     _log(f"report={report_path.relative_to(PROJECT_ROOT)}")
     return 0
 

@@ -19,7 +19,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from .replay_simulator import DiscoveryTree, DiscoveryNode, ReplayPool
+from .replay_simulator import DiscoveryNode, DiscoveryTree, ReplayPool
 
 EXTERNAL_INIT_WEIGHT = 0.5
 VERIFY_PASS_THRESHOLD = 0.6
@@ -75,7 +75,10 @@ class ExternalHarvester:
 
     def _run(self, cmd: List[str]) -> str:
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=FETCH_TIMEOUT,
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=FETCH_TIMEOUT,
         )
         if proc.returncode != 0:
             raise RuntimeError(proc.stderr.strip()[-500:])
@@ -94,7 +97,8 @@ class ExternalHarvester:
     def _effective_node_count(self, tree: DiscoveryTree) -> int:
         """有效节点数：排除根节点与纯叙事节点，用于空壳质量门。"""
         return sum(
-            1 for n in tree.nodes
+            1
+            for n in tree.nodes
             if isinstance(n.action, dict)
             and n.action.get("analyzer") not in (None, "", "init", "s33_rea_narrative")
         )
@@ -153,6 +157,7 @@ class ExternalHarvester:
         """E2 第 2 步：设计决策还原 → ADR 级决策节点（FAIL-OPEN）。"""
         try:
             from core.design_decision_recovery import recover_decisions
+
             result = recover_decisions(local_dir) or {}
         except Exception as exc:  # noqa: BLE001
             self._log(f"E2 recover_decisions unavailable: {exc}")
@@ -182,6 +187,7 @@ class ExternalHarvester:
         """E2 第 3 步：演化叙事 → 转折点节点（FAIL-OPEN）。"""
         try:
             from core.evolution_narrative import generate_narrative
+
             result = generate_narrative(local_dir) or {}
         except Exception as exc:  # noqa: BLE001
             self._log(f"E2 generate_narrative unavailable: {exc}")
@@ -212,9 +218,8 @@ class ExternalHarvester:
         findings: List[Dict[str, Any]] = []
         try:
             from core import architecture_pattern_detector
-            detect = getattr(
-                architecture_pattern_detector, "detect_architecture_patterns", None
-            )
+
+            detect = getattr(architecture_pattern_detector, "detect_architecture_patterns", None)
             if callable(detect):
                 result = detect(local_dir) or {}
                 findings = self._patterns_to_findings(result)
@@ -229,15 +234,19 @@ class ExternalHarvester:
         findings: List[Dict[str, Any]] = []
         for pat in result.get("patterns", []):
             if isinstance(pat, dict):
-                findings.append({
-                    "analyzer": "architecture_pattern_detector",
-                    "path": ", ".join(pat.get("matched_dirs", [])[:5]),
-                    "evidence_refs": [{
-                        "type": "pattern",
-                        "pattern": pat.get("pattern", ""),
-                    }],
-                    "poe_score": 0.5,
-                })
+                findings.append(
+                    {
+                        "analyzer": "architecture_pattern_detector",
+                        "path": ", ".join(pat.get("matched_dirs", [])[:5]),
+                        "evidence_refs": [
+                            {
+                                "type": "pattern",
+                                "pattern": pat.get("pattern", ""),
+                            }
+                        ],
+                        "poe_score": 0.5,
+                    }
+                )
         return findings
 
     def _fallback_scan(self, local_dir: str, patterns: List[str]) -> List[Dict[str, Any]]:
@@ -252,12 +261,14 @@ class ExternalHarvester:
                 rel = os.path.relpath(os.path.join(base, name), local_dir)
                 if patterns and not any(p in rel for p in patterns):
                     continue
-                results.append({
-                    "analyzer": "fallback_scan",
-                    "path": rel,
-                    "evidence_refs": [{"type": "file", "path": rel}],
-                    "poe_score": 0.3,
-                })
+                results.append(
+                    {
+                        "analyzer": "fallback_scan",
+                        "path": rel,
+                        "evidence_refs": [{"type": "file", "path": rel}],
+                        "poe_score": 0.3,
+                    }
+                )
             if len(results) >= 50:
                 break
         return results
@@ -347,11 +358,13 @@ class ExternalHarvester:
                     continue
                 effective = self._effective_node_count(tree)
                 if effective < MIN_EFFECTIVE_NODES:
-                    outcome.rejected.append({
-                        "source": source.location,
-                        "stage": "E2-quality",
-                        "effective_nodes": effective,
-                    })
+                    outcome.rejected.append(
+                        {
+                            "source": source.location,
+                            "stage": "E2-quality",
+                            "effective_nodes": effective,
+                        }
+                    )
                     continue
                 self._apply_metadata(tree, source, local_dir)
                 pass_rate = self.verify_tree(tree, source)
@@ -359,11 +372,13 @@ class ExternalHarvester:
                 if tree_id:
                     outcome.injected_trees.append(tree_id)
                 else:
-                    outcome.rejected.append({
-                        "source": source.location,
-                        "stage": "E3/E4",
-                        "pass_rate": pass_rate,
-                    })
+                    outcome.rejected.append(
+                        {
+                            "source": source.location,
+                            "stage": "E3/E4",
+                            "pass_rate": pass_rate,
+                        }
+                    )
             except Exception as exc:  # noqa: BLE001
                 outcome.errors.append(f"{source.location}: {exc}")
         outcome.ok = not outcome.errors
