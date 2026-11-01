@@ -31,6 +31,13 @@
 - 编译类开销 ≤20% 属云端实测门（本机无 runsc，未在本轮测量；strict 下不会静默直跑）
 - commit: `fa8a75e72a`
 
+### P4-4 人工评测工作流
+- 新增 `scorers/human/workflow.py`：`build_plan`（分层抽样 + 双标重叠 10–20%（默认 15%，D-03）+ 盲测 payload 禁止 expected/answer/version 等字段）、`resolve`（一致定稿；分歧必须第三方仲裁且记录理由，仲裁者不得为原标注者）、`consistency_report`（α ordinal 下限 0.67 / κ 下限 0.60，重叠样本 <2 判 INCONCLUSIVE）、`build_report`（仲裁样本计入最终分、未决样本不计分，输出分层工时、单样本成本、脱敏标注者 ID，rubric 版本绑定）
+- `scorers/model/calibration.py` 新增 `krippendorff_alpha_ordinal`：按 rubric 等级顺序计算序数 δ²（累积频率），相邻分歧惩罚小于跨级分歧
+- 测试：29 个用例（重叠比例 15%/越界拒绝、双标子集与 seed 确定性、盲测泄漏拒绝、一致/分歧/仲裁校验、α 跌破下限判 INCONCLUSIVE、重叠不足、ordinal α 强于 nominal、仲裁计入最终分、未决样本剔除、工时/成本/脱敏、rubric 绑定）；scorers/human/workflow.py 覆盖率 95%
+- 顺带修复 MinIO 缺依赖用例的环境依赖（`9d552907af`）
+- commit: `<待回填>`
+
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
 ### P3-1 凭证签发与校验

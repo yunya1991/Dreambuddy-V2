@@ -463,6 +463,7 @@ class Evaluator(Protocol):
 
 - 记录每层工时、单样本成本、标注者 ID（脱敏）
 - rubric 版本化，与 EvalSpec 绑定；rubric 变更需重算历史基线
+- 落地：`scorers/human/workflow.py`（`build_plan` 分层抽样 + 双标重叠 10–20%（默认 15%）+ 盲测 payload 校验；`resolve` 分歧强制第三方仲裁并记录理由；`consistency_report` 计算 α（ordinal）下限 0.67 与 κ 下限 0.60，不足判 INCONCLUSIVE；`build_report` 仲裁样本计入最终分，输出分层工时、单样本成本与脱敏标注者 ID）；`scorers/model/calibration.py` 新增 `krippendorff_alpha_ordinal`
 
 ---
 
