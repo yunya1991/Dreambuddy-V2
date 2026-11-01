@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-cli.py — evalctl 门禁 CLI（P0-6 / SPEC §13.4）
-==============================================
+cli.py — evalctl 门禁 CLI（P0-6 / P3-2 / P3-5 / SPEC §13.4）
+============================================================
 用法：
     evalctl gate --eval-id <id> [--wait [--timeout S] [--poll-interval S]]
+    evalctl enforce --kind deploy|l0_settle --eval-id <id> [--approval-id <id>] [--require-approval]
+    evalctl audit --eval-id <id>
 
-退出码（CI 据此阻断，禁止解析日志判断，§13.4）：
-    0 = PASS  2 = BLOCK  3 = INCONCLUSIVE  4 = ERROR（未知 id / 超时 / 未出分且未 --wait）
+退出码（CI / 部署脚本据此阻断，禁止解析日志判断，§13.4）：
+    0 = PASS / 影子观测   2 = BLOCK   3 = INCONCLUSIVE   4 = ERROR（未知 id / 无报告 / 超时）
 
-存储装配：
+装配：
 - 默认从环境变量 EVAL_PG_DSN 装配 PgRepo；未设置回退 InMemoryRepo（本地空跑）
-- 测试可注入 repo / sleeper，避免真实等待
+- `enforce` 的影子/实盘由 config/categories.yaml 的 gate.shadow 决定（唯一开关）
+- 27 审批台账路径由 EVAL_APPROVALS_LOG 给定；未配置即视为无审批（fail-closed）
 """
 
 from __future__ import annotations
@@ -63,6 +66,19 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     gate.add_argument("--timeout", type=float, default=60.0, help="--wait 最长等待秒数")
     gate.add_argument("--poll-interval", type=float, default=1.0, help="轮询间隔秒数")
+
+    enforce = sub.add_parser("enforce", help="部署 / L0 沉淀门禁卡点（凭证 + 双凭证）")
+    enforce.add_argument("--kind", required=True, choices=["deploy", "l0_settle"])
+    enforce.add_argument("--eval-id", required=True, help="45 受理返回的 eval_id")
+    enforce.add_argument("--approval-id", default=None, help="27 审批凭证 id（P3-4）")
+    enforce.add_argument(
+        "--require-approval",
+        action="store_true",
+        help="策略上线双凭证：必须同时持有 27 审批（SPEC §7）",
+    )
+
+    audit = sub.add_parser("audit", help="全链路审计查询：申请→执行→判定→门禁裁决")
+    audit.add_argument("--eval-id", required=True, help="评测受理返回的 eval_id")
     return parser
 
 
@@ -71,6 +87,9 @@ def main(
     repo: EvalRepo | None = None,
     sleeper: Callable[[float], None] = time.sleep,
     out: Any = sys.stdout,
+    shadow: bool | None = None,
+    approvals: Callable[[str], bool] | None = None,
+    audit_log: Any = None,
 ) -> int:
     """入口：返回退出码（不调用 sys.exit，便于测试注入）。"""
     args = _build_parser().parse_args(argv)
@@ -79,6 +98,10 @@ def main(
 
     if args.command == "gate":
         return _gate(args, repo, sleeper, out)
+    if args.command == "enforce":
+        return _enforce(args, repo, shadow, approvals, audit_log, out)
+    if args.command == "audit":
+        return _audit(args, repo, audit_log, out)
     print(f"未知命令: {args.command}", file=out)
     return EXIT_ERROR
 
@@ -132,6 +155,56 @@ def _gate(
         file=out,
     )
     return VERDICT_EXIT[verdict]
+
+
+def _enforce(
+    args: argparse.Namespace,
+    repo: EvalRepo,
+    shadow: bool | None,
+    approvals: Callable[[str], bool] | None,
+    audit_log: Any,
+    out: Any,
+) -> int:
+    from core.enforcement import Enforcer
+    from core.gate import Gate
+    from core.gateway import CategoriesConfig
+    from integrations.approvals import ApprovalChecker
+    from storage.audit import AuditLog
+
+    effective_shadow = CategoriesConfig.load().gate_shadow if shadow is None else shadow
+    checker = approvals if approvals is not None else ApprovalChecker()
+    log = audit_log if audit_log is not None else AuditLog()
+
+    decision = Enforcer(
+        gate=Gate(repo=repo), audit=log, shadow=effective_shadow, approvals=checker
+    ).enforce(
+        args.kind,
+        args.eval_id,
+        approval_id=args.approval_id,
+        require_approval=args.require_approval,
+    )
+    print(json.dumps(decision.to_dict(), ensure_ascii=False), file=out)
+    if decision.allowed:
+        return EXIT_PASS
+    if any("unknown_eval_id" in r or "no_report" in r for r in decision.reasons):
+        return EXIT_ERROR
+    return EXIT_BLOCK
+
+
+def _audit(args: argparse.Namespace, repo: EvalRepo, audit_log: Any, out: Any) -> int:
+    from core.audit_trace import TraceError, trace
+    from storage.audit import AuditLog
+
+    log = audit_log if audit_log is not None else AuditLog()
+    try:
+        payload = trace(repo, args.eval_id, log)
+    except TraceError as exc:
+        print(
+            json.dumps({"eval_id": args.eval_id, "error": str(exc)}, ensure_ascii=False), file=out
+        )
+        return EXIT_ERROR
+    print(json.dumps(payload, ensure_ascii=False, default=str), file=out)
+    return EXIT_PASS
 
 
 if __name__ == "__main__":  # pragma: no cover
