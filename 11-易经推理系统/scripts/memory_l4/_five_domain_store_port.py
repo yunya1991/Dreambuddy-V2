@@ -451,6 +451,35 @@ def fetch_top10_inflow_until(
         conn.close()
 
 
+def fetch_all_rows_id_desc(
+    db_path: str,
+    columns: str = "source, sub_category, metrics, timestamp, id",
+    switch: str = "FD_PROBE_STORE_PORT",
+) -> List[Any]:
+    """全量 records 行（id DESC，无过滤；_probe_sqlite_records 探针用）。
+
+    开关打开 → 走 RecordsStorePort（FAIL-OPEN 返回 []）；默认 legacy 直连（异常上抛）。
+    """
+    if _switch(switch):
+        try:
+            port = RecordsStorePort(db_path)
+            r = port.query(
+                "records",
+                columns=columns,
+                order_by="id DESC",
+                limit=1000000,
+            )
+            return r.get("rows") or []
+        except Exception:
+            return []  # FAIL-OPEN
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        return conn.execute("SELECT " + columns + " FROM records ORDER BY id DESC").fetchall()
+    finally:
+        conn.close()
+
+
 __all__ = [
     "RecordsStorePort",
     "fetch_rows_by_sources",
@@ -460,4 +489,5 @@ __all__ = [
     "fetch_latest_row",
     "fetch_latest_rows_for_pairs",
     "fetch_top10_inflow_until",
+    "fetch_all_rows_id_desc",
 ]
