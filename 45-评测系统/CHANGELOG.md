@@ -44,7 +44,7 @@
 - 告警：积压 ≥ 阈值（默认 10）→ warning；SLA 达标率 <90% → critical（SPEC §14.5）；灰度期 SLA 目标 90%、正式期 95%
 - `config/slo.yaml` 可覆盖目标与告警阈值；CLI 新增 `evalctl slo [--signals] [--config]`（输出 JSON，退出码 0；信号/配置非法 → 4）
 - 测试：14 个用例（9 项 KPI 定义、空仓、积压告警、SLA 告警、灰度目标、信号填充、缺失 no_data、未知信号拒绝、配置默认/覆盖、CLI 三态）；core/slo.py 覆盖率 93%
-- commit: `<待回填>`
+- commit: `bdc49e579c`
 
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
