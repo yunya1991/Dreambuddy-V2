@@ -13,7 +13,7 @@
 - CLI 新增 `evalctl evidence --eval-id --out` 与 `evalctl evidence --verify <bundle> [--require-signature]`（0 通过 / 4 失败）
 - 测试：26 个用例（链链路、字段篡改、断链乱序、Merkle 空/单/双/奇/顺序、包篡改四类、错密钥、缺密钥、CLI 构建与验证）；storage/evidence.py 覆盖率 96%
 - 签名采用 HMAC-SHA256（§13.3 同族）；Sigstore/in-toto 与 WORM 留待 P4-2 及后续升级
-- commit: `PENDING`
+- commit: `3b58782962`
 
 ## [0.4.0] — 2026-11-01 — P3 强制门禁
 
