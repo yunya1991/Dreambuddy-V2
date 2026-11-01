@@ -28,7 +28,7 @@
 - 新增 `evaluators/finance/backtest.py`：PSR（Bailey 公式）、DSR（期望最大 Sharpe 基准）、PBO（CSCV S=16）、`_sharpe`
 - 出分 F-H6 overfit（N_trials 未登记 / PBO>0.50 → BLOCK）与 F-H7 significance（DSR<0.95、OOS<100、折数<5 → INCONCLUSIVE）
 - 测试：25 个用例（含论文公式参考值 0.975602 / 0.519755 / 2.530603、PBO 极端样例）；evaluators 覆盖率 95%
-- commit: `待填`
+- commit: `280fef9010`
 
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
 
