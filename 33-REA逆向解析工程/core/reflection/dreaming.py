@@ -96,6 +96,7 @@ def replay_objective(
 def generate_candidates(
     current: Dict[str, Any],
     max_candidates: int = 8,
+    pool: Optional["ReplayPool"] = None,
 ) -> List[Dict[str, Any]]:
     """从当前策略配置变换生成候选策略集（含当前策略本身）。
 
@@ -108,6 +109,31 @@ def generate_candidates(
     当前策略始终在候选集中（不劣化保证）。
     """
     candidates: List[Dict[str, Any]] = [dict(current)]  # 当前策略排第一
+    # 0. 池序列挖掘（SPEC §9-1）：internal+external 树动作序列进入候选集，否则 V 贡献 0
+    if pool is not None:
+        budget0 = dict(current.get("budget") or {})
+        max_calls0 = max(1, int(budget0.get("max_calls") or 10))
+        seen_seqs = {tuple(current.get("analyzer_sequence") or [])}
+        for tree in pool.list_trees():
+            actions = [
+                n.action.get("analyzer", "")
+                for n in tree.nodes
+                if n.parent_id is not None and n.action.get("analyzer")
+            ]
+            if not actions:
+                continue
+            actions = actions[:max_calls0]
+            key = tuple(actions)
+            if key in seen_seqs:
+                continue
+            seen_seqs.add(key)
+            cand = dict(current)
+            cand["analyzer_sequence"] = actions
+            cand["transform"] = f"pool_{tree.provenance}_{tree.tree_id[:12]}"
+            candidates.append(cand)
+            if len(candidates) >= max_candidates:
+                return candidates
+
     seq = list(current.get("analyzer_sequence") or [])
     budget = dict(current.get("budget") or {})
     max_calls = int(budget.get("max_calls") or 10)
@@ -166,11 +192,14 @@ class DreamingLoop:
         pool: ReplayPool,
         lam: float = DEFAULT_LAMBDA,
         max_rounds: int = 10,
+        max_trees: int = 200,
     ):
         self.pool = pool
         self.sim = ReplaySimulator(pool)
         self.lam = lam
         self.max_rounds = max_rounds
+        # 抽样限制：回放池树数超过上限时均匀抽样，避免全量重放开销
+        self.max_trees = max(1, int(max_trees))
 
     def evaluate_strategy(
         self,
@@ -181,7 +210,11 @@ class DreamingLoop:
         parallelism = max(1, int(strategy.get("parallelism") or 1))
         v_values: List[float] = []
         per_tree: List[Dict[str, Any]] = []
-        for tree in self.pool.list_trees():
+        trees = self.pool.list_trees()
+        if len(trees) > self.max_trees:
+            step = len(trees) / self.max_trees
+            trees = [trees[int(i * step)] for i in range(self.max_trees)]
+        for tree in trees:
             r = self.sim.replay(tree, strategy, self.max_rounds)
             r["parallelism"] = parallelism
             v = replay_objective(r, budget, self.lam)
@@ -212,7 +245,7 @@ class DreamingLoop:
                candidates: [{strategy, avg_v}], selection_rule}
         """
         eval_ready = self.pool.eval_ready()
-        candidates = generate_candidates(current, max_candidates)
+        candidates = generate_candidates(current, max_candidates, pool=self.pool)
         evaluated = [self.evaluate_strategy(c) for c in candidates]
         # 不劣化保证：当前策略（candidates[0]）始终参与比较
         best = max(evaluated, key=lambda e: e["avg_v"])

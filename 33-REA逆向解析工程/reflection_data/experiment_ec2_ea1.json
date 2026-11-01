@@ -1,0 +1,38 @@
+{
+  "experiment": "E-C2 + E-A1-static",
+  "ec2": {
+    "strategy": {
+      "analyzer_sequence": [
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan",
+        "fallback_scan"
+      ],
+      "budget": {
+        "max_calls": 10
+      },
+      "parallelism": 2
+    },
+    "internal_trees": 200,
+    "external_trees": 11,
+    "v_internal_only": 0.0,
+    "v_full_pool": 0.006448,
+    "delta": 0.006448,
+    "improve_pct": null
+  },
+  "ea1_static": {
+    "base_constraints": 0,
+    "base_poe": 0.0,
+    "base_passed": false,
+    "enh_constraints": 20,
+    "enh_poe": 1.0,
+    "enh_passed": true,
+    "matched_trees": 11
+  }
+}

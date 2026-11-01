@@ -112,6 +112,15 @@ def S33_rea_analyze(params: Dict[str, Any]) -> Dict[str, Any]:
 
     scope = str(params.get("scope") or "architecture")
     trace_id = str(params.get("trace_id") or _gen_trace_id("s33an"))
+    # 记录器：日常分析自动回流回放池（FAIL-OPEN，失败不阻断分析）
+    recorder = None
+    try:
+        from core.reflection.recorder import AnalysisRecorder
+        recorder = AnalysisRecorder(pool_dir=str(params.get("pool_dir") or "reflection_data/replay_pool"))
+        if not recorder.begin({"target": target, "task_type": "analyze", "scope": scope}):
+            recorder = None
+    except Exception:
+        recorder = None
 
     try:
         # 根据目标类型选择分析器
@@ -119,11 +128,25 @@ def S33_rea_analyze(params: Dict[str, Any]) -> Dict[str, Any]:
             # 单文件分析
             analyzer = PythonAnalyzer()
             result = analyzer.analyze(target)
+            if recorder is not None:
+                try:
+                    recorder.record("python_analyzer", params={"target": target},
+                                    poe_score=0.8, cost_calls=1,
+                                    evidence_refs=[{"source": "s33_rea_analyze", "detail": "单文件 AST 分析"}])
+                except Exception:
+                    pass
+            tree_id = None
+            if recorder is not None:
+                try:
+                    tree_id = recorder.commit()
+                except Exception:
+                    tree_id = None
             return _make_output("S33_rea_analyze", trace_id, ok=True, result={
                 "summary": result.summary,
                 "evidence": [e.to_dict() for e in result.evidence],
                 "raw": result.raw,
                 "trace_id": trace_id,
+                "replay_tree_id": tree_id,
             })
         elif os.path.isdir(target):
             # 目录级分析：依赖图 + 调用链
@@ -153,6 +176,22 @@ def S33_rea_analyze(params: Dict[str, Any]) -> Dict[str, Any]:
                 f"架构分析: {len(modules)} 模块, {n_edges} 依赖, "
                 f"{n_cycles} 循环依赖, {n_funcs} 函数"
             )
+            if recorder is not None:
+                try:
+                    recorder.record("dependency_graph", params={"target": target},
+                                    poe_score=0.8, cost_calls=1,
+                                    evidence_refs=[{"source": "s33_rea_analyze", "detail": "依赖图构建"}])
+                    recorder.record("call_chain_tracer", params={"target": target},
+                                    poe_score=0.8, cost_calls=1,
+                                    evidence_refs=[{"source": "s33_rea_analyze", "detail": "调用链追踪"}])
+                except Exception:
+                    pass
+            tree_id = None
+            if recorder is not None:
+                try:
+                    tree_id = recorder.commit()
+                except Exception:
+                    tree_id = None
 
             return _make_output("S33_rea_analyze", trace_id, ok=True, result={
                 "summary": summary,
@@ -167,6 +206,7 @@ def S33_rea_analyze(params: Dict[str, Any]) -> Dict[str, Any]:
                     },
                 },
                 "trace_id": trace_id,
+                "replay_tree_id": tree_id,
             })
         else:
             return _make_output(
@@ -741,8 +781,34 @@ def S33_rea_dream(params: Dict[str, Any]) -> Dict[str, Any]:
             str(params.get("trace_id") or _gen_trace_id("s33dm")),
             ok=False, result={}, error="pool_not_eval_ready",
         )
+    # current 策略：调用方显式传入优先；缺省从回放池最近内部树推导
+    current = params.get("current")
+    if not isinstance(current, dict) or not current.get("analyzer_sequence"):
+        trees = pool.list_trees("internal")
+        if not trees:
+            return _make_output(
+                "S33_rea_dream",
+                str(params.get("trace_id") or _gen_trace_id("s33dm")),
+                ok=False, result={},
+                error="missing_current_and_no_internal_tree",
+            )
+        latest = trees[-1]
+        seq = []
+        for node in latest.nodes:
+            analyzer = (node.action or {}).get("analyzer")
+            if analyzer and analyzer != "init":
+                seq.append(analyzer)
+        if not seq:
+            seq = [n.action.get("analyzer") for n in latest.nodes if n.action.get("analyzer")][:4]
+        current = {
+            "budget": {"max_calls": 10},
+            "parallelism": 1,
+            "analyzer_sequence": seq,
+            "transform": "current",
+        }
     loop = DreamingLoop(pool)
-    result = loop.dream()
+    result = loop.dream(current)
+    result["current_derived_from_pool"] = not isinstance(params.get("current"), dict)
     return _make_output(
         "S33_rea_dream",
         str(params.get("trace_id") or _gen_trace_id("s33dm")),

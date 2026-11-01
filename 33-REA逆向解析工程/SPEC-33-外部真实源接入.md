@@ -216,16 +216,16 @@ for t in p.list_trees('external'):
 
 | 类别 | 源（wave1） | 可拉取 | 可解析 | 许可 | 体积 | 备注 |
 |---|---|---|---|---|---|---|
-| 数据采集 | dlt |  |  |  |  |  |
-| 数据库 | sqlite-utils |  |  |  |  |  |
-| 搜索引擎 | whoosh |  |  |  |  |  |
-| 广义认知 | letta |  |  |  |  |  |
-| 逆向解析 | code2flow |  |  |  |  |  |
-| 金融交易 | backtrader |  |  |  |  |  |
-| 前端产品 | zustand |  |  |  |  |  |
-| AI 训练 | peft |  |  |  |  |  |
-| DreamOS | langgraph |  |  |  |  |  |
-| DSH | mcp-python-sdk / pluggy |  |  |  |  |  |
+| 数据采集 | dlt | Y | Y | Y (Apache-2.0) | Y | commit=f3b6223c，380 节点/320 决策（2026-11-01 实测） |
+| 数据库 | sqlite-utils | Y | Y | Y (Apache-2.0) | Y | commit=9c66bafa，70 节点/2 决策（2026-11-01 实测） |
+| 搜索引擎 | whoosh | Y | Y | Y (BSD-2-Clause) | Y | commit=d9a3fa2a，68 节点/13 决策（2026-11-01 实测） |
+| 广义认知 | letta | Y | Y | Y (Apache-2.0) | Y | commit=8816d3a8，2 节点/0 决策（2026-11-01 实测） |
+| 逆向解析 | code2flow | Y | Y | Y (MIT) | Y | commit=c2c22afe，55 节点/3 决策（2026-11-01 实测） |
+| 金融交易 | backtrader | Y | Y | Y (GPL-3.0) | Y | commit=b853d7c9，64 节点/12 决策（2026-11-01 实测） |
+| 前端产品 | zustand | Y | Y | Y (MIT) | Y | commit=382d29c4，29 节点/0 决策（2026-11-01 实测） |
+| AI 训练 | peft | Y | Y | Y (Apache-2.0) | Y | commit=03412afc，177 节点/125 决策（2026-11-01 实测） |
+| DreamOS | langgraph | Y | Y | Y (MIT) | Y | commit=e5c961d7，63 节点/11 决策（2026-11-01 实测） |
+| DSH | mcp-python-sdk / pluggy | Y | Y | Y (MIT) | Y | mcp-python-sdk commit=d7845c07，pluggy commit=3fc9e561（2026-11-01 实测） |
 
 ## 11. 离线源快照分发（预下载 → 压缩包 → 云端按需解压）
 

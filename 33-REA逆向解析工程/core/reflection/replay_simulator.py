@@ -103,6 +103,12 @@ class DiscoveryTree:
     source_label: str = ""
     weight: float = 1.0
     created_at: int = field(default_factory=_now_ms)
+    # 外部源元数据（SPEC-33-外部真实源接入 §9-5，A2 验收要求）
+    source_id: str = ""
+    repo_url: str = ""
+    commit: str = ""
+    license: str = ""
+    collected_at: int = 0
 
     def __post_init__(self) -> None:
         if self.provenance == "external" and self.weight == 1.0:
@@ -155,6 +161,11 @@ class DiscoveryTree:
             "source_label": self.source_label,
             "weight": self.weight,
             "created_at": self.created_at,
+            "source_id": self.source_id,
+            "repo_url": self.repo_url,
+            "commit": self.commit,
+            "license": self.license,
+            "collected_at": self.collected_at,
         }
 
     @classmethod
@@ -167,6 +178,11 @@ class DiscoveryTree:
             source_label=str(data.get("source_label") or ""),
             weight=float(data.get("weight") or 1.0),
             created_at=int(data.get("created_at") or _now_ms()),
+            source_id=str(data.get("source_id") or ""),
+            repo_url=str(data.get("repo_url") or ""),
+            commit=str(data.get("commit") or ""),
+            license=str(data.get("license") or ""),
+            collected_at=int(data.get("collected_at") or 0),
         )
 
     @classmethod
