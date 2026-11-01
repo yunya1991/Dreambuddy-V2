@@ -47,6 +47,12 @@
 - 新增 `evaluators/engineering/scan.py`：E-H1 秘密泄露、E-H2 漏洞（CRITICAL / HIGH 有修复版本）、E-H3 三方一致（build digest ↔ SBOM + attestation）、E-H5 旁路痕迹（8 条模式）
 - 四个 hard item 各自出分；命中即 BLOCK
 - 测试：14 个用例（含 6 类旁路痕迹参数化）；engineering 覆盖率 100%
+- commit: `9a396ef1db`
+
+### P2-8 工程-测试与基准
+- 新增 `evaluators/engineering/tests.py`：E-H4 diff coverage 按 base_sha 自算（缺 base_sha/job 签名即 BLOCK，无新增行 INCONCLUSIVE）、E-W5 pycg F1、E-W6 Scorecard
+- 阈值：diff coverage ≥0.80、pycg F1 ≥0.70、Scorecard ≥7.0
+- 测试：16 个用例；engineering 覆盖率 100%
 - commit: `待填`
 
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
