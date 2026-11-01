@@ -23,6 +23,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
+from storage.index_publisher import ReportPublisher
 from storage.repo import EvalRepo
 
 from core.callbacks import CallbackDispatcher, ShadowDispatcher
@@ -51,6 +52,7 @@ class RunOutcome:
     attempts: int
     run_id: str | None
     error: str | None
+    report_uri: str | None = None  # P1-4：落盘/登记后的报告 URI
 
 
 class TaskQueue(Protocol):
@@ -142,6 +144,7 @@ class Runner:
         poll_interval: float = 0.1,
         dispatcher: CallbackDispatcher | None = None,
         metrics: Metrics | None = None,
+        publisher: ReportPublisher | None = None,
     ) -> None:
         self._repo = repo
         self._reporter = reporter
@@ -154,6 +157,7 @@ class Runner:
         # 默认影子分发：未显式装配时绝不触发下游回调（P1-3 安全默认）
         self._dispatcher = dispatcher or ShadowDispatcher()
         self._metrics = metrics
+        self._publisher = publisher
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -270,8 +274,25 @@ class Runner:
         # 自定义执行器未负责状态时兜底：running → succeeded
         if request is not None and request.status == "running":
             self._repo.update_status(eval_id, "succeeded")
+        report_uri = self._publish(eval_id, result)
         # 判定回调：影子模式只记录，实盘才真正回调（P1-3）
         if isinstance(result, dict) and result.get("verdict"):
             self._dispatcher.dispatch(eval_id, str(result["verdict"]), result)
-        logger.info("eval 执行成功 eval_id=%s attempts=%d run_id=%s", eval_id, attempts, run_id)
-        return RunOutcome(eval_id, "succeeded", attempts, run_id, None)
+        logger.info(
+            "eval 执行成功 eval_id=%s attempts=%d run_id=%s report_uri=%s",
+            eval_id,
+            attempts,
+            run_id,
+            report_uri,
+        )
+        return RunOutcome(eval_id, "succeeded", attempts, run_id, None, report_uri)
+
+    def _publish(self, eval_id: str, result: Any) -> str | None:
+        """报告落盘 + 41 索引钩子；失败 fail-open（评测结果不受影响）。"""
+        if self._publisher is None or not isinstance(result, dict):
+            return None
+        try:
+            return self._publisher.publish(result).uri
+        except Exception as exc:  # noqa: BLE001 — 发布失败不得把成功执行改判为失败
+            logger.error("报告发布失败（fail-open）eval_id=%s: %s", eval_id, exc)
+            return None
