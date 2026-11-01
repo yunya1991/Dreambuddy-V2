@@ -2696,6 +2696,168 @@
       "verified": true,
       "stars": 1711,
       "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "scaling-verification",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/HazyResearch/scaling-verification",
+      "label": "HazyResearch/scaling-verification",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/stanford-llm-self-verification-research-report.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 33,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "robomonkey",
+      "category": "llm_training",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/robomonkey-vla/RoboMonkey",
+      "label": "robomonkey-vla/RoboMonkey",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": ".trae/documents/stanford-llm-self-verification-research-report.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 47,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "btc-enhanced-dca",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/Eumenides-K/btc-enhanced-dca",
+      "label": "Eumenides-K/btc-enhanced-dca",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/btc-enhanced-dca.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 0,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "mefai-autotrade",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/mefai-dev/mefai-autotrade",
+      "label": "mefai-dev/mefai-autotrade",
+      "language": "Python",
+      "license": "Apache-2.0",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/mefai-autotrade.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 10,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "lob-regime-scanner",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/CameronScarpati/lob-regime-scanner",
+      "label": "CameronScarpati/lob-regime-scanner",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/lob-regime-scanner.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 19,
+      "last_checked_at": "2026-11-01"
+    },
+    {
+      "id": "trading-bot",
+      "category": "finance_models",
+      "level": "qualified",
+      "priority": "P3",
+      "wave": 4,
+      "source_type": "github_repo",
+      "location": "https://github.com/EliasAbouKhater/trading-bot",
+      "label": "EliasAbouKhater/trading-bot",
+      "language": "Python",
+      "license": "MIT",
+      "patterns": [
+        "src",
+        "docs"
+      ],
+      "expected_analyzers": [
+        "architecture_pattern_detector",
+        "python_analyzer"
+      ],
+      "extract_target": "待人工补全（自动抽取，未评估架构映射）",
+      "size_cap_mb": 50,
+      "discovered_from": "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/trading-bot.md",
+      "discovered_at": "2026-11-01",
+      "verified": true,
+      "stars": 0,
+      "last_checked_at": "2026-11-01"
     }
   ]
 }
