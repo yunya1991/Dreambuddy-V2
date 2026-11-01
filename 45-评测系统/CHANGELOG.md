@@ -59,7 +59,7 @@
 - 新增 `evaluators/registry.py`：`(name, version)` 唯一注册、重复注册拒绝；`resolve` 未注册/错版本抛 `EvaluatorNotFoundError`（默认拒绝执行）；`lock` 钉住当前版本写入报告；版本格式 `MAJOR.MINOR.PATCH`
 - `load_defaults()` 注册 P2 全部 7 个内置评测器（`e3`、`finance-availability`、`finance-backtest-stats`、`ai-judge-calibration`、`ai-stress`、`engineering-scan`、`engineering-tests`，均为 `1.0.0`）
 - 测试：13 个用例（含非法版本参数化、重复注册、锁定后新增版本不影响已锁定引用）
-- commit: `待填`
+- commit: `71a84f8624`
 
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
 
