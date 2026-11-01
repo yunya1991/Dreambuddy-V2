@@ -35,6 +35,12 @@
 - 新增 `scorers/model/position_swap.py`：顺序对调两遍评审、映射回 A/B、flip 留痕
 - 新增 `evaluators/ai/judge.py`：A-H4 判定（样本≥200、κ≥0.60、α≥0.67，否则 INCONCLUSIVE）
 - 测试：16 个用例（含 κ=0.666667 / α=0.657143 参考值、首位偏好检出）；evaluators+scorers 覆盖率 95%
+- commit: `7078853d88`
+
+### P2-6 AI-压测与人工工作流
+- 新增 `evaluators/ai/stress.py`：A-W2 达标率（p95/吞吐/错误率三阈值 + 样本≥30 + 目标 0.80）
+- 新增 `scorers/human/sampling.py`：分层抽样（每层至少 1、比例分配、余数给最大小数层、固定 seed 可复算）
+- 测试：13 个用例；evaluators+scorers 覆盖率 95%
 - commit: `待填`
 
 ## [0.2.0] — 2026-11-01 — P1 灰度受理（只受理不拦截）
