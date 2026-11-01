@@ -34,6 +34,7 @@ from core.gateway import (
 )
 from core.registry import ThresholdRegistry
 from core.reporter import Reporter
+from core.runner import Runner
 from fastapi import FastAPI, Header, Query, Request
 from fastapi.responses import JSONResponse
 from storage.repo import EvalRepo, InMemoryRepo, parse_zulu, zulu
@@ -49,8 +50,13 @@ def create_app(
     repo: EvalRepo | None = None,
     gateway: Gateway | None = None,
     reporter: Reporter | None = None,
+    runner: Runner | None = None,
 ) -> FastAPI:
-    """应用工厂：默认内存装配（本地空跑/单测）；生产注入 PgRepo 装配。"""
+    """应用工厂：默认内存装配（本地空跑/单测）；生产注入 PgRepo 装配。
+
+    runner 非空时，受理成功即入队（P1-2 受理→排队）；默认 None（只受理不执行，
+    避免 API 进程内隐式跑评测）。
+    """
     if repo is None:
         repo = InMemoryRepo()
     if gateway is None:
@@ -62,6 +68,7 @@ def create_app(
     app.state.repo = repo
     app.state.gateway = gateway
     app.state.reporter = reporter
+    app.state.runner = runner
 
     # ---------- 错误映射 ----------
 
@@ -89,6 +96,8 @@ def create_app(
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> dict[str, Any]:
         result = gateway.submit(payload, idempotency_key)
+        if runner is not None:
+            runner.enqueue(result.eval_id, payload.get("priority", "normal"))
         return {
             "eval_id": result.eval_id,
             "status": result.status,

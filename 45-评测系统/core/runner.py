@@ -25,6 +25,7 @@ from typing import Any, Callable, Protocol
 
 from storage.repo import EvalRepo
 
+from core.callbacks import CallbackDispatcher, ShadowDispatcher
 from core.reporter import Reporter
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,7 @@ class Runner:
         backoff_base: float = 1.0,
         sleeper: Callable[[float], None] | None = None,
         poll_interval: float = 0.1,
+        dispatcher: CallbackDispatcher | None = None,
     ) -> None:
         self._repo = repo
         self._reporter = reporter
@@ -147,10 +149,16 @@ class Runner:
         self._backoff_base = backoff_base
         self._sleeper = sleeper or time.sleep
         self._poll_interval = poll_interval
+        # 默认影子分发：未显式装配时绝不触发下游回调（P1-3 安全默认）
+        self._dispatcher = dispatcher or ShadowDispatcher()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
     # ---------- 入队 / 取消 ----------
+
+    @property
+    def queue(self) -> TaskQueue:
+        return self._queue
 
     def enqueue(self, eval_id: str, priority: str = "normal") -> bool:
         return self._queue.put(eval_id, priority)
@@ -255,5 +263,8 @@ class Runner:
         # 自定义执行器未负责状态时兜底：running → succeeded
         if request is not None and request.status == "running":
             self._repo.update_status(eval_id, "succeeded")
+        # 判定回调：影子模式只记录，实盘才真正回调（P1-3）
+        if isinstance(result, dict) and result.get("verdict"):
+            self._dispatcher.dispatch(eval_id, str(result["verdict"]), result)
         logger.info("eval 执行成功 eval_id=%s attempts=%d run_id=%s", eval_id, attempts, run_id)
         return RunOutcome(eval_id, "succeeded", attempts, run_id, None)

@@ -27,6 +27,7 @@ from api.routes import create_app  # noqa: E402
 from core.gateway import CategoriesConfig, Gateway, spec_hash_placeholder  # noqa: E402
 from core.registry import ThresholdRegistry  # noqa: E402
 from core.reporter import Reporter  # noqa: E402
+from core.runner import Runner  # noqa: E402
 from storage.repo import EvalItemRecord, EvalRunRecord, InMemoryRepo  # noqa: E402
 
 NOW = datetime(2026, 11, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -126,6 +127,16 @@ def test_submit_accepted_202(stack):
     assert body["status"] == "accepted"
     assert body["eval_id"].startswith("EV-20261101-")
     assert body["spec_hash"] == SPEC_HASH
+
+
+def test_submit_enqueues_when_runner_attached(stack):
+    """P1-2 接线：装配 runner 时受理成功即入队（默认不装配，避免隐式跑评测）。"""
+    repo, gateway, reporter, _ = stack
+    runner = Runner(repo=repo, reporter=reporter)
+    client = TestClient(create_app(repo=repo, gateway=gateway, reporter=reporter, runner=runner))
+    resp = submit(client)
+    assert resp.status_code == 202
+    assert len(runner.queue) == 1
 
 
 def test_submit_idempotent_replay_same_eval_id(stack):
