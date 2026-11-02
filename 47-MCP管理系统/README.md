@@ -25,12 +25,14 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约�
 
 | 文档 | 位置 | 关系 |
 |---|---|---|
-| REPORT-L0-MCP-DSH-IMPACT v1.0 | `46-DSH架构/docs/tech/` | 影响评估（本 SPEC 上游，已修正 F1/F2） |
-| ANALYSIS-L0-MCP-ENCAPSULATION v0.2 | `46-DSH架构/docs/tech/` | 评估底稿 |
-| SPEC-L0-three-layer-architecture v0.5 | `44-三端协作架构系统/docs/tech/` | 六 port + 统一信封（内层不动） |
+| REPORT-L0-MCP-DSH-IMPACT v1.1 | `46-DSH架构/docs/tech/` | 影响评估（本 SPEC 上游，评估归档，已勘误 F1/F2/F6/F7） |
+| ANALYSIS-L0-MCP-ENCAPSULATION | `46-DSH架构/docs/tech/` | 评估底稿 |
+| SPEC-L0-three-layer-architecture | `44-三端协作架构系统/docs/tech/` | 六 port + 统一信封（内层不动） |
 | COLLABORATION-CONTRACT.md | `35-广义认知系统协作模块/` | 认知 MCP 工具面协作契约（待按 SPEC §6.3 更新 scope/写门禁） |
 
 ## 存量 MCP 面登记（契约注册表 P0 前过渡）
+
+> **状态说明**: 契约注册表 `registry/mcp_capabilities.yaml` 与顶层 `mcp_shells/` 目录均为 **P0 交付物，当前尚未创建**；下表为注册表落地前的过渡登记。
 
 | 面 | 类型 | 工具数 | 位置 |
 |---|---|---|---|
