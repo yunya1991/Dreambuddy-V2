@@ -1,0 +1,26 @@
+{
+  "_note": "L0 MCP 双模 profile 模板（M3⑧）。<REPO_ROOT> 替换为仓库根绝对路径；本地只读 profile 与云端 ssh profile 互斥，宿主 mcp.json 只启用其一。",
+  "_reference": "47-MCP管理系统/docs/tech/TECH-L0-MCP-v0.1.md §5.3",
+  "profiles": {
+    "cognitive-local": {
+      "description": "本地只读降级：COGNITIVE_MCP_MODE=local，record/verify 明确拒绝（ok=false, error_code=conflict）",
+      "command": "python3",
+      "args": ["<REPO_ROOT>/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"],
+      "env": {
+        "COGNITIVE_MCP_MODE": "local",
+        "PYTHONPATH": "<REPO_ROOT>"
+      }
+    },
+    "cognitive-cloud-ssh": {
+      "description": "云端 ssh 单一事实源：写工具需宿主 Mandate 授权",
+      "command": "ssh",
+      "args": [
+        "-o",
+        "BatchMode=yes",
+        "dreambuddy-remote",
+        "sudo -n -u luke -H env PYTHONPATH=/home/luke/dreambuddy/4-MEMORY/9-工具与接口 /home/luke/venv-trading/bin/python /home/luke/dreambuddy/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}

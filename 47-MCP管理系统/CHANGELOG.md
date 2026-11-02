@@ -1,5 +1,23 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 M2/M3 收口缺口修复（注册表/双模/CI/trace_id）
+
+### 修正
+
+- **注册表 V6 对齐**：新增 `l0.rea.mcp`（6 个两段式 submit/poll 工具，status=available # M3⑦）；`l0.rea-client.mcp` 转 `deprecated`（被前者取代，保留登记不删）
+- **envelope_version 统一**：`l0.data.mcp` / `l0.eval.mcp` / `l0.store-admin.mcp` 由 0.2 回正为 **0.1**，与 `mcp_shells/_shared/envelope_wrap.py` 的 `ENVELOPE_VERSION` 一致
+- **任务号注释回正**：data M2⑤ / eval M2⑥ / store-admin M4⑩；`l0.eval.mcp` 的 `capability_id` 回填为 `l0.rea`（C6 仅 5 个 id，不新增）
+- **双模变量名统一（V7）**：TECH §5.3 的 `MCP_PROFILE=local-readonly` 改为实现真值 `COGNITIVE_MCP_MODE=local`；新增 `registry/mcp_profiles.json` 模板（cognitive-local / cognitive-cloud-ssh）
+
+### 新增
+
+- **CI 阻断**：`l0-contracts.yml` 追加 `python -m pytest mcp_shells/ -v`（M2/M3/M4 壳契约测试）
+- **V5 trace_id 贯穿断言**：`mcp_shells/test_trace_id_coverage.py`，4 壳（data/eval/rea/store-admin）验证 `MCP_TRACE_ID` → 信封 `trace_id`，并校验 source/version/三态
+
+### 索引同步
+
+- M2④ `19-数据访问层/docs/CONNECTION_GOVERNANCE.md` 补入 19 ENGINEERING_INDEX 文件树与 `0-系统文档管理/INDEX.md` 文档计数（7→8）
+
 ## 2026-11-02 PLAN v0.2 修正（本地审查云端产出）
 
 ### 背景

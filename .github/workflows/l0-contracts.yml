@@ -47,3 +47,6 @@ jobs:
       - name: Run L0 contract tests
         run: |
           python -m pytest '44-三端协作架构系统/shared/tests/' -v --tb=short
+      - name: Run MCP shell contract tests (M2/M3/M4 + V5 trace_id 贯穿)
+        run: |
+          python -m pytest mcp_shells/ -v --tb=short

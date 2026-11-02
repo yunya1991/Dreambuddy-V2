@@ -304,19 +304,22 @@ result = json.loads(result) if isinstance(result, str) else result
 
 | 场景 | record / verify / distill_aliases / training_feed |
 |---|---|
-| **本地 profile**（cognitive-local） | 写工具**禁用**，返回 `ok=false, error_code=unavailable, meta.reason=local-readonly` |
+| **本地 profile**（cognitive-local） | 写工具**禁用**，返回 `ok=false, error_code=conflict, meta.reason` 含 `local readonly mode (D5)`，stderr 审计 `write_denied` |
 | **云端 ssh profile** | 需宿主 mcp.json 声明 Mandate scope，未声明返回 `ok=false, error_code=conflict, meta.reason=missing-mandate` |
 
-本地 profile 配置示例（mcp.json）：
+双模开关是环境变量 **`COGNITIVE_MCP_MODE`**（实现：[cognitive_mcp_server.py](../../../4-MEMORY/9-工具与接口/cognitive_mcp_server.py#L56)）：
+`local` = 本地只读降级，`ssh`（默认）= 云端单一事实源。变量名与实现必须一致（V7）。
+
+本地 profile 配置示例（可直接从模板 [mcp_profiles.json](../../registry/mcp_profiles.json) 复制 `profiles.cognitive-local`）：
 ```json
 {
   "mcpServers": {
     "cognitive-local": {
       "command": "python3",
-      "args": ["4-MEMORY/9-工具与接口/cognitive_mcp_server.py"],
+      "args": ["<REPO_ROOT>/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"],
       "env": {
-        "MCP_PROFILE": "local-readonly",
-        "PYTHONPATH": "/home/luke/dreambuddy"
+        "COGNITIVE_MCP_MODE": "local",
+        "PYTHONPATH": "<REPO_ROOT>"
       }
     }
   }

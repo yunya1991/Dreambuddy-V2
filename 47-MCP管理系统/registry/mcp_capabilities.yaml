@@ -126,14 +126,62 @@ shells:
         requires_mandate: true
         annotations: { readOnlyHint: false, destructiveHint: true }
 
-  # 壳 ③ REA client（npm rea-agents 133 工具，REA 域服务面；本 MCP 壳为 consumer）
+  # 壳 ③ REA 壳（M3⑦ 落地）：两段式异步 submit/poll × analyze/trace/compare 共 6 工具
+  # 异步工具强制配持久层（JSONL job store），无持久层不得暴露（SPEC-L0 §3.2）
+  - shell_id: l0.rea.mcp
+    capability_id: l0.rea
+    transport: stdio
+    shell_path: "mcp_shells/l0_rea/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.1"
+    status: available                  # M3⑦
+    tools:
+      - name: submit_rea_analyze
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: poll_rea_analyze
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: submit_rea_trace
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: poll_rea_trace
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: submit_rea_compare
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: poll_rea_compare
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+
+  # 壳 ③-b 存量 consumer 面（npm rea-agents 133 工具，npm 包接入未落地）
+  # M3⑦ 起 REA 能力由上方 l0.rea.mcp 承载；本面保留登记（V6 存量面不删）
   - shell_id: l0.rea-client.mcp
     capability_id: l0.rea
     transport: http                    # 实际调 npm rea-agents HTTP 端点
     shell_path: ""                     # client 壳薄，无独立脚本
     shell_cmd: "rea-agents"            # 占位；落地时以 npm 包/IPC 接入
     envelope_version: "0.1"
-    status: planned                    # M3⑧ 落地
+    status: deprecated                 # 被 l0.rea.mcp 取代（M3⑦）
     tools:
       - name: rea_analyze
         port: analysis
@@ -163,8 +211,8 @@ planned_shells:
     transport: stdio
     shell_path: "mcp_shells/l0_data/server.py"
     shell_cmd: "python3 {path}"
-    envelope_version: "0.2"
-    status: available                  # M2⑥
+    envelope_version: "0.1"            # 与 envelope_wrap 实现一致
+    status: available                  # M2⑤
     tools:
       - name: data_fetch
         port: collector
@@ -193,12 +241,12 @@ planned_shells:
         annotations: { readOnlyHint: false, destructiveHint: true }
 
   - shell_id: l0.eval.mcp
-    capability_id: l0.rea               # 评测属 analysis 域，复用 l0.rea（C6 capability_id 待补）
+    capability_id: l0.rea               # 评测属 analysis 域，复用 l0.rea（C6 仅 5 个 capability_id，不新增）
     transport: stdio
     shell_path: "mcp_shells/l0_eval/server.py"
     shell_cmd: "python3 {path}"
-    envelope_version: "0.2"
-    status: available                  # M2⑦
+    envelope_version: "0.1"            # 与 envelope_wrap 实现一致
+    status: available                  # M2⑥
     tools:
       - name: eval_analyze
         port: analysis
@@ -218,8 +266,8 @@ planned_shells:
     transport: stdio
     shell_path: "mcp_shells/l0_store_admin/server.py"
     shell_cmd: "python3 {path}"
-    envelope_version: "0.2"
-    status: available                  # M4⑪
+    envelope_version: "0.1"            # 与 envelope_wrap 实现一致
+    status: available                  # M4⑩
     tools:
       - name: store_admin_status
         port: store

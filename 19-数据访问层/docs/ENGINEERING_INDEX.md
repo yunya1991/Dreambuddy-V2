@@ -51,6 +51,7 @@
 │   ├── TECHNICAL_DESIGN.md                # ⭐ 架构设计（§0-§8 全文）v1.0
 │   ├── SCHEMA_DESIGN.md                   # ⭐ 21 表字段字典 + 20 索引 + 4 触发器
 │   ├── MIGRATION_PLAN.md                  # ⭐ 迁移 SOP + 5 项门禁 Checklist
+│   ├── CONNECTION_GOVERNANCE.md           # 连接上限 + 方言能力集声明（M2④，壳不感知数值）
 │   ├── ENGINEERING_INDEX.md               # 本文件（L2 文件级索引）
 │   └── CHANGELOG.md                       # 变更日志（P0→P3 全阶段记录）
 │
