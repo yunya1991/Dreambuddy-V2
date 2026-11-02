@@ -274,7 +274,7 @@ class InMemoryRepo(InMemoryEvalRequestStore):
 
     # 受理
     def insert_request(self, record: EvalRequestRecord) -> None:
-        self.insert(record)
+        super().insert_request(record)
 
     def get_request(self, eval_id: str) -> EvalRequestRecord | None:
         return self._by_id.get(eval_id)

@@ -30,6 +30,8 @@ from typing import Any, Callable, Protocol
 import yaml
 from jsonschema import Draft202012Validator
 
+from core.spec_registry import SpecRegistry
+
 from core.validators import EnvManifestError, EnvManifestValidator  # noqa: F401 — 对外统一导出
 
 logger = logging.getLogger(__name__)
@@ -169,7 +171,7 @@ class EvalRequestStore(Protocol):
 
     def get_by_idempotency_key(self, key: str) -> EvalRequestRecord | None: ...
 
-    def insert(self, record: EvalRequestRecord) -> None: ...
+    def insert_request(self, record: EvalRequestRecord) -> None: ...
 
     def count_for_day(self, day: str) -> int: ...
 
@@ -184,7 +186,7 @@ class InMemoryEvalRequestStore:
     def get_by_idempotency_key(self, key: str) -> EvalRequestRecord | None:
         return self._by_key.get(key)
 
-    def insert(self, record: EvalRequestRecord) -> None:
+    def insert_request(self, record: EvalRequestRecord) -> None:
         if record.idempotency_key in self._by_key:
             raise ValueError(f"幂等键冲突: {record.idempotency_key}")
         if record.eval_id in self._by_id:
@@ -238,8 +240,11 @@ class Gateway:
         schema_path: str | Path = SCHEMA_PATH,
         clock: Callable[[], datetime] | None = None,
         prober: Callable[[str], bool] | None = None,
+        spec_registry: SpecRegistry | None = None,
     ) -> None:
         self._store = store
+        # P2-9 收口：注册表可用时按 §3.1 全量哈希；未提供时保持占位（向后兼容）
+        self._spec_registry = spec_registry
         self._categories = categories
         schema = json.loads(Path(schema_path).read_text(encoding="utf-8"))
         self._validator = Draft202012Validator(schema)
@@ -279,7 +284,10 @@ class Gateway:
         day = now.strftime("%Y%m%d")
         seq = self._store.count_for_day(day) + 1
         eval_id = f"EV-{day}-{seq:06d}"
-        spec_hash = spec_hash_placeholder(payload["spec_id"])
+        if self._spec_registry is not None:
+            spec_hash = self._spec_registry.spec_hash(payload["spec_id"])
+        else:
+            spec_hash = spec_hash_placeholder(payload["spec_id"])
 
         record = EvalRequestRecord(
             eval_id=eval_id,
@@ -298,7 +306,7 @@ class Gateway:
         )
         # 注意：count_for_day + insert 非原子，内存实现可接受；
         # PG 实现（P0-5）依赖唯一键约束兜底防重。
-        self._store.insert(record)
+        self._store.insert_request(record)
         logger.info(
             "eval accepted eval_id=%s category=%s object_type=%s submitter=%s purpose=%s",
             eval_id,

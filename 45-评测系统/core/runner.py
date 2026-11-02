@@ -10,7 +10,7 @@ runner.py — 受理→排队→执行占位（P1-2）
 - 执行占位：默认调用 reporter.finalize_empty（空评测 → INCONCLUSIVE，fail-closed）
 
 边界：
-- TODO(P1-2b)：跨进程/持久队列用 Celery 适配 TaskQueue 接口（单机暂不引入 Redis）
+- P1-2b 已落地：跨进程/持久队列见 core/celery_queue.py（CeleryTaskQueue 适配本接口；单机默认仍为 InProcessQueue）
 - 长任务执行中的取消检查点由 P2 评测器自行轮询 runner.cancelled(eval_id)
 """
 
