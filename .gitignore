@@ -239,3 +239,14 @@ DreamOS_intermediate.pptx
 33-REA逆向解析工程/reflection_data/replay_pool/external/
 *.json.lock
 *.json.tmp
+
+# 运行期产物：REA 壳作业目录（每次 submit 生成 job 文件，不入库）
+33-REA逆向解析工程/reflection_data/mcp_jobs/
+
+# 运行期产物：易经推理系统 L4 知识图谱库（每轮推理后变更，二进制不入库；
+# 如需以特定快照为种子，用 git add -f 强制纳入）
+11-易经推理系统/.workbuddy/memory_l4/kg/*.db
+
+# 运行期产物：自进化系统自动生成的训练案例（人工精选案例入库用 git add -f）
+2-KNOWLEDGE/1-TRADING/cases/
+
