@@ -1,10 +1,10 @@
 # DreamBuddy v2 系统总体架构
 
-> **版本**: v4.0
-> **更新日期**: 2026-10-16
+> **版本**: v4.1
+> **更新日期**: 2026-11-02
 > **文档定位**: ★ **系统架构唯一事实源（SSoT）**。所有架构设计争议、模块边界、分层口径一律以本文档为准。
 > **维护说明**: 被本文档取代的旧架构文档已在顶部标注「已归档」横幅，**禁止作为实现依据**（详见第十六章「文档权威性与弃用指引」）。
-> **核心理念**: 三层能力架构（L0/L1/L2）+ 认知驱动编排（新 SACG）+ 高度模块化 + OS内核 + 适配器接入
+> **核心理念**: 三层能力架构（L0/L1/L2）+ 认知驱动编排（新 SACG）+ L0 双通道供给（port/MCP）+ DSH 多 agent（规划）+ 高度模块化 + OS内核 + 适配器接入
 > **实现状态**: 🟢 已实现 / 🟡 部分实现 / 🔴 规划中
 
 ---
@@ -553,6 +553,43 @@ dreamos/
 | SkillRouterAPI | `6-TRADING/bridge/api/skill_router_api.py` | 技能路由API | 🟢 |
 
 ---
+
+### 1.7 L0 统一出口层（port / MCP 双通道）
+
+L0 对外供给采用**双通道**，不是单一通道——这是本节确立的架构口径：
+
+| 调用方 | 通道 | 理由 |
+|------|------|------|
+| L1 规则引擎 / 同进程 L2 编排 | **in-process port**（默认） | 零额外延迟、强一致、FAIL-OPEN 天然 |
+| DSH Worker / 跨端 Agent / 云端服务 | **MCP** | 跨 Harness 稳定契约；进程隔离；权限 scope；天然 span 证据边界 |
+
+**硬约束**：
+
+- **H1 热路径不走 MCP**：L1 判定与交易相关链路必须 in-process（保住「零 token + 秒级」承诺）。
+- **H2 信封映射**：MCP 返回须还原统一信封 `ok / data / source / timestamp / degraded(reason) / meta`；**MCP error/timeout ≠ degraded**；源可达无数据 = `ok + data=None`（沿用 L0 既有铁律）。
+- **H3 只经 DAL**：数据类 MCP 必须调用 19-DAL，禁止 server 内直连 PG/CH。
+- **H4 写工具收权**：`record`/`verify` 等写类工具默认禁用，挂 `write` scope，与 Ticket Mandate 授权绑定。
+- **H5 trace 贯穿**：`trace_id` 全链路透传，落 `dreamos_sessions`／`dreamos_spans`。
+
+> 本节只固定**通道口径**；分域价值、聚合粒度、落地顺序属评估范畴，见 `46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md`。
+
+### 1.8 DSH 多 agent 升级（🔴 规划中）
+
+现行 DSH 为**单会话同步执行**；规划升级为「常驻、多任务、可验收、会沉淀」的形态。架构要点：
+
+| 维度 | 目标口径 |
+|------|---------|
+| **触发** | 事件驱动（Trigger 统一抽象 → L1 零 token 首道门 → 三分流） |
+| **编排** | Router 常驻**无状态**，批处理分派与聚合，可随时重启 |
+| **契约** | A 层 OKR 节点 → Ticket + Mandate（**工具授权与预算同源**） |
+| **执行** | Worker 角色池，每角色**能力集 ≤10 工具**；保留 subagent 隔离与摘要压缩，新增「会话可续」 |
+| **状态** | **单一事实源 = L0**；DSH 侧仅运行时缓存，**禁止双写** |
+| **验收** | A 层 verify + 45 门禁，**Worker 不自证完成** |
+| **沉淀** | settle → 五系统（认知经验／SKILL 流程／调研知识／文档／索引） |
+
+**红线**：交易热路径零接入；`enable_dsh_upgrade` 默认关；独立 DSH profile；异常 FAIL-OPEN 退回现有单会话等价行为。
+
+> 详细设计（七层架构 / 8 条 ADR / P0-P3 演进路径 / 风险册）见 `46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.1.md`。**下位 SPEC 可细化实现，但不得与本节的「状态单一事实源 / 验收外置 / 能力集 / 红线」冲突。**
 
 ## 二、三大思维链（骨架层）
 
@@ -2267,6 +2304,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 | v2.4 | 2026-06-25 | 新增：1) 开发协作网络（Dream-Agent）完整章节，包含四大角色/账本系统/DREAM Token/UI-Driven分解/Phase 0-8生命周期/双门禁体系（GitHub+飞书）/防漂移三重保障；2) DZE开发链与Dream-Agent的关系说明（单任务方法论 vs 多任务协作网络）；3) 完整自主迭代闭环（系统运行→学习进化→开发协作→能力升级→回到运行）；4) 进化系统架构图补充协作网络层；5) 实现进度总览补充Dream-Agent协作网络；6) 关键代码参考补充10个Dream-Agent相关文件 | System |
 | v2.5 | 2026-06-25 | 新增：1) 系统维护 SKILL（自动化运维）完整章节，包含健康检查/问题追踪/报告生成/修复流程；2) SKILL.md 规范文档和 health-check.ts 执行脚本；3) 每周定时执行机制设计；4) 首次运行测试成功（评分94/100，A级）；5) 关键代码参考补充系统维护 SKILL；6) 维护报告自动保存到 .maintenance-reports/ | System |
 | **v4.0** | 2026-10-16 | **架构统一重大升级（跨系统一致性）**：1) 三层能力架构 **L0/L1/L2** 正式确立（唯一判据：是否依赖生成式 LLM 推理）；2) **新 SACG** 编排（S=认知驱动规划入口 / A=OKR 节点验收 / C=执行驱动 / G=压缩沉淀，C-drive 贯穿调度）取代旧 SACG（Sense/Arrange/Compute/Graph）；3) 认知系统内部四层改名 **C1-C4**（C1 基础/C2 记忆/C3 路由/C4 元认知）；4) **置信度门控**跨系统统一阈值契约；5) 新增第十六章「文档权威性与弃用指引」，旧架构文档统一加「已归档」横幅。**确保 0-系统文档管理 / 1-ARCHITECTURE / 3.1-FRONTEND / 34-前端应用训练系统 四处口径一致** | System |
+| **v4.1** | 2026-11-02 | **DSH 升级与 L0 供给口径增补**：1) 新增 §1.7「L0 统一出口层」——确立 port(in-process，默认) / MCP(跨端) 双通道及 5 条硬约束（热路径不走 MCP、信封映射、只经 DAL、写工具收权、trace 贯穿）；2) 新增 §1.8「DSH 多 agent 升级（规划）」——Router 无状态、Ticket+Mandate、能力集≤10、状态单一事实源=L0、验收外置、settle 五系统，含 4 条红线；3) 第十六章权威层级与保留清单纳入 `46-DSH架构` 域（DSH 子域细则与 SSoT 同口径） | System |
 
 ---
 
@@ -2425,9 +2463,10 @@ reporting:
 
 | 层级 | 文档 | 定位 | 优先级 |
 |------|------|------|--------|
-| **权威层（SSoT）** | `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` **v4.0** | 系统架构**唯一事实源** | **最高**，一切争议以本文档为准 |
+| **权威层（SSoT）** | `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` **v4.1** | 系统架构**唯一事实源** | **最高**，一切争议以本文档为准 |
 | **导航层** | `0-系统文档管理/2-文档地图/ARCHITECTURE_MAP.md`、`SYSTEM_MAP.md`、`INDEX.md` | 只告诉你「文档在哪」，不含架构内容 | 高于业务文档，低于 SSoT |
 | **一致性子系统文档** | `34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md`、`SPEC-v1.2-SACG-orchestration.md` | 支撑 SSoT 的子域细则（L0/L1/L2 与 SACG 深化） | 与 SSoT 平级口径，细节补充 |
+| **一致性子系统文档（DSH 域）** | `46-DSH架构/docs/tech/`（DESIGN-DSH-ARCH-UPGRADE / ANALYSIS-L0-MCP-ENCAPSULATION / REPORT-L0-MCP-DSH-IMPACT / SPEC-EVENT-DRIVEN-L1-GATEWAY / ANALYSIS-SUPERAGENT-ARCH-DATAFLOW / DESIGN-SUPERAGENT-FUSION） | DSH 多 agent 升级、事件驱动入口、L0 出口面的子域细则 | 与 SSoT 同口径；**不得另立分层/状态/验收口径** |
 | **已归档层** | 见 16.3 清单 | 被 SSoT 取代的历史文档 | **禁止作为实现依据**，仅历史留档 |
 
 **冲突裁定规则**：
@@ -2440,12 +2479,12 @@ reporting:
 所有被取代的旧架构文档，**必须在文档顶部第一行**加入以下横幅（逐字，不得改写）：
 
 ```
-> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
+> ⚠️ 已归档 · 2026-10-16：本文档描述的架构已被《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.1》取代，请以该文档为准。本文档仅作历史留档，禁止作为实现依据。
 ```
 
 ### 16.3 已归档文档清单（加横幅）
 
-以下文档描述的架构已被 v4.0 取代，统一加 16.2 横幅：
+以下文档描述的架构已被 v4.1 取代，统一加 16.2 横幅：
 
 | 位置 | 文档 |
 |------|------|
@@ -2460,10 +2499,12 @@ reporting:
 
 以下文档**现行有效**，**禁止**加弃用横幅：
 
-- ★ `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md`（本 SSoT，v4.0）
+- ★ `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md`（本 SSoT，v4.1）
 - `1-ARCHITECTURE/specs/` 下现行有效 SPEC：`DREAMOS_SKILL_ORCHESTRATION_SPEC.md`、`SKILL_IMITATION_EVOLUTION_SPEC.md`、`COGNITIVE_SYSTEM_INTEGRATION_SPEC.md`、`COGNITIVE_SYSTEM_INTEGRATION_P1_P3_SPEC.md`、`DATA_AND_COGNITIVE_READONLY_ACCESS_SPEC.md`、`DUAL_MODE_TRAINING_SPEC.md`
 - 根层专题 / 基础设施 / 调研文档（不构成系统分层第二套口径）：`SPEC-20260928-POSTGRESQL-CENTRALIZATION.md`、`SPEC-20260929-L1-TRACE-PILOT.md`（含 `-REPORT`）、`SPEC-20260930-COGNITIVE-TAG-HOOKS-AUTO-LOOP.md`、`SPEC-20261004-INTENT-TRAINING-LOOP-30-SYSTEM.md`、`PLAN-20261004-INTENT-TRAINING-LOOP-30-SYSTEM.md`、`TOP10_RANKING_RECOMMENDATION_SPEC.md`、`TRADING_MODULES_OVERVIEW.md`、`THREE_CHAIN_DISPATCH_CHECKLIST.md`、`WORKBUDDY_OS_COMPETITIVE_ANALYSIS.md`（外部同类项目调研）、`RESEARCH_20260930_FINANCE_AI_AGENT_ARCH_SURVEY.md`、`SPEC-自运行系统四层落地路径-总技术文档.md`（其"四层"=可观测→自检测→自修复→自迭代，非 SACG/能力分层）
 - `34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md`、`SPEC-v1.2-SACG-orchestration.md`（子域细则，与 SSoT 同口径）
+- `46-DSH架构/docs/tech/` 全量现行文档（DSH 升级与 L0 出口面子域细则，与 SSoT 同口径）
+- `1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md`（A 层契约桥接，与 SSoT A 层口径一致）
 - `0-系统文档管理/` 全量导航文档（ARCHITECTURE_MAP / SYSTEM_MAP / INDEX 等）
 
 > **判断原则**：文档描述的是「**当前正在实现的系统分层/编排/认知口径**」→ 保留；描述的是「**已被 L0/L1/L2 或新 SACG 取代的旧口径**」→ 归档加横幅。
@@ -2476,6 +2517,7 @@ reporting:
 2. `1-ARCHITECTURE/`（SSoT 及架构文档）
 3. `3.1-FRONTEND/`（前端架构，`docs/v3-frontend-architecture.md`）
 4. `34-前端应用训练系统/`（L0/L1/L2 与 SACG SPEC、README）
+5. `46-DSH架构/`（DSH 升级与 L0 出口面，须与 §1.7／§1.8 同口径）
 
 **硬约束阈值（跨系统统一，禁第二套）**：
 - `THRESHOLD_HIGH = 0.7`

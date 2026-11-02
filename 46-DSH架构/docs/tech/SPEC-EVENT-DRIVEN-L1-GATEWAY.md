@@ -1,0 +1,114 @@
+# SPEC:事件驱动 L1 网关(Event-Driven L1 Gateway)
+
+> **版本**: v0.2(评审修订版)
+> **日期**: 2026-11-02
+> **状态**: 🟡 修改后接受——已按评审修订(REVIEW-SUPERAGENT-FUSION-v0.1),待复核 M1-M4 落点
+> **修订记录**: v0.2 增加 P0 前置事件源盘点(M3/DA-3)、意图改由清单导出、跨语言归属(m2)、A5 回放集定义(m3)、45 转正判据初值(m4)、settle 五系统口径(用户修正)
+> **归属**: 46-DSH架构 ｜ 层级: L1(零 token 确定性层)
+> **定位**: 将 Super-agent「统一 Trigger 抽象 + 两级过滤」思想落地为三层架构下的**事件驱动 L1 网关**——外部异步事件的零 token 第一道门,命中 L1 能力则确定性闭环,未命中则携带 L0 供给的六维上下文升级 L2
+> **依据**:
+> - [调研报告第九章(事件驱动×存算分离×L0L1L2)](../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)
+> - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.1（§1.7 L0 出口层 / §1.8 DSH 升级）
+> - **上位设计**:[DESIGN-DSH-ARCH-UPGRADE-v0.1.md](DESIGN-DSH-ARCH-UPGRADE-v0.1.md)(本 SPEC 是其 ① 入口层的实现规格)
+> - 姊妹 SPEC:[SACG_A_SUPERAGENT_CONNECTION_SPEC.md](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(契约桥接,评审时可决定先后/并行)
+> - 认知记忆:VM-1793586560886(三层视角结论)、VM-1792148857896(L0 统一信封与 degraded≠ok(None) 约定)
+
+---
+
+## 一、问题定义
+
+当前系统以**同步用户请求**为主入口,外部异步事件(行情阈值、公告、GitHub/CI、定时任务)没有统一抽象与统一入口:
+- 轮询散落各进程(polling_trader、monitor 等),事件无统一过滤门, token 成本不可控;
+- 事件命中时需要人工组装上下文, L0 的六维供给(实时数据/SKILL/知识/经验/案例/REA)未被自动激活;
+- Super-agent 实测证明:两级过滤+事件直通可显著降本(取消直通 → Router 决策 +30%、缓存读 +37%)。
+
+## 二、核心设计:三级事件梯度
+
+```
+外部事件(行情/公告/GitHub/CI/定时器/飞书)
+        │
+        ▼
+┌─ Trigger 统一抽象 ─────────────────────────┐
+│  Trigger{trigger_id, source, kind,         │
+│          payload_ref, thread_id?, ts}      │
+└──────────────┬─────────────────────────────┘
+               ▼
+┌─ L1 事件网关(本 SPEC,零 token)───────────┐
+│  ① 程序规则过滤(白名单/去重/冷却/阈值)     │
+│  ② 事件类意图匹配(复用意图注册表机制)      │
+│     命中 → L1 确定性闭环(告警卡/数据应答)  │
+│     未命中+价值分≥阈值 → 升级 L2           │
+│     未命中+低价值 → 记录后静默(注意力预算) │
+└──────────────┬─────────────────────────────┘
+               ▼ (升级时)
+┌─ L0 fetchContext 六维供给 ─────────────────┐
+│  实时数据指标 / SKILL / 知识库 / 认知经验   │
+│  / CBR 真实案例 / REA 逆向解析(最优路径)  │
+└──────────────┬─────────────────────────────┘
+               ▼
+        L2 新 SACG(S→A→C→G + C-drive)
+               │
+               ▼ settle 沉淀回 L0 → 下次事件 recall 命中(自进化循环)
+```
+
+**与 Super-agent 的本质差异**:其规则层只能过滤;本网关 L1 能**过滤+直接闭环**(复用十意图执行器形态扩展事件类意图)。
+
+## 三、范围
+
+### 3.1 P0(本 SPEC)
+
+| # | 内容 |
+| --- | --- |
+| 0 | **【前置·事件源盘点】盘点现有事件源(polling_trader 监控/13 timer/GitHub webhook/飞书/文件落盘):源/速率/类型/现处理方,产出事件清单;事件意图从清单导出**(评审 M3/DA-3) |
+| 1 | Trigger 数据契约 + 事件源适配器接口(SourceAdapter,先支持:定时器、行情阈值、文件落盘事件三类) |
+| 2 | L1 事件网关核心:`event_gateway.py`(规则过滤 → 事件意图匹配 → 分流),纯函数+注入依赖,TDD |
+| 2a | 归属约定:网关落 **34-core Python 侧**(与十意图执行器同侧);3.1 前端 TS 的 l1-intent-registry.ts 为另一消费端,两侧经**意图契约文件**(YAML/JSON)对齐,不双写逻辑(评审 m2) |
+| 3 | 事件类意图扩展:从任务 0 清单导出(初值占位 `alert_confirm` / `event_triage`,零 token) |
+| 4 | 升级 L2 时调用 L0 fetchContext 组装六维上下文信封;**L0 访问走 port 双通道:in-process 优先(同进程,默认),MCP 仅作跨端/非热路径兜底**;MCP 通道须经统一信封映射层(error/timeout→degraded(reason),源可达无数据仍 ok+None)(MCP 评估 X1/X2) |
+| 5 | 批处理聚合:事件突发时按 thread_id/kind 合并(对齐 Super-agent Router 批处理实测结论) |
+| 6 | settle 前置 45 评测门禁接入:P0 为 shadow 记录模式(评测执行但只记录不拦截),P1 转强制(2026-11-02 用户决策:45-评测系统加入闭环) |
+
+### 3.2 非目标(排除)
+
+- ✗ 交易热路径(polling_trader 开仓链路)不接入,先用于研究/评审/告警类事件
+- ✗ Thread 订阅直通、Worker 持续会话(归 SACG_A SPEC P1)
+- ✗ Watchdog、异步 ReAct(后续 SPEC)
+- ✗ 飞书/GitHub 真实渠道接入 P0 不做(适配器接口预留,先用文件/定时器模拟源验证)
+
+## 四、硬约束
+
+| # | 约束 | 违反后果 |
+| --- | --- | --- |
+| HC-1 | **FAIL-OPEN**:网关任何异常 → 事件直落 L2 现有入口,行为等价「网关不存在」 | 阻塞事件流即违规 |
+| HC-2 | **模块化开关** `enable_event_l1_gateway`(默认 **False**) | 默认改变行为即违规 |
+| HC-3 | L0 数据区分沿用铁律:源不可用=degraded(reason),源可达无数据=ok+data=None;**经 MCP 通道时映射层须逐字段还原该信封,不得把 MCP error/timeout 直接当 degraded 或当 ok** | 降级文案错位即违规 |
+| HC-4 | 网关自身零 token(规则/统计/向量检索允许;生成式 LLM 禁止进入 L1) | L1/L2 边界破坏即违规 |
+| HC-5 | 事件全量落 L0(青铜层留痕),升级/闭环/静默三分流结果可审计;settle 沉淀面向**广义认知系统五系统**(认知经验/SKILL 可复用流程/调研知识/文档/索引,口径见 35 号域 SPEC-CognitiveSystem-Evolution v0.2) | 事件黑盒即违规 |
+| HC-6 | v4.0 新 SACG 口径 | 旧口径出现即返工 |
+
+## 五、验收标准
+
+| # | 验收项 | 通过标准 |
+| --- | --- | --- |
+| A1 | 单测 | 规则过滤/意图匹配/三分流/批合并全覆盖;异常注入不抛错(FAIL-OPEN) |
+| A2 | 开关等价 | 开关关断前后现有测试套件全绿 |
+| A3 | 端到端(模拟源) | 文件落盘事件 → 网关 → L1 闭环(已知模式)与升级 L2(带六维上下文信封)各验证一次 |
+| A4 | 零 token 证明 | 网关路径日志无 LLM 调用记录 |
+| A5 | 成本对照 | 回放集=任务 0 盘点出的真实事件分布构造(n≥200 事件,覆盖全部已盘点类型):有网关 vs 无网关的 L2 调用次数对比报告 |
+
+## 六、风险
+
+| 风险 | 缓解 |
+| --- | --- |
+| 事件类意图覆盖率低 → token 放大 | P0 仅 2 个事件意图起步;A5 成本对照数据驱动扩意图 |
+| 事件风暴 | thread_id/kind 批合并 + 冷却窗口(复用开仓冷却同构机制) |
+| 与轮询进程职责重叠 | P0 只读不改轮询;网关先旁路观察模式(shadow)运行 |
+
+## 七、评审清单
+
+- [ ] 与 SACG_A SPEC 的先后关系:P0 并行,还是本网关作为其 P1 前置?
+- [ ] 事件意图放 L1 注册表 vs 独立事件注册表?
+- [ ] shadow 旁路观察期时长与转正判据
+- [ ] 批处理合并窗口参数(初始建议 2s,对齐 Super-agent passes 周期)
+- [x] 45 shadow 转正判据(评审 m4 定初值):**误拦率 <5%、观察期 ≥2 周、INCONCLUSIVE 占比 <30%**;达标转强制,不达标回 shadow 调参
+- [ ] A 层 verify=evidence_backed 是否统一消费 45 Evidence Bundle(与 SACG_A SPEC 对齐)
