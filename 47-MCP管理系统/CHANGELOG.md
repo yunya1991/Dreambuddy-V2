@@ -1,5 +1,21 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-02 PLAN v0.2 修正（本地审查云端产出）
+
+### 背景
+
+云端产出 `PLAN-L0-MCP-P0-P3 v0.1` 后，本地与 SPEC v0.3 / ALIGNMENT v1.0 交叉比对发现 1 处冲突，修正为 v0.2。
+
+### 修正
+
+- **任务载体冲突（P1）**：v0.1 任务②新建 `0-系统文档管理/l0_capability_set.v1.yaml` 作为"DSH 能力集单一载体"，与 ALIGNMENT B4「单一载体 = `47/registry/mcp_capabilities.yaml`」冲突。修正为：任务①合并原任务②，mcp_capabilities.yaml 包含完整的**角色→能力标签→工具**三层映射；删除多余的 l0_capability_set.v1.yaml
+- **任务编号重排**：因删除 1 个任务，M1 ①②③、M2 ④⑤⑥、M3 ⑦⑧⑨、M4 ⑩⑪（原 M4⑫→⑪）；K1 引用 M1③→M1②，K3 引用 M4⑫→M4⑪，§一 P3 引用同步
+- **范围说明补充**：头部新增「本计划仅覆盖 47-MCP 侧」说明，46-DSH 侧见 DESIGN-DSH-ARCH-UPGRADE §五
+
+### 评审判定
+
+云端产出的其余部分（里程碑依赖、K1-K5 对策、出口判据、envelope 字段列表）均与 SPEC/ALIGNMENT 一致，无需修正。
+
 ## 2026-11-02 两端改动集成（本地 v0.3 + 云端修正）
 
 ### 集成说明
