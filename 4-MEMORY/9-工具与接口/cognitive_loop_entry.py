@@ -1624,6 +1624,34 @@ class CognitiveLoopEntry:
         }
 
     # ============================================================
+    # M4⑪ bulk-read：Memory port export/list 语义（委托 VectorMemoryInterface）
+    # ============================================================
+
+    def export_entries(
+        self,
+        *,
+        min_quality: str = "C",
+        limit: int = 100,
+        cursor: Optional[str] = None,
+        since: Optional[str] = None,
+        order: str = "desc",
+    ) -> Dict[str, Any]:
+        """批量导出记忆条目（跨系统消费方不逐条 recall）。"""
+        return self._vm.export_entries(
+            min_quality=min_quality, limit=limit, cursor=cursor, since=since, order=order
+        )
+
+    def list_ids(
+        self,
+        *,
+        min_quality: str = "C",
+        limit: int = 100,
+        cursor: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """批量列出记忆 ID（与 export_entries 同序同集）。"""
+        return self._vm.list_ids(min_quality=min_quality, limit=limit, cursor=cursor)
+
+    # ============================================================
     # 统计与健康检查
     # ============================================================
 

@@ -8,25 +8,55 @@
 
 FAIL-OPEN：DB 不可读或为空 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import re
-import sqlite3
+import sys
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
-
 
 # ───────────────────────────── 关键词提取 ─────────────────────────────
 
 # 中文/英文关键词提取（排除停用词）
 _STOPWORDS = {
-    "the", "and", "for", "with", "from", "that", "this", "have", "been",
-    "will", "was", "are", "not", "but", "can", "has", "had", "was",
-    "流程", "建议", "形成", "衍生", "可复用", "第", "次", "一个", "我们",
-    "可以", "需要", "使用", "通过", "进行", "基于", "以及", "或者",
+    "the",
+    "and",
+    "for",
+    "with",
+    "from",
+    "that",
+    "this",
+    "have",
+    "been",
+    "will",
+    "was",
+    "are",
+    "not",
+    "but",
+    "can",
+    "has",
+    "had",
+    "流程",
+    "建议",
+    "形成",
+    "衍生",
+    "可复用",
+    "第",
+    "次",
+    "一个",
+    "我们",
+    "可以",
+    "需要",
+    "使用",
+    "通过",
+    "进行",
+    "基于",
+    "以及",
+    "或者",
 }
+
 
 def _extract_keywords(text: str) -> list[str]:
     """从文本提取英文词和中文 2-4 字词（粗粒度）。"""
@@ -58,32 +88,47 @@ def _pattern_signature(text: str) -> str:
 
 # ───────────────────────────── 记忆查询 ─────────────────────────────
 
+
+def _memory_read_port(db_path: Path):
+    """构造 Memory port 只读 adapter（函数级 sys.path 注入，禁止模块级）。"""
+    repo_root = Path(__file__).resolve().parents[3]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from dreambuddy_l0.adapters.cognitive import from_vector_memory
+
+    return from_vector_memory(storage_path=str(db_path))
+
+
 def _fetch_skill_memories(db_path: Path) -> list[dict]:
-    """从认知记忆 DB 查询 hermes/SKILL 相关记忆。"""
+    """经 Memory port bulk-read 取 hermes/SKILL 相关记忆。"""
     if not db_path.exists():
         return []
+    port = None
     try:
-        conn = sqlite3.connect(str(db_path))
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id, content, tags FROM memories "
-            "WHERE tags LIKE '%hermes%' OR tags LIKE '%SKILL%' OR content LIKE '%hermes%'"
-        )
-        rows = cur.fetchall()
-        conn.close()
-        results = []
-        for mem_id, content, tags in rows:
-            try:
-                tag_list = tags.split(",") if isinstance(tags, str) else []
-            except Exception:
-                tag_list = []
-            results.append({"id": mem_id, "content": content or "", "tags": tag_list})
+        port = _memory_read_port(db_path)
+        results: list[dict] = []
+        cursor = None
+        while True:
+            page = port.export_entries(min_quality="D", limit=500, cursor=cursor)
+            for entry in page.get("entries", []):
+                content = entry.get("content") or ""
+                tags = list(entry.get("tags") or [])
+                tag_text = " ".join(str(t) for t in tags).lower()
+                if "hermes" in tag_text or "skill" in tag_text or "hermes" in content.lower():
+                    results.append({"id": entry.get("id", ""), "content": content, "tags": tags})
+            cursor = page.get("cursor")
+            if not cursor:
+                break
         return results
     except Exception:
         return []  # FAIL-OPEN
+    finally:
+        if port is not None:
+            port.close()
 
 
 # ───────────────────────────── 候选挖掘 ─────────────────────────────
+
 
 @dataclass
 class SkillCandidate:
@@ -116,7 +161,12 @@ def mine_candidates(db_path: Path | str | None = None, min_occurrences: int = 3)
         候选字典列表（evidence_count >= min_occurrences）
     """
     if db_path is None:
-        db_path = Path(__file__).resolve().parent.parent.parent.parent / "4-MEMORY" / "data" / "cognitive_memory.db"
+        db_path = (
+            Path(__file__).resolve().parent.parent.parent.parent
+            / "4-MEMORY"
+            / "data"
+            / "cognitive_memory.db"
+        )
     else:
         db_path = Path(db_path)
 
@@ -141,14 +191,16 @@ def mine_candidates(db_path: Path | str | None = None, min_occurrences: int = 3)
         description = f"自动挖掘自 {len(mems)} 条 hermes 记忆，pattern: {sig.replace('_', ' ')}"
         triggers = _derive_triggers(sig, mems)
         category = _infer_category(mems)
-        candidates.append(SkillCandidate(
-            name=name,
-            description=description,
-            triggers=triggers,
-            category=category,
-            evidence_count=len(mems),
-            source_memories=[m["id"] for m in mems],
-        ))
+        candidates.append(
+            SkillCandidate(
+                name=name,
+                description=description,
+                triggers=triggers,
+                category=category,
+                evidence_count=len(mems),
+                source_memories=[m["id"] for m in mems],
+            )
+        )
 
     # 按 evidence_count 降序
     candidates.sort(key=lambda c: c.evidence_count, reverse=True)
@@ -187,6 +239,7 @@ def _infer_category(mems: list[dict]) -> str:
 
 
 # ───────────────────────────── SKILL 草稿生成 ─────────────────────────────
+
 
 def generate_skill_draft(candidate: dict) -> str:
     """从候选生成 SKILL.md frontmatter 草稿。"""
@@ -235,6 +288,7 @@ created: 2026-09-29
 
 # ───────────────────────────── 自动创建 SKILL ─────────────────────────────
 
+
 def _load_init_skill():
     """动态加载 skill-creator 的 init_skill 模块。
 
@@ -250,8 +304,19 @@ def _load_init_skill():
     here = Path(__file__).resolve().parent
     candidates = [
         here.parent / "skill-creator" / "scripts" / "init_skill.py",
-        here.parent.parent.parent / ".trae" / "skills" / "skill-creator" / "scripts" / "init_skill.py",
-        here.parent.parent.parent / "11-易经推理系统" / "skills" / "4-GENERIC" / "skill-creator" / "scripts" / "init_skill.py",
+        here.parent.parent.parent
+        / ".trae"
+        / "skills"
+        / "skill-creator"
+        / "scripts"
+        / "init_skill.py",
+        here.parent.parent.parent
+        / "11-易经推理系统"
+        / "skills"
+        / "4-GENERIC"
+        / "skill-creator"
+        / "scripts"
+        / "init_skill.py",
     ]
     for path in candidates:
         if path.exists():
@@ -373,29 +438,6 @@ def mine_and_create(
 
     print(f"\n✅ 自动创建完成：{len(created)}/{min(len(candidates), max_create)} 个 SKILL")
     return created
-
-
-# ───────────────────────────── 测试辅助 ─────────────────────────────
-
-def _write_test_db(db_path: Path, memories: list[dict]) -> None:
-    """测试用：写入临时认知记忆 DB。"""
-    conn = sqlite3.connect(str(db_path))
-    cur = conn.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS memories ("
-        "id TEXT PRIMARY KEY, content TEXT, vector BLOB, quality_level TEXT, "
-        "confidence REAL, tags TEXT, memory_type TEXT, source TEXT, "
-        "created_at TEXT, updated_at TEXT, verify_count INTEGER)"
-    )
-    for m in memories:
-        tags = ",".join(m.get("tags", []))
-        cur.execute(
-            "INSERT INTO memories (id, content, tags, quality_level, confidence, verify_count) "
-            "VALUES (?, ?, ?, 'C', 0.2, 0)",
-            (m["id"], m["content"], tags),
-        )
-    conn.commit()
-    conn.close()
 
 
 # ───────────────────────────── CLI ─────────────────────────────

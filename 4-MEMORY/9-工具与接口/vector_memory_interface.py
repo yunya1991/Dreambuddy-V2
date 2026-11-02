@@ -43,6 +43,30 @@ logger = logging.getLogger(__name__)
 # 向量维度（简化版：使用哈希向量化，生产环境可替换为 embedding 模型）
 DEFAULT_VECTOR_DIM = 256
 
+# 质量等级序（M4⑪ bulk-read：S>A>B>C>D，禁止按字母序比较——A 会误排在 C 之后）
+_QUALITY_RANK = {"S": 4, "A": 3, "B": 2, "C": 1, "D": 0}
+
+
+def _next_cursor(cursor: Optional[str], limit: int, fetched: int) -> Optional[str]:
+    """bulk-read 分页游标：fetched > limit 说明还有下页，返回已消费条数。"""
+    limit = max(1, int(limit))
+    return str(int(cursor or 0) + limit) if fetched > limit else None
+
+
+def _parse_json_list(value: Any) -> List[Any]:
+    """解析记忆行的列表字段：JSON 数组优先，兼容历史逗号分隔文本。"""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            return [part.strip() for part in value.split(",") if part.strip()]
+        return parsed if isinstance(parsed, list) else []
+    return []
+
 
 # ============================================================
 # 向量化器（轻量级，无需外部模型）
@@ -874,6 +898,121 @@ class VectorMemoryInterface:
         """查找相似记忆（便捷方法）"""
         results = self.search(content, top_k=top_k)
         return [r for r in results if r.score >= threshold]
+
+    # ============================================================
+    # bulk-read（M4⑪ Memory port export_entries / list_ids 语义）
+    # ============================================================
+
+    def export_entries(
+        self,
+        *,
+        min_quality: str = "C",
+        limit: int = 100,
+        cursor: Optional[str] = None,
+        since: Optional[str] = None,
+        order: str = "desc",
+    ) -> Dict[str, Any]:
+        """批量导出记忆条目（不经 recall 逐条检索）。
+
+        Args:
+            min_quality: 质量下限（S>A>B>C>D，含本级）
+            limit: 单页条数（禁止全量）
+            cursor: 上页返回的偏移游标；None 表示首页
+            since: 仅返回 created_at 严格大于该 ISO 时间戳的条目（增量）
+            order: "desc"（默认，新→旧）或 "asc"
+
+        Returns:
+            统一信封 {"entries": [...], "cursor": str|None}
+        """
+        sql, params = self._bulk_read_sql(
+            "id, content, quality_level, confidence, tags, memory_type, source, "
+            "created_at, updated_at, verify_count, level, known_gaps, observations",
+            min_quality=min_quality,
+            limit=limit,
+            cursor=cursor,
+            since=since,
+            order=order,
+        )
+        with self._db_lock:
+            rows = self.db.execute(sql, params).fetchall()
+        limit_n = max(1, int(limit))
+        next_cursor = _next_cursor(cursor, limit_n, len(rows))  # 多取 1 行判断下页
+        return {
+            "entries": [self._row_to_entry(r) for r in rows[:limit_n]],
+            "cursor": next_cursor,
+        }
+
+    def list_ids(
+        self,
+        *,
+        min_quality: str = "C",
+        limit: int = 100,
+        cursor: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """批量列出记忆 ID（与 export_entries 同序同集）。返回 {"ids": [...], "cursor": str|None}。"""
+        sql, params = self._bulk_read_sql(
+            "id",
+            min_quality=min_quality,
+            limit=limit,
+            cursor=cursor,
+            since=None,
+            order="desc",
+        )
+        with self._db_lock:
+            rows = self.db.execute(sql, params).fetchall()
+        limit_n = max(1, int(limit))
+        next_cursor = _next_cursor(cursor, limit_n, len(rows))
+        return {
+            "ids": [r["id"] for r in rows[:limit_n]],
+            "cursor": next_cursor,
+        }
+
+    def _bulk_read_sql(
+        self,
+        columns: str,
+        *,
+        min_quality: str,
+        limit: int,
+        cursor: Optional[str],
+        since: Optional[str],
+        order: str,
+    ) -> Tuple[str, List[Any]]:
+        """组 bulk-read SQL（方言细节只在本 adapter 内）。多取 1 行用于判断是否还有下页。"""
+        threshold = _QUALITY_RANK.get(str(min_quality).upper(), _QUALITY_RANK["C"])
+        grades = [g for g, rank in _QUALITY_RANK.items() if rank >= threshold]
+        limit = max(1, int(limit))
+        offset = int(cursor or 0)
+        direction = "ASC" if str(order).lower() == "asc" else "DESC"
+        sql = (
+            f"SELECT {columns} FROM memories "
+            f"WHERE quality_level IN ({', '.join('?' * len(grades))})"
+        )
+        params: List[Any] = list(grades)
+        if since:
+            sql += " AND created_at > ?"
+            params.append(since)
+        sql += f" ORDER BY created_at {direction}, id {direction} LIMIT ? OFFSET ?"
+        params.extend([limit + 1, offset])
+        return sql, params
+
+    @staticmethod
+    def _row_to_entry(row: sqlite3.Row) -> Dict[str, Any]:
+        """记忆行 → bulk-read 统一信封条目（字段集与 get() 对齐）。"""
+        return {
+            "id": row["id"],
+            "content": row["content"],
+            "quality_level": row["quality_level"],
+            "confidence": row["confidence"],
+            "tags": _parse_json_list(row["tags"]),
+            "memory_type": row["memory_type"],
+            "source": row["source"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "verify_count": row["verify_count"],
+            "level": row["level"],
+            "known_gaps": _parse_json_list(row["known_gaps"]),
+            "observations": _parse_json_list(row["observations"]),
+        }
 
     # ============================================================
     # 7标准接口补全：distill_candidates
