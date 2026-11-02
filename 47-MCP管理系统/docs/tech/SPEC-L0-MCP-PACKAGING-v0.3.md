@@ -2,7 +2,7 @@
 
 > **版本**: v0.3 ｜ **日期**: 2026-11-02 ｜ **状态**: ✅ 决议落定——B1-B6 / G1-G3 已经 ALIGNMENT-46-47 对齐审查落定(见 §8)，可开工；文档终审(approved)按 R8 归云端签发
 > **v0.3 变更**: 按 [ALIGNMENT-46-47 v1.0](./ALIGNMENT-46-47-v1.0.md) 的 Go/No-Go 决议修订：主功能禁 FAIL-OPEN、写主体=编排侧、壳实例进程级共享、能力集单一载体、45 两类评测改名、异步 job 状态登记
-> **上游**: [REPORT-L0-MCP-DSH-IMPACT v1.0](../../../46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md)（影响评估，本 SPEC 吸收其结论并修正 2 处实证偏差）
+> **上游**: [REPORT-L0-MCP-DSH-IMPACT v1.1](../../../46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.1.md)（影响评估 v1.1，吸收本 SPEC 评审实证并修正 F1/F2/F6 三处偏差）
 > **上游**: SPEC-L0-three-layer-architecture v0.5（§3.1 六 port + 统一信封，本 SPEC 是其 L0-P 的**对外协议面**）
 > **定位**: 实施 SPEC。REPORT 回答"要不要做"，本 SPEC 回答"怎么做"。
 > **硬约束**: 单人维护 / FAIL-OPEN / 云端 4C16G / stdio 按需拉起（不常驻、不开放网络端口）/ 零回归 / **实盘交易链路（11/yijing/v15/止损）永不暴露 MCP** / 壳零业务逻辑（训练优化载体在域内，不在壳）
