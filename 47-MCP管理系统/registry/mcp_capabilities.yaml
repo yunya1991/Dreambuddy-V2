@@ -164,7 +164,7 @@ planned_shells:
     shell_path: "mcp_shells/l0_data/server.py"
     shell_cmd: "python3 {path}"
     envelope_version: "0.2"
-    status: planned                    # M2⑥
+    status: available                  # M2⑥
     tools:
       - name: data_fetch
         port: collector
@@ -198,7 +198,7 @@ planned_shells:
     shell_path: "mcp_shells/l0_eval/server.py"
     shell_cmd: "python3 {path}"
     envelope_version: "0.2"
-    status: planned                    # M2⑦
+    status: available                  # M2⑦
     tools:
       - name: eval_analyze
         port: analysis
@@ -219,7 +219,7 @@ planned_shells:
     shell_path: "mcp_shells/l0_store_admin/server.py"
     shell_cmd: "python3 {path}"
     envelope_version: "0.2"
-    status: planned                    # M4⑪
+    status: available                  # M4⑪
     tools:
       - name: store_admin_status
         port: store
