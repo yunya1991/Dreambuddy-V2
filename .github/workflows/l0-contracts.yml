@@ -35,6 +35,9 @@ jobs:
       - name: Validate capabilities declaration (C6)
         run: |
           python scripts/validate_capabilities.py
+      - name: Validate MCP capabilities registry (47 M1①)
+        run: |
+          python "47-MCP管理系统/registry/scripts/validate_mcp_registry.py" --quiet
       - name: C10 direct-connection gate (ratchet, blocking)
         run: |
           python scripts/check_db_direct_imports.py --ratchet

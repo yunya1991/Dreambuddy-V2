@@ -1,0 +1,226 @@
+# MCP 契约注册表 — L0 对外协议面唯一事实源（SPEC §3.7 / PLAN M1①）
+# 硬约束：文件 + CI 校验为唯一门禁；不加载运行时注册表（跨进程不可行）。
+# Schema v1.0-mcp 复用 C6 capabilities.yaml 的 CapabilitySpec 字段
+# + SPEC §3.7 增补：transport / shell_cmd / shell_path / envelope_version /
+#   tools[].{domain, read_write, annotations, requires_mandate}
+#
+# 字段词典：
+#   shell_id       全局唯一（kebab-case），C6 capabilities.yaml capability_id 加 .mcp 后缀对齐
+#   transport      stdio / ssh-stdio / http / in-process（枚举）
+#   shell_cmd      拉起命令（stdio）；http 则填 base_url；in-process 填 module::class
+#   envelope_version 统一信封语义版本（本 v1=0.1，M1③ 信封映射层落地后迭代）
+#   tools[].port   隶属 L0-P port（memory/collector/search/store/analysis/event）
+#   tools[].domain L0 域语义（cognition/search/semantic/data/eval/rea/store-admin）
+#   tools[].read_write 读/写/读写（枚举）
+#   tools[].requires_mandate 写工具是否需要宿主 Mandate 授权（SPEC §3.3）
+#   tools[].annotations MCP tool annotations：readOnlyHint=true/false
+schema_version: "1.0-mcp"
+registry_version: "0.1"
+last_updated: "2026-11-02"
+# 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
+# 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
+single_source_of_truth: true
+
+# ── 存量三壳（已在线运行）─────────────────────────────────────────
+# 壳不计入 SPEC-L0 §3.1 port 上限 6（壳是协议转换层，非 port 实现）
+shells:
+  # 壳 ① 认知+检索（含 unified_search，C7 已挂入）
+  - shell_id: l0.cognition.mcp
+    capability_id: l0.cognition     # 对齐 C6
+    transport: ssh-stdio             # D5 双模：默认 ssh 云端；本地 profile 切 stdio
+    shell_path: "4-MEMORY/9-工具与接口/cognitive_mcp_server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.1"          # M1③ 信封映射层落地后迭代
+    status: available
+    tools:
+      - name: recall
+        port: memory
+        domain: cognition
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: unified_search         # 检索域工具并入认知壳（§3.1 注②）
+        port: search
+        domain: search
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: record
+        port: memory
+        domain: cognition
+        read_write: write
+        requires_mandate: true       # 写工具需宿主 Mandate 授权
+        annotations: { readOnlyHint: false, destructiveHint: true }
+      - name: verify
+        port: memory
+        domain: cognition
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+      - name: stats
+        port: memory
+        domain: cognition
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: health
+        port: memory
+        domain: cognition
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+
+  # 壳 ② 金融语义蒸馏系统（39）——Search 语义面；不新增 port
+  - shell_id: l0.semantic-39.mcp
+    capability_id: l0.search.semantic39   # C6 无此 capability_id（39 纳入 L0 但不新增 port）
+    transport: stdio
+    shell_path: "39-金融语义蒸馏系统/scripts/mcp_server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.1"
+    status: available
+    tools:
+      - name: query_entity
+        port: search
+        domain: semantic
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: semantic_lookup
+        port: search
+        domain: semantic
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: distill_aliases
+        port: search
+        domain: semantic
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+      - name: training_feed
+        port: search
+        domain: semantic
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+
+  # 壳 ③ REA client（npm rea-agents 133 工具，REA 域服务面；本 MCP 壳为 consumer）
+  - shell_id: l0.rea-client.mcp
+    capability_id: l0.rea
+    transport: http                    # 实际调 npm rea-agents HTTP 端点
+    shell_path: ""                     # client 壳薄，无独立脚本
+    shell_cmd: "rea-agents"            # 占位；落地时以 npm 包/IPC 接入
+    envelope_version: "0.1"
+    status: planned                    # M3⑧ 落地
+    tools:
+      - name: rea_analyze
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: rea_trace
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: rea_compare
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+
+# ── 规划新壳占位（P1-P3）─────────────────────────────────────────
+# 占位 = schema 已存在、status=planned，落地时只填 shell_path/shell_cmd/envelope_version
+# 新壳未经本注册表登记不得上线（R6 漂移门禁）
+planned_shells:
+  - shell_id: l0.data.mcp
+    capability_id: l0.data
+    transport: stdio
+    shell_path: "mcp_shells/l0_data/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.2"
+    status: planned                    # M2⑥
+    tools:
+      - name: data_fetch
+        port: collector
+        domain: data
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: data_collect_once
+        port: collector
+        domain: data
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: data_store_read
+        port: store
+        domain: data
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      # 写面 Ban 默认禁，Mandate 授权后开放（SPEC §3.3）
+      - name: data_store_write
+        port: store
+        domain: data
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+
+  - shell_id: l0.eval.mcp
+    capability_id: l0.rea               # 评测属 analysis 域，复用 l0.rea（C6 capability_id 待补）
+    transport: stdio
+    shell_path: "mcp_shells/l0_eval/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.2"
+    status: planned                    # M2⑦
+    tools:
+      - name: eval_analyze
+        port: analysis
+        domain: eval
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: eval_report
+        port: analysis
+        domain: eval
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+
+  - shell_id: l0.store-admin.mcp
+    capability_id: l0.store             # 库管属 store 管理面
+    transport: stdio
+    shell_path: "mcp_shells/l0_store_admin/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.2"
+    status: planned                    # M4⑪
+    tools:
+      - name: store_admin_status
+        port: store
+        domain: store-admin
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: store_admin_query
+        port: store
+        domain: store-admin
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+
+# ── 枚举词典（校验器参照）───────────────────────────────────────
+enums:
+  transport: [stdio, ssh-stdio, http, in-process]
+  port: [memory, collector, search, store, analysis, event]
+  domain: [cognition, search, semantic, data, eval, rea, store-admin]
+  read_write: [read, write, read-write]
+  status: [available, degraded, planned, deprecated]
+  envelope_version: ["0.1", "0.2"]
+  # 每个 shell 的工具数硬上限（SPEC §3.3 B2：Worker 角色→工具集矩阵，每角色 ≤10 工具）
+  max_tools_per_shell: 10
+  # 聚合 2-3 shell 总工具数上限（SPEC R1 工具面膨胀治理）
+  max_total_tools: 40
