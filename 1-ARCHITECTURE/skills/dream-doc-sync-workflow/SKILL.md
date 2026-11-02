@@ -1,18 +1,18 @@
 ---
 name: dream-doc-sync-workflow
-description: "Orchestrates 8-step doc index sync: change parse → 0-系统文档管理/INDEX update → 2-KNOWLEDGE index update → doc_lint+link_checker validate → doc_coverage → feishu base sync → cognitive record → verify closure. Invoke when docs are added/deleted/modified, or cognitive record tags contain 'doc-sync'."
+description: Orchestrates 8-step doc index sync: change parse → 0-系统文档管理/INDEX update → 2-KNOWLEDGE index update → doc_lint+link_checker validate → doc_coverage → feishu base sync → cognitive record → verify closure. Invoke when docs are added/deleted/modified, or cognitive record tags contain 'doc-sync'.
 version: 1.1.0
 created: 2026-09-24
-updated: 2026-10-11
+updated: 2026-11-02
 license: Internal
 status: active
 category: orchestration
 triggers: [文档同步, 更新索引, 文档索引治理, 同步知识库, doc sync, 更新文档索引]
 depends_on: [doc_lint.py, doc_coverage.py, index_generator.py, link_checker.py, index-ops]
 provides: [doc-index-sync, knowledge-base-sync, doc-index-governance]
-cognitive_links: [VM-1790001702811-24bffe86, VM-1790003285544-0df90409]
+cognitive_links: [VM-1790001702811-24bffe86, VM-1790003285544-0df90409, VM-integration-test]
+apply_count: 20
 ---
-
 ## Autonomy Boundary
 
 可自主执行：

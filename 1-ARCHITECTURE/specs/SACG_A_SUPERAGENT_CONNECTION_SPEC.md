@@ -9,7 +9,7 @@
 > - [2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md](../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)(含第八章连接点专项评估)
 > - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.1（§1.8 DSH 升级口径）(新 SACG 口径唯一依据)
 > - 认知记忆 VM-1793584859748(连接点评估结论)
-> - **上位设计**:[DESIGN-DSH-ARCH-UPGRADE-v0.1.md](../../46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.1.md)(本 SPEC 是其 ③ 契约层的实现规格)
+> - **上位设计**:[DESIGN-DSH-ARCH-UPGRADE-v0.2.md](../../46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md)(本 SPEC 是其 ③ 契约层的实现规格)
 >
 > **口径声明(硬约束)**: 本文档一律使用 v4.0 新 SACG 口径(S=认知规划/A=OKR验收/C=执行驱动/G=压缩沉淀),旧 Sense/Arrange/Compute/GraphStore 口径已作废,禁止混用。
 

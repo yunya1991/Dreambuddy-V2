@@ -1,6 +1,6 @@
 # ANALYSIS:L0 能力 MCP 化评估与分层约定
 
-> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 🔬 待评审
+> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 📚 评估归档——**MCP 域设计以 47-MCP管理系统 SPEC 为 SSoT**(本文档仅保留评估依据,不再作为实现依据;数字与现状以 [REPORT-L0-MCP-DSH-IMPACT v1.1](REPORT-L0-MCP-DSH-IMPACT-v1.1.md) 勘误 F1/F2/F6/F7 为准,含『聚合 2-3 个 server』与『连接池收口』两处结论的修正)
 > **v0.2 变更**: 新增 §八「面向 DSH 升级的价值分级」——从通用 MCP 优劣转向对 DSH 多 agent 架构的价值高低
 > **问题**: 是否将 L0 基础能力(认知/数据/检索/库管/评测/REA)统一通过 MCP 封装?优劣如何?技术文档需否调整?
 > **依据**: v4.0 架构总览 L0 定义、35 号域 SPEC-CognitiveSystem-Evolution / COLLABORATION-CONTRACT、[SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2](SPEC-EVENT-DRIVEN-L1-GATEWAY.md)、[DESIGN-SUPERAGENT-FUSION v0.2](DESIGN-SUPERAGENT-FUSION.md)

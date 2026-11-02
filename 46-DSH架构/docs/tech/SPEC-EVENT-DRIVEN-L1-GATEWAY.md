@@ -9,7 +9,7 @@
 > **依据**:
 > - [调研报告第九章(事件驱动×存算分离×L0L1L2)](../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)
 > - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.1（§1.7 L0 出口层 / §1.8 DSH 升级）
-> - **上位设计**:[DESIGN-DSH-ARCH-UPGRADE-v0.1.md](DESIGN-DSH-ARCH-UPGRADE-v0.1.md)(本 SPEC 是其 ① 入口层的实现规格)
+> - **上位设计**:[DESIGN-DSH-ARCH-UPGRADE-v0.2.md](DESIGN-DSH-ARCH-UPGRADE-v0.2.md)(本 SPEC 是其 ① 入口层的实现规格)
 > - 姊妹 SPEC:[SACG_A_SUPERAGENT_CONNECTION_SPEC.md](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(契约桥接,评审时可决定先后/并行)
 > - 认知记忆:VM-1793586560886(三层视角结论)、VM-1792148857896(L0 统一信封与 degraded≠ok(None) 约定)
 
@@ -106,9 +106,10 @@
 
 ## 七、评审清单
 
-- [ ] 与 SACG_A SPEC 的先后关系:P0 并行,还是本网关作为其 P1 前置?
-- [ ] 事件意图放 L1 注册表 vs 独立事件注册表?
-- [ ] shadow 旁路观察期时长与转正判据
-- [ ] 批处理合并窗口参数(初始建议 2s,对齐 Super-agent passes 周期)
+- [ ] 与 SACG_A SPEC 的先后关系:P0 并行,还是本网关作为其 P1 前置?(**建议初值:P0 并行**——网关事件源盘点与契约桥接无依赖顺序,并行可缩短关键路径)
+- [ ] 事件意图放 L1 注册表 vs 独立事件注册表?(**建议初值:独立事件注册表**——事件意图生命周期与任务意图不同(高频/可冷却),独立注册表经意图契约文件与 L1 注册表对齐,不双写逻辑)
+- [ ] shadow 旁路观察期时长与转正判据(**建议初值:观察期 ≥2 周;转正判据对齐 m4——误拦率 <5%、INCONCLUSIVE 占比 <30%**)
+- [ ] 批处理合并窗口参数(**建议初值 2s**,对齐 Super-agent passes 周期;P0 回放集实测后按 P99 事件到达间隔调整)
 - [x] 45 shadow 转正判据(评审 m4 定初值):**误拦率 <5%、观察期 ≥2 周、INCONCLUSIVE 占比 <30%**;达标转强制,不达标回 shadow 调参
-- [ ] A 层 verify=evidence_backed 是否统一消费 45 Evidence Bundle(与 SACG_A SPEC 对齐)
+- [ ] A 层 verify=evidence_backed 是否统一消费 45 Evidence Bundle(与 SACG_A SPEC 对齐)(**建议初值:统一消费**——A 层验收与 45 门禁共用同一证据源,避免两套证据口径)
+- [ ] **外部数据本地实测验证**:『取消直通→Router 决策 +30%、缓存读 +37%』当前引自二手报道(已标注宣称值);**P0 回放集(A5)顺带产出本地实测值**,实测与宣称偏差 >10 个百分点时复核融合价值假设

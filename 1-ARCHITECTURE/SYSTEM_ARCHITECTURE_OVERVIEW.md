@@ -572,7 +572,7 @@ L0 对外供给采用**双通道**，不是单一通道——这是本节确立�
 - **H5 trace 贯穿**：`trace_id` 全链路透传，落 `dreamos_sessions`／`dreamos_spans`。
 - **H6 单一事实源**：MCP 通道**不得引入第二事实源**。认知库事实源在云端 → 认知壳默认 ssh 云端；本地拉起**仅作离线只读降级**，写工具在本地模式禁用。
 
-> 本节只固定**通道口径**；分域价值、聚合粒度、落地顺序属评估范畴，见 `46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md`。
+> 本节只固定**通道口径**；分域价值、聚合粒度、落地顺序属评估范畴，见 `46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.1.md`。
 
 ### 1.8 DSH 多 agent 升级（🔴 规划中）
 
@@ -591,7 +591,7 @@ L0 对外供给采用**双通道**，不是单一通道——这是本节确立�
 
 **红线**：交易热路径零接入；`enable_dsh_upgrade` 默认关；独立 DSH profile；异常 FAIL-OPEN 退回现有单会话等价行为。
 
-> 详细设计（七层架构 / 8 条 ADR / P0-P3 演进路径 / 风险册）见 `46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.1.md`。**下位 SPEC 可细化实现，但不得与本节的「状态单一事实源 / 验收外置 / 能力集 / 红线」冲突。**
+> 详细设计（七层架构 / 8 条 ADR / P0-P3 演进路径 / 风险册）见 `46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md`。**下位 SPEC 可细化实现，但不得与本节的「状态单一事实源 / 验收外置 / 能力集 / 红线」冲突。**
 
 ## 二、三大思维链（骨架层）
 

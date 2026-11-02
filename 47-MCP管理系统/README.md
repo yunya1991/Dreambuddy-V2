@@ -18,7 +18,7 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约�
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
-| [docs/tech/SPEC-L0-MCP-PACKAGING-v0.2.md](./docs/tech/SPEC-L0-MCP-PACKAGING-v0.2.md) | L0 六域 MCP 封装实施 SPEC：契约映射/写工具治理/P0-P3 路线/D1-D6 决策记录 | **v0.3 决议落定**（B1-B6/G1-G3），可开工；R8 终审待云端签发 |
+| [docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md](./docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md) | L0 六域 MCP 封装实施 SPEC：契约映射/写工具治理/P0-P3 路线/D1-D6 决策记录 | **v0.3 决议落定**（B1-B6/G1-G3），可开工；R8 终审待云端签发 |
 | [docs/tech/ALIGNMENT-46-47-v1.0.md](./docs/tech/ALIGNMENT-46-47-v1.0.md) | 与 46-DSH 升级文档的对齐审查：6 冲突 + 3 架构缺口 + 合并开工顺序 + Go/No-Go | 开工前终审输入 |
 
 ## 外部关联文档（原位保留，本模块登记索引）
