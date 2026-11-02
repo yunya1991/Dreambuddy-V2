@@ -25,6 +25,10 @@ single_source_of_truth: true
 # 壳不计入 SPEC-L0 §3.1 port 上限 6（壳是协议转换层，非 port 实现）
 shells:
   # 壳 ① 认知+检索（含 unified_search，C7 已挂入）
+  # 跨 domain 说明：此壳含 cognition + search 两类工具——recall 是认知域
+  # 内部向量检索（Memory port），unified_search 是 Search 域跨源统一门面
+  # （三后端：41 文档索引 + Chroma RAG + recall）；因 unified_search 第三
+  # 后端必须同进程调 recall，C7 决策同 server 承载，零 IPC 开销
   - shell_id: l0.cognition.mcp
     capability_id: l0.cognition     # 对齐 C6
     transport: ssh-stdio             # D5 双模：默认 ssh 云端；本地 profile 切 stdio
@@ -70,7 +74,9 @@ shells:
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
 
-  # 壳 ② 金融语义蒸馏系统（39）——Search 语义面；不新增 port
+  # 壳 ② 金融语义蒸馏系统（39）——Search 域独立第三面；不新增 port
+  # 与 unified_search 边界：unified_search 面向"找文档/找记忆"，39 面向
+  # "实体解析/别名蒸馏/金融语义字典"——质不同源，独立 server 承载避免污染
   - shell_id: l0.semantic-39.mcp
     capability_id: l0.search.semantic39   # C6 无此 capability_id（39 纳入 L0 但不新增 port）
     transport: stdio
