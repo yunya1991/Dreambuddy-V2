@@ -85,12 +85,13 @@ dreambuddy-v2/
 │       └── TECH-L0-MCP-v0.1.md      # 本文件
 ```
 
-**规划壳占位**（M2⑥/M2⑦/M4⑪ 落地时创建目录）：
+**新壳落地清单**（PLAN M2⑤/M2⑥/M3⑦/M4⑩ 已创建目录）：
 ```
 mcp_shells/
-├── l0_data/server.py           # M2⑥ 数据壳（只读）
-├── l0_eval/server.py           # M2⑦ 评测壳（薄包 45）
-└── l0_store_admin/server.py    # M4⑪ 库管壳（只读）
+├── l0_data/server.py           # M2⑤ 数据壳（只读 + 写面 Ban）
+├── l0_eval/server.py           # M2⑥ 评测壳（薄包 45）
+├── l0_rea/server.py            # M3⑦ REA 壳（6 两段式工具 + JSONL 作业持久层）
+└── l0_store_admin/server.py    # M4⑩ 库管壳（只读）
 ```
 
 ### 2.2 壳三段式结构（所有存量/规划壳必须遵循）
@@ -475,7 +476,7 @@ SPEC DA1：壳进程按需拉起即退，job 状态必须落持久层——评�
 
 **壳后 agent 化的推进时机**：
 - 壳落地完成（M2/M3/M4 全部 ✅）
-- shadow 双跑一窗口（M3⑩ REA_MCP_SHADOW=1）
+- shadow 双跑一窗口（M3⑨ REA_MCP_SHADOW=1）
 - 基线报告产出、延迟 SLO 达标
 - **bcrm2 切流后**（不同日原则）
 

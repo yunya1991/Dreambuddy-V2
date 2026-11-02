@@ -1,4 +1,4 @@
-# L0 MCP 壳延迟基线（M1④）
+# L0 MCP 壳延迟基线（M1③）
 
 - 测量日期：2026-11-02
 - 宿主：/home/luke/venv-trading/bin/python3 ｜ 进程数：in-process=N=1 / stdio=每次新进程冷启动
