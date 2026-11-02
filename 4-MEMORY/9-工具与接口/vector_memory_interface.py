@@ -36,7 +36,6 @@ import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -101,7 +100,7 @@ class TextVectorizer:
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
     """计算两个向量的余弦相似度（向量已归一化时等于点积）"""
-    return sum(x * y for x, y in zip(a, b))
+    return sum(x * y for x, y in zip(a, b, strict=False))
 
 
 def vector_to_bytes(vec: List[float]) -> bytes:
@@ -228,8 +227,28 @@ class VectorMemoryInterface:
         self.engine = self._select_engine(engine)
         logger.info(f"VectorMemoryInterface 引擎: {self.engine}")
 
+        # 事务纪律：busy_timeout + 文件库 WAL（须在 sqlite-vec 连接切换之后应用）
+        self._apply_tx_pragmas()
+
         # 初始化表结构
         self._init_schema()
+
+    def _apply_tx_pragmas(self) -> None:
+        """应用事务纪律 PRAGMA（FAIL-OPEN，设置失败不阻塞初始化）。
+
+        - busy_timeout=30000ms：写争用时等待而非立即失败（避免 "database is locked"）
+        - 文件库启用 WAL：读写不互斥（:memory: 不支持 WAL，跳过）
+        """
+        try:
+            self.db.execute("PRAGMA busy_timeout=30000")
+        except Exception:
+            logger.exception("设置 busy_timeout 失败（FAIL-OPEN，继续初始化）")
+
+        if self.storage_path != ":memory:":
+            try:
+                self.db.execute("PRAGMA journal_mode=WAL")
+            except Exception:
+                logger.exception("启用 WAL 失败（FAIL-OPEN，继续初始化）")
 
     def set_distill_engine(self, distill_engine: Any) -> None:
         """设置动态蒸馏引擎"""
@@ -457,34 +476,39 @@ class VectorMemoryInterface:
 
         # 插入元数据表
         with self._db_lock:
-            self.db.execute("""
-                INSERT OR REPLACE INTO memories
-                    (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations, external_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, [
-                mem_id, content, vector_bytes,
-                quality_level, confidence,
-                json.dumps(tags, ensure_ascii=False),
-                memory_type, source, now, now, int(verify_count or 0),
-                level,
-                json.dumps(known_gaps, ensure_ascii=False),
-                json.dumps(observations, ensure_ascii=False),
-                external_id,
-            ])
-
-            # 插入 sqlite-vec 虚拟表
-            if self.engine == "sqlite_vec":
+            try:
                 self.db.execute("""
-                    INSERT OR REPLACE INTO vec_memories(rowid, embedding, memory_id, quality)
-                    VALUES (?, ?, ?, ?)
+                    INSERT OR REPLACE INTO memories
+                        (id, content, vector, quality_level, confidence, tags, memory_type, source, created_at, updated_at, verify_count, level, known_gaps, observations, external_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, [
-                    self._get_rowid(mem_id),
-                    vector_bytes,
-                    mem_id,
-                    quality_level,
+                    mem_id, content, vector_bytes,
+                    quality_level, confidence,
+                    json.dumps(tags, ensure_ascii=False),
+                    memory_type, source, now, now, int(verify_count or 0),
+                    level,
+                    json.dumps(known_gaps, ensure_ascii=False),
+                    json.dumps(observations, ensure_ascii=False),
+                    external_id,
                 ])
 
-            self.db.commit()
+                # 插入 sqlite-vec 虚拟表
+                if self.engine == "sqlite_vec":
+                    self.db.execute("""
+                        INSERT OR REPLACE INTO vec_memories(rowid, embedding, memory_id, quality)
+                        VALUES (?, ?, ?, ?)
+                    """, [
+                        self._get_rowid(mem_id),
+                        vector_bytes,
+                        mem_id,
+                        quality_level,
+                    ])
+
+                self.db.commit()
+            except Exception:
+                # 事务纪律：异常路径必须回滚，杜绝 RESERVED 锁泄漏
+                self.db.rollback()
+                raise
         return mem_id
 
     def _get_rowid(self, mem_id: str) -> int:
@@ -692,11 +716,16 @@ class VectorMemoryInterface:
             current_verify_count = old_row["verify_count"] if old_row else 0
 
             now = datetime.now(timezone.utc).isoformat()
-            cursor = self.db.execute(
-                "UPDATE memories SET quality_level=?, confidence=?, updated_at=? WHERE id=?",
-                [quality_level, confidence, now, memory_id]
-            )
-            self.db.commit()
+            try:
+                cursor = self.db.execute(
+                    "UPDATE memories SET quality_level=?, confidence=?, updated_at=? WHERE id=?",
+                    [quality_level, confidence, now, memory_id]
+                )
+                self.db.commit()
+            except Exception:
+                # 事务纪律：异常路径必须回滚，杜绝 RESERVED 锁泄漏
+                self.db.rollback()
+                raise
 
         # 触发动态蒸馏（在锁外，避免死锁）
         if cursor.rowcount > 0 and self._distill_engine is not None:
@@ -765,11 +794,16 @@ class VectorMemoryInterface:
     def delete(self, memory_id: str) -> bool:
         """删除记忆"""
         with self._db_lock:
-            cursor = self.db.execute("DELETE FROM memories WHERE id=?", [memory_id])
-            if self.engine == "sqlite_vec":
-                rowid = self._get_rowid(memory_id)
-                self.db.execute("DELETE FROM vec_memories WHERE rowid=?", [rowid])
-            self.db.commit()
+            try:
+                cursor = self.db.execute("DELETE FROM memories WHERE id=?", [memory_id])
+                if self.engine == "sqlite_vec":
+                    rowid = self._get_rowid(memory_id)
+                    self.db.execute("DELETE FROM vec_memories WHERE rowid=?", [rowid])
+                self.db.commit()
+            except Exception:
+                # 事务纪律：异常路径必须回滚，杜绝 RESERVED 锁泄漏
+                self.db.rollback()
+                raise
         return cursor.rowcount > 0
 
     # ============================================================
@@ -1117,14 +1151,14 @@ if __name__ == "__main__":
     print(f"  类型分布: {stats['type_distribution']}")
 
     # 健康检查
-    print(f"\n--- 健康检查 ---")
+    print("\n--- 健康检查 ---")
     health = vm.healthcheck()
     print(f"  状态: {health['status']}")
     print(f"  引擎: {health['engine']}")
     print(f"  记忆数: {health['total_memories']}")
 
     # 更新测试
-    print(f"\n--- 更新测试 ---")
+    print("\n--- 更新测试 ---")
     first_id = vm.add("测试记忆", quality_level="C", confidence=0.3)
     vm.update_quality(first_id, "A", 0.85)
     vm.increment_verify(first_id)
@@ -1133,7 +1167,7 @@ if __name__ == "__main__":
     print(f"  更新后: quality={rec['quality_level']}, confidence={rec['confidence']}, verify={rec['verify_count']}")
 
     # 相似记忆查找
-    print(f"\n--- 相似记忆查找 ---")
+    print("\n--- 相似记忆查找 ---")
     similar = vm.search_similar("BTC趋势突破策略", top_k=3, threshold=0.2)
     print(f"  符合阈值的结果: {len(similar)} 条")
     for r in similar:
@@ -1182,7 +1216,6 @@ def rebuild_solution_paths_from_memories(
     Returns:
         统计字典（扫描数/合格数/写入数/质量分布等）
     """
-    import shutil as _shutil
 
     stats: Dict[str, Any] = {
         "scanned": 0,

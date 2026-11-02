@@ -9,10 +9,7 @@ F3: cognitive-session 噪音记忆权重惩罚测试。
 TDD 顺序：RED -> GREEN -> 验证。
 """
 
-import json
 import sys
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -21,8 +18,7 @@ _COG_DIR = Path(__file__).resolve().parent.parent
 if str(_COG_DIR) not in sys.path:
     sys.path.insert(0, str(_COG_DIR))
 
-from cognitive_loop_entry import CognitiveLoopEntry
-
+from cognitive_loop_entry import CognitiveLoopEntry  # noqa: E402  sys.path 注入必须先于 import
 
 # ═══════════════════════════════════════════════════════════════
 # 测试数据构造器
@@ -67,6 +63,8 @@ def cle_isolated(tmp_path):
         storage_path=str(db_file),
         memory_id="AM-TEST-001",
         enable_distill=False,
+        # 隔离 F3 噪音惩罚：关掉正交的 PoE soft 降权（否则 score 再 ×0.5，无法验证 F3 系数）
+        poe_enforcement="off",
     )
 
     # 先插入噪音（4条）

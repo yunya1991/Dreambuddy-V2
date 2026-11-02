@@ -82,7 +82,13 @@ extend-exclude = '''
 '''
 # C5 第五批：legacy 模块级执行回测脚本（不可 import 回归），全量重排风险大于收益；
 # force-exclude 使显式传入的暂存文件也排除（pre-commit black hook 场景）。
-force-exclude = '''11-易经推理系统/scripts/memory_l4/(backtest_five_domain_v2|bcrm2/storage|kg_store)\.py'''
+# 4-MEMORY/9-工具与接口 存量文件（HEAD 即未 black 化，全量重排 >700 行 diff，风险大于收益）同样豁免。
+force-exclude = '''
+(
+  11-易经推理系统/scripts/memory_l4/(backtest_five_domain_v2|bcrm2/storage|kg_store)\.py
+  | 4-MEMORY/9-工具与接口/(vector_memory_interface\.py|tests/(test_final_signoff|test_gray_release_checklist|test_skill_loader|test_f3_noise_penalty)\.py)
+)
+'''
 
 [tool.ruff]
 target-version = "py310"

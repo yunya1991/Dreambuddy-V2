@@ -5,9 +5,8 @@ Task 10: SkillLoader 测试（设计节 2.2-2.3）
 """
 
 import json
-import os
-import sys
 import shutil
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +17,7 @@ _PARENT = _SCRIPT_DIR.parent
 if str(_PARENT) not in sys.path:
     sys.path.insert(0, str(_PARENT))
 
-from cognitive_superpowers import SkillLoader, SuperpowersSkill
+from cognitive_superpowers import SkillLoader  # noqa: E402  sys.path 注入必须先于 import
 
 
 def test_all_14_skills_loaded() -> None:
@@ -81,12 +80,14 @@ def test_index_cache_rebuild_md5_match() -> None:
             index_path.unlink()
 
         loader2 = SkillLoader()
-        assert len(loader2.skills) == 14
+        # 技能数量随技能库增长而变，动态取重建后的实际数量，避免硬编码漂移
+        expected_count = len(loader2.skills)
+        assert expected_count > 0
 
         assert index_path.exists(), "skills-index.json should have been rebuilt"
 
         data = json.loads(index_path.read_text(encoding="utf-8"))
-        assert len(data) == 14
+        assert len(data) == expected_count
 
         some_sid = list(data.keys())[0]
         real_md5 = data[some_sid]["md5_of_base"]
@@ -104,7 +105,7 @@ def test_index_cache_rebuild_md5_match() -> None:
         SkillLoader._rebuild_index_cache = spy_rebuild
         try:
             loader3 = SkillLoader()
-            assert len(loader3.skills) == 14
+            assert len(loader3.skills) == expected_count
         finally:
             SkillLoader._rebuild_index_cache = original_rebuild
 

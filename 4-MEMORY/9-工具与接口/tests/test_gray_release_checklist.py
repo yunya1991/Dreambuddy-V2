@@ -1,10 +1,35 @@
 """灰度观察期检查脚本单测（设计节 6.5 检查表 7 项）。"""
 import sys
+import types
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from scripts.gray_release_checklist import run_gray_check, GrayCheckResult
+_MODULE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_MODULE_DIR))
+
+# 本目录 scripts/ 与仓库根 scripts/ 都是无 __init__.py 的命名空间包，而
+# 11-易经推理系统/scripts 是常规包（含 __init__.py）。按 PEP 420，常规包优先于
+# 命名空间包，仓库根 conftest 注入该目录后，pytest 内 `import scripts` 会命中
+# 常规包，导致本目录 scripts.gray_release_checklist 不可见（ModuleNotFoundError）。
+# 这里预先注册命名空间包，按 sys.path 顺序收集所有 scripts 目录，
+# 复现无遮蔽时的命名空间解析语义。
+_pkg = sys.modules.get("scripts")
+if _pkg is None or not hasattr(_pkg, "__path__"):
+    _pkg = types.ModuleType("scripts")
+    _pkg.__path__ = []
+    sys.modules["scripts"] = _pkg
+_local_scripts = str(_MODULE_DIR / "scripts")
+if _local_scripts not in _pkg.__path__:
+    _pkg.__path__.insert(0, _local_scripts)
+for _entry in sys.path:
+    _cand = str(Path(_entry) / "scripts")
+    if _cand != _local_scripts and Path(_cand).is_dir() and _cand not in _pkg.__path__:
+        _pkg.__path__.append(_cand)
+
+from scripts.gray_release_checklist import (  # noqa: E402  命名空间包注册必须先于 import
+    GrayCheckResult,
+    run_gray_check,
+)
 
 
 def test_gray_check_returns_7_items():

@@ -129,6 +129,44 @@ def _voyager_ensure_dirs() -> None:
             pass
 
 
+class QuarantineManager:
+    """隔离区管理器（N-P1b）。
+
+    隔离态以 quality_level="quarantined" 表示（与 archived 同为最低等级 rank=9），
+    因此默认 recall 的 min_quality 过滤会自然排除隔离记忆；显式查询才可见。
+    """
+
+    QUARANTINED = "quarantined"
+
+    def __init__(self, vm: Any) -> None:
+        self._vm = vm
+
+    def quarantine(self, memory_id: str) -> bool:
+        """将记忆置为隔离态（confidence 归零）。"""
+        return bool(self._vm.update_quality(memory_id, self.QUARANTINED, 0.0))
+
+    def is_quarantined(self, memory_id: str) -> bool:
+        mem = self._vm.get(memory_id)
+        return bool(mem) and mem.get("quality_level") == self.QUARANTINED
+
+    def restore(self, memory_id: str, quality_level: str = "C", confidence: float = 0.4) -> bool:
+        """从隔离区恢复：质量等级回到 C 档，confidence 重置为 C 档基线 0.4。"""
+        return bool(self._vm.update_quality(memory_id, quality_level, confidence))
+
+    def count(self) -> int:
+        with self._vm._db_lock:
+            row = self._vm.db.execute(
+                "SELECT COUNT(*) FROM memories WHERE quality_level=?", [self.QUARANTINED]
+            ).fetchone()
+        return int(row[0]) if row else 0
+
+    def status(self) -> Dict[str, Any]:
+        return {
+            "quarantined_count": self.count(),
+            "quality_level": self.QUARANTINED,
+        }
+
+
 class CognitiveLoopEntry:
     """
     认知闭环入口 — TRAE 日常开发的记忆系统统一接口
@@ -194,6 +232,9 @@ class CognitiveLoopEntry:
             memory_id=memory_id,
             distill_engine=self._distill_engine,
         )
+
+        # N-P1b: 隔离区管理器（隔离记忆默认不进 recall，可显式查询/恢复）
+        self._quarantine = QuarantineManager(self._vm)
 
         # 初始化压缩引擎
         from consolidation_engine import ConsolidationEngine
@@ -391,7 +432,12 @@ class CognitiveLoopEntry:
     # ============================================================
 
     def recall(
-        self, context: str, top_k: int = 5, min_quality: str = "C", sort_mode: str = "score"
+        self,
+        context: str,
+        top_k: int = 5,
+        min_quality: str = "C",
+        sort_mode: str = "score",
+        include_quarantined: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         检索相关记忆（处理代码问题前调用）。
@@ -405,6 +451,7 @@ class CognitiveLoopEntry:
             context: 问题描述或上下文
             top_k: 返回结果数
             min_quality: 最低质量等级
+            include_quarantined: 是否把隔离区记忆一并返回（默认 False，隔离态不进 recall）
 
         Returns:
             记忆列表，按相似度降序
@@ -439,12 +486,30 @@ class CognitiveLoopEntry:
         # ---------- Cold path — archival (SQLite) 查询 ----------
         archival_results: List[Dict[str, Any]] = []
         try:
-            results = self._vm.search(
-                context,
-                top_k=top_k,
-                quality_filter=min_quality,
-            )
+            if include_quarantined:
+                # 显式请求：不加质量过滤，隔离记忆与正常记忆并列返回
+                results = self._vm.search(context, top_k=top_k * 2)
+            else:
+                results = self._vm.search(
+                    context,
+                    top_k=top_k,
+                    quality_filter=min_quality,
+                )
             archival_results = [r.to_dict() for r in results]
+            if not include_quarantined:
+                # 隔离态兜底过滤：sqlite-vec 的 vec_memories.quality 是写入时快照，
+                # 质量等级变更后可能仍被向量检索命中，故以 memories 表的实时质量为准
+                archival_results = [
+                    r
+                    for r in archival_results
+                    if r.get("quality_level") != QuarantineManager.QUARANTINED
+                ]
+                cached_results = [
+                    r
+                    for r in cached_results
+                    if (r.get("metadata") or {}).get("quality_level")
+                    != QuarantineManager.QUARANTINED
+                ]
         except Exception:
             archival_results = []
 
@@ -641,6 +706,31 @@ class CognitiveLoopEntry:
             pass  # FAIL-OPEN：41 文档通道失败不影响记忆通道返回
         # ---------- END D6 ----------
         return dicts
+
+    # ============================================================
+    # N-P1b: 隔离区 — 恢复与状态
+    # ============================================================
+
+    def restore_from_quarantine(
+        self, memory_id: str, quality_level: str = "C", confidence: float = 0.4
+    ) -> bool:
+        """从隔离区恢复记忆：质量等级回到 C 档，confidence 重置为 C 档基线。
+
+        Args:
+            memory_id: 记忆ID
+            quality_level: 恢复后的质量等级（默认 C）
+            confidence: 恢复后的置信度（默认 0.4，C 档基线）
+
+        Returns:
+            是否成功恢复
+        """
+        return self._quarantine.restore(
+            memory_id, quality_level=quality_level, confidence=confidence
+        )
+
+    def quarantine_status(self) -> Dict[str, Any]:
+        """查询隔离区状态（quarantined_count 等）。"""
+        return self._quarantine.status()
 
     # ============================================================
     # P2-1: 记忆路由器 — Intent-Engine → 三库加权召回
