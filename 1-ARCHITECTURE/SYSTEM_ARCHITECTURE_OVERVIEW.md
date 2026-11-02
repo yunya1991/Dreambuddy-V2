@@ -566,10 +566,11 @@ L0 对外供给采用**双通道**，不是单一通道——这是本节确立�
 **硬约束**：
 
 - **H1 热路径不走 MCP**：L1 判定与交易相关链路必须 in-process（保住「零 token + 秒级」承诺）。
-- **H2 信封映射**：MCP 返回须还原统一信封 `ok / data / source / timestamp / degraded(reason) / meta`；**MCP error/timeout ≠ degraded**；源可达无数据 = `ok + data=None`（沿用 L0 既有铁律）。
+- **H2 信封映射**：MCP 返回须还原统一信封 `ok / data / source / timestamp / degraded / error_code / meta`；`error_code` 固定六值枚举 `not_found / unavailable / conflict / invalid / timeout / degraded`（与 44 SPEC-L0 §3.1 同源，**禁止自由文本 reason 直出**）；**MCP 层 error/timeout ≠ degraded**；源可达无数据 = `ok + data=None`。按 44 硬规则，**主功能不可用必须显式 `error_code`，禁止用 FAIL-OPEN 伪装「无结果」**；增强型能力（recall 先验等）可 FAIL-OPEN，但须标 `degraded`。
 - **H3 只经 DAL**：数据类 MCP 必须调用 19-DAL，禁止 server 内直连 PG/CH。
-- **H4 写工具收权**：`record`/`verify` 等写类工具默认禁用，挂 `write` scope，与 Ticket Mandate 授权绑定。
+- **H4 写工具收权**：`record`/`verify` 等写类工具默认禁用，挂 `write` scope，与 Ticket Mandate 授权绑定；**Mandate 授予对象为编排侧（Router／Settle／Verifier），Worker 默认只读**，`settle` 由编排侧执行。
 - **H5 trace 贯穿**：`trace_id` 全链路透传，落 `dreamos_sessions`／`dreamos_spans`。
+- **H6 单一事实源**：MCP 通道**不得引入第二事实源**。认知库事实源在云端 → 认知壳默认 ssh 云端；本地拉起**仅作离线只读降级**，写工具在本地模式禁用。
 
 > 本节只固定**通道口径**；分域价值、聚合粒度、落地顺序属评估范畴，见 `46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md`。
 
@@ -584,8 +585,9 @@ L0 对外供给采用**双通道**，不是单一通道——这是本节确立�
 | **契约** | A 层 OKR 节点 → Ticket + Mandate（**工具授权与预算同源**） |
 | **执行** | Worker 角色池，每角色**能力集 ≤10 工具**；保留 subagent 隔离与摘要压缩，新增「会话可续」 |
 | **状态** | **单一事实源 = L0**；DSH 侧仅运行时缓存，**禁止双写** |
-| **验收** | A 层 verify + 45 门禁，**Worker 不自证完成** |
+| **验收** | A 层 verify + **45 业务门禁**（≠ 45 MCP 契约评测），**Worker 不自证完成** |
 | **沉淀** | settle → 五系统（认知经验／SKILL 流程／调研知识／文档／索引） |
+| **异步等待** | 长任务工具（评测/REA）走两段式 submit/poll；Ticket 进入 `paused(waiting_job)`，由 job 完成事件唤醒，**禁止忙轮询**；job 状态登记于域内存储（45 PG／33 JSONL），属 L0 域内状态，非第二事实源 |
 
 **红线**：交易热路径零接入；`enable_dsh_upgrade` 默认关；独立 DSH profile；异常 FAIL-OPEN 退回现有单会话等价行为。
 
@@ -2466,6 +2468,7 @@ reporting:
 | **权威层（SSoT）** | `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` **v4.1** | 系统架构**唯一事实源** | **最高**，一切争议以本文档为准 |
 | **导航层** | `0-系统文档管理/2-文档地图/ARCHITECTURE_MAP.md`、`SYSTEM_MAP.md`、`INDEX.md` | 只告诉你「文档在哪」，不含架构内容 | 高于业务文档，低于 SSoT |
 | **一致性子系统文档** | `34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md`、`SPEC-v1.2-SACG-orchestration.md` | 支撑 SSoT 的子域细则（L0/L1/L2 与 SACG 深化） | 与 SSoT 平级口径，细节补充 |
+| **MCP 域 SSoT** | `47-MCP管理系统/`（README + docs/tech/SPEC-L0-MCP-PACKAGING + ALIGNMENT-46-47） | MCP 壳的契约映射／写工具治理／能力集注册表／对齐审查 | **MCP 域内最高**；46 的 MCP 评估文档降为评估归档 |
 | **一致性子系统文档（DSH 域）** | `46-DSH架构/docs/tech/`（DESIGN-DSH-ARCH-UPGRADE / ANALYSIS-L0-MCP-ENCAPSULATION / REPORT-L0-MCP-DSH-IMPACT / SPEC-EVENT-DRIVEN-L1-GATEWAY / ANALYSIS-SUPERAGENT-ARCH-DATAFLOW / DESIGN-SUPERAGENT-FUSION） | DSH 多 agent 升级、事件驱动入口、L0 出口面的子域细则 | 与 SSoT 同口径；**不得另立分层/状态/验收口径** |
 | **已归档层** | 见 16.3 清单 | 被 SSoT 取代的历史文档 | **禁止作为实现依据**，仅历史留档 |
 

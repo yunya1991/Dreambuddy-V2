@@ -1,6 +1,7 @@
 # SPEC:L0 六域 MCP 封装（Packaging）— 契约、边界与实施路线
 
-> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 📝 同行评审修订版（4 条 Major 已修入），待用户终审
+> **版本**: v0.3 ｜ **日期**: 2026-11-02 ｜ **状态**: ✅ 决议落定——B1-B6 / G1-G3 已经 ALIGNMENT-46-47 对齐审查落定(见 §8)，可开工；文档终审(approved)按 R8 归云端签发
+> **v0.3 变更**: 按 [ALIGNMENT-46-47 v1.0](./ALIGNMENT-46-47-v1.0.md) 的 Go/No-Go 决议修订：主功能禁 FAIL-OPEN、写主体=编排侧、壳实例进程级共享、能力集单一载体、45 两类评测改名、异步 job 状态登记
 > **上游**: [REPORT-L0-MCP-DSH-IMPACT v1.0](../../../46-DSH架构/docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md)（影响评估，本 SPEC 吸收其结论并修正 2 处实证偏差）
 > **上游**: SPEC-L0-three-layer-architecture v0.5（§3.1 六 port + 统一信封，本 SPEC 是其 L0-P 的**对外协议面**）
 > **定位**: 实施 SPEC。REPORT 回答"要不要做"，本 SPEC 回答"怎么做"。
@@ -23,7 +24,7 @@
 
 ---
 
-## 1. 定位（吸收 REPORT §1.1，用户 D1 待拍板）
+## 1. 定位（吸收 REPORT §1.1；D1 已确认）
 
 **MCP = L0 的对外统一出口（边界适配层），不是内部调用链改造。**
 
@@ -67,6 +68,7 @@
 - 壳内**零业务逻辑**：只允许 协议解析→port/域入口调用→信封映射 三段
 - **壳实现语言 = Python**（与六 port 同栈，宿主 TS/Python 均可 stdio 拉起；评审 DA4）
 - **stdio 进程模型明文（评审 DA6）**：stdio 壳为 **1 宿主 = 1 壳进程**，N 个 Worker 并发 = N 个壳进程 = N×DB 连接——**REPORT §3.6"server 作单点连接池"论据在 stdio 模式下不成立，予以删除**；连接治理下沉到 19-DAL 层（连接上限/方言能力集声明，SPEC-L0 §3.1），壳内禁止自建连接池
+- **壳实例拓扑（G2 定稿）**：`宿主` = **DSH 运行时进程**。同一运行时进程内**按域共享单壳实例**，Worker 会话只持「工具调用句柄」→ 连接数 = 域数（聚合后 3），而非 Worker 数；跨进程（云端／本地）才各自拉起。此口径优先于上一条的 N× 推演
 
 ### 3.2 统一信封 ↔ MCP schema 映射（防第二事实源）
 
@@ -76,12 +78,16 @@
 | `data` | 结构化 content（JSON text block） |
 | `source/timestamp/degraded/meta` | content 内嵌 envelope 对象原样透传 |
 | `error_code`（枚举） | 六值 `not_found/unavailable/conflict/invalid/timeout/degraded`；**禁止自由文本 reason 直出** |
-| 异步任务（评测/REA 长任务） | 两段式：`submit_*` 返回 `ok+meta.job_id`；`poll_*` 返回 `state=running/success/failed` + 结果信封。**持久层强制（评审 DA1）**：壳进程按需拉起即退，job 状态必须落持久层——评测落 45 PG 七表（已有）；**REA 落 JSONL 状态文件**（`33-REA逆向解析工程/reflection_data/mcp_jobs/<job_id>.json`，shadow 期最简载体，禁止内存态）；无持久层的域不得暴露异步工具 |
+| 异步任务（评测/REA 长任务） | 两段式：`submit_*` 返回 `ok+meta.job_id`；`poll_*` 返回 `state=running/success/failed` + 结果信封。**持久层强制（评审 DA1）**：壳进程按需拉起即退，job 状态必须落持久层——评测落 45 PG 八表（已有，`001_init.sql` 实测 8 个 CREATE TABLE）；**REA 落 JSONL 状态文件**（`33-REA逆向解析工程/reflection_data/mcp_jobs/<job_id>.json`，shadow 期最简载体，禁止内存态）；无持久层的域不得暴露异步工具 |
+| **FAIL-OPEN 分型（B1 定稿）** | 增强型能力（recall 先验／投机预取）可 FAIL-OPEN 返回空，但 **meta 必须标 `degraded=true`**；**主功能（统一检索／数据查询／评测裁决）禁止 FAIL-OPEN**，不可用必须 `ok=false + error_code=unavailable`；壳崩溃／超时由宿主兜底并打 `degraded + error_code`，**不得等同于「无结果」** |
+
+> **job 状态归属（B6 定稿）**：45 PG 与 33 JSONL 的 job 状态均属 **L0 域内状态**，登记于域内存储，不构成第二事实源（SSoT §1.8）。
 
 ### 3.3 工具治理（写工具 = 权限单元）
 
 - 所有工具声明 MCP annotations：只读工具 `readOnlyHint=true`；写工具 `readOnlyHint=false + destructiveHint` 视语义
 - 写工具（record/verify/distill_aliases/training_feed/…）**默认禁用**，由 Ticket Mandate 按 scope 显式授权；越权调用**明确拒绝**（非静默降级），审计留痕
+- **Mandate 授予对象 = 编排侧（Router／Settle 节点／Verifier），不是 Worker（B2 定稿）**。Worker **默认只读**；`settle` 写回由编排侧 Settle 节点执行。主体×权限矩阵见 46 DESIGN ADR-9
 - 幂等：写工具必接 `external_id`（沿用 C8 先例），重复调用幂等返回
 - 库管域（38）**只读**（表结构/迁移状态/一致性），写走 CLI+CI，永不进 MCP
 
@@ -116,9 +122,9 @@
 | 阶段 | 内容 | 前置 | 验收 |
 |---|---|---|---|
 | **P0** | ①能力集设计（Worker 角色→工具集矩阵，每角色 ≤10 工具）②契约注册表 v1（**含存量三面登记**：认知/39 语义/REA-client）③统一信封映射层（`mcp_shells/_shared/`）④认知壳读写分 scope（写默认禁） | 无 | 能力集矩阵评审通过；越权写被拒且留痕 |
-| **P1** | ①数据 MCP（只读，只经 19-DAL，Collector+Store 语义）②评测 MCP（适配层复用 45 HTTP :8790，异步 submit/poll） | P0 | DAL 审计无旁路；两段式跑通 |
+| **P1** | ①数据 MCP（只读，只经 19-DAL，Collector+Store 语义）②评测 MCP（适配层复用 45 HTTP :8790，异步 submit/poll） | P0 + **19-DAL 连接上限落地（B3 前置，非 P1 内含）** | DAL 审计无旁路；两段式跑通；3 并发下连接数不超上限 |
 | **P2** | ①REA MCP（新建 server 包 `dsh_nodes.py`，长任务两段式，shadow 起步）②认知壳双模改造（**ssh 云端默认 + 本地只读降级**，修正 F2） | P1 | shadow 无回归；无双事实源 |
-| **P3** | ①库管只读工具（38）②45 增"契约评测"维度（schema 兼容性 + FAIL-OPEN 回归） | P2 | 契约评测可拦截 schema 破坏 |
+| **P3** | ①库管只读工具（38）②45 增「**MCP 契约评测**」维度（schema 兼容性 + FAIL-OPEN 回归；与「45 业务门禁」严格区分） | P2 | 契约评测可拦截 schema 破坏 |
 
 **优先级依据**（与 REPORT 价值分级一致）：数据/评测 ★★★★★ 先行；检索保持聚合不拆壳；库管 ★☆ 只读最后；实盘链路永不进范围。
 
@@ -139,6 +145,25 @@ R1 工具面膨胀（高，能力集裁剪）｜R2 并发写污染（高，Manda
 | D1 | "对外出口"定位（非唯一通道） | ✅ 已确认 |
 | D2 | 聚合粒度：2-3 聚合 server（认知+检索+语义 / 数据+库管只读 / 评测+REA） | ✅ 已确认 |
 | D3 | 库管不做通用写（只读 + CLI/CI 保留） | ✅ 已确认 |
-| D4 | 延迟 SLO（in-process P50<5ms / MCP 本地<50ms / 远端<200ms） | ✅ 已确认 |
+| D4 | 延迟 SLO（in-process P50<5ms / MCP 本地<50ms / 远端<200ms） | ✅ 已确认（数值为方向性，以 P0 基线报告校准；判据 = 壳 P50 ≤ in-process P50 + 45ms） |
 | D5 | 认知壳形态：ssh 云端默认 + 本地只读降级（修正 REPORT"本地为主"） | ✅ 已确认 |
 | D6 | 39-金融语义纳入 L0（归 Search 语义面，不新增 port）；建 47-MCP管理系统 为 MCP 域文档 SSoT | ✅ 已确认 |
+
+
+---
+
+## 8. 开工前对齐决议（2026-11-02，按建议默认落定）
+
+| # | 决议 | 落点 |
+|---|---|---|
+| B1 | FAIL-OPEN 分型：增强型可 FAIL-OPEN（标 degraded）；**主功能禁止 FAIL-OPEN**（必须 error_code） | 本 SPEC §3.2 信封表 |
+| B2 | 写主体 = 编排侧（Router／Settle／Verifier）；**Worker 默认只读**，settle 由编排侧执行 | 本 SPEC §3.3 + 46 DESIGN ADR-9 |
+| B3 | 19-DAL **连接上限**升为 P1 开工前置；P0 阶段 1 Worker 试点规避 | 本 SPEC §4 P1 前置 |
+| B4 | 能力集**单一载体** `47/registry/mcp_capabilities.yaml`；46 只定角色→能力标签 | 本 SPEC §3.7 + 46 DESIGN ADR-4 |
+| B5 | 「45 业务门禁」≠「45 MCP 契约评测」，两维度独立登记 | 本 SPEC §4 P3 + 46 P2 术语 |
+| B6 | 异步 job 状态属 **L0 域内状态**，登记后不构成第二事实源 | 本 SPEC §3.2 + SSoT §1.8 |
+| G1 | 主体×权限矩阵：Worker 读／编排侧读写／Verifier 记裁决／CLI·CI admin | 46 DESIGN ADR-9 |
+| G2 | 壳实例按 **DSH 运行时进程级共享**，Worker 只持句柄 | 本 SPEC §3.1 |
+| G3 | Ticket `paused` 增子因 `waiting_event／waiting_job／waiting_person`，**禁止忙轮询** | 46 DESIGN ADR-3 |
+
+> **开工条件**：以上 9 条已全部落定；剩余 `19-DAL 连接上限` 为 P1 前置（不阻塞 P0）。

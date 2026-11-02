@@ -1,6 +1,6 @@
 # 跨系统协作接口契约 — COLLABORATION-CONTRACT
 
-> **版本**: v1.4 | **更新日期**: 2026-11-02
+> **版本**: v1.5 | **更新日期**: 2026-11-02
 > **定位**: 广义认知系统各子系统间协作调用的**接口契约**（权威定义）
 > **SSoT 层级**: L1（协作接口层），各子系统实现必须遵循
 > **关联**: [SPEC-CognitiveSystem-Evolution.md](./SPEC-CognitiveSystem-Evolution.md) §2 L1基础层接线 + [SPEC-Unified-PoE-Framework.md](./SPEC-Unified-PoE-Framework.md) §2.3 有界信任传递 + [SYSTEM_ARCHITECTURE_OVERVIEW v4.1](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) §1.7 L0 统一出口层
@@ -185,6 +185,8 @@ params = prepare_audit_record_params(audit_result)
 | `record` | **写** | ❌ 默认禁用 | `write` | 写入记忆（落库前过 45 门禁的通道除外） |
 | `verify` | **写** | ❌ 默认禁用 | `write` | 置信度更新（触发蒸馏链） |
 
+> **存量第三面（39-金融语义，D6 归 Search 语义面）**：`query_entity`／`semantic_lookup` 为读，`distill_aliases`／`training_feed` 为写；写工具同样默认禁用，受 §5.2 全部约束。
+
 **约束**：写工具必须由调用方显式携带 `write` scope，且 scope 来源是 **Ticket Mandate 的工具授权字段**（SSoT §1.8），不得由调用方自行声明。
 
 ### 5.2 调用约束（硬约束）
@@ -192,10 +194,13 @@ params = prepare_audit_record_params(audit_result)
 | # | 约束 |
 |---|---|
 | C1 | **统一信封**：返回须为 `ok / data / source / timestamp / degraded(reason) / meta`；MCP 层 error/timeout **不等于** `degraded`；源可达无数据 = `ok + data=None` |
-| C2 | **FAIL-OPEN**：认知 MCP 不可用时调用方返回空结果（如 `[]`）并继续主流程，不得抛出中断（与 `cognitive_loop_adapter.py` 现状一致） |
+| C2a | **FAIL-OPEN（仅增强型能力）**：recall 先验／投机预取等**非主功能**不可用时，调用方返回空（如 `[]`）并继续主流程，**但须标 `degraded=true`**；不得抛出中断 |
+| C2b | **主功能禁止 FAIL-OPEN**：统一检索／数据查询／评测裁决不可用时**必须**返回 `ok=false + error_code=unavailable`，禁止把故障伪装成「无结果」（44 SPEC-L0 §3.1 硬规则） |
 | C3 | **写幂等**：写工具须以 `external_id` 幂等（沿用 C8 job_runs 回调先例），重复调用不产生重复记录 |
 | C4 | **trace 贯穿**：调用须透传 `trace_id`，落 `dreamos_sessions`／`dreamos_spans` |
 | C5 | **写门禁**：`record`／`verify` 的结果若用于沉淀或上线，须先过 45 评测门禁（shadow 期仅记录） |
+| C6 | **主体（principal）必填**：`principal ∈ {worker, orchestrator, verifier, admin}`；**Worker 默认只读**，写工具的 principal 必须为 `orchestrator`／`verifier`；`settle` 由编排侧执行（G1/B2 定稿） |
+| C7 | **工具声明**：只读工具 `readOnlyHint=true`；写工具 `readOnlyHint=false + destructiveHint` 视语义（供宿主侧刻意拦截） |
 
 ### 5.3 与其他契约的关系
 
@@ -213,4 +218,5 @@ params = prepare_audit_record_params(audit_result)
 | v1.1 | 2026-10-11 | P0 落地完成：P0-1/2/5/6 全部 ✅（_check_poe_trust 索引查询 + verify_receipt_exists + WAL + 启动健康检查） |
 | v1.2 | 2026-10-11 | P1 批次1+2 落地：P1-1 poe_mode + P1-2 sample 10% + P1-3 六失效条件 + P1-5 git_commit_hash 全部 ✅（P1-4 待补） |
 | v1.3 | 2026-10-11 | P1-4 落地：prepare_decision/audit_record_params 补 evidence_entries（复用 _convert_evidence_to_entries），P1 全部 ✅ |
+| v1.5 | 2026-11-02 | 按 ALIGNMENT-46-47 决议修订 §5：C2 拆 C2a/C2b（增强型可 FAIL-OPEN / 主功能禁止）、新增 C6 principal 矩阵与 C7 tool annotations、登记 39 存量第三面写工具 |
 | v1.4 | 2026-11-02 | 新增 §5「认知 MCP 工具面契约」：读/写分级（record/verify 默认禁用，挂 write scope，授权来自 Ticket Mandate）+ 5 条调用约束（信封/FAIL-OPEN/幂等/trace/45 门禁）+ 与其他契约关系；对齐 SSoT v4.1 §1.7/§1.8 |

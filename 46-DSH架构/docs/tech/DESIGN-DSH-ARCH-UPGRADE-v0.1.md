@@ -1,8 +1,9 @@
 # DESIGN:DSH 架构升级方案 v0.1
 
-> **版本**: v0.1 ｜ **日期**: 2026-11-02 ｜ **状态**: 🔬 待评审 ｜ **定位**: **46-DSH架构 域主线设计**
+> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: ✅ 决议落定,可进 P0 ｜ **定位**: **46-DSH架构 域主线设计**
+> **v0.2 变更**: 按 [ALIGNMENT-46-47 v1.0](../../../47-MCP管理系统/docs/tech/ALIGNMENT-46-47-v1.0.md) 落定 G1/G3/B2/B4/B5：新增 ADR-9 写主体与 settle 归属、ADR-10 壳实例拓扑；ADR-3 补 paused 子因；ADR-4 改为引用 47 注册表；术语改「45 业务门禁」
 > **升级对象**: 当前单会话 DSH(0.1.5-rc.2) → 常驻、多任务、可验收的 DSH 多 agent 架构
-> **外部前提(不展开)**: L0 通过稳定工具面(port / MCP)对外供给。MCP 封装细节见 [REPORT-L0-MCP-DSH-IMPACT v1.0](REPORT-L0-MCP-DSH-IMPACT-v1.0.md);本设计只依赖"存在稳定工具面"这一契约,不依赖具体封装形态。
+> **外部前提(不展开)**: L0 通过稳定工具面(port / MCP)对外供给。**MCP 域设计以 47-MCP管理系统 SPEC v0.3 为 SSoT**([SPEC-L0-MCP-PACKAGING](../../../47-MCP管理系统/docs/tech/SPEC-L0-MCP-PACKAGING-v0.2.md));本设计只依赖"存在稳定工具面 + 主体权限矩阵"这一契约,不依赖具体封装形态。
 > **承接文档**: [DESIGN-SUPERAGENT-FUSION v0.2](DESIGN-SUPERAGENT-FUSION.md) ｜ [ANALYSIS 双维梳理](ANALYSIS-SUPERAGENT-ARCH-DATAFLOW.md) ｜ [SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2](SPEC-EVENT-DRIVEN-L1-GATEWAY.md) ｜ [SACG_A SUPERVAGENT CONNECTION SPEC v0.2](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)
 
 ---
@@ -92,24 +93,41 @@ Thread / Ticket / Session 三层状态**全部映射到 L0 存储**(PG + trace_i
 
 > 对应 §1.1 差距:subagent 需从"一次性隔离执行"升级为"可续会话"。保留隔离(独立上下文)与摘要压缩(返回 SubagentOutput),新增 `thread_id + 续跑锚点`,使同一 Thread 的后续事件可直接送原 Worker(不经 Router)。
 Ticket 状态机收敛为 **live / paused / waitsForPerson / ended** 四态(由官方 8 态合并,便于工程实现):
-- `paused`:释放 Worker 资源(Token/会话槽),等事件或超时唤醒
+- `paused`:释放 Worker 资源(Token/会话槽),等事件或超时唤醒。**子因(G3 定稿)**:`waiting_event`(等外部事件)／`waiting_job`(等异步工具 submit-poll 完成)／`waiting_person`(等人)——异步等待必须走 job 完成事件唤醒,**禁止忙轮询**
 - `waitsForPerson`:释放 Worker,挂人工待办(飞书通知),对应官方"人在环"
 - 无论 paused 还是 waitsForPerson,**Worker 不占槽**——这是并行度能起来的关键
 
 ### ADR-4 能力集(而非全量工具面)
-定义 `Worker 角色 → 可见工具集` 矩阵,每角色 ≤10 个工具;Router 只感知"能力集标签",不感知全量工具。理由:MCP 按域封装后工具总量会膨胀,若全量暴露给每个 Worker,Router 决策质量与 token 成本会双恶化(与 Super-agent 注意力预算问题同源)。
+**本设计只定义「Worker 角色清单」与「角色→能力标签」**;「能力标签→工具集」的唯一载体是 `47-MCP管理系统/registry/mcp_capabilities.yaml`(B4 定稿),本设计不另建矩阵。每角色 ≤10 个工具;Router 只感知能力标签,不感知全量工具。理由:MCP 按域封装后工具总量会膨胀,若全量暴露给每个 Worker,Router 决策质量与 token 成本会双恶化(与 Super-agent 注意力预算问题同源)。
 
 ### ADR-5 权限与预算合一(Mandate)
 Ticket 的 Mandate 同时承载 **"允许调用的工具集" + "预算上限(token/时长/成本)"**。理由:两者都是"这次任务能干多少"的约束,拆成两套契约必然不同步;合并后越权与超预算都在同一处判定。
 
 ### ADR-6 验收外置,Worker 不自证
-完成判定由 **A 层 verify 分派表**(evidence_backed / gap_closed / c_action)+ **45 门禁**共同决定,Worker 输出仅是候选证据。理由:多 agent 下"自报完成"是最容易被幻觉污染的一环。
+完成判定由 **A 层 verify 分派表**(evidence_backed / gap_closed / c_action)+ **45 业务门禁**共同决定,Worker 输出仅是候选证据。理由:多 agent 下"自报完成"是最容易被幻觉污染的一环。
 
 ### ADR-7 观测以 trace_id 为唯一主轴
 Router → Worker → 工具面 → L0 全链路透传 `trace_id`,落 `dreamos_sessions` / `dreamos_spans` / `dsh_calls` 三表。理由:链路加深到 5 跳后,**没有 trace 就没有可运维性**;注意 span 必须先有同 trace 的 session 行(既有 DDL 约束,已踩过坑)。
 
 ### ADR-8 升级以"独立 profile + 开关"落地
 新形态运行于独立 DSH profile(`superagent` 或 `dsh-upgrade`),与 `web` profile 隔离;所有新增路径挂 `enable_*` 开关默认关,关断时字节等价现有行为。
+
+### ADR-9 写主体与 settle 归属(G1/B2 定稿)
+
+**Worker 默认只读;`settle` 由编排侧 Settle 节点执行;Mandate 的授予对象是编排侧,不是 Worker。**
+
+| 主体 | read | write(record/verify/distill) | admin(migrate/sync) |
+|---|---|---|---|
+| Worker(DSH 会话) | ✅ 能力集内 | ❌ | ❌ |
+| Router / Settle 节点(编排侧) | ✅ | ✅ 受 Mandate 约束 | ❌ |
+| Verifier / 45 业务门禁 | ✅ | ✅ 仅记录裁决结果 | ❌ |
+| 运维 CLI / CI | — | — | ✅ |
+
+理由:认知壳默认 ssh 云端且本地模式写工具禁用;若让 Worker 直接写,settle 会静默失败或形成双事实源。
+
+### ADR-10 壳实例按运行时进程共享(G2 定稿)
+
+`宿主` = DSH 运行时进程;同一进程内**按域共享单壳实例**,Worker 会话只持「工具调用句柄」→ 连接数 = 聚合后域数(3),而非 Worker 数。跨进程(云端/本地)才各自拉起。理由:stdio 下 1 宿主 = 1 壳 = N×连接,若按会话拉起则并发即放大;且壳内禁止自建连接池。
 
 ---
 
@@ -137,7 +155,7 @@ Router → Worker → 工具面 → L0 全链路透传 `trace_id`,落 `dreamos_s
 | --- | --- | --- | --- |
 | **P0·骨架** | 单域试点跑通 | 事件网关(shadow 只记录不拦截)+ Router 单轮分派 + Ticket 契约翻译器 + 1 个 Worker 角色 | 1 类事件端到端走通(Router→Ticket→Worker→45→settle),网关未拦截任何事件 |
 | **P1·并行** | 多任务与状态机 | 四态状态机 + 能力集矩阵 + Thread 亲和直通(亲和表+TTL)+ 多 Worker 并发 | 同时 3 个 Ticket 并行;越权工具调用被拒 |
-| **P2·验收** | 质量门禁闭环 | 45 门禁接为硬门(先 shadow 转正)+ Watchdog 独立巡查 + Evidence Bundle 引用调用链 | 未过门禁的产出无法沉淀;Watchdog 能识别偏离目标 |
+| **P2·验收** | 质量门禁闭环 | 45 业务门禁接为硬门(先 shadow 转正)+ Watchdog 独立巡查 + Evidence Bundle 引用调用链 | 未过门禁的产出无法沉淀;Watchdog 能识别偏离目标 |
 | **P3·常驻** | 自进化与连续性 | settle 五系统全通道 + 会话级离线续跑 + 投机预取(L1 零 token 预取上下文) | 重启后 Ticket 可续跑;同类事件 recall 命中率提升可测 |
 
 > 阶段间**不强制线性**:P1 的直通与 P2 的门禁可由不同人并行推进,但 **P0 必须先出骨架**(否则契约与观测面无法对齐)。
@@ -156,6 +174,7 @@ Router → Worker → 工具面 → L0 全链路透传 `trace_id`,落 `dreamos_s
 | H4 | **Worker 不自证**:完成判定必须经 A 层 verify + 45(ADR-6) |
 | H5 | **交易热路径零接入**:polling_trader/开仓链路不参与本升级 |
 | H6 | **独立 profile**:不动 web profile,不污染现有链路 |
+| H7 | **Worker 只读**:写操作仅由编排侧/Verifier 持有 Mandate 执行(ADR-9) |
 
 ### 6.2 风险登记
 
@@ -205,4 +224,6 @@ Router → Worker → 工具面 → L0 全链路透传 `trace_id`,落 `dreamos_s
 | [SPEC-EVENT-DRIVEN-L1-GATEWAY](SPEC-EVENT-DRIVEN-L1-GATEWAY.md) | 本设计 ① 入口层的实现规格(P0) |
 | [SACG_A SPEC](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) | 本设计 ③ 契约层的实现规格(P0) |
 | [REPORT-L0-MCP-DSH-IMPACT](REPORT-L0-MCP-DSH-IMPACT-v1.0.md) | 给定出口的评估与建议(**上游输入,不在本设计范围**) |
+| [SPEC-L0-MCP-PACKAGING v0.3](../../../47-MCP管理系统/docs/tech/SPEC-L0-MCP-PACKAGING-v0.2.md) | **MCP 域 SSoT**:壳契约/写工具治理/能力集注册表(本设计 ADR-4/9/10 的实现依据) |
+| [ALIGNMENT-46-47 v1.0](../../../47-MCP管理系统/docs/tech/ALIGNMENT-46-47-v1.0.md) | 双方交界审查与开工顺序(本 v0.2 修订来源) |
 | [ANALYSIS 双维梳理](ANALYSIS-SUPERAGENT-ARCH-DATAFLOW.md) | 本设计的差距依据(架构/数据流双维) |

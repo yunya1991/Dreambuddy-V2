@@ -1,6 +1,7 @@
 # REPORT:L0 底层能力 MCP 封装对 DSH 架构升级的影响评估与建议
 
-> **版本**: v1.0 ｜ **日期**: 2026-11-02 ｜ **状态**: 🔬 待评审
+> **版本**: v1.1 ｜ **日期**: 2026-11-02 ｜ **状态**: 📚 评估归档——**MCP 域设计以 47-MCP管理系统 SPEC 为 SSoT**(本文档仅保留评估与决策依据,不再作为实现依据)
+> **v1.1 勘误**: 吸收 47 SPEC 评审实证,修正 F1/F2/F6 三处偏差(见 §0)
 > **报告类型**: 影响评估与决策建议(非实施方案)
 > **范围**: L0 六域(认知/数据/检索/库管/评测/REA)的 MCP 封装形态,及其对 DSH(Router/Worker 多 agent + 事件驱动)升级的影响
 > **配套文档**:
@@ -9,6 +10,19 @@
 > - [SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2](SPEC-EVENT-DRIVEN-L1-GATEWAY.md)(事件驱动网关)
 > - [SACG_A_SUPERAGENT_CONNECTION_SPEC v0.2](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(A 层契约桥接)
 > **口径**: v4.0 新 SACG;L0/L1/L2 为系统能力架构,与认知系统 C1-C4 严格区分
+
+---
+
+## 零、勘误(v1.1)(v1.1,来自 47-MCP管理系统 SPEC 评审实证)
+
+| # | v1.0 原表述 | 实证修正 |
+|---|---|---|
+| F1 | §2.1「REA MCP:已有 adapter + 单测(218 行)」暗示 33 域已有 MCP server | **错**:`33-REA/adapters/rea_mcp_adapter.py` 是 **MCP client**(调外部 npm `rea-agents` 的 133 个逆向工具);33 域对外接口是 `dsh_nodes.py`。REA MCP 属**新建 server** 包装 dsh_nodes |
+| F2 | §3.5/P2「认知 MCP 本地直连为主、远端可选」 | **错**:认知库事实源在云端,本地 stdio 会读写本地 `cognitive_memory.db` → **双事实源**。正确形态 = **ssh 云端默认(单一事实源)+ 本地只读降级(写工具禁用)** |
+| F6 | §3.6/§8.4「MCP server 作单点连接池」 | **不成立**:stdio 模式 **1 宿主 = 1 壳进程 = N×DB 连接**,不存在收口;连接治理必须下沉 19-DAL(当前**未实现**连接上限) |
+| F7 | 未覆盖 | **39-金融语义蒸馏系统已有第 3 个 MCP server**(4 工具,已区分读写);用户决策纳入 L0,语义归 Search 域,**不新增 port** |
+
+> 以上修正已同步到 47 SPEC 与 SSoT v4.1;本文档其余章节按"评估结论"引用,数字与现状以 F1/F2/F6/F7 为准。
 
 ---
 

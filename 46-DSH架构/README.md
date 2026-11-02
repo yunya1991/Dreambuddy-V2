@@ -22,9 +22,9 @@
 | [docs/tech/ANALYSIS-SUPERAGENT-ARCH-DATAFLOW.md](docs/tech/ANALYSIS-SUPERAGENT-ARCH-DATAFLOW.md) | ✅ 定稿 | Super-agent×DreamOS 架构与数据流双维梳理(评审输入件) |
 | [docs/tech/DESIGN-SUPERAGENT-FUSION.md](docs/tech/DESIGN-SUPERAGENT-FUSION.md) | 🟡 v0.2 待复核 | 融合设计(借壳灌芯);已按评审修订(M1/M2+五系统口径+§七护城河) |
 | [docs/tech/REVIEW-SUPERAGENT-FUSION-v0.1.md](docs/tech/REVIEW-SUPERAGENT-FUSION-v0.1.md) | 🟡 修改后接受 | 同行评审报告(Major 4 / Minor 4,待修订复核) |
-| [docs/tech/ANALYSIS-L0-MCP-ENCAPSULATION.md](docs/tech/ANALYSIS-L0-MCP-ENCAPSULATION.md) | 🔬 待评审 | L0 能力 MCP 化评估(定位=对外出口,内部仍 in-process;六域分级) |
+| [docs/tech/ANALYSIS-L0-MCP-ENCAPSULATION.md](docs/tech/ANALYSIS-L0-MCP-ENCAPSULATION.md)（📚 评估归档,实现以 47 为准） | 🔬 待评审 | L0 能力 MCP 化评估(定位=对外出口,内部仍 in-process;六域分级) |
 | [docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.1.md](docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.1.md) | 🔬 待评审 | **域主线设计**:DSH 架构升级(七层目标架构 + 8 条 ADR + P0-P3 路径 + 6 红线) |
-| [docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md](docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md) | 🔬 待评审 | **正式报告**:L0 MCP 封装对 DSH 升级的影响评估与建议(六维矩阵+风险册+分阶段路线) |
+| [docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md](docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.0.md)（📚 评估归档,实现以 47 为准） | 🔬 待评审 | **正式报告**:L0 MCP 封装对 DSH 升级的影响评估与建议(六维矩阵+风险册+分阶段路线) |
 
 ## 相关文档(物理位置不动,避免断链;本表为导航)
 
