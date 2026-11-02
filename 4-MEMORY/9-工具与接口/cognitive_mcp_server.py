@@ -31,6 +31,7 @@
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -47,6 +48,45 @@ _ENVELOPE_DIR = Path(__file__).resolve().parents[2] / "mcp_shells" / "_shared"
 if str(_ENVELOPE_DIR) not in sys.path:
     sys.path.insert(0, str(_ENVELOPE_DIR))
 from envelope_wrap import wrap as _wrap  # noqa: E402
+
+# ============================================================
+# 双模（D5 / M3⑧）：ssh 云端默认（单一事实源）+ 本地只读降级
+# COGNITIVE_MCP_MODE=local → 写工具（record/verify）明确拒绝（非静默），审计留痕
+# ============================================================
+COGNITIVE_MCP_MODE = os.environ.get("COGNITIVE_MCP_MODE", "ssh").strip().lower()
+_LOCAL_READONLY = COGNITIVE_MCP_MODE == "local"
+
+
+def _write_denied(tool: str) -> str:
+    """本地只读降级模式：写工具明确拒绝（SPEC §3.3 / D5），审计留痕（stderr）。"""
+    import sys as _sys
+
+    print(
+        json.dumps(
+            {
+                "event": "write_denied",
+                "shell": "l0.cognition.mcp",
+                "tool": tool,
+                "mode": COGNITIVE_MCP_MODE,
+                "reason": "local readonly degraded mode (D5): write tools disabled",
+            }
+        ),
+        file=_sys.stderr,
+    )
+    return json.dumps(
+        _wrap(
+            None,
+            "cognition." + tool,
+            degraded=True,
+            error_code="conflict",
+            meta={
+                "reason": "write tool disabled in local readonly mode (D5); use ssh cloud profile for writes"
+            },
+        ),
+        ensure_ascii=False,
+    )
+
+
 from envelope_wrap import wrap_merge_partial as _wrap_merge  # noqa: E402
 
 # ============================================================
@@ -403,6 +443,8 @@ def _resolve_triggered_skills(tags: List[str]) -> List[str]:
 
 
 def _handle_record(args: Dict[str, Any]) -> str:
+    if _LOCAL_READONLY:  # M3⑧：本地只读降级，写工具明确拒绝
+        return _write_denied("record")
     content = args.get("content", "")
     quality_level = args.get("quality_level", "C")
     tags_str = args.get("tags", "")
@@ -496,6 +538,8 @@ def _handle_record(args: Dict[str, Any]) -> str:
 
 
 def _handle_verify(args: Dict[str, Any]) -> str:
+    if _LOCAL_READONLY:  # M3⑧：本地只读降级，写工具明确拒绝
+        return _write_denied("verify")
     memory_id = args.get("memory_id", "")
     success = args.get("success", True)
     known_gaps_update = args.get("known_gaps_update")
