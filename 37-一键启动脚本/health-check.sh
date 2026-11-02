@@ -63,7 +63,8 @@ done
 # ── 3. PostgreSQL / Redis（客户端缺失则 SKIP）──
 CHECKS=$((CHECKS + 1))
 if command -v pg_isready >/dev/null 2>&1; then
-    if pg_isready -q 2>/dev/null; then ok "pg" ready; else fail "pg" "not-ready"; fi
+    # PG 跑在 docker（postgres:16-alpine）内，宿主机无 unix socket，必须走 TCP 探测
+    if pg_isready -q -h "${PGHOST:-127.0.0.1}" -p "${PGPORT:-5432}" 2>/dev/null; then ok "pg" ready; else fail "pg" "not-ready"; fi
 else
     skip "pg" "pg_isready-not-installed"
 fi
