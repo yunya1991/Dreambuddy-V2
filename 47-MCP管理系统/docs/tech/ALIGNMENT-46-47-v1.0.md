@@ -1,7 +1,7 @@
 # 对齐审查:47-MCP管理系统 SPEC v0.2 × 46-DSH 架构升级技术文档
 
 > **版本**: v1.0 ｜ **日期**: 2026-11-02 ｜ **状态**: 🔬 开工前终审输入
-> **审查对象**: [SPEC-L0-MCP-PACKAGING v0.2](../../docs/tech/SPEC-L0-MCP-PACKAGING-v0.2.md)
+> **审查对象**: [SPEC-L0-MCP-PACKAGING v0.3](../../docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md)
 > **对照基线**: 46-DSH架构(DESIGN-DSH-ARCH-UPGRADE v0.1 / REPORT-L0-MCP-DSH-IMPACT v1.0 / ANALYSIS-L0-MCP-ENCAPSULATION v0.2 / SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2 / ANALYSIS-SUPERAGENT-ARCH-DATAFLOW)、SSoT v4.1 §1.7-1.8、35 协作契约 v1.4、44 SPEC-L0 v0.5、代码实证
 > **审查问题**: 47 的最终文档与 46 的升级设计是否自洽?可否据此开工?
 

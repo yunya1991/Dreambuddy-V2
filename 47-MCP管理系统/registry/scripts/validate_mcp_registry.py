@@ -2,7 +2,7 @@
 """validate_mcp_registry — 47-MCP registry/mcp_capabilities.yaml 校验器
 
 校验项：
-  1. schema_version = 1.0-mcp
+  1. schema_version = 1.1-mcp
   2. shell_id 全局唯一 + 合法枚举 transport/port/domain/read_write/status
   3. tools[].name 在同一 shell 内不重复
   4. 存量壳（status!=planned）shell_path 存在
@@ -63,7 +63,7 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
     else:
         # 1. schema_version
         _check(
-            data.get("schema_version") == "1.0-mcp",
+            data.get("schema_version") == "1.1-mcp",
             "ERR",
             "schema_version",
             f"必须是 1.0-mcp，当前 {data.get('schema_version')!r}",

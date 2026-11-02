@@ -1,10 +1,19 @@
 # MCP 契约注册表 — L0 对外协议面唯一事实源（SPEC §3.7 / PLAN M1①）
 # 硬约束：文件 + CI 校验为唯一门禁；不加载运行时注册表（跨进程不可行）。
-# Schema v1.0-mcp 复用 C6 capabilities.yaml 的 CapabilitySpec 字段
-# + SPEC §3.7 增补：transport / shell_cmd / shell_path / envelope_version /
-#   tools[].{domain, read_write, annotations, requires_mandate}
 #
-# 字段词典：
+# Schema v1.0-mcp（原始）+ v1.1-mcp（B4 外部调研增量）
+# =====================================================
+# v1.0 字段：
+#   shell_id / transport / shell_cmd / shell_path / envelope_version /
+#   tools[].{domain, read_write, annotations, requires_mandate, port}
+#
+# v1.1 增量（B4，Google A2A Agent Card 自描述概念采纳）：
+#   shell.capabilities.{shadow_capable, training_hooks, oracle_verifiable}
+#   — 每个壳自描述是否支持影子旁路观察 / 训练基座 TB1-TB5 钩挂点 / Oracle 验证层 cross-check
+#   — 壳运行时自动注入 envelope.meta.{shadow_capable, oracle_verifiable, config_version}
+#   — COMM-SHADOW 影子观察器消费这些元字段做版本对账 + 旁路判断
+#
+# 字段词典（v1.1 完整）：
 #   shell_id       全局唯一（kebab-case），C6 capabilities.yaml capability_id 加 .mcp 后缀对齐
 #   transport      stdio / ssh-stdio / http / in-process（枚举）
 #   shell_cmd      拉起命令（stdio）；http 则填 base_url；in-process 填 module::class
@@ -14,7 +23,10 @@
 #   tools[].read_write 读/写/读写（枚举）
 #   tools[].requires_mandate 写工具是否需要宿主 Mandate 授权（SPEC §3.3）
 #   tools[].annotations MCP tool annotations：readOnlyHint=true/false
-schema_version: "1.0-mcp"
+#   capabilities.shadow_capable  此壳是否支持 COMM-SHADOW 影子旁路观察（B4 v1.1 新增）
+#   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
+#   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
+schema_version: "1.1-mcp"
 registry_version: "0.1"
 last_updated: "2026-11-02"
 # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
@@ -36,6 +48,10 @@ shells:
     shell_cmd: "python3 {path}"
     envelope_version: "0.1"          # M1③ 信封映射层落地后迭代
     status: available
+    capabilities:                    # B4 v1.1-mcp 增量（Google A2A Agent Card 概念采纳）
+      shadow_capable: true           # COMM-SHADOW 影子可旁路观察
+      training_hooks: [on_verify, on_recall, on_record, on_drift_alert]  # TB1-TB5 可钩挂点
+      oracle_verifiable: true        # Oracle 验证层可 cross-check
     tools:
       - name: recall
         port: memory

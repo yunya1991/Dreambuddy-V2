@@ -17,7 +17,7 @@ last_updated: "2026-11-02"
 registry_ref:
   path: "47-MCP管理系统/registry/mcp_capabilities.yaml"
   registry_version: "0.1"
-  schema_version: "1.0-mcp"
+  schema_version: "1.1-mcp"
 
 # ── Worker 角色清单（首批三类起步，DD2 决策）───────────────────────
 # 交易分析 Worker 后置（避热路径：涉及实盘数据/触发风控，P1 再评估）
