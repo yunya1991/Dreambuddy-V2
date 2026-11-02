@@ -1,0 +1,129 @@
+# 能力集 — L0 对外能力与 DSH Worker 角色唯一载体（B4 定稿 / PLAN M1②）
+#
+# 分层结构：Worker 角色 → 能力标签 → 工具引用（shell_id.tool_name）
+#   - 「能力标签 → 工具引用」的**最终载体**是 47-MCP 注册表（单一事实源）；
+#     本文件只做「角色 → 标签」的编排视图，工具定义**引用**注册表不重复。
+#   - 每角色 ≤10 工具（ADR-4 / SPEC R1 工具面膨胀治理）
+#   - Worker 默认只读；写工具（record/verify/distill_aliases 等）由 ADR-9
+#     编排侧 Router/Settle 节点经 Mandate 授权后才能调用，Worker 不直接持有
+#
+# Schema v1.0：复用 46-DSH DESIGN ADR-4 口径 + registry 引用约定
+# 校验器：0-系统文档管理/scripts/validate_capability_set.py（与 registry 交叉引用）
+
+schema_version: "1.0"
+capability_set_version: "1.0"
+last_updated: "2026-11-02"
+# 引用的注册表版本（漂移即校验器报错）
+registry_ref:
+  path: "47-MCP管理系统/registry/mcp_capabilities.yaml"
+  registry_version: "0.1"
+  schema_version: "1.0-mcp"
+
+# ── Worker 角色清单（首批三类起步，DD2 决策）───────────────────────
+# 交易分析 Worker 后置（避热路径：涉及实盘数据/触发风控，P1 再评估）
+# 角色定义 = 该角色允许 Router 分派的能力标签集合
+worker_roles:
+
+  # 研究 Worker：知识检索 + 语义解析 + REA 逆向分析
+  # 场景：写报告前查历史证据 / 金融术语解析 / REA 事实逆向
+  - role_id: researcher
+    description: 研究型 Worker — 主要消费认知读 + 语义读 + REA（逆向解析事实分级）
+    # 引用 47 registry 的 shell_id.tool_name
+    tools:
+      - shell: l0.cognition.mcp
+        tool: recall
+      - shell: l0.cognition.mcp
+        tool: unified_search
+      - shell: l0.semantic-39.mcp
+        tool: query_entity
+      - shell: l0.semantic-39.mcp
+        tool: semantic_lookup
+      - shell: l0.rea-client.mcp
+        tool: rea_analyze
+      - shell: l0.rea-client.mcp
+        tool: rea_trace
+      - shell: l0.rea-client.mcp
+        tool: rea_compare
+      - shell: l0.cognition.mcp
+        tool: stats
+      - shell: l0.cognition.mcp
+        tool: health
+    tool_count: 9
+    read_write: read-only
+
+  # 工程 Worker：数据获取 + 检索 + REA 辅助
+  # 场景：实盘数据采集与查询 / 数据管道验证 / 代码模块 REA 逆向
+  - role_id: engineer
+    description: 工程型 Worker — 主要消费数据读 + 检索 + REA 辅助
+    tools:
+      - shell: l0.data.mcp
+        tool: data_fetch
+      - shell: l0.data.mcp
+        tool: data_collect_once
+      - shell: l0.data.mcp
+        tool: data_store_read
+      - shell: l0.cognition.mcp
+        tool: recall
+      - shell: l0.cognition.mcp
+        tool: unified_search
+      - shell: l0.semantic-39.mcp
+        tool: query_entity
+      - shell: l0.rea-client.mcp
+        tool: rea_analyze
+      - shell: l0.cognition.mcp
+        tool: stats
+      - shell: l0.cognition.mcp
+        tool: health
+    tool_count: 9
+    read_write: read-only
+
+  # 验收 Worker：评测 + 认知 verify（⚠️ 由 ADR-9 编排侧 settle 执行，Worker 不直接持有）
+  # 场景：A 层 verify 分派表执行 / 45 门禁证据链验证 / 裁决前查认知证据
+  # 注意：verify 是写工具（requires_mandate=true），Worker 不直接持有——
+  #       真正调用由 Router/Settle 节点在 Mandate 授权后执行；
+  #       验收 Worker 只暴露 read 工具（eval_analyze / eval_report 是评测 API 读）
+  - role_id: verifier
+    description: 验收型 Worker — 主要消费评测读 + 认知证据查询（verify 由编排侧 settle 执行）
+    tools:
+      - shell: l0.eval.mcp
+        tool: eval_analyze
+      - shell: l0.eval.mcp
+        tool: eval_report
+      - shell: l0.cognition.mcp
+        tool: recall
+      - shell: l0.cognition.mcp
+        tool: unified_search
+      - shell: l0.cognition.mcp
+        tool: stats
+      - shell: l0.cognition.mcp
+        tool: health
+      - shell: l0.rea-client.mcp
+        tool: rea_analyze
+    tool_count: 7
+    read_write: read-only
+
+  # 交易分析 Worker — 暂不开（P1 再评估，DD2：避热路径）
+  # 风险：涉及实盘数据/触发风控/REA 逆向交易决策链
+  # role_id: trading-analyst （reserved）
+
+# ── 角色→能力标签（供 Router 分派，ADR-4：Router 只感知标签不感知工具）───
+# 标签是 Worker 角色语义的别名层，Router 做分派决策时按标签匹配而非按 shell/tool
+role_to_tags:
+  researcher: [cognition.read, search.read, semantic.read, rea.analyze]
+  engineer: [data.read, cognition.read, search.read, semantic.read, rea.analyze]
+  verifier: [eval.read, cognition.read, search.read, rea.analyze]
+
+# ── 写主体矩阵（ADR-9 定稿）────────────────────────────────────────
+# Worker 一律只读；写/Admin 由编排侧 Settle 节点/运维 CLI 持有
+# 本矩阵 = Router 编排层对 Mandate 授予的依据
+write_subject_matrix:
+  worker: { read: true, write: false, admin: false }
+  settle_node: { read: true, write: true, admin: false }
+  verifier_45: { read: true, write: true, admin: false }
+  ops_cli: { read: false, write: false, admin: true }
+
+# ── 治理：单角色工具上限（与 47 registry 一致）───────────────────────
+limits:
+  max_tools_per_role: 10      # 与 47 registry max_tools_per_shell 呼应
+  max_active_tools_total: 40  # 与 47 registry max_total_tools 一致（R1 治理）
+  read_write_default: read-only  # 所有 Worker 默认只读（ADR-9）
