@@ -42,6 +42,13 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 from cognitive_loop_entry import CognitiveLoopEntry, get_cle, reset_cle  # noqa: E402
 
+# envelope_wrap（L0 统一信封外层包装）
+_ENVELOPE_DIR = Path(__file__).resolve().parents[2] / "mcp_shells" / "_shared"
+if str(_ENVELOPE_DIR) not in sys.path:
+    sys.path.insert(0, str(_ENVELOPE_DIR))
+from envelope_wrap import wrap as _wrap  # noqa: E402
+from envelope_wrap import wrap_merge_partial as _wrap_merge  # noqa: E402
+
 # ============================================================
 # MCP Server Info
 # ============================================================
@@ -345,7 +352,7 @@ def _handle_recall(args: Dict[str, Any]) -> str:
                 "error": str(e),
             }
 
-    return json.dumps(response, ensure_ascii=False)
+    return json.dumps(_wrap(response, "cognition.recall"), ensure_ascii=False)
 
 
 # ============================================================
@@ -472,16 +479,18 @@ def _handle_record(args: Dict[str, Any]) -> str:
         pass  # FAIL-OPEN
 
     return json.dumps(
-        {
-            "memory_id": memory_id,
-            "status": "recorded",
-            "triggered_skills": triggered_skills,
-            "skill_links": skill_links,
-            "knowledge_ingest_required": knowledge_ingest_required,
-            "receipt_hash": receipt_hash,
-            # L4: 预测误差门控结果（高误差记忆可能已被升级为 B 级）
-            "l4": _l4_snapshot(),
-        },
+        _wrap(
+            {
+                "memory_id": memory_id,
+                "status": "recorded",
+                "triggered_skills": triggered_skills,
+                "skill_links": skill_links,
+                "knowledge_ingest_required": knowledge_ingest_required,
+                "receipt_hash": receipt_hash,
+                "l4": _l4_snapshot(),
+            },
+            "cognition.record",
+        ),
         ensure_ascii=False,
     )
 
@@ -529,12 +538,12 @@ def _handle_verify(args: Dict[str, Any]) -> str:
         result["l4"] = _l4_snapshot()
     except Exception:
         pass
-    return json.dumps(result, ensure_ascii=False)
+    return json.dumps(_wrap(result, "cognition.verify"), ensure_ascii=False)
 
 
 def _handle_stats(args: Dict[str, Any]) -> str:
     result = _get_cle().stats()
-    return json.dumps(result, ensure_ascii=False)
+    return json.dumps(_wrap(result, "cognition.stats"), ensure_ascii=False)
 
 
 def _handle_health(args: Dict[str, Any]) -> str:
@@ -559,7 +568,7 @@ def _handle_health(args: Dict[str, Any]) -> str:
             "error_code": "l0_health_unavailable",
             "reason": f"{type(exc).__name__}: {exc}",
         }
-    return json.dumps(result, ensure_ascii=False)
+    return json.dumps(_wrap_merge(result, "cognition.health"), ensure_ascii=False)
 
 
 def _handle_l4_status(args: Dict[str, Any]) -> str:
@@ -587,12 +596,16 @@ def _handle_unified_search(args: Dict[str, Any]) -> str:
     query = str(args.get("query", ""))
     if not query:
         return json.dumps(
-            {"ok": False, "error_code": "invalid", "error": "missing query"}, ensure_ascii=False
+            _wrap_merge(
+                {"ok": False, "error_code": "invalid", "error": "missing query"},
+                "search.unified",
+            ),
+            ensure_ascii=False,
         )
     top_k = int(args.get("top_k", 5))
     sources = args.get("sources") or None
     result = get_unified_search().search(query, sources=sources, top_k=top_k)
-    return json.dumps(result, ensure_ascii=False)
+    return json.dumps(_wrap_merge(result, "search.unified"), ensure_ascii=False)
 
 
 TOOL_DEFINITIONS.append(

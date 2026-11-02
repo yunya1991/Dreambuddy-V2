@@ -370,6 +370,7 @@ def test_mcp_health_includes_l0_section(monkeypatch, tmp_path):
     monkeypatch.setattr(srv, "_get_cle", lambda: _StubCLE())
     monkeypatch.setenv("JOB_RUNS_PATH", str(tmp_path / "job_runs.jsonl"))
     out = json.loads(srv._handle_health({}))
+    out = out.get("data", out)  # 信封兼容（47 M1③ 外层包信封，业务体透传 data）
     # 基础健康载荷不丢（零回归）
     assert out["memory"]["status"] == "healthy"
     assert "distill" in out and "consolidation" in out
@@ -395,6 +396,7 @@ def test_mcp_health_l0_fail_open(monkeypatch):
 
     monkeypatch.setattr(health_mod, "collect_l0_health", _boom)
     out = json.loads(srv._handle_health({}))
+    out = out.get("data", out)  # 信封兼容（47 M1③）
     # L0 聚合失败不得拖垮认知基础健康
     assert out["memory"]["status"] == "healthy"
     assert out["l0"]["degraded"] is True
