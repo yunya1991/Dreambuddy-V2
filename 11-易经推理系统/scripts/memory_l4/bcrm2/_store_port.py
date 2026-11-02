@@ -17,6 +17,12 @@
 非 FAIL-OPEN 返回空）；全部写操作幂等（INSERT OR IGNORE/REPLACE、
 CREATE IF NOT EXISTS、DELETE+重插、to_sql replace），回退重放安全。
 
+第八批收编 3 处剩余直连：
+  - learner 聚合读（AVG/SUM 专用 SQL，通用 port 不可表达 → fetch_recent_performance，
+    复用 BCRM_LEARNER_STORE_PORT 开关，port 分支 _connect_ro 同 SQL）；
+  - storage.py / kg_store.py 连接持有型：connect_persistent / connect_autocommit
+    纯透传工厂（参数与原直连逐字节等价，故无开关），connect 字面量集中本文件。
+
 SqliteReadOnlyPort 结构化实现 dreambuddy_l0.ports.store.StorePort 协议
 （read/query/health），连接一律 `mode=ro`；write 未开放。
 写路径 port 分支统一经 `_connect_rw`（单一收口，未来可替换真实 Store 实现）。
@@ -237,6 +243,24 @@ def _connect_ro(db_path: str, *, row: bool = True):
     if row:
         conn.row_factory = sqlite3.Row
     return conn
+
+
+def connect_persistent(db_path):
+    """连接持有型 Store 的持久连接工厂（C5 第八批收编集中点）。
+
+    纯参数透传（check_same_thread=False，供 Flask 多线程读取），
+    与调用方原直连逐字节等价，故无开关；row_factory 设置留调用方。
+    """
+    return sqlite3.connect(str(db_path), check_same_thread=False)
+
+
+def connect_autocommit(db_path):
+    """autocommit（isolation_level=None）连接工厂（KGStore WAL+FTS 场景）。
+
+    纯参数透传，与调用方原直连逐字节等价，故无开关；
+    PRAGMA / DDL / 重试逻辑留调用方。
+    """
+    return sqlite3.connect(db_path, isolation_level=None)
 
 
 # ---------------------------------------------------------------------------
@@ -482,6 +506,57 @@ def upsert_model_version(
     except Exception:
         conn.rollback()
         return False
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 读助手：learner 聚合读（C5 第八批；开关复用 BCRM_LEARNER_STORE_PORT）
+# ---------------------------------------------------------------------------
+
+_RECENT_PERF_SQL = """
+    SELECT COUNT(*) as n_trades,
+           AVG(pnl_pct) as avg_pnl,
+           SUM(CASE WHEN pnl_pct > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as win_rate
+    FROM trades WHERE symbol = ?
+"""
+
+
+def fetch_recent_performance(
+    db_path: str, symbol: str, switch: str = "BCRM_LEARNER_STORE_PORT"
+) -> Dict[str, Any]:
+    """learner 聚合读（AVG/SUM 专用 SQL，SqliteReadOnlyPort.query 不可表达）。
+
+    port 分支用 _connect_ro 同 SQL；port 异常回退 legacy 直连。
+    legacy 分支为原 TradeDatabase.get_recent_performance 内联实现
+    （异常返回 {}，days 参数原样不参与 SQL——保留原行为不修复）。
+    """
+    if _switch(switch):
+        try:
+            conn = _connect_ro(db_path, row=False)
+            try:
+                cur = conn.cursor()
+                cur.execute(_RECENT_PERF_SQL, (symbol,))
+                row = cur.fetchone()
+                if row:
+                    columns = [desc[0] for desc in cur.description]
+                    return dict(zip(columns, row, strict=True))
+                return {}
+            finally:
+                conn.close()
+        except Exception:
+            pass  # 回退 legacy 直连
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(_RECENT_PERF_SQL, (symbol,))
+        row = cursor.fetchone()
+        if row:
+            columns = [desc[0] for desc in cursor.description]
+            return dict(zip(columns, row, strict=True))
+        return {}
+    except Exception:
+        return {}
     finally:
         conn.close()
 
@@ -759,4 +834,7 @@ __all__ = [
     "purge_and_insert_shadow_rows",
     "fetch_shadow_stats",
     "fetch_shadow_eval_records",
+    "connect_persistent",
+    "connect_autocommit",
+    "fetch_recent_performance",
 ]

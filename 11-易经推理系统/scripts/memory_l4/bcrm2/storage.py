@@ -51,6 +51,8 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
+from ._store_port import connect_persistent  # C5 第八批：连接工厂收编（纯透传）
+
 __all__ = ["EvolutionStorageJSON", "EvolutionStorageSQLite", "RegimeStateFrame"]
 
 
@@ -563,7 +565,8 @@ class EvolutionStorageSQLite:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         # check_same_thread=False：供 Flask 多线程读取
-        self._conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        # C5 第八批：连接工厂收编（纯透传，参数与原直连逐字节等价）
+        self._conn = connect_persistent(self.db_path)
         self._conn.row_factory = sqlite3.Row
         _init_sqlite_schema(self._conn)
 

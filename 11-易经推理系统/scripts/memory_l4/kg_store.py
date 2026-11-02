@@ -24,6 +24,11 @@ except ImportError:
 
 from dataclasses import dataclass, field
 
+try:  # C5 第八批：连接工厂收编（纯透传，无开关）
+    from scripts.memory_l4.bcrm2._store_port import connect_autocommit
+except ImportError:  # sys.path 顶层导入形态（memory_l4 在 sys.path）
+    from bcrm2._store_port import connect_autocommit
+
 
 @dataclass
 class Triple:
@@ -118,7 +123,8 @@ class KGStore:
             import os
             dir_path = os.path.dirname(db_path)
             os.makedirs(dir_path, exist_ok=True)
-        self.db = sqlite3.connect(db_path, isolation_level=None)
+        # C5 第八批：连接工厂收编（纯透传，isolation_level=None 与原直连逐字节等价）
+        self.db = connect_autocommit(db_path)
         self.db.execute("PRAGMA busy_timeout=5000")
         for attempt in range(5):
             try:

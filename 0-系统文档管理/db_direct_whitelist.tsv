@@ -9,12 +9,9 @@
 1-ARCHITECTURE/skills/dream-skill-index-governance/skill_candidate_miner.py	sqlite3	2
 10-经典指标系统/classic_pipeline/strategy_factory/registry.py	sqlite3	1
 10-经典指标系统/ml_trade_service.py	sqlite3	2
-11-易经推理系统/scripts/memory_l4/bcrm2/_store_port.py	sqlite3	15
-11-易经推理系统/scripts/memory_l4/bcrm2/incremental_learner.py	sqlite3	1
-11-易经推理系统/scripts/memory_l4/bcrm2/storage.py	sqlite3	1
+11-易经推理系统/scripts/memory_l4/bcrm2/_store_port.py	sqlite3	18
 11-易经推理系统/scripts/memory_l4/_five_domain_store_port.py	sqlite3	9
 11-易经推理系统/scripts/memory_l4/force_vector/_store_port.py	sqlite3	5
-11-易经推理系统/scripts/memory_l4/kg_store.py	sqlite3	1
 11-易经推理系统/scripts/memory_l4/tests/test_coin_fundamental_event_timeline.py	sqlite3	1
 11-易经推理系统/scripts/memory_l4/tests/test_coin_fundamental_historical_data_loader.py	sqlite3	1
 11-易经推理系统/scripts/memory_l4/tests/test_coin_fundamental_valuation_query.py	sqlite3	2

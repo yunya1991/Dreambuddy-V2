@@ -1,12 +1,14 @@
-"""C5 第七批：bcrm2 写路径 Store port 收编契约测试。
+"""C5 第七批 + 第八批：bcrm2 写路径 Store port 收编契约测试。
 
 覆盖：
   - learner 四处写 / macro 缓存读写 / backfill 三处读写已收编进 _store_port；
   - 开关关（默认 legacy）与开关开（BCRM_*_STORE_PORT=1）双 tmp DB 全表比对、返回值一致；
   - port 分支故障回退 legacy 直写（fail-safe：数据仍落盘，非 FAIL-OPEN 返回空）；
   - 读助手（regime/stats/eval/cache）两种模式输出相等；
-  - 红线：storage.py/kg_store.py 直连数不变、learner 聚合读保留、
-    macro/backfill 直连清零且删除 import sqlite3、_store_port 直连数固定；
+  - 第八批：learner 聚合读 fetch_recent_performance 双模式等价、
+    storage/kg_store 连接工厂纯透传（无开关、逐字节等价）；
+  - 红线：_store_port 直连数固定，调用方文件（learner/macro/backfill/storage/kg_store）
+    直连全部清零；
   - backfill 模块经 sys.path 以顶层 bcrm2._store_port 导入（双模块对象事实登记）。
 """
 
@@ -178,19 +180,20 @@ def test_write_connects_collected():
     learner_src = LEARNER_PATH.read_text(encoding="utf-8")
     macro_src = MACRO_PATH.read_text(encoding="utf-8")
     backfill_src = BACKFILL_PATH.read_text(encoding="utf-8")
-    # 收编容器：15 处固定（2 工厂 + 10 助手 legacy 内联 + 3 第四批既有）
-    assert port_src.count(direct) == 15
-    # learner 仅剩 1 处 = get_recent_performance 聚合读（AVG/SUM port 不可表达，SPEC 暂缓）
-    assert learner_src.count(direct) == 1
-    assert "AVG(pnl_pct)" in learner_src
+    # 收编容器：18 处固定（2 内部工厂 + 2 持久/自动提交工厂 + 11 助手 legacy 内联 + 3 第四批既有）
+    assert port_src.count(direct) == 18
+    # learner 直连清零（第八批聚合读已收编），模块级 import sqlite3 已删除
+    assert learner_src.count(direct) == 0
+    assert "import sqlite3" not in learner_src
+    assert "AVG(pnl_pct)" in port_src  # 聚合 SQL 收进 _store_port
     # macro / backfill 直连清零，且模块级 import sqlite3 已删除
     assert macro_src.count(direct) == 0
     assert "import sqlite3" not in macro_src
     assert backfill_src.count(direct) == 0
     assert "import sqlite3" not in backfill_src
-    # 连接持有型组件保持原状（按 SPEC 单独立项，本批不动）
-    assert STORAGE_PATH.read_text(encoding="utf-8").count(direct) == 1
-    assert KG_STORE_PATH.read_text(encoding="utf-8").count(direct) == 1
+    # 连接持有型组件直连清零（第八批连接工厂收编；import sqlite3 保留供 Row/异常类型）
+    assert STORAGE_PATH.read_text(encoding="utf-8").count(direct) == 0
+    assert KG_STORE_PATH.read_text(encoding="utf-8").count(direct) == 0
 
 
 # ── learner 写：双 tmp DB 全表比对 + 返回值一致 ────────────────────────────
@@ -374,3 +377,92 @@ def test_no_module_level_sys_path_insert():
     for p in (MACRO_PATH, LEARNER_PATH, PORT_PATH):
         for line in p.read_text(encoding="utf-8").splitlines():
             assert not line.lstrip().startswith("sys.path.insert"), f"{p.name}: {line}"
+
+
+# ── 第八批：learner 聚合读（AVG/SUM 专用助手）双模式等价 ──────────────────
+def _seed_trades_db(path) -> str:
+    conn = _conn(path)
+    conn.execute(
+        "CREATE TABLE trades (id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT, pnl_pct REAL)"
+    )
+    conn.executemany(
+        "INSERT INTO trades (symbol, pnl_pct) VALUES (?, ?)",
+        [("BTC", 1.0), ("BTC", -0.5), ("BTC", 2.0), ("ETH", 5.0)],
+    )
+    conn.commit()
+    conn.close()
+    return str(path)
+
+
+def test_fetch_recent_performance_equal(tmp_path):
+    db = _seed_trades_db(tmp_path / "t.db")
+    with _switch("BCRM_LEARNER_STORE_PORT", False):
+        legacy = port_mod.fetch_recent_performance(db, "BTC")
+    with _switch("BCRM_LEARNER_STORE_PORT", True):
+        ported = port_mod.fetch_recent_performance(db, "BTC")
+    assert legacy == ported
+    assert legacy["n_trades"] == 3
+    assert abs(legacy["avg_pnl"] - (1.0 - 0.5 + 2.0) / 3) < 1e-9
+    assert abs(legacy["win_rate"] - 200.0 / 3) < 1e-9
+
+
+def test_fetch_recent_performance_fallback_when_port_broken(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        port_mod, "_connect_ro", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
+    db = _seed_trades_db(tmp_path / "tf.db")
+    with _switch("BCRM_LEARNER_STORE_PORT", True):
+        result = port_mod.fetch_recent_performance(db, "BTC")
+    assert result["n_trades"] == 3  # 回退 legacy 直连仍读到
+
+
+def test_fetch_recent_performance_missing_table_returns_empty(tmp_path):
+    empty = str(tmp_path / "empty.db")
+    _conn(empty).close()  # 建空库（无 trades 表）
+    for flag in (False, True):
+        with _switch("BCRM_LEARNER_STORE_PORT", flag):
+            assert port_mod.fetch_recent_performance(empty, "BTC") == {}
+
+
+def test_learner_get_recent_performance_equal(tmp_path):
+    db_a = str(tmp_path / "a" / "trades.db")
+    db_b = str(tmp_path / "b" / "trades.db")
+    with _switch("BCRM_LEARNER_STORE_PORT", False):
+        ra = _exercise_learner(db_a)
+        perf_a = ra[4].get_recent_performance("BTC")
+    with _switch("BCRM_LEARNER_STORE_PORT", True):
+        rb = _exercise_learner(db_b)
+        perf_b = rb[4].get_recent_performance("BTC")
+    assert perf_a == perf_b
+    assert perf_a["n_trades"] == 2  # BTC 两笔（ETH 一笔被 symbol 过滤）
+
+
+# ── 第八批：连接工厂纯透传（无开关、参数逐字节等价） ──────────────────────
+def test_connect_persistent_factory(tmp_path):
+    from scripts.memory_l4.bcrm2.storage import EvolutionStorageSQLite
+
+    store = EvolutionStorageSQLite(tmp_path / "ev" / "e.db")
+    assert store._conn.row_factory is sqlite3.Row  # row_factory 设置留调用方
+    # 工厂连接真实可用：schema 已初始化，写入/读回往返
+    store._conn.execute(
+        "INSERT OR REPLACE INTO regime_state_daily (timestamp, symbol, price_close,"
+        " level_raw, trend_raw, level_smooth, trend_smooth, regime_probs, top3,"
+        " consensus, hmm_state, bocpd_cp_prob, indicators, data_version)"
+        " VALUES ('2026-10-01','BTCUSDT',61000.0,0.1,-0.5,0.1,-0.5,'{}','[]',0.4,0,0.0,'{}',1)"
+    )
+    row = store._conn.execute(
+        "SELECT price_close FROM regime_state_daily WHERE symbol='BTCUSDT'"
+    ).fetchone()
+    assert row["price_close"] == 61000.0
+
+
+def test_connect_autocommit_factory(tmp_path):
+    from scripts.memory_l4.kg_store import KGStore, Triple
+
+    kg = KGStore(str(tmp_path / "kg" / "k.db"))
+    assert kg.db.isolation_level is None  # autocommit 参数透传
+    assert kg.db.execute("PRAGMA journal_mode").fetchone()[0] == "wal"  # PRAGMA 留调用方
+    tid = kg.add_triple(
+        Triple(subject="BTC", predicate="has_regime", object="TRENDING", statement="BTC trending")
+    )
+    assert tid > 0  # 工厂连接真实可写（autocommit 即时落盘）

@@ -82,7 +82,7 @@ extend-exclude = '''
 '''
 # C5 第五批：legacy 模块级执行回测脚本（不可 import 回归），全量重排风险大于收益；
 # force-exclude 使显式传入的暂存文件也排除（pre-commit black hook 场景）。
-force-exclude = '''11-易经推理系统/scripts/memory_l4/backtest_five_domain_v2\.py'''
+force-exclude = '''11-易经推理系统/scripts/memory_l4/(backtest_five_domain_v2|bcrm2/storage|kg_store)\.py'''
 
 [tool.ruff]
 target-version = "py310"
@@ -132,6 +132,9 @@ ignore = [
     "F401",          # 存量未使用 import
     "F541", "B007", "B905", "C420",
 ]
+# C5 第八批：legacy 存量风格文件（仅连接工厂 2 行收编改动），不重排存量风格
+"11-易经推理系统/scripts/memory_l4/bcrm2/storage.py" = ["F841", "F401", "I001"]
+"11-易经推理系统/scripts/memory_l4/kg_store.py" = ["I001", "F541"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dreamos", "dreambuddy_dal"]

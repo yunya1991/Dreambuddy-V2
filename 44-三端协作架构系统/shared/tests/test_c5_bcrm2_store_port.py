@@ -120,9 +120,9 @@ def test_read_connects_collected():
     # macro 直连清零（第七批：_load_cache/_save_cache 已收编进 _store_port）
     assert macro_src.count(direct) == 0
     assert "mode=ro" not in macro_src
-    # learner 仅剩 1 处 = 聚合读（AVG/SUM 无法用 port 表达，按 SPEC 暂缓）；
-    # 4 处写路径第七批已收编进 _store_port
-    assert learner_src.count(direct) == 1
+    # learner 直连清零（第八批：聚合读已收编进 _store_port 的 fetch_recent_performance；
+    # 4 处写路径第七批已收编）
+    assert learner_src.count(direct) == 0
     assert "mode=ro" not in learner_src
 
 

@@ -17,7 +17,6 @@ BCRM理论映射:
 import json
 import os
 import shutil
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -98,29 +97,10 @@ class TradeDatabase:
 
     def get_recent_performance(self, symbol: str, days: int = 30) -> Dict:
         """获取最近一段时间的模型表现"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        # C5 第八批：聚合读收编（默认 legacy，BCRM_LEARNER_STORE_PORT=1 走 port 分支）
+        from ._store_port import fetch_recent_performance
 
-        try:
-            cursor.execute(
-                """
-                SELECT COUNT(*) as n_trades,
-                       AVG(pnl_pct) as avg_pnl,
-                       SUM(CASE WHEN pnl_pct > 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as win_rate
-                FROM trades WHERE symbol = ?
-            """,
-                (symbol,),
-            )
-
-            row = cursor.fetchone()
-            if row:
-                columns = [desc[0] for desc in cursor.description]
-                return dict(zip(columns, row, strict=True))
-            return {}
-        except Exception:
-            return {}
-        finally:
-            conn.close()
+        return fetch_recent_performance(self.db_path, symbol)
 
 
 class ModelVersionManager:
