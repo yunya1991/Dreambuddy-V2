@@ -148,6 +148,84 @@ class V15APIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_json({"error": str(e)}, 500)
 
+    def _read_json_body(self):
+        """读取并解析 POST 请求的 JSON 体，失败时返回空字典"""
+        try:
+            length = int(self.headers.get("Content-Length", 0) or 0)
+        except Exception:
+            length = 0
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length)
+        if not raw:
+            return {}
+        try:
+            data = json.loads(raw.decode("utf-8"))
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        params = parse_qs(parsed.query)
+        body = self._read_json_body()
+
+        def param(name, default):
+            if name in body and body[name] is not None:
+                return str(body[name])
+            return params.get(name, [default])[0]
+
+        try:
+            if path == "/api/v15-ct/decision":
+                coin = param("coin", "BTC").upper()
+                self._handle_decision(coin)
+
+            elif path == "/api/v15-ct/status":
+                self._handle_status()
+
+            elif path == "/api/v15-ct/backtest":
+                coin = param("coin", "BTC").upper()
+                self._handle_backtest(coin)
+
+            elif path == "/api/v15-ct/decisions":
+                self._handle_decisions()
+
+            elif path == "/api/v15-ct/account-overview":
+                self._handle_account_overview()
+
+            elif path == "/api/capital/allocation":
+                self._handle_capital_allocation()
+
+            elif path == "/api/capital/signal-trigger":
+                self._handle_signal_trigger()
+
+            elif path == "/health":
+                self._send_json({"status": "ok", "service": "v15-api"})
+
+            elif path == "/" or path == "":
+                self._send_json({
+                    "status": "ok",
+                    "service": "v15-api",
+                    "method": "POST",
+                    "supported_endpoints": [
+                        "/api/v15-ct/decision",
+                        "/api/v15-ct/status",
+                        "/api/v15-ct/backtest",
+                        "/api/v15-ct/decisions",
+                        "/api/v15-ct/account-overview",
+                        "/api/capital/allocation",
+                        "/api/capital/signal-trigger",
+                        "/health",
+                    ],
+                })
+
+            else:
+                self._send_json({"error": "unknown endpoint"}, 404)
+
+        except Exception as e:
+            self._send_json({"error": str(e)}, 500)
+
     def _handle_decision(self, coin):
         try:
             result = v15_decision(f"{coin}-USDT")
