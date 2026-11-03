@@ -27,7 +27,7 @@ export interface SessionContext {
   last_clarification_options?: ClarificationOption[];
   message_history: string[];
   thinking_mode: 'quick' | 'deep' | 'stepwise' | 'scheduler';
-  trading_mode: 'ai_skill' | 'classic';
+  trading_mode: 'ai_skill';
   active_strategy_id?: string;
 }
 

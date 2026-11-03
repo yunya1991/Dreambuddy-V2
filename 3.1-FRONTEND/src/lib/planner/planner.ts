@@ -24,7 +24,6 @@ import {
   StepDecision,
   Gap,
   S_CHAIN_STEPS,
-  C_CHAIN_STEPS,
   F_CHAIN_STEPS,
   getStepDefinition,
 } from './step-types.ts';
@@ -729,17 +728,15 @@ export class ExecutionPlanner {
     switch (context.tradingMode) {
       case 'ai_skill':
         return ['A'];
-      case 'classic':
-        return ['C'];
       case 'hybrid':
-        return ['A', 'C', 'F'];
+        return ['A', 'F'];
       default:
         return ['A'];
     }
   }
 
   /**
-   * 获取链的步骤（A = AI技能链 / S链步骤，C = 经典量化，F = 基本面）
+   * 获取链的步骤（A = AI技能链 / S链步骤，F = 基本面）
    */
   private getStepsForChain(chain: SkillChain, context: PlannerContext): ThinkingStepDefinition[] {
     let steps: ThinkingStepDefinition[];
@@ -747,9 +744,6 @@ export class ExecutionPlanner {
     switch (chain) {
       case 'A':
         steps = [...S_CHAIN_STEPS];
-        break;
-      case 'C':
-        steps = [...C_CHAIN_STEPS];
         break;
       case 'F':
         steps = [...F_CHAIN_STEPS];
@@ -1006,7 +1000,7 @@ export class ExecutionPlanner {
     return {
       direction,
       confidence: lastCV?.consensus.overallConfidence || this.calculateOverallConfidence(steps),
-      participatingChains: ['A', 'C', 'F'],
+      participatingChains: ['A', 'F'],
       keyDecisionPoints,
       reasoningPath,
       nextSteps,

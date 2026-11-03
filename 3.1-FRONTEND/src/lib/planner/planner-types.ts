@@ -72,7 +72,7 @@ export interface PlannerContext {
   userPreferences?: ExecutionContext['userPreferences'];
 
   /** 交易模式 */
-  tradingMode: 'ai_skill' | 'classic' | 'hybrid';
+  tradingMode: 'ai_skill' | 'hybrid';
 
   /** 约束条件 */
   constraints?: PlannerConstraints;
@@ -443,9 +443,9 @@ export function createDefaultPlannerContext(
     complexity: intent === 'simple_qa' ? 'quick' : intent === 'execute_trade' ? 'deep' : 'standard',
     tradingMode: 'hybrid',
     chainWeights: {
-      s_chain: 0.35,
-      c_chain: 0.45,
-      f_chain: 0.20,
+      s_chain: 0.55,
+      c_chain: 0,
+      f_chain: 0.45,
     },
   };
 }
@@ -478,7 +478,6 @@ export function inferComplexity(intent: IntentType): ComplexityLevel {
  * 根据意图推断主要使用的链
  */
 export function inferPrimaryChain(intent: IntentType, tradingMode: string): SkillChain {
-  if (tradingMode === 'classic') return 'C';
   if (tradingMode === 'fundamental') return 'F';
   // hybrid 模式根据 intent 决定主链
   if (tradingMode === 'hybrid') {

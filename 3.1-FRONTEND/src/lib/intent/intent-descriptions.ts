@@ -165,9 +165,9 @@ export function getIntentDescription(intentId: string): IntentDescription | unde
  * 帮助 LLM 理解每个意图会调用什么能力，辅助意图区分
  */
 export const INTENT_SUBSYSTEM_MAP: Record<string, string[]> = {
-  market_query: ['C1_tech_scan', '行情数据'],
-  deep_analysis: ['C1_tech_scan', 'C2_momentum', 'C3_volatility', 'A1-A8 分析链'],
-  triple_chain: ['C链', 'A链', 'F链', 'V15_EXECUTOR'],
+  market_query: ['M25-M28 行情数据'],
+  deep_analysis: ['M25-M28 深度分析', 'A1-A8 分析链'],
+  triple_chain: ['A链', 'F链', 'V15_EXECUTOR'],
   scenario_sim: ['A链分析', '情景推演引擎'],
   strategy_verify: ['回测引擎', '策略验证'],
   execute_trade: ['V15_EXECUTOR', '订单系统'],

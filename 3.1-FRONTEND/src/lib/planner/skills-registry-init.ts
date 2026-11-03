@@ -19,7 +19,7 @@ import {
 } from './skill-types.ts';
 import type { SkillCategory } from './skill-types.ts';
 import { SkillsRegistry, getSkillsRegistry } from './skills-registry.ts';
-import { getAllCSkills, getAllFSkills } from './chains-registry.ts';
+import { getAllFSkills } from './chains-registry.ts';
 
 // ============================================================
 // 技能工厂函数 - 统一创建 SkillCapability 的工具
@@ -30,7 +30,7 @@ interface SkillFactoryOptions {
   id: string;
   name: string;
   description: string;
-  chain: 'A' | 'C' | 'F';
+  chain: 'A' | 'F';
   category: SkillCategory;
   version?: string;
   tags?: string[];
@@ -1119,11 +1119,6 @@ export function registerASeriesSkills(registry?: SkillsRegistry): SkillsRegistry
 export function initializeSkillsRegistry(): SkillsRegistry {
   const registry = getSkillsRegistry();
   registerASeriesSkills(registry);
-
-  // 注册 C 链技能（经典量化指标系统）
-  for (const skill of getAllCSkills()) {
-    registry.register(skill);
-  }
 
   // 注册 F 链技能（基本面分析框架 - 占位实现）
   for (const skill of getAllFSkills()) {

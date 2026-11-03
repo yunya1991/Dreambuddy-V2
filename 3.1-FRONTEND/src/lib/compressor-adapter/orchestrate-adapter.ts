@@ -26,7 +26,7 @@ export interface OrchestrateConfig {
   enabled: boolean;
   apiBaseUrl?: string;
   autoInvoke: boolean;
-  defaultTradingMode: 'ai_skill' | 'classic' | 'hybrid';
+  defaultTradingMode: 'ai_skill' | 'hybrid';
   defaultComplexity: 'quick' | 'standard' | 'deep';
   defaultChainWeights: {
     s_chain: number;
@@ -44,7 +44,7 @@ export interface OrchestrateRequest {
   intent?: 'market_query' | 'deep_analysis' | 'execute_trade' | 'strategy_verify' | 'risk_alert';
   symbol?: string;
   complexity?: 'quick' | 'standard' | 'deep';
-  tradingMode?: 'ai_skill' | 'classic' | 'hybrid';
+  tradingMode?: 'ai_skill' | 'hybrid';
   chainWeights?: {
     s_chain: number;
     c_chain: number;
@@ -140,9 +140,9 @@ const DEFAULT_CONFIG: OrchestrateConfig = {
   defaultTradingMode: 'hybrid',
   defaultComplexity: 'standard',
   defaultChainWeights: {
-    s_chain: 0.45,
-    c_chain: 0.35,
-    f_chain: 0.20,
+    s_chain: 0.55,
+    c_chain: 0,
+    f_chain: 0.45,
   },
   maxRetries: 2,
   retryDelayMs: 1000,

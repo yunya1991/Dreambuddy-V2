@@ -50,7 +50,6 @@ export {
   type CrossChainReference,
   type StepExecutionResult,
   S_CHAIN_STEPS,
-  C_CHAIN_STEPS,
   F_CHAIN_STEPS,
   getStepDefinition,
   getStepsByChain,
@@ -146,17 +145,11 @@ export {
 
 // C/F 链技能模块
 export {
-  createC1Skill,
-  createC2Skill,
-  createC3Skill,
-  createC4Skill,
-  createC5Skill,
   createF1Skill,
   createF2Skill,
   createF3Skill,
   createF4Skill,
   createF5Skill,
-  getAllCSkills,
   getAllFSkills,
   getAllChainSkills,
   getChainSummary,
@@ -175,16 +168,12 @@ export const utils = {
 
 export default {
   // 类型
-  SkillChain: ['A', 'C', 'F'] as const,
+  SkillChain: ['A', 'F'] as const,
   SkillCategory: [
     'execution',
     'intelligence',
     'governance',
     'research',
-    'classic-indicators',
-    'classic-strategy',
-    'classic-backtest',
-    'classic-execution',
     'fundamental-news',
     'fundamental-flow',
     'fundamental-sentiment',

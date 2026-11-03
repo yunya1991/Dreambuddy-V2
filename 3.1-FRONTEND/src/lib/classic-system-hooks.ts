@@ -7,28 +7,7 @@
  * 3. 监控数据：获取审批/回滚状态用于监控界面
  */
 
-const CLASSIC_BASE = process.env.NEXT_PUBLIC_CLASSIC_SYSTEM_URL || "http://127.0.0.1:8092";
-
-async function classicRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  try {
-    const response = await fetch(`${CLASSIC_BASE}${endpoint}`, {
-      headers: { "Content-Type": "application/json", ...options.headers },
-      ...options,
-    });
-    return await response.json();
-  } catch (error) {
-    console.error(`[ClassicHook] Request failed: ${endpoint}`, error);
-    return { ok: false, error: error instanceof Error ? error.message : "request_failed" } as T;
-  }
-}
-
-export interface ClassicResponse<T = any> {
-  ok: boolean;
-  ts?: number;
-  error?: string;
-  data?: T;
-  [key: string]: any;
-}
+import { syncStrategyToClassic, type StrategySync } from "@/lib/classic-system-bridge";
 
 export interface PipelineState {
   phase: string;
@@ -174,75 +153,85 @@ export async function onStrategyExecuteComplete(
     options.onProgress?.(state);
   };
 
-  try {
-    // 阶段1: Draft创建
-    const draftResult = await classicRequest<ClassicResponse>("/agent/changeset/draft", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    notify({ phase: "draft", success: draftResult?.ok ?? false, message: draftResult?.ok ? `Draft已创建: ${payload.strategy_name}` : "Draft创建失败", timestamp: Date.now() });
-    if (!draftResult?.ok) return { success: false, strategyName: payload.strategy_name, traceId: payload.trace_id, steps, error: "Draft创建失败" };
-
-    // 阶段2: Gate评估
-    const gateResult = await classicRequest<ClassicResponse>("/evaluation/gate/check", {
-      method: "POST",
-      body: JSON.stringify({ changeset_id: payload.trace_id, strategy_name: payload.strategy_name, gate_checks: payload.gate_result.checks, risks: payload.gate_result.risks }),
-    });
-    notify({ phase: "gate", success: gateResult?.ok ?? false, message: gateResult?.ok ? "Gate评估通过" : "Gate评估未通过", timestamp: Date.now() });
-
-    // 阶段3: 审批请求
-    const approvalResult = await classicRequest<ClassicResponse>("/agent/approvals/request", {
-      method: "POST",
-      body: JSON.stringify({ strategy_name: payload.strategy_name, changeset_id: payload.trace_id, request_type: "strategy_deployment", reason: payload.changeset.reason, gate_pass: gateResult?.ok ?? true }),
-    });
-    notify({ phase: "approval", success: approvalResult?.ok ?? false, message: approvalResult?.ok ? "审批请求已提交" : "审批请求提交失败", timestamp: Date.now() });
-
-    // 阶段4: Apply变更
-    const applyResult = await classicRequest<ClassicResponse>("/governance/changeset/apply", {
-      method: "POST",
-      body: JSON.stringify({ strategy_name: payload.strategy_name, changeset_id: payload.trace_id, mode: approvalResult?.ok ? "apply" : "dry_run" }),
-    });
-    notify({ phase: "apply", success: applyResult?.ok ?? false, message: applyResult?.ok ? "策略已应用" : "策略应用失败", timestamp: Date.now() });
-
-    // 阶段5: 审计记录
-    const auditResult = await classicRequest<ClassicResponse>("/agent/audit/record", {
-      method: "POST",
-      body: JSON.stringify({ strategy_name: payload.strategy_name, trace_id: payload.trace_id, action: "strategy_deployment", status: "success" }),
-    });
-    notify({ phase: "audit", success: auditResult?.ok ?? false, message: "审计记录完成", timestamp: Date.now() });
-
-    console.log(`[Hook/S5] ✅ 策略推送完成: ${payload.strategy_name}`);
-    return { success: steps.slice(0, -1).every(s => s.success), strategyName: payload.strategy_name, traceId: payload.trace_id, steps };
-  } catch (error: any) {
-    return { success: false, strategyName: payload.strategy_name, traceId: payload.trace_id, steps, error: error.message };
-  }
-}
-
-/**
- * 查询策略库作为知识参考
- */
-export async function queryStrategyKnowledge(scope: string): Promise<{ strategies: any[]; error?: string }> {
-  try {
-    const result = await classicRequest<ClassicResponse>(`/strategy/inject/list?scope=${encodeURIComponent(scope)}`);
-    if (result?.ok && result?.strategies) return { strategies: result.strategies };
-    return { strategies: [], error: result?.error || "查询失败" };
-  } catch (error) {
-    return { strategies: [], error: error instanceof Error ? error.message : "查询异常" };
-  }
-}
-
-/**
- * 获取监控数据
- */
-export async function fetchSystemMonitorData() {
-  const [approvalsRes, rollbackRes, healthRes] = await Promise.allSettled([
-    classicRequest<ClassicResponse>("/agent/approvals/list"),
-    classicRequest<ClassicResponse>("/evaluation/rollback/list"),
-    classicRequest<ClassicResponse>("/agent/api/health"),
-  ]);
-  return {
-    approvals: approvalsRes.status === "fulfilled" ? approvalsRes.value?.approvals || [] : [],
-    rollbackPoints: rollbackRes.status === "fulfilled" ? rollbackRes.value?.points || [] : [],
-    health: healthRes.status === "fulfilled" ? healthRes.value : { ok: false },
+  const strategyName = payload.strategy_name;
+  const traceId = payload.trace_id;
+  const symbol = String(payload.candidate.symbol || chain.scope || "BTC").toUpperCase();
+  const shortTerm = chain.s2?.trend?.shortTerm || "";
+  const direction = /涨|上行|bull|多|up/i.test(shortTerm)
+    ? "long"
+    : /跌|下行|bear|空|down/i.test(shortTerm)
+      ? "short"
+      : "neutral";
+  const parsePct = (value?: string): number | null => {
+    const matched = String(value || "").match(/(\d+(?:\.\d+)?)\s*%/);
+    return matched ? Number(matched[1]) / 100 : null;
   };
+  const rawPosition = chain.s3?.entryPlan?.positionSize;
+  const syncPayload: StrategySync = {
+    id: strategyName.replace(/[^A-Za-z0-9_-]/g, "_"),
+    name: strategyName,
+    description: payload.changeset.description,
+    direction,
+    symbol,
+    tradeType: "spot",
+    leverage: 1,
+    positionSize: rawPosition === undefined ? undefined : rawPosition > 1 ? rawPosition / 100 : rawPosition,
+    stopLoss: parsePct(chain.s3?.riskManagement?.stopLoss || chain.s2?.keyLevels?.stopLoss),
+    takeProfit: parsePct(chain.s3?.riskManagement?.takeProfit || chain.s2?.keyLevels?.takeProfit),
+    frequency: "1h",
+  };
+
+  try {
+    // 统一走 M26 策略库 + M27 治理审批（Draft → Gate → Approval → Apply）
+    const result = await syncStrategyToClassic(syncPayload);
+    const stages = result.data?.stages;
+
+    notify({
+      phase: "draft",
+      success: stages?.draft.ok ?? false,
+      message: stages?.draft.message || (stages?.draft.ok ? "Draft已创建" : "Draft创建失败"),
+      timestamp: Date.now(),
+    });
+    notify({
+      phase: "gate",
+      success: stages?.gate.ok ?? false,
+      message: stages?.gate.message || (stages?.gate.ok ? "Gate评估通过" : "Gate评估未通过"),
+      timestamp: Date.now(),
+    });
+    notify({
+      phase: "approval",
+      success: stages?.approval.ok ?? false,
+      message: stages?.approval.message || (stages?.approval.ok ? "审批请求已提交" : "审批请求提交失败"),
+      timestamp: Date.now(),
+    });
+    notify({
+      phase: "apply",
+      success: stages?.apply.ok ?? false,
+      message: stages?.apply.message || (stages?.apply.ok ? "策略已应用" : "策略应用失败"),
+      timestamp: Date.now(),
+    });
+    // M27 的 Gate/审批链路自动写入审计事件，此处不再单独调用 8092 审计接口
+    notify({ phase: "audit", success: true, message: "审计事件已由 M27 治理链路自动记录", timestamp: Date.now() });
+
+    const success =
+      Boolean(result.ok) &&
+      Boolean(stages) &&
+      stages!.draft.ok &&
+      stages!.gate.ok &&
+      stages!.approval.ok &&
+      stages!.apply.ok;
+
+    console.log(`[Hook/S5] ${success ? "✅" : "⚠️"} 策略推送完成: ${strategyName}`);
+    return {
+      success,
+      strategyName,
+      traceId,
+      changesetId: result.data?.changeset_id || result.data?.draft_id,
+      approvalId: result.data?.approval_id,
+      steps,
+      error: success ? undefined : result.error || "治理链路未全部通过",
+    };
+  } catch (error: any) {
+    return { success: false, strategyName, traceId, steps, error: error.message };
+  }
 }

@@ -14,7 +14,7 @@ import { z } from 'zod';
 // ============================================================
 
 /** 技能所属链 */
-export type SkillChain = 'A' | 'C' | 'F';
+export type SkillChain = 'A' | 'F';
 
 /** 技能分类 */
 export type SkillCategory =
@@ -22,10 +22,6 @@ export type SkillCategory =
   | 'intelligence'   // 情报闭环
   | 'governance'     // 治理闭环
   | 'research'       // 研究工具
-  | 'classic-indicators'   // 经典技术指标
-  | 'classic-strategy'      // 经典策略库
-  | 'classic-backtest'      // 经典回测
-  | 'classic-execution'     // 经典执行
   | 'fundamental-news'      // 基本面新闻
   | 'fundamental-flow'      // 基本面资金
   | 'fundamental-sentiment' // 基本面情绪
@@ -84,7 +80,7 @@ export interface SkillMetadata {
   /** 简短描述 */
   description: string;
 
-  /** 所属链: A=AI技能, C=经典量化, F=基本面 */
+  /** 所属链: A=AI技能, F=基本面 */
   chain: SkillChain;
 
   /** 技能分类（开放 string 以兼容外部扩展，SkillCategory 为标准枚举） */
@@ -158,7 +154,7 @@ export interface ExecutionContext {
   userRole: 'FREE' | 'PRO' | 'ADMIN';
 
   /** 交易模式 */
-  tradingMode: 'ai_skill' | 'classic' | 'hybrid';
+  tradingMode: 'ai_skill' | 'hybrid';
 
   /** Token 预算 */
   budgetTokens?: number;
@@ -487,9 +483,9 @@ export function createDefaultContext(sessionId: string): ExecutionContext {
     userRole: 'FREE',
     tradingMode: 'ai_skill',
     chainWeights: {
-      s_chain: 0.35,
-      c_chain: 0.45,
-      f_chain: 0.20,
+      s_chain: 0.55,
+      c_chain: 0,
+      f_chain: 0.45,
     },
   };
 }

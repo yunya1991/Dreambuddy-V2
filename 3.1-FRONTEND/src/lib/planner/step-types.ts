@@ -335,7 +335,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 2,
     isCrossValidationPoint: true,
-    crossValidationChains: ['A', 'C', 'F'],
+    crossValidationChains: ['A', 'F'],
   },
   {
     id: 'S2',
@@ -352,7 +352,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 3,
     isCrossValidationPoint: true,
-    crossValidationChains: ['A', 'C', 'F'],
+    crossValidationChains: ['A', 'F'],
   },
   {
     id: 'S3',
@@ -368,7 +368,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 2,
     isCrossValidationPoint: true,
-    crossValidationChains: ['A', 'C'],
+    crossValidationChains: ['A', 'F'],
   },
   {
     id: 'S4',
@@ -385,7 +385,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     allowIteration: true,
     maxIterations: 2,
     isCrossValidationPoint: true,
-    crossValidationChains: ['A', 'C'],
+    crossValidationChains: ['A', 'F'],
   },
   {
     id: 'S5',
@@ -400,78 +400,7 @@ export const S_CHAIN_STEPS: ThinkingStepDefinition[] = [
     recommendedSkillCategories: ['execution'],
     allowIteration: false,
     isCrossValidationPoint: true,
-    crossValidationChains: ['A', 'C'],
-  },
-];
-
-// ============================================================
-// C 链步骤定义
-// ============================================================
-
-/**
- * C 链（量化技术思维）的步骤定义
- */
-export const C_CHAIN_STEPS: ThinkingStepDefinition[] = [
-  {
-    id: 'C1',
-    stage: 'research',
-    chain: 'C',
-    label: 'C1_扫描',
-    icon: '📊',
-    description: '多周期技术指标扫描',
-    coreQuestion: '各周期的技术指标显示什么信号？RSI/MACD/均线/波动率状态？',
-    expectedOutputs: ['多周期信号矩阵', '关键指标读数', '信号强度排序'],
-    confidenceThresholds: { high: 85, medium: 60, low: 40 },
-    recommendedSkillCategories: ['classic-indicators'],
-  },
-  {
-    id: 'C2',
-    stage: 'analysis',
-    chain: 'C',
-    label: 'C2_识别',
-    icon: '🔄',
-    description: '市场状态自动识别',
-    coreQuestion: '当前是趋势市场还是震荡市场？应该用什么策略家族？',
-    expectedOutputs: ['市场状态', '推荐策略家族', '状态置信度'],
-    confidenceThresholds: { high: 80, medium: 55, low: 35 },
-    recommendedSkillCategories: ['classic-strategy'],
-    requiredSkills: ['RegimeHybridStrategy'],
-  },
-  {
-    id: 'C3',
-    stage: 'design',
-    chain: 'C',
-    label: 'C3_匹配',
-    icon: '📋',
-    description: '从策略库中匹配最优策略',
-    coreQuestion: '有哪些可用策略？哪个最适合当前市场状态？',
-    expectedOutputs: ['候选策略列表', '策略评分', '推荐策略', '策略元数据'],
-    confidenceThresholds: { high: 80, medium: 55, low: 35 },
-    recommendedSkillCategories: ['classic-strategy'],
-  },
-  {
-    id: 'C4',
-    stage: 'validate',
-    chain: 'C',
-    label: 'C4_回测',
-    icon: '📈',
-    description: '历史数据回测验证',
-    coreQuestion: '策略在历史上表现如何？胜率/夏普/最大回撤？',
-    expectedOutputs: ['回测报告', '绩效指标', 'Gate评估结果', '通过/否决标记'],
-    confidenceThresholds: { high: 85, medium: 60, low: 40 },
-    recommendedSkillCategories: ['classic-backtest'],
-  },
-  {
-    id: 'C5',
-    stage: 'execute',
-    chain: 'C',
-    label: 'C5_参数',
-    icon: '⚙️',
-    description: '输出策略参数和信号阈值',
-    coreQuestion: '具体的策略参数配置是什么？可以执行吗？',
-    expectedOutputs: ['策略参数配置', '信号阈值', '执行就绪状态'],
-    confidenceThresholds: { high: 80, medium: 55, low: 35 },
-    recommendedSkillCategories: ['classic-execution'],
+    crossValidationChains: ['A', 'F'],
   },
 ];
 
@@ -553,7 +482,7 @@ export const F_CHAIN_STEPS: ThinkingStepDefinition[] = [
  * 根据步骤 ID 获取步骤定义
  */
 export function getStepDefinition(stepId: string): ThinkingStepDefinition | undefined {
-  const allSteps = [...S_CHAIN_STEPS, ...C_CHAIN_STEPS, ...F_CHAIN_STEPS];
+  const allSteps = [...S_CHAIN_STEPS, ...F_CHAIN_STEPS];
   return allSteps.find(s => s.id === stepId);
 }
 
@@ -564,8 +493,6 @@ export function getStepsByChain(chain: SkillChain): ThinkingStepDefinition[] {
   switch (chain) {
     case 'A':
       return S_CHAIN_STEPS;
-    case 'C':
-      return C_CHAIN_STEPS;
     case 'F':
       return F_CHAIN_STEPS;
     default:
@@ -577,7 +504,7 @@ export function getStepsByChain(chain: SkillChain): ThinkingStepDefinition[] {
  * 获取所有步骤定义
  */
 export function getAllSteps(): ThinkingStepDefinition[] {
-  return [...S_CHAIN_STEPS, ...C_CHAIN_STEPS, ...F_CHAIN_STEPS];
+  return [...S_CHAIN_STEPS, ...F_CHAIN_STEPS];
 }
 
 /**

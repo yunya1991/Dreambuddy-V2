@@ -146,8 +146,6 @@ export class VotingCalculator {
     switch (chain) {
       case 'A':
         return this.config.weights.s_chain;
-      case 'C':
-        return this.config.weights.c_chain;
       case 'F':
         return this.config.weights.f_chain;
     }

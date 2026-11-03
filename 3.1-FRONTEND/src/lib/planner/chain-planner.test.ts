@@ -1,10 +1,10 @@
 #!/usr/bin/env npx tsx
 /**
- * ChainPlanner 四维规划 + 三链动态插入 集成测试
+ * ChainPlanner 四维规划 + A/F链动态插入 集成测试
  *
  * 验证内容：
  * 1. ChainPlanner 四维规划（预算/知识库/历史/标的覆盖）
- * 2. 三链动态插入机制
+ * 2. A/F链动态插入机制
  */
 
 import { ChainPlanner, DynamicInsertionPlanner } from './chain-planner.ts';
@@ -60,18 +60,6 @@ test('S链深度分析 - 完整步骤', () => {
   console.log(`   规划步骤数: ${result.plannedSteps.length}`);
   console.log(`   预估Token: ${result.estimatedTokens}`);
   console.log(`   预算模式: ${result.budgetMode}`);
-});
-
-test('C链快速查询 - 精简步骤', () => {
-  const planner = new ChainPlanner(5000);
-  const result = planner.plan(
-    'market_query' as IntentType,
-    'quick' as ComplexityLevel,
-    'C' as SkillChain
-  );
-
-  assert(result.plannedSteps.length <= 3, '快速模式步骤应该较少');
-  assert(result.primaryChain === 'C', '主链应该是C链');
 });
 
 test('F链标准模式', () => {
@@ -210,13 +198,13 @@ test('小币种 - 部分数据可能缺失', () => {
 });
 
 // ============================================================
-// 测试 5: DynamicInsertionPlanner - 三链动态插入
+// 测试 5: DynamicInsertionPlanner - A/F链动态插入
 // ============================================================
 
-console.log('\n🧪 测试组 5: DynamicInsertionPlanner - 三链动态插入');
+console.log('\n🧪 测试组 5: DynamicInsertionPlanner - A/F链动态插入');
 console.log('=' .repeat(50));
 
-test('数据缺失缺口 - 插入C链和F链步骤', () => {
+test('数据缺失缺口 - 插入F链步骤', () => {
   const planner = new DynamicInsertionPlanner(5000);
   const result = planner.planInsertions(
     'S2',
@@ -253,8 +241,8 @@ test('逻辑冲突缺口 - 插入交叉验证步骤', () => {
   console.log(`   建议: ${result.recommendation}`);
   console.log(`   插入数: ${result.insertions.length}`);
 
-  const hasCChain = result.insertions.some(i => i.chain === 'C');
-  assert(hasCChain, '逻辑冲突应该插入C链做交叉验证');
+  const hasFChain = result.insertions.some(i => i.chain === 'F');
+  assert(hasFChain, '逻辑冲突应该插入F链做交叉验证');
 });
 
 test('低置信度缺口 - 插入补充分析', () => {

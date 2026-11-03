@@ -15,7 +15,6 @@
 import {
   ThinkingStepDefinition,
   S_CHAIN_STEPS,
-  C_CHAIN_STEPS,
   F_CHAIN_STEPS,
   getStepDefinition,
 } from './step-types.ts';
@@ -28,8 +27,6 @@ import { IntentType, ComplexityLevel, PlannerContext } from './planner-types.ts'
 
 const NODE_COST_TABLE: Record<string, number> = {
   // 零成本节点（纯规则/本地计算）
-  'C1': 0,
-  'C2': 50,
   'F2': 0,
   'F3': 0,
   // 低成本节点
@@ -38,9 +35,6 @@ const NODE_COST_TABLE: Record<string, number> = {
   'S3': 1200,
   'S4': 800,
   'S5': 1000,
-  'C3': 300,
-  'C4': 800,
-  'C5': 1500,
   'F1': 500,
   'F4': 400,
   'F5': 500,
@@ -214,9 +208,6 @@ export class ChainPlanner {
     switch (primaryChain) {
       case 'A':
         steps = [...S_CHAIN_STEPS];
-        break;
-      case 'C':
-        steps = [...C_CHAIN_STEPS];
         break;
       case 'F':
         steps = [...F_CHAIN_STEPS];
@@ -443,7 +434,7 @@ export class ChainPlanner {
     const lines: string[] = [];
 
     lines.push(`【ChainPlanner 规划报告】`);
-    lines.push(`主链: ${primaryChain === 'A' ? 'S链(AI交易)' : primaryChain === 'C' ? 'C链(经典量化)' : 'F链(基本面)'}`);
+    lines.push(`主链: ${primaryChain === 'A' ? 'S链(AI交易)' : 'F链(基本面)'}`);
     lines.push(`复杂度: ${complexity === 'quick' ? '快速' : complexity === 'standard' ? '标准' : '深度'}`);
     lines.push(`预算模式: ${budgetMode} (预计 ${totalTokens} Token)`);
     lines.push(`规划步骤数: ${steps.length}`);
@@ -586,26 +577,10 @@ export class DynamicInsertionPlanner {
       cost: number;
     }> = [];
 
-    // 根据缺口类型推荐不同链的步骤
+    // 根据缺口类型推荐不同链的步骤（C 链已退役，仅保留 F 链）
     switch (gapType) {
       case 'missing-data':
         // 数据缺失 → 补充其他链的数据维度
-        if (primaryChain !== 'C') {
-          candidates.push({
-            stepId: 'C1',
-            chain: 'C',
-            reason: '数据缺口：补充技术面扫描数据',
-            priority: 'high',
-            cost: 0,
-          });
-          candidates.push({
-            stepId: 'C2',
-            chain: 'C',
-            reason: '数据缺口：补充Regime识别',
-            priority: 'high',
-            cost: 50,
-          });
-        }
         if (primaryChain !== 'F') {
           candidates.push({
             stepId: 'F1',
@@ -619,15 +594,6 @@ export class DynamicInsertionPlanner {
 
       case 'logical-conflict':
         // 逻辑冲突 → 引入第三方链做仲裁
-        if (primaryChain !== 'C') {
-          candidates.push({
-            stepId: 'C3',
-            chain: 'C',
-            reason: '逻辑冲突：用量化策略匹配做交叉验证',
-            priority: 'high',
-            cost: 300,
-          });
-        }
         if (primaryChain !== 'F') {
           candidates.push({
             stepId: 'F5',
@@ -641,15 +607,6 @@ export class DynamicInsertionPlanner {
 
       case 'low-confidence':
         // 置信度低 → 追加更多分析维度
-        if (primaryChain !== 'C') {
-          candidates.push({
-            stepId: 'C3',
-            chain: 'C',
-            reason: '置信度不足：补充量化策略验证',
-            priority: 'medium',
-            cost: 300,
-          });
-        }
         if (primaryChain !== 'F') {
           candidates.push({
             stepId: 'F2',
@@ -672,28 +629,10 @@ export class DynamicInsertionPlanner {
             cost: 0,
           });
         }
-        if (primaryChain !== 'C') {
-          candidates.push({
-            stepId: 'C4',
-            chain: 'C',
-            reason: '风险不确定：补充回测验证',
-            priority: 'medium',
-            cost: 800,
-          });
-        }
         break;
 
       default:
         // 默认：优先插入低成本高价值的步骤
-        if (primaryChain !== 'C') {
-          candidates.push({
-            stepId: 'C1',
-            chain: 'C',
-            reason: '默认补充：技术面扫描（零成本）',
-            priority: 'low',
-            cost: 0,
-          });
-        }
         if (primaryChain !== 'F') {
           candidates.push({
             stepId: 'F2',

@@ -51,7 +51,7 @@ export class SkillsRegistry {
 
   private initIndexes(): void {
     // 按链索引
-    (['S', 'C', 'F'] as SkillChain[]).forEach(chain => {
+    (['A', 'F'] as SkillChain[]).forEach(chain => {
       this.byChain.set(chain, new Set());
     });
   }

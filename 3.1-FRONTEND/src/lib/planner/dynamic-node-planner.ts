@@ -84,7 +84,7 @@ const INTENT_STRATEGIES: Record<IntentType, IntentNodeStrategy> = {
     minNodes: 2,
     maxNodes: 4,
     initialMode: 'cross_chain',
-    primaryChains: ['C', 'F', 'A'],
+    primaryChains: ['F', 'A'],
     preferredStages: ['research', 'analysis'],
     useFullPipeline: false,
   },
@@ -95,7 +95,7 @@ const INTENT_STRATEGIES: Record<IntentType, IntentNodeStrategy> = {
     minNodes: 5,
     maxNodes: 7,
     initialMode: 'cross_chain',
-    primaryChains: ['C', 'F', 'A'],
+    primaryChains: ['F', 'A'],
     preferredStages: ['research', 'analysis'],
     useFullPipeline: false,
   },
@@ -106,7 +106,7 @@ const INTENT_STRATEGIES: Record<IntentType, IntentNodeStrategy> = {
     minNodes: 2,
     maxNodes: 4,
     initialMode: 'core_only',
-    primaryChains: ['A', 'C'],
+    primaryChains: ['A'],
     preferredStages: ['analysis', 'validate'],
     useFullPipeline: false,
   },
@@ -130,7 +130,7 @@ const INTENT_STRATEGIES: Record<IntentType, IntentNodeStrategy> = {
     minNodes: 3,
     maxNodes: 8,
     initialMode: 'cross_chain',
-    primaryChains: ['A', 'C'],
+    primaryChains: ['A'],
     preferredStages: ['analysis', 'design', 'validate'],
     useFullPipeline: true,
   },
@@ -141,7 +141,7 @@ const INTENT_STRATEGIES: Record<IntentType, IntentNodeStrategy> = {
     minNodes: 3,
     maxNodes: 8,
     initialMode: 'cross_chain',
-    primaryChains: ['C', 'A'],
+    primaryChains: ['A'],
     preferredStages: ['validate', 'analysis', 'design'],
     useFullPipeline: true,
   },
@@ -152,7 +152,7 @@ const INTENT_STRATEGIES: Record<IntentType, IntentNodeStrategy> = {
     minNodes: 4,
     maxNodes: 10,
     initialMode: 'full_spectrum',
-    primaryChains: ['A', 'C'],
+    primaryChains: ['A'],
     preferredStages: ['analysis', 'design', 'validate', 'execute'],
     requiredSkillIds: ['dream-pretrade-gatekeeper', 'dream-regime-detector'],
     useFullPipeline: true,
@@ -401,14 +401,14 @@ export class DynamicNodePlanner {
     }
 
     // ── 思维链阶段定义 ──────────────────────────────
-    // Phase 1: 数据采集（C/F链客观数据）
+    // Phase 1: 数据采集（F链客观数据）
     // Phase 2: 矛盾识别（A链基于数据分析矛盾）
     // Phase 3: 假设验证（A链验证矛盾判断）
     // Phase 4: 策略形成（A链输出操作建议）
     type ThinkingPhase = 'data_collection' | 'contradiction_identification' | 'hypothesis_validation' | 'strategy_formation';
 
     const phaseForSkill = (meta: typeof allSkills[0]['metadata']): ThinkingPhase => {
-      if (meta.chain === 'C' || meta.chain === 'F') return 'data_collection';
+      if (meta.chain === 'F') return 'data_collection';
       if (meta.category === 'philosophical_analysis' || meta.category === 'intelligence') return 'contradiction_identification';
       if (meta.category === 'first_principles' || meta.category === 'market_regime' || meta.category === 'screening') return 'hypothesis_validation';
       return 'strategy_formation';
@@ -693,7 +693,7 @@ export class DynamicNodePlanner {
     score += chainMatch;
 
     // C/F 链技能有真实 API 数据源，额外加分
-    const dataBonus = meta.chain === 'C' ? 25 : meta.chain === 'F' ? 20 : 0;
+    const dataBonus = meta.chain === 'F' ? 20 : 0;
     score += dataBonus;
 
     const midConfidence = (meta.confidenceRange[0] + meta.confidenceRange[1]) / 2;

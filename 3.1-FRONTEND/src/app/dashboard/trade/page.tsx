@@ -11,7 +11,7 @@ import { useSessionStore, useChainStore, useTradingStore } from '@/stores';
 export default function TradePage() {
   const { isStreaming, sLayerIntent } = useSessionStore();
   const { activeChain } = useChainStore();
-  const { mode, balance, positions, signals } = useTradingStore();
+  const { balance, positions, signals } = useTradingStore();
 
   return (
     <div className="flex h-full gap-4 p-4">
@@ -21,7 +21,7 @@ export default function TradePage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-200">
-              {mode === 'ai_skill' ? 'AI Skill 交易' : '经典交易'}
+              AI Skill 交易
             </h2>
             <V3Badge variant={isStreaming ? 'info' : 'default'} dot pulse={isStreaming}>
               {isStreaming ? '执行中' : '就绪'}

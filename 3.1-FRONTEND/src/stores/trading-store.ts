@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type TradingMode = 'ai_skill' | 'classic';
+export type TradingMode = 'ai_skill';
 
 export interface Position {
   symbol: string;
