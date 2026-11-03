@@ -1,5 +1,20 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 影子验证合并跑 TB1-TB5（真实 DB 数据）
+
+- 新增 `tb_shadow_run.py`（与 TB1-TB5 同目录，绝对 import）：影子跑脚本，零业务回写
+- 数据源：`cognitive_memory.db` 539MB（262K memories，mean confidence 0.301；verify_count>0 的 3403 条真实 success_rate mean=0.474）
+- 第一次 shadow 暴露采样坑：`voyager_consecutive.jsonl` 里大量 C 级未验证记忆（success_rate≈0）→ TB2 Beta 后验塌缩 mean=0.0015；recall_hits 硬算常数 → TB3 分布平坦 spread=0.0；TB5 两候选在低 gaps / 低 refs 下无分歧 → 零切换。**非代码 bug，纯数据采样策略问题**
+- 第二次 shadow 修正：改用 DB `verify_count>0` 记忆算 success_rate（quality_level rank 加权）+ recall_hits 从每样本派生 + TB5 候选差异拉开（threshold 1 vs 10 + refs_budget 1 vs 20）
+- **第二次 shadow 结论**：
+  - TB1 PSI=0.0001，stable ✅
+  - TB2 Beta 后验 Beta(96.3, 104.7) mean=0.479，从 0.301 提升 ✅
+  - TB3 pareto_score mean=0.667, p50=0.665, p90=0.717, spread=0.118
+  - TB4 regime gate 四 arm mean 置信度 0.45~0.50，commodity 最高（DB 里该 arm 对应质量等级≈B）；drift 50 步触发一次 reset，本次 200 步触发 3 次
+  - TB5 切换 0 次（当前 extras 样本 gaps/refs 普遍低，两候选截断后输入相同 → 合理不切换）；FAIL-OPEN fallback 0
+  - **verdict = PASS**
+- 影子报告落 `4-MEMORY/artifacts/tb_shadow_report.{json,md}`（artifacts/ 在 .gitignore，不入库；与 SPEC §6.3 / §6.5 影子期校准协议对齐，后续 ≥200 条 agent 结论可复跑校准）
+
 ## 2026-11-03 TB5 PolicySelectLoop 落地（TB1-TB5 全部完成）
 
 - 新增 `grpo_evolution.py`：`StrategyConfig`（格式偏好，H2 冻结权重）+ `GRPOEvolutionLoop`（`evaluate_config` → 候选 argmax → 严格改进才切换）
