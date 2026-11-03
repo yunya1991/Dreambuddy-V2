@@ -28,6 +28,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 _SHELLS_DIR = _REPO_ROOT / "mcp_shells"
 
 # 只读工具面调用计划（域名 → [(tool, args)]）；写面工具一律不进入本计划
