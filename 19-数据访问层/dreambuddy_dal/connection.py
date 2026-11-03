@@ -5,6 +5,7 @@ dreambuddy_dal.connection — SQLite 连接生命周期管理 + 异常分类 + a
 - TECHNICAL_DESIGN.md §4.2 异常分类矩阵（BUSY / CONSTRAINT / CORRUPT / IO_ERROR / OTHER）
 - TECHNICAL_DESIGN.md §4.3 auto_retry_locked 指数退避：0.1s / 0.3s / 0.9s 三次重试
 """
+
 from __future__ import annotations
 
 import functools
@@ -23,12 +24,13 @@ _T = TypeVar("_T")
 # 5 类异常分类（TECHNICAL_DESIGN §4.2 表）
 # ---------------------------------------------------------------------------
 
+
 class SQLiteErrorCategory(str, Enum):
-    BUSY = "BUSY"               # 并发写冲突：database is locked → Fail-Open（双写场景不阻塞）
-    CONSTRAINT = "CONSTRAINT"   # UNIQUE / FK / CHECK 冲突 → Fail-Closed（返回 False 不重试）
-    CORRUPT = "CORRUPT"         # DB 损坏 malformed → 立即 Kill-Switch 切 json_legacy + 飞书 CRITICAL
-    IO_ERROR = "IO_ERROR"       # 磁盘 IO / 权限 / 无空间 → 告警 + 重试 1 次
-    OTHER = "OTHER"             # 兜底：未分类 → 抛原异常
+    BUSY = "BUSY"  # 并发写冲突：database is locked → Fail-Open（双写场景不阻塞）
+    CONSTRAINT = "CONSTRAINT"  # UNIQUE / FK / CHECK 冲突 → Fail-Closed（返回 False 不重试）
+    CORRUPT = "CORRUPT"  # DB 损坏 malformed → 立即 Kill-Switch 切 json_legacy + 飞书 CRITICAL
+    IO_ERROR = "IO_ERROR"  # 磁盘 IO / 权限 / 无空间 → 告警 + 重试 1 次
+    OTHER = "OTHER"  # 兜底：未分类 → 抛原异常
 
 
 def classify_sqlite_exception(exc: BaseException) -> SQLiteErrorCategory:
@@ -55,6 +57,7 @@ def classify_sqlite_exception(exc: BaseException) -> SQLiteErrorCategory:
 # auto_retry_locked：BUSY 指数退避装饰器（仅 BUSY 重试，其它异常直通）
 # ---------------------------------------------------------------------------
 
+
 def auto_retry_locked(max_retries: int = 3, backoff_ms: tuple = (100, 300, 900)):
     """
     @auto_retry_locked 或 @auto_retry_locked(max_retries=3, backoff_ms=(100,300,900))
@@ -71,6 +74,7 @@ def auto_retry_locked(max_retries: int = 3, backoff_ms: tuple = (100, 300, 900))
     # 正常带参数场景
     def decorator(fn: Callable[..., _T]) -> Callable[..., _T]:
         return _build_wrapper(fn, max_retries=max_retries, backoff_ms=backoff_ms)
+
     return decorator
 
 
@@ -98,6 +102,7 @@ def _build_wrapper(fn: Callable[..., _T], max_retries: int, backoff_ms: tuple) -
         if last_exc:
             raise last_exc
         raise RuntimeError("unreachable in auto_retry_locked")
+
     return wrapper
 
 
@@ -108,15 +113,15 @@ def _build_wrapper(fn: Callable[..., _T], max_retries: int, backoff_ms: tuple) -
 # 连接后立刻按顺序 PRAGMA（critical 4 条后有断言）
 _DEFAULT_PRAGMAS: tuple[tuple[str, Optional[int]], ...] = (
     # ─── critical（ASSERTION 校验）───
-    ("journal_mode=WAL", None),       # 写前日志，并发读不阻塞
-    ("foreign_keys=ON", 1),           # FK 约束开启
-    ("busy_timeout=5000", 5000),      # 5s busy_timeout（与 fcntl 旧机制共存）
-    ("synchronous=NORMAL", 1),        # NORMAL = 只在 CHECKPOINT 时 fsync（WAL 场景安全平衡性能）
+    ("journal_mode=WAL", None),  # 写前日志，并发读不阻塞
+    ("foreign_keys=ON", 1),  # FK 约束开启
+    ("busy_timeout=5000", 5000),  # 5s busy_timeout（与 fcntl 旧机制共存）
+    ("synchronous=NORMAL", 1),  # NORMAL = 只在 CHECKPOINT 时 fsync（WAL 场景安全平衡性能）
     # ─── performance（可接受小差异，不 assertion）───
-    ("temp_store=MEMORY", 2),         # 临时表全内存
+    ("temp_store=MEMORY", 2),  # 临时表全内存
     ("mmap_size=268435456", 268435456),  # 256MB 内存映射（读性能 ↑）
-    ("cache_size=-20000", None),      # 20MB 页缓存（负值=KB）
-    ("soft_heap_limit=134217728", None), # 128MB 软内存上限（防止极端 SQL 撑爆）
+    ("cache_size=-20000", None),  # 20MB 页缓存（负值=KB）
+    ("soft_heap_limit=134217728", None),  # 128MB 软内存上限（防止极端 SQL 撑爆）
 )
 
 
@@ -144,6 +149,7 @@ def _apply_pragmas(conn: sqlite3.Connection, *, assert_critical: bool = True) ->
 # 对外主入口：get_sqlite_connection 上下文管理器
 # ---------------------------------------------------------------------------
 
+
 @contextmanager
 def get_sqlite_connection(
     db_path: str,
@@ -152,20 +158,31 @@ def get_sqlite_connection(
     timeout: float = 10.0,
     apply_pragmas: bool = True,
     assert_critical_pragmas: bool = True,
+    limiter=None,
+    limiter_timeout: Optional[float] = None,
 ) -> Iterator[sqlite3.Connection]:
     """
     SQLite 连接工厂：每次 with 返回一个连接；__exit__ 自动 commit+close。
+
+    limiter: 可选 ConnectionLimiter(B3 连接上限);None(默认)= 不接入,行为不变。
     """
     # 父目录不存在则创建
     parent = os.path.dirname(os.path.abspath(db_path))
     os.makedirs(parent, exist_ok=True)
 
-    conn = sqlite3.connect(
-        db_path,
-        check_same_thread=check_same_thread,
-        timeout=timeout,
-        isolation_level=None,  # 自动提交关闭；业务层显式 BEGIN / COMMIT
-    )
+    if limiter is not None:
+        limiter.acquire(timeout=limiter_timeout)
+    try:
+        conn = sqlite3.connect(
+            db_path,
+            check_same_thread=check_same_thread,
+            timeout=timeout,
+            isolation_level=None,  # 自动提交关闭；业务层显式 BEGIN / COMMIT
+        )
+    except BaseException:
+        if limiter is not None:
+            limiter.release()
+        raise
     # Decimal 适配：SELECT 时 REAL → Decimal（精度保护），TEXT 也当 Decimal
     sqlite3.register_adapter(Decimal, lambda d: str(d))
     sqlite3.register_converter("DECIMAL", lambda b: Decimal(b.decode("utf-8")))
@@ -181,9 +198,13 @@ def get_sqlite_connection(
         raise
     finally:
         conn.close()
+        if limiter is not None:
+            limiter.release()
 
 
 __all__ = [
-    "SQLiteErrorCategory", "classify_sqlite_exception",
-    "auto_retry_locked", "get_sqlite_connection",
+    "SQLiteErrorCategory",
+    "classify_sqlite_exception",
+    "auto_retry_locked",
+    "get_sqlite_connection",
 ]

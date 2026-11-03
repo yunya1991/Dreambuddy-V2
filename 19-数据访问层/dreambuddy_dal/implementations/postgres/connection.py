@@ -8,6 +8,7 @@
 连接为每操作短连接（与 sqlite_unified 的 get_sqlite_connection 同生命周期语义），
 context manager 退出时提交并关闭；异常时回滚。
 """
+
 from __future__ import annotations
 
 import os
@@ -38,18 +39,26 @@ def get_pg_dsn() -> str:
     _load_pg_env_fallback()
     dsn = os.environ.get("DAL_PG_URL") or os.environ.get("DATABASE_URL") or ""
     if not dsn:
-        raise RuntimeError(
-            "PG DSN 未配置：需要 DAL_PG_URL 或 DATABASE_URL 环境变量"
-        )
+        raise RuntimeError("PG DSN 未配置：需要 DAL_PG_URL 或 DATABASE_URL 环境变量")
     return dsn
 
 
 @contextmanager
-def get_pg_connection():
-    """PG 短连接 context manager：正常退出 commit+close，异常 rollback+close。"""
+def get_pg_connection(limiter=None, limiter_timeout=None):
+    """PG 短连接 context manager：正常退出 commit+close，异常 rollback+close。
+
+    limiter: 可选 ConnectionLimiter(B3 连接上限);None(默认)= 不接入,行为不变。
+    """
     import psycopg2
 
-    conn = psycopg2.connect(get_pg_dsn())
+    if limiter is not None:
+        limiter.acquire(timeout=limiter_timeout)
+    try:
+        conn = psycopg2.connect(get_pg_dsn())
+    except BaseException:
+        if limiter is not None:
+            limiter.release()
+        raise
     try:
         yield conn
         conn.commit()
@@ -58,6 +67,8 @@ def get_pg_connection():
         raise
     finally:
         conn.close()
+        if limiter is not None:
+            limiter.release()
 
 
 __all__ = ["get_pg_connection", "get_pg_dsn"]
