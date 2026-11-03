@@ -1,5 +1,13 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB3 AlphaPareto 六维奖励落地
+
+- 新增 `training_reward.py`：`RewardComponents` 六维（verify mean / recall 命中率 / PSI 稳定度 / citation 多样性 / 过程奖励 / 转移平滑度）+ `compute_reward` + `pareto_score`
+- 硬编码 `REWARD_WEIGHTS=(0.25,0.20,0.20,0.15,0.12,0.08)`（和=1.0），无 env override / 运行期调整（与 TB1 H8 同类硬约束）
+- 边界：PSI>1.0 → psi_stability 0.0；known_gaps>10 → citation 下限 0.0；recall_total=0 → p_recall_hit 0.0
+- 测试 `test_alpha_pareto.py` RED 6 条全绿；TB1+TB2+TB3 联合回归 26/26，C10 直连门禁与 47 注册表校验通过
+- SPEC §3.2 测试路径修正为同目录、§3.3 移除不存在的 `from drift_detector import psi`、§3.4 RED 2 明确六维均差的输入口径
+
 ## 2026-11-03 TB2 Beta 分布 verify 升级落地
 
 - `cognitive_interfaces.py` 新增 `BetaState` / `VerifyResult` / `verify_beta`（SPEC §2 骨架），TB3 可直接 `from cognitive_interfaces import BetaState`

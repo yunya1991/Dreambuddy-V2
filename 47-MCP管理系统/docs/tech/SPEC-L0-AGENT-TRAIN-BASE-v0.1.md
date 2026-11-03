@@ -527,9 +527,8 @@ def verify_beta(memory_id: str, success_rate: float,
 
 ```
 4-MEMORY/9-工具与接口/
-└── training_reward.py       # 新增，AlphaPareto 六维奖励定义
-tests/
-└── test_alpha_pareto.py     # 新增
+├── training_reward.py       # 新增，AlphaPareto 六维奖励定义
+└── test_alpha_pareto.py     # 新增（与实现同目录，绝对 import）
 ```
 
 ### 3.3 代码骨架
@@ -539,8 +538,9 @@ tests/
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple, List
-from drift_detector import psi  # TB1（本目录非包，绝对 import）
-from cognitive_interfaces import BetaState  # TB2（绝对 import）
+from cognitive_interfaces import BetaState  # TB2（绝对 import，本目录非包）
+
+# 注：PSI 数值由调用方传入（psi_value），training_reward.py 不直接 import drift_detector
 
 
 @dataclass
@@ -608,7 +608,7 @@ def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_W
 | 步骤 | 测试用例 | 预期 |
 |---|---|---|
 | **RED 1** | 理想情况：Beta mean=0.9, PSI=0.05, recall 10/10, known_gaps=0, refs=5 | pareto_score ≥ 0.9 |
-| **RED 2** | 差情况：Beta mean=0.3, PSI=0.5, recall 2/10, known_gaps=5, refs=0 | pareto_score ≤ 0.3 |
+| **RED 2** | 差情况：Beta mean=0.3, PSI=0.5, recall 2/10, known_gaps=5, refs=0（process_reward=0.0、transition_smoothness=0.0，六维均取差） | pareto_score ≤ 0.3 |
 | **RED 3** | PSI > 1.0 边界 | psi_stability = 0.0（cap 生效） |
 | **RED 4** | known_gaps > 10 边界 | citation_diversity 下限 0.0（cap 生效） |
 | **RED 5** | recall_total=0 边界 | p_recall_hit = 0.0（除零保护） |
