@@ -42,7 +42,7 @@ class RewardComponents:
     pnl_delta_score: float  # 维度 7：跨域组合 vs 单域 baseline 的 Alpha 提升（无回执 → 0.5）
 
 
-def _compute_pnl_delta_score(counterfactual_result: Optional[dict]) -> float:
+def pnl_delta_score_from_receipt(counterfactual_result: Optional[dict]) -> float:
     """维度 7：P4 沙箱回执 → pnl_delta_score ∈ [0, 1]。
 
     FAIL-OPEN：回执缺失、非 dict、字段缺失、类型不可转 float → 中性 0.5。
@@ -91,7 +91,7 @@ def compute_reward(
         citation_diversity=citation,
         process_reward=process_reward,
         transition_smoothness=transition_smoothness,
-        pnl_delta_score=_compute_pnl_delta_score(counterfactual_result),
+        pnl_delta_score=pnl_delta_score_from_receipt(counterfactual_result),
     )
 
 

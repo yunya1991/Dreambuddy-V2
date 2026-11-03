@@ -1039,8 +1039,14 @@ class GRPOEvolutionLoop:
         recall_total: int,
         known_gaps_count: int,
         cross_domain_refs: int,
+        p4_receipts: Optional[List[dict]] = None,
     ) -> Optional[StrategyConfig]:
         """执行一轮 GRPO 进化
+        
+        Args:
+            p4_receipts: P4 沙箱验证回执（DOMAIN-DISCOVERY §4.5.4）；
+                有效回执（非空 trace_id + counterfactual_result）按 V_ALPHA=0.1
+                修正 v_adjusted；无回执时 v_adjusted == pareto_score（零行为变化）
         
         Returns:
             改进后的策略配置；如果当前最优则返回 None（保持不劣化）
@@ -1096,8 +1102,13 @@ class GRPOEvolutionLoop:
 | **RED 3** | PSI > 0.25 → classify_drift = "severe_drift" → regime gate 重置先验 | TB1 漂移 → TB4 Bayesian reset 链 |
 | **RED 4** | evolve_step 内部抛异常（如 beta_state=None）→ 返回 None + history 记录 fallback | H4 FAIL-OPEN |
 | **RED 5** | 所有候选 config pareto_score 均 < 当前 → evolve_step 返回 None | 不劣化保证成立 |
+| **RED 6** | `p4_receipts=None` → 行为与升级前一致 | 返回 None / 当前配置不变（v_adjusted == pareto_score） |
+| **RED 7** | 2 条合法回执（trace_id + counterfactual，pnl 均 1.0）→ 触发切换 | history 记录 `p4_validated=2`、`p4_pnl_mean=1.0`、`v_adjusted = score + 0.1×0.5` |
+| **RED 8** | 回执缺 `trace_id` → 被过滤 | `p4_validated=0`，`v_adjusted` 回退原始分 |
+| **RED 9** | 回执内容非法（非 dict / 缺 counterfactual / alpha 非数值） | FAIL-OPEN 不抛异常，无 fallback 记录 |
+| **RED 10** | `p4_receipts` 传 dict（非 list） | 视为无回执，不崩、不切换 |
 
-**验收标准**：pytest 5/5 passed + H2（无 .train()/.backward()/.backprop）+ H4（FAIL-OPEN fallback）硬约束在代码中明确标注。
+**验收标准**：pytest 10/10 passed + H2（无 .train()/.backward()/.backprop）+ H4（FAIL-OPEN fallback）+ P4 回执 FAIL-OPEN 硬约束在代码中明确标注。
 
 ### 5.5 算力
 
@@ -1125,7 +1136,7 @@ TB2 Beta verify 升级 ── 2 天 ──→ TDD 验收 8/8 passed + 零业务�
     └──→ TB4 Thompson Sampling ── 1 天 ──→ TDD 验收 4/4 passed
     │
     ▼
-TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验证
+TB5 GRPO loop ── 2 天 ──→ TDD 验收 10/10 passed + H2/H4 硬约束验证 + P4 回执消费
     │
     ▼
 Phase A 认知 agent 参数化（train_base recall） ── 1 天 ──→ 5/5 passed
@@ -1146,9 +1157,9 @@ Phase A 认知 agent 参数化（train_base recall） ── 1 天 ──→ 5/5
 | TB2 Beta | H1 壳零感知，envelope schema 零变化 | 8/8 | 旧 verify 零回归 | 1μs |
 | TB3 AlphaPareto | — | 9/9 | 不涉及 | 10μs |
 | TB4 Thompson | — | 4/4 | 不涉及 | 10μs |
-| TB5 GRPO | H2 无 .train()/.backward() + H4 FAIL-OPEN | 5/5 | 不涉及 | 50ms |
+| TB5 GRPO | H2 无 .train()/.backward() + H4 FAIL-OPEN + P4 回执 FAIL-OPEN | 10/10 | 不涉及 | 50ms |
 | Phase A recall | H1 壳零感知 | 5/5 | 旧 recall 排序零回归 | 1ms |
-| **全局** | H1/H2/H4/H8 全覆盖 | **43/43** | verify/recall 零回归 | 零 GPU |
+| **全局** | H1/H2/H4/H8 全覆盖 | **48/48** | verify/recall 零回归 | 零 GPU |
 
 ### 6.3 影子验证（与 AgentMail 影子合并）
 

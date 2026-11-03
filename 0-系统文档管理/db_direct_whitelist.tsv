@@ -73,6 +73,8 @@
 4-MEMORY/9-工具与接口/tests/test_vector_transaction_discipline.py	sqlite3	2
 # 【档一】vector_memory_interface（向量记忆引擎本体，含模块级 export 函数）
 4-MEMORY/9-工具与接口/vector_memory_interface.py	sqlite3	2
+# 【档三】tb_shadow_run.py（TB1-TB5 影子验证只读脚本，mode=ro 读取认知库，不写业务数据）
+4-MEMORY/9-工具与接口/tb_shadow_run.py	sqlite3	2
 40-周期神经网络系统/scripts/p1_real_cycle.py	sqlite3	1
 40-周期神经网络系统/scripts/p2_asset_rotation.py	sqlite3	1
 40-周期神经网络系统/scripts/p2_divergence.py	sqlite3	1

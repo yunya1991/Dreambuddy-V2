@@ -1,5 +1,16 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB5 P4 回执消费闭环（TRAIN-BASE 与新 SPEC 完全对齐）
+
+- `evolve_step(p4_receipts=...)`：DOMAIN-DISCOVERY §4.5.4 要求的 P4 沙箱回执消费
+- 有效回执（非空 `trace_id` + `counterfactual_result`）→ `v_adjusted = pareto_score + V_ALPHA×(pnl_mean−0.5)`，`V_ALPHA=0.1` 硬编码
+- 无回执 → `v_adjusted == pareto_score`，零行为变化（向后兼容）
+- FAIL-OPEN：非 list 容器 / 非 dict / 缺 trace_id / 字段非数值 → 丢弃回执，不抛异常、不触发 fallback
+- `training_reward.pnl_delta_score_from_receipt` 改为公开函数，供 TB5 复用同一归一化口径（避免两套公式）
+- 测试 5→10 条（RED 6 零变化 / RED 7 alpha 加权 / RED 8 过滤 / RED 9 非法内容 / RED 10 容器类型）
+- 全局 **48/48**（TB1 12 + TB2 8 + TB3 9 + TB4 4 + TB5 10 + Phase A 5）
+- C10 白名单补登记 `tb_shadow_run.py`（档三：只读影子脚本，mode=ro），保留原有定性三档注释
+
 ## 2026-11-03 TB3 七维契约升级 + ROADMAP 状态回填
 
 - **TB3 七维落代码**（文档此前已改七维，代码仍六维）：`REWARD_WEIGHTS` 改 `(0.23, 0.18, 0.18, 0.14, 0.12, 0.05, 0.10)`；`RewardComponents` 新增 `pnl_delta_score`；`compute_reward` 新增 `counterfactual_result` 参数，按 `clip((treatment−control+0.05)/0.25, 0, 1)` 归一化

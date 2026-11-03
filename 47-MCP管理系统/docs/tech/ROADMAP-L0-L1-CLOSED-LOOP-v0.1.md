@@ -86,7 +86,7 @@
 | **2** | 静态 domain_transmission.json | ③ Phase 0 | 无（现在就能做；本地缺 `sector_transmission.json` 字段来源） | 从 sector_transmission 改字段，静态 v0.0 | 本地 → push | ✅ 无 | 1 天 |
 | **3** | observe() 消费静态版本 | ② P0 | #2 | COMM-SHADOW observe() 加 l1_transmission_path 参数 | 本地 | ✅ 无 | 1 天 |
 | **4** | BTCRegimeDetector k=3 + NeuralSDE dim64 regime 输入 | ③ Phase 0 | NeuralSDE dim64 在本地有 | 重写 regime 检测为 BTC-only k=3 + drift_net in_dim 18→21 | 本地 | ✅ **已完成**（k=3 + regime/transition 接线，4 个测试文件 27 passed） | 已收口 |
-| **5** | TRAIN-BASE Phase 0 TB1-TB5 落地 | ① MCP→②③ 并行 | M1③ 信封稳定 | 5 个训练基座模块 + **43/43 TDD**（TB1 12 + TB2 8 + TB3 9 + TB4 4 + TB5 5 + Phase A 5） | 本地 → push → 云端 | ✅ **已完成** | 已收口 |
+| **5** | TRAIN-BASE Phase 0 TB1-TB5 落地 | ① MCP→②③ 并行 | M1③ 信封稳定 | 5 个训练基座模块 + **48/48 TDD**（TB1 12 + TB2 8 + TB3 9 + TB4 4 + TB5 10 + Phase A 5）+ P4 回执消费（DOMAIN-DISCOVERY §4.5.4） | 本地 → push → 云端 | ✅ **已完成** | 已收口 |
 | **6** | NeuralSDE dim64 + path_sig 同步云端 | ③ Phase B 前置 | 本地有 | scp 或 git-lfs 推 | 本地 → 云端 | ✅ **已完成**（主模型 sha 一致 `a023719e`；path_sig/v2 已 scp + sha 校验） | 已收口 |
 | **7** | 标注数据管线 MVP | ③ Phase A | #5 TB1-TB5 落地 | collect_domain_discovery_data.py 20 行 + JSONL schema | 本地 | ✅ 无 | 1 天 |
 | **8** | **GPU 就绪**（Mac Metal 或腾讯云 T4） | ③ Phase B | 无 | Mac 本地用 Metal 免费；云端按需开 T4 | 本地 / 云端 | **🔴 Phase B 硬阻塞** | 1 天（腾讯云 T4 开 ¥2.4/小时） |
