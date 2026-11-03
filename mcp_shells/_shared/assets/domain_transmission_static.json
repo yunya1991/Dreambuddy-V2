@@ -88,11 +88,11 @@
       "L3_sensitive": 88.9
     }
   },
-  "generated_at": "2026-11-03T13:17:17.344380+00:00",
+  "generated_at": "2026-11-03T13:19:35.154231+00:00",
   "model_version": "l1-domain-coupling-v0.1",
   "trace_id": "l1-head-infer-7d8264eb1b3a3621",
   "source": "neural_sde_head_infer",
-  "note": "Phase B/D DomainCouplingHead v0.1: frozen NeuralSDE v1_dim64 (H2) + 2863 params Head, input_source=real_btc_1h_36factors, coupling target 来自真实域轨迹. Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100",
+  "note": "Phase B/D DomainCouplingHead v0.1: frozen NeuralSDE v1_dim64 (H2) + 2863 params Head, input_source=real_btc_1h_36factors, coupling target 来自真实域轨迹. Phase B/D DomainCouplingHead v0.1: frozen NeuralSDE v1_dim64 (H2) + 2863 params Head, input_source=real_btc_1h_36factors",
   "derived_from": "40-周期神经网络系统/sector_transmission.json（字段结构同构，语义映射到 L0 六域）",
   "pseudo_target_source": "phaseC_jsonl_85samples",
   "head_training": {
@@ -110,8 +110,8 @@
   "input_source": "real_btc_1h_36factors",
   "input_stats": {
     "input_source": "real_btc_1h_36factors",
-    "closes_path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/data/btc_closes_1h.json",
-    "factors_path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/data/exogenous_factors_36.json",
+    "closes_path": "23-四层闭环自进化交易架构/data/btc_closes_1h.json",
+    "factors_path": "23-四层闭环自进化交易架构/data/exogenous_factors_36.json",
     "n_windows": 96,
     "n_candidates": 6009,
     "seq_len": 64,
@@ -197,6 +197,8 @@
   },
   "state_sensitivity": {
     "regime": {
+      "n_groups": 3,
+      "degenerate": false,
       "groups": {
         "bull": {
           "n": 32,
@@ -320,6 +322,8 @@
       }
     },
     "vol": {
+      "n_groups": 3,
+      "degenerate": false,
       "groups": {
         "q0": {
           "n": 32,
@@ -443,6 +447,8 @@
       }
     },
     "flow": {
+      "n_groups": 1,
+      "degenerate": true,
       "groups": {
         "q0": {
           "n": 96,
