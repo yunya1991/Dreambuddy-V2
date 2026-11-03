@@ -287,6 +287,114 @@ def _shadow_trace_id(self, original_trace_id: str) -> str:
 
 ---
 
+## §5.5 未来扩展：双层通信架构 + LLM 关系发现层（2026-11-03 讨论提案）
+
+> **来源**：用户洞察（"底层能力不用 LLM，但通信层叠加 LLM 关系识别 + REA 严谨执行"）+ 数据流冲突审计 Major #3（TB5 plateau escape hatch）+ 外部调研（Meta HiPRAG 过程奖励 > 纯结果奖励、Two Sigma Oracle 四层分层）
+>
+> **当前状态**：讨论提案，**不在 v0.1 实施范围内**。影子 Phase 0 启动后才可能触发进一步评审。
+> **拆独立 SPEC 的触发条件**：影子 Phase 1 观察期结束，且 LLM 建议器 MVP（插入点 ⑥）原型验证通过后。
+
+### 5.5.1 设计原则：建议-执行分离
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Layer 1：LLM 建议层（你说的"引入大语言模型推理"）                      │
+│  只读轨迹树 + 关系图 → 输出符合 Schema 的 π JSON 建议                    │
+│  硬约束：                                                             │
+│    - 零执行权 · 影子模式 · 人工 review 后才入候选池                     │
+│    - 输出过 STRATEGY_CONFIG_SCHEMA 严格校验（additionalProperties=False） │
+│    - 建议 π 必须过 V 函数评估，不比硬编码 π 差才保留                      │
+│    - LLM 调用产 trace_id，前缀 llm-suggest-，可审计                      │
+│    - 可以随时关掉 · 失败只影响"建议的丰富度" · 不影响通信基本功能           │
+└──────────────────────┬──────────────────────────────────────────────┘
+                       │ 建议输入
+                       ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Layer 2：REA 严谨通信层（已落地的 AgentMail + Dream-RSI）               │
+│  5 个硬编码 π → V 函数 hypervolume 评估 → Dream-RSI 不劣化保证            │
+│  这条链零 LLM · 零幻觉 · 每步可审计 · 可重放                              │
+│  建议层输出的 π 也必须走这条严谨链才能正式生效                              │
+└──────────────────────┬──────────────────────────────────────────────┘
+                       │ 执行决策
+                       ▼
+                  域内 Agent
+```
+
+### 5.5.2 为什么不突破硬约束
+
+| 硬约束 | 如何保证不被突破 |
+|---|---|
+| **H2 无神经网络权重微调** | LLM 层输出的是"符合 Schema 的 JSON 建议"，不是权重更新。本质是"策略格式建议"（与 GRPO 冻结权重调格式是同一类操作） |
+| **H3 可审计** | LLM 调用产 trace_id（前缀 `llm-suggest-`），建议 π 入候选池后走严谨层 V 函数评估，所有决策可追溯 |
+| **H4 FAIL-OPEN** | LLM 层是建议层，失败=不出建议。严谨层继续用硬编码 π |
+| **H8 PSI 阈值硬编码** | LLM 层只读 PSI 值，不碰阈值常量 |
+| **D1/D2 port 层 Principal 门禁** | LLM 层只读影子旁路的轨迹树数据，不进 port 层 |
+| **H9 影子三条约束** | 插入点 ⑥（影子报告建议器）和 ②（observe 内部关系发现）都在影子层内部，零触发 agent 行为 |
+
+### 5.5.3 七个候选插入点（按安全度排序）
+
+| # | 插入点 | 位置 | 做什么 | 安全度 | 对应 TRAIN-BASE/COMM-SHADOW 章节 |
+|---|---|---|---|---|---|
+| **⑥** ⭐P0 | **影子报告 π 建议器** | `generate_report()` 内部 | LLM 读轨迹树 + 已有候选 π → 输出"可考虑的跨域通信关系"章节（纯 markdown 建议，零触发 agent） | ⭐⭐⭐⭐⭐ | COMM-SHADOW §2 AgentMailShadow.generate_report() |
+| **②** ⭐P1 | **observe() 跨轨迹关系发现** | observe() 影子层内部 | LLM 读 trajectory_entry 序列 → 输出"轨迹间可能的因果链路"（如 "record cognition → next trajectory is rea investigate with same tag"） | ⭐⭐⭐⭐ | COMM-SHADOW §2 AgentMailShadow.observe() |
+| **⑤** ⭐P1 | **OracleVerificationLayer 新视角注册** | Oracle PERSPECTIVES 字典 | LLM 读已有 PERSPECTIVES + 轨迹树 → 建议新 cross-check 视角变体（如"语义新实体 → 评测 PSI 验证"自动生成领域专家变体） | ⭐⭐⭐⭐ | TRAIN-BASE §0.5.7 OracleVerificationLayer.PERSPECTIVES |
+| **③** ⭐P2 | **TB5 plateau escape hatch** | TB5 GRPO evolve_step 内部 | V 函数连续 5 轮不提升 → LLM 生成 2-3 个新 StrategyConfig 候选（过 STRATEGY_CONFIG_SCHEMA 校验后入候选池） | ⭐⭐⭐ | TRAIN-BASE §5 TB5 GRPOEvolutionLoop.evolve_step() |
+| **⑦** | **config diff 解释器** | COMM-SHADOW config_version 对账链 | LLM 读 config old vs new diff + 影子指标前后变化 → 输出"配置变化对指标的影响解释" | ⭐⭐⭐ | TRAIN-BASE §0.5.5 竞态修复（config_version 冻结→对账链） |
+| **④** | **TB3 奖励耦合异常诊断** | TB3 AlphaPareto compute_reward 内部 | 奖励分量耦合异常（如 psi_stability↓ 但 citation_diversity↑） → LLM 诊断并产"耦合假设" | ⭐⭐⭐ | TRAIN-BASE §3 TB3 compute_reward() |
+| **①** | **壳返回体 pre-envelope hint** | 壳返回前旁路 | LLM 读 envelope.data 业务体 → 给 envelope.meta 加 hint 字段（如 `meta.domain_hint: "semantic_entity"`） | ⭐⭐ | COMM-SHADOW §0.5.1 三观察点时序协议第一观察点旁路 |
+
+### 5.5.4 推进节奏（零风险起步）
+
+```
+Phase 0（影子 Phase 0 启动后，可以并行做）
+  ├── 插入点 ⑥ 影子报告 π 建议器 MVP —— 纯 markdown 输出，零触发 agent
+  ├── 验证：影子跑 1 周后报告末尾有 LLM 建议章节
+  ├── 硬约束：LLM 输出不过 schema 校验的建议直接丢弃
+  └── 此阶段不触发独立 SPEC 评审
+
+Phase 1（影子 Phase 1 观察期 2 周中）
+  ├── 插入点 ② observe() 跨轨迹关系发现
+  ├── 插入点 ⑤ OracleVerificationLayer 新视角注册
+  ├── 验证：LLM 建议的 π 入候选池后，V 函数评估不比硬编码 π 差
+  └── 此时触发独立 SPEC 评审（条件：MVP 原型验证通过 + 影子 Phase 0 基线稳定）
+
+Phase 2（TRAIN-BASE Phase 0 落地后）
+  └── 插入点 ③ TB5 plateau escape hatch —— LLM 帮 GRPO 跳出局部最优
+```
+
+### 5.5.5 算力预算（影子运行月成本估算）
+
+| 插入点 | LLM 调用频率 | 单次 token | 影子 1 周 tokens | 月成本 |
+|---|---|---|---|---|
+| ⑥ 影子报告建议器 | 1 次/天 × 1 个报告 | ~2K in + 1K out | ~21K | ~¥1-2 |
+| ② observe() 关系发现 | 每 50 个 trajectory_entry 调 1 次 | ~5K in + 2K out | ~60K（影子跑满 1 周 ~300 个 trajectory） | ~¥3-5 |
+| ⑤ Oracle 视角注册 | 1 次/周 | ~3K in + 1K out | ~4K | < ¥1 |
+| ③ TB5 plateau escape | 每 5 轮不提升时调 1 次 | ~4K in + 2K out | 极少触发（GRPO plateau 概率低） | ~¥2-3 |
+| **合计** | | | **~85K/周** | **< ¥10/月** |
+
+**约束**：零 GPU，云端 4C16G 调外部 LLM API。影子关闭时 LLM 调用自动关闭（硬编码开关）。
+
+### 5.5.6 独立 SPEC 触发条件
+
+**何时拆独立 SPEC《SPEC-L0-LLM-RELATION-DISCOVERY》**：
+
+| 触发条件 | 含义 | 当前状态 |
+|---|---|---|
+| ✅ 插入点 ⑥ MVP 原型验证通过 | LLM 建议器输出的 π 建议过 STRATEGY_CONFIG_SCHEMA 校验 + V 函数评估不比硬编码 π 差 | ⏳ 未做 |
+| ✅ 影子 Phase 0 基线稳定 | V-S1~V-S6 至少满足 2 项（基线采集质量足够支撑 LLM 评估） | ⏳ 未启动 |
+| ✅ TRAIN-BASE Phase 0 落地 | TB1-TB5 训练基座代码存在，TB5 plateau 和 TB3 奖励耦合有真实场景可诊断 | ⏳ 未启动（等 M1④→M2-M4） |
+| ✅ 项目上下文允许分配评审带宽 | 不与 bcrm2 切流 / 壳落地 / 基线测量并行 | ⏳ bcrm2 切流前不启动 |
+
+**独立 SPEC 应覆盖**：
+1. 双层通信架构完整设计（含建议-执行分离的代码骨架）
+2. 7 个插入点的详细 TDD 验收标准（含每个插入点的 FAIL-OPEN 行为）
+3. LLM 调用的 schema 约束（STRATEGY_CONFIG_SCHEMA + Oracle PERSPECTIVES 的 JSON schema）
+4. 独立的 trace_id 前缀（`llm-suggest-` / `llm-oracle-` / `llm-diagnose-`）
+5. 与 TRAIN-BASE / COMM-SHADOW / DOMAIN-AGENTS 三个 SPEC 的交叉引用
+6. 算力预算 + 硬编码开关实现
+
+---
+
 ## §6 影子 → 激活 升级判据（Phase 1-2 完成后评估）
 
 | # | 升级条件 | 判定方法 | 数据来源 |
