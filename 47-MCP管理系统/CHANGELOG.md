@@ -1,5 +1,12 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB4 Thompson Sampling regime gate 落地
+
+- 新增 `regime_gate.py`：`ThompsonSamplingRegimeGate`（美林四段 arm），Beta 采样选 arm、部分成功率更新、`drift_detected=True` 全 arm 重置 Beta(1,1)、`get_confidence` 返回 Beta mean
+- 测试 `test_regime_gate.py` RED 4 条全绿（随机过程显式 seed 可复现）
+- SPEC §4.2 测试路径修正为同目录；§4.4 RED 2 阈值 `>0.8` 经数学复核 `E[X³]=11/14≈0.786` 不可达，修正为 `>0.75`（场景 10 次成功不变）；RED 4 补全前序 Beta(2,1) 输入口径
+- TB1+TB2+TB3+TB4 联合回归 30/30
+
 ## 2026-11-03 TB3 AlphaPareto 六维奖励落地
 
 - 新增 `training_reward.py`：`RewardComponents` 六维（verify mean / recall 命中率 / PSI 稳定度 / citation 多样性 / 过程奖励 / 转移平滑度）+ `compute_reward` + `pareto_score`

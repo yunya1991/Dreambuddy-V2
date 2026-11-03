@@ -647,8 +647,7 @@ def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_W
 ├── training_reward.py        # TB3（AlphaPareto 六维奖励）
 ├── regime_gate.py            # TB4 新增，Thompson Sampling regime gate ← 统一位置
 └── grpo_evolution.py         # TB5 新增，PolicySelectLoop（`from regime_gate import ...` 绝对 import ✅）
-tests/
-└── test_regime_gate.py       # 新增
+    test_regime_gate.py        # 新增（与实现同目录，绝对 import）
 ```
 
 ### 4.3 代码骨架
@@ -720,9 +719,11 @@ class ThompsonSamplingRegimeGate:
 | 步骤 | 测试用例 | 预期 |
 |---|---|---|
 | **RED 1** | 初始 Beta(1,1) → 选 arm → 四 arm 被选中概率 ≈ 0.25（1000 次采样卡方检验 p > 0.05） | 无偏性 |
-| **RED 2** | arm "risk" 连续 10 次 success_rate=1.0 → Beta(11, 1) → select_regime 选 "risk" 概率 > 0.8（1000 次采样） | 收敛性 |
+| **RED 2** | arm "risk" 连续 10 次 success_rate=1.0 → Beta(11, 1) → select_regime 选 "risk" 概率 > 0.75（1000 次采样，seed 固定） | 收敛性 |
 | **RED 3** | drift_detected=True → 所有 arm 重置为 Beta(1, 1) | Bayesian reset |
-| **RED 4** | success_rate=0.5 部分更新 → Beta(2.5, 1.5) → get_confidence = 0.625 | 部分成功支持 |
+| **RED 4** | 先 1 次 success=1.0 得 Beta(2,1)，再 success_rate=0.5 部分更新 → Beta(2.5, 1.5) → get_confidence = 0.625 | 部分成功支持 |
+
+**RED 2 数学上限说明（2026-11-03 落地修正）**：Beta(11,1) 采样超过 3 个 Beta(1,1) 的期望为 `E[X³] = 11/(11+3) ≈ 0.786`，原定 `>0.8` 在数学上不可能达到。场景保持 10 次成功不变，验收阈值修正为 `>0.75`（测试显式 `random.seed` 保证可复现）。
 
 **验收标准**：pytest 4/4 passed。
 
