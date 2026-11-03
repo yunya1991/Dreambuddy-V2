@@ -689,6 +689,34 @@ class TemporalSignatureExtractor:
 2. 10 分钟 9 调用 ≈ 每域 6 步/小时，S0 去重后仍满足窗口 ≥3 步，但跨度需累积数周才可信。
 3. `cross_domain_refs` 壳侧无法感知，保持缺省 0；跨域共现只能由 S0 窗口层事后推导。
 
+#### 4.6.11 数据门禁自动推进（2026-11-03 上线）
+
+**开关**：`AGENT_MAIL_AUTO_PROMOTE`（env）> `.workbuddy/agent_mail/AUTO_PROMOTE`（flag）> **默认关**。
+云端已置 flag，驱动每轮（10min）结束后自动评估一次。
+
+**阈值（F5 数据充分性，硬下限）**
+
+| 指标 | 下限/上限 | 说明 |
+|---|---|---|
+| 连续流数 | **下限 10** | 一条流 = (域 × 信号)，信号 ∈ {poe_score, latency_ms, messages_sent, cross_domain_refs} |
+| 每流观测数 | **下限 200** | 低于此值的流不计入连续流 |
+| 覆盖跨度 | **下限 180 天** | 轨迹库首末 ts 差 |
+| 断档 | **上限 72h** | 单域相邻步最大间隔，超限则该域全部流不连续 |
+
+**状态机（只升不降，`PROMOTION_STATE.json` 留痕）**
+
+| 阶段 | 触发条件 | 动作 | 是否改图 |
+|---|---|---|---|
+| `S0.5` → `S1_READY` | 上述四阈值全部满足 | touch `S1_ENABLED`；壳内 `observe()` 追加签名特征（仍影子侧） | ❌ |
+| `S1_READY` → `S3_READY` | 仅认 `ablation_result.json` 的 `f1_pass` + `f2_pass` 均为 true | 记状态 | ❌ **不自动改图**（S3 接线必须人工审查，H2） |
+
+**实现**
+- [shadow_gate.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/mcp_shells/_shared/shadow_gate.py)：流式评估（内存 O(域×信号)，不加载全量 JSON）+ 状态机 + CLI（`--evaluate` 只读 / `--promote` 强制评估）
+- [temporal_signature_extractor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/mcp_shells/_shared/temporal_signature_extractor.py)：S0 窗口 → `D×10 + C(D,2)×2` 维（每域 poe/latency 各 5 维签名 + 域对 Lévy area/lag），无 look-ahead、零训练、FAIL-OPEN
+- 驱动每轮结束调用门禁；开关关闭时**零 IO**直接跳过
+
+**云端首测**：`enabled=true / stage=S0.5 / data_not_ready`（coverage 0.011d、continuous 0），与实际相符。
+
 ---
 
 ## §6 TDD 验收标准（Phase B 硬门禁）
