@@ -70,37 +70,40 @@ def _load_jsonl_targets(jsonl_path: Path) -> tuple[torch.Tensor, str, int] | Non
         return None
 
     N = len(samples)
-    # 预统计每个 pair 的 drift 共现
+    # 预统计每个 pair 的 drift level 共现 (乘积均值)
+    drift_levels = {"stable": 0.0, "minor_drift": 0.5, "severe_drift": 1.0}
     targets: list[float] = []
-    drift_events = 0
+    drift_samples_count = 0  # 至少一个域非 stable 的样本数
     for a, b in PAIRS:
-        both_drift = 0
-        both_stable = 0
+        sum_la_lb = 0.0  # drift level 乘积和
+        both_drifted = 0  # 两者都非 stable
         for s in samples:
             ds = s.get("input", {}).get("domain_states", {})
             da = ds.get(a, {}).get("drift", "unknown")
             db = ds.get(b, {}).get("drift", "unknown")
-            if da == "drift" and db == "drift":
-                both_drift += 1
-            elif da == "stable" and db == "stable":
-                both_stable += 1
-        drift_events += both_drift
-        # coupling 公式: drift 同向权重高, stable 同向次之
-        raw = (both_drift * 2 + both_stable) / N * 0.5
+            la = drift_levels.get(da, 0.0)
+            lb = drift_levels.get(db, 0.0)
+            sum_la_lb += la * lb
+            if la > 0 and lb > 0:
+                both_drifted += 1
+            if la > 0 or lb > 0:
+                drift_samples_count += 1
+        # coupling = drift level 乘积均值 (severe×severe=1.0, minor×minor=0.25)
+        raw = sum_la_lb / N
         targets.append(min(max(raw, 0.0), 1.0))
 
     # 全 stable 样本场景: 用 static JSON coupling 平滑 (避免全 0)
-    if drift_events == 0:
-        print(f"[INFO] JSONL {N} 样本无 drift 事件, coupling 全 0, 用 static JSON 平滑")
+    if drift_samples_count == 0:
+        print(f"[INFO] JSONL {N} 样本全 stable, coupling 全 0, 用 static JSON 平滑")
         static_t = _load_pseudo_target(STATIC_JSON)
         if static_t is not None:
             targets = [
                 round(t * 0.5 + s * 0.5, 3) for t, s in zip(targets, static_t.tolist(), strict=True)
             ]
 
-    source_label = f"phaseC_jsonl_{N}samples" + ("_allstable" if drift_events == 0 else "")
+    source_label = f"phaseC_jsonl_{N}samples" + ("_allstable" if drift_samples_count == 0 else "")
     print(
-        f"[INFO] Phase C JSONL target: N={N}, drift_events={drift_events}, "
+        f"[INFO] Phase C JSONL target: N={N}, drift_samples={drift_samples_count}, "
         f"mean={sum(targets)/len(targets):.3f}, source={source_label}"
     )
     return torch.tensor(targets, dtype=torch.float32), source_label, N
@@ -240,7 +243,7 @@ def train_head_and_infer(
                 _ = drift_net(float(torch.rand(1).item() * 2.0 - 1.0), y.to(dev), log_sig.to(dev))
             hidden = extractor.last_hidden
             optimizer.zero_grad()
-            coupling = head(hidden)
+            coupling = head(hidden, apply_mask=False)  # 训练时禁用 band mask
             if pseudo_target_loaded:
                 target = pseudo_target.unsqueeze(0).expand_as(coupling)  # (B, 15)
             else:
@@ -261,7 +264,7 @@ def train_head_and_infer(
         for _ in range(n_steps):
             hidden = torch.randn(3, 32, 64, device=dev)
             optimizer.zero_grad()
-            coupling = head(hidden)
+            coupling = head(hidden, apply_mask=False)  # 训练时禁用 band mask
             target = (
                 pseudo_target.unsqueeze(0).expand_as(coupling)
                 if pseudo_target_loaded

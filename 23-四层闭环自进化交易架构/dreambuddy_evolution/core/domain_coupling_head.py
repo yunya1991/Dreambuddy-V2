@@ -53,14 +53,17 @@ class DomainCouplingHead(nn.Module):
             nn.Linear(16, N_PAIRS),
         )
 
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+    def forward(self, hidden: torch.Tensor, apply_mask: bool = False) -> torch.Tensor:
         """Extract coupling scalars from aggregated hidden.
 
         Args:
             hidden: either (B, 64) pre-aggregated or (E, B, 64) per-expert.
+            apply_mask: True = 弱带 ≤0.3 clip 为 0 (调试/特定下游用);
+                        False (默认) = 仅 sigmoid, 输出 raw coupling strength,
+                        COMM-SHADOW 消费时自行做三带判定 (避免双重 clip 矛盾).
 
         Returns:
-            torch.Tensor (B, 15): coupling scalars ∈ [0, 1], sigmoid + band-masked.
+            torch.Tensor (B, 15): coupling scalars ∈ [0, 1].
         """
         if hidden.dim() == 3:
             agg = hidden.mean(dim=0)  # (B, 64)
@@ -69,7 +72,8 @@ class DomainCouplingHead(nn.Module):
         else:
             raise ValueError(f"hidden must be 2D or 3D, got shape {tuple(hidden.shape)}")
         raw = self.net(agg)  # (B, 15) unconstrained
-        return _apply_band_mask(torch.sigmoid(raw))  # [0,1] + 弱带 clip
+        sig = torch.sigmoid(raw)
+        return _apply_band_mask(sig) if apply_mask else sig
 
 
 def _apply_band_mask(
