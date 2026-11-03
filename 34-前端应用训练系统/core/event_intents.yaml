@@ -1,0 +1,29 @@
+# 事件意图契约文件(T-DSH-P0 C2)
+# 依据: SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2 §三.1 任务3 + §七(独立事件注册表)。
+# 定位: 事件类意图唯一事实源。34-core Python(event_gateway.load_event_intents)
+#       与 3.1 前端 TS(l1-intent-registry.ts) 两侧只读本文件对齐,不双写逻辑。
+# 初值 3 个事件意图(评审 m 修订: 由事件源盘点 INVENTORY-EVENT-SOURCES-v1.0 导出)。
+# 全部零 token(HC-4): executor 仅允许确定性执行器形态(alert_card/data_reply)。
+schema_version: "0.1"
+last_updated: "2026-11-03"
+intents:
+  # 告警确认: 健康/阈值类告警的确定性应答卡(已知模式,无需 L2)
+  - intent_id: alert_confirm
+    kinds: [alert_confirm]
+    executor: alert_card
+    zero_token: true
+    desc: "告警确认卡: 已知告警模式的确定性应答与确认留痕"
+
+  # 事件分诊: 定时任务/CI/文件落盘等事件的确定性分类归并
+  - intent_id: event_triage
+    kinds: [event_triage, job_done, file_landed]
+    executor: data_reply
+    zero_token: true
+    desc: "事件分诊: 规则化分类、归并与格式化应答"
+
+  # 健康告警: 云端 healthcheck/服务健康事件的确定性告警卡
+  - intent_id: health_alert
+    kinds: [health_alert, service_down, timer_missed]
+    executor: alert_card
+    zero_token: true
+    desc: "健康告警卡: 服务/定时器健康事件的确定性告警与升级建议"

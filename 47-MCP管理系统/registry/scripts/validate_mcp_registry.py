@@ -10,6 +10,9 @@
   6. 聚合 available+degraded 壳总工具数 ≤ max_total_tools (40) — R1 工具面膨胀门禁
   7. write 工具 requires_mandate 必须为 true
   8. annotations.readOnlyHint 与 read_write=write 不冲突
+  9. worker_roles（若存在）：引用的 shell_id/tool 必须存在；每角色工具数 ≤
+     max_tools_per_shell；Worker 只读（ADR-9/H7）——角色工具集禁止含
+     requires_mandate=true 的写工具
 
 用法：
   python3 47-MCP管理系统/registry/scripts/validate_mcp_registry.py
@@ -221,6 +224,68 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
             violations.append(
                 Violation("WARN", "single_source_of_truth", "建议显式声明 true（B4 单一载体）")
             )
+
+        # 9. worker_roles（46-DSH ADR-4：角色→能力标签唯一载体）
+        tool_index: dict[str, dict] = {}  # tool_name -> {"shell": sid, "requires_mandate": bool}
+        for shell in all_shells:
+            for t in shell.get("tools", []) or []:
+                if t.get("name"):
+                    tool_index[t["name"]] = {
+                        "shell": shell.get("shell_id"),
+                        "requires_mandate": t.get("requires_mandate") is True,
+                    }
+
+        for role, spec in (data.get("worker_roles", {}) or {}).items():
+            path = f"worker_roles.{role}"
+            _check(isinstance(spec, dict), "ERR", path, "角色定义必须是 dict", violations)
+            if not isinstance(spec, dict):
+                continue
+            role_shells = spec.get("shells", []) or []
+            role_tools = spec.get("tools", []) or []
+            for sid in role_shells:
+                _check(
+                    sid in seen_ids,
+                    "ERR",
+                    f"{path}.shells",
+                    f"引用的 shell {sid!r} 不存在",
+                    violations,
+                )
+            _check(
+                0 < len(role_tools) <= max_tools_per_shell,
+                "ERR",
+                f"{path}.tools",
+                (
+                    f"{len(role_tools)} 工具超出每角色上限 {max_tools_per_shell}（ADR-4）"
+                    if role_tools
+                    else "角色工具集为空"
+                ),
+                violations,
+            )
+            for tname in role_tools:
+                info = tool_index.get(tname)
+                _check(
+                    info is not None,
+                    "ERR",
+                    f"{path}.tools.{tname}",
+                    "工具未在任何 shell 登记",
+                    violations,
+                )
+                if info is None:
+                    continue
+                _check(
+                    info["shell"] in role_shells,
+                    "ERR",
+                    f"{path}.tools.{tname}",
+                    f"工具隶属壳 {info['shell']!r} 未列入角色 shells",
+                    violations,
+                )
+                _check(
+                    not info["requires_mandate"],
+                    "ERR",
+                    f"{path}.tools.{tname}",
+                    "Worker 只读（ADR-9/H7）：禁止纳入 requires_mandate=true 写工具",
+                    violations,
+                )
 
     # 输出
     if violations:
