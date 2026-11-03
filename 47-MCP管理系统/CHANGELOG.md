@@ -1,5 +1,16 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 窗口化采集 + 状态化 target + 云端每小时任务（DOMAIN-DISCOVERY Phase E）
+
+- **根因修复**：`compute_real_psi_map` 全局聚合 → 所有样本 `domain_states` 逐位相同 → coupling target 恒定、状态敏感性≈0。改为按 **30 min 时间窗**聚合（`buckets[int(ts//1800)*1800]`），逐窗 PSI 实测分化：cognition 0.051~0.1038、rea 仅窗 1 达 1.0、data 恒 1.0
+- **状态标签**：新增 `btc_1h_ts.json`（真实 Binance BTCUSDT 1h × 3000 根，2026-07-01→2026-11-03；三态 HMM 打标 bull 793 / chop 1454 / bear 753）。**仅用于给采集窗口打 regime 标签，不作模型输入**（模型输入仍用与 ckpt 同源的 `btc_closes_1h.json`）
+- **采集幂等化**：`collect_windowed` 新增 `skip_existing`（按 `window.start_ts` 去重）与 `window_end_ts <= now` 过滤，修掉周期任务「重复追加」与「把未跑满窗口永久冻结」两个坑；云端已清理冻结行并重采
+- **状态化 target**：`train_and_export_coupling.py` 新增 `_pair_target`（15 对 drift level 乘积）、per-sample/per-regime target、缺 regime 回退 global 并如实标注；导出新增 `target_state_labeled` / `target_by_regime` / `target_regime_coverage` / `target_windows`
+- **云端定时任务**：`dreambuddy-windowed-collect.{service,timer}` 每小时 `:07`、`Persistent=true`、`User=luke`、`Nice=10`；首跑 `Result=success / ExecMainStatus=0`，产出 4 个已结束窗口
+- **诚实结论**：4 窗口全部落在 **bear** 段 → `regime_targets` 单桶；dry-run `regime.mean_abs_delta=0.00802` 是**训练伪影**（global 与 bear target 相同），**不能**作为状态敏感性证据；bull/chop 分化待行情切换与多日累积
+- **测试**：`4-MEMORY` collect 用例 18/18（新增 7 条：窗口切分/窗口内 PSI/regime 映射/缺序列 FAIL-OPEN/状态标签落盘/空输入/幂等/跳过未结束窗）；`23-` coupling 用例 7/7（新增 per-sample+per-regime、回退矩阵 2 条）；云端同版本回归一致
+- **文档同步**：SPEC §2 补 Phase D/E 实际导出字段与诚实性约束；§3.1 补窗口化样本格式；§3.2 修正实现路径（`47/registry/scripts/` → `4-MEMORY/9-工具与接口/`）并标注伪代码未落地；新增 §3.3 窗口化管线与 §4.6.12 上云/定时/首测；README 状态列补 Phase E
+
 ## 2026-11-03 全仓断链治理（第一批，10-经典指标体系暂缓）
 
 - 断链 983 → **724**，剩余全部位于 `10-经典指标系统/`（721 条）与其引用（3 条），按用户要求单开对话分析

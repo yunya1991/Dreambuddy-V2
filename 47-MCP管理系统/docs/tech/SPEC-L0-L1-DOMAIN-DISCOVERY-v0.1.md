@@ -221,6 +221,24 @@ for p in neural_sde_base.parameters():
 }
 ```
 
+**Phase D/E 实际导出字段（v0.1 实现已写入，均非 `required`，消费方可选读取）**
+
+`train_and_export_coupling.py::export_coupling_json` 在保留上述基础字段的同时追加以下证据字段，缺省不视为 schema 失败：
+
+| 字段 | 类型 | 含义 |
+|---|---|---|
+| `head_training` | object | 训练元信息：`n_steps/final_loss/device/pseudo_target_loaded/target_source/target_n_samples/seed/input_source/n_input_windows/target_state_labeled` |
+| `input_source` | enum | 实际喂入来源（如 `real_market_btc_35d` / `synthetic_randn`），FAIL-OPEN 时如实标注 |
+| `input_stats` | object | 输入窗口元信息（`n_windows` 等），供审计 |
+| `regime_conditional_coupling` | object | 分 regime 的 coupling 统计 |
+| `state_sensitivity` | object | `regime.mean_abs_delta` + `coupling_std_across_samples`，状态敏感性判据 |
+| `target_state_labeled` | bool | target 是否来自**带状态标签的真实窗口**；`false` 表示退化为 global/伪 target |
+| `target_windows` | object | `n_samples / n_state_labeled_samples / window_seconds` |
+| `target_by_regime` | object | 按 bull/chop/bear 的 15 维 target 均值 |
+| `target_regime_coverage` | object | `regimes_collected / windows_labeled / windows_total / labeled_fraction / labeled_by_regime / regime_target_means` |
+
+**诚实性约束**：任一 regime 无真实窗口时，`target_regime_coverage` 必须如实反映缺失；实现上缺该 regime 回退 global target，**不得用其他 regime 数据冒充**。
+
 ---
 
 ## §3 标注数据 schema + Phase A 采集管线
@@ -247,11 +265,36 @@ for p in neural_sde_base.parameters():
 "source":"REA_dreamer_verify","timestamp":"2026-11-03T14:30","bbox_count":null}
 ```
 
-### 3.2 Phase A 采集管线实现（20 行 Python，TRAIN-BASE Phase 0 并行）
+**窗口化采集实际格式（Phase E，2026-11-03 起）**
+
+`collect_windowed` 写入的每条样本 = **一个 30 分钟窗口**的聚合，而非全局快照：
+
+| 字段 | 说明 |
+|---|---|
+| `window.start_ts / end_ts / window_seconds / n_entries / degraded_count` | 窗口边界与样本量；仅采集 `window_end_ts <= now` 的**已结束窗口**，避免周期任务把残缺统计永久冻结 |
+| `window.domains` | 窗口内逐域统计（`psi` 为**窗口内均值**，不再全局聚合） |
+| `market_regime` | `{label, name, bar_ts_ms, bar_close, series_path}`，由 `btc_1h_ts.json` 的已完成 1h bar 时间戳映射 |
+
+`input.domain_states.<d>.psi` = 窗口内 PSI 均值；`target` 由 15 对域 drift level 乘积给出（stable=0.0 / minor_drift=0.5 / severe_drift=1.0）。
+
+### 3.2 Phase A 采集管线实现
+
+**真实实现位置（原文档路径有误，2026-11-03 修正）**
+
+| 项 | 值 |
+|---|---|
+| 代码 | `4-MEMORY/9-工具与接口/collect_domain_discovery_data.py` |
+| 测试 | `4-MEMORY/9-工具与接口/test_collect_domain_discovery_data.py`（18 条） |
+| 输入 | `.workbuddy/agent_mail/trajectories.jsonl`（影子驱动落盘） |
+| 输出 | `.workbuddy/l1_training/domain_discovery_training.jsonl` |
+| regime 序列 | `23-四层闭环自进化交易架构/data/btc_1h_ts.json` |
+
+真实函数面：`collect()` / `build_training_sample()` / `compute_real_psi_map()` / `build_domain_states()` 为原有全局快照链路；`group_trajectories_by_window()` / `build_window_sample()` / `collect_windowed()` / `load_regime_series()` / `regime_at()` 为 Phase E 窗口化链路。
+
+> 下方代码块为**设计示意（伪代码）**，非当前实现；`collect_trajectory_bundle` 未落地。
 
 ```python
-# 位置：47-MCP管理系统/registry/scripts/collect_domain_discovery_data.py
-# 由 AgentMailShadow.observe() 旁路调用，零侵入主路径
+# 设计示意（伪代码）：把多源反馈打包成一个标注样本
 def collect_trajectory_bundle(trajectory_entries: list[dict],
                                tb1_outputs: dict,
                                rea_dreamer_v: Optional[float]) -> dict:
@@ -274,6 +317,40 @@ def collect_trajectory_bundle(trajectory_entries: list[dict],
     }
     return {"input": {...}, "target": {...}, "reward": {...}}
 ```
+
+### 3.3 窗口化采集管线（Phase E，2026-11-03）
+
+**要解决的根因**：`compute_real_psi_map` 原为**全局聚合** → 所有样本的 `domain_states` 逐位相同 → coupling target 恒定 → 状态敏感性≈0。改为**按时间窗聚合**后，每个窗口有自己的 PSI 分布。
+
+| 规则 | 实现 |
+|---|---|
+| 窗口粒度 | 1800s（30 min），`buckets[int(ts // window_seconds) * window_seconds]` |
+| 纳入条件 | 窗口内必须含 `degraded=True` 的真实轨迹；`min_entries` 默认 1 |
+| 只采已结束窗口 | `window_end_ts <= now`，避免把残缺统计写入并去重冻结 |
+| 幂等 | `skip_existing=True` 时按已有 JSONL 的 `window.start_ts` 去重，周期任务重复运行不追加旧窗口 |
+| PSI 标定 | `psi = min(degraded_rate / 0.25, 1.0)`（窗口内）；`classify_drift`：<0.1 stable / <0.25 minor_drift / ≥0.25 severe_drift |
+| 状态标签 | `regime_at()` 用 `bisect_right(timestamps_ms, end_ts*1000)-1` 取**最近一根已完成 1h bar** 的 regime |
+| 目标 | 15 对域 drift level 乘积（stable=0.0 / minor_drift=0.5 / severe_drift=1.0）→ 逐窗口 target |
+
+**regime 序列资产** `btc_1h_ts.json`
+
+- 真实 Binance `BTCUSDT` 1h K 线 **3000 根**，覆盖 2026-07-01 → 2026-11-03
+- 三态 HMM（`BTCRegimeDetector`，window=720，min_samples=200，观测 drawdown）打标：bull 793 / chop 1454 / bear 753
+- **用途仅限给采集窗口打 regime 标签**，不作模型输入（模型输入仍用与 ckpt 同源的 `btc_closes_1h.json`），避免训练/推理口径错配
+
+**命令行**
+
+```bash
+python "4-MEMORY/9-工具与接口/collect_domain_discovery_data.py" --windowed \
+  --window-seconds 1800 \
+  --store .workbuddy/agent_mail/trajectories.jsonl \
+  --out .workbuddy/l1_training/domain_discovery_training.jsonl \
+  --btc-ts "23-四层闭环自进化交易架构/data/btc_1h_ts.json"
+```
+
+**单测**：`test_collect_domain_discovery_data.py` 18 条（新增窗口切分 / 窗口内 PSI 非全局 / regime 映射 / 缺序列 FAIL-OPEN / 状态标签落盘 / 无真实轨迹写空 / 重复运行幂等 / 跳过未结束窗口）。
+
+**诚实局限**：首次采集的 4 个窗口全部落在 bear 段，`regime_targets` 实际只有单桶；bull/chop 分化必须等行情切换与多日累积，**当前数字不足以判别状态敏感性**。
 
 ---
 
@@ -716,6 +793,36 @@ class TemporalSignatureExtractor:
 - 驱动每轮结束调用门禁；开关关闭时**零 IO**直接跳过
 
 **云端首测**：`enabled=true / stage=S0.5 / data_not_ready`（coverage 0.011d、continuous 0），与实际相符。
+
+#### 4.6.12 窗口化采集上云 + 每小时定时任务（2026-11-03）
+
+**目标**：让窗口样本按 regime **自然累积**，而不是靠一次性补采；只有 bull/chop/bear 三档都有真实窗口后，dry-run 的 `state_sensitivity` 才具备判别意义。
+
+| 层 | 改动 | 说明 |
+|---|---|---|
+| 代码 | `collect_windowed()` + CLI `--windowed` | 见 §3.3；`4-MEMORY/9-工具与接口/collect_domain_discovery_data.py` |
+| 定时 | `dreambuddy-windowed-collect.service` + `.timer` | 每小时 `:07`，`Persistent=true`（错过的窗口开机后补跑），`User=luke`，`Nice=10` |
+| 宿主 | 43.160.201.117（`dreambuddy-remote`），`/home/luke/dreambuddy` | 统一 `sudo -u luke -H` + `/home/luke/venv-trading/bin/python`（系统 python3 无 torch） |
+| 落盘 | `/home/luke/dreambuddy/.workbuddy/l1_training/domain_discovery_training.jsonl` | 与影子驱动同源目录 |
+
+**首跑实测（4 窗口，UTC 13:00 / 13:30 / 14:00 / 14:30）**
+
+| 指标 | 实测 | 判定 |
+|---|---|---|
+| systemd 状态 | `enabled`，下次触发 23:07 CST，首跑 `Result=success / ExecMainStatus=0` | ✅ 定时生效 |
+| 窗口数 | 4（全部已结束窗口） | ✅ |
+| 逐窗 PSI 分化 | cognition 0.051~0.1038；rea 仅窗口 1 达 1.0；data 恒 1.0 | ✅ 窗口内统计确有差异（不再是全局常量） |
+| regime 分布 | 4/4 = **bear** | ⚠️ 单 regime，不足以判别 |
+| coupling dry-run | `regime.mean_abs_delta` = 0.00802 | ⚠️ **训练伪影**：global 与 bear target 相同，差值不能归因于状态标签 |
+
+**自查发现并修复的两个周期任务坑（非用户提出）**
+
+1. 原 `collect_windowed` 纯 append → 重复运行会追加旧窗口；改为 `skip_existing` + 按 `window.start_ts` 去重。
+2. 原实现会把未跑满的窗口写入，去重后**永久冻结**残缺统计；改为 `window_end_ts <= now` 过滤 + `now_ts` 注入，并清理云端已冻结的窗口行后重采。
+
+**与 §4.6.11 的关系**：数据门禁（F5）按"连续流 × 观测数 × 跨度"判定；窗口化采集把单域每小时样本从"6 步"提升到可聚合口径，但**跨度仍需按日累积**，门禁不会因此提前放开。
+
+**出口判据**：bull/chop/bear 三档各 ≥N 窗口（N 见 §4.6.11 `每流观测数` 下限）后，用同一套 dry-run 对比 `regime_target_means` 与 `state_sensitivity.regime.mean_abs_delta`，届时数字才有判别意义。
 
 ---
 
