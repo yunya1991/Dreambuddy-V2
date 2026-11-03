@@ -76,7 +76,7 @@ v0.2 已实现 4 个 DSH 层采集器（CleaningTrace/DalRoute/DataFetchRoute/Ds
 
 ### 1.1 DSH 层训练数据格式（已确认，同 v0.2）
 
-**来源**: [run_continual_training.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py#L139-L140) L139-140
+**来源**: [run_continual_training.py](../34-前端应用训练系统/scripts/run_continual_training.py#L139-L140) L139-140
 
 ```python
 elif layer == "DSH":
@@ -89,7 +89,7 @@ elif layer == "DSH":
 
 ### 1.2 v0.2 已有采集器的 DSH 层覆盖度（基线）
 
-**来源**: v0.2 验收报告 + [run_continual_training.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py#L95-L108) L95-108
+**来源**: v0.2 验收报告 + [run_continual_training.py](../34-前端应用训练系统/scripts/run_continual_training.py#L95-L108) L95-108
 
 | 采集器 | layer_tags | node_sequence 特征 | DSH 条数 | 节点长度 |
 |--------|-----------|-------------------|---------|---------|
@@ -104,17 +104,17 @@ elif layer == "DSH":
 ### 1.3 P0 数据源：polling_trader 交易环（已确认 ✅）
 
 **数据文件**:
-- 主路径: [all_trades.jsonl](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl)
+- 主路径: [all_trades.jsonl](../11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl)
 - 归档: `all_trades_archived_20260804.jsonl`
-- 统一索引: [all_trades_index.jsonl](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/trade_index/all_trades_index.jsonl)
+- 统一索引: [all_trades_index.jsonl](../.workbuddy/trade_index/all_trades_index.jsonl)
 
-**交易记录字段** (来源: [trade_index_builder.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_index_builder.py#L335-L346) L335-346):
+**交易记录字段** (来源: [trade_index_builder.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_index_builder.py#L335-L346) L335-346):
 
 ```
 trade_id / coin / inst_id / entry_price / exit_price / direction / pnl / pnl_pct / entry_time / exit_time
 ```
 
-**Score_B 计算链路** (来源: [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L111-L166) L111-166):
+**Score_B 计算链路** (来源: [polling_trader.py](../11-易经推理系统/scripts/memory_l4/polling_trader.py#L111-L166) L111-166):
 
 ```python
 def compute_score_b_with_event_boost(continuity, confidence, event):
@@ -153,16 +153,16 @@ def compute_score_b_with_event_boost(continuity, confidence, event):
 
 ### 1.4 P1 数据源：认知闭环链（已确认 ✅）
 
-**数据库**: [cognitive_memory.db](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/data/cognitive_memory.db)
+**数据库**: [cognitive_memory.db](../4-MEMORY/data/cognitive_memory.db)
 
-**memories 表 schema** (来源: [test_cognitive_memory_collector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/tests/test_cognitive_memory_collector.py#L35-L57) L35-57):
+**memories 表 schema** (来源: [test_cognitive_memory_collector.py](../34-前端应用训练系统/tests/test_cognitive_memory_collector.py#L35-L57) L35-57):
 
 ```
 id / content / vector / quality_level / confidence / tags / memory_type / 
 source / created_at / updated_at / verify_count / level / known_gaps / observations
 ```
 
-**recall 链路** (来源: [cognitive_loop_entry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_loop_entry.py#L340-L399) L340-399):
+**recall 链路** (来源: [cognitive_loop_entry.py](../4-MEMORY/9-工具与接口/cognitive_loop_entry.py#L340-L399) L340-399):
 
 ```python
 def recall(context, top_k=5, min_quality="C"):
@@ -173,7 +173,7 @@ def recall(context, top_k=5, min_quality="C"):
     # 5. 返回 memories 列表
 ```
 
-**record 链路** (来源: [cognitive_loop_entry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_loop_entry.py#L787-L865) L787-865):
+**record 链路** (来源: [cognitive_loop_entry.py](../4-MEMORY/9-工具与接口/cognitive_loop_entry.py#L787-L865) L787-865):
 
 ```python
 def record(content, quality_level, tags, ...):
@@ -182,7 +182,7 @@ def record(content, quality_level, tags, ...):
     # 3. 返回 memory_id
 ```
 
-**verify 链路** (来源: [cognitive_loop_entry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_loop_entry.py#L871-L967) L871-967):
+**verify 链路** (来源: [cognitive_loop_entry.py](../4-MEMORY/9-工具与接口/cognitive_loop_entry.py#L871-L967) L871-967):
 
 ```python
 def verify(memory_id, success):
@@ -192,7 +192,7 @@ def verify(memory_id, success):
     # 4. 可能触发蒸馏 → bayesian_memories.json
 ```
 
-**事后校验闭环** (来源: [cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py#L1445-L1488) L1445-1488):
+**事后校验闭环** (来源: [cognitive_session.py](../4-MEMORY/9-工具与接口/cognitive_session.py#L1445-L1488) L1445-1488):
 
 ```python
 # recall 建议 vs 实际行为
@@ -229,11 +229,11 @@ elif followed_advice and not success:
 
 ### 1.5 P2 数据源：BCRM/BDSM/战略层执行链（需拼接 🟡）
 
-**核心代码路径**: [11-易经推理系统/scripts/memory_l4/bcrm2/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/)
+**核心代码路径**: [11-易经推理系统/scripts/memory_l4/bcrm2/](../11-易经推理系统/scripts/memory_l4/bcrm2/)
 
 #### 1.5.1 BCRM 2.0 Score_B 合成链
 
-**来源**: [score_composer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/score_composer.py#L98-L172) L98-172
+**来源**: [score_composer.py](../11-易经推理系统/scripts/memory_l4/bcrm2/score_composer.py#L98-L172) L98-172
 
 ```python
 def compose(self, ohlcv):
@@ -266,7 +266,7 @@ def compose(self, ohlcv):
 
 #### 1.5.2 BDSM 出场巡检链
 
-**来源**: [exit_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/exit_manager.py#L83-L172) L83-172
+**来源**: [exit_manager.py](../11-易经推理系统/scripts/memory_l4/bcrm2/exit_manager.py#L83-L172) L83-172
 
 ```python
 def evaluate(self, position):
@@ -294,7 +294,7 @@ def evaluate(self, position):
 
 #### 1.5.3 战略层影子模式链
 
-**来源**: [shadow_logger.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/shadow_logger.py#L36-L260) L36-260
+**来源**: [shadow_logger.py](../11-易经推理系统/scripts/memory_l4/bcrm2/shadow_logger.py#L36-L260) L36-260
 
 ```python
 def record_polling(self, inference):
@@ -331,9 +331,9 @@ def record_polling(self, inference):
 
 ### 1.6 P3 数据源：REA 深度报告（已确认 ✅）
 
-**报告路径**: [self_evolution_rea_report.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/reports/self_evolution_rea_report.json)
+**报告路径**: [self_evolution_rea_report.json](../33-REA逆向解析工程/reports/self_evolution_rea_report.json)
 
-**报告生成入口** (来源: [run_self_evolution_audit.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/run_self_evolution_audit.py#L48-L141) L48-141):
+**报告生成入口** (来源: [run_self_evolution_audit.py](../33-REA逆向解析工程/run_self_evolution_audit.py#L48-L141) L48-141):
 
 ```python
 def run_pipeline_investigate():
@@ -362,7 +362,7 @@ def main():
 - `key_engine_algorithms`: 关键引擎算法还原
 - `git_history`: Git 历史分析
 
-**演化叙事** (来源: [evolution_narrative.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/core/evolution_narrative.py#L106-L128) L106-128):
+**演化叙事** (来源: [evolution_narrative.py](../33-REA逆向解析工程/core/evolution_narrative.py#L106-L128) L106-128):
 - `turning_points`: 转折点
 - `tech_debt_timeline`: 技术债时间线
 - `evidence`: 证据链
@@ -393,7 +393,7 @@ def main():
 
 ### 1.7 P4 数据源：evolution 进化链（需映射 🟡）
 
-**核心代码**: [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L5-L19) L5-19
+**核心代码**: [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L5-L19) L5-19
 
 ```python
 # L1→L4 闭环:
@@ -403,7 +403,7 @@ def main():
 # L4: Bellman V(s) 回馈与进化寻优
 ```
 
-**shadow_validation 样本路径**: [gene_data/shadow_validation/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/shadow_validation/)
+**shadow_validation 样本路径**: [gene_data/shadow_validation/](../23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/shadow_validation/)
 
 **样本格式** (来自 CD-DONCHIAN-20-BREAK_samples.jsonl):
 
@@ -606,7 +606,7 @@ class EvolutionChainCollector(TrainingDataProvider):
 
 1. 创建采集器文件 `adapters/{name}_collector.py`
 2. 实现 `fetch_cases()` 方法
-3. 在 [run_continual_training.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py#L95-L108) L95-108 注册采集器
+3. 在 [run_continual_training.py](../34-前端应用训练系统/scripts/run_continual_training.py#L95-L108) L95-108 注册采集器
 4. 运行 `python scripts/run_continual_training.py --limit 100`
 5. 验证 DSH 层 step 增长 + bufferStats
 

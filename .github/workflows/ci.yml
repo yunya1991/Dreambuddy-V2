@@ -195,3 +195,19 @@ jobs:
             exit 1
           fi
           echo "✅ Quality gate passed"
+
+  docs-links:
+    name: Docs link check (active roots)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Link check
+        run: |
+          for d in 0-系统文档管理 47-MCP管理系统 44-三端协作架构系统; do
+            echo "== $d"
+            python3 0-系统文档管理/4-工具与自动化/link_checker.py "$d"
+          done

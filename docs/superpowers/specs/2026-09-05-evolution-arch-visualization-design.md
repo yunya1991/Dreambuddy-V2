@@ -10,7 +10,7 @@
 ## 1. 背景与目标
 
 ### 1.1 背景
-- 8765 监控页 [monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html) 现有 12 个 Tab，其中"☁️ 云端调度"价值有限（运维兜底监控，非研究/叙事维度）。
+- 8765 监控页 [monitor.html](../../../experiments/ab-trading/monitor.html) 现有 12 个 Tab，其中"☁️ 云端调度"价值有限（运维兜底监控，非研究/叙事维度）。
 - 用户决策：隐藏云端调度（不删除，可恢复），新增"🧬 自进化架构"Tab 取代其位置。
 - **核心要求**："自进化可视化还是要以交易数据来评估"——不是纯静态架构图，而是用真实交易/进化数据回答"系统是否真的在自我进化、效果如何"。
 - AGI 时代叙事：自我进化系统是 AGI 主路径之一，对外可视化叙事价值显著高于运维监控。
@@ -27,19 +27,19 @@
 ## 2. 现有资产盘点
 
 ### 2.1 前端
-- 入口：[monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html)（单页 12 Tab 内联）
+- 入口：[monitor.html](../../../experiments/ab-trading/monitor.html)（单页 12 Tab 内联）
 - CSS 既有类：`.card` / `.tab-grid` / `.stats-grid` / `.stat` / `.schedule-grid-3`
 - 已有 CDN 先例：可复用 CDN 引入 ECharts
 - 云端调度 Tab 涉及行：
-  - Tab 按钮 [L194](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html#L194)
-  - Tab 内容 [L409-L455](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html#L409-L455)
+  - Tab 按钮 [L194](../../../experiments/ab-trading/monitor.html#L194)
+  - Tab 内容 [L409-L455](../../../experiments/ab-trading/monitor.html#L409-L455)
   - 数据加载逻辑 L2809-L2910
 
 ### 2.2 后端
-- 服务入口：[data_server_fixed.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/data_server_fixed.py)（端口 8765，`ThreadedHTTPServer` + `BaseHTTPRequestHandler`）
-- 现有路由分发：[L3403-L3458](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/data_server_fixed.py#L3403-L3458)
-- `/api/state` 入口：[L3410-L3413](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/data_server_fixed.py#L3410-L3413)
-- `get_full_state()` 聚合：[L352-L365](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/data_server_fixed.py#L352-L365)
+- 服务入口：[data_server_fixed.py](../../../11-易经推理系统/data_server_fixed.py)（端口 8765，`ThreadedHTTPServer` + `BaseHTTPRequestHandler`）
+- 现有路由分发：[L3403-L3458](../../../11-易经推理系统/data_server_fixed.py#L3403-L3458)
+- `/api/state` 入口：[L3410-L3413](../../../11-易经推理系统/data_server_fixed.py#L3410-L3413)
+- `get_full_state()` 聚合：[L352-L365](../../../11-易经推理系统/data_server_fixed.py#L352-L365)
 - 数据目录：`open_positions/` / `risk/risk_state.json` / `guardian/heartbeat.json` / `stats/performance.json`
 
 ### 2.3 进化系统资产与数据源现状
@@ -47,30 +47,30 @@
 **已确认可用的数据源**:
 
 - **平仓历史 JSONL**: `11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl`
-  - `PerformanceTracker._save_trade()` 以 append 写入（[trading_utils.py L118-L180](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py#L118-L180)）
+  - `PerformanceTracker._save_trade()` 以 append 写入（[trading_utils.py L118-L180](../../../11-易经推理系统/scripts/memory_l4/trading_utils.py#L118-L180)）
   - 字段: `trade_id` / `coin` / `inst_id` / `direction` / `entry_price` / `exit_price` / `pnl` / `exit_reason` / `confidence` / `hexagram` / `strategy_source` / `entry_time` / `exit_time`
   - **关键**: 区分 evolution vs main_pool 用 `strategy_source == "evolution"`（非 `source_tag`，因 JSONL 字段是 strategy_source）
 - **全局汇总**: `11-易经推理系统/.workbuddy/memory_l4/stats/performance.json`
   - 字段: `total_trades` / `win_count` / `loss_count` / `win_rate` / `total_pnl` / `avg_pnl` / `max_win` / `max_loss` / `consecutive_losses` / `last_update`
   - 全局汇总，无 evolution/main_pool 拆分（需从 all_trades.jsonl 聚合）
-- **当前持仓**: `position_tracker.all_open_positions()`（[trading_utils.py L1073-L1271](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py#L1073-L1271)）
-  - `TradeRecord` 含 `source_tag` 字段（[L70-L74](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py#L70-L74)）
+- **当前持仓**: `position_tracker.all_open_positions()`（[trading_utils.py L1073-L1271](../../../11-易经推理系统/scripts/memory_l4/trading_utils.py#L1073-L1271)）
+  - `TradeRecord` 含 `source_tag` 字段（[L70-L74](../../../11-易经推理系统/scripts/memory_l4/trading_utils.py#L70-L74)）
   - **注意**: position_tracker 无 `closed_positions()` 方法，平仓历史在 all_trades.jsonl
-- **入场快照**: `gene_data/evolution_snapshots.json`（[trade_settlement_bridge.py L20-L76](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py#L20-L76)）
+- **入场快照**: `gene_data/evolution_snapshots.json`（[trade_settlement_bridge.py L20-L76](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py#L20-L76)）
   - 仅 pre_trade_snapshot（d_star / ri / confidence 等）
   - **不含** cs/ess_delta/gmax_mult 等后验数据
 
 **已确认缺失的数据源（降级处理）**:
 
-- **ReflectionEngine 历史未持久化**: [reflection_engine.py L42-L121](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/dreambuddy_core/reflection_engine.py#L42-L121) `calculate_cs()` / `apply_reward()` 仅内存计算，返回值未落盘
+- **ReflectionEngine 历史未持久化**: [reflection_engine.py L42-L121](../../../dreambuddy_core/reflection_engine.py#L42-L121) `calculate_cs()` / `apply_reward()` 仅内存计算，返回值未落盘
 - **ESS/gmax/cluster 历史轨迹未持久化**: tight_coupling_orchestrator 7步闭环的 reflect/learn/feedback 产出未写入文件
 - **降级方案**: 区块4"进化证据"显示"进化引擎数据接入中"占位，不阻塞 MVP 1-3 区块。后续单独排期实现 ReflectionEngine 持久化（新增 `reflection_history.jsonl`，Phase 2 范围）
 
 **进化系统代码资产（参考）**:
 
-- **演化子池建仓**: [polling_trader.py L7448-L7515](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L7448-L7515) — `source_tag="evolution"` / `strategy_source="evolution"`、25U 硬上限、5x isolated
-- **闭环 7 步产出**: [tight_coupling_orchestrator.py L37-L60](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/dreambuddy_core/tight_coupling_orchestrator.py#L37-L60)（ri 触发）+ [L150-L182](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/dreambuddy_core/tight_coupling_orchestrator.py#L150-L182)（cs / ess_delta / gmax_mult / cluster_weight_mult / anti_pattern_flag，内存传递未落盘）
-- **涟漪引擎**: [ripple_engine.py L58-L87](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/dreambuddy_core/ripple_engine.py#L58-L87) `compute_ri()` + `get_ri_action()`
+- **演化子池建仓**: [polling_trader.py L7448-L7515](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L7448-L7515) — `source_tag="evolution"` / `strategy_source="evolution"`、25U 硬上限、5x isolated
+- **闭环 7 步产出**: [tight_coupling_orchestrator.py L37-L60](../../../dreambuddy_core/tight_coupling_orchestrator.py#L37-L60)（ri 触发）+ [L150-L182](../../../dreambuddy_core/tight_coupling_orchestrator.py#L150-L182)（cs / ess_delta / gmax_mult / cluster_weight_mult / anti_pattern_flag，内存传递未落盘）
+- **涟漪引擎**: [ripple_engine.py L58-L87](../../../dreambuddy_core/ripple_engine.py#L58-L87) `compute_ri()` + `get_ri_action()`
 - **认知记忆**: `mcp_cognitive` MCP server（recall/record/verify/stats/health），数据库 `4-MEMORY/data/cognitive_memory.db`
 
 ---
@@ -111,8 +111,8 @@
 ```
 
 ### 3.2 隐藏云端调度（3 处注释，零删除）
-1. 注释 [monitor.html L194](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html#L194) Tab 按钮（一行）
-2. 注释 [monitor.html L409-L455](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html#L409-L455) Tab 内容块
+1. 注释 [monitor.html L194](../../../experiments/ab-trading/monitor.html#L194) Tab 按钮（一行）
+2. 注释 [monitor.html L409-L455](../../../experiments/ab-trading/monitor.html#L409-L455) Tab 内容块
 3. 注释 L2809-L2910 数据加载逻辑
 4. 默认 active 保持 `local`（已是当前状态，无需改）
 
@@ -120,7 +120,7 @@
 
 ## 4. 后端 API 设计
 
-新增 4 个 API 到 [data_server_fixed.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/data_server_fixed.py) 的路由分发器（L3410-L3458）。
+新增 4 个 API 到 [data_server_fixed.py](../../../11-易经推理系统/data_server_fixed.py) 的路由分发器（L3410-L3458）。
 
 ### 4.1 `GET /api/evolution-overview`
 

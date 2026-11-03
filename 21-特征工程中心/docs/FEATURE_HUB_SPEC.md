@@ -175,4 +175,4 @@ else:
 
 本归档为 21 号专项摘录；完整章节含 奖章全景 / 20-Silver 全参数 / H1集成 / M1阶段 / 错误处理三层 / 新鲜度红线关联易经离场缓存 / T1~T12 等内容：
 
-👉 完整 Spec：[2026-08-24-data-cleaning-and-feature-hub-spec.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-24-data-cleaning-and-feature-hub-spec.md)
+👉 完整 Spec：[2026-08-24-data-cleaning-and-feature-hub-spec.md](../../docs/superpowers/specs/2026-08-24-data-cleaning-and-feature-hub-spec.md)

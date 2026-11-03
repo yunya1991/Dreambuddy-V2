@@ -295,7 +295,7 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 - **预期影响**：消除97%的亏损来源，胜率可能从5%提升到20%+
 - **风险**：错过震荡市中的突破行情
 - **验证**：回测对比"震荡市空仓"vs"全量开仓"
-- **代码改动点**：[polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py) 开仓前增加震荡市检查
+- **代码改动点**：[polling_trader.py](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py) 开仓前增加震荡市检查
 
 #### 建议2：置信度阈值动态调整
 - **措施**：

@@ -72,9 +72,9 @@
 
 | 断裂 | 代码位置 | 影响 |
 |:---|:---|:---|
-| **① 层级语义断裂** | [exogenous_strength_evaluator.py#L324](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py#L324) 按 strength 取 max；[evolution_pipeline.py#L884-L886](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L884-L886) 按 strength 排序取 top2 | 反弹阶段会误判短期多头为 primary，长期空头降为 secondary，弹性约束方向反 |
-| **② 制度切换断裂** | [hjb_solver.py#L194,L213-L214](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L194) GBM 单制度恒定 μ/σ；[L160-L174](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L160-L174) 静态矛盾调制整个 horizon | 无法表达"反弹→重新主导→级联"多制度演变 |
-| **③ 闭环反馈断裂** | [reflexivity_monitor.py#L187](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L187) adjust_strength 线性、未回流；[contradiction_shift_accumulator](file:///Users/zhangjiangtao/WorkBuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 仅记录不驱动 | 反身性只监测不反馈；质变被检测但不触发路径切换 |
+| **① 层级语义断裂** | [exogenous_strength_evaluator.py#L324](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py#L324) 按 strength 取 max；[evolution_pipeline.py#L884-L886](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L884-L886) 按 strength 排序取 top2 | 反弹阶段会误判短期多头为 primary，长期空头降为 secondary，弹性约束方向反 |
+| **② 制度切换断裂** | [hjb_solver.py#L194,L213-L214](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L194) GBM 单制度恒定 μ/σ；[L160-L174](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L160-L174) 静态矛盾调制整个 horizon | 无法表达"反弹→重新主导→级联"多制度演变 |
+| **③ 闭环反馈断裂** | [reflexivity_monitor.py#L187](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L187) adjust_strength 线性、未回流；[contradiction_shift_accumulator](file:///Users/zhangjiangtao/WorkBuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 仅记录不驱动 | 反身性只监测不反馈；质变被检测但不触发路径切换 |
 
 ### 3.2 已具备的正确组件
 
@@ -710,36 +710,36 @@ Layer 2: 风险偏好共同因子（跨资产传导）
 
 ## 十四 · 技术可行性验证：反身性燃料偏移HJB转移概率
 
-> 本节对判据4（反身性燃料5分类→HJB转移概率偏移）做深入技术可行性验证。基于 [hjb_solver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) 和 [reflexivity_monitor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py) 代码实现分析。
+> 本节对判据4（反身性燃料5分类→HJB转移概率偏移）做深入技术可行性验证。基于 [hjb_solver.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) 和 [reflexivity_monitor.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py) 代码实现分析。
 
 ### 14.1 现状代码分析 — 三处关键断裂
 
 #### 断裂1：转移概率完全无视矛盾/反身性
 
-当前 `_transition_probabilities`（[hjb_solver.py#L183-L231](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L183-L231)）签名：
+当前 `_transition_probabilities`（[hjb_solver.py#L183-L231](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L183-L231)）签名：
 ```python
 def _transition_probabilities(self, price_idx, grid, drift, volatility, dt)
 ```
 - GBM：`ln(S'/S) ~ N((μ-σ²/2)dt, σ²dt)` — **σ恒定**
-- μ由action决定（[L298-L304](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L298-L304)）：long→上行偏, short→下行偏, wait→0
-- **primary_contradiction 只传入 lagrangian() 调制L（[L160-L174](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L160-L174)），不传入 _transition_probabilities()**
+- μ由action决定（[L298-L304](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L298-L304)）：long→上行偏, short→下行偏, wait→0
+- **primary_contradiction 只传入 lagrangian() 调制L（[L160-L174](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L160-L174)），不传入 _transition_probabilities()**
 
 #### 断裂2：反身性监测不回流HJB
 
-当前 `ReflexivityMonitor.adjust_strength`（[reflexivity_monitor.py#L159-L190](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L159-L190)）：
+当前 `ReflexivityMonitor.adjust_strength`（[reflexivity_monitor.py#L159-L190](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L159-L190)）：
 ```python
 def adjust_strength(self, exogenous_strength: float) -> float:
     # S_adjusted = S_exogenous + λ × S_self  (线性叠加)
     return max(0.0, min(1.0, adjusted))
 ```
 - 返回**标量力量值**，不回流到HJB
-- pipeline 中（[evolution_pipeline.py#L393-L450](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L393-L450)）只调整 `R_reflexivity`（r_vector分量）
-- `R_reflexivity` 进入 lagrangian 的 wait 分支：`L = γ·R_smooth·R_refl`（[L156](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L156)）
+- pipeline 中（[evolution_pipeline.py#L393-L450](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L393-L450)）只调整 `R_reflexivity`（r_vector分量）
+- `R_reflexivity` 进入 lagrangian 的 wait 分支：`L = γ·R_smooth·R_refl`（[L156](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L156)）
 - **反身性对转移概率零影响**
 
 #### 断裂3：无"穿关键位"路径依赖
 
-当前值迭代 `_value_iteration`（[L236-L331](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L236-L331)）：
+当前值迭代 `_value_iteration`（[L236-L331](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L236-L331)）：
 ```python
 for t in range(n_t - 2, -1, -1):
     for p_idx in range(n_p):
@@ -820,9 +820,9 @@ probs = np.where(log_returns < mu_log,
 #### 挑战4：FAIL-OPEN与数值稳定性
 
 **现有防护**（保留）：
-- HC-AGI-19：`L >= 0.001`（[L178](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L178)）
-- 网格溢出防护：`sigma_total = min(sigma_total, 50.0)`（[L91](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L91)）
-- 三级降级链：HJB→变分法→argmin（[L630-L764](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L630-L764)）
+- HC-AGI-19：`L >= 0.001`（[L178](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L178)）
+- 网格溢出防护：`sigma_total = min(sigma_total, 50.0)`（[L91](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L91)）
+- 三级降级链：HJB→变分法→argmin（[L630-L764](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L630-L764)）
 
 **新增防护**（建议）：
 ```python
@@ -874,11 +874,11 @@ eff_drift = max(-0.5, min(0.5, eff_drift))  # μ∈[-0.5, 0.5]
 
 ## 十五 · 技术可行性验证：层级加权 primary 判定
 
-> 本节对判据1（主要矛盾 = 因果主导性 + 层级权重）做深入技术可行性验证。基于 [exogenous_strength_evaluator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py) 和 [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) 代码实现分析。
+> 本节对判据1（主要矛盾 = 因果主导性 + 层级权重）做深入技术可行性验证。基于 [exogenous_strength_evaluator.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py) 和 [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) 代码实现分析。
 
 ### 15.1 现状代码分析
 
-当前 `get_primary_contradiction`（[exogenous_strength_evaluator.py#L282-L334](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py#L282-L334)）：
+当前 `get_primary_contradiction`（[exogenous_strength_evaluator.py#L282-L334](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py#L282-L334)）：
 ```python
 # L324: 纯瞬时力量排序
 primary = max(candidates, key=lambda c: c["strength"])
@@ -956,11 +956,11 @@ _candidates.sort(
 
 ## 十六 · 技术可行性验证：不可逆级联熔断
 
-> 本节对判据5（不可逆级联4事前判据→风控熔断）做深入技术可行性验证。基于 [portfolio_risk_fuses.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/portfolio_risk_fuses.py) 和 [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py) 代码实现分析。
+> 本节对判据5（不可逆级联4事前判据→风控熔断）做深入技术可行性验证。基于 [portfolio_risk_fuses.py](../11-易经推理系统/scripts/memory_l4/portfolio_risk_fuses.py) 和 [polling_trader.py](../11-易经推理系统/scripts/memory_l4/polling_trader.py) 代码实现分析。
 
 ### 16.1 现状代码分析
 
-当前 `PortfolioRiskFuses`（[portfolio_risk_fuses.py#L54-L120](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/portfolio_risk_fuses.py#L54-L120)）：
+当前 `PortfolioRiskFuses`（[portfolio_risk_fuses.py#L54-L120](../11-易经推理系统/scripts/memory_l4/portfolio_risk_fuses.py#L54-L120)）：
 
 | 熔断规则 | 触发条件 | 动作 | 类型 |
 |:---|:---|:---|:---|
@@ -969,7 +969,7 @@ _candidates.sort(
 
 **核心缺陷**：两者都是**事后触发型**——在亏损已经发生后才触发。无法在**不可逆级联发生前**就触发预防。
 
-polling_trader.py 中的调用链（[L15791-L15835](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L15791-L15835)）：
+polling_trader.py 中的调用链（[L15791-L15835](../11-易经推理系统/scripts/memory_l4/polling_trader.py#L15791-L15835)）：
 ```python
 self._current_fuse_action = None
 if self._portfolio_fuses is not None:
@@ -1090,11 +1090,11 @@ _prf_ctx["no_intervener"] = self._check_no_intervener()
 
 ## 十八 · 技术可行性验证：质变驱动路径切换
 
-> 本节对判据3（质变=排序变化AND结构性断裂→驱动HJB路径切换）做深入技术可行性验证。基于 [contradiction_shift_accumulator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 和 [hjb_solver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) 代码实现分析。
+> 本节对判据3（质变=排序变化AND结构性断裂→驱动HJB路径切换）做深入技术可行性验证。基于 [contradiction_shift_accumulator.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 和 [hjb_solver.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) 代码实现分析。
 
 ### 18.1 现状代码分析
 
-**质变检测**（[contradiction_shift_accumulator.py#L75-L179](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py#L75-L179)）：
+**质变检测**（[contradiction_shift_accumulator.py#L75-L179](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py#L75-L179)）：
 
 ✅ **检测逻辑正确**：
 - 质变 = 排序变化 AND 结构性断裂（波动率制度/相关性/市场形态三类）
@@ -1104,7 +1104,7 @@ _prf_ctx["no_intervener"] = self._check_no_intervener()
 ❌ **只记录不驱动**：
 - `detect_shift()` 返回 dict，pipeline 中 `_select_optimal_path` 调用后存入 `shift_result`
 - **`shift_result` 不传入 HJB 的 `solve()` / `_value_iteration()`**
-- HJB 整个 horizon 用同一个 `primary_contradiction`（[L236-L331](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L236-L331)）
+- HJB 整个 horizon 用同一个 `primary_contradiction`（[L236-L331](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L236-L331)）
 - **质变后不切换转移概率**——无法表达"反弹→重新主导"的多制度演变
 
 ### 18.2 修改方案
@@ -1184,11 +1184,11 @@ optimal_path = self._hjb_solver.solve_optimal_path(
 
 ## 十九 · 技术可行性验证：认知函数建模
 
-> 本节对§10.3索罗斯认知函数（贝叶斯信念更新 C=认知→行为）做深入技术可行性验证。基于 [reflexivity_monitor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py) 代码实现分析。
+> 本节对§10.3索罗斯认知函数（贝叶斯信念更新 C=认知→行为）做深入技术可行性验证。基于 [reflexivity_monitor.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py) 代码实现分析。
 
 ### 19.1 现状代码分析
 
-**参与函数P**（[reflexivity_monitor.py#L159-L190](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L159-L190)）：
+**参与函数P**（[reflexivity_monitor.py#L159-L190](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L159-L190)）：
 
 ✅ **参与函数已实现**：
 - `adjust_strength(exogenous_strength)` → `S_adjusted = S_exogenous + λ × S_self`
@@ -1307,17 +1307,17 @@ def adjust_cognition(self, info_signals: list[dict]) -> dict:
 
 ## 二十 · 技术可行性验证：分层弹性约束
 
-> 本节对判据2（弹性约束分层 = 力量差 + 层级差；力量接近时层级驱动）做深入技术可行性验证。基于 [elastic_constraint_resolver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py) 代码实现分析。
+> 本节对判据2（弹性约束分层 = 力量差 + 层级差；力量接近时层级驱动）做深入技术可行性验证。基于 [elastic_constraint_resolver.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py) 代码实现分析。
 
 ### 20.1 现状代码分析
 
-**弹簧模型**（[elastic_constraint_resolver.py#L59-L148](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L59-L148)）：
+**弹簧模型**（[elastic_constraint_resolver.py#L59-L148](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L59-L148)）：
 
 ✅ **弹簧模型正确**：
 - sigmoid衰减：偏离越大回弹力越强（非线性，非墙壁）
 - `T_max = base_limit × (S_p / (S_p + S_m))` — 力量比合理
 - `position_mult = floor + (1-floor) × sigmoid(1-ratio)`
-- 参数边界检查完整（[L53-L57](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L53-L57)）
+- 参数边界检查完整（[L53-L57](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L53-L57)）
 
 ❌ **无层级语义**：
 - `resolve(primary, secondary)` 签名**无 timeframe 参数**

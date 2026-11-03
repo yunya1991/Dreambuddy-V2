@@ -2,7 +2,7 @@
 
 > 日期：2026-10-29
 > 来源：千问一轮评估（8.5/10）+ 现状资产盘点修正 + 本地整合
-> 上游：[千问调研报告](three-tier-collab-qwen-research.md)
+> 上游：[千问调研报告](../../docs/tech/three-tier-collab-qwen-research.md)
 > 阶段：SPEC（待评审）
 > 目标读者：项目 owner（单人维护）
 

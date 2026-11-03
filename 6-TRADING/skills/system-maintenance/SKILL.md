@@ -314,7 +314,7 @@ cron:
 
 ## 🔗 相关文档
 
-- 架构总览: [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md)
+- 架构总览: [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md)
 - 实现进度: [第十三章 - 实现进度总览](#十三-实现进度总览)
 - 维护记录: [第十四章 - 维护记录](#十四-维护记录)
 

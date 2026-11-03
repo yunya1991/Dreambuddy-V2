@@ -577,7 +577,7 @@ curl -s "https://www.banking.senate.gov/hearings" | grep -o "hearing" | head
 
 ### 7.1 evaluate() 触发逻辑扩展
 
-[event_driven_strategy.py L287-297](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/29-事件驱动策略系统/event_driven/event_driven_strategy.py#L287-297) 现有三选一触发：
+[event_driven_strategy.py L287-297](../../29-事件驱动策略系统/event_driven/event_driven_strategy.py#L287-297) 现有三选一触发：
 
 ```python
 # 扩展后：四选一触发

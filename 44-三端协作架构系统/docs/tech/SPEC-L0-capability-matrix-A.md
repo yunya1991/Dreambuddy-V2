@@ -2,7 +2,7 @@
 
 > **版本**: v0.1 (2026-10-30)
 > **状态**: 待评审（开工SKILL 阶段 3 产出，用户确认门后进入阶段 4 评审）
-> **上游**: [l0-foundation-research-report.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-foundation-research-report.md) 第七章（能力矩阵与协同主线专项调研）
+> **上游**: [l0-foundation-research-report.md](../../../.trae/documents/l0-foundation-research-report.md) 第七章（能力矩阵与协同主线专项调研）
 > **命名口径（硬约束）**: 五能力 = ①广义认知系统（五类四层 C1-C4）②数据采集系统 ③检索系统 ④PostgreSQL 数据存储管理 ⑤REA 逆向解析能力；协同主线 = 认知-数据-工程解析-数据存储-检索入口。C1-C4 ≠ L0/L1/L2 ≠ SACG ≠ 矛盾维度 C1-C8；④不得笼统称"数据库管理"。
 > **下游**: SPEC-B（协同化路线图）
 

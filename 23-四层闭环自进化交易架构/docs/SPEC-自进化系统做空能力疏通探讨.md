@@ -58,7 +58,7 @@
 ## 1. 背景与核心矛盾
 
 ### 1.1 事实层
-- 历史做空亏损率高（ETH 做空亏损率显著、BTC 做空 100% 亏损，见 [polling_trader.py:890](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 注释）
+- 历史做空亏损率高（ETH 做空亏损率显著、BTC 做空 100% 亏损，见 [polling_trader.py:890](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 注释）
 - 自进化系统理论支持做空（`d_star` 可输出 short 方向），但被 4 层门禁实质锁死
 
 ### 1.2 机会层
@@ -84,7 +84,7 @@
 
 ### 1.5.1 数据源与样本概况
 
-- **数据源**：[all_trades.jsonl](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl)（L4 自进化系统全量交易记录）
+- **数据源**：[all_trades.jsonl](../../11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl)（L4 自进化系统全量交易记录）
 - **样本量**：130 笔交易（做空 33 笔 / 做多 97 笔）
 - **分析维度**：方向（做多/做空）× regime × 币种 × PnL
 
@@ -179,24 +179,24 @@
 ## 2. 现状调研：4 层门禁锁死做空
 
 ### 门禁 1：SHORT_ONLY_BLACKLIST 静态黑名单
-- **位置**：[polling_trader.py:890](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L890)
+- **位置**：[polling_trader.py:890](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890)
 - **内容**：`SHORT_ONLY_BLACKLIST = {"ETH", "BTC"}`
 - **依据**：ETH 做空亏损率高 + BTC 做空 100% 亏损
 - **性质**：静态、硬编码、无滚动学习机制
 
 ### 门禁 2：SHORT_BAN 铁律默认活跃
-- **位置**：[polling_trader.py:15884](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884)
+- **位置**：[polling_trader.py:15884](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884)
 - **内容**：`_short_ban_active = True`（默认活跃）
 - **解除条件**：仅当 `direction_state == "SHORT_ONLY"` 时才解除
 - **性质**：方向状态机驱动，但 SHORT_ONLY 状态极少触发
 
 ### 门禁 3：_evolution_build_position 实施 SHORT_BAN
-- **位置**：[polling_trader.py:10801-10825](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L10801-L10825)
+- **位置**：[polling_trader.py:10801-10825](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10801-L10825)
 - **内容**：黑名单币种做空直接 `return`（不建仓）
 - **性质**：执行层硬拦截，在仓位映射前阻断
 
 ### 门禁 4：三因子豁免 AND 逻辑极苛
-- **位置**：[three_factor_short.py:60-74](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74)
+- **位置**：[three_factor_short.py:60-74](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74)
 - **内容**：三个因子全满足才豁免（AND 逻辑）
   1. `pattern_factor <= -0.5`（头肩顶看跌）
   2. `btc_regime == "WEAK"`（BTC 与美股高相关弱市）
@@ -290,7 +290,7 @@
 - **冷启动问题**：新币种无做空样本 → 默认入榜（保守）
 
 #### A.4 落点
-- [polling_trader.py:890](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 区域：静态集合 → 动态判定函数
+- [polling_trader.py:890](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 区域：静态集合 → 动态判定函数
 - 需新增：滚动胜率存储（可复用 `all_trades.jsonl` 的 close 记录）
 
 #### A.5 回滚
@@ -348,7 +348,7 @@
 - **因子权重**：当前三因子等权；是否应加权？（评审问题）
 
 #### B.4 落点
-- [three_factor_short.py:60-74](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74) 区域：`detect()` 返回 bool → 返回分层结果（层级 + 仓位 + 止损）
+- [three_factor_short.py:60-74](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74) 区域：`detect()` 返回 bool → 返回分层结果（层级 + 仓位 + 止损）
 
 #### B.5 回滚
 - 开关：`enable_layered_short_exemption`（默认 False）
@@ -365,7 +365,7 @@
 - `REVERSAL`（探讨新增）→ 部分解锁，仓位 0.5x（探讨值）
 - 其他状态 → 不解锁，维持 SHORT_BAN
 
-叠加 **MAX_DIRECTION_RATIO 集中度限制**（[polling_trader.py:10651](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651)）：做空总仓位占比上限（探讨值 30%），防止单方向集中度过高。
+叠加 **MAX_DIRECTION_RATIO 集中度限制**（[polling_trader.py:10651](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651)）：做空总仓位占比上限（探讨值 30%），防止单方向集中度过高。
 
 #### C.2 严苛点（评审重点）
 | 参数 | 探讨值 | 严苛点说明 |
@@ -382,8 +382,8 @@
 - **判定准确性**：TREND_BEAR/REVERSAL 的判定是否可靠？（评审重点）
 
 #### C.4 落点
-- [polling_trader.py:15884](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884) 区域：`_short_ban_active` 的解除条件扩展
-- [polling_trader.py:10651](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651) 区域：MAX_DIRECTION_RATIO 集中度限制
+- [polling_trader.py:15884](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884) 区域：`_short_ban_active` 的解除条件扩展
+- [polling_trader.py:10651](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651) 区域：MAX_DIRECTION_RATIO 集中度限制
 
 #### C.5 回滚
 - 开关：`enable_direction_state_short_expansion`（默认 False）
@@ -397,7 +397,7 @@
 
 | 状态 | 判定方法 | 数据源 | 代码锚点 |
 |---|---|---|---|
-| TREND_BEAR | RegimeClassifier 输出 `btc_regime == "WEAK"` 且 BTC 20 日均线斜率 < 0 | BTC 日线 close + SPX 日线 close | [agi_config.py:47](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py#L47) `enable_btc_regime_classifier` |
+| TREND_BEAR | RegimeClassifier 输出 `btc_regime == "WEAK"` 且 BTC 20 日均线斜率 < 0 | BTC 日线 close + SPX 日线 close | [agi_config.py:47](../../23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py#L47) `enable_btc_regime_classifier` |
 | REVERSAL | RegimeClassifier 输出 `btc_regime` 从 STRONG/NEUTRAL → WEAK 的**转换态**（连续 3 日 regime 下降） | 同上 | 同上 |
 
 **判定准确性验证方法**：
@@ -456,7 +456,7 @@
 - **因子相关性**：新因子与现有三因子的相关性需去重（评审问题）
 
 #### D.4 落点
-- [three_factor_short.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py) 新增因子检测方法
+- [three_factor_short.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py) 新增因子检测方法
 - 与路径 B 的分层豁免协同：新因子纳入分层计算
 
 #### D.5 回滚
@@ -573,14 +573,14 @@
 
 | 文件 | 关键行 | 用途 |
 |---|---|---|
-| [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) | 890 | SHORT_ONLY_BLACKLIST 静态黑名单 |
-| [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884) | 15884 | SHORT_BAN 铁律默认活跃 |
-| [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L10801-L10825) | 10801-10825 | _evolution_build_position 实施 SHORT_BAN |
-| [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651) | 10651 | MAX_DIRECTION_RATIO 集中度限制 |
-| [three_factor_short.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74) | 60-74 | 三因子 AND 豁免逻辑 |
-| [kline_event_handler.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py) | — | 信号主链路 |
-| [conviction_position_mapper.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/conviction_position_mapper.py) | — | 仓位映射（5 档）|
-| [agi_config.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py) | — | 开关配置（回滚开关落点）|
+| [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) | 890 | SHORT_ONLY_BLACKLIST 静态黑名单 |
+| [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L15884) | 15884 | SHORT_BAN 铁律默认活跃 |
+| [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10801-L10825) | 10801-10825 | _evolution_build_position 实施 SHORT_BAN |
+| [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L10651) | 10651 | MAX_DIRECTION_RATIO 集中度限制 |
+| [three_factor_short.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/three_factor_short.py#L60-L74) | 60-74 | 三因子 AND 豁免逻辑 |
+| [kline_event_handler.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py) | — | 信号主链路 |
+| [conviction_position_mapper.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/conviction_position_mapper.py) | — | 仓位映射（5 档）|
+| [agi_config.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py) | — | 开关配置（回滚开关落点）|
 
 ## 附录 B：认知记忆索引
 - **VM-1791508385441-05d27a08**：自进化系统做空能力调研结论（B 级，置信度 0.4，tags: 硬约束,自进化系统,做空能力,SHORT_BAN）

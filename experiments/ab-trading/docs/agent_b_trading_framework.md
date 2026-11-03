@@ -216,10 +216,10 @@ agent_b_runner.py
 - 模拟模式（账户查询失败）使用虚拟资金 `BUDGET_USDC`
 
 **实现位置**：
-- ChainRouter 构造函数：[chain_router.py#L86](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py#L86)
-- 仓位计算：[chain_router.py#L227](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py#L227)
-- 权益获取：[agent_b_runner.py#L1081](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py#L1081)
-- ClassicDriver 初始化：[agent_b_runner.py#L858](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py#L858)
+- ChainRouter 构造函数：[chain_router.py#L86](../../../experiments/ab-trading/core/chain_router.py#L86)
+- 仓位计算：[chain_router.py#L227](../../../experiments/ab-trading/core/chain_router.py#L227)
+- 权益获取：[agent_b_runner.py#L1081](../../../experiments/ab-trading/agents/agent_b_runner.py#L1081)
+- ClassicDriver 初始化：[agent_b_runner.py#L858](../../../experiments/ab-trading/agents/agent_b_runner.py#L858)
 
 ---
 
@@ -243,15 +243,15 @@ agent_b_runner.py
 
 | 文件 | 功能 |
 |------|------|
-| [agent_b_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py) | 主流程（三层架构整合，含实际余额资金分配） |
-| [chain_router.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py) | 动态链路执行引擎（含A0、做梦部、治理环、equity传参） |
-| [chain_planner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_planner.py) | 零Token链路规划器 |
-| [intent_gateway.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/intent_gateway.py) | 意图识别层 |
-| [classic_driver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/classic_driver.py) | Classic模式驱动（使用实际余额） |
-| [trading_memory.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/trading_memory.py) | 交易记忆系统 |
-| [exit_module.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/exit_module.py) | 离场模块 |
-| [aster_spot.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行层 |
-| [monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html) | AB Trading 监控页面 |
+| [agent_b_runner.py](../../../experiments/ab-trading/agents/agent_b_runner.py) | 主流程（三层架构整合，含实际余额资金分配） |
+| [chain_router.py](../../../experiments/ab-trading/core/chain_router.py) | 动态链路执行引擎（含A0、做梦部、治理环、equity传参） |
+| [chain_planner.py](../../../experiments/ab-trading/core/chain_planner.py) | 零Token链路规划器 |
+| [intent_gateway.py](../../../experiments/ab-trading/core/intent_gateway.py) | 意图识别层 |
+| [classic_driver.py](../../../experiments/ab-trading/core/classic_driver.py) | Classic模式驱动（使用实际余额） |
+| [trading_memory.py](../../../experiments/ab-trading/core/trading_memory.py) | 交易记忆系统 |
+| [exit_module.py](../../../experiments/ab-trading/core/exit_module.py) | 离场模块 |
+| [aster_spot.py](../../../experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行层 |
+| [monitor.html](../../../experiments/ab-trading/monitor.html) | AB Trading 监控页面 |
 | `data/skill_registry.md` | 能力清单（三环架构节点注册表） |
 | `data/agent_b_memory.json` | 跨session记忆（自动维护） |
 | `data/agent_b_graph.json` | 图压缩B/A/C节点日志 |

@@ -16,9 +16,9 @@
 
 | 接入方向 | 接入点 | 代码位置 | 数据流 |
 | :--- | :--- | :--- | :--- |
-| 战略层 → 自进化 | `SubSystemBridge.get_war_state()` | [subsystem_bridge.py:L45-66](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) | war_state → Feynman温度T → ESS评分调制 |
-| 战略层 → 自进化 | `get_ess_temperature()` | [subsystem_bridge.py:L64-66](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) | ALLOW=1.0/COOLDOWN=0.5/RESTRICT=0.2/FREEZE=0.1 |
-| BCRM2.0 → 自进化(开仓) | `compute_bcrm_entry_weight_factor()` | [entry_signal_governor.py:L84-133](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py) | 反向信号分层：≥0.95硬否决/0.85-0.95×0.5/0.80-0.85×0.7 |
+| 战略层 → 自进化 | `SubSystemBridge.get_war_state()` | [subsystem_bridge.py:L45-66](../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) | war_state → Feynman温度T → ESS评分调制 |
+| 战略层 → 自进化 | `get_ess_temperature()` | [subsystem_bridge.py:L64-66](../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) | ALLOW=1.0/COOLDOWN=0.5/RESTRICT=0.2/FREEZE=0.1 |
+| BCRM2.0 → 自进化(开仓) | `compute_bcrm_entry_weight_factor()` | [entry_signal_governor.py:L84-133](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py) | 反向信号分层：≥0.95硬否决/0.85-0.95×0.5/0.80-0.85×0.7 |
 | BCRM2.0 → 自进化(离场) | `_decide_impl()` 规则2b | [exit_engine.py:L374-423](file:///Users/zhangjiangtao/WorkBuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/exit_engine/exit_engine.py) | 反向信号分层减仓：30%/50%/70%(BDSM共振) |
 | BDSM → 自进化(开仓) | `_apply_bdsm_direction_constraint` | polling_trader.py | direction_constraint: LONG_ONLY/SHORT_ONLY/NEUTRAL |
 | BDSM → 自进化(离场) | exit_action/trend_stop | exit_engine.py | bds_score/bds_score<-0.3→SHORT_ONLY |
@@ -31,9 +31,9 @@
 
 | 差距项 | 验证依据 | 性质 |
 | :--- | :--- | :--- |
-| Shadow RL 是 stub | [shadow_rl.py:L59-64](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/shadow_rl.py) `activate_phase3()` 未实现 | 学习闭环空壳 |
-| 基因库静态 | [strategy_gene.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_gene.py) 手动JSON定义 | 无自主策略发现 |
-| 头肩顶未接实盘 | 仅在 [shadow_backtest.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/shadow_backtest.py) | 市场理解缺口 |
+| Shadow RL 是 stub | [shadow_rl.py:L59-64](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/shadow_rl.py) `activate_phase3()` 未实现 | 学习闭环空壳 |
+| 基因库静态 | [strategy_gene.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_gene.py) 手动JSON定义 | 无自主策略发现 |
+| 头肩顶未接实盘 | 仅在 [shadow_backtest.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/shadow_backtest.py) | 市场理解缺口 |
 | BTC-美股相关性regime | 代码全局搜索无实现 | 市场理解缺口 |
 | ETF流出权重仅5% | 战略层权重配置 | 信号权重偏低 |
 | 无因果推理 | 全局搜索无 do-calculus/DML | 认知深度缺口 |
@@ -205,7 +205,7 @@
 
 **蓝本：** [FinRL (16.3k★)](https://github.com/AI4Finance-Foundation/FinRL) 三层解耦 + [ElegantRL (4.4k★)](https://github.com/AI4Finance-Foundation/ElegantRL) 并行训练
 
-**现状：** [shadow_rl.py:L62-64](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/shadow_rl.py) `activate_phase3()` 是空方法
+**现状：** [shadow_rl.py:L62-64](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/shadow_rl.py) `activate_phase3()` 是空方法
 
 **升级：**
 1. 样本≥2000时自动激活（自动检测，非PR评审）
@@ -489,7 +489,7 @@ class TransferLearner:
 
 #### 4.4.1 头肩顶检测接入实盘
 
-**现状：** 仅在 [shadow_backtest.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/shadow_backtest.py)
+**现状：** 仅在 [shadow_backtest.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/shadow_backtest.py)
 
 **升级：** 提取为独立模块，接入BCRM2.0技术评估
 

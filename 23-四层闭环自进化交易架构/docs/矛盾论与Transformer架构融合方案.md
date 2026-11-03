@@ -382,7 +382,7 @@ Attention 链 ────→ 现在的主矛盾（实时）
 
 #### 5.1.5a 替代框架对比（实证约束）
 
-基于 [framework_comparison.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/framework_comparison.py) 的 5 框架配对 walk-forward 验证（BTC 30m, 87598 期, 2024-2026）：
+基于 [framework_comparison.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/framework_comparison.py) 的 5 框架配对 walk-forward 验证（BTC 30m, 87598 期, 2024-2026）：
 
 | 框架 | 样本外夏普 | DSR | 胜率 | 排序 |
 |------|-----------|-----|------|------|
@@ -981,7 +981,7 @@ elif G_dim == A_dim AND cycle_transitioning:
 1. `factor_head_mask` shape = `(n_heads=8, n_factors=36)` — 每个 head 对应一个矛盾维度（C1-C8/news），mask 确保每个 head 只 attend 到属于自己维度的因子
 2. softmax 后每个 head 的 weights sum = 1.0（在该 head 的因子子集内归一化）
 3. 因此 **head 间的权重比较 = 维度间的力量比较**：head0 的总权重 0.35 vs head3 的 0.15 = "C1 维度比 C4 维度受关注 2.3 倍"
-4. `head_multipliers` 已经在 softmax 后乘到 weights 上（[cross_attention.py L149-154](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L149-L154)），所以聚合时应使用乘以 multipliers 后的 weights
+4. `head_multipliers` 已经在 softmax 后乘到 weights 上（[cross_attention.py L149-154](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L149-L154)），所以聚合时应使用乘以 multipliers 后的 weights
 5. head_dim 内的分布（head_dim=8）反映的是"该维度内哪个因子更重要"，不是跨维度比较——不需要考虑
 
 聚合方法：
@@ -1007,7 +1007,7 @@ for head_idx, dim_3_name in DIMENSION_MAP_8_TO_3.items():
 
 **v0.5 代码审计结论**：标准化影响可控，**不需要重训**。理由：
 
-1. [cross_attention.py L24-52](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L24-L52): `FactorEncoder` = `nn.Linear(factor_dim=1, d_model=cross_attn_dim)` + `nn.LayerNorm(d_model)` — **已有 LayerNorm**
+1. [cross_attention.py L24-52](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L24-L52): `FactorEncoder` = `nn.Linear(factor_dim=1, d_model=cross_attn_dim)` + `nn.LayerNorm(d_model)` — **已有 LayerNorm**
 2. `factor_dim=1` 意味着每个因子是一个标量。`Linear(1, 64)` 对标量做变换：`y = w·x + b`，LayerNorm 然后：`y' = (y - μ) / (σ + ε) · γ + β`
 3. z-score 标准化：`x' = (x - μ_x) / σ_x`。代入后：`y = w·(x-μ_x)/σ_x + b = (w/σ_x)·x + (b - w·μ_x/σ_x)`
 4. LayerNorm 的 `(y - μ)/σ` 会部分抵消 `w/σ_x` 的缩放——因为 LayerNorm 的 γ 参数可以学到补偿
@@ -1026,7 +1026,7 @@ StructuralBreakDetector 的 CUSUM/HMM/Hurst 需要多少历史数据？能否做
 
 **v0.5 代码审计结论**：
 
-1. [structural_break_detector.py L48-82](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/structural_break_detector.py#L48-L82): 实际实现 3 类检测：
+1. [structural_break_detector.py L48-82](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/structural_break_detector.py#L48-L82): 实际实现 3 类检测：
    - **波动率制度转换**：比较当前 vs 前窗口的波动率，类似 CUSUM 逻辑 → **可在线**
    - **相关性结构断裂**：滚动相关系数窗口 + CUSUM → **可在线**，但有窗口滞后
    - **市场形态转换**：Hurst 指数比较前后窗口 → **可滚动检测**
@@ -1063,7 +1063,7 @@ C7（广度）的 3 个因子中：
 
 **v0.5 代码审计结论**：
 
-[elastic_constraint_resolver.py L41-57](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L41-L57) 已实现参数边界检查和默认值：
+[elastic_constraint_resolver.py L41-57](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L41-L57) 已实现参数边界检查和默认值：
 
 | 参数 | 默认值 | 理论边界 | 数据驱动估计方法 |
 |------|--------|---------|----------------|
@@ -1074,7 +1074,7 @@ C7（广度）的 3 个因子中：
 
 1. **默认值是保守的**——base_limit=0.12 在 [0.05, 0.20] 中间偏低，floor=0.20 保守
 2. **T_max 计算**已数据驱动：`T_max = base_limit × (S_primary / (S_primary + S_minor))`，力量比是实时计算的
-3. **分层弹性约束**已实现（[L125-138](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L125-L138)）：力量差大时纯力量驱动，力量接近时层级驱动（长期约束短期），`TIER_WEIGHT = {"short": 0.2, "medium": 0.3, "long": 0.5}`
+3. **分层弹性约束**已实现（[L125-138](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L125-L138)）：力量差大时纯力量驱动，力量接近时层级驱动（长期约束短期），`TIER_WEIGHT = {"short": 0.2, "medium": 0.3, "long": 0.5}`
 4. **结论**：默认值可行先用，后续用历史交易数据（`backtest_results` 表）估计 `base_limit` 的 75 百分位和 `floor` 的 Kelly 下界。`steepness` 可用网格搜索在回测上优化。
 
 ### 8.6 Transformer 路径是否也需要周期轴（已通过回退解决）
@@ -1093,8 +1093,8 @@ ExogenousStrengthEvaluator 使用 `data` dict 中的聚合度量（ri_signal_str
 
 | 路径 | 数据来源 | 数据结构 | 新鲜度 |
 |------|---------|---------|--------|
-| 矛盾论 ExogenousStrengthEvaluator | `market_data` dict（来自 [kline_event_handler.py L373](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L373) `kline_data`） | `ri_signal_strength`, `etf_net_flow`, `cpi_actual` 等 | **实时**（每根 K 线更新） |
-| 矛盾论 W1 微观阻力 | DAL `mm_metrics`（[evolution_pipeline.py L1274-1291](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1274-L1291)） | `funding_rate`, `fut_open_interest_usd` | 近 24h |
+| 矛盾论 ExogenousStrengthEvaluator | `market_data` dict（来自 [kline_event_handler.py L373](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L373) `kline_data`） | `ri_signal_strength`, `etf_net_flow`, `cpi_actual` 等 | **实时**（每根 K 线更新） |
+| 矛盾论 W1 微观阻力 | DAL `mm_metrics`（[evolution_pipeline.py L1274-1291](../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1274-L1291)） | `funding_rate`, `fut_open_interest_usd` | 近 24h |
 | Transformer | DAL `mm_metrics`（通过 `exogenous_data_bridge`） | 36 因子 `CROSS_ATTENTION_FACTOR_METRICS` | 最近一条记录 |
 
 1. **时间错位风险**：矛盾论的 `market_data` 来自 kline（实时 OHLCV + 派生指标），Transformer 的因子来自 DAL `mm_metrics`（历史采集，可能有小时级延迟）
@@ -1118,8 +1118,8 @@ ExogenousStrengthEvaluator 使用 `data` dict 中的聚合度量（ri_signal_str
 **差距**：文档 §5.1 假设 Granger 路径输出 G_dim（过去主矛盾维度），但 GrangerCausalityChecker **未从 evolution_pipeline.py 调用**。
 
 代码事实：
-- [granger_causality_checker.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/granger_causality_checker.py) 完整实现了 ADF + grangercausalitytests + per_regime + verify_causal_chain
-- 唯一调用点：[reflexivity_monitor.py L85-118](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L85-L118) `check_self_influence(positions, etf_flows)` — 检验"仓位→市场"
+- [granger_causality_checker.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/granger_causality_checker.py) 完整实现了 ADF + grangercausalitytests + per_regime + verify_causal_chain
+- 唯一调用点：[reflexivity_monitor.py L85-118](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L85-L118) `check_self_influence(positions, etf_flows)` — 检验"仓位→市场"
 - evolution_pipeline.py 和 kline_event_handler.py 中**无 Granger 调用**
 
 §5.1 框架要成立，需要：
@@ -1134,8 +1134,8 @@ ExogenousStrengthEvaluator 使用 `data` dict 中的聚合度量（ri_signal_str
 **差距**：文档 §5.1 假设 Attention 路径输出 A_dim（现在主矛盾维度），但 `last_attn_weights` **未被外部使用**。
 
 代码事实：
-- [cross_attention.py L170](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L170) 存储 `last_attn_weights`（shape `(B, n_heads, 1, n_factors)`）
-- [neural_sde_model.py L304-331](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/neural_sde_model.py#L304-L331) 调用 cross_attn 后**未提取** `last_attn_weights`
+- [cross_attention.py L170](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L170) 存储 `last_attn_weights`（shape `(B, n_heads, 1, n_factors)`）
+- [neural_sde_model.py L304-331](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/neural_sde_model.py#L304-L331) 调用 cross_attn 后**未提取** `last_attn_weights`
 - 无 `collapse_attention_weights()` 函数
 
 §5.1 框架要成立，需要：
@@ -1249,9 +1249,9 @@ evolution_pipeline._select_optimal_path()
 
 **关键设计要点**：
 
-1. **现有 `cross_attention.py` 的 `head_multipliers` 字段已存在**（[cross_attention.py L149-154](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L149-L154)）——只需在 CrossValidationGate 输出中提供 delta 字典，pipeline 末尾一行 `head_multipliers.update()` 即可，**不修改 cross_attention 类**
+1. **现有 `cross_attention.py` 的 `head_multipliers` 字段已存在**（[cross_attention.py L149-154](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L149-L154)）——只需在 CrossValidationGate 输出中提供 delta 字典，pipeline 末尾一行 `head_multipliers.update()` 即可，**不修改 cross_attention 类**
 2. **`NeuralSDE.forecast()` 仅新增可选参数 `return_attn_weights=False`**——默认 False，旧调用完全不变；当 AttentionAggregator 启用时才传 True
-3. **`last_attn_weights` 已在 [cross_attention.py L170](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L170) 存储**——只需 forecast 末尾 `return ..., self.cross_attn.last_attn_weights`，不修改 cross_attn 内部逻辑
+3. **`last_attn_weights` 已在 [cross_attention.py L170](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py#L170) 存储**——只需 forecast 末尾 `return ..., self.cross_attn.last_attn_weights`，不修改 cross_attn 内部逻辑
 4. **所有 hook 通过开关控制**——关闭时直接跳过，pipeline 走原路径
 
 ### 10.4 CrossValidationGate 主流程（§5.1 算法的工程化封装）
@@ -1535,10 +1535,10 @@ Granger 重估 → 新的过去              ① granger_reestimate_trigger
 ```
 
 **实现要点**：
-- 数据来源：每次质变事件触发时记录当时的 `divergence_count`（CrossValidationGate **实现后将包含**此字段；当前 [contradiction_shift_accumulator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 的 `detect_shift()` 已返回 `consecutive_count` 作为数据源）
+- 数据来源：每次质变事件触发时记录当时的 `divergence_count`（CrossValidationGate **实现后将包含**此字段；当前 [contradiction_shift_accumulator.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 的 `detect_shift()` 已返回 `consecutive_count` 作为数据源）
 - **持久化保障（TDD-PRE-003 已落地）**：质变事件通过 `_quality_change_log`（`quality_change_log.jsonl` 追加落盘）持久化，每条记录含 `consecutive_count`、`structural_break` 三字段、`timestamp`、`ts_code`。解决原 `_history` 内存列表重启丢失问题，Bayesian 校准的 `observed_count`/`observed_sum` 可从落盘日志冷启动恢复
 - 边界硬约束：`persistence_threshold ∈ [3, 20]`（下限保证过滤噪声，上限保证响应性）
-- **BTC 实测推荐范围**（基于 [调研报告_数据项_1_2_4.md §4.2](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md)）：BTC 自相关 τ=1（弱有效市场），2τ 规则失效，persistence=5 真实误报概率 35-42%。按时间周期调整：
+- **BTC 实测推荐范围**（基于 [调研报告_数据项_1_2_4.md §4.2](../../23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md)）：BTC 自相关 τ=1（弱有效市场），2τ 规则失效，persistence=5 真实误报概率 35-42%。按时间周期调整：
   - 30m: [5, 7]（2.5-3.5 小时）
   - 1h: [7, 10]（7-10 小时）
   - 1d: [10, 14]（2 周）
@@ -1570,9 +1570,9 @@ Mean Reversion（一致状态回归）:
 ```
 
 **理论依据**：
-- `floor=0.1`：与 `ElasticConstraintResolver._floor=0.20`（[elastic_constraint_resolver.py L55](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L55)）保持同量级——仓位约束与 head 权重约束的"最低保留"哲学一致
+- `floor=0.1`：与 `ElasticConstraintResolver._floor=0.20`（[elastic_constraint_resolver.py L55](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L55)）保持同量级——仓位约束与 head 权重约束的"最低保留"哲学一致
 - `ceiling=2.0`：理论边界，单 head 不应超过原始权重的 2 倍——基于 attention softmax 归一化后单 head 主导已属异常
-- `reversion_rate=0.15`：基于 **OU 离散过程均值回归速率** `r = 1 - exp(-Δt/τ)`（[调研报告_理论项_3_5_6.md §3](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md) 相平面分析推导）。r=0.05 时实际需 ~59 期（文档原称 ~20 期，3 倍误差），且 boost/decay 是 reversion 的 4-20 倍。r=0.15 半衰期约 4 期，3 期消除 38% 单期偏离，理论边界 `[0.10, 0.20]`
+- `reversion_rate=0.15`：基于 **OU 离散过程均值回归速率** `r = 1 - exp(-Δt/τ)`（[调研报告_理论项_3_5_6.md §3](../../23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md) 相平面分析推导）。r=0.05 时实际需 ~59 期（文档原称 ~20 期，3 倍误差），且 boost/decay 是 reversion 的 4-20 倍。r=0.15 半衰期约 4 期，3 期消除 38% 单期偏离，理论边界 `[0.10, 0.20]`
 
 **新增开关**：`enable_head_multipliers_mean_reversion`（默认 `False`），可独立关闭。
 
@@ -1698,7 +1698,7 @@ SPRT 参数:
   else: 继续采样
 ```
 
-**理论依据**：SPRT 是 Wald（1945）提出的序贯检验，在所有 α、β 相同的检验中 ASN 最小。p0=0.75 基于 [调研报告_数据项_3_5_6.md §4](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_数据项_3_5_6.md)：单 Granger 链在趋势期一致率 75-85%，在震荡期降至 40-50%。ASN≈73 对应 1h 周期约 3 天，可在单链路失准早期切换。
+**理论依据**：SPRT 是 Wald（1945）提出的序贯检验，在所有 α、β 相同的检验中 ASN 最小。p0=0.75 基于 [调研报告_数据项_3_5_6.md §4](../../23-四层闭环自进化交易架构/docs/调研报告_数据项_3_5_6.md)：单 Granger 链在趋势期一致率 75-85%，在震荡期降至 40-50%。ASN≈73 对应 1h 周期约 3 天，可在单链路失准早期切换。
 
 **实现状态**：待 TDD-PRE-004 落地。当前 Q4 降级模式直接信任单链路，SPRT 上线后增加安全网。
 
@@ -1706,7 +1706,7 @@ SPRT 参数:
 
 **问题**：`detect_all()` 返回 `any_structural_break`，但 3 种类型可靠性不同——`volatility_regime_shift` 可能只是事件冲击噪声。
 
-**代码事实**（[structural_break_detector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/structural_break_detector.py)）：
+**代码事实**（[structural_break_detector.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/structural_break_detector.py)）：
 - `detect_all()` 已返回 3 个独立字段：`volatility_regime_shift` / `correlation_break` / `market_form_shift` + `any_structural_break` 汇总
 - 现有 `ContradictionShiftAccumulator` 质变确认逻辑只要求"至少一类断裂为真"——未差异化处理
 - **已落地修复（TDD-PRE-001/002）**：`correlation_break` 检测方法从 `breaks_cusumolsresid`（statsmodels 0.13+ 已移除）改为 `scipy.stats.ttest_ind` Welch's t-test（method=`welch_ttest`），检测滚动相关序列前/后 1/3 的均值漂移，叠加 `abs(mean_diff) > 0.3` 效应量阈值防大样本伪显著；`volatility_regime_shift` 的 `MarkovRegression` 迭代上限从 `maxiter=100` 提升至 `maxiter=500`（修复 100% ConvergenceWarning）
@@ -1744,7 +1744,7 @@ if self._divergence_count >= self._persistence_threshold:
 ```
 
 **触发阈值**（`structural_break_threshold`）：
-- **临时默认 `0.4`**（v1.2 评审 P0 #7）：statsmodels fallback 状态下 Hurst(1.0) + CUSUM(0.0) 最高仅 1.0 ≤ 1.0，原阈值 1.0 不可触发。临时降为 0.4（任一断裂即可触发），[contradiction_shift_accumulator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 已定义模块常量 `STRUCTURAL_BREAK_THRESHOLD = 0.4`。CUSUM/HMM 依赖修复并重测命中率后再校准回 1.0
+- **临时默认 `0.4`**（v1.2 评审 P0 #7）：statsmodels fallback 状态下 Hurst(1.0) + CUSUM(0.0) 最高仅 1.0 ≤ 1.0，原阈值 1.0 不可触发。临时降为 0.4（任一断裂即可触发），[contradiction_shift_accumulator.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 已定义模块常量 `STRUCTURAL_BREAK_THRESHOLD = 0.4`。CUSUM/HMM 依赖修复并重测命中率后再校准回 1.0
 - 严格模式 `1.6`：要求 `market_form_shift + correlation_break`（权重和 1.6），过滤所有 vol 噪声
 - 宽松模式 `0.6`：任一中等以上断裂即触发（用于回测对比）
 

@@ -1,6 +1,6 @@
 # L0 三层架构 · 本地多视角评审（第 1 轮）
 
-> 日期：2026-10-30　评审对象：[l0-three-layer-SPEC-C.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-three-layer-SPEC-C.md) v0.2
+> 日期：2026-10-30　评审对象：[l0-three-layer-SPEC-C.md](../../../.trae/documents/l0-three-layer-SPEC-C.md) v0.2
 > 评审方式：架构 / 工程 / 风险 三个独立视角并行，只读评审（不改代码、不改文档）
 > 基线：两端代码已对齐 `4d6837f880`；云端 Ubuntu 24.04.5（4C8G/120G）为交付目标
 > 结论：**三方均为「有条件通过」**，合并后有 **12 项 P0** 必须在 P0 段开工前关闭

@@ -1,5 +1,13 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 技术文档一致性修复（断链 + 契约 + 状态回填）
+
+- **断链清零**：47 docs 7 处（`../../../../` 层级错误 ×4、`SPEC-L0-DOMAIN-AGENTS-v0.1` 文件名过期 ×3）；44 2 处；PLAN 1 处绝对路径 → 相对路径。三根（0 / 47 / 44）link_checker 均 0 断链
+- **全仓绝对链接归一**：1284 处 `file:///Users/...` → 相对路径（111 文件），断链总数 1002 → 983（无回归，纯收益）
+- **CI 防回归**：新增 `docs-links` job，对 0 / 47 / 44 三个活跃文档根执行 link_checker，断链即失败
+- **契约修正**：`registry/mcp_capabilities.yaml` v0.1→v0.2，`planned_shells` 三壳（data/eval/store-admin）迁入 `shells`（status=available），校验器输出 7 壳 / 0 规划壳 / 24 active 工具
+- **状态回填**：TRAIN-BASE（✅ 48/48 + 影子 PASS）、DOMAIN-AGENTS（Phase 0 完成 + Phase A 落地）、PLAN（已开工）、ALIGNMENT（终审已执行）
+
 ## 2026-11-03 TB5 P4 回执消费闭环（TRAIN-BASE 与新 SPEC 完全对齐）
 
 - `evolve_step(p4_receipts=...)`：DOMAIN-DISCOVERY §4.5.4 要求的 P4 沙箱回执消费

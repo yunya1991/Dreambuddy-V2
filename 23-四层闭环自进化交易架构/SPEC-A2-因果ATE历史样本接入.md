@@ -3,10 +3,10 @@
 > **状态：** Spec（评审修订·v5：按 v0.2 评审修复 + 用户裁决落定，可落地）
 > **创建：** 2026-10-14
 > **代号：** A2（承接 A1/A3 的降级契约修复）
-> **评审：** 已通过同行评审 → [SPEC评审报告_A2因果ATE历史样本接入_v0.1.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md)（决议：修改后接受；Major 5 条、Minor 7 条已在 v2 修复）。
+> **评审：** 已通过同行评审 → [SPEC评审报告_A2因果ATE历史样本接入_v0.1.md](../23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md)（决议：修改后接受；Major 5 条、Minor 7 条已在 v2 修复）。
 > **v3 修订（2026-10-14，实证复核）：** 落地前用真实数据复核发现 **v2 内部不自洽**——§2.2 设计用 X4（去 R_up 防共线）而 §6 引用的 POC 证据用 X5（含 R_up）；用 X4 复核后**无任何 treatment 定义可稳定显著**（详见 §六 实证复核表）。据用户裁决：**验收②从「统计显著」降级为「如实报告显著性 + 必交付效应量」**，本 v3 同步修订验收与边界声明。
 > **v4 修订（2026-10-14，调研增补）：** 按用户指令先修订 SPEC（v3）→ 调研三方向（学术界+成熟 AI/ML 工程 / GitHub-pyWhy 开源生态 / 金融工程-量化业界）寻找「观察性数据无稳定显著因果效应」的可落地方案 → 增补 **§2.5 统计口径强化**、**§6.2 调制契约裁决升级**、**新增 §9 替代与增强方案**，并同步 §5/§7/§8。三线**一致结论**：问题在**设计**不在估计器；把「CI 含 0」判成「应恒定 ×0.95」是把「不确定」错当「负向证据」，业界支持**改为经济显著性门禁下的 no-op**。详见 §9。
-> **v5 修订（2026-10-14，v0.2 评审修复 + 用户裁决）：** 用户已裁决 —— ①**采用经济显著性三态门禁**（废弃 A1 恒定 ×0.95）；②**τ 来源 = 交易成本折算**（双边成本+滑点 ≈5–10bps 折算到 reward 尺度，独立预注册）；③**按评审修 v5 后落地 T2**。据评审修复：**M1**（τ 独立经济来源 + 预注册 + 阈值稳健性 τ∈{0.02,0.05,0.1}）；**M2**（已核实 causalml **无 HAC**、仅 i.i.d. bootstrap → 定降级路径 = 自实现 stationary block bootstrap）；**M3**（三态门禁获用户授权，保留守门测试防回归）；同步 Minors（净收益边界声明、来源性质、试错披露、效应量口径）。评审报告：[v0.2](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.2.md)。
+> **v5 修订（2026-10-14，v0.2 评审修复 + 用户裁决）：** 用户已裁决 —— ①**采用经济显著性三态门禁**（废弃 A1 恒定 ×0.95）；②**τ 来源 = 交易成本折算**（双边成本+滑点 ≈5–10bps 折算到 reward 尺度，独立预注册）；③**按评审修 v5 后落地 T2**。据评审修复：**M1**（τ 独立经济来源 + 预注册 + 阈值稳健性 τ∈{0.02,0.05,0.1}）；**M2**（已核实 causalml **无 HAC**、仅 i.i.d. bootstrap → 定降级路径 = 自实现 stationary block bootstrap）；**M3**（三态门禁获用户授权，保留守门测试防回归）；同步 Minors（净收益边界声明、来源性质、试错披露、效应量口径）。评审报告：[v0.2](../23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.2.md)。
 > **目标：** 为 `CausalEngine.estimate_ate` 接入 ≥500 条**历史已标注样本**，使 ATE 从「永远 `insufficient_samples` 中性降级」变为「真实可估计、可复现、如实报告效应量与显著性」，并以此因果先验调制主要矛盾 `strength`。
 > **硬约束：** HC-AGI-02（异常→中性兜底）、HC-AGI-07（新模块**默认关闭**，Shadow 验证后开启）、HC-AGI-08（因果引擎最小样本量 **≥500，不得下调**）；FAIL-OPEN 铁律不可破坏。
 > **决策基线（用户 2026-10-14 确认）：**
@@ -25,11 +25,11 @@
 
 | 事实 | 证据 |
 | :--- | :--- |
-| 因果引擎最小样本量硬约束 = 500 | [causal_engine.py L91-L94](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/causal_engine.py#L91-L94) `MIN_SAMPLES = 500` |
-| `estimate_ate` 样本 <500 → 直接返回 `ate=0.0 / significant=False / method="insufficient_samples"` | [causal_engine.py L239-L244](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/causal_engine.py#L239-L244) |
-| **唯一真正调用 `estimate_ate` 的业务路径**，样本来自 `identify()` 的 `paths`（通常 5~8 条） | [contradiction_identifier.py L350-L402](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L350-L402) |
+| 因果引擎最小样本量硬约束 = 500 | [causal_engine.py L91-L94](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/causal_engine.py#L91-L94) `MIN_SAMPLES = 500` |
+| `estimate_ate` 样本 <500 → 直接返回 `ate=0.0 / significant=False / method="insufficient_samples"` | [causal_engine.py L239-L244](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/causal_engine.py#L239-L244) |
+| **唯一真正调用 `estimate_ate` 的业务路径**，样本来自 `identify()` 的 `paths`（通常 5~8 条） | [contradiction_identifier.py L350-L402](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L350-L402) |
 | 路径数 `<<500` → 每次识别恒命中 `insufficient_samples` → A1 契约下中性 no-op（安全，但 ATE 从未产出真实结果） | 同上 L382-L384 |
-| 另一条「真实数据 ATE」入口 `calibrate_impact_multipliers` 已实现，但**无任何生产调用者**（仅 docs/tests 引用）→ 死代码 | [evolution_pipeline.py L258-L303](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L258-L303) |
+| 另一条「真实数据 ATE」入口 `calibrate_impact_multipliers` 已实现，但**无任何生产调用者**（仅 docs/tests 引用）→ 死代码 | [evolution_pipeline.py L258-L303](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L258-L303) |
 
 **结论：** ATE 的调用链路健全且 FAIL-OPEN 安全，但**输入样本严重不足**，导致因果能力形同虚设。
 
@@ -39,10 +39,10 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **Shadow RL 样本（源B）** | `dreambuddy_evolution/gene_data/shadow_rl_samples.jsonl` | **290,921 条**（71 MB，2026-10-14 15:48 更新） | `symbol, state{R_up,R_down,R_smooth,R_flow,R_reflexivity,quality_score}, action(10 类), reward(realized, −1~1), next_state` | ✅ ≥500，含 covariate/treatment/y，**立即可用** |
 | Shadow RL sqlite 后端 | `gene_data/shadow_rl_samples.db` | 719 MB（2026-10-04，已陈旧） | `samples(id,data,reward)` | ⚠ 后端陈旧，jsonl 为准 |
-| StreamingSampleStore（读优化） | [streaming_sample_store.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/streaming_sample_store.py) | — | `append/read_range/stats/migrate_from_jsonl` | ✅ 已实现，可复用作读层 |
-| W6 矛盾样本（源A） | `data/contradiction_samples.json`（由 `ContradictionWeightLearner` 管理） | **磁盘 0 条**（文件不存在） | `ts,power,time,consistency,market_weight,direction,confidence,actual_return`（延迟标注） | ⚠ 机制已在 [contradiction_identifier.py L37-L179](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L37-L179)，但未有效累积/持久化 |
+| StreamingSampleStore（读优化） | [streaming_sample_store.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/streaming_sample_store.py) | — | `append/read_range/stats/migrate_from_jsonl` | ✅ 已实现，可复用作读层 |
+| W6 矛盾样本（源A） | `data/contradiction_samples.json`（由 `ContradictionWeightLearner` 管理） | **磁盘 0 条**（文件不存在） | `ts,power,time,consistency,market_weight,direction,confidence,actual_return`（延迟标注） | ⚠ 机制已在 [contradiction_identifier.py L37-L179](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L37-L179)，但未有效累积/持久化 |
 | AGI 决策快照 | `data/agi_snapshot.jsonl` | 2,000 条（滚动窗口，仅当日 07:18→15:47） | 决策特征完整但**无已实现收益标签** | ❌ 无 y |
-| live `market_data` | [evolution_pipeline.py L1481-L1505](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1481-L1505) | 单窗口 `close/kline_data` | 同一窗口内无独立样本，且无收益标签 | ❌ |
+| live `market_data` | [evolution_pipeline.py L1481-L1505](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1481-L1505) | 单窗口 `close/kline_data` | 同一窗口内无独立样本，且无收益标签 | ❌ |
 
 **结论：** 存在一个 **29 万条、已含 (covariates, reward) 的历史样本源（源B）** 可立即让 ATE 生效；另有一个语义更贴合但需累积的实时源（源A）。二者**独立使用**即为本 SPEC 的双源设计。
 
@@ -144,8 +144,8 @@
 | :--- | :--- | :--- |
 | 样本写入（源A） | `PrimaryContradictionIdentifier.identify()` 内已有 `_weight_learner.record_prediction(...)` / `_label_previous_from_market(...)` | **复用 + 补持久化**（评审 m5）：标注发生时即落盘（或在 `label_previous` 后触发 `_save`），避免 <100 条进程重启丢失 |
 | 样本构造 | 新增 `causal_sample_store.py::build_ate_samples()` | 新增（含退化保护） |
-| ATE 调用 | [contradiction_identifier.py L376](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L376) | **替换输入**：`X/treatment/returns` 改为 `CausalSampleStore.build_ate_samples()` 输出；调制逻辑 L385-L399 **保持 A1 契约不变** |
-| 开关 | [agi_config.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py) | 新增 `enable_causal_historical_samples`（见 §四，**默认 False**） |
+| ATE 调用 | [contradiction_identifier.py L376](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L376) | **替换输入**：`X/treatment/returns` 改为 `CausalSampleStore.build_ate_samples()` 输出；调制逻辑 L385-L399 **保持 A1 契约不变** |
+| 开关 | [agi_config.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py) | 新增 `enable_causal_historical_samples`（见 §四，**默认 False**） |
 | 死代码（本次不动） | `EvolutionPipeline.calibrate_impact_multipliers` | 评审 m3：本次不选该替代路径（其需 factor_matrix/returns/**phases** 三源对齐，数据成本更高）；保留后续单独 SPEC |
 
 ***
@@ -383,5 +383,5 @@
 
 - 本 SPEC 涉及 HC-AGI-07/08 硬约束，落地后须 `record(content="[硬约束][自进化/因果] A2: ATE 历史样本双源独立估计...", quality_level="B", tags="硬约束,HC-AGI-07,HC-AGI-08,自进化,因果推断,ATE历史样本")` 并 `verify`。
 - 关联记忆：`VM-1791963721822-a7f9bae4`（A1+A3 降级契约，B 级）、`VM-1791964377401-f6115a5e`（A2 决策，B 级）。
-- 评审报告：v0.1 → [docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md)（§十含 v3 实证勘误）；**v0.2（对 v4 调研增补后版本）→ `docs/SPEC评审报告_A2因果ATE历史样本接入_v0.2.md`（本轮产出）**。
+- 评审报告：v0.1 → [docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md](../23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md)（§十含 v3 实证勘误）；**v0.2（对 v4 调研增补后版本）→ `docs/SPEC评审报告_A2因果ATE历史样本接入_v0.2.md`（本轮产出）**。
 - v4 调研增补（§9）新增「经济显著性三态门禁」契约，落地后须另 `record(content="[硬约束][自进化/因果] A2 v4: 观测量测不显著且|ate|<SESOI → no-op，废恒定×0.95 ...", quality_level="B", tags="硬约束,HC-AGI-08,自进化,因果推断,SESOI,TOST,经济显著性")` 并 `verify`。

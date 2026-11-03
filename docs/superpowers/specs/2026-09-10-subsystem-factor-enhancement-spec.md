@@ -35,11 +35,11 @@
 
 ### 1.1 问题定位
 
-[bdsm_snapshot_writer.py:100](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/force_vector/bdsm_snapshot_writer.py#L100)
+[bdsm_snapshot_writer.py:100](../../../11-易经推理系统/scripts/memory_l4/force_vector/bdsm_snapshot_writer.py#L100)
 ```python
 params = {"instId": inst_id, "bar": "1D", "limit": str(_KLINE_FETCH_LIMIT)}  # 290
 ```
-OKX `/api/v5/market/history-candles` 单次 `limit` 上限为 **100**，超出被截断。`_compute_technical_assessment` 要求 `len(klines) >= ma_long=200`（[L298](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/force_vector/bdsm_snapshot_writer.py#L298)），100<200 → 全部中性。
+OKX `/api/v5/market/history-candles` 单次 `limit` 上限为 **100**，超出被截断。`_compute_technical_assessment` 要求 `len(klines) >= ma_long=200`（[L298](../../../11-易经推理系统/scripts/memory_l4/force_vector/bdsm_snapshot_writer.py#L298)），100<200 → 全部中性。
 
 ### 1.2 修复方案
 
@@ -100,7 +100,7 @@ def _fetch_snapshot_klines(coin: str) -> list:
 
 ### 2.1 ETF 流出权重提升
 
-[five_domain_feature_computer.py:436](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/five_domain_feature_computer.py#L436)
+[five_domain_feature_computer.py:436](../../../11-易经推理系统/scripts/memory_l4/five_domain_feature_computer.py#L436)
 ```python
 # 改前
 deltas.append(float(flow_norm) * 0.05)
@@ -156,7 +156,7 @@ BCRM2.0 技术面分析模块，输出到 `_last_bcrm2_result["next_state"]` 新
 
 ### 3.2 检测逻辑（复用进化系统已有实现）
 
-参考 [shadow_backtest.py:267-309](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/shadow_backtest.py#L267-L309) 的头肩顶检测，适配 BCRM2.0 的 K 线数据结构。
+参考 [shadow_backtest.py:267-309](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/scripts/shadow_backtest.py#L267-L309) 的头肩顶检测，适配 BCRM2.0 的 K 线数据结构。
 
 **头肩顶（hs_top）**：
 1. 55 bar 窗口找最高点（头部），头部在窗口中部
@@ -187,7 +187,7 @@ BCRM2.0 技术面分析模块，输出到 `_last_bcrm2_result["next_state"]` 新
 
 ### 4.1 新增方法
 
-在 [subsystem_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) 中新增：
+在 [subsystem_bridge.py](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) 中新增：
 
 | 方法 | 返回 | 来源 |
 |------|------|------|
@@ -199,7 +199,7 @@ BCRM2.0 技术面分析模块，输出到 `_last_bcrm2_result["next_state"]` 新
 
 ### 4.2 data_pipeline 注入
 
-在 [data_pipeline.py:127-133](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/data_pipeline.py#L127-L133) 中注入新字段到 `kline_data`：
+在 [data_pipeline.py:127-133](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/data_pipeline.py#L127-L133) 中注入新字段到 `kline_data`：
 ```python
 kline_data["five_scores"] = self._subsystem.get_five_scores()
 kline_data["position_cap"] = self._subsystem.get_position_cap()
@@ -217,7 +217,7 @@ kline_data["bdsm_valuation"] = self._subsystem.get_bdsm_valuation()
 
 ### 5.1 现有权重框架
 
-[weights.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/weights.py) 的四组权重：
+[weights.py](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/weights.py) 的四组权重：
 - `ESS`: H:S:N_ratio = 4:4:2
 - `R_REFL`: corr:liq:sent = 4:3:3
 - `CS`: Level0:ESS_top:CBR_top = 4:3:3

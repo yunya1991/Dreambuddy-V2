@@ -17,12 +17,12 @@ record(content="经验内容", quality_level="B", tags="标签1,标签2")
 **已有**：
 - `quality_level`（S/A/B/C/D 离散等级）
 - `tags`（标签）
-- `source`（来源标识，默认"mcp"，在 [cognitive_mcp_server.py L291](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_mcp_server.py#L291)）
+- `source`（来源标识，默认"mcp"，在 [cognitive_mcp_server.py L291](../../4-MEMORY/9-工具与接口/cognitive_mcp_server.py#L291)）
 - `verify` 贝叶斯置信度更新
 
 **缺失（对比REA Evidence结构）**：
 1. 无4层事实分级（observation/derivation/inference/unknown）
-2. 无连续 `confidence_score`（0.0-1.0），只有离散等级（当前 `confidence=0.3` 硬编码，见 [L298](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_mcp_server.py#L298)）
+2. 无连续 `confidence_score`（0.0-1.0），只有离散等级（当前 `confidence=0.3` 硬编码，见 [L298](../../4-MEMORY/9-工具与接口/cognitive_mcp_server.py#L298)）
 3. 无 `known_gaps` 字段（已知局限）
 4. 无 `observations` 支撑观察列表
 5. 无详细 `provenance` 结构（现有只有 `source` 字符串，缺少文件路径/行号/引擎等详细来源）

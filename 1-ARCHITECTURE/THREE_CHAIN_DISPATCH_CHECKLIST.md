@@ -199,7 +199,7 @@ A0矛盾识别 → A1深度调研 → A2第一性原理 → A3沙盘推演
 
 > ✅ **已全部实现**: 14个指标全部在 `talib/abstract.py` 中实现并通过测试
 
-**实现文件**: [talib/abstract.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/talib/abstract.py)
+**实现文件**: [talib/abstract.py](../10-经典指标系统/talib/abstract.py)
 
 ### 2.2 复杂策略系统（已验证 - 7个策略）
 
@@ -351,9 +351,9 @@ deployed_canary                            deployed_full
 
 | 引擎名称 | 功能 | 实现文件 |
 |----------|------|----------|
-| 情绪分析 | 关键词正则匹配，正面/负面情绪识别，4大分类 | [sentiment_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/engines/sentiment_engine.py) |
-| 信号生成 | 多维度融合，10种信号类型，模块权重可调 | [signal_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/engines/signal_engine.py) |
-| 三维度阻力 | Direction/Velocity/Acceleration + 置信度 | [least_resistance.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/engines/least_resistance.py) |
+| 情绪分析 | 关键词正则匹配，正面/负面情绪识别，4大分类 | [sentiment_engine.py](../9-基本面分析/engines/sentiment_engine.py) |
+| 信号生成 | 多维度融合，10种信号类型，模块权重可调 | [signal_engine.py](../9-基本面分析/engines/signal_engine.py) |
+| 三维度阻力 | Direction/Velocity/Acceleration + 置信度 | [least_resistance.py](../9-基本面分析/engines/least_resistance.py) |
 
 ### 3.2 扩展模块（已验证）
 
@@ -413,26 +413,26 @@ deployed_canary                            deployed_full
 | Schema | 说明 | 文件路径 |
 |--------|------|----------|
 | `anchor_registry` | 锚点注册 | [anchor_registry.schema.json](file:///Users/zhangjiangtao/WorkBuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/anchor_registry.schema.json) |
-| `delta_registry` | Delta注册 | [delta_registry.schema.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/delta_registry.schema.json) |
-| `event_mapping.policy` | 事件映射策略 | [event_mapping.policy.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/event_mapping.policy.json) |
-| `flow_brief_contract` | 简报契约 | [flow_brief_request.schema.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json) |
-| `narrative_contract` | 叙事契约 | [narrative_contract.schema.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/narrative_contract.schema.json) |
-| `news_contract` | 新闻契约 | [news_contract.schema.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/news_contract.schema.json) |
-| `source_snapshot` | 源快照 | [source_snapshot_v1.schema.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/source_snapshot_v1.schema.json) |
-| `feature_cube` | 特征立方体 | [feature_cube_v1.schema.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/feature_cube_v1.schema.json) |
+| `delta_registry` | Delta注册 | [delta_registry.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/delta_registry.schema.json) |
+| `event_mapping.policy` | 事件映射策略 | [event_mapping.policy.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/event_mapping.policy.json) |
+| `flow_brief_contract` | 简报契约 | [flow_brief_request.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json) |
+| `narrative_contract` | 叙事契约 | [narrative_contract.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/narrative_contract.schema.json) |
+| `news_contract` | 新闻契约 | [news_contract.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/news_contract.schema.json) |
+| `source_snapshot` | 源快照 | [source_snapshot_v1.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/source_snapshot_v1.schema.json) |
+| `feature_cube` | 特征立方体 | [feature_cube_v1.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/feature_cube_v1.schema.json) |
 
 ### 3.4 扩展脚本（已验证 - 6+个）
 
 | 脚本 | 功能 | 文件路径 |
 |------|------|----------|
-| `flow_brief_generator` | 资金流简报生成 | [flow_brief_generator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/flow_brief_generator.py) |
-| `narrative_analyzer` | 叙事分析 | [narrative_analyzer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/narrative/scripts/narrative_analyzer.py) |
-| `news_crawler` | 新闻爬虫 | [news_crawler.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/scripts/news_crawler.py) |
-| `news_digest_v2` | 新闻摘要 | [news_digest_v2.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/scripts/news_digest_v2.py) |
-| `traditional_finance_analyzer` | 传统金融分析 | [traditional_finance_analyzer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/scripts/traditional_finance_analyzer.py) |
-| `regime_classifier` | 状态分类 | [regime_classifier.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/regime_classifier.py) |
-| `signal_fusion` | 信号融合 | [signal_fusion.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/signal_fusion.py) |
-| `event_ledger_generator` | 事件账本生成 | [event_ledger_generator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/scripts/event_ledger_generator.py) |
+| `flow_brief_generator` | 资金流简报生成 | [flow_brief_generator.py](../9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/flow_brief_generator.py) |
+| `narrative_analyzer` | 叙事分析 | [narrative_analyzer.py](../9-基本面分析/ops/nanoclaw/core_task1/narrative/scripts/narrative_analyzer.py) |
+| `news_crawler` | 新闻爬虫 | [news_crawler.py](../9-基本面分析/ops/nanoclaw/core_task1/scripts/news_crawler.py) |
+| `news_digest_v2` | 新闻摘要 | [news_digest_v2.py](../9-基本面分析/ops/nanoclaw/core_task1/scripts/news_digest_v2.py) |
+| `traditional_finance_analyzer` | 传统金融分析 | [traditional_finance_analyzer.py](../9-基本面分析/ops/nanoclaw/core_task1/scripts/traditional_finance_analyzer.py) |
+| `regime_classifier` | 状态分类 | [regime_classifier.py](../9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/regime_classifier.py) |
+| `signal_fusion` | 信号融合 | [signal_fusion.py](../9-基本面分析/ops/nanoclaw/core_task1/flow/scripts/signal_fusion.py) |
+| `event_ledger_generator` | 事件账本生成 | [event_ledger_generator.py](../9-基本面分析/ops/nanoclaw/core_task1/scripts/event_ledger_generator.py) |
 
 ### 3.5 传统金融分析框架（已验证）
 
@@ -529,26 +529,26 @@ deployed_canary                            deployed_full
 ### 5.1 6-TRADING核心文档
 | 文档 | 路径 |
 |------|------|
-| A系列详情 | [A_SERIES_DETAIL.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/A_SERIES_DETAIL.md) |
-| SKILL覆盖率 | [A0_A9_SKILL_COVERAGE_v1.0.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/docs/A0_A9_SKILL_COVERAGE_v1.0.md) |
-| 交易工作流规范 | [TRADING_WORKFLOW_SPEC_v1.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/docs/TRADING_WORKFLOW_SPEC_v1.md) |
-| 架构设计v2.0 | [ARCHITECTURE_DESIGN_v2.0.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/docs/ARCHITECTURE_DESIGN_v2.0.md) |
-| 治理系统 | [GOVERNANCE_SYSTEM.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-GOVERNANCE/GOVERNANCE_SYSTEM.md) |
+| A系列详情 | [A_SERIES_DETAIL.md](../6-TRADING/A_SERIES_DETAIL.md) |
+| SKILL覆盖率 | [A0_A9_SKILL_COVERAGE_v1.0.md](../6-TRADING/docs/A0_A9_SKILL_COVERAGE_v1.0.md) |
+| 交易工作流规范 | [TRADING_WORKFLOW_SPEC_v1.md](../6-TRADING/docs/TRADING_WORKFLOW_SPEC_v1.md) |
+| 架构设计v2.0 | [ARCHITECTURE_DESIGN_v2.0.md](../6-TRADING/docs/ARCHITECTURE_DESIGN_v2.0.md) |
+| 治理系统 | [GOVERNANCE_SYSTEM.md](../2-GOVERNANCE/GOVERNANCE_SYSTEM.md) |
 
 ### 5.2 经典指标系统核心文档
 | 文档 | 路径 |
 |------|------|
-| 技术文档 | [技术文档.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/技术文档.md) |
-| AI Agent技术文档2.0 | [交易AI Agent 技术文档2.0.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/交易AI Agent 技术文档2.0.md) |
-| 主服务文件 | [ml_trade_service.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/ml_trade_service.py) |
+| 技术文档 | [技术文档.md](../10-经典指标系统/技术文档.md) |
+| AI Agent技术文档2.0 | [交易AI Agent 技术文档2.0.md](../10-经典指标系统/交易AI Agent 技术文档2.0.md) |
+| 主服务文件 | [ml_trade_service.py](../10-经典指标系统/ml_trade_service.py) |
 
 ### 5.3 基本面分析系统核心文档
 | 文档 | 路径 |
 |------|------|
-| 基本面研究文档 | [基本面研究文档.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/基本面研究文档.md) |
-| SKILL集成技术文档 | [SKILL集成技术文档.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/SKILL集成技术文档.md) |
-| 基本面独立化架构 | [基本面独立化架构与清理规划.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/基本面独立化架构与清理规划.md) |
-| Anchor Delta技术设计 | [ANCHOR_DELTA_TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/ANCHOR_DELTA_TECHNICAL_DESIGN.md) |
+| 基本面研究文档 | [基本面研究文档.md](../9-基本面分析/基本面研究文档.md) |
+| SKILL集成技术文档 | [SKILL集成技术文档.md](../9-基本面分析/SKILL集成技术文档.md) |
+| 基本面独立化架构 | [基本面独立化架构与清理规划.md](../9-基本面分析/基本面独立化架构与清理规划.md) |
+| Anchor Delta技术设计 | [ANCHOR_DELTA_TECHNICAL_DESIGN.md](../9-基本面分析/ops/nanoclaw/core_task1/ANCHOR_DELTA_TECHNICAL_DESIGN.md) |
 
 ---
 

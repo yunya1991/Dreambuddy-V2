@@ -7,7 +7,7 @@
 > **关联**: 替代 `PROP-20260829-hermes-drives-dreamos*.md` 两份 Hermes 旧方案
 
 > ⚠️ **架构定位更新（2026-09-16）**：意图识别的权威规范已明确为
-> [`intent-recognition-spec/intent-taxonomy.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/intent-recognition-spec/intent-taxonomy.md)，
+> [`intent-recognition-spec/intent-taxonomy.md`](../../1-ARCHITECTURE/intent-recognition-spec/intent-taxonomy.md)，
 > 采用 **6×30 对话意图体系**，落地于 DreamOS 操作系统内核 S 层。
 > 本 SPEC 评估的前端 35 型正典（intent-schema.ts）作为过渡方案，最终应迁移到 DreamOS 内核统一意图识别。
 > 意图识别分两层：对话意图（内核 6×30）+ 策略意图（交易能力域 7 种）。
@@ -215,7 +215,7 @@ next_step_hint: str = ""
 - **结果结构化回流**：JSON 结构化返回
 
 **对 Harness 的迁移建议**:
-- **不迁移此文件**：dream-harness-bridge 的 [python-server/server.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/server.py) 已通过 IPC + Cordis plugin 实现了等效的桥接功能
+- **不迁移此文件**：dream-harness-bridge 的 [python-server/server.py](../../1-ARCHITECTURE/dream-harness-bridge/packages/python-server/server.py) 已通过 IPC + Cordis plugin 实现了等效的桥接功能
 - **吸收其工具设计**：server.py 的 IPC 方法可参考这 4 个工具的职责划分（health/recognize/run/list_nodes）
 - **剥离硬编码**：所有 `/home/ubuntu/.hermes/` 路径需移除
 
@@ -422,8 +422,8 @@ GraphPlanner 渐进式编排
 
 ## 6. 关联文档
 
-- [SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/SPEC.md) — dream-harness-bridge 总体规范
-- [SPEC_INFRASTRUCTURE_INTEGRATION.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/SPEC_INFRASTRUCTURE_INTEGRATION.md) — 基础设施集成规范
+- [SPEC.md](../../1-ARCHITECTURE/dream-harness-bridge/SPEC.md) — dream-harness-bridge 总体规范
+- [SPEC_INFRASTRUCTURE_INTEGRATION.md](../../1-ARCHITECTURE/dream-harness-bridge/SPEC_INFRASTRUCTURE_INTEGRATION.md) — 基础设施集成规范
 - PR68 源文件（pr-68 分支）：
   - `intent-schema.ts` / `intent-unified.ts` / `command-fastpath.ts` / `intent-args-repair.ts` / `shadow-probe.ts`
   - `complexity_classifier.py` / `graph_planner.py` / `types.py` / `api_server.py`

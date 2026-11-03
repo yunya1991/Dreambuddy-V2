@@ -277,9 +277,9 @@
 | `loss_protection_countdown` | object | 倒计时信息（elapsed/remaining/max_hours） |
 
 **实现位置**：
-- 超时检查：[agent_a_memory.py#L145](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py#L145) `check_loss_protection_timeout()`
-- 倒计时查询：[agent_a_memory.py#L195](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py#L195) `get_loss_protection_countdown()`
-- 保护触发：[agent_a_runner.py#L251](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_a_runner.py#L251)
+- 超时检查：[agent_a_memory.py#L145](../../../experiments/ab-trading/core/agent_a_memory.py#L145) `check_loss_protection_timeout()`
+- 倒计时查询：[agent_a_memory.py#L195](../../../experiments/ab-trading/core/agent_a_memory.py#L195) `get_loss_protection_countdown()`
+- 保护触发：[agent_a_runner.py#L251](../../../experiments/ab-trading/agents/agent_a_runner.py#L251)
 - 超时常量：`LOSS_PROTECTION_MAX_HOURS = 48`
 
 ---
@@ -336,13 +336,13 @@ except Exception as e:
 
 | 文件 | 功能 |
 |------|------|
-| [agent_a_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_a_runner.py) | 主流程入口（SOP 10步） |
-| [agent_a_llm.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_llm.py) | LLM 决策核心（SKILL框架调用） |
-| [agent_a_memory.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py) | 记忆系统（教训/大师/连败保护/48h超时） |
-| [exit_module.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/exit_module.py) | L1/L2 离场模块 |
-| [scorecard.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/scoring/scorecard.py) | DecisionLog 日志结构 |
-| [aster_spot.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行层 |
-| [monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html) | AB Trading 监控页面（含风控门禁/倒计时） |
+| [agent_a_runner.py](../../../experiments/ab-trading/agents/agent_a_runner.py) | 主流程入口（SOP 10步） |
+| [agent_a_llm.py](../../../experiments/ab-trading/core/agent_a_llm.py) | LLM 决策核心（SKILL框架调用） |
+| [agent_a_memory.py](../../../experiments/ab-trading/core/agent_a_memory.py) | 记忆系统（教训/大师/连败保护/48h超时） |
+| [exit_module.py](../../../experiments/ab-trading/core/exit_module.py) | L1/L2 离场模块 |
+| [scorecard.py](../../../experiments/ab-trading/scoring/scorecard.py) | DecisionLog 日志结构 |
+| [aster_spot.py](../../../experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行层 |
+| [monitor.html](../../../experiments/ab-trading/monitor.html) | AB Trading 监控页面（含风控门禁/倒计时） |
 | `data/agent_a_memory.json` | 跨session记忆（自动维护） |
 | `logs/agent_a/*.json` | 每轮决策日志 |
 | `skills/agent-a-trading/SKILL.md` | Agent A SKILL 定义 |

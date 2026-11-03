@@ -178,7 +178,7 @@
 
 > **用户口径（原文要点）**：①底层核心能力第一目标是**打通**——沿主线打通、互联互通；②第二目标是**灵活调度**——检索系统可作入口，但灵活调度与管理同样重要；③第三目标是**封装统一底层能力**——底层改动不波及上层（痛点：数据库系统更换时多次出问题，大量细枝末节仍依赖老数据库）。
 >
-> **命名澄清**：本章讨论的是 **L0 内部的组织方式**。现有 L0/L1/L2 定义见 [SPEC-v1.3-L0L1L2-architecture.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md) §1（按"是否依赖生成式 LLM 推理"分层：L0 基础能力层 / L1 基础智能层 / L2 大模型驱动层）。两者**正交**：L0/L1/L2 回答"谁依赖大模型"，本章回答"L0 内部怎么组织"。为避免与 C1-C4 认知四层再混淆，本章三层命名为 **L0-P 封装层（Ports）/ L0-I 互联层（Interconnect）/ L0-S 调度层（Schedule）**。
+> **命名澄清**：本章讨论的是 **L0 内部的组织方式**。现有 L0/L1/L2 定义见 [SPEC-v1.3-L0L1L2-architecture.md](../../../34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md) §1（按"是否依赖生成式 LLM 推理"分层：L0 基础能力层 / L1 基础智能层 / L2 大模型驱动层）。两者**正交**：L0/L1/L2 回答"谁依赖大模型"，本章回答"L0 内部怎么组织"。为避免与 C1-C4 认知四层再混淆，本章三层命名为 **L0-P 封装层（Ports）/ L0-I 互联层（Interconnect）/ L0-S 调度层（Schedule）**。
 
 ### 8.0 调研口径：云端为目标，本地为代理（2026-10-30 实测补正）
 
@@ -210,9 +210,9 @@
 
 **直连热点分布（top 5）**：11-易经推理系统 61 处/27 文件（含 bcrm2/incremental_learner 7 处、coin_fundamental_crypto 5 处）；1-ARCHITECTURE 31 处/6 文件（含 dreamos/cli/bcrm2_scheduler 11 处、dreamos_full_scheduler 5 处）；23-四层闭环自进化 22 处/8 文件；4-MEMORY 13 处/10 文件；18-数据获取中心 12 处/2 文件。
 
-**关键对照**：19-DAL 其实**已有可用抽象**——[di.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/di.py#L1-L126) 提供 `json_legacy / dual_write / sqlite_unified` 三后端选择 + `DualWrite` 读写代理 + `get_*_repo` 仓库工厂；[README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/README.md#L68-L70) 甚至明令"严禁 18 层直连 `dreambuddy_core.db`"。**问题不是"没有缝"，而是"缝存在但无人走"**——约束写在文档里，没有机制强制。
+**关键对照**：19-DAL 其实**已有可用抽象**——[di.py](../../../19-数据访问层/dreambuddy_dal/di.py#L1-L126) 提供 `json_legacy / dual_write / sqlite_unified` 三后端选择 + `DualWrite` 读写代理 + `get_*_repo` 仓库工厂；[README.md](../../../19-数据访问层/README.md#L68-L70) 甚至明令"严禁 18 层直连 `dreambuddy_core.db`"。**问题不是"没有缝"，而是"缝存在但无人走"**——约束写在文档里，没有机制强制。
 
-**换库痛点的机制解释**：SQLite 与 PG 的并存不是"一套抽象两个 adapter"，而是多套并存（18 同时保留 `sink_sqlite.py` 与 `sink_postgres.py`；3.1 前端 Prisma `dev.db`；产物中台 `business.db`；认知库 `cognitive_memory.db`；38 迁移仍在进行）。[SPEC-20260928-POSTGRESQL-CENTRALIZATION.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/SPEC-20260928-POSTGRESQL-CENTRALIZATION.md#L36-L41) 记录了至少 5 个库/两套 ORM 的并存事实。**没有强制缝 → 换库的波及面 = 全部 179 个调用点**，这正是"改一处、坏一片"的算术根源。
+**换库痛点的机制解释**：SQLite 与 PG 的并存不是"一套抽象两个 adapter"，而是多套并存（18 同时保留 `sink_sqlite.py` 与 `sink_postgres.py`；3.1 前端 Prisma `dev.db`；产物中台 `business.db`；认知库 `cognitive_memory.db`；38 迁移仍在进行）。[SPEC-20260928-POSTGRESQL-CENTRALIZATION.md](../../../1-ARCHITECTURE/SPEC-20260928-POSTGRESQL-CENTRALIZATION.md#L36-L41) 记录了至少 5 个库/两套 ORM 的并存事实。**没有强制缝 → 换库的波及面 = 全部 179 个调用点**，这正是"改一处、坏一片"的算术根源。
 
 ### 8.2 审计 B：调度现状（"灵活调度"的起点）
 
@@ -240,13 +240,13 @@
 
 | 能力域 | 现有抽象 | 证据 | 接口宽度 | 换实现是否波及上层 |
 |---|---|---|---|---|
-| 存储（19-DAL） | `get_*_repo` + 三后端 DI + `DualWrite` | [di.py:L1-126](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/di.py#L1-L126) | 中（repo 粒度） | **部分**：走了 DAL 的不波及，不走 DAL 的（92%）全部波及 |
-| 存储（39 民间） | `dc_pg` 脚本模块 | [dc_pg.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/39-金融语义蒸馏系统/scripts/dc_pg.py) | 宽（裸连接/游标） | 否（换实现要改所有 import 方） |
+| 存储（19-DAL） | `get_*_repo` + 三后端 DI + `DualWrite` | [di.py:L1-126](../../../19-数据访问层/dreambuddy_dal/di.py#L1-L126) | 中（repo 粒度） | **部分**：走了 DAL 的不波及，不走 DAL 的（92%）全部波及 |
+| 存储（39 民间） | `dc_pg` 脚本模块 | [dc_pg.py](../../../39-金融语义蒸馏系统/scripts/dc_pg.py) | 宽（裸连接/游标） | 否（换实现要改所有 import 方） |
 | 采集（18） | `BaseCollector.fetch` + `Registry` + `dispatcher(category,source)` | `collectors/_base.py:L13-28`、`core/registry.py:L11-31` | **窄**（好） | 部分：collector 契约稳定，但落库 sink 双实现并存 |
 | 检索（41） | `SearchAPI.search/rebuild/update/status` + `Database`(PG pool) | `api/search_api.py:L36-108`、`core/db.py:L38-66` | **窄**（好） | 否：换索引实现只动 core |
 | 认知（4-MEMORY） | MCP 五工具（recall/record/verify/stats/health） | `cognitive_mcp_server.py:L5-17,58-170` | **窄**（好） | 否：MCP 是稳定契约，但底层 SQLite 直连散落 13 处 |
 | 解析（33-REA） | `PythonAnalyzer.analyze(path)` | `README.md:L17-27` | **窄**（好） | 否（单入口），但无后端抽象（换 tree-sitter 需改内部） |
-| **统一 L0 门面** | `L0Foundation.fetch_context(scope,params)` + 统一信封 `{ok,data,source,timestamp,degraded,meta}` + 11 scope 注册表 | [l0_foundation.py:L91-120](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/core/l0_foundation.py#L91-L120)、[L0-接口规范-fetchContext.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/L0-接口规范-fetchContext.md#L12-L49) | **最窄**（scope 字符串） | **否**——这是全仓最接近 T3 目标的原型，但只服务 34 这一个子系统 |
+| **统一 L0 门面** | `L0Foundation.fetch_context(scope,params)` + 统一信封 `{ok,data,source,timestamp,degraded,meta}` + 11 scope 注册表 | [l0_foundation.py:L91-120](../../../34-前端应用训练系统/core/l0_foundation.py#L91-L120)、[L0-接口规范-fetchContext.md](../../../34-前端应用训练系统/L0-接口规范-fetchContext.md#L12-L49) | **最窄**（scope 字符串） | **否**——这是全仓最接近 T3 目标的原型，但只服务 34 这一个子系统 |
 | 能力注册（dreamos） | `CapabilityRegistry` + `CapabilitySpec(capability_id/category/provider_type/requirements/status/degraded_reason)` + `CapabilityMatcher` | `core/capability/registry.py:L28-105`、`shared/capability.py:L50-80` | 中 | 否：**注册表已存在**，但仅 DreamOS 运行时内存态，不覆盖 L0 五能力，无声明文件 |
 
 **判断**：**"有零散抽象、无统一缝"**。四个能力（采集/检索/认知/解析）各自已有窄接口（这是好消息，说明不需要重建），但**五个能力之间没有同一层门面**；存储侧的缝（19-DAL）存在却只有 8% 的调用走它。**T3 的真实工作量不是"设计抽象"，而是"把已有窄接口收进同一层门面 + 让存储调用真正走 DAL"**。

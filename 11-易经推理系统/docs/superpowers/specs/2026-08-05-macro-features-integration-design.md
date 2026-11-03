@@ -29,8 +29,8 @@
 | 美林时钟 (merrill_clock) | ✅ | ❌ | **实盘缺失** |
 | Meta-Labeling V2 | ✅ | ❌ | **实盘缺失** |
 
-- 回测路径：[walk_forward_backtester.py#L320-L472](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py#L320-L472) 拼接全部 11 个模块
-- 实盘路径：[bcrm2_adapter.py#L192-L225](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L192-L225) 仅拼接 6 个模块
+- 回测路径：[walk_forward_backtester.py#L320-L472](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py#L320-L472) 拼接全部 11 个模块
+- 实盘路径：[bcrm2_adapter.py#L192-L225](../../../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L192-L225) 仅拼接 6 个模块
 
 **根因**：特征拼接是硬编码的 `pd.concat` 序列，无插件注册机制，回测和实盘各自维护一份代码，导致漂移。
 
@@ -38,9 +38,9 @@
 
 #### 问题 2：缺乏真正的宏观/基本面特征
 
-当前 BCRM 2.0 中名为"宏观环境"的特征（[meta_labeling_features_v2.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/meta_labeling_features_v2.py) `_macro_environment_features()`）实际全部由 OHLCV 价格派生（BTC.D 用价格比代理、资金流向用成交量变化代理），**没有任何外部宏观数据注入**。
+当前 BCRM 2.0 中名为"宏观环境"的特征（[meta_labeling_features_v2.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/meta_labeling_features_v2.py) `_macro_environment_features()`）实际全部由 OHLCV 价格派生（BTC.D 用价格比代理、资金流向用成交量变化代理），**没有任何外部宏观数据注入**。
 
-与此同时，系统已在 [free_fundamental_provider.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/capabilities/trading/free_fundamental_provider.py) 接入 8 个免费数据源（Hyperliquid / CoinGecko / alternative.me / Blockchain.info / OKX / DefiLlama / 币安 Web3 Social / 币安 Web3 Smart Money），但**这些数据只被 DreamOS F 链消费，易经 BCRM 2.0 完全不消费**。
+与此同时，系统已在 [free_fundamental_provider.py](../../../../1-ARCHITECTURE/dreamos/capabilities/trading/free_fundamental_provider.py) 接入 8 个免费数据源（Hyperliquid / CoinGecko / alternative.me / Blockchain.info / OKX / DefiLlama / 币安 Web3 Social / 币安 Web3 Smart Money），但**这些数据只被 DreamOS F 链消费，易经 BCRM 2.0 完全不消费**。
 
 ### 1.2 目标
 
@@ -64,7 +64,7 @@
 
 #### 2.1.1 设计
 
-新建 [bcrm2/feature_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/feature_registry.py)，作为回测和实盘共用的唯一特征入口。
+新建 [bcrm2/feature_registry.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/feature_registry.py)，作为回测和实盘共用的唯一特征入口。
 
 ```python
 class FeatureModuleSpec:
@@ -139,7 +139,7 @@ class MacroFeatures:
 
 #### 2.1.3 回测和实盘统一调用
 
-重构后，[walk_forward_backtester.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py) 和 [bcrm2_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py) 的特征计算都改为：
+重构后，[walk_forward_backtester.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py) 和 [bcrm2_adapter.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py) 的特征计算都改为：
 
 ```python
 from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
@@ -224,7 +224,7 @@ P0 完成后，实盘自动获得与回测一致的 11 个模块（因为统一�
 
 #### 3.1.1 设计
 
-新建 [bcrm2/macro_data_fetcher.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py)，复用 [free_fundamental_provider.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/capabilities/trading/free_fundamental_provider.py) 的采集逻辑，独立于 DreamOS。
+新建 [bcrm2/macro_data_fetcher.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py)，复用 [free_fundamental_provider.py](../../../../1-ARCHITECTURE/dreamos/capabilities/trading/free_fundamental_provider.py) 的采集逻辑，独立于 DreamOS。
 
 ```python
 @dataclass
@@ -333,7 +333,7 @@ def align_to_klines(self, macro_list, kline_index, lookahead_guard=1):
 
 #### 3.2.1 设计
 
-新建 [bcrm2/macro_features.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/macro_features.py)，约 20-30 个特征，**不参与卦象推导**（纯 ML 增强）。
+新建 [bcrm2/macro_features.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/macro_features.py)，约 20-30 个特征，**不参与卦象推导**（纯 ML 增强）。
 
 ```python
 @FeatureRegistry.register("macro", requires_macro_df=True, default_enabled=True)
@@ -424,7 +424,7 @@ class MacroFeatures:
 
 ### 4.1 BaselineManager
 
-新建 [bcrm2/baseline_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/baseline_manager.py)：
+新建 [bcrm2/baseline_manager.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/baseline_manager.py)：
 
 ```python
 class BaselineManager:
@@ -498,7 +498,7 @@ class BaselineManager:
 
 ### 4.3 回测对比脚本
 
-新建 [bcrm2/run_baseline_comparison.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/run_baseline_comparison.py)：
+新建 [bcrm2/run_baseline_comparison.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/run_baseline_comparison.py)：
 
 ```bash
 # 用法
@@ -696,14 +696,14 @@ P0 交付后需用户确认基线可信，再启动 P1。
 
 | 类别 | 文件 |
 |------|------|
-| **特征工程** | [bagua_feature_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/bagua_feature_engine.py) |
-| | [meta_labeling_features_v2.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/meta_labeling_features_v2.py) |
-| | [feature_selector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/feature_selector.py) |
-| **回测/实盘入口** | [walk_forward_backtester.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py) |
-| | [bcrm2_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py) |
-| **ML 引擎** | [dialectical_ml_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) |
-| **已有数据源** | [free_fundamental_provider.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/capabilities/trading/free_fundamental_provider.py) |
-| **技术文档** | [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/TECHNICAL_DESIGN.md) |
+| **特征工程** | [bagua_feature_engine.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/bagua_feature_engine.py) |
+| | [meta_labeling_features_v2.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/meta_labeling_features_v2.py) |
+| | [feature_selector.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/feature_selector.py) |
+| **回测/实盘入口** | [walk_forward_backtester.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py) |
+| | [bcrm2_adapter.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py) |
+| **ML 引擎** | [dialectical_ml_engine.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) |
+| **已有数据源** | [free_fundamental_provider.py](../../../../1-ARCHITECTURE/dreamos/capabilities/trading/free_fundamental_provider.py) |
+| **技术文档** | [TECHNICAL_DESIGN.md](../../../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) |
 
 ### 9.2 基线指标权重与容差
 

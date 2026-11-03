@@ -413,18 +413,18 @@ v5              大版本架构升级（需充分验证）
 
 | 文件 | 说明 |
 |-----|------|
-| [`ml/halving_top_exit_strategy.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/halving_top_exit_strategy.py) | V4基线策略实现（HalvingTopExitStrategy） |
-| [`backtest/strategy.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/backtest/strategy.py) | V2/V3策略实现（EnhancedMA200Strategy） |
-| [`ml/enhanced_ma200_v3_strategy.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/enhanced_ma200_v3_strategy.py) | V3策略实现（抄底+逃顶框架） |
-| [`ml/short_optimization_test.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/short_optimization_test.py) | 做空优化测试脚本 |
-| [`ml/final_comparison.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/final_comparison.py) | V2 vs 做空优化对比 |
-| [`ml/v2_vs_v3_comparison.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v2_vs_v3_comparison.py) | V2 vs V3对比回测 |
-| [`ml/philosophy_feature_engineer.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/philosophy_feature_engineer.py) | 哲学贡献→ML特征工程 |
-| [`ml/LIGHTGBM_FEATURE_CATALOG.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/LIGHTGBM_FEATURE_CATALOG.md) | LightGBM特征消费分类目录 |
-| [`ml/four_objective_framework_design.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/four_objective_framework_design.md) | 四类目的+动态实践闭环设计 |
-| [`ml/v2_baseline_optimization_principles.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v2_baseline_optimization_principles.md) | 本文档 · V4基线优化原则 |
-| [`docs/TECHNICAL_DESIGN.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) | 技术设计文档 |
-| [`ENGINEERING_INDEX.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ENGINEERING_INDEX.md) | 工程索引（完整版） |
+| [`ml/halving_top_exit_strategy.py`](../../12-三屏趋势系统/ml/halving_top_exit_strategy.py) | V4基线策略实现（HalvingTopExitStrategy） |
+| [`backtest/strategy.py`](../../12-三屏趋势系统/backtest/strategy.py) | V2/V3策略实现（EnhancedMA200Strategy） |
+| [`ml/enhanced_ma200_v3_strategy.py`](../../12-三屏趋势系统/ml/enhanced_ma200_v3_strategy.py) | V3策略实现（抄底+逃顶框架） |
+| [`ml/short_optimization_test.py`](../../12-三屏趋势系统/ml/short_optimization_test.py) | 做空优化测试脚本 |
+| [`ml/final_comparison.py`](../../12-三屏趋势系统/ml/final_comparison.py) | V2 vs 做空优化对比 |
+| [`ml/v2_vs_v3_comparison.py`](../../12-三屏趋势系统/ml/v2_vs_v3_comparison.py) | V2 vs V3对比回测 |
+| [`ml/philosophy_feature_engineer.py`](../../12-三屏趋势系统/ml/philosophy_feature_engineer.py) | 哲学贡献→ML特征工程 |
+| [`ml/LIGHTGBM_FEATURE_CATALOG.md`](../../12-三屏趋势系统/ml/LIGHTGBM_FEATURE_CATALOG.md) | LightGBM特征消费分类目录 |
+| [`ml/four_objective_framework_design.md`](../../12-三屏趋势系统/ml/four_objective_framework_design.md) | 四类目的+动态实践闭环设计 |
+| [`ml/v2_baseline_optimization_principles.md`](../../12-三屏趋势系统/ml/v2_baseline_optimization_principles.md) | 本文档 · V4基线优化原则 |
+| [`docs/TECHNICAL_DESIGN.md`](../../12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) | 技术设计文档 |
+| [`ENGINEERING_INDEX.md`](../../12-三屏趋势系统/ENGINEERING_INDEX.md) | 工程索引（完整版） |
 
 ---
 

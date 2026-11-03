@@ -28,7 +28,7 @@
 
 ### 2. 矛盾维度体系（C1-C8）
 
-来源：[contradiction_identifier.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L45-L54)
+来源：[contradiction_identifier.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L45-L54)
 
 | 维度 | 含义 | 路径来源 | 市场影响权重 |
 |---|---|---|---|
@@ -42,7 +42,7 @@
 
 ### 3. Cross-Attention 组件
 
-来源：[cross_attention.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py)
+来源：[cross_attention.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/cross_attention.py)
 
 #### 3.1 组件结构
 
@@ -76,7 +76,7 @@ MultiHeadCrossAttention(d_model=32, n_heads=8, dropout=0.1, factor_head_mask=Non
 
 #### 3.3 在 NeuralSDE 中的集成
 
-来源：[neural_sde_model.py#L301-L318](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/neural_sde_model.py#L301-L318)
+来源：[neural_sde_model.py#L301-L318](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/neural_sde_model.py#L301-L318)
 
 ```
 Q = q_proj(log_sig_t)              # (B, 1, cross_attn_dim)
@@ -97,7 +97,7 @@ drift = net([S_t, time, ctx, regime, transition])  # ctx 注入漂移项
 
 ### 4. 矛盾识别引擎
 
-来源：[contradiction_identifier.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py)
+来源：[contradiction_identifier.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py)
 
 #### 4.1 三步法
 
@@ -129,7 +129,7 @@ drift = net([S_t, time, ctx, regime, transition])  # ctx 注入漂移项
 
 #### 5.1 五维阻力场
 
-来源：[resistance_vector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/resistance_vector.py)
+来源：[resistance_vector.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/resistance_vector.py)
 
 | 维度 | 含义 | 计算方法 |
 |---|---|---|
@@ -138,7 +138,7 @@ drift = net([S_t, time, ctx, regime, transition])  # ctx 注入漂移项
 | R_flow | 量价效率 | Wyckoff effort/result |
 | R_reflexivity | 反射性 | Soros 4:3:3（corr/liq/sent） |
 
-**矛盾调制**（[resistance_vector.py#L438-L452](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/resistance_vector.py#L438-L452)）：
+**矛盾调制**（[resistance_vector.py#L438-L452](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/resistance_vector.py#L438-L452)）：
 ```
 if primary_direction == "long":
     R_up   *= (1 - 0.3 × strength)    # 上涨阻力减小
@@ -147,7 +147,7 @@ if primary_direction == "long":
 
 #### 5.2 最小阻力路径求解
 
-三级降级链（[hjb_solver.py#L18-L23](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L18-L23)）：
+三级降级链（[hjb_solver.py#L18-L23](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L18-L23)）：
 
 ```
 HJBPathSolver (PDE 逆向动态规划)
@@ -161,7 +161,7 @@ HJBPathSolver (PDE 逆向动态规划)
 
 #### 6.1 FOMC 事件窗口
 
-来源：[event_window_tracker.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/event_window_tracker.py)
+来源：[event_window_tracker.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/event_window_tracker.py)
 
 ```
 6 阶段:
@@ -183,7 +183,7 @@ HJBPathSolver (PDE 逆向动态规划)
 
 #### 6.2 债务周期
 
-来源：[debt_cycle_phase.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/debt_cycle_phase.py)
+来源：[debt_cycle_phase.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/debt_cycle_phase.py)
 
 - 信贷增速 > GDP 增速 → expansion
 - 信贷增速 < GDP 增速 + 利率上行 → contraction
@@ -191,7 +191,7 @@ HJBPathSolver (PDE 逆向动态规划)
 
 #### 6.3 矛盾漂移检测
 
-来源：[contradiction_shift_accumulator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py)
+来源：[contradiction_shift_accumulator.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py)
 
 - 量变：力量数值变化，排序不变
 - 质变：排序变化 + 结构性断裂（波动率制度转换/相关性断裂/形态转换）
@@ -307,7 +307,7 @@ HJBPathSolver (PDE 逆向动态规划)
 
 #### 7.3 现有外生因子强度评估器
 
-来源：[exogenous_strength_evaluator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py)
+来源：[exogenous_strength_evaluator.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py)
 
 3 维度 × 3 周期 = 9 个力量值：
 

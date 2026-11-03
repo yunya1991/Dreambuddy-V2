@@ -110,7 +110,7 @@
 | OBV_Trend | 量能 | 能量潮趋势 |
 | Keltner_Channel | 波动率 | 肯特纳通道突破 |
 
-代码位置: [`SCREEN1_INDICATORS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L568-L570)
+代码位置: [`SCREEN1_INDICATORS`](../../../experiments/ab-trading/screen_engine.py#L568-L570)
 
 #### 日线指标组
 
@@ -122,7 +122,7 @@
 | TEMA | 趋势 | 三重指数移动平均 |
 | EMA_Align_20_50_200 | 趋势 | 三条EMA排列方向 |
 
-代码位置: [`SCREEN2_INDICATORS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L572-L574)
+代码位置: [`SCREEN2_INDICATORS`](../../../experiments/ab-trading/screen_engine.py#L572-L574)
 
 #### 权重分配原则
 
@@ -131,7 +131,7 @@
 - **权重排名**：根据超额收益、夏普比率、胜率综合排名分配权重
 - **周线权重 > 日线权重**：周线 60%，日线 40%（周线准确度更高）
 
-代码位置: [`WEEKLY_WEIGHT`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L577-L578) / [`_calc_dynamic_weights()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1116-L1215)
+代码位置: [`WEEKLY_WEIGHT`](../../../experiments/ab-trading/screen_engine.py#L577-L578) / [`_calc_dynamic_weights()`](../../../experiments/ab-trading/screen_engine.py#L1116-L1215)
 
 ### 2.2 趋势方向判定 — 静态 + 三维动态
 
@@ -139,7 +139,7 @@
 
 对周线/日线各自的5个指标进行投票，多数决定方向（BULL/BEAR/NEUTRAL）。
 
-核心函数: [`_calc_trend_direction_static()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L927-L935)
+核心函数: [`_calc_trend_direction_static()`](../../../experiments/ab-trading/screen_engine.py#L927-L935)
 
 #### 三维动态融合（核心创新，动态优先）
 
@@ -155,7 +155,7 @@
 
 逆转分数 > 50% 时，方向前缀 `REVERSAL_`。
 
-核心函数: [`_calc_trend_direction_dynamic()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L938-L1014)
+核心函数: [`_calc_trend_direction_dynamic()`](../../../experiments/ab-trading/screen_engine.py#L938-L1014)
 
 #### 动态优先原则
 
@@ -169,7 +169,7 @@
 其他情况 → 以动态方向为准
 ```
 
-核心函数: [`_calc_trend_consistency_with_dynamics()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1017-L1106)
+核心函数: [`_calc_trend_consistency_with_dynamics()`](../../../experiments/ab-trading/screen_engine.py#L1017-L1106)
 
 ### 2.3 趋势一致性检测
 
@@ -190,7 +190,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 - **先验** 隐含在历史权重排名中
 - **周线 60%，日线 40%**（周线准确度更高）
 
-核心函数: [`_calc_bayesian_confidence()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1216-L1292)
+核心函数: [`_calc_bayesian_confidence()`](../../../experiments/ab-trading/screen_engine.py#L1216-L1292)
 
 ---
 
@@ -203,7 +203,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 | Screen1 周报 | 周线 | 宏观趋势方向、市场情绪 |
 | A1 日报 | 日线 | 短期事件驱动、资金流向 |
 
-基本面数据获取: [`_fetch_fundamental_data()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1303-L1338)
+基本面数据获取: [`_fetch_fundamental_data()`](../../../experiments/ab-trading/screen_engine.py#L1303-L1338)
 
 ---
 
@@ -219,7 +219,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 > **核心原则**：趋势方向以技术面为主，基本面影响置信度调整。
 
-核心函数: [`_fuse_technical_fundamental()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1513-L1569)
+核心函数: [`_fuse_technical_fundamental()`](../../../experiments/ab-trading/screen_engine.py#L1513-L1569)
 
 ---
 
@@ -241,7 +241,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 - 逆势加仓预算: 固定40%
 - 最大加仓次数: 1次（战略缓冲）
 
-代码位置: [`_POSITION_TIERS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_executor.py#L51-L57)
+代码位置: [`_POSITION_TIERS`](../../../experiments/ab-trading/screen_executor.py#L51-L57)
 
 ### 5.2 动态止损线
 
@@ -257,7 +257,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 **收盘价确认规则**：仅使用已收盘K线计算，当前未完成的K线不算跌破。
 **全部跌破时禁止开多仓**。
 
-核心函数: [`get_dynamic_stop_loss()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/strategy_params.py#L71-L170)
+核心函数: [`get_dynamic_stop_loss()`](../../../experiments/ab-trading/strategy_params.py#L71-L170)
 
 ### 5.3 波动率调整止盈/加仓幅度
 
@@ -273,7 +273,7 @@ BTC基准参数：
 vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 ```
 
-核心函数: [`get_vol_adjusted_params()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/strategy_params.py#L193-L219)
+核心函数: [`get_vol_adjusted_params()`](../../../experiments/ab-trading/strategy_params.py#L193-L219)
 
 ---
 
@@ -303,7 +303,7 @@ vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 - 反向时 -10%
 - 1h或4h任一同向即为 freqtrade_consistent = true
 
-核心函数: [`_fetch_freqtrade_signals()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1426-L1511)
+核心函数: [`_fetch_freqtrade_signals()`](../../../experiments/ab-trading/screen_engine.py#L1426-L1511)
 
 ### 6.2 跨周期数据对齐
 
@@ -318,7 +318,7 @@ vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 
 聚合规则：Open=首根开盘, High=最高, Low=最低, Close=末根收盘, Volume=求和。
 
-核心函数: [`_resample_candles()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1340-L1398)
+核心函数: [`_resample_candles()`](../../../experiments/ab-trading/screen_engine.py#L1340-L1398)
 
 ### 6.3 加仓机制
 
@@ -335,7 +335,7 @@ vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 - **预算**: 新置信度对应仓位 - 入场仓位
 - **与逆势加仓互斥**: 触发顺势加仓时需检查未触发过逆势加仓
 
-代码位置: [`screen_executor.py 1060-1155`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_executor.py#L1060-L1155)
+代码位置: [`screen_executor.py 1060-1155`](../../../experiments/ab-trading/screen_executor.py#L1060-L1155)
 
 ### 6.4 执行决策（五大算法模式）
 
@@ -346,7 +346,7 @@ vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 4. 其他 → WAIT
 ```
 
-核心函数: [`_five_algo_decision()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_executor.py#L447-L518)
+核心函数: [`_five_algo_decision()`](../../../experiments/ab-trading/screen_executor.py#L447-L518)
 
 ---
 
@@ -407,7 +407,7 @@ vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 }
 ```
 
-核心函数: [`compute_full_trading_signal()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L1576-L1707)
+核心函数: [`compute_full_trading_signal()`](../../../experiments/ab-trading/screen_engine.py#L1576-L1707)
 
 ---
 
@@ -471,7 +471,7 @@ vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 
 BTC币种使用全六维评分，其他币种使用三维评分（技术65/宏观20/跨市场15）。
 
-代码位置: [`CANDIDATE_COINS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py#L25-L35)
+代码位置: [`CANDIDATE_COINS`](../../../experiments/ab-trading/screen_engine.py#L25-L35)
 
 ---
 

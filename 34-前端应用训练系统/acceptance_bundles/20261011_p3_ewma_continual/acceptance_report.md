@@ -31,25 +31,25 @@
 
 ### P3.1 EWMA 衰减 (SPEC §3.2 行216, §5.4 行1079)
 - SPEC: `decayAll(): 每次训练后调用: age++, decayedWeight = weight × exp(-age × DECAY_RATE)`
-- 代码: [replay-buffer.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/replay-buffer.ts) L210-215 `decayAll()` 实现
+- 代码: [replay-buffer.ts](../../../3.1-FRONTEND/src/lib/replay-buffer.ts) L210-215 `decayAll()` 实现
 - 运行: `python3 scripts/run_continual_training.py` 阶段4 手动5次 incremental
 - 日志: `C层 | avgWeight 0.1643 → 0.0996 | step 3→8 | ✅ EWMA 衰减`
 
 ### P3.2 C层 ruleArchive (SPEC §3.3.3 行398-402, §5.4 行1080)
 - SPEC: `weight < 0.05 → 移入 ruleArchive（保留在档案中，可恢复）`
-- 代码: [c-reflection-training-loop.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/c-reflection-training-loop.ts) L249-258 规则归档
+- 代码: [c-reflection-training-loop.ts](../../../3.1-FRONTEND/src/lib/c-reflection-training-loop.ts) L249-258 规则归档
 - 测试: `c-reflection-training-loop.test.ts` P3.2 验证测试 (3个) GREEN
 - 日志: `step 0→3 (Δ=+3) | ✅ 持续训练` (trainIncremental 触发 ruleArchive 逻辑)
 
 ### P3.3 LLM层 KL散度约束 (SPEC §3.3.5 行503-507, §5.4 行1074)
 - SPEC: `KL > 0.3 → effectiveLambda = ewmaLambda * 0.5 (KL过大则降速)`
-- 代码: [llm-prompt-training-loop.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/llm-prompt-training-loop.ts) L276-284 KL约束回退
+- 代码: [llm-prompt-training-loop.ts](../../../3.1-FRONTEND/src/lib/llm-prompt-training-loop.ts) L276-284 KL约束回退
 - 测试: `llm-prompt-training-loop.test.ts` P3.3 验证测试 (3个) GREEN
 - 日志: `LLM | step 0→6 (Δ=+6) | avgW=0.143 | age=6 | ✅ 持续训练`
 
 ### P3.4 持续训练脚本 (SPEC §5.4 行1075, §0.1 行28)
 - SPEC: `驱动方: 算法自驱动（数据到达即学习）`
-- 代码: [run_continual_training.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py) 新建
+- 代码: [run_continual_training.py](../../../34-前端应用训练系统/scripts/run_continual_training.py) 新建
 - 运行: `python3 scripts/run_continual_training.py --limit 30`
 - 日志: `持续训练 (数据到达即学习): 5/5 层触发`
 

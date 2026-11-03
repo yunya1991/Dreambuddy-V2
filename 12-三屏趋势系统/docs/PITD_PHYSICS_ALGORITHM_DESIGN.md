@@ -836,7 +836,7 @@ if decision["action"] in ("ENTER_LONG", "ENTER_SHORT") and daily_df is not None 
 - 波浪策略：补充仓位（3成基础，上限5成）
 - 物理引擎：作为信号评估器调节波浪仓位（与方向1相同角色）
 
-**新增文件**：[ml/ewave_strategy_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/ewave_strategy_adapter.py)
+**新增文件**：[ml/ewave_strategy_adapter.py](../../12-三屏趋势系统/ml/ewave_strategy_adapter.py)
 - `EWaveStrategyAdapter` 类：封装波浪识别+物理评估+仓位融合
 - `WaveConfig` 数据类：配置参数（base_position, max_position等）
 
@@ -857,7 +857,7 @@ if decision["action"] in ("ENTER_LONG", "ENTER_SHORT") and daily_df is not None 
 
 #### 集成位置
 
-**集成点B**：[engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L1365-L1394) 行1365-1394
+**集成点B**：[engine.py](../../12-三屏趋势系统/engine.py#L1365-L1394) 行1365-1394
 
 紧接方向1物理置信度调节之后、构造 `final_signal` 之前：
 

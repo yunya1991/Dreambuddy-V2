@@ -3,9 +3,9 @@
 > **版本**: v0.5
 > **更新日期**: 2026-11-02（C5 二批认知域定性：§3.1 注 adapter 合法区口径 + §6/§9 回写；v0.4 = 2026-11-01 C11/C12/C13 落地 + §9 全量验收回写；v0.3 = 2026-10-30 新增 §5.1 G0 前置门禁）
 > **状态**: 本地评审已闭环，**待用户确认后进入阶段 4 云端评审（D1-D8）**
-> **本地评审报告**: [l0-three-layer-review-round1.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-three-layer-review-round1.md)
+> **本地评审报告**: [l0-three-layer-review-round1.md](../../../.trae/documents/l0-three-layer-review-round1.md)
 > **调研对象**: **云端 `43.160.201.117`（Ubuntu 24.04.5，4C16G/180G）为交付目标**；本地 macOS 仅作代理证据与训练端，一致性核对见 §1.1
-> **依据**: [l0-foundation-research-report.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.trae/documents/l0-foundation-research-report.md) 第八章（三层目标专项审计与对标）
+> **依据**: [l0-foundation-research-report.md](../../../.trae/documents/l0-foundation-research-report.md) 第八章（三层目标专项审计与对标）
 > **上游**: SPEC-A（五能力现状与断点 S1-S7）、SPEC-B（协同化路线图 B1-B9）
 > **关系**: 本 SPEC **吸收并重排** SPEC-B —— SPEC-B 的 B1/B3/B4 归入 L0-I，B2/B5/B6/B7 归入 L0-P，B8 归入 L0-P，B9 归入 L0-S（见 §7）
 > **约束**: 单人维护、FAIL-OPEN、云端 4C16G、禁止 MLflow/K8s/Kafka/DataHub/Backstage 运行时、零回归（HC-1a 开关回落）、评审只读、本 SPEC 不改任何代码

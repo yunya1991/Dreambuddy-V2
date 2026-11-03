@@ -13,7 +13,7 @@
 ## §1 背景 & 动机（为什么做）
 
 ### 现状空壳
-[five_domain_feature_computer.py L574-582](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-%E6%98%93%E7%BB%8F%E6%8E%A8%E7%90%86%E7%B3%BB%E7%BB%9F/scripts/memory_l4/five_domain_feature_computer.py#L574-L582) 当前实现：
+[five_domain_feature_computer.py L574-582](../../../11-%E6%98%93%E7%BB%8F%E6%8E%A8%E7%90%86%E7%B3%BB%E7%BB%9F/scripts/memory_l4/five_domain_feature_computer.py#L574-L582) 当前实现：
 ```python
 def _fetch_news_72h_limit200(self) -> List[Dict[str, Any]]:
     try:

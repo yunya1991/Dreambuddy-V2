@@ -203,7 +203,7 @@ turn/end
 
 ### 3.1 Dreambuddy OS 内核 SKILL 摘要
 
-来源: [SKILL.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md)
+来源: [SKILL.md](../../1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md)
 
 **SACG 四层架构**：
 ```
@@ -216,11 +216,11 @@ G 层 Graph 存储层  — GraphCompressor · 执行记录持久化 · 上下文
 **核心信条**: 调用的不重复建设；能力清单在总架构中已存在；架构检查模块可定期验证执行效果。
 
 **关键文件**：
-- [registry/node_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/registry/node_registry.py): NodeRegistry 节点唯一真相源，支持 register/get/list/unregister，YAML 批量加载，线程安全
-- [registry/base.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/registry/base.py): BaseNode 模板方法 — validate → execute_core → 异常 fallback → 自动计时 → F 链 EWMA+MAD 信号平滑
-- [adapters/base.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/adapters/base.py): AdapterRegistry — FunctionAdapter/SkillAdapter/APIAdapter 三适配器分发
-- [evolution/engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/evolution/engine.py): EvolutionEngine — LessonDistiller + GapAnalyzer + NodeOptimizer + TradingAnalysisEvaluator，含沙箱验证（新方案回测得分 > 现有 × 1.1）
-- G 层快照: [data/graph_store/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/data/graph_store/) 当前为 `ckpt_{timestamp}_{hash}.json` 快照式
+- [registry/node_registry.py](../../1-ARCHITECTURE/dreamos/registry/node_registry.py): NodeRegistry 节点唯一真相源，支持 register/get/list/unregister，YAML 批量加载，线程安全
+- [registry/base.py](../../1-ARCHITECTURE/dreamos/registry/base.py): BaseNode 模板方法 — validate → execute_core → 异常 fallback → 自动计时 → F 链 EWMA+MAD 信号平滑
+- [adapters/base.py](../../1-ARCHITECTURE/dreamos/adapters/base.py): AdapterRegistry — FunctionAdapter/SkillAdapter/APIAdapter 三适配器分发
+- [evolution/engine.py](../../1-ARCHITECTURE/dreamos/evolution/engine.py): EvolutionEngine — LessonDistiller + GapAnalyzer + NodeOptimizer + TradingAnalysisEvaluator，含沙箱验证（新方案回测得分 > 现有 × 1.1）
+- G 层快照: [data/graph_store/](../../1-ARCHITECTURE/dreamos/data/graph_store/) 当前为 `ckpt_{timestamp}_{hash}.json` 快照式
 
 ### 3.2 维度对照表
 
@@ -260,7 +260,7 @@ G 层 Graph 存储层  — GraphCompressor · 执行记录持久化 · 上下文
 
 #### P0-1: Append-only 事件流升级 G 层
 
-**现状**: G 层是 [data/graph_store/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/data/graph_store/) 下的 `ckpt_{timestamp}_{hash}.json` 快照式存储，每轮一个 JSON。
+**现状**: G 层是 [data/graph_store/](../../1-ARCHITECTURE/dreamos/data/graph_store/) 下的 `ckpt_{timestamp}_{hash}.json` 快照式存储，每轮一个 JSON。
 
 **借鉴点**: Harness 的 `session/event` 机制 — 所有 model-visible 内容都 append 到事件流，支持 fork/resume/replay/search。
 
@@ -299,7 +299,7 @@ G 层 Graph 存储层  — GraphCompressor · 执行记录持久化 · 上下文
 
 #### P1-1: Capability Seams 三角色分离
 
-**现状**: [adapters/base.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/adapters/base.py) 的 Adapter 已有 FunctionAdapter/SkillAdapter/APIAdapter 三种，但 Service Definition / Provider / Consumer 三角色未明确分离。
+**现状**: [adapters/base.py](../../1-ARCHITECTURE/dreamos/adapters/base.py) 的 Adapter 已有 FunctionAdapter/SkillAdapter/APIAdapter 三种，但 Service Definition / Provider / Consumer 三角色未明确分离。
 
 **借鉴点**: Harness 的 seam 模型 — 定义能力、实现能力、向模型呈现能力是三件不同的事。
 
@@ -438,12 +438,12 @@ Harness 有 `dsh-plugin` topic。DreamOS 暂为专用系统不需要社区生态
   - DeepThink: https://deepthink.ltd/blog/deepseek-harness-rc8-claude-codex-subagent-2026/
   - 阿里云 Model Studio 集成: https://www.alibabacloud.com/help/en/model-studio/deepseek-harness
 - DreamOS 内部参考:
-  - [dreambuddy-os SKILL.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md)
-  - [NodeRegistry](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/registry/node_registry.py)
-  - [BaseNode](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/registry/base.py)
-  - [AdapterRegistry](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/adapters/base.py)
-  - [EvolutionEngine](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/evolution/engine.py)
-  - [G 层快照目录](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/data/graph_store/)
+  - [dreambuddy-os SKILL.md](../../1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md)
+  - [NodeRegistry](../../1-ARCHITECTURE/dreamos/registry/node_registry.py)
+  - [BaseNode](../../1-ARCHITECTURE/dreamos/registry/base.py)
+  - [AdapterRegistry](../../1-ARCHITECTURE/dreamos/adapters/base.py)
+  - [EvolutionEngine](../../1-ARCHITECTURE/dreamos/evolution/engine.py)
+  - [G 层快照目录](../../1-ARCHITECTURE/dreamos/data/graph_store/)
 
 ---
 

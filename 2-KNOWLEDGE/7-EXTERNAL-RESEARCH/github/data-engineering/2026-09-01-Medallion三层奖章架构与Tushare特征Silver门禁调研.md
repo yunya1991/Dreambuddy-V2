@@ -76,57 +76,57 @@
 > **坐标格式说明**：以下 11 处代码段均为本次调研审计时实际读取的内容，行号 Lx-Ly 精确对应各文件 2026-09-01 工作副本。
 
 ### 坐标 1 · 标准三级清洗链串联定义
-[standard_chain.py L3-L4](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L3-L4)
+[standard_chain.py L3-L4](../../../../21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L3-L4)
 
 文件头注释明确标注清洗链顺序为 **① InfNaNImpute → ② RobustScalerIQR → ③ VIFDropper → ④ IVDropper**，并写明 L1 兜底原则：任一步异常 → Raw 透传 + log.warning（永不阻塞）。当前实现中 RobustScalerIQR 对应二级异常过滤（IQR 基），但 3σ 粗筛与 ATR 自适应尚未显式纳入，需在 P1 迭代中前置插入两级。**状态**：生产运行中；缺少 3σ+ATR 两级，三级链未闭环。
 
 ### 坐标 2 · 清洗链 4 步构造器装配
-[standard_chain.py L34-L45](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L34-L45)
+[standard_chain.py L34-L45](../../../../21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L34-L45)
 
 构造函数将 4 个 Step 以 tuple 列表 `self.steps` 形式装配。注意关键默认参数：VIFDropper 的 `skip_if` 默认为 `lambda X: len(X) < 1000`（样本量不足 1000 时自动跳过 VIF，避免矩阵退化）、IVDropper 的 `skip_if` 默认为 `lambda y: y is None`（无监督训练场景不做 IV 筛选，避免全列被删）。这两项默认值直接对应反模式 D 的修复方案。**状态**：生产运行中；默认参数合理。
 
 ### 坐标 3 · L1 兜底 fit_transform 异常捕获
-[standard_chain.py L52-L65](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L52-L65)
+[standard_chain.py L52-L65](../../../../21-特征工程中心/feature_hub/cleaning_chain/standard_chain.py#L52-L65)
 
 `fit_transform` 方法对每一步 step 调用包在 `try/except Exception` 块中。任一 step 抛异常时：写入 warning 级日志（包含步骤名与异常信息 `fail-open` 标识）→ 返回当前半成品输出 `out`（即上一步成功的结果）→ 不再继续后续步骤。注意 IVDropper 单独传 `y` 参数处理有监督场景。该实现与 §1 结论④「单步骤异常返回上一步半成品」完全一致。**状态**：生产运行中；已覆盖。
 
 ### 坐标 4 · RobustScalerIQR 基于 IQR 稳健缩放
-[cleaning_steps.py L39-L54](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/cleaning_steps.py#L39-L54)
+[cleaning_steps.py L39-L54](../../../../21-特征工程中心/feature_hub/cleaning_chain/cleaning_steps.py#L39-L54)
 
 `RobustScalerIQR` 类中，按列循环计算 `median`、`Q1(0.25)`、`Q3(0.75)`、`IQR = Q3 - Q1`。关键分支：`if iqr == 0 or pd.isna(iqr)` → 直接 continue，保留原值不缩放（恒等变换），避免除零错误。这是 Silver 门禁中 IQR 二级过滤的核心计算复用点（可直接从这里导出 IQR 阈值用于异常标记，无需二次计算）。**状态**：生产运行中；IQR=0 分支正确。
 
 ### 坐标 5 · InfNaNImpute 缺失插补三级兜底
-[cleaning_steps.py L19-L36](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/cleaning_chain/cleaning_steps.py#L19-L36)
+[cleaning_steps.py L19-L36](../../../../21-特征工程中心/feature_hub/cleaning_chain/cleaning_steps.py#L19-L36)
 
 InfNaNImpute 执行三级插补策略：① `replace([inf, -inf], nan)` 统一转为 NaN；② `ffill(limit=3)` 向前填充最多 3 个连续缺失（对应 Silver 层 ffill 插补规则）；③ 若 median 仍为 NaN（即全列缺失），填充常数 50.0。该策略与 §1 结论①中 Silver 层缺失插补规格（≤3 根 ffill，>3 根 median，全列缺失中性常数 50）精确对齐，常数 50 与五域各域 0-100 原始分的中值匹配。**状态**：生产运行中；策略与 Silver 规格一致。
 
 ### 坐标 6 · FeaturePipeline 调度：模块级异常跳过 + 清洗链调用
-[feature_pipeline.py L87-L134](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/pipeline/feature_pipeline.py#L87-L134)
+[feature_pipeline.py L87-L134](../../../../21-特征工程中心/feature_hub/pipeline/feature_pipeline.py#L87-L134)
 
 代码分三段：(1) L87-L126 `for mod_name in modules` 循环，对每个本地模块或 FR 注册模块调用 compute，异常被捕获后写入 `meta["modules_failed"]` 并跳过（不抛、不中断），其他模块正常拼接列（加 `<mod_name>__` 前缀防冲突）；(2) L129 调用 `self._cleaning_chain.fit_transform(features, y=y)` 执行 4 步清洗；(3) L131-L134 写入 meta：feature_count 列数、modules_run 成功列表、extra_ctx 聚合。本实现对应 Silver 层「模块并行产出 → 统一清洗 → 列拼接」的数据流。**状态**：生产运行中；异常日志需补 Lark 告警 Hook。
 
 ### 坐标 7 · GoldReader 设计原则：DAL 异常空 DF 兜底
-[gold_reader.py L1-L10](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/gold_reader.py#L1-L10)
+[gold_reader.py L1-L10](../../../../21-特征工程中心/feature_hub/gold_reader.py#L1-L10)
 
 文件头明确列出三条设计原则：① DAL 异常 → 返回空 DataFrame（绝不抛）；② 空查询结果 → 返回空 DataFrame；③ OHLCV 可外部传入或从 18-DataCenter 自动拉取。这三条原则与 FAIL-OPEN 铁律的 Gold 层读取分支完全吻合：即使 MarketMacroRepo 数据库锁死或 18-DataCenter 拉取失败，上游 FeaturePipeline 仍拿到非 None 的空 DataFrame，后续代码用 `if not df.empty` 判断即可安全降级。**状态**：生产运行中；兜底逻辑完整。
 
 ### 坐标 8 · GoldReader 宏观指标全量合并 + 时间戳对齐
-[gold_reader.py L130-L177](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/gold_reader.py#L130-L177)
+[gold_reader.py L130-L177](../../../../21-特征工程中心/feature_hub/gold_reader.py#L130-L177)
 
 `read_all_macro` 依次调用 fear_greed/funding_rate/open_interest/long_short_ratio/taker_volume 五项单指标读取，每步在 `if not fg.empty` 条件下做列重命名与 `pd.to_datetime(..., utc=True, errors="coerce")` 强制 UTC 时间戳转换，最后通过逐次 `pd.merge(..., on="timestamp", how="outer")` 做全外连接并排序。对应 Silver 层「多源时间戳对齐率 ≥98%」的门禁要求：`errors="coerce"` 将非法时间戳统一转为 NaT，后续 merge 丢弃，保证对齐质量。**状态**：生产运行中。
 
 ### 坐标 9 · H3 策略出口：双路径开关 + 异常回退原始 FE
-[h3_wrapper.py L1-L5](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/h3_wrapper.py#L1-L5) 与 [h3_wrapper.py L104-L143](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/h3_wrapper.py#L104-L143)
+[h3_wrapper.py L1-L5](../../../../21-特征工程中心/feature_hub/h3_wrapper.py#L1-L5) 与 [h3_wrapper.py L104-L143](../../../../21-特征工程中心/feature_hub/h3_wrapper.py#L104-L143)
 
 H3 wrapper 设计三段式：(1) L38-L41 环境变量 `EN_FEATUREHUB_<STRATEGY>` 控制是否启用 FeatureHub 路径（false 或未设置则直接调用 original_fe_fn）；(2) L107-L137 成功路径：构建 Pipeline → 执行 run → strip_prefix 去除 `<module>__` 前缀（灰度对齐传统 FE 列名）→ 返回 DataFrame 或 tuple；(3) L138-L143 异常捕获：写入 warning 日志并调用 `original_fe_fn()` 回退传统 FE 实现。与 §1 结论④ 兜底层次的第 5 级「策略级回退」严格对应。**状态**：生产运行中；灰度接入开关完备。
 
 ### 坐标 10 · L1 兜底 5 类异常注入综合 TC
-[test_l1_failopen.py L1-L11](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/tests/unit/test_l1_failopen.py#L1-L11) 与 [test_l1_failopen.py L172-L188](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/tests/unit/test_l1_failopen.py#L172-L188)
+[test_l1_failopen.py L1-L11](../../../../21-特征工程中心/tests/unit/test_l1_failopen.py#L1-L11) 与 [test_l1_failopen.py L172-L188](../../../../21-特征工程中心/tests/unit/test_l1_failopen.py#L172-L188)
 
 文件头列出 T26 测试套件覆盖的 5 类异常注入场景：模块 KeyError / InfNaN 全脏数据 / RobustScalerIQR 异常输入 / VIF 奇异矩阵 / IV 标签长度不匹配。综合测试 `test_t26_g_combined_no_raise`（L172-L188）同时喂入空 DF、全 NaN、全共线、字符串列 + 不匹配 y 四类极端输入，遍历后断言 `out is not None` 且 `isinstance(out, pd.DataFrame)`。对应 §1 结论④ 铁律「永不返回 None、永不抛异常」的自动化回归。**状态**：TC 通过。
 
 ### 坐标 11 · 五域基本面注入：天域 ATR + RobustScaler(IQR) 双复用
-[five_domain_fc.py L45-L48](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/modules/five_domain_fc.py#L45-L48) 与 [five_domain_fc.py L74-L86](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/21-特征工程中心/feature_hub/modules/five_domain_fc.py#L74-L86)
+[five_domain_fc.py L45-L48](../../../../21-特征工程中心/feature_hub/modules/five_domain_fc.py#L45-L48) 与 [five_domain_fc.py L74-L86](../../../../21-特征工程中心/feature_hub/modules/five_domain_fc.py#L74-L86)
 
 五域「天」域市场环境计算：L45-L48 `TR = rolling(14).mean(high-low)` → `TR_pct = TR/close` → `60 日 rank(pct=True)*100` 归一化至 0-100，使用完全相同的 14 日 TR 中间变量作为三级过滤链中动态 ATR 的输入来源（可在同一 DataFrame 中增加中间列 `_atr_14`，减少约 25% 的 rolling 重复计算）。L74-L86 五域输出标准化采用 `(x - median)/IQR` RobustScaler（IQR=0 时输出 `x-median`），与 cleaning_chain 坐标 4 的 RobustScalerIQR 实现一致，说明 Gold 层 Schema 验证中「五域输出 ∈[-3, 3] 的概率 >95%」这一断言有理论依据。**状态**：生产运行中；A 股引入时需新增 asset_class="equity_cn" 分支适配。
 

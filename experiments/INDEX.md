@@ -34,8 +34,8 @@ experiments/
 
 | 文件 | Agent | 功能 |
 |------|-------|------|
-| [agent_a_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_a_runner.py) | A | Raw Claude 主流程（SOP 10步：记忆→超时检查→离场→扫描→LLM决策→连败保护→执行→日志→记忆更新） |
-| [agent_b_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/agents/agent_b_runner.py) | B | DreamBuddy v2 主流程（三层架构整合，实际余额资金分配） |
+| [agent_a_runner.py](../experiments/ab-trading/agents/agent_a_runner.py) | A | Raw Claude 主流程（SOP 10步：记忆→超时检查→离场→扫描→LLM决策→连败保护→执行→日志→记忆更新） |
+| [agent_b_runner.py](../experiments/ab-trading/agents/agent_b_runner.py) | B | DreamBuddy v2 主流程（三层架构整合，实际余额资金分配） |
 
 ### 1.2 core/ — 核心引擎
 
@@ -43,17 +43,17 @@ experiments/
 
 | 文件 | 功能 | 关键特性 |
 |------|------|----------|
-| [agent_a_llm.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_llm.py) | Agent A LLM 决策 | SKILL框架调用，多Provider降级 |
-| [agent_a_memory.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/agent_a_memory.py) | Agent A 记忆系统 | 教训管理、大师切换、连败保护48h超时、倒计时 |
-| [chain_router.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_router.py) | Agent B 链路执行引擎 | A0矛盾内置、做梦部、治理环、equity传参、动态追加 |
-| [chain_planner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_planner.py) | 零Token链路规划器 | 四维过滤（预算/知识库/历史/标的） |
-| [intent_gateway.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/intent_gateway.py) | 意图识别层 | 六种意图类型，本地零Token打分 |
-| [classic_driver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/classic_driver.py) | Classic模式驱动 | 使用实际余额进行资金分配 |
-| [trading_memory.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/trading_memory.py) | Agent B 交易记忆 | 跨session记忆持久化 |
-| [exit_module.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/exit_module.py) | 离场模块 | L1基础离场 + L2 LLM智能调仓 |
-| [llm_client.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/llm_client.py) | LLM 客户端 | 多Provider（Trae/DeepSeek/Rule） |
-| [graph_orchestrator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/graph_orchestrator.py) | 图编排器 | A/C/F三链编排 |
-| [graph_checkpointer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/graph_checkpointer.py) | 图检查点 | 状态持久化 |
+| [agent_a_llm.py](../experiments/ab-trading/core/agent_a_llm.py) | Agent A LLM 决策 | SKILL框架调用，多Provider降级 |
+| [agent_a_memory.py](../experiments/ab-trading/core/agent_a_memory.py) | Agent A 记忆系统 | 教训管理、大师切换、连败保护48h超时、倒计时 |
+| [chain_router.py](../experiments/ab-trading/core/chain_router.py) | Agent B 链路执行引擎 | A0矛盾内置、做梦部、治理环、equity传参、动态追加 |
+| [chain_planner.py](../experiments/ab-trading/core/chain_planner.py) | 零Token链路规划器 | 四维过滤（预算/知识库/历史/标的） |
+| [intent_gateway.py](../experiments/ab-trading/core/intent_gateway.py) | 意图识别层 | 六种意图类型，本地零Token打分 |
+| [classic_driver.py](../experiments/ab-trading/core/classic_driver.py) | Classic模式驱动 | 使用实际余额进行资金分配 |
+| [trading_memory.py](../experiments/ab-trading/core/trading_memory.py) | Agent B 交易记忆 | 跨session记忆持久化 |
+| [exit_module.py](../experiments/ab-trading/core/exit_module.py) | 离场模块 | L1基础离场 + L2 LLM智能调仓 |
+| [llm_client.py](../experiments/ab-trading/core/llm_client.py) | LLM 客户端 | 多Provider（Trae/DeepSeek/Rule） |
+| [graph_orchestrator.py](../experiments/ab-trading/core/graph_orchestrator.py) | 图编排器 | A/C/F三链编排 |
+| [graph_checkpointer.py](../experiments/ab-trading/core/graph_checkpointer.py) | 图检查点 | 状态持久化 |
 
 #### core/nodes/ — 节点定义
 
@@ -89,7 +89,7 @@ experiments/
 
 | 文件 | 功能 |
 |------|------|
-| [aster_spot.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行（开仓/平仓/查询） |
+| [aster_spot.py](../experiments/ab-trading/execution/aster_spot.py) | Hyperliquid 合约执行（开仓/平仓/查询） |
 | okx_spot.py | OKX 现货执行（预留） |
 | onchain_tpsl.py | 链上止盈止损 |
 | `hyperliquid/utils/signing.py` | Hyperliquid 签名工具 |
@@ -98,53 +98,53 @@ experiments/
 
 | 文件 | 功能 |
 |------|------|
-| [scorecard.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/scoring/scorecard.py) | DecisionLog 结构定义与保存 |
+| [scorecard.py](../experiments/ab-trading/scoring/scorecard.py) | DecisionLog 结构定义与保存 |
 
 ### 1.5 docs/ — 技术文档
 
 | 文件 | 版本 | 内容 |
 |------|------|------|
-| [agent_a_trading_framework.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/agent_a_trading_framework.md) | v2.1 | Agent A 框架文档（连败保护48h超时、执行异常保护、风控门禁） |
-| [agent_b_trading_framework.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/agent_b_trading_framework.md) | v2.1 | Agent B 框架文档（实际余额资金分配、equity传参） |
-| [trend-screen-system-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/trend-screen-system-design.md) | - | 三屏趋势系统设计 |
+| [agent_a_trading_framework.md](../experiments/ab-trading/docs/agent_a_trading_framework.md) | v2.1 | Agent A 框架文档（连败保护48h超时、执行异常保护、风控门禁） |
+| [agent_b_trading_framework.md](../experiments/ab-trading/docs/agent_b_trading_framework.md) | v2.1 | Agent B 框架文档（实际余额资金分配、equity传参） |
+| [trend-screen-system-design.md](../experiments/ab-trading/docs/trend-screen-system-design.md) | - | 三屏趋势系统设计 |
 
 ### 1.6 顶层脚本
 
 | 文件 | 功能 |
 |------|------|
-| [monitor.html](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/monitor.html) | AB Trading 监控页面（风控门禁/倒计时/持仓/日志） |
-| [orchestrator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/orchestrator.py) | AB 调度器 |
-| [export_state.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/export_state.py) | 状态导出（供监控页面读取） |
-| [bridge_server.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/bridge_server.py) | FastAPI 桥接服务器 |
-| [screen_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_engine.py) | 三屏趋势引擎 |
-| [screen_executor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_executor.py) | 三屏执行器 |
-| [screen_orchestrator.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/screen_orchestrator.py) | 三屏调度器 |
-| [mode_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/mode_manager.py) | 模式管理（AB/Screen切换） |
-| [evolution_scheduler.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/evolution_scheduler.py) | 进化调度器 |
-| [fundamental_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/fundamental_bridge.py) | 基本面数据桥接 |
-| [indicator_library.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/indicator_library.py) | 指标库 |
-| [ml_inference.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/ml_inference.py) | ML 推理 |
-| [run_agent_b_cycle.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/run_agent_b_cycle.py) | Agent B 单循环运行器（2026-10-11 新增） |
-| [dreamos_batch_analyze_direct.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/dreamos_batch_analyze_direct.py) | DreamOS 批量分析直连（2026-10-11 新增） |
-| [install_evolution_launchd.sh](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/install_evolution_launchd.sh) | 进化 launchd 安装脚本（2026-10-11 新增） |
+| [monitor.html](../experiments/ab-trading/monitor.html) | AB Trading 监控页面（风控门禁/倒计时/持仓/日志） |
+| [orchestrator.py](../experiments/ab-trading/orchestrator.py) | AB 调度器 |
+| [export_state.py](../experiments/ab-trading/export_state.py) | 状态导出（供监控页面读取） |
+| [bridge_server.py](../experiments/ab-trading/bridge_server.py) | FastAPI 桥接服务器 |
+| [screen_engine.py](../experiments/ab-trading/screen_engine.py) | 三屏趋势引擎 |
+| [screen_executor.py](../experiments/ab-trading/screen_executor.py) | 三屏执行器 |
+| [screen_orchestrator.py](../experiments/ab-trading/screen_orchestrator.py) | 三屏调度器 |
+| [mode_manager.py](../experiments/ab-trading/mode_manager.py) | 模式管理（AB/Screen切换） |
+| [evolution_scheduler.py](../experiments/ab-trading/evolution_scheduler.py) | 进化调度器 |
+| [fundamental_bridge.py](../experiments/ab-trading/fundamental_bridge.py) | 基本面数据桥接 |
+| [indicator_library.py](../experiments/ab-trading/indicator_library.py) | 指标库 |
+| [ml_inference.py](../experiments/ab-trading/ml_inference.py) | ML 推理 |
+| [run_agent_b_cycle.py](../experiments/ab-trading/run_agent_b_cycle.py) | Agent B 单循环运行器（2026-10-11 新增） |
+| [dreamos_batch_analyze_direct.py](../experiments/ab-trading/dreamos_batch_analyze_direct.py) | DreamOS 批量分析直连（2026-10-11 新增） |
+| [install_evolution_launchd.sh](../experiments/ab-trading/install_evolution_launchd.sh) | 进化 launchd 安装脚本（2026-10-11 新增） |
 
 ### 1.6.1 顶层测试脚本（2026-10-11 新增）
 
 | 文件 | 功能 |
 |------|------|
-| [test_trend_wallet.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_trend_wallet.py) | 趋势钱包测试 |
-| [test_stress_test.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_stress_test.py) | 压力测试 |
-| [test_node_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_node_registry.py) | 节点注册表测试 |
-| [test_module_interfaces.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_module_interfaces.py) | 模块接口测试 |
-| [test_modular.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_modular.py) | 模块化测试 |
-| [test_dynamic_intent_recognizer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/test_dynamic_intent_recognizer.py) | 动态意图识别测试 |
+| [test_trend_wallet.py](../experiments/ab-trading/test_trend_wallet.py) | 趋势钱包测试 |
+| [test_stress_test.py](../experiments/ab-trading/test_stress_test.py) | 压力测试 |
+| [test_node_registry.py](../experiments/ab-trading/test_node_registry.py) | 节点注册表测试 |
+| [test_module_interfaces.py](../experiments/ab-trading/test_module_interfaces.py) | 模块接口测试 |
+| [test_modular.py](../experiments/ab-trading/test_modular.py) | 模块化测试 |
+| [test_dynamic_intent_recognizer.py](../experiments/ab-trading/test_dynamic_intent_recognizer.py) | 动态意图识别测试 |
 
 ### 1.7 skills/ — SKILL 定义
 
 | 文件 | 功能 |
 |------|------|
-| [agent-a-trading/SKILL.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/skills/agent-a-trading/SKILL.md) | Agent A SKILL 定义 |
-| [screen-martin-trading/SKILL.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/skills/screen-martin-trading/SKILL.md) | Agent B SKILL 定义 |
+| [agent-a-trading/SKILL.md](../experiments/ab-trading/skills/agent-a-trading/SKILL.md) | Agent A SKILL 定义 |
+| [screen-martin-trading/SKILL.md](../experiments/ab-trading/skills/screen-martin-trading/SKILL.md) | Agent B SKILL 定义 |
 
 ### 1.8 config/ — 环境配置
 
@@ -181,7 +181,7 @@ experiments/
 
 | 文件 | 功能 |
 |------|------|
-| [agent_c.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/agent_c/agent_c.py) | Agent C 预留入口 |
+| [agent_c.py](../experiments/agent_c/agent_c.py) | Agent C 预留入口 |
 
 ---
 

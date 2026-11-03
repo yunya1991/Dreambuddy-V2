@@ -84,7 +84,7 @@
 
 ### 1.1 C-Drive Agent 现状
 
-**文件**: [c_drive_agent.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py)
+**文件**: [c_drive_agent.py](../1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py)
 
 **现有阈值** (L200-207):
 | 常量 | 值 | 含义 |
@@ -110,7 +110,7 @@
 
 ### 1.2 广义大认知系统现状
 
-**SPEC**: [SPEC-CognitiveSystem-Evolution.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/35-广义认知系统协作模块/SPEC-CognitiveSystem-Evolution.md) — P0-P3 24/24 已落地
+**SPEC**: [SPEC-CognitiveSystem-Evolution.md](../35-广义认知系统协作模块/SPEC-CognitiveSystem-Evolution.md) — P0-P3 24/24 已落地
 
 | 层 | 现状 | 关键能力 |
 |---|------|---------|
@@ -121,7 +121,7 @@
 
 ### 1.3 P1-P3 决策推导器现状
 
-**文件**: [decision_deriver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/core/decision_deriver.py) + [debate_integration.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/core/debate_integration.py)
+**文件**: [decision_deriver.py](../34-前端应用训练系统/core/decision_deriver.py) + [debate_integration.py](../34-前端应用训练系统/core/debate_integration.py)
 
 | 层 | 机制 | Token | 状态 |
 |---|------|-------|------|

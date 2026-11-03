@@ -1,6 +1,6 @@
 # 同行复审报告 — 自进化系统做空能力疏通探讨 v0.2
 
-> **复审对象**：[SPEC-自进化系统做空能力疏通探讨.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md) v0.2
+> **复审对象**：[SPEC-自进化系统做空能力疏通探讨.md](../../23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md) v0.2
 > **复审依据**：v0.1 评审报告的 5 Major + 4 Minor 意见
 > **复审协议**：Devil's Advocate 让步阈值协议 + 7 模式阻断清单
 > **复审日期**：2026-10-09
@@ -51,7 +51,7 @@
 | **v0.1 意见** | 路径 C 的 TREND_BEAR/REVERSAL 判定方法缺失 |
 | **v0.2 回应** | 新增 C.6"状态判定方法"，复用 RegimeClassifier，并基于历史数据调整 |
 | **回应充分性** | ✅ **充分** |
-| **评估理由** | 判定方法明确（复用 [agi_config.py:47](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py#L47) 的 RegimeClassifier），不新增判定逻辑。验证方法三重（历史回测 + 影子模式 + 误判兜底）。**特别值得肯定**：基于 §1.5.3 历史数据做了合理调整——REVERSAL regime 下做空 2 笔全亏（-21.67 PnL），因此 REVERSAL 不纳入部分解锁，仅 TREND_BEAR 纳入。这是数据驱动决策的体现。 |
+| **评估理由** | 判定方法明确（复用 [agi_config.py:47](../../23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py#L47) 的 RegimeClassifier），不新增判定逻辑。验证方法三重（历史回测 + 影子模式 + 误判兜底）。**特别值得肯定**：基于 §1.5.3 历史数据做了合理调整——REVERSAL regime 下做空 2 笔全亏（-21.67 PnL），因此 REVERSAL 不纳入部分解锁，仅 TREND_BEAR 纳入。这是数据驱动决策的体现。 |
 
 ### Major-4：数据可用性硬前置 → 清算热力图降级
 

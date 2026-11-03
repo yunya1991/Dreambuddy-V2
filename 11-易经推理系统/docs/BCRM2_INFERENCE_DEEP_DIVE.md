@@ -6,21 +6,21 @@
 > **★ 2026-09-12 行号修正**：因新增代码导致行号偏移，本章行号引用已更新（_infer_bcrm2: L3990→L4811）
 > **依赖源码**:
 >
-> - 入口：[polling\_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811) [`_infer_bcrm2()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811) [L4811](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811)
+> - 入口：[polling\_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811) [`_infer_bcrm2()`](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811) [L4811](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L4811)
 >
-> - 适配层：[bcrm2\_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518) [`BCRM2Adapter.infer()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518) [L518](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518)
+> - 适配层：[bcrm2\_adapter.py](../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518) [`BCRM2Adapter.infer()`](../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518) [L518](../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L518)
 >
-> - ML引擎：[dialectical\_ml\_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) [`DialecticalMLEngine`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py)
+> - ML引擎：[dialectical\_ml\_engine.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) [`DialecticalMLEngine`](../../11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py)
 >
-> - 五角校验：[triangle\_verifier.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269) [`TriangleVerifier.verify()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269) [L269](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269)
+> - 五角校验：[triangle\_verifier.py](../../11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269) [`TriangleVerifier.verify()`](../../11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269) [L269](../../11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269)
 >
-> - A0矛盾：[a0\_contradiction\_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/a0_contradiction_engine.py) [`A0ContradictionEngine.analyze()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/a0_contradiction_engine.py)
+> - A0矛盾：[a0\_contradiction\_engine.py](../../11-易经推理系统/scripts/memory_l4/a0_contradiction_engine.py) [`A0ContradictionEngine.analyze()`](../../11-易经推理系统/scripts/memory_l4/a0_contradiction_engine.py)
 >
-> - 力场引擎：[bcrm/force\_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/force_engine.py)
+> - 力场引擎：[bcrm/force\_engine.py](../../11-易经推理系统/scripts/memory_l4/bcrm/force_engine.py)
 >
-> - Ising相变：[bcrm/ising\_phase\_detector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/ising_phase_detector.py)
+> - Ising相变：[bcrm/ising\_phase\_detector.py](../../11-易经推理系统/scripts/memory_l4/bcrm/ising_phase_detector.py)
 >
-> - TDA拓扑预警：[bcrm/tda\_early\_warning.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/tda_early_warning.py)
+> - TDA拓扑预警：[bcrm/tda\_early\_warning.py](../../11-易经推理系统/scripts/memory_l4/bcrm/tda_early_warning.py)
 
 ***
 
@@ -51,9 +51,9 @@ BCRM 2.0 推理系统代码量巨大：
 
 本文件**只讲推理细节**（从输入 K 线 → 输出 inference dict 的全过程）。以下主题不在本文范围，参考对应文档：
 
-- BDSM 价值驱动分批建仓 → [docs/superpowers/specs/2026-09-02-bdsm-value-scaling-spec.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-09-02-bdsm-value-scaling-spec.md)
+- BDSM 价值驱动分批建仓 → [docs/superpowers/specs/2026-09-02-bdsm-value-scaling-spec.md](../../docs/superpowers/specs/2026-09-02-bdsm-value-scaling-spec.md)
 
-- 形态周期预测 + ParameterMapper 反应式参数 → [11-易经推理系统/docs/TECHNICAL\_DESIGN.md §3.5](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/TECHNICAL_DESIGN.md) 及第 6 章简版
+- 形态周期预测 + ParameterMapper 反应式参数 → [11-易经推理系统/docs/TECHNICAL\_DESIGN.md §3.5](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) 及第 6 章简版
 
 - 增量学习 + 量变质变闭环 → bcrm2/incremental\_learner.py（未来文档补全）
 
@@ -143,7 +143,7 @@ flowchart LR
 
 ## 2. inference 返回对象字段 Schema
 
-> 来源：[polling\_trader.py L4904+](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L4904)（★ 2026-09-12 行号修正：原 L4204-L4254 → L4904+，因新增代码导致偏移）
+> 来源：[polling\_trader.py L4904+](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L4904)（★ 2026-09-12 行号修正：原 L4204-L4254 → L4904+，因新增代码导致偏移）
 
 ### 2.1 完整字段表（26+ 字段）
 
@@ -260,7 +260,7 @@ flowchart LR
 
 ## 3. 五角校验 v4 深度算法
 
-> 来源：[triangle\_verifier.py L269-L392（verify 主流程）+ L40-L130（PentagonParams 定义）](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269)
+> 来源：[triangle\_verifier.py L269-L392（verify 主流程）+ L40-L130（PentagonParams 定义）](../../11-易经推理系统/scripts/memory_l4/triangle_verifier.py#L269)
 
 五角校验 = BCRM2 ML × 力学引擎物理 × A0 矛盾逻辑 × Ising 相变统计力学 × TDA 拓扑分析。**五角风险评分是 20+ 风控输出字段的唯一来源**。
 
@@ -268,11 +268,11 @@ flowchart LR
 
 | 角 # | 名称                    | 理论范式                                      | 风险信号公式（risk\_signals\[k] ∈ \[0,1]，值越大风险越大）                                    | 实现位置                                                                                                                                                                                                                                        | TriangleVerifier 调用点         |
 | --- | --------------------- | ----------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| ①   | **BCRM2 ML**（辩证机器学习）  | LightGBM 三分类 + Meta-Labeling 二分类 + L3辩证裁决 | `risk_bcrm2 = 1.0 - bcrm2_confidence`（置信度越高=风险越低）                             | [dialectical\_ml\_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py#L131) `DialecticalMLEngine.infer()` → `L1×L2` 输出                                                | L313                         |
-| ②   | **ForceEngine（力学物理）** | 五象力场 + Verlet 辛积分 + Langevin 随机项          | `risk_force = 0.8`（reversal\_warning=True）；否则 0.2                             | [bcrm/force\_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/force_engine.py#L1-L20) `ForceEngine.infer()` → `ForceEngineResult.reversal_warning / trend_strength`                          | L517 `_run_force_engine()`   |
-| ③   | **A0 矛盾（逻辑）**         | 七维矛盾张力 + 创伤信号 + 七象限结构                     | `risk_a0 = min(1.0, overall_tension + 0.3 * trauma_signal)`（创伤信号 → +30%）      | [a0\_contradiction\_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/a0_contradiction_engine.py#L1-L16) `A0ContradictionEngine.analyze()` → `A0AnalysisResult`                                    | L309（作为入参传入 verify）          |
-| ④   | **Ising 相变**          | 二维Ising模型 + Onsager精确解 + 临界温度             | `risk_ising = 0.9`（phase\_transition\_alert=True）；否则 0.1                      | [bcrm/ising\_phase\_detector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/ising_phase_detector.py#L1-L21) `IsingPhaseDetector.feed_predict()` → `phase_transition_alert` + `critical_exponents` | L548 `_run_ising_detector()` |
-| ⑤   | **TDA 拓扑预警**          | Takens延迟嵌入 + Vietoris-Rips 持久同调 + Betti曲线 | `risk_tda = 0.9`（early\_warning=True）× warning\_strength（强度0.7\~1.0缩放）；否则 0.1 | [bcrm/tda\_early\_warning.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/tda_early_warning.py#L1-L25) `TDAEarlyWarning.analyze()` → `early_warning + warning_strength`                            | L577 `_run_tda_detector()`   |
+| ①   | **BCRM2 ML**（辩证机器学习）  | LightGBM 三分类 + Meta-Labeling 二分类 + L3辩证裁决 | `risk_bcrm2 = 1.0 - bcrm2_confidence`（置信度越高=风险越低）                             | [dialectical\_ml\_engine.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py#L131) `DialecticalMLEngine.infer()` → `L1×L2` 输出                                                | L313                         |
+| ②   | **ForceEngine（力学物理）** | 五象力场 + Verlet 辛积分 + Langevin 随机项          | `risk_force = 0.8`（reversal\_warning=True）；否则 0.2                             | [bcrm/force\_engine.py](../../11-易经推理系统/scripts/memory_l4/bcrm/force_engine.py#L1-L20) `ForceEngine.infer()` → `ForceEngineResult.reversal_warning / trend_strength`                          | L517 `_run_force_engine()`   |
+| ③   | **A0 矛盾（逻辑）**         | 七维矛盾张力 + 创伤信号 + 七象限结构                     | `risk_a0 = min(1.0, overall_tension + 0.3 * trauma_signal)`（创伤信号 → +30%）      | [a0\_contradiction\_engine.py](../../11-易经推理系统/scripts/memory_l4/a0_contradiction_engine.py#L1-L16) `A0ContradictionEngine.analyze()` → `A0AnalysisResult`                                    | L309（作为入参传入 verify）          |
+| ④   | **Ising 相变**          | 二维Ising模型 + Onsager精确解 + 临界温度             | `risk_ising = 0.9`（phase\_transition\_alert=True）；否则 0.1                      | [bcrm/ising\_phase\_detector.py](../../11-易经推理系统/scripts/memory_l4/bcrm/ising_phase_detector.py#L1-L21) `IsingPhaseDetector.feed_predict()` → `phase_transition_alert` + `critical_exponents` | L548 `_run_ising_detector()` |
+| ⑤   | **TDA 拓扑预警**          | Takens延迟嵌入 + Vietoris-Rips 持久同调 + Betti曲线 | `risk_tda = 0.9`（early\_warning=True）× warning\_strength（强度0.7\~1.0缩放）；否则 0.1 | [bcrm/tda\_early\_warning.py](../../11-易经推理系统/scripts/memory_l4/bcrm/tda_early_warning.py#L1-L25) `TDAEarlyWarning.analyze()` → `early_warning + warning_strength`                            | L577 `_run_tda_detector()`   |
 
 > **并行调度**：角②/④/⑤ 三个重计算引擎在 `L299-L306 ` concurrent.futures.ThreadPoolExecutor\` 中并行跑（max\_workers=3），总耗时 \~最慢单引擎时间。
 

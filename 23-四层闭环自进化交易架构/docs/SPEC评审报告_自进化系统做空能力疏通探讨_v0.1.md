@@ -1,6 +1,6 @@
 # 同行评审报告 — 自进化系统做空能力疏通探讨
 
-> **评审对象**：[SPEC-自进化系统做空能力疏通探讨.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md)
+> **评审对象**：[SPEC-自进化系统做空能力疏通探讨.md](../../23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md)
 > **评审协议**：Devil's Advocate 让步阈值协议 + 7 模式阻断清单
 > **评审日期**：2026-10-09
 > **评审性质**：探讨文档评审（非实现 SPEC，不含代码变更）
@@ -25,7 +25,7 @@
 ## 一、Journal-Fit Reviewer（市场适配性评审）
 
 ### 1.1 评价
-SPEC 准确识别了核心矛盾：历史做空亏损率高（ETH/BTC，见 [polling_trader.py:890](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 注释）vs 极端行情做空高价值（LUNA/FTX）。
+SPEC 准确识别了核心矛盾：历史做空亏损率高（ETH/BTC，见 [polling_trader.py:890](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 注释）vs 极端行情做空高价值（LUNA/FTX）。
 
 ### 1.2 市场适配性评估
 - **当前市场适配**：加密货币市场做空确实存在结构性困难——永续合约资金费率长期偏多、做空面临逼空风险（如 2023 年 10 月 BTC 逼空行情）。SPEC 对此有认知（路径 D 引入资金费率因子）。
@@ -53,7 +53,7 @@ SPEC 的设计哲学"小仓位试探 + 滚动胜率学习 + 因子分层"方向�
 路径 C 引入 TREND_BEAR / REVERSAL 两个新状态，但 SPEC **完全没有说明这些状态如何判定**。如果状态判定逻辑不可靠，路径 C 的"部分解锁"就是空中楼阁——可能在非 bear 行情中错误解锁做空。
 
 **修改建议**：SPEC 需补充 TREND_BEAR / REVERSAL 的判定方法来源：
-- 是复用现有 RegimeClassifier（[agi_config.py:47](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py#L47) 的 `enable_btc_regime_classifier`）？
+- 是复用现有 RegimeClassifier（[agi_config.py:47](../../23-四层闭环自进化交易架构/dreambuddy_evolution/agi_config.py#L47) 的 `enable_btc_regime_classifier`）？
 - 还是新增判定逻辑？
 - 判定准确性如何验证（回测）？
 
@@ -108,7 +108,7 @@ SPEC 要求"回测验证"才能确定参数，但回测需要参数才能运行�
 
 ### 反驳 1：核心逻辑跳跃（评分 4 — 必须让步）
 
-**质疑**：SPEC 的核心前提是"历史做空亏损率高"是事实（ETH/BTC 做空亏损，[polling_trader.py:890](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 注释）。疏通路径本质上是说"我们能在严苛条件下做空"。
+**质疑**：SPEC 的核心前提是"历史做空亏损率高"是事实（ETH/BTC 做空亏损，[polling_trader.py:890](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L890) 注释）。疏通路径本质上是说"我们能在严苛条件下做空"。
 
 **但 SPEC 没有论证一个关键假设**：为什么"严苛条件下做空"的期望会不同于"历史做空"的期望？
 

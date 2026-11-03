@@ -64,7 +64,7 @@ DSH 层（Dream OS Subagent Harness）训练器 `ExecutionPathTrainingLoop` 需�
 
 ### 1.1 DSH 层训练数据格式（已确认）
 
-**来源**: [run_continual_training.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py#L134-L135) L134-135
+**来源**: [run_continual_training.py](../34-前端应用训练系统/scripts/run_continual_training.py#L134-L135) L134-135
 
 ```python
 elif layer == "DSH":
@@ -95,7 +95,7 @@ elif layer == "DSH":
 
 ### 1.3 P0 数据源：20-数据清洗中心（已确认 ✅）
 
-**来源**: [contract.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/20-数据清洗中心/data_cleaning/contract.py) + [pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/20-数据清洗中心/data_cleaning/pipeline.py)
+**来源**: [contract.py](../20-数据清洗中心/data_cleaning/contract.py) + [pipeline.py](../20-数据清洗中心/data_cleaning/pipeline.py)
 
 **核心契约**:
 
@@ -147,7 +147,7 @@ class SilverRecord:
 
 ### 1.4 P1 数据源：18-数据获取中心（需封装 🟡）
 
-**来源**: [dispatcher.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/data_center/core/dispatcher.py) + silver_layer.py + gold_layer.py
+**来源**: [dispatcher.py](../18-数据获取中心/data_center/core/dispatcher.py) + silver_layer.py + gold_layer.py
 
 **路由逻辑** (dispatcher.py L177-220):
 - `DataCenter.fetch(category, source)` 按 category/source 路由到 collector
@@ -172,7 +172,7 @@ class SilverRecord:
 
 ### 1.5 P2 数据源：DSH 子 Agent（需补日志 🔴）
 
-**来源**: [subagent_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_registry.py) + [subagent_types.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_types.py) + heartbeat_monitor.py + server.py
+**来源**: [subagent_registry.py](../1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_registry.py) + [subagent_types.py](../1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_types.py) + heartbeat_monitor.py + server.py
 
 **8 个子 Agent** (subagent_registry.py L30-112):
 | node_id | module | capability_id |
@@ -210,11 +210,11 @@ class SilverRecord:
 
 | 层 | 文件 | node_sequence | outcome | 审计表 |
 |----|------|---------------|---------|--------|
-| **DI 路由层** | [di.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/di.py) L85-103 | `get_*_repo → _resolve_backend → check_kill_switch → build_factory → _get_instance` | backend 选中值 | — |
+| **DI 路由层** | [di.py](../19-数据访问层/dreambuddy_dal/di.py) L85-103 | `get_*_repo → _resolve_backend → check_kill_switch → build_factory → _get_instance` | backend 选中值 | — |
 | **DualWrite 代理层** ★ | di.py L109-260 `_make_dual_write` | `intercept → classify_method → legacy.execute → new.execute_secondary → shadow_read.compare → audit.write` | MATCH/DIFF | ma_migration_audit |
-| **Gate 检查层** | [gate_check.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/gate_check.py) | `check_g1_dual_write_diff → check_g2_db_locked → check_g3_shadow_read → check_g4_rollback → check_g5_backup` | all_pass | ma_migration_audit |
-| **审计汇总层** | [audit_summary.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/audit_summary.py) | `query_dual_write_audit → query_shadow_read_audit → compute_diff_rate → compute_consistency_rate → return_summary` | g1_pass/g3_pass | ma_migration_audit |
-| **Cron 运维层** | [cron_runner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/cron_runner.py) | `dispatch(backup/integrity/rotate/checkpoint) → execute → print_result` | OK/FAIL | — |
+| **Gate 检查层** | [gate_check.py](../19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/gate_check.py) | `check_g1_dual_write_diff → check_g2_db_locked → check_g3_shadow_read → check_g4_rollback → check_g5_backup` | all_pass | ma_migration_audit |
+| **审计汇总层** | [audit_summary.py](../19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/audit_summary.py) | `query_dual_write_audit → query_shadow_read_audit → compute_diff_rate → compute_consistency_rate → return_summary` | g1_pass/g3_pass | ma_migration_audit |
+| **Cron 运维层** | [cron_runner.py](../19-数据访问层/dreambuddy_dal/cron_runner.py) | `dispatch(backup/integrity/rotate/checkpoint) → execute → print_result` | OK/FAIL | — |
 
 **核心发现 — ma_migration_audit 审计表**:
 
@@ -634,17 +634,17 @@ class DalRouteCollector(TrainingDataProvider):
 
 ## 8. 关联文档
 
-- [SPEC-20261011 双模式学习训练架构](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/SPEC.md) — 上层 SPEC
-- [SPEC-v0.5-continual-training](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/SPEC-v0.5-continual-training.md) — 持续训练机制
-- [20-数据清洗中心 contract.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/20-数据清洗中心/data_cleaning/contract.py) — P0 契约
-- [20-数据清洗中心 pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/20-数据清洗中心/data_cleaning/pipeline.py) — P0 管道
-- [18-数据获取中心 dispatcher.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/data_center/core/dispatcher.py) — P1 路由
-- [DSH subagent_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_registry.py) — P2 注册表
-- [DSH subagent_types.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_types.py) — P2 契约
-- [19-DAL di.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/di.py) — P3 DI 路由 + DualWrite 代理
-- [19-DAL gate_check.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/gate_check.py) — P3 门禁检查
-- [19-DAL audit_summary.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/audit_summary.py) — P3 审计汇总
-- [19-DAL README](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/19-数据访问层/README.md) — P3 架构概述
+- [SPEC-20261011 双模式学习训练架构](../34-前端应用训练系统/SPEC.md) — 上层 SPEC
+- [SPEC-v0.5-continual-training](../34-前端应用训练系统/SPEC-v0.5-continual-training.md) — 持续训练机制
+- [20-数据清洗中心 contract.py](../20-数据清洗中心/data_cleaning/contract.py) — P0 契约
+- [20-数据清洗中心 pipeline.py](../20-数据清洗中心/data_cleaning/pipeline.py) — P0 管道
+- [18-数据获取中心 dispatcher.py](../18-数据获取中心/data_center/core/dispatcher.py) — P1 路由
+- [DSH subagent_registry.py](../1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_registry.py) — P2 注册表
+- [DSH subagent_types.py](../1-ARCHITECTURE/dream-harness-bridge/packages/python-server/subagent_types.py) — P2 契约
+- [19-DAL di.py](../19-数据访问层/dreambuddy_dal/di.py) — P3 DI 路由 + DualWrite 代理
+- [19-DAL gate_check.py](../19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/gate_check.py) — P3 门禁检查
+- [19-DAL audit_summary.py](../19-数据访问层/dreambuddy_dal/implementations/sqlite_unified/audit_summary.py) — P3 审计汇总
+- [19-DAL README](../19-数据访问层/README.md) — P3 架构概述
 
 ---
 

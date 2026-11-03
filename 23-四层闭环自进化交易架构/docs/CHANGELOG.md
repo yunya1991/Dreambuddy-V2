@@ -340,7 +340,7 @@ Phase 3 审计发现与 Phase 4 完全相同的"写入链路断裂"反模式—�
 
 - **根因**: `_value_iteration()` L268 调用 `lagrangian()` 不传 `primary_contradiction`；`_select_optimal_path` 先跑 HJB 后识别矛盾（顺序错误）
 - **修复**: 
-  - [hjb_solver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) `solve()` + `_value_iteration()` 新增 `primary_contradiction` 参数
+  - [hjb_solver.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) `solve()` + `_value_iteration()` 新增 `primary_contradiction` 参数
   - `_value_iteration()` 内部调用 `lagrangian()` 时传入 `primary_contradiction`
   - `_select_optimal_path` 调整执行顺序：先识别矛盾 → 再跑 HJB 传入 `primary_contradiction`
 

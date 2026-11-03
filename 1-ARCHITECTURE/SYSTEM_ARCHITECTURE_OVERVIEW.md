@@ -823,7 +823,7 @@ F5_宏观 (Macro)
 - **对应思维链骨架**：选择了哪条主链，B层就对应哪条链的宏观结构
 - **由ChainPlanner在规划阶段构建**
 
-**数据结构**（来源：[models.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/models.ts#L35-L59)）：
+**数据结构**（来源：[models.ts](../6-图结构上下文压缩/models.ts#L35-L59)）：
 ```typescript
 interface BNode {
   id: NodeId;
@@ -884,7 +884,7 @@ bp_root (交易决策系统)
 | 新发现 | INSERT_AFTER | 追加深度分析节点 | 🟡 |
 | 技能不够 | 联网扩展 | AI决定需要外部工具/搜索 | 🔴 |
 
-**反思决策引擎**（来源：[reflect-engine.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/reflect-engine.ts)）：
+**反思决策引擎**（来源：[reflect-engine.ts](../3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/reflect-engine.ts)）：
 
 ```
 决策优先级（从高到低）：
@@ -908,7 +908,7 @@ bp_root (交易决策系统)
 - **可压缩**：通过图压缩算法，从C→A→B逐层压缩
 - **可展开**：需要时从B→A→C逐层展开还原
 
-**数据结构**（来源：[models.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/models.ts#L87-L115)）：
+**数据结构**（来源：[models.ts](../6-图结构上下文压缩/models.ts#L87-L115)）：
 ```typescript
 interface CNode {
   id: NodeId;
@@ -1134,8 +1134,8 @@ L1 返回 `handled=false` 时，请求携带 **`l1_intent_hint`**（L1 已算出
 ### 6.1 主循环
 
 **位置**：
-- 后端完整实现：[planner.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/planner.ts)
-- 前端展示版：[runner.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/runner.ts)
+- 后端完整实现：[planner.ts](../6-图结构上下文压缩/planner/planner.ts)
+- 前端展示版：[runner.ts](../3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/runner.ts)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -1179,7 +1179,7 @@ Step N 执行流程：
   8. 写入图架构（更新 BAC 的 A层 Architecture / C层 Chronicle）
 ```
 
-**位置**：[skill-selector.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/skill-selector.ts)
+**位置**：[skill-selector.ts](../6-图结构上下文压缩/planner/skill-selector.ts)
 
 ---
 
@@ -1204,7 +1204,7 @@ Step N 执行流程：
 
 ### 6.4 交叉验证器（阶段一：投票）
 
-**位置**：[cross-validator.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/cross-validator.ts)
+**位置**：[cross-validator.ts](../6-图结构上下文压缩/planner/cross-validator.ts)
 
 在关键节点（S1/S2/S3/S4/S5）触发三链投票：
 
@@ -1288,7 +1288,7 @@ Step N 执行流程：
 
 #### 7.2.1 📚 知识库（Knowledge Base）
 
-**位置**：[2-KNOWLEDGE/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/)
+**位置**：[2-KNOWLEDGE/](../2-KNOWLEDGE/)
 
 **三层架构**：
 
@@ -1344,7 +1344,7 @@ Step N 执行流程：
 
 #### 7.2.3 📇 索引系统（Index System）
 
-**位置**：[2-KNOWLEDGE/4-OPERATIONS/索引体系.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/4-OPERATIONS/索引体系.md)
+**位置**：[2-KNOWLEDGE/4-OPERATIONS/索引体系.md](../2-KNOWLEDGE/4-OPERATIONS/索引体系.md)
 
 **Z轴三级索引架构**：
 
@@ -1617,7 +1617,7 @@ Lesson（规律层）
     代码落地完成 → 知识库更新 → 记忆系统更新 → 索引更新
 ```
 
-**位置**：[3-CHAIN-DEVELOPMENT/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/)
+**位置**：[3-CHAIN-DEVELOPMENT/](../3-CHAIN-DEVELOPMENT/)
 
 ---
 
@@ -1665,20 +1665,20 @@ Lesson（规律层）
 
 **前端集成**：
 - S5_EXECUTE 内部集成 E 链（策略代码开发场景）
-- 位置：[dev-chain/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/)
-- 控制器：[chain-controller.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/chain-controller.ts)
+- 位置：[dev-chain/](../3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/)
+- 控制器：[chain-controller.ts](../3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/chain-controller.ts)
 
 ---
 
 ### 8.5 三链接力协议（防跳步约束）
 
-**位置**：[3-CHAIN-DEVELOPMENT/4-PROTOCOL/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/4-PROTOCOL/)
+**位置**：[3-CHAIN-DEVELOPMENT/4-PROTOCOL/](../3-CHAIN-DEVELOPMENT/4-PROTOCOL/)
 
 **核心思想**：不是"写更多文档教AI怎么做"，而是**提供物理约束**——让AI读状态文件来判断当前该做什么，不能让AI自己决定。
 
 #### 门禁系统（chain_guard.py）
 
-**位置**：[scripts/chain_guard.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/scripts/chain_guard.py)
+**位置**：[scripts/chain_guard.py](../3-CHAIN-DEVELOPMENT/scripts/chain_guard.py)
 
 | 跳转类型 | 规则 | 示例 |
 |:---|:---|---:|
@@ -2178,50 +2178,50 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 
 | 模块 | 核心文件 | 位置 | 状态 |
 |------|---------|------|------|
-| **BAC三层模型** | models.ts | [6-图结构上下文压缩/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/models.ts) | 🟢 |
-| **蓝图构建** | blueprint.ts | [6-图结构上下文压缩/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/blueprint.ts) | 🟢 |
-| **意图识别网关** | intent-gateway.ts | [6-图结构上下文压缩/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/intent-gateway.ts) | 🟢 |
-| **执行规划器** | planner.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/planner.ts) | 🟡 |
-| **思维步骤定义** | step-types.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/step-types.ts) | 🟢 |
-| **技能注册表** | skills-registry.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/skills-registry.ts) | 🟢 |
-| **A系列技能注册** | skills-registry-init.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/skills-registry-init.ts) | 🟢 |
-| **C/F链技能** | chains-registry.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/chains-registry.ts) | 🟡 |
-| **技能选择器** | skill-selector.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/skill-selector.ts) | 🟢 |
-| **交叉验证器** | cross-validator.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/cross-validator.ts) | 🟢 |
-| **投票计算器** | voting-calculator.ts | [6-图结构上下文压缩/planner/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/voting-calculator.ts) | 🟢 |
-| **Python实验版ChainPlanner** | chain_planner.py | [experiments/ab-trading/core/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/chain_planner.py) | 🟢 |
-| **Python版意图识别** | intent_gateway.py | [experiments/ab-trading/core/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/core/intent_gateway.py) | 🟢 |
-| **编排API** | route.ts | [app/api/orchestrate/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/orchestrate/route.ts) | 🟡 |
-| **前端动态链Runner** | runner.ts | [dynamic-chain/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/runner.ts) | 🟡 |
-| **前端反思引擎** | reflect-engine.ts | [dynamic-chain/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/reflect-engine.ts) | 🟢 |
-| **图-反思桥接** | graph-reflection-bridge.ts | [3-FRONTEND/.../lib/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/graph-reflection-bridge.ts) | 🟡 |
-| **三屏系统架构** | 三屏系统架构.md | [2-KNOWLEDGE/1-TRADING/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/1-TRADING/三屏系统架构.md) | 🟢 |
-| **SKILL注册表文档** | SKILL_REGISTRY.md | [6-TRADING/docs/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/docs/SKILL_REGISTRY.md) | 🟢 |
-| **治理系统** | GOVERNANCE_SYSTEM.md | [2-GOVERNANCE/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-GOVERNANCE/GOVERNANCE_SYSTEM.md) | 🟡 |
-| **知识库RAG** | knowledge-rag.ts | [3-FRONTEND/.../lib/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/knowledge-rag.ts) | 🟢 |
-| **意图记忆** | intent-memory.ts | [3-FRONTEND/.../intent/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-memory.ts) | 🟢 |
-| **用户偏好记忆** | user-preference-memory.ts | [3-FRONTEND/.../memory/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/memory/user-preference-memory.ts) | 🟢 |
-| **学习记录器** | learning-episode-writer | [6-TRADING/skills/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/learning-episode-writer/SKILL.md) | 🟢 |
-| **经验提炼器** | lesson-distiller | [6-TRADING/skills/0-core-integration/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/0-core-integration/lesson-distiller/INTEGRATION.md) | 🟡 |
-| **做梦系统** | dream-oneirology | [6-TRADING/skills/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/dream-oneirology/SKILL.md) | 🟡 |
-| **A7实践论** | A7-practice-theory | [6-TRADING/skills/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/A7-practice-theory/SKILL.md) | 🟡 |
-| **A8知行合一** | A8-theory-practice-verification | [6-TRADING/skills/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/A8-theory-practice-verification/SKILL.md) | 🟡 |
-| **知识库管理框架** | 知识库管理框架.md | [2-KNOWLEDGE/5-METHODOLOGY/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/5-METHODOLOGY/知识库管理框架.md) | 🟢 |
-| **索引体系** | 索引体系.md | [2-KNOWLEDGE/4-OPERATIONS/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/4-OPERATIONS/索引体系.md) | 🟢 |
-| **DZE开发链总览** | README.md | [3-CHAIN-DEVELOPMENT/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/README.md) | 🟢 |
-| **D系列（调研）** | D1-D4 docs | [3-CHAIN-DEVELOPMENT/1-RESEARCH/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/1-RESEARCH/) | 🟢 |
-| **Z系列（规划）** | Z1-Z4 docs | [3-CHAIN-DEVELOPMENT/2-PLANNING/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/2-PLANNING/) | 🟢 |
-| **E系列（执行）** | E1-E3 docs | [3-CHAIN-DEVELOPMENT/3-EXECUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/3-EXECUTION/) | 🟡 |
-| **三链接力协议** | SPEC.md | [3-CHAIN-DEVELOPMENT/4-PROTOCOL/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/4-PROTOCOL/SPEC.md) | 🟢 |
-| **门禁系统** | chain_guard.py | [3-CHAIN-DEVELOPMENT/scripts/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-CHAIN-DEVELOPMENT/scripts/chain_guard.py) | 🟢 |
-| **前端E链集成** | chain-controller.ts | [3-FRONTEND/.../dev-chain/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/chain-controller.ts) | 🟡 |
-| **Evolution Engine** | evolution-engine.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/evolution-engine.ts) | 🟢 |
-| **DZE Bridge** | dze-bridge.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/dze-bridge.ts) | 🟢 |
-| **DreamAgent Bridge** | dream-agent-bridge.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/dream-agent-bridge.ts) | 🟢 |
-| **Approval Bridge** | approval-bridge.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/approval-bridge.ts) | 🟢 |
-| **Evolution Orchestrator** | evolution-orchestrator.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/evolution-orchestrator.ts) | 🟢 |
-| **进化系统类型定义** | types.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/types.ts) | 🟢 |
-| **全链路集成测试** | evolution-fullstack.test.ts | [3-EVOLUTION/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-EVOLUTION/evolution-fullstack.test.ts) | 🟢 |
+| **BAC三层模型** | models.ts | [6-图结构上下文压缩/](../6-图结构上下文压缩/models.ts) | 🟢 |
+| **蓝图构建** | blueprint.ts | [6-图结构上下文压缩/](../6-图结构上下文压缩/blueprint.ts) | 🟢 |
+| **意图识别网关** | intent-gateway.ts | [6-图结构上下文压缩/](../6-图结构上下文压缩/intent-gateway.ts) | 🟢 |
+| **执行规划器** | planner.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/planner.ts) | 🟡 |
+| **思维步骤定义** | step-types.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/step-types.ts) | 🟢 |
+| **技能注册表** | skills-registry.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/skills-registry.ts) | 🟢 |
+| **A系列技能注册** | skills-registry-init.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/skills-registry-init.ts) | 🟢 |
+| **C/F链技能** | chains-registry.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/chains-registry.ts) | 🟡 |
+| **技能选择器** | skill-selector.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/skill-selector.ts) | 🟢 |
+| **交叉验证器** | cross-validator.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/cross-validator.ts) | 🟢 |
+| **投票计算器** | voting-calculator.ts | [6-图结构上下文压缩/planner/](../6-图结构上下文压缩/planner/voting-calculator.ts) | 🟢 |
+| **Python实验版ChainPlanner** | chain_planner.py | [experiments/ab-trading/core/](../experiments/ab-trading/core/chain_planner.py) | 🟢 |
+| **Python版意图识别** | intent_gateway.py | [experiments/ab-trading/core/](../experiments/ab-trading/core/intent_gateway.py) | 🟢 |
+| **编排API** | route.ts | [app/api/orchestrate/](../3-FRONTEND/dream-universal-gateway/src/app/api/orchestrate/route.ts) | 🟡 |
+| **前端动态链Runner** | runner.ts | [dynamic-chain/](../3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/runner.ts) | 🟡 |
+| **前端反思引擎** | reflect-engine.ts | [dynamic-chain/](../3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/reflect-engine.ts) | 🟢 |
+| **图-反思桥接** | graph-reflection-bridge.ts | [3-FRONTEND/.../lib/](../3-FRONTEND/dream-universal-gateway/src/lib/graph-reflection-bridge.ts) | 🟡 |
+| **三屏系统架构** | 三屏系统架构.md | [2-KNOWLEDGE/1-TRADING/](../2-KNOWLEDGE/1-TRADING/三屏系统架构.md) | 🟢 |
+| **SKILL注册表文档** | SKILL_REGISTRY.md | [6-TRADING/docs/](../6-TRADING/docs/SKILL_REGISTRY.md) | 🟢 |
+| **治理系统** | GOVERNANCE_SYSTEM.md | [2-GOVERNANCE/](../2-GOVERNANCE/GOVERNANCE_SYSTEM.md) | 🟡 |
+| **知识库RAG** | knowledge-rag.ts | [3-FRONTEND/.../lib/](../3-FRONTEND/dream-universal-gateway/src/lib/knowledge-rag.ts) | 🟢 |
+| **意图记忆** | intent-memory.ts | [3-FRONTEND/.../intent/](../3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-memory.ts) | 🟢 |
+| **用户偏好记忆** | user-preference-memory.ts | [3-FRONTEND/.../memory/](../3-FRONTEND/dream-universal-gateway/src/lib/memory/user-preference-memory.ts) | 🟢 |
+| **学习记录器** | learning-episode-writer | [6-TRADING/skills/](../6-TRADING/skills/learning-episode-writer/SKILL.md) | 🟢 |
+| **经验提炼器** | lesson-distiller | [6-TRADING/skills/0-core-integration/](../6-TRADING/skills/0-core-integration/lesson-distiller/INTEGRATION.md) | 🟡 |
+| **做梦系统** | dream-oneirology | [6-TRADING/skills/](../6-TRADING/skills/dream-oneirology/SKILL.md) | 🟡 |
+| **A7实践论** | A7-practice-theory | [6-TRADING/skills/](../6-TRADING/skills/A7-practice-theory/SKILL.md) | 🟡 |
+| **A8知行合一** | A8-theory-practice-verification | [6-TRADING/skills/](../6-TRADING/skills/A8-theory-practice-verification/SKILL.md) | 🟡 |
+| **知识库管理框架** | 知识库管理框架.md | [2-KNOWLEDGE/5-METHODOLOGY/](../2-KNOWLEDGE/5-METHODOLOGY/知识库管理框架.md) | 🟢 |
+| **索引体系** | 索引体系.md | [2-KNOWLEDGE/4-OPERATIONS/](../2-KNOWLEDGE/4-OPERATIONS/索引体系.md) | 🟢 |
+| **DZE开发链总览** | README.md | [3-CHAIN-DEVELOPMENT/](../3-CHAIN-DEVELOPMENT/README.md) | 🟢 |
+| **D系列（调研）** | D1-D4 docs | [3-CHAIN-DEVELOPMENT/1-RESEARCH/](../3-CHAIN-DEVELOPMENT/1-RESEARCH/) | 🟢 |
+| **Z系列（规划）** | Z1-Z4 docs | [3-CHAIN-DEVELOPMENT/2-PLANNING/](../3-CHAIN-DEVELOPMENT/2-PLANNING/) | 🟢 |
+| **E系列（执行）** | E1-E3 docs | [3-CHAIN-DEVELOPMENT/3-EXECUTION/](../3-CHAIN-DEVELOPMENT/3-EXECUTION/) | 🟡 |
+| **三链接力协议** | SPEC.md | [3-CHAIN-DEVELOPMENT/4-PROTOCOL/](../3-CHAIN-DEVELOPMENT/4-PROTOCOL/SPEC.md) | 🟢 |
+| **门禁系统** | chain_guard.py | [3-CHAIN-DEVELOPMENT/scripts/](../3-CHAIN-DEVELOPMENT/scripts/chain_guard.py) | 🟢 |
+| **前端E链集成** | chain-controller.ts | [3-FRONTEND/.../dev-chain/](../3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/chain-controller.ts) | 🟡 |
+| **Evolution Engine** | evolution-engine.ts | [3-EVOLUTION/](../3-EVOLUTION/evolution-engine.ts) | 🟢 |
+| **DZE Bridge** | dze-bridge.ts | [3-EVOLUTION/](../3-EVOLUTION/dze-bridge.ts) | 🟢 |
+| **DreamAgent Bridge** | dream-agent-bridge.ts | [3-EVOLUTION/](../3-EVOLUTION/dream-agent-bridge.ts) | 🟢 |
+| **Approval Bridge** | approval-bridge.ts | [3-EVOLUTION/](../3-EVOLUTION/approval-bridge.ts) | 🟢 |
+| **Evolution Orchestrator** | evolution-orchestrator.ts | [3-EVOLUTION/](../3-EVOLUTION/evolution-orchestrator.ts) | 🟢 |
+| **进化系统类型定义** | types.ts | [3-EVOLUTION/](../3-EVOLUTION/types.ts) | 🟢 |
+| **全链路集成测试** | evolution-fullstack.test.ts | [3-EVOLUTION/](../3-EVOLUTION/evolution-fullstack.test.ts) | 🟢 |
 | **Dream-Agent总览** | README.md | [DREAM-AGENT/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/README.md) | 🟢 |
 | **创始宣言** | MANIFESTO.md | [DREAM-AGENT/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/MANIFESTO.md) | 🟢 |
 | **协作架构** | 02-ARCHITECTURE.md | [DREAM-AGENT/docs/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/02-ARCHITECTURE.md) | 🟢 |
@@ -2231,8 +2231,8 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 | **DREAM Token** | DREAM-TOKEN-DESIGN.md | [DREAM-AGENT/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/DREAM-TOKEN-DESIGN.md) | 🟢 |
 | **飞书协作** | feishu-collab/ | [DREAM-AGENT/docs/feishu-collab/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/feishu-collab/README.md) | 🟡 |
 | **GitHub门禁** | github-actions/ | [DREAM-AGENT/github-actions/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/github-actions/README.md) | 🟢 |
-| **系统维护SKILL** | system-maintenance/ | [6-TRADING/skills/system-maintenance/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/system-maintenance/) | 🟢 |
-| **维护报告** | maintenance-reports/ | [1-ARCHITECTURE/.maintenance-reports/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/.maintenance-reports/) | 🟢 |
+| **系统维护SKILL** | system-maintenance/ | [6-TRADING/skills/system-maintenance/](../6-TRADING/skills/system-maintenance/) | 🟢 |
+| **维护报告** | maintenance-reports/ | [1-ARCHITECTURE/.maintenance-reports/](../1-ARCHITECTURE/.maintenance-reports/) | 🟢 |
 
 ---
 
@@ -2314,7 +2314,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 
 > **定位**：将架构文档维护自动化，每周定时执行健康检查，生成维护报告，追踪问题修复。
 >
-> **SKILL位置**：[6-TRADING/skills/system-maintenance/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/skills/system-maintenance/)
+> **SKILL位置**：[6-TRADING/skills/system-maintenance/](../6-TRADING/skills/system-maintenance/)
 >
 > **目标**：从"手动维护架构文档"升级为"系统自动检查+人工确认"的新模式。
 
@@ -2366,7 +2366,7 @@ npx tsx 6-TRADING/skills/system-maintenance/health-check.ts
 
 ### 15.4 报告输出
 
-**位置**：[1-ARCHITECTURE/.maintenance-reports/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/.maintenance-reports/)
+**位置**：[1-ARCHITECTURE/.maintenance-reports/](../1-ARCHITECTURE/.maintenance-reports/)
 
 **报告文件**：
 - `maintenance-report-YYYY-MM-DD.md` - Markdown 格式报告

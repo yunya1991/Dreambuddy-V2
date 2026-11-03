@@ -11,9 +11,9 @@
 
 | # | 阻断模式 | 是否触发 | 证据 | 建议 |
 |---|---------|---------|------|------|
-| 1 | 幻觉引用 | 部分 | [矛盾论与Transformer架构融合方案.md#L1619](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/矛盾论与Transformer架构融合方案.md#L1619) 称 vol 用"HMM/阈值"，实际 [structural_break_detector.py#L101](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/structural_break_detector.py#L101) 主路径是 MarkovRegression，fallback 才是阈值 | 修正表述为"Markov-Regression（HMM 类）+ fallback 阈值" |
+| 1 | 幻觉引用 | 部分 | [矛盾论与Transformer架构融合方案.md#L1619](../../23-四层闭环自进化交易架构/docs/矛盾论与Transformer架构融合方案.md#L1619) 称 vol 用"HMM/阈值"，实际 [structural_break_detector.py#L101](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/structural_break_detector.py#L101) 主路径是 MarkovRegression，fallback 才是阈值 | 修正表述为"Markov-Regression（HMM 类）+ fallback 阈值" |
 | 2 | 数据造假 | 否 | v0.7 草案明确标注"无代码实现"，参数均为先验值并承认需回测 | — |
-| 3 | 方法捏造 | 是 | [§10.11.2 L1513](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/矛盾论与Transformer架构融合方案.md#L1513) `reversion_rate=0.05` 参考"EM 算法衰减率"——EM 算法衰减率针对似然收敛，与 head 权重回归 1.0 不同语境 | 替换为统计依据（如 OU 过程的均值回归速率） |
+| 3 | 方法捏造 | 是 | [§10.11.2 L1513](../../23-四层闭环自进化交易架构/docs/矛盾论与Transformer架构融合方案.md#L1513) `reversion_rate=0.05` 参考"EM 算法衰减率"——EM 算法衰减率针对似然收敛，与 head 权重回归 1.0 不同语境 | 替换为统计依据（如 OU 过程的均值回归速率） |
 | 4 | 框架锁定 | 是 | §5.1.5 仅论证优于"Granger 验证 Attention"，未对比纯 Attention+在线学习 / 互信息替代方案 | 补充替代框架对比 |
 | 5 | 结果幻觉 | 否 | 理论设计阶段无回测结果 | — |
 | 6 | 逻辑跳跃 | **是（≥4分）** | Q5 vol 权重=0.4 称"易受事件冲击"，但 HMM 本身是 regime 检测成熟方法；Q4 降级输出 primary_dim 隐含"单链路可靠"未论证 | **必须让步**：Q5 权重需数据校准；Q4 需论证单链路可靠性 |
@@ -38,7 +38,7 @@
 | 参数 | 文档依据 | 审查结论 |
 |------|---------|---------|
 | persistence_threshold [3,20] | "下限过滤噪声，上限保证响应性" | **不足**：3 期样本方差极大，不足以稳定检测；与 Granger 检验推荐样本量 ≥30 混淆概念 |
-| head_floor=0.1 | "与 [elastic_constraint_resolver.py#L55](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L55) `_floor=0.20` 同量级" | **牵强**：0.1 ≠ 0.20（差 2 倍）；仓位 floor 与 head 权重 floor 是不同概念 |
+| head_floor=0.1 | "与 [elastic_constraint_resolver.py#L55](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/elastic_constraint_resolver.py#L55) `_floor=0.20` 同量级" | **牵强**：0.1 ≠ 0.20（差 2 倍）；仓位 floor 与 head 权重 floor 是不同概念 |
 | head_ceiling=2.0 | "softmax 归一化后单 head 主导已属异常" | **有误**：softmax 后单 head 最大 1/8=0.125，ceiling 乘在 softmax 输出上，2.0 倍是相对提升非绝对主导 |
 | reversion_rate=0.05 | "参考 EM 算法衰减率" | **错误类比**：EM 衰减率针对似然收敛，非权重回归 |
 | structural_break 权重 1.0/0.6/0.4 | "基于统计稳定性" | **无统计依据**：Hurst 对窗口敏感（min_samples=60），HMM 是成熟方法不应权重最低 |
@@ -104,8 +104,8 @@ Granger 重估 — 不确定性：重估样本量、冷却期误差、新 p-valu
 |------|----------|--------|
 | ElasticConstraintResolver（floor=0.20） | 部分 | head_floor=0.1 与 floor=0.20 差 2 倍，"同量级"论证牵强；仓位 floor vs head 权重 floor 是不同概念 |
 | StructuralBreakDetector | 部分 | 文档称 vol 用"HMM/阈值"，实际主路径是 MarkovRegression；vol 权重=0.4 但 HMM 是成熟方法 |
-| ContradictionShiftAccumulator（persistence=14） | **冲突** | [contradiction_shift_accumulator.py#L52](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py#L52) `persistence=14`（评估次数）vs CrossValidationGate `persistence_threshold=5`（分歧期数）——命名冲突易混淆 |
-| FTCEvolutionBridge.run_gene_innovation | **冲突** | [ftc_gene_innovation.py#L6-L9](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/ftc_gene_innovation.py#L6) 触发条件是涟漪异常/反思失败/FTC 饱和，**不含质变事件**——§10.5④ 需扩展触发路径 |
+| ContradictionShiftAccumulator（persistence=14） | **冲突** | [contradiction_shift_accumulator.py#L52](../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py#L52) `persistence=14`（评估次数）vs CrossValidationGate `persistence_threshold=5`（分歧期数）——命名冲突易混淆 |
+| FTCEvolutionBridge.run_gene_innovation | **冲突** | [ftc_gene_innovation.py#L6-L9](../../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/ftc_gene_innovation.py#L6) 触发条件是涟漪异常/反思失败/FTC 饱和，**不含质变事件**——§10.5④ 需扩展触发路径 |
 | 认知记忆系统（CLAUDE.md） | 一致 | §10.5② 质变触发 record+verify 符合硬约束，但 record 时机可能延迟于"30秒内" |
 
 ## 8. 综合判定与改进建议
@@ -120,7 +120,7 @@ Granger 重估 — 不确定性：重估样本量、冷却期误差、新 p-valu
 1. reversion_rate=0.05 的 EM 类比需替换为 OU 过程或统计依据
 2. TIME_COOLDOWN=24h 的"FOMC 对齐"逻辑错误，需基于实际质变频率校准
 3. head_floor=0.1 与 ElasticConstraintResolver floor=0.20 的哲学一致性需重新论证
-4. 质变事件 → GeneInnovationEngine 的触发路径需在 [ftc_gene_innovation.py#L6](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/ftc_gene_innovation.py#L6) 触发条件中新增"质变事件"来源
+4. 质变事件 → GeneInnovationEngine 的触发路径需在 [ftc_gene_innovation.py#L6](../../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/ftc_gene_innovation.py#L6) 触发条件中新增"质变事件"来源
 5. confidence_boost=1.15/penalty=0.9 的不对称设计需论证或改为对称
 
 ### P2 优化项（远期优化）
@@ -157,8 +157,8 @@ Granger 重估 — 不确定性：重估样本量、冷却期误差、新 p-valu
 ## 11. 补充调研结论与评分更新（v1.1 新增）
 
 > 6 项补充调研已完成，详见：
-> - [调研报告_理论项_3_5_6.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md)（相平面+消融+多重比较）
-> - [调研报告_数据项_1_2_4.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md)（质变分布+断裂命中率+时间周期）
+> - [调研报告_理论项_3_5_6.md](../../23-四层闭环自进化交易架构/docs/调研报告_理论项_3_5_6.md)（相平面+消融+多重比较）
+> - [调研报告_数据项_1_2_4.md](../../23-四层闭环自进化交易架构/docs/调研报告_数据项_1_2_4.md)（质变分布+断裂命中率+时间周期）
 >
 > 基于新证据重新评审。
 
@@ -341,8 +341,8 @@ development_tasks:
 ## 12. 复盘与补充调研 2 项（v1.2 新增）
 
 > v1.1 评审结论 7.2/10 出具后，主代理复盘发现 3 项可信度风险（R1 评分张力 / R2 让步阈值违反 / R3 模式 4/6 未完全解决），按用户决策"接受复盘，补充 2 项调研"，已完成：
-> - [调研报告_补充项_7_替代框架对比.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md)
-> - [调研报告_补充项_8_单链路可靠性.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md)
+> - [调研报告_补充项_7_替代框架对比.md](../../23-四层闭环自进化交易架构/docs/调研报告_补充项_7_替代框架对比.md)
+> - [调研报告_补充项_8_单链路可靠性.md](../../23-四层闭环自进化交易架构/docs/调研报告_补充项_8_单链路可靠性.md)
 >
 > 本章基于新证据重新复核 R1-R3 风险，并更新评分与判定。
 

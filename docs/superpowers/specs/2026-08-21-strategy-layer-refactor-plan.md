@@ -2,7 +2,7 @@
 
 > **文档状态**：方案设计，不改代码
 > **创建日期**：2026-08-21
-> **关联文档**：[孙子五维度评估](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-21-sunzi-five-domains-evaluation.md) §4.10–§4.13
+> **关联文档**：[孙子五维度评估](../../../docs/superpowers/specs/2026-08-21-sunzi-five-domains-evaluation.md) §4.10–§4.13
 > **改造路径**：先 A（轻量改造）后 B（完整改造，仅限组合级，不做单笔级 36 子链）
 > **修订记录**：
 > - 2026-08-21 v1.0：初稿，定义路径 A（约 215 行）与路径 B（约 240 行）。
@@ -619,7 +619,7 @@ P3EarlyExitStrategy 仍保持不变（系统性 TDA+Ising 预警，与策略类�
 - 写入 key：`strategy_type / style_exposures / exit_config / strategy_version / regime_label / five_score_snapshot / liquidity_tier`
 - `strategy_source` 字段复用：原值 "bcrm" / 外部不变，区分五计策略路由不使用该槽位，避免与外部策略（马丁等）来源混淆。
 
-`PositionTracker.open_position()` 签名在路径 A 阶段**不新增参数**。`_open_position()` 调用时把策略层输出塞进 `enhance_info`，随后 `position_tracker.open_position(..., enhance_info=enhance_info, ...)` 即完成落盘。这与现有 [polling_trader.py L33](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-21-strategy-layer-refactor-plan.md#L33) 数据流完全一致，调用点改动降到最少。
+`PositionTracker.open_position()` 签名在路径 A 阶段**不新增参数**。`_open_position()` 调用时把策略层输出塞进 `enhance_info`，随后 `position_tracker.open_position(..., enhance_info=enhance_info, ...)` 即完成落盘。这与现有 [polling_trader.py L33](../../../docs/superpowers/specs/2026-08-21-strategy-layer-refactor-plan.md#L33) 数据流完全一致，调用点改动降到最少。
 
 > **路径 B 后续再升级强类型**（R5）：当实盘验证无问题后，在 TradeRecord 里追加字段，并在 `_load_open_positions` 中继续保留白名单过滤——`TradeRecord.__dataclass_fields__` 自动识别新字段，旧 JSON 不会报错（因为被 filter 掉），字段默认值也保证缺省安全。
 

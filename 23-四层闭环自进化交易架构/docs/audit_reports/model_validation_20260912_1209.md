@@ -11,11 +11,11 @@
 
 | 环节 | 检查项 | 实现状态 | 评分 | 证据位置 |
 |------|--------|----------|------|----------|
-| ① 多路径=多矛盾 | `_discover_paths` 路径来源标注 source/dimension | ✅ 完整 | 100 | [evolution_pipeline.py:393-660](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L393-L660) |
-| ② 识别主要矛盾 | `identify()` 三步法(共振→冲突裁决→主导性评估) | ✅ 完整 | 100 | [contradiction_identifier.py:67-117](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L67-L117) |
-| ③ 趋势延续性回流 | `TrendContinuationScorer` 接入 pipeline，continuation_score 非恒 0.5 | ✅ 完整 | 100 | [evolution_pipeline.py:725-741](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L725-L741) |
-| ④ 验证回流闭环 | `_contradiction_weight_factors` 被 `identify()` 消费（完整闭环） | ✅ 完整 | 100 | [evolution_pipeline.py:716-721, 1116-1122](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L716-L721) |
-| ⑤ 最小阻力计算 | HJB lagrangian 传入 `primary_contradiction` | ✅ 完整 | 100 | [hjb_solver.py:112-178](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L112-L178) |
+| ① 多路径=多矛盾 | `_discover_paths` 路径来源标注 source/dimension | ✅ 完整 | 100 | [evolution_pipeline.py:393-660](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L393-L660) |
+| ② 识别主要矛盾 | `identify()` 三步法(共振→冲突裁决→主导性评估) | ✅ 完整 | 100 | [contradiction_identifier.py:67-117](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L67-L117) |
+| ③ 趋势延续性回流 | `TrendContinuationScorer` 接入 pipeline，continuation_score 非恒 0.5 | ✅ 完整 | 100 | [evolution_pipeline.py:725-741](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L725-L741) |
+| ④ 验证回流闭环 | `_contradiction_weight_factors` 被 `identify()` 消费（完整闭环） | ✅ 完整 | 100 | [evolution_pipeline.py:716-721, 1116-1122](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L716-L721) |
+| ⑤ 最小阻力计算 | HJB lagrangian 传入 `primary_contradiction` | ✅ 完整 | 100 | [hjb_solver.py:112-178](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L112-L178) |
 
 **5环节综合得分: 100/100** — 矛盾论哲学逻辑链完整贯通，无断裂。
 
@@ -38,7 +38,7 @@ _discover_paths (8种source) → identify(paths, weight_factor=_wfs) → primary
 | `sample_count()` 非0且持续增长 | ✅ | `return len(self._samples)`，每次 `record()` append |
 | `mean_reward` 非 NaN/Inf | ✅ | `reward` NaN 时兜底为 0.0；`np.mean` 前无 NaN |
 | `train_policy()` 在 `enable_shadow_rl_phase3` 开启后调用 | ✅ | 样本≥2000 且开关开启 → `self.trainer.train_policy(list(self._samples))` |
-| L3 sample 在 `KlineEventHandler.on_kline_close` 中记录 | ✅ | [kline_event_handler.py:774-780](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L774-L780) |
+| L3 sample 在 `KlineEventHandler.on_kline_close` 中记录 | ✅ | [kline_event_handler.py:774-780](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L774-L780) |
 
 **L3 统计结构**:
 ```python

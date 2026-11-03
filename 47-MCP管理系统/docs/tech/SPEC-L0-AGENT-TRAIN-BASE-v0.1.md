@@ -1,7 +1,7 @@
 # SPEC-L0-AGENT-TRAIN-BASE — Agent 训练基座开发 SPEC
 
-> **版本**: v0.1 ｜ **日期**: 2026-11-02 ｜ **状态**: 📋 设计草案，M1 壳落地后立即启动 Phase 0
-> **上游**: [评估报告](../../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-传统金融AI-Agent训练架构对齐评估.md)（训练算法层）· [SPEC-L0-DOMAIN-AGENTS v0.2](./SPEC-L0-DOMAIN-AGENTS-v0.1.md) §4 Phase 0（训练基座补全是壳搭建期间并行推进）· [TECH-L0-MCP v0.1](./TECH-L0-MCP-v0.1.md) §5 已落地工具测试方法
+> **版本**: v0.1 ｜ **日期**: 2026-11-02 ｜ **状态**: ✅ TB1-TB5 + Phase A 已落地（48/48 TDD，影子验证 PASS，2026-11-03）
+> **上游**: [评估报告](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-传统金融AI-Agent训练架构对齐评估.md)（训练算法层）· [SPEC-L0-DOMAIN-AGENTS v0.2](./SPEC-L0-DOMAIN-AGENTS-v0.2.md) §4 Phase 0（训练基座补全是壳搭建期间并行推进）· [TECH-L0-MCP v0.1](./TECH-L0-MCP-v0.1.md) §5 已落地工具测试方法
 > **依赖前置**: SPEC-L0-MCP-PACKAGING v0.3 M1 基础（壳层 envelope.data 业务体透传稳定）
 > **定位**: 训练基座是 MCP 壳和域内 agent 之间的**基础设施**——比 AGENT Phase A-E 更早启动
 > **约束**: 单人维护 · 零 GPU · 不引入神经网络权重微调（H2）· 影子验证先行（H3 扩展）· **port 层 Principal 硬门禁（D1）** · **TRAIN-BASE Mandate 感知（D2）** · **kill_switch 语义=告警型非执行型（C2）** · **version 字段重命名（A1）**

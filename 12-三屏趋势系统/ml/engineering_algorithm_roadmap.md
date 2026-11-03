@@ -136,8 +136,8 @@ class PhilosophyFeatureEngineer:
 
 ### 2.0 Walk-Forward 验证基线（2026-07-19）
 
-> 验证脚本：[stage2_dip_buy_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
-> 验证结果：[stage2_dip_buy_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
+> 验证脚本：[stage2_dip_buy_validation.py](../../12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
+> 验证结果：[stage2_dip_buy_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
 
 **DIP_BUY 场景特征重要性 Walk-Forward 验证**（12折，730天训练/180天测试）：
 
@@ -164,8 +164,8 @@ class PhilosophyFeatureEngineer:
 
 ### 2.1 Stage 2.1 假设DIP-001验证（RSI + 成交量，2026-07-19）
 
-> 验证脚本：[stage2_dip_buy_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
-> 验证结果：[stage2_dip_buy_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
+> 验证脚本：[stage2_dip_buy_validation.py](../../12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
+> 验证结果：[stage2_dip_buy_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
 
 **假设DIP-001**：周线MA200附近 + 日线RSI<30 + 成交量放大 = 高质量抄底点
 
@@ -255,8 +255,8 @@ class PhilosophyFeatureEngineer:
 
 ### 2.5 Stage 2.4 清理冗余派生特征验证（2026-07-19）
 
-> 验证脚本：[stage2_4_cleanup_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/stage2_4_cleanup_validation.py)
-> 验证结果：[stage2_4_cleanup_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/stage2_4_cleanup_result.json)
+> 验证脚本：[stage2_4_cleanup_validation.py](../../12-三屏趋势系统/ml/stage2_4_cleanup_validation.py)
+> 验证结果：[stage2_4_cleanup_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_4_cleanup_result.json)
 
 **操作内容**：移除3个零重要性派生特征（`dip_buy_level`/`dip_buy_position_ratio`/`left_side_buy_signal`），特征总数 76→73
 
@@ -324,9 +324,9 @@ class PhilosophyFeatureEngineer:
 
 ### 2.6 V5.1 周期相似性特征探索（2026-07-18，已回退 ❌）
 
-> 验证脚本：[v51_cycle_similarity_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v51_cycle_similarity_validation.py)
-> 消融实验：[v51_ablation_experiment.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v51_ablation_experiment.py)
-> 验证结果：[v51_cycle_similarity_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/v51_cycle_similarity_result.json)
+> 验证脚本：[v51_cycle_similarity_validation.py](../../12-三屏趋势系统/ml/v51_cycle_similarity_validation.py)
+> 消融实验：[v51_ablation_experiment.py](../../12-三屏趋势系统/ml/v51_ablation_experiment.py)
+> 验证结果：[v51_cycle_similarity_result.json](../../12-三屏趋势系统/ml/backtest_results/v51_cycle_similarity_result.json)
 
 **探索假设**：基于BTC 4年牛熊周期（减半后18月见顶 + 顶后12.5月见底 + 历史平均跌幅82.3%），构建周期相似性特征预测趋势。
 
@@ -376,9 +376,9 @@ class PhilosophyFeatureEngineer:
 
 ### 2.7 V5.2 美联储利率周期特征探索（2026-07-18，已回退 ❌）
 
-> 验证脚本：[v52_fed_rate_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v52_fed_rate_validation.py)
-> 消融实验：[v52_ablation_experiment.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v52_ablation_experiment.py)
-> 验证结果：[v52_fed_rate_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/v52_fed_rate_result.json)
+> 验证脚本：[v52_fed_rate_validation.py](../../12-三屏趋势系统/ml/v52_fed_rate_validation.py)
+> 消融实验：[v52_ablation_experiment.py](../../12-三屏趋势系统/ml/v52_ablation_experiment.py)
+> 验证结果：[v52_fed_rate_result.json](../../12-三屏趋势系统/ml/backtest_results/v52_fed_rate_result.json)
 
 **探索假设**：基于美联储加息/降息周期构建宏观流动性特征：
 - 美联储降息 + BTC低位 → all in 抄底信号

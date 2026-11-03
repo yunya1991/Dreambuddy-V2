@@ -1,6 +1,6 @@
 # P0 实施计划：FeatureRegistry 插件机制与基线建立
 
-**关联设计文档**: [2026-08-05-macro-features-integration-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/superpowers/specs/2026-08-05-macro-features-integration-design.md)  
+**关联设计文档**: [2026-08-05-macro-features-integration-design.md](../../../../11-易经推理系统/docs/superpowers/specs/2026-08-05-macro-features-integration-design.md)  
 **创建日期**: 2026-08-05  
 **状态**: 待执行
 
@@ -12,7 +12,7 @@
 
 ### 修正 1：L1 特征模块是 10 个，不是 11 个
 
-`MetaLabelingFeaturesV2` **不是 L1 特征模块**，而是 L2 管道内部调用——它在 [dialectical_ml_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) 的 `train_l2()` 和 `predict()` 内部被调用，返回 `np.ndarray`（非 DataFrame），且强依赖 `l1_pred` / `l1_proba`。**不应注册到 FeatureRegistry**。
+`MetaLabelingFeaturesV2` **不是 L1 特征模块**，而是 L2 管道内部调用——它在 [dialectical_ml_engine.py](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) 的 `train_l2()` 和 `predict()` 内部被调用，返回 `np.ndarray`（非 DataFrame），且强依赖 `l1_pred` / `l1_proba`。**不应注册到 FeatureRegistry**。
 
 FeatureRegistry 管理的是 **10 个 L1 特征模块**：
 
@@ -31,7 +31,7 @@ FeatureRegistry 管理的是 **10 个 L1 特征模块**：
 
 ### 修正 2：实盘 L2 也存在缺陷
 
-bcrm2_adapter 的 `train()` [L333](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L333) 调用了 `engine.train_l2(X, y, df=df_valid)`，但**未传 `ref_df` 和 `cycle_phase`**，导致 L2 的 MetaLabelingFeaturesV2 退化（跨资产和周期特征全部缺失）。P0 需一并修复。
+bcrm2_adapter 的 `train()` [L333](../../../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L333) 调用了 `engine.train_l2(X, y, df=df_valid)`，但**未传 `ref_df` 和 `cycle_phase`**，导致 L2 的 MetaLabelingFeaturesV2 退化（跨资产和周期特征全部缺失）。P0 需一并修复。
 
 ### 修正 3：wdh 子模块注册不一致
 
@@ -353,7 +353,7 @@ FeatureRegistry.register(
 
 ### 步骤 4：重构 walk_forward_backtester.py
 
-**目标**：将 [L320-L472](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py#L320-L472) 的 150 行手工 concat 替换为 `FeatureRegistry.compute_all()` 调用。
+**目标**：将 [L320-L472](../../../../11-易经推理系统/scripts/memory_l4/bcrm2/walk_forward_backtester.py#L320-L472) 的 150 行手工 concat 替换为 `FeatureRegistry.compute_all()` 调用。
 
 **改动前**（L320-L472 摘要）：
 ```python
@@ -434,7 +434,7 @@ if enable_cycle:
 
 ### 步骤 5：重构 bcrm2_adapter.py train()
 
-**目标**：将 [L192-L225](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L192-L225) 的 6 模块手工 concat 替换为 `FeatureRegistry.compute_all()`，并启用全部 10 个模块。
+**目标**：将 [L192-L225](../../../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L192-L225) 的 6 模块手工 concat 替换为 `FeatureRegistry.compute_all()`，并启用全部 10 个模块。
 
 **改动前**（L192-L225 摘要）：
 ```python
@@ -521,7 +521,7 @@ def _fetch_ref_df(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
     return None
 ```
 
-**同时修改 infer()** [L395-L411](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L395-L411)：
+**同时修改 infer()** [L395-L411](../../../../11-易经推理系统/scripts/memory_l4/bcrm2_adapter.py#L395-L411)：
 
 ```python
 # 改动前：6 模块手工 concat

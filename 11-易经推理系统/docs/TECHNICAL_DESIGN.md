@@ -1084,7 +1084,7 @@ CREATE TABLE IF NOT EXISTS exit_strategy_log (
 ## 4. BCRM 2.0 技术深度
 
 > **重要：§4 推理细节增补文档已完成（2026-09-03）** — 字段 Schema / 五角 v4 算法 / 溯源链 / FAIL-CLOSED 速查 见：
-> [BCRM2_INFERENCE_DEEP_DIVE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/BCRM2_INFERENCE_DEEP_DIVE.md)（9 章 + 2 附录，完整推理细节）
+> [BCRM2_INFERENCE_DEEP_DIVE.md](../../11-易经推理系统/docs/BCRM2_INFERENCE_DEEP_DIVE.md)（9 章 + 2 附录，完整推理细节）
 >
 > 本 §4 保留"方法论/特征/架构"的高层描述；代码级推理实现以上述文档为准。
 
@@ -1771,7 +1771,7 @@ A0-A9阶段数据收集 (a0a9_bridge.py)
 
 ### 9.3.1 宏观特征层（MacroFeatures）— v4.2 特征级开关
 
-**文件**: [macro_features.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/macro_features.py)
+**文件**: [macro_features.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/macro_features.py)
 
 **定位**: BCRM 2.0 特征工程的组成部分，提供 24 个市场级宏观特征（6 维度），通过两级开关控制启用/禁用。
 
@@ -2172,14 +2172,14 @@ export DREAMOS_EXIT_SELECTOR_ENABLED=1
 
 **配置项**: `td_mode = "isolated"`（可通过环境变量 `OKX_TD_MODE` 覆盖）
 
-**代码位置**: [okx_simulated.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/okx_simulated.py)
+**代码位置**: [okx_simulated.py](../../11-易经推理系统/scripts/memory_l4/okx_simulated.py)
 
 - `DEFAULT_CONFIG["td_mode"]` = `"isolated"`
 - `_load_config()` 支持从 `data/okx_sim/config.json` 和环境变量读取
 - `place_order()` 从配置读取，不再硬编码 `td_mode`
 - `place_stop_loss_take_profit()` 止盈止损单同步使用配置的 td_mode
 
-**保证金检查**: [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py)
+**保证金检查**: [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py)
 
 | 模式 | 检查逻辑 |
 |------|----------|
@@ -2235,7 +2235,7 @@ pos_size_info = self.risk_manager.calc_position_size(
 | -30U | 20.0% | ✗ 触发拦截（达到阈值） |
 | -35U | 23.3% | ✗ 触发拦截 + `trading_halted=True` |
 
-**关键代码**：[trading_utils.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py) `RiskManager.can_trade()`
+**关键代码**：[trading_utils.py](../../11-易经推理系统/scripts/memory_l4/trading_utils.py) `RiskManager.can_trade()`
 
 ```python
 # 动态亏损阈值：亏损超过当前权益的 loss_limit_pct（默认20%）则拦截
@@ -2290,7 +2290,7 @@ export OKX_TD_MODE=isolated
 
 ### 飞书告警
 
-**文件**: [scripts/memory_l4/yijing_feishu_alert.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/yijing_feishu_alert.py)
+**文件**: [scripts/memory_l4/yijing_feishu_alert.py](../../11-易经推理系统/scripts/memory_l4/yijing_feishu_alert.py)
 
 - 告警类型：heartbeat / trading / model / position / system / performance
 - 告警级别：critical / error / warning / info

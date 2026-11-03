@@ -27,7 +27,7 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 
 ### 1.1 实盘绩效铁证
 
-**数据来源**：[data/polling_trader/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/data/polling_trader/) 2026-07-06 至 2026-07-24 共 13 天日志
+**数据来源**：[data/polling_trader/](../../../11-易经推理系统/data/polling_trader/) 2026-07-06 至 2026-07-24 共 13 天日志
 
 | 指标 | 数值 | 严重程度 |
 |:---|---:|:---:|
@@ -109,20 +109,20 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 
 | 模块 | 代码位置 | 宣称功能 | 实际状态 | A8判定 |
 |:---|:---|:---|:---|:---:|
-| BCRM 1.0 | [bcrm/engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/engine.py) | 辩证矛盾+力学引擎 | 可导入，功能完整 | 🟡 有功能 |
-| BCRM 2.0 | [bcrm2/dialectical_ml_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) | ML辩证引擎+111特征 | L1/L2模型文件缺失 | 🔴 半残 |
-| 八卦引擎 | [bcrm/bagua_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/bagua_engine.py) | 八卦力学合成 | 可导入 | 🟡 有功能 |
-| 五象力场 | [bcrm/force_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm/force_engine.py) | Verlet+Langevin+Kalman | 可导入 | 🟡 有功能 |
+| BCRM 1.0 | [bcrm/engine.py](../../../11-易经推理系统/scripts/memory_l4/bcrm/engine.py) | 辩证矛盾+力学引擎 | 可导入，功能完整 | 🟡 有功能 |
+| BCRM 2.0 | [bcrm2/dialectical_ml_engine.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/dialectical_ml_engine.py) | ML辩证引擎+111特征 | L1/L2模型文件缺失 | 🔴 半残 |
+| 八卦引擎 | [bcrm/bagua_engine.py](../../../11-易经推理系统/scripts/memory_l4/bcrm/bagua_engine.py) | 八卦力学合成 | 可导入 | 🟡 有功能 |
+| 五象力场 | [bcrm/force_engine.py](../../../11-易经推理系统/scripts/memory_l4/bcrm/force_engine.py) | Verlet+Langevin+Kalman | 可导入 | 🟡 有功能 |
 | 五角校验 | - | 5源交叉验证 | 代码存在但效果未验证 | 🟡 待验证 |
-| 市态切换 | [bcrm2/market_regime.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/market_regime.py) | 8种市态分类 | 99.9%判为震荡 | 🔴 失效 |
-| 震荡市增强 | [ranging_market_enhancer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/ranging_market_enhancer.py) | 5态自适应+布林双信号 | 已接入，正在运行 | 🟡 运行中 |
-| CBR 案例检索 | [cbr_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/cbr_adapter.py) | 4R循环案例检索 | 已初始化，案例库空 | 🟡 空转 |
-| 经典离场系统 | [classic_exit_system.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/classic_exit_system.py) | L0-L2多优先级离场 | 已启用，回退到原始参数 | 🟡 运行中 |
-| 易经离场系统 | [yijing_exit_system.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/yijing_exit_system.py) | 卦象驱动离场决策 | 已启用 | 🟡 运行中 |
-| L4 记忆体系 | [pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/pipeline.py) | 实时→短期→长期→归档 | 代码完整，反馈断裂 | 🔴 空转 |
-| 自进化引擎 | [self_evolution_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/self_evolution_engine.py) | 经验→知识→约束→升级 | 代码存在，未触发 | 🔴 空转 |
-| 增量学习 | [bcrm2/incremental_learner.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/incremental_learner.py) | 实盘数据反馈迭代 | 已初始化，样本不足 | 🟡 待积累 |
-| QMM 量子矩 | [qmm/engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/qmm/engine.py) | 三重屏+不确定性建模 | 代码完整，未接入主流程 | 🟡 独立运行 |
+| 市态切换 | [bcrm2/market_regime.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/market_regime.py) | 8种市态分类 | 99.9%判为震荡 | 🔴 失效 |
+| 震荡市增强 | [ranging_market_enhancer.py](../../../11-易经推理系统/scripts/memory_l4/ranging_market_enhancer.py) | 5态自适应+布林双信号 | 已接入，正在运行 | 🟡 运行中 |
+| CBR 案例检索 | [cbr_adapter.py](../../../11-易经推理系统/scripts/memory_l4/cbr_adapter.py) | 4R循环案例检索 | 已初始化，案例库空 | 🟡 空转 |
+| 经典离场系统 | [classic_exit_system.py](../../../11-易经推理系统/scripts/memory_l4/classic_exit_system.py) | L0-L2多优先级离场 | 已启用，回退到原始参数 | 🟡 运行中 |
+| 易经离场系统 | [yijing_exit_system.py](../../../11-易经推理系统/scripts/memory_l4/yijing_exit_system.py) | 卦象驱动离场决策 | 已启用 | 🟡 运行中 |
+| L4 记忆体系 | [pipeline.py](../../../11-易经推理系统/scripts/memory_l4/pipeline.py) | 实时→短期→长期→归档 | 代码完整，反馈断裂 | 🔴 空转 |
+| 自进化引擎 | [self_evolution_engine.py](../../../11-易经推理系统/scripts/memory_l4/self_evolution_engine.py) | 经验→知识→约束→升级 | 代码存在，未触发 | 🔴 空转 |
+| 增量学习 | [bcrm2/incremental_learner.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/incremental_learner.py) | 实盘数据反馈迭代 | 已初始化，样本不足 | 🟡 待积累 |
+| QMM 量子矩 | [qmm/engine.py](../../../11-易经推理系统/scripts/memory_l4/qmm/engine.py) | 三重屏+不确定性建模 | 代码完整，未接入主流程 | 🟡 独立运行 |
 
 **15 个核心模块中**：
 - 🟢 完全正常运行：0 个
@@ -133,11 +133,11 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 
 | Bug | 位置 | 严重度 | 状态 |
 |:---|:---|:---:|:---|
-| 模型文件缺失（L1/L2） | [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py) 系统诊断 | P1 | 存在 |
-| 系统诊断 `has_error` 属性不存在 | [polling_trader.py:289](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L289) | P2 | 存在 |
+| 模型文件缺失（L1/L2） | [polling_trader.py](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py) 系统诊断 | P1 | 存在 |
+| 系统诊断 `has_error` 属性不存在 | [polling_trader.py:289](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L289) | P2 | 存在 |
 | 卦象分布畸形（坤为地>50%） | BCRM 引擎核心 | P0 | 存在 |
 | 市态判定 99.9% 震荡 | 市态分类器 | P1 | 存在 |
-| 飞书未配置 | [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py) | P3 | 存在 |
+| 飞书未配置 | [polling_trader.py](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py) | P3 | 存在 |
 | 持仓不一致（本地 vs OKX） | 持仓同步逻辑 | P2 | 间歇性 |
 
 ---

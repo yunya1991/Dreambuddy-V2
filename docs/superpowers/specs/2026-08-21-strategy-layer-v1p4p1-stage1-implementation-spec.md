@@ -1,7 +1,7 @@
 # 策略算法层 v1.4.1 — 阶段1（最小影子模式）实施 Spec
 
 > **版本**：sal-stage1-v1.4.1（本 spec 版本：v1.0.0）
-> **对应上游文档**：[孙子五维度评估 §一/§4.2/§11-§16](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-21-sunzi-five-domains-evaluation.md) / [策略层改造方案 v1.4.1 §十](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-21-strategy-layer-refactor-plan.md)
+> **对应上游文档**：[孙子五维度评估 §一/§4.2/§11-§16](../../../docs/superpowers/specs/2026-08-21-sunzi-five-domains-evaluation.md) / [策略层改造方案 v1.4.1 §十](../../../docs/superpowers/specs/2026-08-21-strategy-layer-refactor-plan.md)
 > **本阶段核心原则 = 零侵入实盘决策**：所有新增代码只读现有状态做计算 → 写 shadow_logger 结构化日志 → **不修改任何 ExitStrategy 开/平仓、RiskManager 仓位、ParameterMapper 注入的现有行为**；全部 2 总开关 + 7 子开关 + 3 模式开关默认 = False；冷启动时只启用 `enable_five_domain_shadow_mode=True` 做记录。
 > **在线学习（§十六）本阶段不落地**：只在 FiveDomainState / StrategySelection dataclass 中预留结构化字段 `DecisionAuditRecord` 供阶段2离线预训练消费，不引入任何 β-Bandit / CUSUM 代码。阶段2触发条件见五维度评估 §16.3。
 

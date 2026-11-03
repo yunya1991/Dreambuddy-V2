@@ -17,7 +17,7 @@
 意图识别输出包含：对话意图分类、槽位、风险等级、能力范围判断、能力路由决策。
 当意图超出 DreamOS 能力范围时，降级到 Harness 驱动外部 agent 调研。
 
-> 完整意图体系详见 [`intent-taxonomy.md`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/intent-recognition-spec/intent-taxonomy.md)
+> 完整意图体系详见 [`intent-taxonomy.md`](../../1-ARCHITECTURE/intent-recognition-spec/intent-taxonomy.md)
 
 ---
 

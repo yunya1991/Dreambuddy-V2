@@ -596,14 +596,14 @@ Step 3: SKILL.md 兼容导入（依赖现有 SkillEngine + NodeRegistry）
 ### 8.1 相关文件索引
 
 **现有文件（不修改）**：
-- [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py) — 实盘交易主执行器
-- [yijing_monitor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/yijing_monitor.py) — 监控与自进化
-- [cbr_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/cbr_engine.py) — CBR 案例推理引擎
-- [cbr_similarity.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/cbr_similarity.py) — 相似度计算
-- [kg_store.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/kg_store.py) — 知识图谱存储
-- [skill_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/core/skill_engine.py) — SKILL 执行引擎
-- [registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/capability/registry.py) — Dream OS 能力域注册表
-- [node_registry.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/registry/node_registry.py) — Dream OS 节点注册表
+- [polling_trader.py](../../../../11-易经推理系统/scripts/memory_l4/polling_trader.py) — 实盘交易主执行器
+- [yijing_monitor.py](../../../../11-易经推理系统/scripts/memory_l4/yijing_monitor.py) — 监控与自进化
+- [cbr_engine.py](../../../../11-易经推理系统/scripts/memory_l4/cbr_engine.py) — CBR 案例推理引擎
+- [cbr_similarity.py](../../../../11-易经推理系统/scripts/memory_l4/cbr_similarity.py) — 相似度计算
+- [kg_store.py](../../../../11-易经推理系统/scripts/memory_l4/kg_store.py) — 知识图谱存储
+- [skill_engine.py](../../../../16-调控系统/core/skill_engine.py) — SKILL 执行引擎
+- [registry.py](../../../../1-ARCHITECTURE/dreamos/core/capability/registry.py) — Dream OS 能力域注册表
+- [node_registry.py](../../../../1-ARCHITECTURE/dreamos/registry/node_registry.py) — Dream OS 节点注册表
 
 **新增文件**：
 - `scripts/memory_l4/inspect.py` — inspect 诊断命令

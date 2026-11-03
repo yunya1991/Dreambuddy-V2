@@ -270,56 +270,56 @@ flowchart LR
 ### 7.1 用户层
 | 文件 | 职责 |
 |------|------|
-| [src/app/chat](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/chat) | 主对话界面 |
-| [src/app/dashboard/page.tsx](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/dashboard/page.tsx) | 仪表盘主页面 |
-| [src/app/notebook](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/notebook) | 笔记本（步骤执行状态） |
-| [src/app/board](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/board) | 审批流 |
-| [src/app/page.tsx](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/page.tsx) | 首页路由 |
+| [src/app/chat](../../../3-FRONTEND/dream-universal-gateway/src/app/chat) | 主对话界面 |
+| [src/app/dashboard/page.tsx](../../../3-FRONTEND/dream-universal-gateway/src/app/dashboard/page.tsx) | 仪表盘主页面 |
+| [src/app/notebook](../../../3-FRONTEND/dream-universal-gateway/src/app/notebook) | 笔记本（步骤执行状态） |
+| [src/app/board](../../../3-FRONTEND/dream-universal-gateway/src/app/board) | 审批流 |
+| [src/app/page.tsx](../../../3-FRONTEND/dream-universal-gateway/src/app/page.tsx) | 首页路由 |
 
 ### 7.2 API 层
 | 文件 | 职责 |
 |------|------|
-| [src/app/api/chat/route.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/chat/route.ts) | 主对话处理入口（初始化 scheduler + 路由 + 执行链） |
-| [src/app/api/intent/analyze/route.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/intent/analyze/route.ts) | 独立意图分析接口 |
-| [src/app/api/market/*](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/market) | 行情/运营数据接口 |
-| [src/app/api/config/*](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/config) | API 配置 / 策略设置 / 交易参数 |
-| [src/app/api/notebook/*](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/notebook) | 笔记本状态同步 |
-| [src/app/api/user/*](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/app/api/user) | 用户体系（签到/余额/登录） |
+| [src/app/api/chat/route.ts](../../../3-FRONTEND/dream-universal-gateway/src/app/api/chat/route.ts) | 主对话处理入口（初始化 scheduler + 路由 + 执行链） |
+| [src/app/api/intent/analyze/route.ts](../../../3-FRONTEND/dream-universal-gateway/src/app/api/intent/analyze/route.ts) | 独立意图分析接口 |
+| [src/app/api/market/*](../../../3-FRONTEND/dream-universal-gateway/src/app/api/market) | 行情/运营数据接口 |
+| [src/app/api/config/*](../../../3-FRONTEND/dream-universal-gateway/src/app/api/config) | API 配置 / 策略设置 / 交易参数 |
+| [src/app/api/notebook/*](../../../3-FRONTEND/dream-universal-gateway/src/app/api/notebook) | 笔记本状态同步 |
+| [src/app/api/user/*](../../../3-FRONTEND/dream-universal-gateway/src/app/api/user) | 用户体系（签到/余额/登录） |
 
 ### 7.3 意图路由层
 | 文件 | 职责 |
 |------|------|
-| [src/lib/intent/smart-router.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/intent/smart-router.ts) | 核心路由逻辑：intent → chain + mode + credits |
-| [src/lib/intent/fallback-engine.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/intent/fallback-engine.ts) | 四层识别（追问→LLM→规则→默认） |
-| [src/lib/intent/intent-memory.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-memory.ts) | RingBuffer 记忆库（1000 条） |
+| [src/lib/intent/smart-router.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/intent/smart-router.ts) | 核心路由逻辑：intent → chain + mode + credits |
+| [src/lib/intent/fallback-engine.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/intent/fallback-engine.ts) | 四层识别（追问→LLM→规则→默认） |
+| [src/lib/intent/intent-memory.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-memory.ts) | RingBuffer 记忆库（1000 条） |
 
 ### 7.4 执行链层
 | 文件 | 职责 |
 |------|------|
-| [src/lib/strategy/chain-controller.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/strategy/chain-controller.ts) | S1~S5 策略链执行器 |
-| [src/lib/dynamic-chain/runner.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/runner.ts) | 动态闭环链（plan-execute-reflect） |
-| [src/lib/dynamic-chain/graph-planner.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/graph-planner.ts) | 动态链步骤规划（权威源：S 系列步骤定义） |
-| [src/lib/dev-chain/index.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/index.ts) | 开发者 E 链 |
-| [src/lib/strategy/steps/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/strategy/steps) | S1~S5 每步具体实现 |
+| [src/lib/strategy/chain-controller.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/strategy/chain-controller.ts) | S1~S5 策略链执行器 |
+| [src/lib/dynamic-chain/runner.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/runner.ts) | 动态闭环链（plan-execute-reflect） |
+| [src/lib/dynamic-chain/graph-planner.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/graph-planner.ts) | 动态链步骤规划（权威源：S 系列步骤定义） |
+| [src/lib/dev-chain/index.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/dev-chain/index.ts) | 开发者 E 链 |
+| [src/lib/strategy/steps/](../../../3-FRONTEND/dream-universal-gateway/src/lib/strategy/steps) | S1~S5 每步具体实现 |
 
 ### 7.5 基础设施层
 | 文件 | 职责 |
 |------|------|
-| [src/lib/scheduler/cost-keeper.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/scheduler/cost-keeper.ts) | Token 用量追踪、预算控制、终止判断、报告生成 |
-| [src/lib/scheduler/skip-gate.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/scheduler/skip-gate.ts) | 步骤跳过判断（结合置信度/风险评分） |
-| [src/lib/compressor-adapter/index.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/compressor-adapter/index.ts) | 上下文压缩统一入口（文本摘要 + 图结构） |
-| [src/lib/graph-reflection-bridge.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/graph-reflection-bridge.ts) | 图结构状态管理 + 自省融合（增强 skip 判断 / 压缩 / 反思） |
-| [src/lib/knowledge-loader.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/knowledge-loader.ts) | 知识库加载与上下文注入 |
-| [src/lib/knowledge-rag.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/knowledge-rag.ts) | RAG 核心（嵌入 / 检索 / 上下文构建 / n-gram 降级） |
-| [src/lib/reflection-gates.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/reflection-gates.ts) | 置信度/风险评分 + skip gate 判断 |
+| [src/lib/scheduler/cost-keeper.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/scheduler/cost-keeper.ts) | Token 用量追踪、预算控制、终止判断、报告生成 |
+| [src/lib/scheduler/skip-gate.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/scheduler/skip-gate.ts) | 步骤跳过判断（结合置信度/风险评分） |
+| [src/lib/compressor-adapter/index.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/compressor-adapter/index.ts) | 上下文压缩统一入口（文本摘要 + 图结构） |
+| [src/lib/graph-reflection-bridge.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/graph-reflection-bridge.ts) | 图结构状态管理 + 自省融合（增强 skip 判断 / 压缩 / 反思） |
+| [src/lib/knowledge-loader.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/knowledge-loader.ts) | 知识库加载与上下文注入 |
+| [src/lib/knowledge-rag.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/knowledge-rag.ts) | RAG 核心（嵌入 / 检索 / 上下文构建 / n-gram 降级） |
+| [src/lib/reflection-gates.ts](../../../3-FRONTEND/dream-universal-gateway/src/lib/reflection-gates.ts) | 置信度/风险评分 + skip gate 判断 |
 
 ### 7.6 状态管理
 | 文件 | 职责 |
 |------|------|
-| [src/stores/chat-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/stores/chat-store.ts) | 对话消息列表 + 状态 |
-| [src/stores/auth-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/stores/auth-store.ts) | 用户登录态 + JWT |
-| [src/stores/notebook-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/stores/notebook-store.ts) | 笔记本步骤状态 |
-| [src/stores/credits-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/stores/credits-store.ts) | 积分余额 |
+| [src/stores/chat-store.ts](../../../3-FRONTEND/dream-universal-gateway/src/stores/chat-store.ts) | 对话消息列表 + 状态 |
+| [src/stores/auth-store.ts](../../../3-FRONTEND/dream-universal-gateway/src/stores/auth-store.ts) | 用户登录态 + JWT |
+| [src/stores/notebook-store.ts](../../../3-FRONTEND/dream-universal-gateway/src/stores/notebook-store.ts) | 笔记本步骤状态 |
+| [src/stores/credits-store.ts](../../../3-FRONTEND/dream-universal-gateway/src/stores/credits-store.ts) | 积分余额 |
 
 ---
 
@@ -367,12 +367,12 @@ AUTH_SECRET="your-secret"               # Auth.js v5
 
 | 测试文件 | 覆盖范围 | 运行方式 |
 |---------|---------|---------|
-| [tests/infrastructure-integration-test.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/tests/infrastructure-integration-test.ts) | 5 大基础设施独立正确性 + 协作顺畅度 | `pnpm tsx tests/infrastructure-integration-test.ts` |
-| [tests/smart-router-v2-stress-test.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/tests/smart-router-v2-stress-test.ts) | smart-router 各种 intent × role × thinking_mode 组合 | `pnpm tsx tests/smart-router-v2-stress-test.ts` |
-| [tests/integration-three-systems.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/tests/integration-three-systems.ts) | 主前端 + 审批 + 产品中台三系统联动 | `pnpm tsx tests/integration-three-systems.ts` |
+| [tests/infrastructure-integration-test.ts](../../../3-FRONTEND/dream-universal-gateway/tests/infrastructure-integration-test.ts) | 5 大基础设施独立正确性 + 协作顺畅度 | `pnpm tsx tests/infrastructure-integration-test.ts` |
+| [tests/smart-router-v2-stress-test.ts](../../../3-FRONTEND/dream-universal-gateway/tests/smart-router-v2-stress-test.ts) | smart-router 各种 intent × role × thinking_mode 组合 | `pnpm tsx tests/smart-router-v2-stress-test.ts` |
+| [tests/integration-three-systems.ts](../../../3-FRONTEND/dream-universal-gateway/tests/integration-three-systems.ts) | 主前端 + 审批 + 产品中台三系统联动 | `pnpm tsx tests/integration-three-systems.ts` |
 
 > 核心测试已通过：infrastructure-integration-test = 41/41 ✅
 
 ---
 
-*本文档为运营快速参考，详细设计请查阅 [docs/ARCHITECTURE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/docs/ARCHITECTURE.md)*
+*本文档为运营快速参考，详细设计请查阅 [docs/ARCHITECTURE.md](../../../3-FRONTEND/dream-universal-gateway/docs/ARCHITECTURE.md)*

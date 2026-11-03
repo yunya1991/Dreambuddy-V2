@@ -261,11 +261,11 @@ cat > "7-产物中台/docs/ENGINEERING_INDEX.md" <<'EOF'
 ## 当前文档主线
 
 - 当前保留的设计文档：
-- [ui-map-independent-hub-main-map-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md)
-- [product-hub-directory-migration-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/superpowers/specs/2026-05-22-product-hub-directory-migration-design.md)
+- [ui-map-independent-hub-main-map-design.md](../../../../7-产物中台/docs/superpowers/specs/2026-05-22-ui-map-independent-hub-main-map-design.md)
+- [product-hub-directory-migration-design.md](../../../../7-产物中台/docs/superpowers/specs/2026-05-22-product-hub-directory-migration-design.md)
 - 当前保留的实施计划：
-- [ui-map-independent-hub-main-map-implementation.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md)
-- [product-hub-directory-migration-implementation.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/superpowers/plans/2026-05-22-product-hub-directory-migration-implementation.md)
+- [ui-map-independent-hub-main-map-implementation.md](../../../../7-产物中台/docs/superpowers/plans/2026-05-22-ui-map-independent-hub-main-map-implementation.md)
+- [product-hub-directory-migration-implementation.md](../../../../7-产物中台/docs/superpowers/plans/2026-05-22-product-hub-directory-migration-implementation.md)
 
 ## 目录地图
 

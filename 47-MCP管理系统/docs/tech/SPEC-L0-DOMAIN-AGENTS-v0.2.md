@@ -1,8 +1,8 @@
 # SPEC-L0-DOMAIN-AGENTS — L0 域内 agent 化演进蓝图
 
-> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 📋 设计草案，待 M1-M4 壳落地后启动
+> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 🟡 Phase 0（训练基座 TB1-TB5）已完成 + Phase A（认知 agent 参数化）已落地；Phase B-E 待 COMM-SHADOW / Oracle 基础设施
 > **v0.2 变更**: 按 2026-11-02 传统金融 AI Agent 训练架构对齐评估报告（下文简称 §评估）补充训练算法层（GRPO/PSI/Beta verify/AlphaPareto/EvolveR）、新增 Phase 0 基座补全、新增 §5.1 H1-H8 硬约束、新增 §6 算力预算。v0.1 六域三档定级 + 壳/agent 分工边界 + Phase A-E 阶段框架不变
-> **上游**: [TECH-L0-MCP v0.1](./TECH-L0-MCP-v0.1.md)（壳实现手册）· [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（壳契约）· [评估报告](../../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-传统金融AI-Agent训练架构对齐评估.md)（训练架构对齐）
+> **上游**: [TECH-L0-MCP v0.1](./TECH-L0-MCP-v0.1.md)（壳实现手册）· [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（壳契约）· [评估报告](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-传统金融AI-Agent训练架构对齐评估.md)（训练架构对齐）
 > **依赖前置**: SPEC-L0-MCP-PACKAGING v0.3（M1④ 基线测量 → M2-M4 壳上线）
 > **定位**: **壳是协议门、agent 是门后自治推理**——两者分离、异步推进
 > **依据**: REA 33 已成熟范式（做梦器+反思+PoE+AI Audit+认知集成）；认知 4-MEMORY 已 agent 化（贝叶斯 verify+预测误差门控+蒸馏）

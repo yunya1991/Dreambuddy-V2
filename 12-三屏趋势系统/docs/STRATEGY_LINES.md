@@ -87,54 +87,54 @@
 
 | 文件 | 职责 | 修改入口 |
 |------|------|----------|
-| [engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py) | 主引擎，V4+波浪互斥融合编排 | `compute_trend_signal_from_dataframes()` |
-| [ml/halving_top_exit_strategy.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/halving_top_exit_strategy.py) | V4 减半周期逃顶策略（BTC专用） | `HalvingTopExitStrategy` |
-| [ml/altcoin_trend_strategy.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/altcoin_trend_strategy.py) | 非BTC趋势跟踪策略（自身MA200+减半影子仓位） | `AltcoinTrendStrategy` |
-| [ml/ewave_strategy_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/ewave_strategy_adapter.py) | 波浪策略适配器（互斥融合） | `EWaveStrategyAdapter` |
-| [ml/ewave_recognizer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/ewave_recognizer.py) | 波浪识别器 | `ElliottWaveRecognizer` |
-| [ml/ewave_backtest.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/ewave_backtest.py) | 波浪策略回测 | 独立回测脚本 |
-| [ml/v4_wave_fusion_comparison.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v4_wave_fusion_comparison.py) | V4+波浪融合对比 | 验证脚本 |
-| [ml/v4_wave_smart_fusion.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v4_wave_smart_fusion.py) | V4+波浪智能融合 | 验证脚本 |
-| [ml/comprehensive_strategy_comparison.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/comprehensive_strategy_comparison.py) | 综合策略对比回测 | 验证脚本 |
-| [ml/9year_strategy_comparison.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/9year_strategy_comparison.py) | 9年策略对比 | 验证脚本 |
-| [ml/walk_forward_v4_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/walk_forward_v4_validation.py) | V4 Walk-Forward 验证 | 验证脚本 |
+| [engine.py](../../12-三屏趋势系统/engine.py) | 主引擎，V4+波浪互斥融合编排 | `compute_trend_signal_from_dataframes()` |
+| [ml/halving_top_exit_strategy.py](../../12-三屏趋势系统/ml/halving_top_exit_strategy.py) | V4 减半周期逃顶策略（BTC专用） | `HalvingTopExitStrategy` |
+| [ml/altcoin_trend_strategy.py](../../12-三屏趋势系统/ml/altcoin_trend_strategy.py) | 非BTC趋势跟踪策略（自身MA200+减半影子仓位） | `AltcoinTrendStrategy` |
+| [ml/ewave_strategy_adapter.py](../../12-三屏趋势系统/ml/ewave_strategy_adapter.py) | 波浪策略适配器（互斥融合） | `EWaveStrategyAdapter` |
+| [ml/ewave_recognizer.py](../../12-三屏趋势系统/ml/ewave_recognizer.py) | 波浪识别器 | `ElliottWaveRecognizer` |
+| [ml/ewave_backtest.py](../../12-三屏趋势系统/ml/ewave_backtest.py) | 波浪策略回测 | 独立回测脚本 |
+| [ml/v4_wave_fusion_comparison.py](../../12-三屏趋势系统/ml/v4_wave_fusion_comparison.py) | V4+波浪融合对比 | 验证脚本 |
+| [ml/v4_wave_smart_fusion.py](../../12-三屏趋势系统/ml/v4_wave_smart_fusion.py) | V4+波浪智能融合 | 验证脚本 |
+| [ml/comprehensive_strategy_comparison.py](../../12-三屏趋势系统/ml/comprehensive_strategy_comparison.py) | 综合策略对比回测 | 验证脚本 |
+| [ml/9year_strategy_comparison.py](../../12-三屏趋势系统/ml/9year_strategy_comparison.py) | 9年策略对比 | 验证脚本 |
+| [ml/walk_forward_v4_validation.py](../../12-三屏趋势系统/ml/walk_forward_v4_validation.py) | V4 Walk-Forward 验证 | 验证脚本 |
 
 #### 副线代码 [ML_BASELINE]
 
 | 文件 | 职责 | 归属目录 |
 |------|------|----------|
-| [ml/philosophy_feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/philosophy_feature_engineer.py) | V5.5 28维哲学特征工程 | `ml/`（保留，被多文件引用） |
-| [ml/feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py) | 价格特征工程（V5.5 使用） | `ml/`（保留） |
-| [ml/v51_ablation_experiment.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v51_ablation_experiment.py) | V5.1 消融实验 | `ml/v55_baseline/`（建议） |
-| [ml/v51_cycle_similarity_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v51_cycle_similarity_validation.py) | V5.1 周期相似性验证 | `ml/v55_baseline/`（建议） |
-| [ml/v52_ablation_experiment.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v52_ablation_experiment.py) | V5.2 消融实验 | `ml/v55_baseline/`（建议） |
-| [ml/v52_fed_rate_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v52_fed_rate_validation.py) | V5.2 联邦利率验证 | `ml/v55_baseline/`（建议） |
-| [ml/v53_*.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/) | V5.3 系列验证（4个文件） | `ml/v55_baseline/`（建议） |
-| [ml/v54_direction4_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v54_direction4_validation.py) | V5.4 方向4验证 | `ml/v55_baseline/`（建议） |
-| [ml/v55_direction123_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v55_direction123_validation.py) | V5.5 方向123验证 | `ml/v55_baseline/`（建议） |
-| [ml/ewave_vs_v55_comparison.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/ewave_vs_v55_comparison.py) | 波浪 vs V5.5 对比 | `ml/v55_baseline/`（建议） |
-| [ml/philosophy_feature_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/philosophy_feature_validation.py) | 哲学特征验证 | `ml/v55_baseline/`（建议） |
-| [ml/stage2_dip_buy_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/stage2_dip_buy_validation.py) | Stage2 抄底验证 | `ml/v55_baseline/`（建议） |
-| [ml/multitask_model.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/multitask_model.py) | 多任务学习模型 | `ml/`（保留） |
-| [ml/lr_ml_strategy*.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/) | LR ML 策略 | `ml/`（保留） |
+| [ml/philosophy_feature_engineer.py](../../12-三屏趋势系统/ml/philosophy_feature_engineer.py) | V5.5 28维哲学特征工程 | `ml/`（保留，被多文件引用） |
+| [ml/feature_engineer.py](../../12-三屏趋势系统/ml/feature_engineer.py) | 价格特征工程（V5.5 使用） | `ml/`（保留） |
+| [ml/v51_ablation_experiment.py](../../12-三屏趋势系统/ml/v51_ablation_experiment.py) | V5.1 消融实验 | `ml/v55_baseline/`（建议） |
+| [ml/v51_cycle_similarity_validation.py](../../12-三屏趋势系统/ml/v51_cycle_similarity_validation.py) | V5.1 周期相似性验证 | `ml/v55_baseline/`（建议） |
+| [ml/v52_ablation_experiment.py](../../12-三屏趋势系统/ml/v52_ablation_experiment.py) | V5.2 消融实验 | `ml/v55_baseline/`（建议） |
+| [ml/v52_fed_rate_validation.py](../../12-三屏趋势系统/ml/v52_fed_rate_validation.py) | V5.2 联邦利率验证 | `ml/v55_baseline/`（建议） |
+| [ml/v53_*.py](../../12-三屏趋势系统/ml/) | V5.3 系列验证（4个文件） | `ml/v55_baseline/`（建议） |
+| [ml/v54_direction4_validation.py](../../12-三屏趋势系统/ml/v54_direction4_validation.py) | V5.4 方向4验证 | `ml/v55_baseline/`（建议） |
+| [ml/v55_direction123_validation.py](../../12-三屏趋势系统/ml/v55_direction123_validation.py) | V5.5 方向123验证 | `ml/v55_baseline/`（建议） |
+| [ml/ewave_vs_v55_comparison.py](../../12-三屏趋势系统/ml/ewave_vs_v55_comparison.py) | 波浪 vs V5.5 对比 | `ml/v55_baseline/`（建议） |
+| [ml/philosophy_feature_validation.py](../../12-三屏趋势系统/ml/philosophy_feature_validation.py) | 哲学特征验证 | `ml/v55_baseline/`（建议） |
+| [ml/stage2_dip_buy_validation.py](../../12-三屏趋势系统/ml/stage2_dip_buy_validation.py) | Stage2 抄底验证 | `ml/v55_baseline/`（建议） |
+| [ml/multitask_model.py](../../12-三屏趋势系统/ml/multitask_model.py) | 多任务学习模型 | `ml/`（保留） |
+| [ml/lr_ml_strategy*.py](../../12-三屏趋势系统/ml/) | LR ML 策略 | `ml/`（保留） |
 
 #### 共享基础设施 [SHARED]
 
 | 文件 | 职责 | 使用方 |
 |------|------|--------|
-| [ml/pitd_confidence_scorer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/pitd_confidence_scorer.py) | 物理置信度评估器 | MAIN + ML_BASELINE |
-| [ml/pitd_kinematics_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/pitd_kinematics_engineer.py) | 运动学特征工程 | MAIN + ML_BASELINE |
-| [ml/pitd_dynamics_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/pitd_dynamics_engineer.py) | 动力学特征工程 | MAIN + ML_BASELINE |
-| [ml/pitd_potential_field.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/pitd_potential_field.py) | 势场计算 | MAIN + ML_BASELINE |
-| [ml/pitd_reasoning_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/pitd_reasoning_engine.py) | 物理推理引擎 | MAIN + ML_BASELINE |
-| [ml/physics_enhancer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/physics_enhancer.py) | 物理增强器 | MAIN（主线使用） |
-| [ml/algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) | LightGBM 集成推理 | 集成推理层（独立） |
-| [ml/llm_reasoning.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/llm_reasoning.py) | LLM 辩证推理 | 集成推理层（独立） |
-| [ml/models.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/models.py) | ML 模型定义 | ML_BASELINE |
-| [ml/label_samples.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/label_samples.py) | 样本标注工具 | 集成推理层 |
-| [backtest/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/backtest/) | 回测引擎 | MAIN + ML_BASELINE |
-| [data/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/) | 数据获取层 | MAIN + ML_BASELINE |
-| [core/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/) | 核心算法层 | MAIN + ML_BASELINE |
+| [ml/pitd_confidence_scorer.py](../../12-三屏趋势系统/ml/pitd_confidence_scorer.py) | 物理置信度评估器 | MAIN + ML_BASELINE |
+| [ml/pitd_kinematics_engineer.py](../../12-三屏趋势系统/ml/pitd_kinematics_engineer.py) | 运动学特征工程 | MAIN + ML_BASELINE |
+| [ml/pitd_dynamics_engineer.py](../../12-三屏趋势系统/ml/pitd_dynamics_engineer.py) | 动力学特征工程 | MAIN + ML_BASELINE |
+| [ml/pitd_potential_field.py](../../12-三屏趋势系统/ml/pitd_potential_field.py) | 势场计算 | MAIN + ML_BASELINE |
+| [ml/pitd_reasoning_engine.py](../../12-三屏趋势系统/ml/pitd_reasoning_engine.py) | 物理推理引擎 | MAIN + ML_BASELINE |
+| [ml/physics_enhancer.py](../../12-三屏趋势系统/ml/physics_enhancer.py) | 物理增强器 | MAIN（主线使用） |
+| [ml/algo_ensemble.py](../../12-三屏趋势系统/ml/algo_ensemble.py) | LightGBM 集成推理 | 集成推理层（独立） |
+| [ml/llm_reasoning.py](../../12-三屏趋势系统/ml/llm_reasoning.py) | LLM 辩证推理 | 集成推理层（独立） |
+| [ml/models.py](../../12-三屏趋势系统/ml/models.py) | ML 模型定义 | ML_BASELINE |
+| [ml/label_samples.py](../../12-三屏趋势系统/ml/label_samples.py) | 样本标注工具 | 集成推理层 |
+| [backtest/](../../12-三屏趋势系统/backtest/) | 回测引擎 | MAIN + ML_BASELINE |
+| [data/](../../12-三屏趋势系统/data/) | 数据获取层 | MAIN + ML_BASELINE |
+| [core/](../../12-三屏趋势系统/core/) | 核心算法层 | MAIN + ML_BASELINE |
 
 ---
 

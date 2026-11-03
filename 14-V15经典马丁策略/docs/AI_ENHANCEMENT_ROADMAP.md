@@ -256,12 +256,12 @@ Phase D 两个模型的输出**不能直接改任何数值参数**，只能在�
 
 | V15 现有文件 | 接入函数/位置 | 注入 AI 逻辑 | 新文件/新类 |
 |---|---|---|---|
-| [core/v15_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_trader.py) | `execute_open_position()` 函数开头，在检查 `_get_direction_ctx()` 之后、实际开仓之前 | 调用 `PhaseDGateway.should_skip_open(coin, ctx)` → 返回 true 则 `return None` 不开仓并打 `G-D1 SKIP` 日志 | 新增 `lib/phase_d_gateway.py` 类 `PhaseDGateway`（封装两个模型推理 + 闸门逻辑） |
-| [core/v15_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_trader.py) | `_place_addon_grid_orders()` 中构造 `addon_budgets` 之后、实际挂单之前 | 调用 `PhaseDGateway.compute_effective_max_addons(coin, pos, addon_budgets)` → 返回 `(effective_max_addons, trimmed_addon_budgets)`；若缩档则 log `G-D2 TRIM addon4` | 同上 |
-| [lib/timing_gate.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/lib/timing_gate.py) | `TimingGate.evaluate()` 末尾，计算完 `timing_score` 与 `hard_pass`/`unclear` 之后、返回之前 | 调用 `PhaseDGateway.apply_timing_relaxation(symbol, timing_score, size_power, regime)` → 返回调整后的 `(timing_score, size_power)`；**strict=true 不可被 AI 改成 false（§3.3 外层铁壳），只能改数值** | 同上 |
-| [core/v15_backtest.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_backtest.py) | `run_backtest()` 中对应 3 个位置对称注入（实盘与回测必须一致，否则§3.2 无意义） | 同实盘三处逻辑；回测模型可用「历史 oracle 值」与「真实推理值」双模式，oracle 模式当模型理论上界 | 复用 `PhaseDGateway`，加 `mode="infer"` / `"oracle"` 切换 |
+| [core/v15_trader.py](../../14-V15经典马丁策略/core/v15_trader.py) | `execute_open_position()` 函数开头，在检查 `_get_direction_ctx()` 之后、实际开仓之前 | 调用 `PhaseDGateway.should_skip_open(coin, ctx)` → 返回 true 则 `return None` 不开仓并打 `G-D1 SKIP` 日志 | 新增 `lib/phase_d_gateway.py` 类 `PhaseDGateway`（封装两个模型推理 + 闸门逻辑） |
+| [core/v15_trader.py](../../14-V15经典马丁策略/core/v15_trader.py) | `_place_addon_grid_orders()` 中构造 `addon_budgets` 之后、实际挂单之前 | 调用 `PhaseDGateway.compute_effective_max_addons(coin, pos, addon_budgets)` → 返回 `(effective_max_addons, trimmed_addon_budgets)`；若缩档则 log `G-D2 TRIM addon4` | 同上 |
+| [lib/timing_gate.py](../../14-V15经典马丁策略/lib/timing_gate.py) | `TimingGate.evaluate()` 末尾，计算完 `timing_score` 与 `hard_pass`/`unclear` 之后、返回之前 | 调用 `PhaseDGateway.apply_timing_relaxation(symbol, timing_score, size_power, regime)` → 返回调整后的 `(timing_score, size_power)`；**strict=true 不可被 AI 改成 false（§3.3 外层铁壳），只能改数值** | 同上 |
+| [core/v15_backtest.py](../../14-V15经典马丁策略/core/v15_backtest.py) | `run_backtest()` 中对应 3 个位置对称注入（实盘与回测必须一致，否则§3.2 无意义） | 同实盘三处逻辑；回测模型可用「历史 oracle 值」与「真实推理值」双模式，oracle 模式当模型理论上界 | 复用 `PhaseDGateway`，加 `mode="infer"` / `"oracle"` 切换 |
 | `14-V15经典马丁策略/`（根） | 新增训练脚本（不在实盘 import 路径里） | `phase_d_train_bilstm.py` 和 `phase_d_train_patchtst.py`：读取 `data/ai_datasets/` → 训练 → 保存权重到 `data/ai_models/phase_d_bilstm_vX.pt`、`phase_d_patchtst_vX.pt`；版本号 X 升 + 记录到 CHANGELOG | 新增 `ai_trainers/` 子目录（含 trainer、plot、eval） |
-| [lib/bayesian_optimizer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/lib/bayesian_optimizer.py) | 贝叶斯优化流程末尾（参数评估后） | 增加钩子：评估结果自动写入 `data/ai_benchmarks/baseline_refs.csv`，作为 §3.2 双验证的基线引用 | 无新文件，加 1 个写 CSV 函数 |
+| [lib/bayesian_optimizer.py](../../14-V15经典马丁策略/lib/bayesian_optimizer.py) | 贝叶斯优化流程末尾（参数评估后） | 增加钩子：评估结果自动写入 `data/ai_benchmarks/baseline_refs.csv`，作为 §3.2 双验证的基线引用 | 无新文件，加 1 个写 CSV 函数 |
 | `core/` | 新增 `ai_boundary_scaler.py`（§3.4 共用） | 计算 S_bt / S_live → 读/写 K_bound → 每次 PhaseDGateway 加载时注入生效的边界 | 新增 `core/ai_boundary_scaler.py` |
 
 ### 4.4 Phase D 启用门禁流程（§3 铁律 2 的可执行化）
@@ -383,12 +383,12 @@ Phase E 的 5 维动作均落入 §3.3 的对应条目，且直接使用 §3.4 �
 
 | V15 现有文件 | 接入函数/位置 | 注入 AI 逻辑 | 新文件/新类 |
 |---|---|---|---|
-| [lib/capital_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/lib/capital_manager.py) | `calculate_per_coin_allocation()` 返回结果之后、被 trader 调用前 | 取返回的 `base_usd / addon1~4_usd` 作为基线，调用 `PhaseEGateway.apply_size_multipliers(allocation, s_state)` → 返回最终预算，总和自动 clamp ≤ 原 ×1.10 | 新增 `lib/phase_e_gateway.py` 类 `PhaseEGateway`（封装 PPO policy 推理 + Deterministic Shield + 边界 clamp） |
-| [lib/strategy_params.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/lib/strategy_params.py) | `get_vol_adjusted_params()` 返回结果（addon_pct / tp_pct）之后 | 调用 `PhaseEGateway.apply_param_multipliers(coin, base_params, s_state)` → 返回 `(eff_addon_pct, eff_tp_pct)` 再经 DS3/DS4 clamp | 同上 |
-| [core/v15_backtest.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_backtest.py) | `run_backtest()` 包装成 Gym 风格环境 | `env = V15MartingaleGymEnv(backtest_runner, use_shield=True)`；`env.step(a)` 内部执行基线逻辑 + 叠加动作 + 应用盾 + 返回 r(s,a) + s_next | 新增 `ai_trainers/v15_gym_env.py`（Stable-Baselines3 兼容） |
+| [lib/capital_manager.py](../../14-V15经典马丁策略/lib/capital_manager.py) | `calculate_per_coin_allocation()` 返回结果之后、被 trader 调用前 | 取返回的 `base_usd / addon1~4_usd` 作为基线，调用 `PhaseEGateway.apply_size_multipliers(allocation, s_state)` → 返回最终预算，总和自动 clamp ≤ 原 ×1.10 | 新增 `lib/phase_e_gateway.py` 类 `PhaseEGateway`（封装 PPO policy 推理 + Deterministic Shield + 边界 clamp） |
+| [lib/strategy_params.py](../../14-V15经典马丁策略/lib/strategy_params.py) | `get_vol_adjusted_params()` 返回结果（addon_pct / tp_pct）之后 | 调用 `PhaseEGateway.apply_param_multipliers(coin, base_params, s_state)` → 返回 `(eff_addon_pct, eff_tp_pct)` 再经 DS3/DS4 clamp | 同上 |
+| [core/v15_backtest.py](../../14-V15经典马丁策略/core/v15_backtest.py) | `run_backtest()` 包装成 Gym 风格环境 | `env = V15MartingaleGymEnv(backtest_runner, use_shield=True)`；`env.step(a)` 内部执行基线逻辑 + 叠加动作 + 应用盾 + 返回 r(s,a) + s_next | 新增 `ai_trainers/v15_gym_env.py`（Stable-Baselines3 兼容） |
 | `ai_trainers/` | 训练脚本 | `phase_e_train_ppo.py`：FinRL-X 或 SB3 PPO + LSTM policy；默认 `n_steps=2048, batch_size=64, gamma=0.995, ent_coef=0.01`；每训完 10 更新评估一次 walk-forward | 新增 `phase_e_train_ppo.py` + `phase_e_eval_wf.py` |
-| [core/v15_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_trader.py) | `run_poll_cycle()` 每轮循环构建 `s_state`（34 维状态）→ 传给 PhaseEGateway → 生效动作 | 每轮 1 次推理，避免高频调用；推理结果先持久化到 `data/ai_logs/phase_e_decisions.jsonl`，再应用（可复现 & 事后回溯） | 复用 `PhaseEGateway` |
-| [core/auto_monitor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/auto_monitor.py) | 每轮轮询结尾 | 读取 phase_e_decisions.jsonl + 盾告警次数，若 24h 内 DS 告警 ≥ 5 次 → 邮件/IM 告警 + 自动触发 S_live 重算 | 在现有告警框架中新增检查项 |
+| [core/v15_trader.py](../../14-V15经典马丁策略/core/v15_trader.py) | `run_poll_cycle()` 每轮循环构建 `s_state`（34 维状态）→ 传给 PhaseEGateway → 生效动作 | 每轮 1 次推理，避免高频调用；推理结果先持久化到 `data/ai_logs/phase_e_decisions.jsonl`，再应用（可复现 & 事后回溯） | 复用 `PhaseEGateway` |
+| [core/auto_monitor.py](../../14-V15经典马丁策略/core/auto_monitor.py) | 每轮轮询结尾 | 读取 phase_e_decisions.jsonl + 盾告警次数，若 24h 内 DS 告警 ≥ 5 次 → 邮件/IM 告警 + 自动触发 S_live 重算 | 在现有告警框架中新增检查项 |
 
 ### 5.5 Phase E 训练框架与离线评估方案
 

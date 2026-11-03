@@ -114,11 +114,11 @@ bool ds4_ssd_auto_cache_plan(..., ds4_ssd_cache_plan *out);
 
 | 组件 | 持久化方式 | 重启恢复 | 代码位置 |
 |------|-----------|---------|---------|
-| Shadow RL 样本 | JSONL 追加写 | ✅ load_from_disk | [shadow_rl.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/shadow_rl.py#L84-L91) |
-| 矛盾权重 | JSON 读写 | ✅ _load_weight_factors | [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L188-L215) |
-| Bellman V(s) | **内存 dict** | ❌ 重启丢失 | [bellman_tracker.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/bellman_tracker.py#L23-L25) |
-| Neural SDE 权重 | 有 load 无 save | 部分 | [deep_reasoning_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L108-L128) |
-| 策略基因库 | JSON 文件全量加载 | ✅ 但全量 | [strategy_gene.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_gene.py#L32-L172) |
+| Shadow RL 样本 | JSONL 追加写 | ✅ load_from_disk | [shadow_rl.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/shadow_rl.py#L84-L91) |
+| 矛盾权重 | JSON 读写 | ✅ _load_weight_factors | [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L188-L215) |
+| Bellman V(s) | **内存 dict** | ❌ 重启丢失 | [bellman_tracker.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/bellman_tracker.py#L23-L25) |
+| Neural SDE 权重 | 有 load 无 save | 部分 | [deep_reasoning_engine.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L108-L128) |
+| 策略基因库 | JSON 文件全量加载 | ✅ 但全量 | [strategy_gene.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_gene.py#L32-L172) |
 
 **缺口**：Bellman V(s) 纯内存，重启后 V 值从零开始，影响 ESS 调整的连续性。
 
@@ -126,9 +126,9 @@ bool ds4_ssd_auto_cache_plan(..., ds4_ssd_cache_plan *out);
 
 | 层级 | 机制 | 代码位置 |
 |------|------|---------|
-| DeepReasoningEngine 内部 | 4 级降级链：torchsde → EM → GARCH → GBM | [deep_reasoning_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L148-L220) |
-| Pipeline 层面 | 开关控制启用/禁用 + try/except FO | [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L112-L124) |
-| 最小阻力搜索 | HJB → 变分法 → argmin | [deep_reasoning_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L309-L354) |
+| DeepReasoningEngine 内部 | 4 级降级链：torchsde → EM → GARCH → GBM | [deep_reasoning_engine.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L148-L220) |
+| Pipeline 层面 | 开关控制启用/禁用 + try/except FO | [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L112-L124) |
+| 最小阻力搜索 | HJB → 变分法 → argmin | [deep_reasoning_engine.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L309-L354) |
 
 **特点**：已有模块内降级链，但 pipeline 层面是"开关控制 + 异常跳过"，缺少**资源感知的主动降级**。
 

@@ -11,11 +11,11 @@
 
 | 环节 | 检查项 | 实现状态 | 评分 | 证据位置 |
 |------|--------|----------|------|----------|
-| ① 多路径=多矛盾 | `_discover_paths` 路径来源标注 source/dimension | ✅ 完整 | 100 | [evolution_pipeline.py:473-660](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L473-L660) |
-| ② 识别主要矛盾 | `identify()` 三步法(共振→冲突裁决→主导性评估) | ✅ 完整 | 100 | [contradiction_identifier.py:67-117](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L67-L117) |
-| ③ 趋势延续性回流 | `TrendContinuationScorer` 接入 pipeline，continuation_score 非恒 0.5 | ✅ 完整 | 100 | [evolution_pipeline.py:810-826](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L810-L826) |
-| ④ 验证回流闭环 | `_contradiction_weight_factors` 被 `identify()` 消费（完整闭环） | ✅ 完整 | 100 | [evolution_pipeline.py:802-806, 1272, 1303](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L802-L806) |
-| ⑤ 最小阻力计算 | HJB lagrangian 传入 `primary_contradiction` | ✅ 完整 | 100 | [hjb_solver.py:112-178](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L112-L178) |
+| ① 多路径=多矛盾 | `_discover_paths` 路径来源标注 source/dimension | ✅ 完整 | 100 | [evolution_pipeline.py:473-660](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L473-L660) |
+| ② 识别主要矛盾 | `identify()` 三步法(共振→冲突裁决→主导性评估) | ✅ 完整 | 100 | [contradiction_identifier.py:67-117](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L67-L117) |
+| ③ 趋势延续性回流 | `TrendContinuationScorer` 接入 pipeline，continuation_score 非恒 0.5 | ✅ 完整 | 100 | [evolution_pipeline.py:810-826](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L810-L826) |
+| ④ 验证回流闭环 | `_contradiction_weight_factors` 被 `identify()` 消费（完整闭环） | ✅ 完整 | 100 | [evolution_pipeline.py:802-806, 1272, 1303](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L802-L806) |
+| ⑤ 最小阻力计算 | HJB lagrangian 传入 `primary_contradiction` | ✅ 完整 | 100 | [hjb_solver.py:112-178](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L112-L178) |
 
 **5环节综合得分: 100/100** — 矛盾论哲学逻辑链完整贯通，无断裂。
 
@@ -31,10 +31,10 @@ _discover_paths (8种source: l2_gene/trend_following/grid_trading/bcrm/bdsm/deep
 ```
 
 **环节④闭环证据**:
-- `identify()` 接收 `weight_factor` 参数（[contradiction_identifier.py:72](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L72)）
-- 按维度独立取权重 `weight_factor.get(_dim, 1.0)`（[contradiction_identifier.py:107-108](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L107-L108)）
-- `get_feedback()` 更新 `_contradiction_weight_factors[_dim]`（[evolution_pipeline.py:1272](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1272)）
-- `_incremental_feedback()` K线级EWMA更新（[evolution_pipeline.py:1297-1303](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1297-L1303)）
+- `identify()` 接收 `weight_factor` 参数（[contradiction_identifier.py:72](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L72)）
+- 按维度独立取权重 `weight_factor.get(_dim, 1.0)`（[contradiction_identifier.py:107-108](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_identifier.py#L107-L108)）
+- `get_feedback()` 更新 `_contradiction_weight_factors[_dim]`（[evolution_pipeline.py:1272](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1272)）
+- `_incremental_feedback()` K线级EWMA更新（[evolution_pipeline.py:1297-1303](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L1297-L1303)）
 - 权重持久化到 `weight_factors.json`（`_save_weight_factors()`）
 
 ---
@@ -46,7 +46,7 @@ _discover_paths (8种source: l2_gene/trend_following/grid_trading/bcrm/bdsm/deep
 | `sample_count()` 非0且持续增长 | ✅ | `return len(self._samples)`，每次 `record()` append 到 deque |
 | `mean_reward` 非 NaN/Inf | ✅ | reward NaN 时兜底为 0.0（`reward != reward` 检测）；`np.mean` 前无 NaN |
 | `train_policy()` 在 `enable_shadow_rl_phase3` 开启后调用 | ✅ | 样本≥2000 且 `is_enabled("enable_shadow_rl_phase3")` → `self.trainer.train_policy(list(self._samples))` |
-| L3 sample 在 `KlineEventHandler.on_kline_close` 中记录 | ✅ | [kline_event_handler.py:784-791](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L784-L791) |
+| L3 sample 在 `KlineEventHandler.on_kline_close` 中记录 | ✅ | [kline_event_handler.py:784-791](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L784-L791) |
 
 **L3 统计结构**:
 ```python
@@ -90,33 +90,33 @@ R = quality_score - 0.5  (状态质量信号)
 | **H: TransferLearner** | `enable_transfer_learning`=True | ✅ | Prototypical Network + MAML + 反事实验证(HC-AGI-05) |
 | **I: CounterfactualEvaluator** | `enable_counterfactual`=True | ✅ | 合成控制法 + alpha/beta 归因；`what_if_no_trade()` |
 
-**F: DeepReasoningEngine 降级链**（[deep_reasoning_engine.py:148-201](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L148-L201)）:
+**F: DeepReasoningEngine 降级链**（[deep_reasoning_engine.py:148-201](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py#L148-L201)）:
 - Level 1: `torchsde.sdeint()` — torchsde 可用 + 模型已训练
 - Level 2: 手写 Euler-Maruyama — torch 可用 + 模型已训练
 - Level 3: GARCH(1,1) — 样本 < 1000 或模型未训练（HC-AGI-13）
 - Level 4: GBM — 几何布朗运动兜底
 
-**G: StrategySynthesizer 冷启动**（[strategy_synthesizer.py:678, 750-794](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_synthesizer.py#L678)）:
+**G: StrategySynthesizer 冷启动**（[strategy_synthesizer.py:678, 750-794](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/strategy_synthesizer.py#L678)）:
 - `NEW_GENE_COLD_START_POSITION = 0.05`（HC-AGI-10）
 - `validate_and_integrate()` 返回 `cold_start_position ≤ 0.05`
 
-**H: TransferLearner**（[transfer_learner.py:43-58](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/transfer_learner.py#L43-L58)）:
+**H: TransferLearner**（[transfer_learner.py:43-58](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/transfer_learner.py#L43-L58)）:
 - `compute_prototype()` — 原型向量计算
 - `maml_adapt()` — MAML 元学习适配（torch可用时torch版，否则线性回归降级）
 - `transfer_pattern()` — 完整迁移：原型匹配 + MAML适配 + 反事实验证
 
-**I: CounterfactualEvaluator**（[counterfactual_evaluator.py:29-175](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/counterfactual_evaluator.py#L29-L175)）:
+**I: CounterfactualEvaluator**（[counterfactual_evaluator.py:29-175](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/counterfactual_evaluator.py#L29-L175)）:
 - `synthetic_control()` — 合成控制法（其他资产加权构造反事实）
 - `what_if_no_trade()` — alpha = actual_pnl - counterfactual_pnl
 - alpha/beta 归因
 
-**get_evolution_feedback() 返回字段**（[kline_event_handler.py:939-953](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L939-L953)）:
+**get_evolution_feedback() 返回字段**（[kline_event_handler.py:939-953](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L939-L953)）:
 - `l3_stats`: {sharpe, sample_count, mean_reward, std_reward}
 - `l4_v_all`: 全部 symbol 的 V(s)
 - `l4_ess_adjustments`: ESS 调整量
 - `contradiction_feedback`: 矛盾权重调整结果
 
-**on_kline_close 返回字段**（实盘数据流，[kline_event_handler.py:897-900](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L897-L900)）:
+**on_kline_close 返回字段**（实盘数据流，[kline_event_handler.py:897-900](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py#L897-L900)）:
 - `l3_sample_count`: ShadowRL 累计样本数
 - `l4_v`: 当前 symbol 的 Bellman V 值
 - `agi_transfer`: 跨资产迁移结果
@@ -140,14 +140,14 @@ if action_dir == pc_dir:    # 对齐主要矛盾 → 阻力降低
 else:                        # 逆向主要矛盾 → 阻力升高
     L = L * (1.0 + 0.5 * pc_strength)
 ```
-（[hjb_solver.py:161-176](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L161-L176)）
+（[hjb_solver.py:161-176](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L161-L176)）
 
-**降级链执行顺序**（[hjb_solver.py:616-750](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L616-L750)）:
+**降级链执行顺序**（[hjb_solver.py:616-750](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L616-L750)）:
 1. HJBPathSolver.solve() — 全局最优值函数
 2. VariationalPathOptimizer.optimize() — 欧拉-拉格朗日梯度下降（含迭代收敛检查）
 3. PathIntegralEngine.find_least_resistance_path() — argmin 兜底
 
-**变分法收敛**: VariationalPathOptimizer 有真正的迭代收敛检查 — 连续3轮 |ΔS/S| < 1e-6（[hjb_solver.py:576-600](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L576-L600)）
+**变分法收敛**: VariationalPathOptimizer 有真正的迭代收敛检查 — 连续3轮 |ΔS/S| < 1e-6（[hjb_solver.py:576-600](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L576-L600)）
 
 ---
 

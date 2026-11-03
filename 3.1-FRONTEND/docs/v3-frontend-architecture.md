@@ -138,7 +138,7 @@ v3.1 Frontend = SACG 四层可视化 + 双交易模式 UI + 三屏交易系统 +
 
 ### 2.3 侧边栏导航
 
-侧边栏定义在 [dashboard/layout.tsx](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/app/dashboard/layout.tsx) 中，共 12 个一级导航项:
+侧边栏定义在 [dashboard/layout.tsx](../../3.1-FRONTEND/src/app/dashboard/layout.tsx) 中，共 12 个一级导航项:
 
 | 序号 | 标签 | 路由 | 图标 | 备注 |
 |------|------|------|------|------|
@@ -426,7 +426,7 @@ Screen1 (战略层)
 
 #### 三屏状态管理
 
-三屏交易系统使用独立的 Zustand store: [three-screens-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/stores/three-screens-store.ts)
+三屏交易系统使用独立的 Zustand store: [three-screens-store.ts](../../3.1-FRONTEND/src/stores/three-screens-store.ts)
 
 #### 三屏辅助组件
 
@@ -824,7 +824,7 @@ src/lib/
 
 ### 4.1 API Client 层
 
-API Client 封装在 [src/lib/v3/api/client.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/v3/api/client.ts) 中，基于 fetch 封装:
+API Client 封装在 [src/lib/v3/api/client.ts](../../3.1-FRONTEND/src/lib/v3/api/client.ts) 中，基于 fetch 封装:
 
 - 支持 GET/POST/PUT/PATCH/DELETE
 - 统一错误处理和重试
@@ -1271,8 +1271,8 @@ G (Graph)   #EF4444  红色  — BAC 压缩、历史回放、Checkpoint
 
 3.1 前端的 UI 设计规范同时参考以下两份 UI_SPEC:
 
-1. [3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md) (v2.3, 3.0 时代)
-2. [1-ARCHITECTURE/前端设计/UI_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/前端设计/UI_SPEC.md) (v2.3, 3.0 时代)
+1. [3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md](../../3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md) (v2.3, 3.0 时代)
+2. [1-ARCHITECTURE/前端设计/UI_SPEC.md](../../1-ARCHITECTURE/前端设计/UI_SPEC.md) (v2.3, 3.0 时代)
 
 > **注**: 两份 UI_SPEC 内容相同，描述 3.0 时代的三栏对话式界面。3.1 已远超此设计，但仍保留以下有效规范:
 > - 色彩系统 (§1.2): 基础色板 + 分析阶段色

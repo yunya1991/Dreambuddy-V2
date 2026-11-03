@@ -45,5 +45,5 @@
 - record/verify：**写入失败**（记忆库 `readonly database`，FAIL-OPEN）。待记忆库恢复写权限后补写：硬约束（远端写操作须 `sudo -u luke -H`、Hermes 单元日志分离）+ 收尾闭环记录。
 
 ## 关联文件
-- [DEPLOYMENT_CHECKLIST.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md)
-- [acceptance_report.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/acceptance_bundles/20261014_cloud-fullsync-g1g5/acceptance_report.md)
+- [DEPLOYMENT_CHECKLIST.md](../../31-分布式计算部署/docs/DEPLOYMENT_CHECKLIST.md)
+- [acceptance_report.md](../../acceptance_bundles/20261014_cloud-fullsync-g1g5/acceptance_report.md)

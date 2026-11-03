@@ -98,9 +98,9 @@
   - [AltStreet Research] 自营团队从 JSON 到 SQLite 到 PG 演进路径 2026
   - [ADR-0014 Phase 8e] 日本 AI 资管平台 SQLite→PG 触发 5 条件
 - 项目内既有实现参考（继承设计避免重复造轮子）：
-  - [kg_store.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/kg_store.py#L61-L83) FTS5 + 双时态 Schema 设计
-  - [storage.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/storage.py#L221-L500) 9 张 BCRM 表设计
-  - [macro_data_fetcher.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py#L122) 宏观 6 维度采集列
+  - [kg_store.py](../11-易经推理系统/scripts/memory_l4/kg_store.py#L61-L83) FTS5 + 双时态 Schema 设计
+  - [storage.py](../11-易经推理系统/scripts/memory_l4/bcrm2/storage.py#L221-L500) 9 张 BCRM 表设计
+  - [macro_data_fetcher.py](../11-易经推理系统/scripts/memory_l4/bcrm2/macro_data_fetcher.py#L122) 宏观 6 维度采集列
 - 迁移经验教训（避免重蹈覆辙）：
   - Experience ID 698940：**绝不只修一张表补丁被追问其他表**；薄适配层保留旧导入符号
   - Experience ID 1040063：**CREATE TABLE 即最终 Schema**；统一 `_add_column_if_missing` helper 幂等补列

@@ -6,7 +6,7 @@
 | 创建日期 | 2026-07-31 |
 | 状态 | Implemented（28/28 Task 已交付，75/75 单测通过；待 live 验收 + 7 天灰度） |
 | 作者 | dreambuddy 认知系统组 |
-| 关联文档 | [COGNITIVE_ARCHITECTURE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md)、[cognitive_superpowers.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_superpowers.py)、[SUPERPOWERS_INTEGRATION_UPGRADE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/SUPERPOWERS_INTEGRATION_UPGRADE.md) |
+| 关联文档 | [COGNITIVE_ARCHITECTURE.md](../../../4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md)、[cognitive_superpowers.py](../../../4-MEMORY/9-工具与接口/cognitive_superpowers.py)、[SUPERPOWERS_INTEGRATION_UPGRADE.md](../../../1-ARCHITECTURE/SUPERPOWERS_INTEGRATION_UPGRADE.md) |
 | 上游标准 | [obra/superpowers](https://github.com/obra/superpowers) v6.2.0（14 个 SKILL.md） |
 
 ## 修订记录
@@ -48,7 +48,7 @@ Process Layer 分两层：
 - **Layer 1 元认知流程**：原版 SKILL.md（总记忆层 L2），只增不改、允许系统性完善
 - **Layer 2 应用认知流程**：Solution Paths（应用记忆层 L1），贝叶斯进化
 
-这直接对齐 [COGNITIVE_ARCHITECTURE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md) 第 4.4 节既有设计，**不新增认知层架构**，只替换 Layer 1 的内容来源（从自创 6 模板 → 原版 14 Skill）。
+这直接对齐 [COGNITIVE_ARCHITECTURE.md](../../../4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md) 第 4.4 节既有设计，**不新增认知层架构**，只替换 Layer 1 的内容来源（从自创 6 模板 → 原版 14 Skill）。
 
 ### 1.2 在认知闭环中的数据流
 
@@ -187,7 +187,7 @@ class SuperpowersSkill:
 
 ### 2.3 关键词索引（服务于 recall 时的任务类型匹配）
 
-索引**自动从文件内容构建**，不再硬编码（替代当前 [PROCESS_KEYWORDS](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_superpowers.py) 手写表）：
+索引**自动从文件内容构建**，不再硬编码（替代当前 [PROCESS_KEYWORDS](../../../4-MEMORY/9-工具与接口/cognitive_superpowers.py) 手写表）：
 
 ```python
 # 自动构建示例
@@ -471,7 +471,7 @@ def recall(self, context, top_k=5, include_process=True, ...):
 
 ### 4.2 会话开始：recalled_processes 的新数据结构
 
-[cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py) 当前：
+[cognitive_session.py](../../../4-MEMORY/9-工具与接口/cognitive_session.py) 当前：
 ```python
 self.recalled_processes: List[Any] = []   # 装的 ProcessTemplate(template_id='TDD-001', ...)
 self._meta_processes: List[Any] = []      # 同上
@@ -654,8 +654,8 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 | 文件 | 操作 | 改动点 |
 |------|------|--------|
-| [methodology-executor.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/methodology-executor.ts) | 改名注释（不删代码） | 1. L1-L23 头部注释：把"Claude Code Superpowers 7阶段方法论"改为「C 层交易节点质量门禁（借鉴 Superpowers 理念，不等价于 Superpowers Skill 体系，与认知层 Process Layer 解耦）」。<br>2. L6 去除与 Superpowers 7 阶段的直接绑定声明。<br>3. L14-L18 注释加一句：「注：更完整的方法论在通用认知层 Process Layer（SKILL.md）；本文件仅做 Planner 节点级代码门禁。」 |
-| [superpowers-skill-adapter.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/superpowers-skill-adapter.ts) | 注释澄清 + 可选改名 | 1. L1-L16 头部：注释改为「SKILL.md 格式解析器（TypeScript 版）——仅用于把外部标准 SKILL.md 文档解析为 SkillCapability 对象，不负责执行；通用认知层对应实现位于 4-MEMORY/ 的 Python SkillLoader」。<br>2. （可选，低优先级）文件名改名为 `skill-md-parser.ts`，去掉"superpowers"字样。**不做也不影响功能**，建议留到本轮迁移的最后再做。 |
+| [methodology-executor.ts](../../../6-图结构上下文压缩/planner/methodology-executor.ts) | 改名注释（不删代码） | 1. L1-L23 头部注释：把"Claude Code Superpowers 7阶段方法论"改为「C 层交易节点质量门禁（借鉴 Superpowers 理念，不等价于 Superpowers Skill 体系，与认知层 Process Layer 解耦）」。<br>2. L6 去除与 Superpowers 7 阶段的直接绑定声明。<br>3. L14-L18 注释加一句：「注：更完整的方法论在通用认知层 Process Layer（SKILL.md）；本文件仅做 Planner 节点级代码门禁。」 |
+| [superpowers-skill-adapter.ts](../../../6-图结构上下文压缩/planner/superpowers-skill-adapter.ts) | 注释澄清 + 可选改名 | 1. L1-L16 头部：注释改为「SKILL.md 格式解析器（TypeScript 版）——仅用于把外部标准 SKILL.md 文档解析为 SkillCapability 对象，不负责执行；通用认知层对应实现位于 4-MEMORY/ 的 Python SkillLoader」。<br>2. （可选，低优先级）文件名改名为 `skill-md-parser.ts`，去掉"superpowers"字样。**不做也不影响功能**，建议留到本轮迁移的最后再做。 |
 
 **不改造**：MethodologyExecutor 的 `wrapExecution` / `performTwoPhaseReview` 核心逻辑——它确实对交易开发节点有实际门禁价值（Spec 合规 + 置信度审查），保留它。
 
@@ -663,7 +663,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 #### 改 1：`cognitive_superpowers.py` — 核心骨架替换（设计节 2）
 
-**位置**：[4-MEMORY/9-工具与接口/cognitive_superpowers.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_superpowers.py)
+**位置**：[4-MEMORY/9-工具与接口/cognitive_superpowers.py](../../../4-MEMORY/9-工具与接口/cognitive_superpowers.py)
 
 **删除的大块代码**（≈ 350 行，约 40%）：
 - `DEFAULT_TEMPLATES`：整个 TDD-001 ~ TDD-DEBUG-001 6 个自创模板定义
@@ -683,7 +683,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 #### 改 2：`working_memory_manager.py` — 新增 process_block（设计节 3.2）
 
-**位置**：[4-MEMORY/9-工具与接口/working_memory_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/working_memory_manager.py)
+**位置**：[4-MEMORY/9-工具与接口/working_memory_manager.py](../../../4-MEMORY/9-工具与接口/working_memory_manager.py)
 
 改动量小（≈ 80 行新增）：
 - `DEFAULT_BUDGETS` 加 `process: 3000`
@@ -694,7 +694,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 #### 改 3：`cognitive_mcp_server.py` — recall 返回值加 processes 字段（设计节 3.3）
 
-**位置**：[4-MEMORY/9-工具与接口/cognitive_mcp_server.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_mcp_server.py)
+**位置**：[4-MEMORY/9-工具与接口/cognitive_mcp_server.py](../../../4-MEMORY/9-工具与接口/cognitive_mcp_server.py)
 
 改动量中等（≈ 60 行新增）：
 - `_handle_recall` 内：若 `include_process=True`（默认 True），调用 `cle.skill_loader.retrieve()`
@@ -704,7 +704,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 #### 改 4：`cognitive_session.py` — 流程关联大改（设计节 4）
 
-**位置**：[4-MEMORY/9-工具与接口/cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py)
+**位置**：[4-MEMORY/9-工具与接口/cognitive_session.py](../../../4-MEMORY/9-工具与接口/cognitive_session.py)
 
 改动量中到大（≈ 180 行改造）：
 - `session.recalled_processes` 字段类型改为 `List[RecalledProcessItem]`（设计节 4.2）
@@ -715,7 +715,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 #### 改 5：`cognitive_install.py` + hooks/ — SessionStart 静默 recall（设计节 3.4，路径 B）
 
-**位置**：[4-MEMORY/9-工具与接口/cognitive_install.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_install.py) + hooks/ 目录
+**位置**：[4-MEMORY/9-工具与接口/cognitive_install.py](../../../4-MEMORY/9-工具与接口/cognitive_install.py) + hooks/ 目录
 
 改动量小（≈ 40 行脚本）：
 - Claude Code / TRAE / Cursor 三个宿主的 `session-start.sh` / 对应 hook 文件：追加后台 Python 命令，实现预热
@@ -724,7 +724,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 #### 改 6：`cognitive_daemon.py` — 后台新会话自动预热（设计节 3.1，路径 C）
 
-**位置**：[4-MEMORY/9-工具与接口/cognitive_daemon.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_daemon.py)
+**位置**：[4-MEMORY/9-工具与接口/cognitive_daemon.py](../../../4-MEMORY/9-工具与接口/cognitive_daemon.py)
 
 改动量极小（≈ 20 行新增）：
 - `on_new_session_created(session_id, initial_msg)` 事件处理：调用 SkillLoader 做初始召回，写入 WorkingMemory
@@ -856,7 +856,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 ### 6.6 完成后的"认知闭环"状态（设计目标）
 
-迁移完成后，[COGNITIVE_ARCHITECTURE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md) 第 4.4 节设计的会话闭环真正打通：
+迁移完成后，[COGNITIVE_ARCHITECTURE.md](../../../4-MEMORY/0-元记忆/COGNITIVE_ARCHITECTURE.md) 第 4.4 节设计的会话闭环真正打通：
 
 ```
 任务开始
@@ -881,7 +881,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 设计节 1–6 解决了"流程注入+沉淀"的基础设施，但缺一个关键环节：**注入的流程建议是否真的让 AI 做得更好？** 没有评测，就无法区分"AI 自身能力强"与"process_block 注入有效"——这违背 project_memory 的硬约束"优化落地必须回测验证+贝叶斯参数优化"。
 
-本节引入**思维路径评测闭环**，借鉴 [16-调控系统/evolution_loop.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/core/evolution_loop.py) 的进化循环模式，应用到认知层——**好则学习（升 Solution Path 质量等级），有历史则先评测**，这正是推理模型的特质。
+本节引入**思维路径评测闭环**，借鉴 [16-调控系统/evolution_loop.py](../../../16-调控系统/core/evolution_loop.py) 的进化循环模式，应用到认知层——**好则学习（升 Solution Path 质量等级），有历史则先评测**，这正是推理模型的特质。
 
 ### 7.2 闭环全景
 
@@ -906,7 +906,7 @@ Process Layer（Python 认知层）     vs     C 层 Methodology Gate（TypeScri
 
 > **参考实现**：[NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) 的 `trajectory_compressor.py` — 借鉴其"trajectory → 压缩样本"的工程模式（相邻合并/纯注释剔除/关键决策点提取），避免重复造轮。实施时先研究其源码再适配我们的 action_chain 数据结构。
 
-**现状**：[cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py) 的 `action_chain` 已记录所有文件变更/工具调用/commit，但未做"思维链"压缩。
+**现状**：[cognitive_session.py](../../../4-MEMORY/9-工具与接口/cognitive_session.py) 的 `action_chain` 已记录所有文件变更/工具调用/commit，但未做"思维链"压缩。
 
 **新增**：`_compress_thought_chain(action_chain, reasoning_log) → EvaluationSample`
 
@@ -1016,7 +1016,7 @@ else:
 
 ### 7.6 飞书告警闭环（回滚条件联动）
 
-**集成现有组件**：[15-监控告警系统/feishu_alert.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/15-监控告警系统/feishu_alert.py) 已实现飞书告警能力，本节定义触发规则和告警内容。
+**集成现有组件**：[15-监控告警系统/feishu_alert.py](../../../15-监控告警系统/feishu_alert.py) 已实现飞书告警能力，本节定义触发规则和告警内容。
 
 **触发条件**（与设计节 6.4 回滚条件一一对应）：
 
@@ -1081,12 +1081,12 @@ def _build_alert_message(condition: str, level: str, context: dict) -> dict:
 
 | 改造点 | 文件 | 说明 |
 |--------|------|------|
-| 思维链压缩 | [cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py) | 新增 `_compress_thought_chain()`，生成 EvaluationSample |
+| 思维链压缩 | [cognitive_session.py](../../../4-MEMORY/9-工具与接口/cognitive_session.py) | 新增 `_compress_thought_chain()`，生成 EvaluationSample |
 | A/B 评测引擎 | 新增 `4-MEMORY/9-工具与接口/evaluation_engine.py` | `compute_path_advantage()` + 历史基线管理 |
-| 学习/回滚决策 | [cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py) | `_deposit_applied_template` 调用评测引擎，根据得分决定升/降级 |
+| 学习/回滚决策 | [cognitive_session.py](../../../4-MEMORY/9-工具与接口/cognitive_session.py) | `_deposit_applied_template` 调用评测引擎，根据得分决定升/降级 |
 | 飞书告警集成 | 新增 `4-MEMORY/9-工具与接口/alert_bridge.py` | 桥接 cognitive_hook → 15-监控告警系统/feishu_alert.py |
-| Solution Path 质量等级扩展 | [cognitive_superpowers.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_superpowers.py) | 增加 `quarantined` 状态 + `path_advantage_history` 字段 |
-| recall 过滤 | [cognitive_mcp_server.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_mcp_server.py) | retrieve 时过滤 quarantined，注入时附带历史评测 |
+| Solution Path 质量等级扩展 | [cognitive_superpowers.py](../../../4-MEMORY/9-工具与接口/cognitive_superpowers.py) | 增加 `quarantined` 状态 + `path_advantage_history` 字段 |
+| recall 过滤 | [cognitive_mcp_server.py](../../../4-MEMORY/9-工具与接口/cognitive_mcp_server.py) | retrieve 时过滤 quarantined，注入时附带历史评测 |
 | 历史评测数据 | 新增 `4-MEMORY/0-元记忆/evaluation_history.jsonl` | 每次评测追加一行，供历史基线统计 |
 
 ### 7.9 验收标准（增量于设计节 6.2）

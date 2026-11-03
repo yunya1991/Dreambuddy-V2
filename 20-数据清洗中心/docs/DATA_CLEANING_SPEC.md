@@ -148,4 +148,4 @@ async def _fetch_monitored(...):
 
 本归档文件为 20 号专项摘录，完整章节含 21-FeatureHub、集成 H2/H3、M2/M3、错误处理三层全图、新鲜度红线关联易经离场缓存等内容：
 
-👉 完整 Spec：[2026-08-24-data-cleaning-and-feature-hub-spec.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-24-data-cleaning-and-feature-hub-spec.md)
+👉 完整 Spec：[2026-08-24-data-cleaning-and-feature-hub-spec.md](../../docs/superpowers/specs/2026-08-24-data-cleaning-and-feature-hub-spec.md)

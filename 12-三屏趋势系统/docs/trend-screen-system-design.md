@@ -2,7 +2,7 @@
 
 > 版本: v2.0 (独立模块重构版)
 > 模块路径: `12-三屏趋势系统/`
-> 主入口: [`compute_full_trading_signal()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L389-L448) / [`compute_trend_signal_from_dataframes()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L298-L386)
+> 主入口: [`compute_full_trading_signal()`](../../12-三屏趋势系统/engine.py#L389-L448) / [`compute_trend_signal_from_dataframes()`](../../12-三屏趋势系统/engine.py#L298-L386)
 
 ---
 
@@ -79,11 +79,11 @@
 
 | # | 算法 | 角色 | 代码位置 |
 |---|------|------|---------|
-| 1 | 静态指标投票 | 趋势方向**基础判定** | [`calc_trend_direction_static()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/indicators.py#L189-L198) |
-| 2 | 三维动态融合 | 趋势方向**核心创新**（动态优先） | [`calc_trend_direction_dynamic()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/trend_consistency.py#L42-L122) |
-| 3 | 动态权重调整 | 指标权重**回测排名** | [`calc_dynamic_weights()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/dynamic_weights.py#L78-L138) |
-| 4 | 贝叶斯参数寻优 | 置信度**参数寻优** | [`calc_bayesian_confidence()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/dynamic_weights.py#L140-L200) |
-| 5 | 技术面+基本面撮合 | 最终方向与置信度**融合** | [`fuse_technical_fundamental()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/fusion.py#L33-L95) |
+| 1 | 静态指标投票 | 趋势方向**基础判定** | [`calc_trend_direction_static()`](../../12-三屏趋势系统/core/indicators.py#L189-L198) |
+| 2 | 三维动态融合 | 趋势方向**核心创新**（动态优先） | [`calc_trend_direction_dynamic()`](../../12-三屏趋势系统/core/trend_consistency.py#L42-L122) |
+| 3 | 动态权重调整 | 指标权重**回测排名** | [`calc_dynamic_weights()`](../../12-三屏趋势系统/core/dynamic_weights.py#L78-L138) |
+| 4 | 贝叶斯参数寻优 | 置信度**参数寻优** | [`calc_bayesian_confidence()`](../../12-三屏趋势系统/core/dynamic_weights.py#L140-L200) |
+| 5 | 技术面+基本面撮合 | 最终方向与置信度**融合** | [`fuse_technical_fundamental()`](../../12-三屏趋势系统/core/fusion.py#L33-L95) |
 
 ### 4.2 静态指标投票
 
@@ -109,7 +109,7 @@
 | TEMA | 趋势 |
 | EMA_Align_20_50_200 | 趋势 |
 
-配置位置: [`SCREEN1_INDICATORS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L17-L19) / [`SCREEN2_INDICATORS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L21-L23)
+配置位置: [`SCREEN1_INDICATORS`](../../12-三屏趋势系统/core/config.py#L17-L19) / [`SCREEN2_INDICATORS`](../../12-三屏趋势系统/core/config.py#L21-L23)
 
 ### 4.3 三维动态融合（核心创新）
 
@@ -133,7 +133,7 @@
 
 可能出现"静态牛市但动态熊市 → 最终判定熊市"的情况，捕捉趋势逆转的早期信号。
 
-配置: [`REVERSAL_THRESHOLD`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L28) / [`REVERSAL_SPEED_LOW`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L29) / [`REVERSAL_ACCEL_HIGH`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L30)
+配置: [`REVERSAL_THRESHOLD`](../../12-三屏趋势系统/core/config.py#L28) / [`REVERSAL_SPEED_LOW`](../../12-三屏趋势系统/core/config.py#L29) / [`REVERSAL_ACCEL_HIGH`](../../12-三屏趋势系统/core/config.py#L30)
 
 ### 4.4 动态权重调整
 
@@ -142,7 +142,7 @@
 - **权重排名**: 根据超额收益、夏普比率、胜率综合排名
 - **周线权重 60%，日线权重 40**（周线准确度更高）
 
-配置: [`WEEKLY_WEIGHT`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L25) / [`DAILY_WEIGHT`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L26)
+配置: [`WEEKLY_WEIGHT`](../../12-三屏趋势系统/core/config.py#L25) / [`DAILY_WEIGHT`](../../12-三屏趋势系统/core/config.py#L26)
 
 ### 4.5 贝叶斯参数寻优
 
@@ -164,7 +164,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 > **核心原则**: 趋势方向以技术面为主，基本面影响置信度调整。
 
-配置: [`TECHNICAL_WEIGHT`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L32) / [`FUNDAMENTAL_WEIGHT`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L33) / [`MAX_CONFLICT_DEDUCTION`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L34)
+配置: [`TECHNICAL_WEIGHT`](../../12-三屏趋势系统/core/config.py#L32) / [`FUNDAMENTAL_WEIGHT`](../../12-三屏趋势系统/core/config.py#L33) / [`MAX_CONFLICT_DEDUCTION`](../../12-三屏趋势系统/core/config.py#L34)
 
 ---
 
@@ -179,7 +179,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 ### 5.2 解析逻辑
 
-**A1日报 (JSON)** — [`_parse_a1_daily()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py#L82-L180):
+**A1日报 (JSON)** — [`_parse_a1_daily()`](../../12-三屏趋势系统/data/fundamental_data.py#L82-L180):
 
 支持三种 JSON 格式:
 1. `market_regime.regime/confidence/composite_score`
@@ -188,7 +188,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 提取字段: `date`, `direction`, `confidence`, `regime`, `score`
 
-**周报 (Markdown)** — [`_parse_weekly_report()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py#L211-L291):
+**周报 (Markdown)** — [`_parse_weekly_report()`](../../12-三屏趋势系统/data/fundamental_data.py#L211-L291):
 
 - 从 frontmatter 提取日期
 - 从表格提取方向关键词（弱多头/弱空头/观望）
@@ -197,7 +197,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 ### 5.3 合并规则
 
-[`_merge_fundamental()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py#L308-L392):
+[`_merge_fundamental()`](../../12-三屏趋势系统/data/fundamental_data.py#L308-L392):
 
 | 场景 | 方向 | 置信度 |
 |------|------|--------|
@@ -210,8 +210,8 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 | 函数 | 用途 |
 |------|------|
-| [`fetch_fundamental_data()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py#L394-L433) | 获取合并后的基本面方向+置信度 |
-| [`fetch_fundamental_by_timeframe()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py#L435-L448) | 按周期分别返回周线/日线基本面 |
+| [`fetch_fundamental_data()`](../../12-三屏趋势系统/data/fundamental_data.py#L394-L433) | 获取合并后的基本面方向+置信度 |
+| [`fetch_fundamental_by_timeframe()`](../../12-三屏趋势系统/data/fundamental_data.py#L435-L448) | 按周期分别返回周线/日线基本面 |
 
 ---
 
@@ -223,9 +223,9 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 | 组件 | 文件 | 说明 |
 |------|------|------|
-| 信号获取 | [`signals.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/signals.py) | `fetch_freqtrade_signals()` 获取1h/4h多策略信号 |
-| 信号对齐 | [`signals.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/signals.py#L158-L190) | `align_freqtrade_with_trend()` 信号校准 |
-| HTTP桥接 | [`classic_bridge.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/classic_bridge.py) | 统一封装对经典系统的API调用 |
+| 信号获取 | [`signals.py`](../../12-三屏趋势系统/signals.py) | `fetch_freqtrade_signals()` 获取1h/4h多策略信号 |
+| 信号对齐 | [`signals.py`](../../12-三屏趋势系统/signals.py#L158-L190) | `align_freqtrade_with_trend()` 信号校准 |
+| HTTP桥接 | [`classic_bridge.py`](../../12-三屏趋势系统/classic_bridge.py) | 统一封装对经典系统的API调用 |
 
 **信号校准规则**:
 
@@ -241,8 +241,8 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 
 | 组件 | 文件 | 说明 |
 |------|------|------|
-| 离场集成 | [`exit_integration.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/exit_integration.py) | `evaluate_exit()` 调用经典系统 |
-| 引擎接口 | [`engine.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L196-L246) | `evaluate_exit_from_classic()` |
+| 离场集成 | [`exit_integration.py`](../../12-三屏趋势系统/exit_integration.py) | `evaluate_exit()` 调用经典系统 |
+| 引擎接口 | [`engine.py`](../../12-三屏趋势系统/engine.py#L196-L246) | `evaluate_exit_from_classic()` |
 
 经典系统四层优先级离场架构:
 
@@ -274,7 +274,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 | 45% | 5% | minimal |
 | <45% | 0% | none |
 
-配置: [`POSITION_TIERS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L39-L45)
+配置: [`POSITION_TIERS`](../../12-三屏趋势系统/core/config.py#L39-L45)
 
 ### 7.2 执行决策（五大算法模式）
 
@@ -285,9 +285,9 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 4. 其他 → WAIT
 ```
 
-函数: [`five_algo_decision()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L248-L295)
+函数: [`five_algo_decision()`](../../12-三屏趋势系统/engine.py#L248-L295)
 
-配置: [`OPEN_CONFIDENCE_THRESHOLD`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L36) / [`TRIAL_CONFIDENCE_THRESHOLD`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L37)
+配置: [`OPEN_CONFIDENCE_THRESHOLD`](../../12-三屏趋势系统/core/config.py#L36) / [`TRIAL_CONFIDENCE_THRESHOLD`](../../12-三屏趋势系统/core/config.py#L37)
 
 ---
 
@@ -352,7 +352,7 @@ from engine import compute_full_trading_signal
 result = compute_full_trading_signal(spot_inst="BTC-USDT", is_btc=True)
 ```
 
-函数: [`compute_full_trading_signal()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L389-L448)
+函数: [`compute_full_trading_signal()`](../../12-三屏趋势系统/engine.py#L389-L448)
 
 ### 9.2 纯计算入口（数据由调用方提供）
 
@@ -368,7 +368,7 @@ result = compute_trend_signal_from_dataframes(
 )
 ```
 
-函数: [`compute_trend_signal_from_dataframes()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L298-L386)
+函数: [`compute_trend_signal_from_dataframes()`](../../12-三屏趋势系统/engine.py#L298-L386)
 
 ### 9.3 入场信号获取
 
@@ -378,7 +378,7 @@ from engine import fetch_entry_signals_from_classic
 signals = fetch_entry_signals_from_classic("BTC", ["1h", "4h"])
 ```
 
-函数: [`fetch_entry_signals_from_classic()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L169-L194)
+函数: [`fetch_entry_signals_from_classic()`](../../12-三屏趋势系统/engine.py#L169-L194)
 
 ### 9.4 离场决策
 
@@ -391,7 +391,7 @@ result = evaluate_exit_from_classic(
 )
 ```
 
-函数: [`evaluate_exit_from_classic()`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py#L196-L246)
+函数: [`evaluate_exit_from_classic()`](../../12-三屏趋势系统/engine.py#L196-L246)
 
 ### 9.5 基本面数据
 
@@ -486,7 +486,7 @@ tf = fetch_fundamental_by_timeframe("BTC")
 | 仓位最高档 | 60% (置信度≥85%) | `config.py` L40 |
 | 仓位最低档 | 5% (置信度≥45%) | `config.py` L44 |
 
-候选币种池: [`CANDIDATE_COINS`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py#L5-L15) (BTC, ETH, SOL, BNB, DOGE, XRP, UNI, HYPE, OKB)
+候选币种池: [`CANDIDATE_COINS`](../../12-三屏趋势系统/core/config.py#L5-L15) (BTC, ETH, SOL, BNB, DOGE, XRP, UNI, HYPE, OKB)
 
 ---
 
@@ -511,4 +511,4 @@ python3 tests/test_core.py
 | `test_full_signal()` | 完整信号计算 + Freqtrade信号校准 |
 | `test_fundamental_data()` | 基本面数据读取（A系列研报） |
 
-测试文件: [`test_core.py`](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/tests/test_core.py)
+测试文件: [`test_core.py`](../../12-三屏趋势系统/tests/test_core.py)

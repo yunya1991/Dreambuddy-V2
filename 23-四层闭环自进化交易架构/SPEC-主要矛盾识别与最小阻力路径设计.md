@@ -32,11 +32,11 @@
 
 | 环节 | 哲学要求 | 实现度 | 核心差距 | 代码位置 |
 |:---|:---|:---:|:---|:---|
-| ① 多路径=多矛盾 | 6 路径来源对应 6 类矛盾 | 85% | 路径并行收集，无对抗/共振分析 | [evolution_pipeline.py:_discover_paths](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L329-L560) |
+| ① 多路径=多矛盾 | 6 路径来源对应 6 类矛盾 | 85% | 路径并行收集，无对抗/共振分析 | [evolution_pipeline.py:_discover_paths](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L329-L560) |
 | ② 识别主要矛盾 | 矛盾间对抗→主导者 | **30%** | **核心断裂**：独立评分取最高，非矛盾间比较识别主导者 | _select_optimal_path L562-L649 |
 | ③ 趋势延续性 | 延续性信号回流路径层 | 40% | trend_strength/ADX 在数据层计算但未回流路径发现层 | resistance_vector.py / market_data |
 | ④ 回测+小仓验证 | 验证结果回流确认矛盾 | 50% | ShadowRL/Counterfactual 验证后未回流闭环 | ShadowRLTrainer |
-| ⑤ 最小阻力计算 | 主要矛盾内求阻力最小 | 70% | HJB lagrangian 未融入矛盾强度调制 | [hjb_solver.py:lagrangian](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L106-L148) |
+| ⑤ 最小阻力计算 | 主要矛盾内求阻力最小 | 70% | HJB lagrangian 未融入矛盾强度调制 | [hjb_solver.py:lagrangian](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L106-L148) |
 
 **核心结论：** 数学算法层已完备（HJB PDE + 变分法 + 三级降级链），但哲学意图层存在核心断裂——当前是"所有矛盾平均化下求最小阻力"，不是"识别出的主要矛盾下求最小阻力"。
 
@@ -46,7 +46,7 @@
 
 ### 2.1 矛盾论（毛泽东）— 主框架
 
-来源：[2-KNOWLEDGE/3-THEORY/矛盾分析法.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/3-THEORY/矛盾分析法.md) A0 统一矛盾操作系统
+来源：[2-KNOWLEDGE/3-THEORY/矛盾分析法.md](../2-KNOWLEDGE/3-THEORY/矛盾分析法.md) A0 统一矛盾操作系统
 
 **核心原理映射：**
 
@@ -369,7 +369,7 @@ def _evaluate_dominance(self, dominance, paths, market_data) -> dict:
 
 ### 4.3 矛盾强度调制的 lagrangian（扩展）
 
-**文件：** [hjb_solver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) `lagrangian()` 方法
+**文件：** [hjb_solver.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py) `lagrangian()` 方法
 
 **变更：** 新增可选参数 `primary_contradiction`，不传则保持现有行为（向后兼容）。
 
@@ -418,7 +418,7 @@ def lagrangian(
 
 ### 4.4 趋势延续性回流（扩展 _discover_paths）
 
-**文件：** [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) `_discover_paths()`
+**文件：** [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) `_discover_paths()`
 
 **变更：** 每个路径新增 3 个字段（cause_score / effort_result / continuation_score），由 `TrendContinuationScorer` 统一计算。
 
@@ -489,7 +489,7 @@ class TrendContinuationScorer:
 
 ### 4.5 _select_optimal_path 集成（扩展）
 
-**文件：** [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) `_select_optimal_path()` L562-L649
+**文件：** [evolution_pipeline.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) `_select_optimal_path()` L562-L649
 
 **变更：** 在 HJB solve 前调用 PrimaryContradictionIdentifier，将结果传入 lagrangian。
 

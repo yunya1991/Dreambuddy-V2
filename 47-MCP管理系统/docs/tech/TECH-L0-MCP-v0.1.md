@@ -466,7 +466,7 @@ SPEC DA1：壳进程按需拉起即退，job 状态必须落持久层——评�
 
 ## §9 壳后域内 agent 化的技术地基
 
-本手册为 [SPEC-L0-DOMAIN-AGENTS v0.1](./SPEC-L0-DOMAIN-AGENTS-v0.1.md) 提供以下前置地基：
+本手册为 [SPEC-L0-DOMAIN-AGENTS v0.1](./SPEC-L0-DOMAIN-AGENTS-v0.2.md) 提供以下前置地基：
 
 | SPEC-L0-DOMAIN-AGENTS 章节 | 依赖本手册的哪部分 | 依赖原因 |
 |---|---|---|

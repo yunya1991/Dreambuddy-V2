@@ -20,7 +20,7 @@
 
 ### 1.2 现状硬伤（代码证据级）
 
-现有 `run_once` 主循环 [polling_trader.py#L3898-L4173](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L3898-L4173) 的算力分配呈现**"空仓/满仓一视同仁"**：
+现有 `run_once` 主循环 [polling_trader.py#L3898-L4173](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L3898-L4173) 的算力分配呈现**"空仓/满仓一视同仁"**：
 
 | 阶段 | 当前做法 | 满仓时的浪费 | 单轮耗时估算（15 币种） |
 |---|---|---|---|

@@ -1,7 +1,7 @@
 # 待终审：R8 终审权归云端（SPEC v2.1）
 
 > 状态：`approved`（2026-10-31 云端终审通过，结论见 [feedback/2026-10-31-R8-cloud-final-approval-review.md](../feedback/2026-10-31-R8-cloud-final-approval-review.md)，已移入 approved/）
-> 依据：[SPEC-dual-end-collab-governance.md](../docs/tech/SPEC-dual-end-collab-governance.md) §3.3 R8 / §5.1 / §5.2 / §八.7
+> 依据：[SPEC-dual-end-collab-governance.md](../../docs/tech/SPEC-dual-end-collab-governance.md) §3.3 R8 / §5.1 / §5.2 / §八.7
 > 起草端：local · 起草日期：2026-10-30
 
 ## 待终审内容

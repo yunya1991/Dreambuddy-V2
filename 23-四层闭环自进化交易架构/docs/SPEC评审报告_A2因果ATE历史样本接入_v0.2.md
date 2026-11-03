@@ -1,9 +1,9 @@
 # 同行评审报告 — SPEC-A2 因果 ATE 历史样本接入（v0.2）
 
-> **评审对象：** [SPEC-A2-因果ATE历史样本接入.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/SPEC-A2-因果ATE历史样本接入.md)（**v4：调研增补版**）
+> **评审对象：** [SPEC-A2-因果ATE历史样本接入.md](../../23-四层闭环自进化交易架构/SPEC-A2-因果ATE历史样本接入.md)（**v4：调研增补版**）
 > **评审日期：** 2026-10-14
 > **评审方法：** `dream-science-peer-review` — 4 视角独立评审 + Devil's Advocate 让步阈值协议 + 7 模式阻断清单
-> **前版报告：** [v0.1](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md)（§十含 v3 实证勘误）
+> **前版报告：** [v0.1](../../23-四层闭环自进化交易架构/docs/SPEC评审报告_A2因果ATE历史样本接入_v0.1.md)（§十含 v3 实证勘误）
 > **本轮新增材料：** v4 相对 v3 的 delta —— 新增 §2.5 统计口径强化、§6.2 调制契约升级为**经济显著性三态门禁（SESOI+TOST）**、新增 §9 替代与增强方案（P0/P1/P2 + 工具映射），以及三方向调研（学术界+成熟 AI 工程 / GitHub-pyWhy / 金融工程业界）的一致结论。
 > **实证依据：** 所有数据结论均来自真实数据 POC（全量 `shadow_rl_samples.jsonl`，真实 `CausalEngine`），非推测；沿用 v3 复核口径（X4 去 treatment 定义变量防共线）。
 

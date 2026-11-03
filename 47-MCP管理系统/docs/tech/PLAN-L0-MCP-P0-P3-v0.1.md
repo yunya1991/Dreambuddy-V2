@@ -1,9 +1,9 @@
 # PLAN-L0-MCP-P0-P3 — L0 MCP 封装实施计划
 
-> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 待用户确认后开工
-> **范围**: 本计划仅覆盖 **47-MCP管理系统** 侧实施；46-DSH架构 侧（事件网关/Router/Ticket 翻译器等）见 [DESIGN-DSH-ARCH-UPGRADE v0.2](../../46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md) §五 演进路径
+> **版本**: v0.2 ｜ **日期**: 2026-11-02 ｜ **状态**: 🔄 已开工（M1-M4 壳 + P0 主体完成；P1-P3 待 bcrm2 切流窗口）
+> **范围**: 本计划仅覆盖 **47-MCP管理系统** 侧实施；46-DSH架构 侧（事件网关/Router/Ticket 翻译器等）见 [DESIGN-DSH-ARCH-UPGRADE v0.2](../../../46-DSH架构/docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md) §五 演进路径
 > **依据**: [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（决议落定：B1-B6/G1-G3/D1-D6）+ [ALIGNMENT-46-47-v1.0](./ALIGNMENT-46-47-v1.0.md) §六 合并开工顺序
-> **对齐**: [SPEC-L0-three-layer-architecture v0.5](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) C 系列进度（§一）
+> **对齐**: [SPEC-L0-three-layer-architecture v0.5](../../../44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) C 系列进度（§一）
 > **约束**: 单人维护、FAIL-OPEN、云端 4C16G、零回归（C 系列既有阻断 job 全绿为每里程碑前置）、实盘写路径不触碰
 > **v0.2 修订**: 任务①合并原任务②——mcp_capabilities.yaml 为 B4 唯一载体，包含完整的**角色→能力标签→工具**三层映射；删除多余的 l0_capability_set.v1.yaml（与 ALIGNMENT B4 "单一载体" 冲突）
 

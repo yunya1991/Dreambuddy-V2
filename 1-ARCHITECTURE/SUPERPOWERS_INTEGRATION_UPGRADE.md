@@ -119,7 +119,7 @@
 
 ### 3.1 现状分析
 
-S 层当前通过 [intent-clarification-engine.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/intent-clarification-engine.ts) 实现：
+S 层当前通过 [intent-clarification-engine.ts](../6-图结构上下文压缩/planner/intent-clarification-engine.ts) 实现：
 
 - `assessAmbiguity()` - 6 维度模糊度评估
 - `generateClarificationQuestion()` - LLM 驱动生成澄清问题
@@ -183,11 +183,11 @@ docs/intent-specs/YYYY-MM-DD-<topic>-intent.md
 
 ### 4.1 现状分析
 
-A 层 [SkillsRegistry](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/skills-registry.ts) 当前：
+A 层 [SkillsRegistry](../6-图结构上下文压缩/planner/skills-registry.ts) 当前：
 
 - 支持内部 SkillCapability 注册
 - 提供 `recommend()` 和 `getAll()` 等查询接口
-- 节点补充通过 [node-gap-supplementer.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/node-gap-supplementer.ts) + [supplement-memory-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/supplement-memory-store.ts) 实现
+- 节点补充通过 [node-gap-supplementer.ts](../6-图结构上下文压缩/planner/node-gap-supplementer.ts) + [supplement-memory-store.ts](../6-图结构上下文压缩/planner/supplement-memory-store.ts) 实现
 - 进化路径：draft → validated → promoted
 
 **不足**：
@@ -269,7 +269,7 @@ Superpowers SKILL.md
 
 ### 5.1 现状分析
 
-C 层当前通过 [graph-executor.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/graph-executor.ts) 实现：
+C 层当前通过 [graph-executor.ts](../6-图结构上下文压缩/graph-executor.ts) 实现：
 
 ```
 while (还有节点) {
@@ -277,7 +277,7 @@ while (还有节点) {
 }
 ```
 
-**反射决策类型**（来自 [reflector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/compute/reflector.py)）：
+**反射决策类型**（来自 [reflector.py](../1-ARCHITECTURE/dreamos/core/compute/reflector.py)）：
 - `CONTINUE` - 正常继续
 - `REDO` - 重新执行（置信度低但可挽救）
 - `INSERT_BEFORE` - 插入补充节点
@@ -347,7 +347,7 @@ while (还有节点) {
   5. 提交
 ```
 
-**实现位置**：[dev-chain.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/dream-universal-gateway/src/lib/dev-chain.ts) 的 `executeS5` 增加 TDD 约束。
+**实现位置**：[dev-chain.ts](../3-FRONTEND/dream-universal-gateway/src/lib/dev-chain.ts) 的 `executeS5` 增加 TDD 约束。
 
 **门禁规则**：
 - 如果 Claude 先写代码再补测试，删除代码重来
@@ -498,18 +498,18 @@ while (还有节点) {
 
 ### 9.1 内部资料
 
-- [WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) - 模块化架构技术文档
-- [SYSTEM_ARCHITECTURE_OVERVIEW.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) - 系统总体架构
-- [intent-recognition-engine-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/intent-recognition-engine-design.md) - 意图识别引擎设计
+- [WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) - 模块化架构技术文档
+- [SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) - 系统总体架构
+- [intent-recognition-engine-design.md](../1-ARCHITECTURE/intent-recognition-engine-design.md) - 意图识别引擎设计
 
 ### 9.2 实现文件
 
-- [intent-clarification-engine.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/intent-clarification-engine.ts) - 意图澄清引擎（S 层）
-- [node-gap-supplementer.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/node-gap-supplementer.ts) - 节点缺失补充器（A 层）
-- [supplement-memory-store.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/supplement-memory-store.ts) - 记忆存储进化（A 层）
-- [dynamic-node-planner.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/planner/dynamic-node-planner.ts) - 动态节点规划器（A 层）
-- [graph-executor.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/graph-executor.ts) - 图执行引擎（C 层）
-- [reflector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/compute/reflector.py) - 反射决策器（C 层）
+- [intent-clarification-engine.ts](../6-图结构上下文压缩/planner/intent-clarification-engine.ts) - 意图澄清引擎（S 层）
+- [node-gap-supplementer.ts](../6-图结构上下文压缩/planner/node-gap-supplementer.ts) - 节点缺失补充器（A 层）
+- [supplement-memory-store.ts](../6-图结构上下文压缩/planner/supplement-memory-store.ts) - 记忆存储进化（A 层）
+- [dynamic-node-planner.ts](../6-图结构上下文压缩/planner/dynamic-node-planner.ts) - 动态节点规划器（A 层）
+- [graph-executor.ts](../6-图结构上下文压缩/graph-executor.ts) - 图执行引擎（C 层）
+- [reflector.py](../1-ARCHITECTURE/dreamos/core/compute/reflector.py) - 反射决策器（C 层）
 
 ### 9.3 外部资料
 

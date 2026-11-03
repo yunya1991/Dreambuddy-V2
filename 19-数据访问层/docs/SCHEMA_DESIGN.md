@@ -514,7 +514,7 @@ CREATE INDEX IF NOT EXISTS idx_cv_versions_family ON cv_config_versions(config_f
 
 ## 8. 知识图谱域表（`kg_*`，共 4 张 = 沿用现有 kg_store.py 设计）
 
-**完全对齐现有 [kg_store.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/kg_store.py#L61-L83) 的 Schema 设计**（已有实战验证，避免重写双时态 + FTS5）。仅加 `kg_` 前缀统一规范：
+**完全对齐现有 [kg_store.py](../../11-易经推理系统/scripts/memory_l4/kg_store.py#L61-L83) 的 Schema 设计**（已有实战验证，避免重写双时态 + FTS5）。仅加 `kg_` 前缀统一规范：
 
 ### 8.1 kg_entities（实体表）
 

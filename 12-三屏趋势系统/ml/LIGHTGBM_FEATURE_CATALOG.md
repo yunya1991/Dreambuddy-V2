@@ -16,19 +16,19 @@
 
 | 管道 | 特征工程 | LightGBM模型 | 特征维度 | 存储位置 |
 |------|---------|-------------|---------|---------|
-| **A. 价格特征管道** | [feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py) `TrendFeatureEngineer` | [models.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/models.py) `LightGBMModel` | ~30维 | `ml/models/current/` |
-| **B. 阻力特征管道** | [lr_feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py) `LeastResistanceFeatureEngineer` | [models.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/models.py) `LightGBMModel` | 67+维（含哲学26维） | `ml/models/current/` |
-| **C. 集成推理管道** | [algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) `extract_ensemble_features` | [algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) `EnsemblePredictor` | 62维（含哲学26维） | `ml/models/ensemble/` |
+| **A. 价格特征管道** | [feature_engineer.py](../../12-三屏趋势系统/ml/feature_engineer.py) `TrendFeatureEngineer` | [models.py](../../12-三屏趋势系统/ml/models.py) `LightGBMModel` | ~30维 | `ml/models/current/` |
+| **B. 阻力特征管道** | [lr_feature_engineer.py](../../12-三屏趋势系统/ml/lr_feature_engineer.py) `LeastResistanceFeatureEngineer` | [models.py](../../12-三屏趋势系统/ml/models.py) `LightGBMModel` | 67+维（含哲学26维） | `ml/models/current/` |
+| **C. 集成推理管道** | [algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) `extract_ensemble_features` | [algo_ensemble.py](../../12-三屏趋势系统/ml/algo_ensemble.py) `EnsemblePredictor` | 62维（含哲学26维） | `ml/models/ensemble/` |
 
 ---
 
 ## 二、管道A：价格特征管道（~30维）
 
-**来源**：[feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py) `TrendFeatureEngineer`
+**来源**：[feature_engineer.py](../../12-三屏趋势系统/ml/feature_engineer.py) `TrendFeatureEngineer`
 **理论基础**：Alexander Elder三重滤网系统 + Elder-ray指标
 **特征来源类型**：⚡理论驱动（非实践回测）
 
-### A1. 趋势方向 direction（8维）— [feature_engineer.py:114-162](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py#L114-L162)
+### A1. 趋势方向 direction（8维）— [feature_engineer.py:114-162](../../12-三屏趋势系统/ml/feature_engineer.py#L114-L162)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -38,7 +38,7 @@
 | `ema13_slope_dir` | EMA13斜率符号 | ⚡理论 |
 | `hl_position_{20,60}` | 价格在过去N天high-low区间中的位置 | ⚡理论 |
 
-### A2. 趋势变化 change（9维）— [feature_engineer.py:164-248](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py#L164-L248)
+### A2. 趋势变化 change（9维）— [feature_engineer.py:164-248](../../12-三屏趋势系统/ml/feature_engineer.py#L164-L248)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -52,7 +52,7 @@
 | `rsi_bear_divergence` | RSI看跌背离 | ⚡理论 |
 | `rsi_bull_divergence` | RSI看涨背离 | ⚡理论 |
 
-### A3. 趋势速率 velocity（9维）— [feature_engineer.py:250-293](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py#L250-L293)
+### A3. 趋势速率 velocity（9维）— [feature_engineer.py:250-293](../../12-三屏趋势系统/ml/feature_engineer.py#L250-L293)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -62,7 +62,7 @@
 | `ema13_slope_accel` | EMA斜率加速度 | ⚡理论 |
 | `momentum_accel_10` | 10日动量加速度 | ⚡理论 |
 
-### A4. Elder-ray力量 power（10维）— [feature_engineer.py:295-371](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py#L295-L371)
+### A4. Elder-ray力量 power（10维）— [feature_engineer.py:295-371](../../12-三屏趋势系统/ml/feature_engineer.py#L295-L371)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -77,7 +77,7 @@
 | `both_weakening` | 双方力量同时减弱（变盘前兆） | ⚡理论 |
 | `bull_cross_negative` / `bear_cross_positive` | 力量穿越零线 | ⚡理论 |
 
-### A5. 多尺度层级 hierarchy（8维）— [feature_engineer.py:373-466](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py#L373-L466)
+### A5. 多尺度层级 hierarchy（8维）— [feature_engineer.py:373-466](../../12-三屏趋势系统/ml/feature_engineer.py#L373-L466)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -94,11 +94,11 @@
 
 ## 三、管道B：阻力特征管道（60+维）
 
-**来源**：[lr_feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py) `LeastResistanceFeatureEngineer`
+**来源**：[lr_feature_engineer.py](../../12-三屏趋势系统/ml/lr_feature_engineer.py) `LeastResistanceFeatureEngineer`
 **理论基础**：最小阻力方向理论（五维阻力融合）
 **特征来源类型**：⚡理论驱动 + 🔬实践回测（哲学15维）
 
-### B1. 五维阻力 daily_res（7维）— [lr_feature_engineer.py:219-227](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py#L219-L227)
+### B1. 五维阻力 daily_res（7维）— [lr_feature_engineer.py:219-227](../../12-三屏趋势系统/ml/lr_feature_engineer.py#L219-L227)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -106,7 +106,7 @@
 | `daily_res_diff` | 日线总阻力差 | ⚡理论 |
 | `daily_confidence` | 日线置信度 | ⚡理论 |
 
-### B2. 五维阻力 weekly_res（7维）— [lr_feature_engineer.py:229-236](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py#L229-L236)
+### B2. 五维阻力 weekly_res（7维）— [lr_feature_engineer.py:229-236](../../12-三屏趋势系统/ml/lr_feature_engineer.py#L229-L236)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -114,7 +114,7 @@
 | `weekly_res_diff` | 周线总阻力差 | ⚡理论 |
 | `weekly_confidence` | 周线置信度 | ⚡理论 |
 
-### B3. 跨周期一致性 cross（8维）— [lr_feature_engineer.py:238-255](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py#L238-L255)
+### B3. 跨周期一致性 cross（8维）— [lr_feature_engineer.py:238-255](../../12-三屏趋势系统/ml/lr_feature_engineer.py#L238-L255)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -123,7 +123,7 @@
 | `cross_conf_ratio` | 日/周置信度比 | ⚡理论 |
 | `cross_{price,volume,momentum,trend,fundamental}_diff` | 各维度周/日差异（5维） | ⚡理论 |
 
-### B4. 历史变化 daily_vel/weekly_vel（4维）— [lr_feature_engineer.py:257-284](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py#L257-L284)
+### B4. 历史变化 daily_vel/weekly_vel（4维）— [lr_feature_engineer.py:257-284](../../12-三屏趋势系统/ml/lr_feature_engineer.py#L257-L284)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -132,7 +132,7 @@
 | `daily_acceleration` | 日线阻力差加速度 | ⚡理论 |
 | `weekly_velocity` / `weekly_acceleration` | 周线速度/加速度 | ⚡理论 |
 
-### B5. 多窗口统计 daily_window/weekly_window（20+维）— [lr_feature_engineer.py:286-303](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py#L286-L303)
+### B5. 多窗口统计 daily_window/weekly_window（20+维）— [lr_feature_engineer.py:286-303](../../12-三屏趋势系统/ml/lr_feature_engineer.py#L286-L303)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -142,21 +142,21 @@
 | `daily_dir_slope_{1,3,5,10,20}` | 多窗口阻力差斜率（5维） | ⚡理论 |
 | `weekly_dir_mean_{1,3,5,10}` | 周线多窗口均值（4维） | ⚡理论 |
 
-### B6. 趋势强度 trend_strength/dominant（2维）— [lr_feature_engineer.py:287-303](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/lr_feature_engineer.py#L287-L303)
+### B6. 趋势强度 trend_strength/dominant（2维）— [lr_feature_engineer.py:287-303](../../12-三屏趋势系统/ml/lr_feature_engineer.py#L287-L303)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
 | `trend_strength_est` | 趋势强度估计 | ⚡理论 |
 | `dominant_res_dim` | 当前主导阻力维度索引 | ⚡理论 |
 
-### B7. 基本面 screen1/fundamental_9（15+维）— [fundamental_adapter.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/fundamental_adapter.py)
+### B7. 基本面 screen1/fundamental_9（15+维）— [fundamental_adapter.py](../../12-三屏趋势系统/ml/fundamental_adapter.py)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
 | `s1_{composite,momentum,value,growth,quality,sentiment}` | Screen1六维（6维） | ⚡理论 |
 | `f9_{pe_ttm,pb,roe,revenue_growth,profit_growth,debt_ratio,cash_ratio,gross_margin,net_margin}` | 9基本面信号（9维） | ⚡理论 |
 
-### B8. ⭐ 哲学贡献特征 philosophy（26维：V2十五个+V4七个+V5.3两个）— [philosophy_feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/philosophy_feature_engineer.py) + [halving_top_exit_strategy.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/halving_top_exit_strategy.py)
+### B8. ⭐ 哲学贡献特征 philosophy（26维：V2十五个+V4七个+V5.3两个）— [philosophy_feature_engineer.py](../../12-三屏趋势系统/ml/philosophy_feature_engineer.py) + [halving_top_exit_strategy.py](../../12-三屏趋势系统/ml/halving_top_exit_strategy.py)
 
 #### V2原有哲学特征（15维，V2基线验证）
 
@@ -198,9 +198,9 @@
 > - V4 vs V2 排名优势：+22.3 位（V4平均排名27.4 vs V2平均排名49.7）
 > - 改进标签（期末跌幅>20%）下，平均测试AUC=0.6888，衰减率26.7%
 >
-> **V4特征整合计划**：详见 [engineering_algorithm_roadmap.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/engineering_algorithm_roadmap.md) Stage 1
-> **验证脚本**：[walk_forward_v4_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/walk_forward_v4_validation.py)
-> **验证结果**：[stage1_improved_label_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/stage1_improved_label_result.json)
+> **V4特征整合计划**：详见 [engineering_algorithm_roadmap.md](../../12-三屏趋势系统/ml/engineering_algorithm_roadmap.md) Stage 1
+> **验证脚本**：[walk_forward_v4_validation.py](../../12-三屏趋势系统/ml/walk_forward_v4_validation.py)
+> **验证结果**：[stage1_improved_label_result.json](../../12-三屏趋势系统/ml/backtest_results/stage1_improved_label_result.json)
 
 #### Stage 2.1 新增哲学特征（2维，假设DIP-001验证完成）
 
@@ -219,14 +219,14 @@
 >
 > **对比Top 10特征**：V4特征主导DIP_BUY场景（4/7进Top30%），`halving_months_after`#1(237.8)，`weekly_ma200_distance`仍是唯一有效的V2抄底特征(#7, 82.2)
 >
-> **验证脚本**：[stage2_dip_buy_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
-> **验证结果**：[stage2_dip_buy_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
+> **验证脚本**：[stage2_dip_buy_validation.py](../../12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
+> **验证结果**：[stage2_dip_buy_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
 
 #### Stage 2.4 冗余特征清理验证（2026-07-19）
 
 > **操作**：移除3个零重要性派生特征（`dip_buy_level`/`dip_buy_position_ratio`/`left_side_buy_signal`），特征总数 76→73
-> **验证脚本**：[stage2_4_cleanup_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/stage2_4_cleanup_validation.py)
-> **验证结果**：[stage2_4_cleanup_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/stage2_4_cleanup_result.json)
+> **验证脚本**：[stage2_4_cleanup_validation.py](../../12-三屏趋势系统/ml/stage2_4_cleanup_validation.py)
+> **验证结果**：[stage2_4_cleanup_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_4_cleanup_result.json)
 
 **Stage 2.4 vs Stage 2.0/2.1 对比**：
 
@@ -264,18 +264,18 @@
 > - 关键发现：消融实验定位"害群之马"`fed_months_in_cycle`（重要性#1但对模型有害）
 > - **决策**：✅ 正式集成到 FEATURE_NAMES，哲学特征从24维扩展到26维
 >
-> **验证脚本**：[v53_feature_correlation_analysis.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v53_feature_correlation_analysis.py)、[v53_direction_d_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v53_direction_d_validation.py)、[v53_ablation_experiment.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v53_ablation_experiment.py)、[v53_final_validation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/v53_final_validation.py)
-> **验证结果**：[v53_direction_d_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/v53_direction_d_result.json)、[v53_ablation_result.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/v53_ablation_result.json)、[v53_final_validation.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/backtest_results/v53_final_validation.json)
+> **验证脚本**：[v53_feature_correlation_analysis.py](../../12-三屏趋势系统/ml/v53_feature_correlation_analysis.py)、[v53_direction_d_validation.py](../../12-三屏趋势系统/ml/v53_direction_d_validation.py)、[v53_ablation_experiment.py](../../12-三屏趋势系统/ml/v53_ablation_experiment.py)、[v53_final_validation.py](../../12-三屏趋势系统/ml/v53_final_validation.py)
+> **验证结果**：[v53_direction_d_result.json](../../12-三屏趋势系统/ml/backtest_results/v53_direction_d_result.json)、[v53_ablation_result.json](../../12-三屏趋势系统/ml/backtest_results/v53_ablation_result.json)、[v53_final_validation.json](../../12-三屏趋势系统/ml/backtest_results/v53_final_validation.json)
 
 ---
 
 ## 四、管道C：集成推理管道（62维）
 
-**来源**：[algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) `extract_ensemble_features`
+**来源**：[algo_ensemble.py](../../12-三屏趋势系统/ml/algo_ensemble.py) `extract_ensemble_features`
 **理论基础**：五大算法输出融合
 **特征来源类型**：⚡算法输出 + 🔬实践回测（哲学26维）
 
-### C1. 趋势一致性 tc（16维）— [algo_ensemble.py:129-149](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L129-L149)
+### C1. 趋势一致性 tc（16维）— [algo_ensemble.py:129-149](../../12-三屏趋势系统/ml/algo_ensemble.py#L129-L149)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -284,7 +284,7 @@
 | `tc_consistent` | 周日一致性 | ⚡算法输出 |
 | `tc_consistency_confidence` | 一致性置信度 | ⚡算法输出 |
 
-### C2. 贝叶斯置信度 bayes（3维）— [algo_ensemble.py:151-155](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L151-L155)
+### C2. 贝叶斯置信度 bayes（3维）— [algo_ensemble.py:151-155](../../12-三屏趋势系统/ml/algo_ensemble.py#L151-L155)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -292,7 +292,7 @@
 | `bayes_bull_prob` | 上涨概率 | ⚡算法输出 |
 | `bayes_bear_prob` | 下跌概率 | ⚡算法输出 |
 
-### C3. 经典指标置信度 classic（9维）— [algo_ensemble.py:157-170](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L157-L170)
+### C3. 经典指标置信度 classic（9维）— [algo_ensemble.py:157-170](../../12-三屏趋势系统/ml/algo_ensemble.py#L157-L170)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -301,7 +301,7 @@
 | `classic_overall_confidence` | 综合置信度 | ⚡算法输出 |
 | `classic_trend_consistent` | 趋势一致性 | ⚡算法输出 |
 
-### C4. 技术基本面融合 fusion（4维）— [algo_ensemble.py:172-177](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L172-L177)
+### C4. 技术基本面融合 fusion（4维）— [algo_ensemble.py:172-177](../../12-三屏趋势系统/ml/algo_ensemble.py#L172-L177)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -310,7 +310,7 @@
 | `fusion_consistent` | 技术基本面一致 | ⚡算法输出 |
 | `fusion_conflict_level` | 冲突级别 | ⚡算法输出 |
 
-### C5. 价值风险评估 vr（4维）— [algo_ensemble.py:179-187](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L179-L187)
+### C5. 价值风险评估 vr（4维）— [algo_ensemble.py:179-187](../../12-三屏趋势系统/ml/algo_ensemble.py#L179-L187)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -319,7 +319,7 @@
 | `vr_value_gt_risk` | 价值>风险 | ⚡算法输出 |
 | `vr_tp_pct` | 止盈百分比 | ⚡算法输出 |
 
-### C6. Freqtrade信号 ft（4维）— [algo_ensemble.py:189-196](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L189-L196)
+### C6. Freqtrade信号 ft（4维）— [algo_ensemble.py:189-196](../../12-三屏趋势系统/ml/algo_ensemble.py#L189-L196)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -328,7 +328,7 @@
 | `ft_4h_signal` | 4小时信号方向 | ⚡算法输出 |
 | `ft_4h_confidence` | 4小时置信度 | ⚡算法输出 |
 
-### C7. 最终信号 fs（5维）— [algo_ensemble.py:198-207](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L198-L207)
+### C7. 最终信号 fs（5维）— [algo_ensemble.py:198-207](../../12-三屏趋势系统/ml/algo_ensemble.py#L198-L207)
 
 | 特征名 | 计算逻辑 | 来源类型 |
 |--------|---------|---------|
@@ -338,7 +338,7 @@
 | `fs_fusion_consistent` | 融合一致 | ⚡算法输出 |
 | `fs_freqtrade_consistent` | Freqtrade一致 | ⚡算法输出 |
 
-### C8. ⭐ 哲学贡献特征 ph（26维：V2十五个+V4七个+V5.3两个）— [algo_ensemble.py:209-225](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py#L209-L225)
+### C8. ⭐ 哲学贡献特征 ph（26维：V2十五个+V4七个+V5.3两个）— [algo_ensemble.py:209-225](../../12-三屏趋势系统/ml/algo_ensemble.py#L209-L225)
 
 与管道B的B8完全一致，前缀改为`ph_`，通过`full_signal["philosophy"]`注入。
 V4新增7个特征待整合到`algo_ensemble.py`的`extract_ensemble_features()`中。
@@ -415,8 +415,8 @@ v2策略消融分析中发现但尚未提取为特征的实践规律：
 > 2026-07-18 新增：基于"四类目的 + 动态实践闭环"框架，
 > 将所有特征按交易目的重新组织，形成"按来源（三管道）+ 按目的（四类）"双维度分类。
 >
-> 详见: [four_objective_framework_design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/four_objective_framework_design.md)
-> 映射器: [four_objective_feature_mapper.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/four_objective_feature_mapper.py)
+> 详见: [four_objective_framework_design.md](../../12-三屏趋势系统/ml/four_objective_framework_design.md)
+> 映射器: [four_objective_feature_mapper.py](../../12-三屏趋势系统/ml/four_objective_feature_mapper.py)
 
 ### 7.1 四类目的定义
 
@@ -528,11 +528,11 @@ labels = mapper.generate_labels(prices_df, "dip_buy")
 ```
 
 相关工具：
-- **分场景回测引擎**: [scenario_backtest_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/scenario_backtest_engine.py)
+- **分场景回测引擎**: [scenario_backtest_engine.py](../../12-三屏趋势系统/ml/scenario_backtest_engine.py)
   - 四类目的分别评估
   - 特征消融实验
   - 综合评分（vs v2基线）
-- **闭环迭代管理器**: [closed_loop_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/closed_loop_manager.py)
+- **闭环迭代管理器**: [closed_loop_manager.py](../../12-三屏趋势系统/ml/closed_loop_manager.py)
   - 假设库管理
   - 实验记录
   - 基线版本管理

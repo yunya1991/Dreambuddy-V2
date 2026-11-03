@@ -1,7 +1,7 @@
 # SPEC-L0-AGENT-COMM-SHADOW — AgentMail 跨域通信影子验证 SPEC
 
 > **版本**: v0.1 ｜ **日期**: 2026-11-02 ｜ **状态**: 📋 设计草案，影子 Phase 1 启动后实施
-> **上游**: [评估报告](../../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-跨域Agent通信与REA做梦器范式推广评估.md)（架构评估，本 SPEC 是其影子落地）· [SPEC-L0-DOMAIN-AGENTS v0.2](./SPEC-L0-DOMAIN-AGENTS-v0.1.md)（域内 agent 化蓝图）· [TECH-L0-MCP v0.1](./TECH-L0-MCP-v0.1.md)（壳实现手册）
+> **上游**: [评估报告](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-跨域Agent通信与REA做梦器范式推广评估.md)（架构评估，本 SPEC 是其影子落地）· [SPEC-L0-DOMAIN-AGENTS v0.2](./SPEC-L0-DOMAIN-AGENTS-v0.2.md)（域内 agent 化蓝图）· [TECH-L0-MCP v0.1](./TECH-L0-MCP-v0.1.md)（壳实现手册）
 > **依赖前置**: SPEC-L0-MCP-PACKAGING v0.3 M1 基础（壳层就绪，envelope.data 业务体透传）· M2-M3 部分壳落地（至少有一个跨域场景可观察）· bcrm2 切流**之后**时间窗
 > **定位**: 影子验证 = 观察 + 记录 + 评估 + 产出报告，**绝不触发**任何域内 agent 实际行为
 > **约束**: 单人维护 · 零 GPU · 零切流 · 影子硬约束 S1/S2/S3（H9 已记录 B 级认知 VM-1793614927363-5f70cc60）

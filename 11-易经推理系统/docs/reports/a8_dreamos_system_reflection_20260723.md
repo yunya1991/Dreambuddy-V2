@@ -15,7 +15,7 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 
 近期完成的四项改造（A2 信号聚合、L4+回测两级优化、三维复合止损因子、编排记忆表修复）在工程层面各有亮点，但全部建立在**一个断裂的地基之上**：
 
-1. **反馈闭环完全断裂**：[execution_feedback.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/memory/execution_feedback.json) 中 277 条交易反馈记录，`result` 全部为 `0.0`，`exit_price` 全部为 `0`。`ExecutionFeedbackCollector.record()` 只在开仓时被调用，平仓结果从未回填。
+1. **反馈闭环完全断裂**：[execution_feedback.json](../../../1-ARCHITECTURE/dreamos/core/memory/execution_feedback.json) 中 277 条交易反馈记录，`result` 全部为 `0.0`，`exit_price` 全部为 `0`。`ExecutionFeedbackCollector.record()` 只在开仓时被调用，平仓结果从未回填。
 2. **编排记忆表充斥模板假数据**：36 个场景中，大量 sparse 场景的 `win_rate` 精确等于 `0.875x` 系列、`return` 精确等于 `0.187x` 系列，`evolved_at` 时间戳全部集中在 `2026-07-21T13:30:01` 批量生成 —— 这是模板填充，不是真实回测。
 3. **score 与实际表现严重背离**：`BEAR_LOW_DECELERATING` 场景 `score=0.7436`（高分）但 `sharpe=-9.2907`、`return=-0.8373`（负收益），说明 score 计算公式有缺陷。
 4. **"编排记忆表修复"治标不治本**：L0 命中从 0/36 提升到 35/36 只是修复了查询逻辑，但命中的数据本身就是 `result=0` 的垃圾数据和模板假数据。
@@ -29,7 +29,7 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 
 ### 1.1 反馈闭环断裂的铁证
 
-**数据来源**：[execution_feedback.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/memory/execution_feedback.json)
+**数据来源**：[execution_feedback.json](../../../1-ARCHITECTURE/dreamos/core/memory/execution_feedback.json)
 
 | 场景 | 反馈记录数 | result=0 占比 | exit_price=0 占比 | direction==expected_direction |
 |:---|---:|:---:|:---:|:---:|
@@ -48,13 +48,13 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 - `exit_price=0` 占比 100% → **平仓价格从未记录**
 - `direction==expected_direction` 100% → **"预期方向"就是"实际方向"**，没有独立验证
 
-**代码根因**：[execution_feedback.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/memory/execution_feedback.py) 第 77 行 `record()` 方法只在开仓时被调用（通过 [auto_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/cli/auto_trader.py) 的 `record_trade_feedback()`），传入 `result=0.0, exit_price=0`。系统没有在平仓时回填这些字段的机制。
+**代码根因**：[execution_feedback.py](../../../1-ARCHITECTURE/dreamos/core/memory/execution_feedback.py) 第 77 行 `record()` 方法只在开仓时被调用（通过 [auto_trader.py](../../../1-ARCHITECTURE/dreamos/cli/auto_trader.py) 的 `record_trade_feedback()`），传入 `result=0.0, exit_price=0`。系统没有在平仓时回填这些字段的机制。
 
 **保护机制的存在反证了问题**：代码第 54-55 行有 `ZERO_RESULT_RATIO_THRESHOLD = 0.8`，当 result=0 占比超过 80% 时"暂停进化触发"。这意味着开发者**知道**这个问题存在，但用"暂停"而非"修复"来应对 —— 暂停的结果是整个进化引擎实际上处于**永久冻结**状态。
 
 ### 1.2 编排记忆表的"假数据"模式
 
-**数据来源**：[orchestration_memory.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/memory/orchestration_memory.json)
+**数据来源**：[orchestration_memory.json](../../../1-ARCHITECTURE/dreamos/core/memory/orchestration_memory.json)
 
 **模板填充特征**（以下场景全部 `evolved_at=2026-07-21T13:30:01` 批量生成）：
 
@@ -100,7 +100,7 @@ no_external_reference: "A8纯内部批评，不参考任何外部视角"
 | 03:00:53 | DOT | 0.82 | 01:00-04:00 ← **DOT第三次** |
 | 03:01:19 | ARB | 0.08976 | 01:00-04:00 ← **ARB第四次** |
 
-**一个 4h 周期内 ARB 被开仓 4 次**。[auto_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/cli/auto_trader.py) 中的 `_last_trade_4h_ts` 去重逻辑未生效。
+**一个 4h 周期内 ARB 被开仓 4 次**。[auto_trader.py](../../../1-ARCHITECTURE/dreamos/cli/auto_trader.py) 中的 `_last_trade_4h_ts` 去重逻辑未生效。
 
 ---
 
@@ -474,8 +474,8 @@ Dream OS 交易系统
 #### 建议1：补全平仓结果回填机制
 
 **措施**：
-- 在 [execution_feedback.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/core/memory/execution_feedback.py) 中增加 `update()` 方法，根据 scenario_id + symbol + entry_price + timestamp 匹配记录，回填 exit_price 和 result
-- 在 [auto_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/cli/auto_trader.py) 的平仓逻辑（check_exit / execute_exit）中调用 `update()`
+- 在 [execution_feedback.py](../../../1-ARCHITECTURE/dreamos/core/memory/execution_feedback.py) 中增加 `update()` 方法，根据 scenario_id + symbol + entry_price + timestamp 匹配记录，回填 exit_price 和 result
+- 在 [auto_trader.py](../../../1-ARCHITECTURE/dreamos/cli/auto_trader.py) 的平仓逻辑（check_exit / execute_exit）中调用 `update()`
 - 补全后，新交易的平仓结果将自动回填
 
 **预期影响**：反馈闭环闭合，进化引擎在 result=0 比例下降后自动解冻

@@ -27,8 +27,8 @@
 #   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
 #   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
 schema_version: "1.1-mcp"
-registry_version: "0.1"
-last_updated: "2026-11-02"
+registry_version: "0.2"
+last_updated: "2026-11-03"
 # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
 # 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
 single_source_of_truth: true
@@ -202,10 +202,10 @@ shells:
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
 
-# ── 规划新壳占位（P1-P3）─────────────────────────────────────────
-# 占位 = schema 已存在、status=planned，落地时只填 shell_path/shell_cmd/envelope_version
-# 新壳未经本注册表登记不得上线（R6 漂移门禁）
-planned_shells:
+# ── 新增三壳（M2⑤/M4⑩ 已落地，v0.2 起并入 shells 序列）──────────────
+# data / eval / store-admin 三壳代码已建成（mcp_shells/l0_{data,eval,store_admin}），
+# v0.2 由 planned_shells 迁入正式 shells 列表，status 统一 available。
+# 新壳未经本注册表登记不得上线（R6 漂移门禁）。
   - shell_id: l0.data.mcp
     capability_id: l0.data
     transport: stdio

@@ -1,6 +1,6 @@
 # 同行评审报告 — SPEC-A2 因果 ATE 历史样本接入
 
-> **评审对象：** [SPEC-A2-因果ATE历史样本接入.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/SPEC-A2-因果ATE历史样本接入.md)（v1）
+> **评审对象：** [SPEC-A2-因果ATE历史样本接入.md](../../23-四层闭环自进化交易架构/SPEC-A2-因果ATE历史样本接入.md)（v1）
 > **评审日期：** 2026-10-14
 > **评审方法：** `dream-science-peer-review` — 4 视角独立评审 + Devil's Advocate 让步阈值协议 + 7 模式阻断清单
 > **实证依据：** 本报告所有「数据结论」均由**真实数据 POC**支持（全量 290,921 条 `shadow_rl_samples.jsonl`，真实 `CausalEngine`），非推测。

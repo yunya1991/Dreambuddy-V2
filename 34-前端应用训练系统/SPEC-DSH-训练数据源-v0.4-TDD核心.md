@@ -85,7 +85,7 @@ v0.3 试图从运行日志和数据库中挖掘决策序列，但发现：
 
 ### 1.1 DSH 层训练数据格式（同 v0.2，已确认）
 
-**来源**: [run_continual_training.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py#L139-L140) L139-140
+**来源**: [run_continual_training.py](../34-前端应用训练系统/scripts/run_continual_training.py#L139-L140) L139-140
 
 ```python
 elif layer == "DSH":
@@ -107,7 +107,7 @@ elif layer == "DSH":
 
 ### 1.3 测试结构 → DSH 映射验证（已确认 ✅）
 
-**样例1**: [test_p0_score_b_event_boost.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/tests/test_p0_score_b_event_boost.py) — Score_B 决策链
+**样例1**: [test_p0_score_b_event_boost.py](../11-易经推理系统/tests/test_p0_score_b_event_boost.py) — Score_B 决策链
 
 ```python
 # 参数化测试 = 6个训练场景（A-F），每个场景不同参数
@@ -128,7 +128,7 @@ def test_formula_and_clamp(cont, conf, strength, expected_score_b, expected_boos
 - `outcome`: `"success"` (GREEN阶段pass)
 - **6个参数化场景 = 6条训练数据**，node_sequence 各不相同
 
-**样例2**: [test_cross_validation_gate.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_cross_validation_gate.py) — 交叉验证决策链
+**样例2**: [test_cross_validation_gate.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_cross_validation_gate.py) — 交叉验证决策链
 
 ```python
 def test_quality_change_on_persistent_divergence():
@@ -146,7 +146,7 @@ def test_quality_change_on_persistent_divergence():
 - `node_sequence`: `["compare_dims(fundamental,macro)", "confidence_mult(0.9)", "shift_signal(true)", "divergence_count(3)", "structural_break(market_form_shift)", "quality_change(true)", "granger_reestimate(true)"]`
 - `outcome`: `"success"`
 
-**样例3**: [test_exit_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/tests/test_exit_manager.py) — 出场策略链
+**样例3**: [test_exit_manager.py](../11-易经推理系统/scripts/memory_l4/tests/test_exit_manager.py) — 出场策略链
 
 ```python
 def test_exit_manager_priority_chain_first_non_pass_wins():
@@ -164,7 +164,7 @@ def test_exit_manager_priority_chain_first_non_pass_wins():
 ### 1.4 v0.3 评审问题#1: all_trades.jsonl 实际数据量（已确认 ✅）
 
 - **SPEC v0.3 声称**: 37万条交易记录
-- **实际验证**: [all_trades.jsonl](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl) 仅 **152 条**
+- **实际验证**: [all_trades.jsonl](../11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl) 仅 **152 条**
 - **37万来源**: recall VM-1791796267529 确认是 trading_log_collector.py 统计的 polling_trader **日志文件**条数（非 all_trades.jsonl）
 - **v0.4 处理**: all_trades.jsonl 降为 P2 补充源；P0 改为 TDD 测试
 
@@ -176,7 +176,7 @@ def test_exit_manager_priority_chain_first_non_pass_wins():
 
 ### 1.6 v0.3 评审问题#5: 与 trading_log_collector 关系（已确认 ✅）
 
-**来源**: recall VM-1791796267529 + [trading_log_collector.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/adapters/trading_log_collector.py)
+**来源**: recall VM-1791796267529 + [trading_log_collector.py](../34-前端应用训练系统/adapters/trading_log_collector.py)
 
 | 维度 | trading_log_collector | v0.4 TddTestCollector |
 |------|----------------------|----------------------|
@@ -378,7 +378,7 @@ QUOTA = {
 4. 重构调用链为 node_sequence
 5. outcome 从 verify 的 success 字段派生
 
-**来源**: [cognitive_session.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_session.py#L1445-L1488) L1445-1488 事后校验闭环逻辑
+**来源**: [cognitive_session.py](../4-MEMORY/9-工具与接口/cognitive_session.py#L1445-L1488) L1445-1488 事后校验闭环逻辑
 
 ---
 
@@ -480,7 +480,7 @@ QUOTA = {
 ]
 ```
 
-来源: [test_shadow_rl_trainer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_shadow_rl_trainer.py) L1-60
+来源: [test_shadow_rl_trainer.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_shadow_rl_trainer.py) L1-60
 
 ---
 

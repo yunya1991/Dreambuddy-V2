@@ -568,25 +568,25 @@ Step 5: adapters/ 层按需适配（Grep 确认实际影响范围）
 ## 附录 A: 三源证据完整索引
 
 ### 技术文档
-- [ENGINEERING_INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) L13-17, L101-123
-- [API_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/API_SPEC.md) L466-493
-- [SPEC-金融逆向推导子系统.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) L166-200
-- [SPEC-矛盾论实现断裂修复与阻力场升级.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/SPEC-矛盾论实现断裂修复与阻力场升级.md)
+- [ENGINEERING_INDEX.md](../../23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) L13-17, L101-123
+- [API_SPEC.md](../../23-四层闭环自进化交易架构/docs/API_SPEC.md) L466-493
+- [SPEC-金融逆向推导子系统.md](../../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) L166-200
+- [SPEC-矛盾论实现断裂修复与阻力场升级.md](../../23-四层闭环自进化交易架构/docs/SPEC-矛盾论实现断裂修复与阻力场升级.md)
 
 ### 代码实现
-- [evolution_pipeline.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) L37-66, L72-105, L152-177, L1101-1143, L1257-1317
-- [trade_settlement_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py) L195-199
-- [deep_reasoning_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py) L30-95, L162-179
-- [kline_event_handler.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py) L34-95
-- [reflection_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/reflection_engine.py) L271-317
-- [investigation_workflow.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/core/investigation_workflow.py) L109-117
-- [git_history.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/core/git_history.py)
-- [algorithm_reducer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/core/algorithm_reducer.py)
+- [evolution_pipeline.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) L37-66, L72-105, L152-177, L1101-1143, L1257-1317
+- [trade_settlement_bridge.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py) L195-199
+- [deep_reasoning_engine.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/deep_reasoning_engine.py) L30-95, L162-179
+- [kline_event_handler.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py) L34-95
+- [reflection_engine.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/reflection_engine.py) L271-317
+- [investigation_workflow.py](../../33-REA逆向解析工程/core/investigation_workflow.py) L109-117
+- [git_history.py](../../33-REA逆向解析工程/core/git_history.py)
+- [algorithm_reducer.py](../../33-REA逆向解析工程/core/algorithm_reducer.py)
 
 ### 运行日志
-- [evolution_pipeline.log](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/logs/evolution_pipeline.log) L2-30
-- [audit_20260912_0013.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/audit_reports/audit_20260912_0013.md) L11-20
-- [model_validation_20260915_0011.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260915_0011.md) L131-134
+- [evolution_pipeline.log](../../23-四层闭环自进化交易架构/dreambuddy_evolution/logs/evolution_pipeline.log) L2-30
+- [audit_20260912_0013.md](../../23-四层闭环自进化交易架构/docs/audit_reports/audit_20260912_0013.md) L11-20
+- [model_validation_20260915_0011.md](../../23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260915_0011.md) L131-134
 
 ### git 证据
 - evolution_pipeline.py: `git log --oneline` → 12 feat/fix, 0 refactor

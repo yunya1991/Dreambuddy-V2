@@ -663,7 +663,7 @@ OR 庙算总分下降
 
 **问题 1：ExitContext 缺少策略类型信息**
 
-当前 [ExitContext](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/exit_manager.py#L24-L42) 只有 coin/inference/pos_info/tracker_pos/in_protection/age_hours/ev/multi_horizon/confidence/all_inferences/held_coins/effective_threshold，没有 `strategy_type` 字段。所有持仓不分策略类型，用同一套 6 策略链评估。
+当前 [ExitContext](../../../11-易经推理系统/scripts/memory_l4/bcrm2/exit_manager.py#L24-L42) 只有 coin/inference/pos_info/tracker_pos/in_protection/age_hours/ev/multi_horizon/confidence/all_inferences/held_coins/effective_threshold，没有 `strategy_type` 字段。所有持仓不分策略类型，用同一套 6 策略链评估。
 
 **改造方案**：ExitContext 新增 `strategy_type` 字段：
 
@@ -693,7 +693,7 @@ class ExitContext:
 - ExitContext 新增 `strategy_type`
 - 各 ExitStrategy 在 `evaluate()` 开头检查 `ctx.strategy_type`，按策略类型调整自身阈值
 - 例如 SignalReverseStrategy：趋势跟踪策略用更高反转阈值（0.70），均值回归用更低阈值（0.55）
-- 改动范围：[exit_strategies.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/exit_strategies.py) 各策略类的 evaluate 方法
+- 改动范围：[exit_strategies.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/exit_strategies.py) 各策略类的 evaluate 方法
 
 **路径 B（完整改造，后期可选）**：
 - 按策略类型分组，每种策略类型注册不同的离场策略子链
@@ -704,7 +704,7 @@ class ExitContext:
 
 **问题 3：持仓元数据需要记录策略类型**
 
-当前 [position_tracker](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L5933) 获取的 tracker_pos 没有 strategy_type 字段。开仓时需要记录策略类型到持仓元数据，离场时才能读取。
+当前 [position_tracker](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L5933) 获取的 tracker_pos 没有 strategy_type 字段。开仓时需要记录策略类型到持仓元数据，离场时才能读取。
 
 **改造方案**：
 - 开仓时在 `_open_position` 中将 `strategy_type` 写入 `inference` 或 `position_tracker` 元数据
@@ -762,7 +762,7 @@ class ExitContext:
 
 ### 4.11 架构冲突评估：与现有架构的兼容性逐项检查
 
-> 基于 [polling_trader.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py)、[exit_manager.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/exit_manager.py)、[exit_strategies.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/bcrm2/exit_strategies.py)、[trading_utils.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py) 实际代码逐点核对。
+> 基于 [polling_trader.py](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py)、[exit_manager.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/exit_manager.py)、[exit_strategies.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/exit_strategies.py)、[trading_utils.py](../../../11-易经推理系统/scripts/memory_l4/trading_utils.py) 实际代码逐点核对。
 
 #### 4.11.1 检查结论总览
 
@@ -789,12 +789,12 @@ class ExitContext:
 - `TradeRecord` 已存在 `strategy_source: str = ""` 与 `enhance_info: Dict = {}`。策略层写入 `strategy_type` 有两种方式：
   - 方案 A（推荐，0 迁移风险）：写入 `enhance_info["strategy_type"] = "trend_follow"`，不落 schema。
   - 方案 B（强类型，推荐路径 B 阶段再做）：在 TradeRecord 新增 `strategy_type: Optional[str] = None` 字段。
-- `_load_open_positions` 用 `{k:v for k,v in data.items() if k in TradeRecord.__dataclass_fields__}` 过滤（见 [trading_utils.py#L1015-L1016](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py#L1015-L1016)），**历史仓位 JSON 缺字段时不会报错；新增字段给默认值时也不会丢数据**。此机制为策略层新增字段提供了关键容错。
+- `_load_open_positions` 用 `{k:v for k,v in data.items() if k in TradeRecord.__dataclass_fields__}` 过滤（见 [trading_utils.py#L1015-L1016](../../../11-易经推理系统/scripts/memory_l4/trading_utils.py#L1015-L1016)），**历史仓位 JSON 缺字段时不会报错；新增字段给默认值时也不会丢数据**。此机制为策略层新增字段提供了关键容错。
 - 实盘如果要做 "旧持仓按默认策略类型处理"，规则必须明确：**建议把无 strategy_type 的历史持仓统一视为 `strategy_type=None`，由 ExitStrategy 按当前默认（等价于现状）行为评估**，避免中途切换策略规则把一笔趋势单提前止损。
 
 #### 4.11.4 RankedTp 的特殊处理（容易踩坑）
 
-代码现状（[polling_trader.py#L602-L615](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L602-L615)）：ExitManager 实盘仅注册 5 个策略：`P3 → SignalRev → EvFC → Timeout → EvAdj`，**RankedTpStrategy 不在链上**。跨持仓排名止盈由 `_handle_ranked_tp_top1` 独立调用（[L8129+](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L8129)），执行前会先 `if enable_ranked_tp` 开关 gate。
+代码现状（[polling_trader.py#L602-L615](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L602-L615)）：ExitManager 实盘仅注册 5 个策略：`P3 → SignalRev → EvFC → Timeout → EvAdj`，**RankedTpStrategy 不在链上**。跨持仓排名止盈由 `_handle_ranked_tp_top1` 独立调用（[L8129+](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L8129)），执行前会先 `if enable_ranked_tp` 开关 gate。
 
 **冲突隐患**：§4.10 的路径 B 描述中把 RankedTp(50) 作为统一链的一环来按策略类型注册/放行，**这与实际运行架构不一致**。改造时需注意：
 
@@ -1368,7 +1368,7 @@ Layer 3 (最内层，最后保险): 单组件 fail-open try/except
 ## 十三、与《策略层改造方案》v1.1 的兼容性审查 + 修正建议
 
 > 解决用户关注点 3：「策略层已有专门研究文档，但是否与我们提出的开关和模块化设计冲突，需要仔细判定。」
-> 审查结论：**与 [策略层改造方案 v1.1](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/docs/superpowers/specs/2026-08-21-strategy-layer-refactor-plan.md) 的 R1-R7 七条红线完全兼容**。开关架构是策略层方案的**超集**（在其外层加 gating + 影子模式 + 降级），不是替代。仅需补充 4 处代码级修正点。
+> 审查结论：**与 [策略层改造方案 v1.1](../../../docs/superpowers/specs/2026-08-21-strategy-layer-refactor-plan.md) 的 R1-R7 七条红线完全兼容**。开关架构是策略层方案的**超集**（在其外层加 gating + 影子模式 + 降级），不是替代。仅需补充 4 处代码级修正点。
 
 ### 13.1 逐条兼容性检查清单
 

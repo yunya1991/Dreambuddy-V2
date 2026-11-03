@@ -37,22 +37,22 @@ final = reason_if_needed(result, ensemble_pred)    # LLM 辩证推理（按需�
 
 | 文件 | 职责 | 核心函数 |
 |------|------|---------|
-| [engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/engine.py) | 主引擎，算法编排 + 公开接口 | `compute_full_trading_signal()`, `compute_trend_signal_from_dataframes()` |
-| [signals.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/signals.py) | Freqtrade信号服务 | `fetch_freqtrade_signals()`, `align_freqtrade_with_trend()` |
-| [exit_integration.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/exit_integration.py) | 离场决策集成 | `evaluate_exit()` |
-| [classic_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/classic_bridge.py) | 经典系统HTTP桥接 | `_make_request()` |
-| [core/config.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/config.py) | 配置常量 | `SCREEN1_INDICATORS`, `POSITION_TIERS` |
-| [core/indicators.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/indicators.py) | 指标计算 | `calc_indicator_dynamics()`, `calc_trend_direction_static()` |
-| [core/trend_consistency.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/trend_consistency.py) | 趋势一致性检测 | `calc_trend_consistency()`, `calc_trend_direction_dynamic()` |
-| [core/dynamic_weights.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/dynamic_weights.py) | 动态权重 + 贝叶斯置信度 | `calc_dynamic_weights()`, `calc_bayesian_confidence()` |
-| [core/fusion.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/core/fusion.py) | 技术面+基本面撮合 | `fuse_technical_fundamental()` |
-| [ml/algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) | **LightGBM 集成推理**（五大算法权重学习） | `predict_ensemble()`, `train_ensemble()`, `collect_sample()` |
-| [ml/llm_reasoning.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/llm_reasoning.py) | **LLM 辩证推理**（矛盾信号分析） | `reason_if_needed()`, `should_trigger_llm()` |
-| [ml/label_samples.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/label_samples.py) | **样本标注 + 训练工具** | `label_collected_samples()`, `train_from_collected()` |
-| [ml/models.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/models.py) | 价格特征ML模型 | `LightGBMModel`, `XGBoostModel` |
-| [ml/feature_engineer.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ml/feature_engineer.py) | 价格特征工程 | `TrendFeatureEngineer` |
-| [data/market_data.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/market_data.py) | K线数据获取 | `fetch_candles()`, `resample_candles()` |
-| [data/fundamental_data.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/fundamental_data.py) | 基本面数据获取 | `fetch_fundamental_data()`, `fetch_fundamental_by_timeframe()` |
+| [engine.py](../12-三屏趋势系统/engine.py) | 主引擎，算法编排 + 公开接口 | `compute_full_trading_signal()`, `compute_trend_signal_from_dataframes()` |
+| [signals.py](../12-三屏趋势系统/signals.py) | Freqtrade信号服务 | `fetch_freqtrade_signals()`, `align_freqtrade_with_trend()` |
+| [exit_integration.py](../12-三屏趋势系统/exit_integration.py) | 离场决策集成 | `evaluate_exit()` |
+| [classic_bridge.py](../12-三屏趋势系统/classic_bridge.py) | 经典系统HTTP桥接 | `_make_request()` |
+| [core/config.py](../12-三屏趋势系统/core/config.py) | 配置常量 | `SCREEN1_INDICATORS`, `POSITION_TIERS` |
+| [core/indicators.py](../12-三屏趋势系统/core/indicators.py) | 指标计算 | `calc_indicator_dynamics()`, `calc_trend_direction_static()` |
+| [core/trend_consistency.py](../12-三屏趋势系统/core/trend_consistency.py) | 趋势一致性检测 | `calc_trend_consistency()`, `calc_trend_direction_dynamic()` |
+| [core/dynamic_weights.py](../12-三屏趋势系统/core/dynamic_weights.py) | 动态权重 + 贝叶斯置信度 | `calc_dynamic_weights()`, `calc_bayesian_confidence()` |
+| [core/fusion.py](../12-三屏趋势系统/core/fusion.py) | 技术面+基本面撮合 | `fuse_technical_fundamental()` |
+| [ml/algo_ensemble.py](../12-三屏趋势系统/ml/algo_ensemble.py) | **LightGBM 集成推理**（五大算法权重学习） | `predict_ensemble()`, `train_ensemble()`, `collect_sample()` |
+| [ml/llm_reasoning.py](../12-三屏趋势系统/ml/llm_reasoning.py) | **LLM 辩证推理**（矛盾信号分析） | `reason_if_needed()`, `should_trigger_llm()` |
+| [ml/label_samples.py](../12-三屏趋势系统/ml/label_samples.py) | **样本标注 + 训练工具** | `label_collected_samples()`, `train_from_collected()` |
+| [ml/models.py](../12-三屏趋势系统/ml/models.py) | 价格特征ML模型 | `LightGBMModel`, `XGBoostModel` |
+| [ml/feature_engineer.py](../12-三屏趋势系统/ml/feature_engineer.py) | 价格特征工程 | `TrendFeatureEngineer` |
+| [data/market_data.py](../12-三屏趋势系统/data/market_data.py) | K线数据获取 | `fetch_candles()`, `resample_candles()` |
+| [data/fundamental_data.py](../12-三屏趋势系统/data/fundamental_data.py) | 基本面数据获取 | `fetch_fundamental_data()`, `fetch_fundamental_by_timeframe()` |
 
 ## 系统边界
 
@@ -94,5 +94,5 @@ A系列研报(周报+日报) ──→ 基本面方向 + 置信度 ────�
 
 | 文档 | 说明 |
 |------|------|
-| [ENGINEERING_INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/ENGINEERING_INDEX.md) | **完整工程索引**（目录结构、API清单、配置参数、依赖关系、外部接口） |
-| [docs/trend-screen-system-design.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/docs/trend-screen-system-design.md) | 技术设计文档（五大算法、数据流、核心原理） |
+| [ENGINEERING_INDEX.md](../12-三屏趋势系统/ENGINEERING_INDEX.md) | **完整工程索引**（目录结构、API清单、配置参数、依赖关系、外部接口） |
+| [docs/trend-screen-system-design.md](../12-三屏趋势系统/docs/trend-screen-system-design.md) | 技术设计文档（五大算法、数据流、核心原理） |

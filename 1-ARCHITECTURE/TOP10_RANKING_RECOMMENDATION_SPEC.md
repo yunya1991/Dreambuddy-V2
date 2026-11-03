@@ -40,7 +40,7 @@
 
 ### 2.2 产物中台能力（7-产物中台）
 
-产物中台是 DreamBuddy-V2 的**产物管理与投递中台**，技术架构详见 [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/TECHNICAL_DESIGN.md)。交易榜单推荐的数据运营看板应接入此中台。
+产物中台是 DreamBuddy-V2 的**产物管理与投递中台**，技术架构详见 [TECHNICAL_DESIGN.md](../7-产物中台/docs/TECHNICAL_DESIGN.md)。交易榜单推荐的数据运营看板应接入此中台。
 
 **已实现能力（✅ 可复用）**：
 
@@ -615,5 +615,5 @@ hub.publish('trading-ranking', {
 8. **拼多多**：社交货币裂变（砍一刀机制）
 9. **Costco**：精选 SKU + 会员锁定品类策略
 10. **星巴克**：星享俱乐部四层会员体系（Green→Gold→Reserve）
-11. **产物中台技术设计**：[TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/7-产物中台/docs/TECHNICAL_DESIGN.md) v1.0，2026-08-02 — UIMapShell 壳层 + adapter 扩展机制 + 推荐引擎 API + 实时事件总线 + Prisma 持久化
-12. **前端 Dashboard**：[3.1-FRONTEND/src/app/dashboard/](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/app/dashboard/page.tsx) — Next.js + V3Card/V3Badge 组件库 + 8 入口卡片 + 交易页面
+11. **产物中台技术设计**：[TECHNICAL_DESIGN.md](../7-产物中台/docs/TECHNICAL_DESIGN.md) v1.0，2026-08-02 — UIMapShell 壳层 + adapter 扩展机制 + 推荐引擎 API + 实时事件总线 + Prisma 持久化
+12. **前端 Dashboard**：[3.1-FRONTEND/src/app/dashboard/](../3.1-FRONTEND/src/app/dashboard/page.tsx) — Next.js + V3Card/V3Badge 组件库 + 8 入口卡片 + 交易页面

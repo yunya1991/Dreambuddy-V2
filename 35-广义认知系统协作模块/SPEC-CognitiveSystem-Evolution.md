@@ -604,11 +604,11 @@ class MetacogMonitor(ABC):
 
 ## 8. 关联文档
 
-- [33-REA/SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/SPEC.md) — 逆向解析工程规格
-- [33-REA/DESIGN-PHILOSOPHY-PoE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md) — PoE 设计哲学
-- [CLAUDE.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/CLAUDE.md) — 认知系统协作引导
-- [SKILL_INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/工作索引/SKILL_INDEX.md) — SKILL 索引（247 SKILL）
-- [ENGINEERING_INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/ENGINEERING_INDEX.md) — 工程索引
+- [33-REA/SPEC.md](../33-REA逆向解析工程/SPEC.md) — 逆向解析工程规格
+- [33-REA/DESIGN-PHILOSOPHY-PoE.md](../33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md) — PoE 设计哲学
+- [CLAUDE.md](../CLAUDE.md) — 认知系统协作引导
+- [SKILL_INDEX.md](../1-ARCHITECTURE/工作索引/SKILL_INDEX.md) — SKILL 索引（247 SKILL）
+- [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) — 工程索引
 
 ---
 

@@ -138,7 +138,7 @@
 ### 3.1 易经推理系统 — 核心数据与算法底座
 
 **目录**: `11-易经推理系统/`
-**现有文档**: [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/README.md) | [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/TECHNICAL_DESIGN.md)
+**现有文档**: [README.md](../../11-易经推理系统/README.md) | [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md)
 
 #### 3.1.1 定位
 
@@ -188,7 +188,7 @@ Dream OS (市态输入 / 方向校验 / 策略建议)
 ### 3.2 Dream OS (调控系统) — 调度操作系统
 
 **目录**: `16-调控系统/`
-**现有文档**: [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/README.md) | [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/docs/TECHNICAL_DESIGN.md)
+**现有文档**: [README.md](../../16-调控系统/README.md) | [TECHNICAL_DESIGN.md](../../16-调控系统/docs/TECHNICAL_DESIGN.md)
 
 #### 3.2.1 定位
 
@@ -265,7 +265,7 @@ Dream OS 通过 **SkillRegistry** 发现和使用能力模块：
 #### 3.3.1 三屏趋势系统 (12-三屏趋势系统)
 
 **目录**: `12-三屏趋势系统/`
-**现有文档**: [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/docs/TECHNICAL_DESIGN.md)
+**现有文档**: [TECHNICAL_DESIGN.md](../../12-三屏趋势系统/docs/TECHNICAL_DESIGN.md)
 
 | 属性 | 说明 |
 |------|------|
@@ -278,7 +278,7 @@ Dream OS 通过 **SkillRegistry** 发现和使用能力模块：
 #### 3.3.2 V15经典马丁策略 (14-V15经典马丁策略)
 
 **目录**: `14-V15经典马丁策略/`
-**现有文档**: [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/README.md) | [API_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/docs/API_SPEC.md)
+**现有文档**: [README.md](../../14-V15经典马丁策略/README.md) | [API_SPEC.md](../../14-V15经典马丁策略/docs/API_SPEC.md)
 
 | 属性 | 说明 |
 |------|------|
@@ -291,7 +291,7 @@ Dream OS 通过 **SkillRegistry** 发现和使用能力模块：
 #### 3.3.3 经典指标系统 (10-经典指标系统)
 
 **目录**: `10-经典指标系统/`
-**现有文档**: [ENGINEERING_INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/docs/ENGINEERING_INDEX.md)
+**现有文档**: [ENGINEERING_INDEX.md](../../10-经典指标系统/docs/ENGINEERING_INDEX.md)
 
 | 属性 | 说明 |
 |------|------|
@@ -314,7 +314,7 @@ Dream OS 通过 **SkillRegistry** 发现和使用能力模块：
 ### 3.4 Agent A / Agent B — 实验性自进化模块
 
 **目录**: `experiments/ab-trading/`
-**现有文档**: [Agent A框架](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/agent_a_trading_framework.md) | [Agent B框架](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/agent_b_trading_framework.md)
+**现有文档**: [Agent A框架](../../experiments/ab-trading/docs/agent_a_trading_framework.md) | [Agent B框架](../../experiments/ab-trading/docs/agent_b_trading_framework.md)
 
 #### 3.4.1 定位
 
@@ -360,7 +360,7 @@ Dream OS 吸收集成 (如 ChainPlanner → 16-调控系统)
 ### 4.1 通用风控模块 (13-通用风控模块)
 
 **目录**: `13-通用风控模块/`
-**现有文档**: [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/13-通用风控模块/docs/TECHNICAL_DESIGN.md)
+**现有文档**: [TECHNICAL_DESIGN.md](../../13-通用风控模块/docs/TECHNICAL_DESIGN.md)
 
 | 属性 | 说明 |
 |------|------|
@@ -374,7 +374,7 @@ Dream OS 吸收集成 (如 ChainPlanner → 16-调控系统)
 ### 4.2 监控告警系统 (15-监控告警系统)
 
 **目录**: `15-监控告警系统/`
-**现有文档**: [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/15-监控告警系统/README.md)
+**现有文档**: [README.md](../../15-监控告警系统/README.md)
 
 | 属性 | 说明 |
 |------|------|
@@ -529,16 +529,16 @@ def screen_trend_signal(symbol: str, ...) -> SignalResult:
 
 | 系统 | 目录 | 关键文档 |
 |------|------|----------|
-| **易经推理系统** | `11-易经推理系统/` | [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/README.md) / [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/TECHNICAL_DESIGN.md) / [architecture.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/docs/architecture.md) |
-| **三屏趋势系统** | `12-三屏趋势系统/` | [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) / [STRATEGY_LINES.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/docs/STRATEGY_LINES.md) |
-| **通用风控模块** | `13-通用风控模块/` | [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/13-通用风控模块/docs/TECHNICAL_DESIGN.md) |
-| **V15马丁策略** | `14-V15经典马丁策略/` | [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/README.md) / [API_SPEC.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/docs/API_SPEC.md) |
-| **监控告警系统** | `15-监控告警系统/` | [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/15-监控告警系统/README.md) |
-| **调控系统 (Dream OS)** | `16-调控系统/` | [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/README.md) / [TECHNICAL_DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/docs/TECHNICAL_DESIGN.md) |
-| **经典指标系统** | `10-经典指标系统/` | [ENGINEERING_INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/docs/ENGINEERING_INDEX.md) |
-| **Agent A/B 实验** | `experiments/ab-trading/` | [Agent A框架](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/agent_a_trading_framework.md) / [Agent B框架](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/docs/agent_b_trading_framework.md) |
-| **架构总览 (旧)** | `1-ARCHITECTURE/` | [README.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/README.md) |
-| **交易工作区 (旧)** | `6-TRADING/` | [ARCHITECTURE_DESIGN_v2.0.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/docs/ARCHITECTURE_DESIGN_v2.0.md) / [GAP_ANALYSIS_v1.0.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-TRADING/docs/GAP_ANALYSIS_v1.0.md) |
+| **易经推理系统** | `11-易经推理系统/` | [README.md](../../11-易经推理系统/README.md) / [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) / [architecture.md](../../11-易经推理系统/docs/architecture.md) |
+| **三屏趋势系统** | `12-三屏趋势系统/` | [TECHNICAL_DESIGN.md](../../12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) / [STRATEGY_LINES.md](../../12-三屏趋势系统/docs/STRATEGY_LINES.md) |
+| **通用风控模块** | `13-通用风控模块/` | [TECHNICAL_DESIGN.md](../../13-通用风控模块/docs/TECHNICAL_DESIGN.md) |
+| **V15马丁策略** | `14-V15经典马丁策略/` | [README.md](../../14-V15经典马丁策略/README.md) / [API_SPEC.md](../../14-V15经典马丁策略/docs/API_SPEC.md) |
+| **监控告警系统** | `15-监控告警系统/` | [README.md](../../15-监控告警系统/README.md) |
+| **调控系统 (Dream OS)** | `16-调控系统/` | [README.md](../../16-调控系统/README.md) / [TECHNICAL_DESIGN.md](../../16-调控系统/docs/TECHNICAL_DESIGN.md) |
+| **经典指标系统** | `10-经典指标系统/` | [ENGINEERING_INDEX.md](../../10-经典指标系统/docs/ENGINEERING_INDEX.md) |
+| **Agent A/B 实验** | `experiments/ab-trading/` | [Agent A框架](../../experiments/ab-trading/docs/agent_a_trading_framework.md) / [Agent B框架](../../experiments/ab-trading/docs/agent_b_trading_framework.md) |
+| **架构总览 (旧)** | `1-ARCHITECTURE/` | [README.md](../../1-ARCHITECTURE/README.md) |
+| **交易工作区 (旧)** | `6-TRADING/` | [ARCHITECTURE_DESIGN_v2.0.md](../../6-TRADING/docs/ARCHITECTURE_DESIGN_v2.0.md) / [GAP_ANALYSIS_v1.0.md](../../6-TRADING/docs/GAP_ANALYSIS_v1.0.md) |
 
 ---
 
