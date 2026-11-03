@@ -58,7 +58,10 @@ def test_static_transmission_required_fields(static_transmission):
 
 def test_static_transmission_identifier_patterns(static_transmission):
     assert re.match(r"^l1-domain-coupling-v\d+\.\d+$", static_transmission["model_version"])
-    assert re.match(r"^l1-infer-[a-f0-9]{32}$", static_transmission["trace_id"])
+    # Phase A: l1-infer-32hex; Phase B Head 推理: l1-head-infer-16hex
+    assert re.match(
+        r"^l1-(infer|head-infer)-[a-f0-9]+$", static_transmission["trace_id"]
+    ), f"trace_id={static_transmission['trace_id']} 格式非法"
     datetime.fromisoformat(static_transmission["generated_at"])  # 可解析即通过
 
 
@@ -79,9 +82,15 @@ def test_static_transmission_coupling_matrix(static_transmission):
     assert pairs == expected, f"缺失配对：{expected - pairs}"
 
 
-def test_static_transmission_declares_static_source(static_transmission):
-    """PLAN 锚点①：静态先验必须可辨识，避免被误当实测信号。"""
-    assert static_transmission["source"] == "static"
+def test_static_transmission_declares_source(static_transmission):
+    """PLAN 锚点①+Phase B: source 必须可辨识, 避免被误当实盘信号.
+
+    Phase A 静态先验: source="static";
+    Phase B Head 推理: source="neural_sde_head_infer".
+    两者都非实盘信号, 必须带 note 说明.
+    """
+    source = static_transmission["source"]
+    assert source in {"static", "neural_sde_head_infer"}, f"未知 source={source}"
     assert "note" in static_transmission
 
 
@@ -120,15 +129,22 @@ def test_observe_reports_insufficient_data_on_single_domain(tmp_path):
 
 
 def test_observe_reports_drift_on_weak_pair_cooccurrence(tmp_path):
-    """静态先验 cognition↔data=0.25（弱），实际共现 → drift。"""
+    """Phase B Head 推理后 cognition↔data coupling=0.0 (原 0.25 弱带, 仍 ≤0.3).
+
+    测试不再硬编码 coupling 值, 改为断言:
+    - band=="weak" (≤0.3 的 pair 共现 → drift)
+    - static_coupling ≤ 0.3 (弱带阈值)
+    - consistency_ratio == 0.0
+    """
     shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"))
     cc = shadow.observe([_envelope("l0.cognition.mcp"), _envelope("l0.data.mcp")])["l1_insights"][
         "coupling_consistency"
     ]
     assert cc["verdict"] == "drift"
     assert cc["consistency_ratio"] == 0.0
-    assert cc["checked_pairs"][0]["band"] == "weak"
-    assert cc["checked_pairs"][0]["static_coupling"] == 0.25
+    pair_info = cc["checked_pairs"][0]
+    assert pair_info["band"] == "weak"
+    assert pair_info["static_coupling"] <= 0.3
 
 
 def test_observe_fail_open_without_static_prior(tmp_path):

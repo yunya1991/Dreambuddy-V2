@@ -1,39 +1,105 @@
 {
   "domain_layers": {
-    "L1_anchor": ["cognition"],
-    "L2_active": ["rea", "search"],
-    "L3_sensitive": ["semantic", "data", "eval"]
+    "L1_anchor": [
+      "cognition"
+    ],
+    "L2_active": [
+      "rea",
+      "search"
+    ],
+    "L3_sensitive": [
+      "semantic",
+      "data",
+      "eval"
+    ]
   },
   "domain_transmission": {
     "state": "neutral",
     "regime": "bull",
     "drift_coupling": {
-      "cognition↔rea": {"coupling": 0.72, "lags_min": 30},
-      "cognition↔search": {"coupling": 0.55, "lags_min": 25},
-      "cognition↔semantic": {"coupling": 0.38, "lags_min": 40},
-      "cognition↔data": {"coupling": 0.25, "lags_min": 60},
-      "cognition↔eval": {"coupling": 0.48, "lags_min": 50},
-      "rea↔search": {"coupling": 0.62, "lags_min": 15},
-      "rea↔semantic": {"coupling": 0.58, "lags_min": 15},
-      "rea↔data": {"coupling": 0.41, "lags_min": 40},
-      "rea↔eval": {"coupling": 0.52, "lags_min": 35},
-      "search↔semantic": {"coupling": 0.33, "lags_min": 25},
-      "search↔data": {"coupling": 0.29, "lags_min": 55},
-      "search↔eval": {"coupling": 0.44, "lags_min": 45},
-      "semantic↔data": {"coupling": 0.41, "lags_min": 45},
-      "semantic↔eval": {"coupling": 0.37, "lags_min": 40},
-      "data↔eval": {"coupling": 0.31, "lags_min": 30}
+      "cognition↔rea": {
+        "coupling": 0.72,
+        "lags_min": 30
+      },
+      "cognition↔search": {
+        "coupling": 0.55,
+        "lags_min": 25
+      },
+      "cognition↔semantic": {
+        "coupling": 0.38,
+        "lags_min": 40
+      },
+      "cognition↔data": {
+        "coupling": 0.0,
+        "lags_min": 60
+      },
+      "cognition↔eval": {
+        "coupling": 0.48,
+        "lags_min": 50
+      },
+      "rea↔search": {
+        "coupling": 0.62,
+        "lags_min": 15
+      },
+      "rea↔semantic": {
+        "coupling": 0.58,
+        "lags_min": 15
+      },
+      "rea↔data": {
+        "coupling": 0.41,
+        "lags_min": 40
+      },
+      "rea↔eval": {
+        "coupling": 0.52,
+        "lags_min": 35
+      },
+      "search↔semantic": {
+        "coupling": 0.33,
+        "lags_min": 25
+      },
+      "search↔data": {
+        "coupling": 0.0,
+        "lags_min": 55
+      },
+      "search↔eval": {
+        "coupling": 0.44,
+        "lags_min": 45
+      },
+      "semantic↔data": {
+        "coupling": 0.41,
+        "lags_min": 45
+      },
+      "semantic↔eval": {
+        "coupling": 0.37,
+        "lags_min": 40
+      },
+      "data↔eval": {
+        "coupling": 0.31,
+        "lags_min": 30
+      }
     }
   },
   "domain_breadth": {
     "breadth_pct": 88.9,
     "state": "strong",
-    "layer_breadth": {"L1_anchor": 100.0, "L2_active": 100.0, "L3_sensitive": 88.9}
+    "layer_breadth": {
+      "L1_anchor": 100.0,
+      "L2_active": 100.0,
+      "L3_sensitive": 88.9
+    }
   },
-  "generated_at": "2026-11-03T00:00:00+00:00",
-  "model_version": "l1-domain-coupling-v0.0",
-  "trace_id": "l1-infer-334698c17856dc9b9d81a890a4230f56",
-  "source": "static",
-  "note": "Phase 0 静态先验占位：coupling 取自 SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1 §3.1 示例矩阵（6 域 × 6 域），lags_min 为人工先验，psi_corr / verify_corr 待 Phase B DomainCouplingHead 推理后填充。非实盘信号，仅供 observe() 一致性旁路比对。",
-  "derived_from": "40-周期神经网络系统/sector_transmission.json（字段结构同构，语义映射到 L0 六域）"
+  "generated_at": "2026-11-03T09:38:19.557450+00:00",
+  "model_version": "l1-domain-coupling-v0.1",
+  "trace_id": "l1-head-infer-ba7ed7a75045dab3",
+  "source": "neural_sde_head_infer",
+  "note": "Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100 steps, Mac Metal 推理 32 点 mean coupling. 主体冻结 (SPEC H2). Phase 0 静态先验占位：coupling 取自 SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1 §3.1 示例矩阵（6 域 × 6 域），lags_min 为人工先验，psi_corr / verify_corr 待",
+  "derived_from": "40-周期神经网络系统/sector_transmission.json（字段结构同构，语义映射到 L0 六域）",
+  "pseudo_target_source": "domain_transmission_static.json",
+  "head_training": {
+    "n_steps": 500,
+    "final_loss": 0.0098,
+    "device": "mps",
+    "pseudo_target_loaded": true,
+    "seed": 42
+  }
 }
