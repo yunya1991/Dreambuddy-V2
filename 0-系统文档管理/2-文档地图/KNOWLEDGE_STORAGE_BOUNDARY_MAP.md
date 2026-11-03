@@ -103,10 +103,10 @@
 - ❌ 持仓状态（open_positions JSON）
 
 **关键文件**：
-- [INDEX.md](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/INDEX.md) — 根索引
-- [9-RAG-INFRA/rag_engine/hybrid_retriever.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/9-RAG-INFRA/rag_engine/hybrid_retriever.py) — RAG 检索入口
-- [9-RAG-INFRA/bridge/memory_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/9-RAG-INFRA/bridge/memory_bridge.py) — RAG → 认知库桥接（已建未通）
-- [9-RAG-INFRA/integration/archiver.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/9-RAG-INFRA/integration/archiver.py) — 外部调研归档
+- [INDEX.md](../../2-KNOWLEDGE/INDEX.md) — 根索引
+- [9-RAG-INFRA/rag_engine/hybrid_retriever.py](../../2-KNOWLEDGE/9-RAG-INFRA/rag_engine/hybrid_retriever.py) — RAG 检索入口
+- [9-RAG-INFRA/bridge/memory_bridge.py](../../2-KNOWLEDGE/9-RAG-INFRA/bridge/memory_bridge.py) — RAG → 认知库桥接（已建未通）
+- [9-RAG-INFRA/integration/archiver.py](../../2-KNOWLEDGE/9-RAG-INFRA/integration/archiver.py) — 外部调研归档
 
 **消费方**：`_rag_hotpath_lookup()`（polling_trader.py L12839/L8603/L9187，2026-09-10 接入）
 
@@ -145,13 +145,13 @@
 
 **训练数据链路**：
 - BCRM2.0 LightGBM：训练数据来自 **OKX K 线历史数据**（非 jsonl），模型缓存在 `data/bcrm2_models/`
-- CBR KNN：检索 `cbr_cases_v03.jsonl`，双时点建库（[cbr_engine.py L709-L841](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/cbr_engine.py#L709-L841)）
+- CBR KNN：检索 `cbr_cases_v03.jsonl`，双时点建库（[cbr_engine.py L709-L841](../../11-易经推理系统/scripts/memory_l4/cbr_engine.py#L709-L841)）
 - learning_scheduler：消费 `all_trades.jsonl` 调度训练
 
 **关键文件**：
-- [polling_trader.py L7865 _handle_close_position()](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py#L7865) — 平仓结算主入口
-- [trading_utils.py L32-L82 TradeRecord](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py#L32-L82) — 运行时交易 dataclass
-- [trade_settlement_bridge.py L214-L285](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py#L214-L285) — outcome 标签生成
+- [polling_trader.py L7865 _handle_close_position()](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L7865) — 平仓结算主入口
+- [trading_utils.py L32-L82 TradeRecord](../../11-易经推理系统/scripts/memory_l4/trading_utils.py#L32-L82) — 运行时交易 dataclass
+- [trade_settlement_bridge.py L214-L285](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py#L214-L285) — outcome 标签生成
 
 ### 系统 D：自进化基因库 `23-四层闭环/gene_data/`
 
@@ -171,7 +171,7 @@
 ```
 
 **关键文件**：
-- [trade_settlement_bridge.py L25-L296](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py#L25-L296) — 反思回路核心
+- [trade_settlement_bridge.py L25-L296](../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_settlement_bridge.py#L25-L296) — 反思回路核心
 
 ---
 
@@ -187,7 +187,7 @@
 
 ### 断层 2：CBR 案例 ↔ RAG 知识库（系统 C 内部孤岛）
 
-**现状**：[cbr_engine.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/cbr_engine.py) 的 CBR KNN 检索 `cbr_cases_v03.jsonl`，RAG 向量检索 `2-KNOWLEDGE/*.md`，两套检索互补但不交叉。
+**现状**：[cbr_engine.py](../../11-易经推理系统/scripts/memory_l4/cbr_engine.py) 的 CBR KNN 检索 `cbr_cases_v03.jsonl`，RAG 向量检索 `2-KNOWLEDGE/*.md`，两套检索互补但不交叉。
 
 **影响**：用户 project_memory 记录的"CBR/KNN 相似检索用于交易决策"是对的，但它的数据源是 jsonl 案例库，不是 2-KNOWLEDGE 的 md 文档。
 
@@ -195,7 +195,7 @@
 
 ### 断层 3：RAG → 认知记忆桥已建未通（系统 A → B）
 
-**现状**：[memory_bridge.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/2-KNOWLEDGE/9-RAG-INFRA/bridge/memory_bridge.py) 写好了 RAG 检索结果 → 4-MEMORY `record()` 的桥接，但因为没有真实检索流量，权重反哺从未触发。
+**现状**：[memory_bridge.py](../../2-KNOWLEDGE/9-RAG-INFRA/bridge/memory_bridge.py) 写好了 RAG 检索结果 → 4-MEMORY `record()` 的桥接，但因为没有真实检索流量，权重反哺从未触发。
 
 **影响**：RAG 检索结果不会被记录为认知记忆，无法形成"检索 → 决策 → outcome → 权重反哺"的闭环。
 

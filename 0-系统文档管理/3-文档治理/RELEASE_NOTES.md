@@ -22,8 +22,8 @@
 - `jev_preference_judge.py` — 方案D DPO 偏好：每轮一个 choice 问题判定策略偏好，输出 `PreferenceSample` 供 DPO 训练
 
 #### 新增/更新 SPEC 文档
-- [.trae/documents/debate-jev-integration-spec.md](../../.trae/documents/debate-jev-integration-spec.md) v1.0-rc1 → **v1.1**：四方案验收标准全部打勾，落地计划标注实际测试数，新增 §13 变更记录
-- [.trae/documents/debate-jev-integration-eng-mgmt.md](../../.trae/documents/debate-jev-integration-eng-mgmt.md)：M1-M4 里程碑全部标注 ✅ 已完成
+- `.trae/documents/debate-jev-integration-spec.md`（本地草稿，`.trae/` 不入库）v1.0-rc1 → **v1.1**：四方案验收标准全部打勾，落地计划标注实际测试数，新增 §13 变更记录
+- `.trae/documents/debate-jev-integration-eng-mgmt.md`（本地草稿）：M1-M4 里程碑全部标注 ✅ 已完成
 
 #### INDEX.md 同步登记
 - [INDEX.md](../INDEX.md) L3 辅助模块新增 2 行：辩论系统（dream-harness-bridge）+ Jev 决策模型接入辩论

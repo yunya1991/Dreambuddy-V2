@@ -147,7 +147,7 @@
 | 技术设计 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) | v1.13 |
 | 接口规格 | [23-四层闭环自进化交易架构/docs/API_SPEC.md](../23-四层闭环自进化交易架构/docs/API_SPEC.md) | v1.1 |
 | 变更日志 | [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) | v1.13 |
-| SPEC | [2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md](../2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md) | v1.0（已完成） |
+| SPEC | `2-KNOWLEDGE/_analysis/SPEC-交易知识构建双通道方案.md`（目录被 gitignore，本地草稿） | v1.0（已完成） |
 | SPEC（做空疏通） | [23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md](../23-四层闭环自进化交易架构/docs/SPEC-自进化系统做空能力疏通探讨.md) | v0.2（执行层集成完成 2026-10-09） |
 | REA设计增强任务 | [23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md](../23-四层闭环自进化交易架构/docs/REA设计增强任务清单.md) | v1.0（T2.1-T2.3完成 2026-10-10） |
 | SPEC（金融逆向推导） | [23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md](../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) | v0.1（P0 ReverseDeriver完成 2026-10-10） |
@@ -195,8 +195,8 @@
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
 | **2-KNOWLEDGE/9-RAG-INFRA** | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) | ✅ v2.0 | RAG三层融合+桥接模块+热路径集成 |
-| **辩论系统（dream-harness-bridge）** | [.trae/documents/debate-engine-v2-spec.md](../.trae/documents/debate-engine-v2-spec.md) · [.trae/documents/debate-adjudication-training-spec.md](../.trae/documents/debate-adjudication-training-spec.md) | ✅ v2.0 + v1.2 | 对抗性辩论引擎：6维评审+5步反思+Bayesian/Elo/CBR训练 |
-| **★ Jev 决策模型接入辩论** | [.trae/documents/debate-jev-integration-spec.md](../.trae/documents/debate-jev-integration-spec.md) **v1.1** | ✅ 已落地 | C质量门控+B评审校验+A补充评分+D DPO偏好，43 tests GREEN |
+| **辩论系统（dream-harness-bridge）** | `.trae/documents/debate-engine-v2-spec.md`（本地草稿，`.trae/` 不入库） · `.trae/documents/debate-adjudication-training-spec.md`（本地草稿） | ✅ v2.0 + v1.2 | 对抗性辩论引擎：6维评审+5步反思+Bayesian/Elo/CBR训练 |
+| **★ Jev 决策模型接入辩论** | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） **v1.1** | ✅ 已落地 | C质量门控+B评审校验+A补充评分+D DPO偏好，43 tests GREEN |
 | **★ 44-三端协作架构系统** | [44-三端协作架构系统/README.md](../44-三端协作架构系统/README.md) | ✅ README + docs/tech 8 份 SPEC | 本地评审 / GitHub 存证 / 云端运行三端协同；L0 契约测试在 `shared/tests/` |
 | **★ 47-MCP管理系统** | [47-MCP管理系统/README.md](../47-MCP管理系统/README.md) · [docs/tech/](../47-MCP管理系统/docs/tech/) | ✅ README + docs/tech 11 份（4 SPEC + TECH v0.1.1 + ROADMAP + PLAN + REVIEW + SHADOW + ALIGNMENT） | L0 六域 MCP 封装 + 训练基座（TB1-TB5，48/48 TDD）+ 域内 agent 路线；契约注册表在 `registry/`，壳在 `mcp_shells/` |
 | **★ L0 三层目标架构（SPEC-C）** | [44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md](../44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) **v0.4** | ✅ C1-C13 已落地（G0 全关闭） | L0-P 封装 / L0-I 互联 / L0-S 调度；C10 gated、C11 检索触发、C12 health 聚合、C13 只读旁路；契约测试入 `l0-contracts` 阻断 job |
@@ -219,8 +219,8 @@
 | RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 |
 | 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
 | 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
-| 辩论系统 | [.trae/documents/debate-engine-v2-spec.md](../.trae/documents/debate-engine-v2-spec.md) v2.0 · [.trae/documents/debate-adjudication-training-spec.md](../.trae/documents/debate-adjudication-training-spec.md) v1.2 · **[jev集成SPEC v1.1](../.trae/documents/debate-jev-integration-spec.md)** |
-| Jev 决策模型 | [.trae/documents/debate-jev-integration-spec.md](../.trae/documents/debate-jev-integration-spec.md) v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |
+| 辩论系统 | `.trae/documents/debate-engine-v2-spec.md` v2.0 · `.trae/documents/debate-adjudication-training-spec.md` v1.2 · **jev集成SPEC v1.1**（以上均为本地草稿，`.trae/` 不入库） |
+| Jev 决策模型 | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |
 | 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.4 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.0 |
 
 ---
@@ -233,7 +233,7 @@
 | L3 辅助模块 | 6 | 6 | 0 | 0 | 100% |
 | **合计** | **32** | **22** | **5** | **5** | **72%** |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-03 实测：32 模块 / 22 齐全 / 5 部分 / 5 缺失 / 72%）；历史口径（38 模块 / 87%）为 2026-10 版本，已按工具输出修正。断链校验：`link_checker.py` 通过（588 链接 0 断链）。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-03 实测：32 模块 / 22 齐全 / 5 部分 / 5 缺失 / 72%）；历史口径（38 模块 / 87%）为 2026-10 版本，已按工具输出修正。断链校验：`link_checker.py` 本地 579 链接、干净克隆 473 链接，**均为 0 断链**（绝对路径 `file:///Users/...` 已全部改为相对路径，`.trae/` 与 `_analysis/` 本地草稿改为纯文本标注）。
 
 ---
 
