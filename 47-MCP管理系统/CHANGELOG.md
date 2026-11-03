@@ -1,5 +1,14 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB3 七维契约升级 + ROADMAP 状态回填
+
+- **TB3 七维落代码**（文档此前已改七维，代码仍六维）：`REWARD_WEIGHTS` 改 `(0.23, 0.18, 0.18, 0.14, 0.12, 0.05, 0.10)`；`RewardComponents` 新增 `pnl_delta_score`；`compute_reward` 新增 `counterfactual_result` 参数，按 `clip((treatment−control+0.05)/0.25, 0, 1)` 归一化
+- FAIL-OPEN：无回执 / 非 dict / 字段缺失 / 类型错误 → 中性 0.5，不抛 KeyError
+- 测试 6→9 条（新增 RED 7 中性、RED 8 clip 边界、RED 9 缺字段）；TB1-TB5+Phase A 全局 **43/43**
+- **SPEC 自洽修复三处**：§3 标题/§3.1/§3.2/§0.5.1 流程图的「六维」改七维；§3.3 `pareto_score` 骨架补 `pnl_delta_score`（原文漏第七维）；§3.4 RED 6 改 `len==7` + 补 RED 7-9 + 验收 9/9；§6.1/§6.2 数字对齐 43/43；§6.5 校准表权重改七维
+- **ROADMAP 状态回填**（原内容落后于实际代码）：三端 HEAD `43fea1c793`；M1④ 基线已完成（11-02）；#4 BTCRegimeDetector k=3 + regime 接线已完成（27 passed）；#5 TRAIN-BASE 43/43；#6 dim64/path_sig 云端已一致（sha `a023719e`）；B1/B2 已消解；§7 Day2-7 标记完成
+- 云端实测：主模型 `neural_sde_v1.pt` sha 与本地一致（即 dim64），`path_sig.pt`/`path_sig_v2.pt` 已 scp 并校验 sha，/tmp 已清理
+
 ## 2026-11-03 Phase A 认知 agent 参数化（train_base recall 排序）落地
 
 - `recall(sort_mode="train_base")` 新增第三种排序模式，TB1+TB2+TB3 三阶段注入 recall 结果

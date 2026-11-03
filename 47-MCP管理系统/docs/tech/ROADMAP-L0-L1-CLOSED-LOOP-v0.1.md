@@ -10,9 +10,9 @@
 
 | 端 | HEAD SHA | 四联门禁 | NeuralSDE v1 | NeuralSDE dim64/path_sig | GPU | 关键服务 |
 |---|---|---|---|---|---|---|
-| **本地 macOS M3** | b737331b26 | ✅ | ✅ 有 | ✅ 有 | ❌ 无（但 M1/M2 Mac Metal 可用） | — |
-| **GitHub main** | b737331b26 | — | — | — | — | — |
-| **云端 43.160.201.117 (Ubuntu 24.04, 4C16G)** | b737331b26 | ✅ | ✅ 有 v1.pt | ❌ **缺口** | ❌ **缺口** | continual-training.timer (每30min) + frontend + REA/L0 |
+| **本地 macOS M3** | 43fea1c793（TB3 七维升级提交后顺延） | ✅ | ✅ 有 | ✅ 有（`neural_sde_v1.pt` = dim64，sha `a023719e`） | ❌ 无（但 M1/M2 Mac Metal 可用） | — |
+| **GitHub main** | 43fea1c793 | — | — | — | — | — |
+| **云端 43.160.201.117 (Ubuntu 24.04, 4C16G)** | 43fea1c793 | ✅ | ✅ 有 v1.pt | ✅ **已一致**（sha `a023719e`）+ path_sig/v2 已补 | ❌ **缺口** | continual-training.timer (每30min) + frontend + REA/L0 |
 
 ---
 
@@ -26,7 +26,7 @@
   │ ✅ M1① 注册表 v1 + validate_mcp_registry.py                           │
   │ ✅ M1② 能力集 v1 + validate_capability_set.py                         │
   │ ✅ M1③ 信封映射层 + cognitive/39 壳 envelope 返回                       │
-  │ ⏸ M1④ 基线脚本 (measure_baseline.py) — **云端跑，被腾讯云 QR 超时挂起** │
+  │ ✅ M1④ 基线脚本 (measure_baseline.py) — latency_baseline.md 已生成（11-02）│
   │    ↓                                                                  │
   │  M2⑥ 数据壳只读 + M2⑦ 评测壳薄包 + M3⑧ REA 壳 + M3⑨ 认知壳双模       │
   │  阻塞：bcrm2 切流需要用户窗口；M4⑪ 库管壳                            │
@@ -56,7 +56,7 @@
   │   → DomainCouplingHead 轻量 output head（< 1MB，冻结主体）             │
   │   → EWC + rolling 2y window + walk-forward OOS                        │
   │   → 验收：coupling MAE < 静态 baseline × 0.8                          │
-  │   阻塞：**云端缺 GPU + 缺 dim64/path_sig 模型文件**                    │
+  │   阻塞：**云端缺 GPU**（dim64/path_sig 已于 11-03 同步）             │
   │                                                                       │
   │ Phase C 闭环验证（COMM-SHADOW Phase 1 观察期）                         │
   │   → observe() 读真实 coupling + generate_report() 建议章节            │
@@ -82,12 +82,12 @@
 
 | # | 里程碑 | 阶段 | 前置条件 | 产出 | 本地/云端 | 阻塞状态 | 时间预估 |
 |---|---|---|---|---|---|---|---|
-| **1** | M1④ 基线脚本云端跑 | ① MCP | 无（代码已 commit） | latency_baseline.md | 云端 | **⚠️ 腾讯云 QR 超时** | 10 分钟（需要手动扫码） |
-| **2** | 静态 domain_transmission.json | ③ Phase 0 | 无（现在就能做） | 从 sector_transmission 改字段，静态 v0.0 | 本地 → push | ✅ 无 | 1 天 |
+| **1** | M1④ 基线脚本云端跑 | ① MCP | 无（代码已 commit） | latency_baseline.md | 云端 | ✅ **已完成**（11-02 生成；recall 18.4ms / record 53.6ms / verify 197.35ms P50） | 已收口 |
+| **2** | 静态 domain_transmission.json | ③ Phase 0 | 无（现在就能做；本地缺 `sector_transmission.json` 字段来源） | 从 sector_transmission 改字段，静态 v0.0 | 本地 → push | ✅ 无 | 1 天 |
 | **3** | observe() 消费静态版本 | ② P0 | #2 | COMM-SHADOW observe() 加 l1_transmission_path 参数 | 本地 | ✅ 无 | 1 天 |
-| **4** | BTCRegimeDetector k=3 + NeuralSDE dim64 regime 输入 | ③ Phase 0 | NeuralSDE dim64 在本地有 | 重写 regime 检测为 BTC-only k=3 + drift_net in_dim 18→21 | 本地 | ✅ 无 | 3 天 + 2 天 |
-| **5** | TRAIN-BASE Phase 0 TB1-TB5 落地 | ① MCP→②③ 并行 | M1③ 信封稳定 | 5 个训练基座模块 + 26/26 TDD | 本地 → push → 云端 | ✅ 无 | 7 天 |
-| **6** | NeuralSDE dim64 + path_sig 同步云端 | ③ Phase B 前置 | 本地有 | scp 或 git-lfs 推 | 本地 → 云端 | **⚠️ 云端缺这两个文件** | 10 分钟 |
+| **4** | BTCRegimeDetector k=3 + NeuralSDE dim64 regime 输入 | ③ Phase 0 | NeuralSDE dim64 在本地有 | 重写 regime 检测为 BTC-only k=3 + drift_net in_dim 18→21 | 本地 | ✅ **已完成**（k=3 + regime/transition 接线，4 个测试文件 27 passed） | 已收口 |
+| **5** | TRAIN-BASE Phase 0 TB1-TB5 落地 | ① MCP→②③ 并行 | M1③ 信封稳定 | 5 个训练基座模块 + **43/43 TDD**（TB1 12 + TB2 8 + TB3 9 + TB4 4 + TB5 5 + Phase A 5） | 本地 → push → 云端 | ✅ **已完成** | 已收口 |
+| **6** | NeuralSDE dim64 + path_sig 同步云端 | ③ Phase B 前置 | 本地有 | scp 或 git-lfs 推 | 本地 → 云端 | ✅ **已完成**（主模型 sha 一致 `a023719e`；path_sig/v2 已 scp + sha 校验） | 已收口 |
 | **7** | 标注数据管线 MVP | ③ Phase A | #5 TB1-TB5 落地 | collect_domain_discovery_data.py 20 行 + JSONL schema | 本地 | ✅ 无 | 1 天 |
 | **8** | **GPU 就绪**（Mac Metal 或腾讯云 T4） | ③ Phase B | 无 | Mac 本地用 Metal 免费；云端按需开 T4 | 本地 / 云端 | **🔴 Phase B 硬阻塞** | 1 天（腾讯云 T4 开 ¥2.4/小时） |
 | **9** | DomainCouplingHead MVP + 增量训练 | ③ Phase B | #6 模型在云端 + #8 GPU | 训练脚本 + domain_transmission.json v0.1 推理 | 本地 Mac Metal | ✅ 无（有 GPU 后） | 3 天 |
@@ -101,8 +101,8 @@
 
 | # | 阻塞 | 影响 | 解法 | 紧急度 |
 |---|---|---|---|---|
-| **B1** | **腾讯云 QR 扫码**：M1④ 基线脚本无法自动跑 | 基线报告缺失，COMM-SHADOW 门槛值无真实数据 | 手动 SSH 扫码跑一次（~10 分钟） | 🟡 中 |
-| **B2** | **云端缺 NeuralSDE dim64.pt + path_sig.pt** | Phase B DomainCouplingHead 增量训练无 backbone | 本地 scp 到云端 `23-.../data/` 或 git-lfs 推 | 🔴 Phase B 硬阻塞 |
+| **B1** | ~~腾讯云 QR 扫码~~：M1④ 基线脚本无法自动跑 | — | ✅ **已消解**：11-02 已生成 latency_baseline.md；云端可直连 | 已解 |
+| **B2** | ~~云端缺 NeuralSDE dim64.pt + path_sig.pt~~ | — | ✅ **已消解**：主模型 sha 与本地一致（`a023719e`，即 dim64）；path_sig/v2 已 scp + sha 校验 | 已解 |
 | **B3** | **云端无 GPU** | Phase B 增量训练无算力 | 选项 A：Mac Metal 本地训练（推荐，数据不出本地）；选项 B：腾讯云 T4 按需开 ¥2.4/小时 | 🔴 Phase B 硬阻塞 |
 | **B4** | **bcrm2 切流窗口未定** | M2-M3 壳落地需要用户确认重启窗口 | 等用户给窗口 | 🟡 中 |
 
@@ -161,9 +161,9 @@ P0-3 BTCRegimeDetector k=3 重写 (⭐ 3天)
 
 | 天 | 任务 | 产出 | 状态 |
 |---|---|---|---|
-| **Day 1** | 静态 domain_transmission.json + observe() 消费 | 2 文件，链路跑通 | ⏳ |
-| **Day 2-4** | BTCRegimeDetector k=3 + NeuralSDE dim64 regime 输入 | 2 模块 + 测试 | ⏳ |
-| **Day 5** | TRAIN-BASE Phase 0 启动 | TB1 drift_detector 开始写 | ⏳ |
-| **Day 6-7** | 持续 TRAIN-BASE + NeuralSDE dim64 scp 云端 | 训练基座 ≥ TB3 | ⏳ |
+| **Day 1** | 静态 domain_transmission.json + observe() 消费 | 2 文件，链路跑通 | ⏳（schema 来源待确认） |
+| **Day 2-4** | BTCRegimeDetector k=3 + NeuralSDE dim64 regime 输入 | 2 模块 + 测试 | ✅ 已完成（27 passed） |
+| **Day 5** | TRAIN-BASE Phase 0 启动 | TB1 drift_detector 开始写 | ✅ 已完成（12 passed） |
+| **Day 6-7** | 持续 TRAIN-BASE + NeuralSDE dim64 scp 云端 | 训练基座 ≥ TB3 | ✅ 已完成（TB1-TB5 + Phase A = 43/43） |
 
-**B1 处理**：找 10 分钟手动 SSH 扫码跑 M1④ 基线脚本。
+**B1 处理**：✅ 已消解（latency_baseline.md 11-02 已生成，云端可直连）。

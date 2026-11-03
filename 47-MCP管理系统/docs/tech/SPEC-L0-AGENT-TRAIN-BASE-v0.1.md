@@ -38,7 +38,7 @@
 │ TRAIN-BASE TB1-TB5 agent 内部（第三观察点：训练层）               │
 │   - TB1 PSI + KS 三重漂移检测 + drift_kill_switch（告警型）      │
 │   - TB2 verify adapter（version 字段已改 data_schema_version）   │
-│   - TB3 AlphaPareto 六维奖励（含 process_reward + Oracle 评分）  │
+│   - TB3 AlphaPareto 七维奖励（含 process_reward + Oracle 评分 + pnl_delta_score） │
 │   - TB4 Thompson Sampling（regime shift via PSI）                │
 │   - TB5 GRPO evolve_step（StrategyConfig mutate）                │
 │                                                                 │
@@ -176,7 +176,7 @@ return {..., "data_schema_version": "0.2-beta", ...}  # 清晰表达：data 内�
                                              - Oracle 输出本身过 Mandate 门
 ```
 
-**与 TRAIN-BASE 集成**：TB3 AlphaPareto 六维奖励中的 `citation_diversity` 分量可以吸收 `oracle_confidence`。Oracle 不替代影子模式（影子看壳层行为，Oracle 看 agent 层行为）。
+**与 TRAIN-BASE 集成**：TB3 AlphaPareto 七维奖励中的 `citation_diversity` 分量可以吸收 `oracle_confidence`。Oracle 不替代影子模式（影子看壳层行为，Oracle 看 agent 层行为）。
 
 ---
 
@@ -196,7 +196,7 @@ TB1 PSI drift_detector（全域复用，零依赖）
     ▼
 TB2 Beta 分布 verify 升级（依赖 TB1 PSI 漂移门控）
     │
-    ├──→ TB3 AlphaPareto 六维奖励定义（依赖 TB2 Beta 置信度）
+    ├──→ TB3 AlphaPareto 七维奖励定义（依赖 TB2 Beta 置信度）
     │
     ├──→ TB4 Thompson Sampling regime gate（依赖 TB1 PSI 漂移检测 regime shift）
     │
@@ -515,11 +515,11 @@ def verify_beta(memory_id: str, success_rate: float,
 
 ---
 
-## §3 TB3：AlphaPareto 六维奖励定义（认知/评测共用）
+## §3 TB3：AlphaPareto 七维奖励定义（认知/评测共用）
 
 ### 3.1 目标
 
-为 TB5 PolicySelectLoop 提供多目标奖励函数，**替代手动权重调优**。六维向量奖励沿 Pareto 前沿优化（AlphaPareto，arXiv 2609.34188；引用编号 2026-11-03 本地联网复核，原 2504 有误）。
+为 TB5 PolicySelectLoop 提供多目标奖励函数，**替代手动权重调优**。七维向量奖励沿 Pareto 前沿优化（AlphaPareto，arXiv 2609.34188；引用编号 2026-11-03 本地联网复核，原 2504 有误）。
 
 **为什么依赖 TB2**：P1（P_verify_success）和 P3（psi_stability）的计算依赖 TB2 Beta verify 的置信度分布和 TB1 PSI 漂移值。
 
@@ -527,7 +527,7 @@ def verify_beta(memory_id: str, success_rate: float,
 
 ```
 4-MEMORY/9-工具与接口/
-├── training_reward.py       # 新增，AlphaPareto 六维奖励定义
+├── training_reward.py       # 新增，AlphaPareto 七维奖励定义
 └── test_alpha_pareto.py     # 新增（与实现同目录，绝对 import）
 ```
 
@@ -614,25 +614,29 @@ REWARD_WEIGHTS = (0.23, 0.18, 0.18, 0.14, 0.12, 0.05, 0.10)
 
 
 def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_WEIGHTS) -> float:
-    """Pareto 前沿综合评分（初版用六维加权和，后续升级为 MAP 流形感知）"""
+    """Pareto 前沿综合评分（初版用七维加权和，后续升级为 MAP 流形感知）"""
     components = [reward.p_verify_success, reward.p_recall_hit,
                   reward.psi_stability, reward.citation_diversity,
-                  reward.process_reward, reward.transition_smoothness]
-    return sum(w * c for w, c in zip(weights, components))
+                  reward.process_reward, reward.transition_smoothness,
+                  reward.pnl_delta_score]
+    return sum(w * c for w, c in zip(weights, components, strict=True))
 ```
 
 ### 3.4 TDD 验收（RED → GREEN → REFACTOR）
 
 | 步骤 | 测试用例 | 预期 |
 |---|---|---|
-| **RED 1** | 理想情况：Beta mean=0.9, PSI=0.05, recall 10/10, known_gaps=0, refs=5 | pareto_score ≥ 0.9 |
-| **RED 2** | 差情况：Beta mean=0.3, PSI=0.5, recall 2/10, known_gaps=5, refs=0（process_reward=0.0、transition_smoothness=0.0，六维均取差） | pareto_score ≤ 0.3 |
+| **RED 1** | 理想情况：Beta mean=0.9, PSI=0.05, recall 10/10, known_gaps=0, refs=5, 沙箱回执 treatment−control=+0.20（七维均好） | pareto_score ≥ 0.9 |
+| **RED 2** | 差情况：Beta mean=0.3, PSI=0.5, recall 2/10, known_gaps=5, refs=0（process_reward=0.0、transition_smoothness=0.0、沙箱回执 treatment−control=−0.20，七维均取差） | pareto_score ≤ 0.3 |
 | **RED 3** | PSI > 1.0 边界 | psi_stability = 0.0（cap 生效） |
 | **RED 4** | known_gaps > 10 边界 | citation_diversity 下限 0.0（cap 生效） |
 | **RED 5** | recall_total=0 边界 | p_recall_hit = 0.0（除零保护） |
-| **RED 6** | 权重完整性：`len(REWARD_WEIGHTS) == 6` 且 `sum(REWARD_WEIGHTS) == 1.0` | 返回 True（容差 1e-9） |
+| **RED 6** | 权重完整性：`len(REWARD_WEIGHTS) == 7` 且 `sum(REWARD_WEIGHTS) == 1.0` | 返回 True（容差 1e-9） |
+| **RED 7** | 无沙箱回执（`counterfactual_result=None`） | pnl_delta_score = 0.5（FAIL-OPEN 中性） |
+| **RED 8** | pnl 归一化 clip 边界：α 差 = +1.0 / −1.0 | 分别 = 1.0 / 0.0 |
+| **RED 9** | 回执字段缺失（非空 dict 但无 `treatment_alpha`） | pnl_delta_score = 0.5（不抛 KeyError） |
 
-**验收标准**：pytest 6/6 passed（含 RED 6 六维权重完整性）。
+**验收标准**：pytest 9/9 passed（含 RED 6 七维权重完整性 + RED 7-9 第七维 FAIL-OPEN/clip 边界）。
 
 ### 3.5 算力
 
@@ -1116,7 +1120,7 @@ TB1 PSI drift_detector ── 1 天 ──→ TDD 验收 12/12 passed
     ▼
 TB2 Beta verify 升级 ── 2 天 ──→ TDD 验收 8/8 passed + 零业务回归
     │
-    ├──→ TB3 AlphaPareto  ── 1 天 ──→ TDD 验收 6/6 passed
+    ├──→ TB3 AlphaPareto  ── 1 天 ──→ TDD 验收 9/9 passed
     │
     └──→ TB4 Thompson Sampling ── 1 天 ──→ TDD 验收 4/4 passed
     │
@@ -1124,11 +1128,14 @@ TB2 Beta verify 升级 ── 2 天 ──→ TDD 验收 8/8 passed + 零业务�
 TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验证
     │
     ▼
+Phase A 认知 agent 参数化（train_base recall） ── 1 天 ──→ 5/5 passed
+    │
+    ▼
 影子验证合并跑 ── 1 天 ──→ TB1-TB5 全部 shadow_run 一轮
     │
     ▼
-总代码量预算：~470 行 Python + pytest 用例
-总时间预算：7 天（壳搭建期间并行）
+总代码量预算：~520 行 Python + pytest 用例
+总时间预算：8 天（壳搭建期间并行）
 ```
 
 ### 6.2 验收标准总览
@@ -1137,10 +1144,11 @@ TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验�
 |---|---|---|---|---|
 | TB1 PSI | H8 阈值硬编码，无 env override | 12/12 | 不涉及 | 1ms |
 | TB2 Beta | H1 壳零感知，envelope schema 零变化 | 8/8 | 旧 verify 零回归 | 1μs |
-| TB3 AlphaPareto | — | 6/6 | 不涉及 | 10μs |
+| TB3 AlphaPareto | — | 9/9 | 不涉及 | 10μs |
 | TB4 Thompson | — | 4/4 | 不涉及 | 10μs |
 | TB5 GRPO | H2 无 .train()/.backward() + H4 FAIL-OPEN | 5/5 | 不涉及 | 50ms |
-| **全局** | H1/H2/H4/H8 全覆盖 | **35/35** | verify 零回归 | 零 GPU |
+| Phase A recall | H1 壳零感知 | 5/5 | 旧 recall 排序零回归 | 1ms |
+| **全局** | H1/H2/H4/H8 全覆盖 | **43/43** | verify/recall 零回归 | 零 GPU |
 
 ### 6.3 影子验证（与 AgentMail 影子合并）
 
@@ -1163,7 +1171,7 @@ TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验�
 
 | 参数 | 初值 | 位置 | 校准指标 |
 |---|---|---|---|
-| AlphaPareto 六维权重 | 0.25 / 0.20 / 0.20 / 0.15 / 0.12 / 0.08 | 本文 §3.3 `REWARD_WEIGHTS` | 影子期人机复核一致率 ≥ 0.8（高分/低分结论吻合） |
+| AlphaPareto 七维权重 | 0.23 / 0.18 / 0.18 / 0.14 / 0.12 / 0.05 / 0.10 | 本文 §3.3 `REWARD_WEIGHTS` | 影子期人机复核一致率 ≥ 0.8（高分/低分结论吻合） |
 | PSI 三档 | <0.1 稳定 / 0.1–0.25 轻微 / >0.25 严重 | 本文 §1、DOMAIN-AGENTS §4 | 对人工标注漂移事件的 ROC-AUC ≥ 0.75 |
 | H5 贝叶斯 VaR 阈值 | <0.3 拦截 / <0.5 降为建议 | DOMAIN-AGENTS §5.1 | 误拦截率 ≤ 5% 且漏拦截率 ≤ 10% |
 | V 函数 λ / 跨域加成 | λ=0.1 / +0.1 × refs | COMM-SHADOW §3 | 与人工排序 Spearman ρ ≥ 0.7 |
