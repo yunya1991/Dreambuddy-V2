@@ -1839,7 +1839,7 @@ Dream-Agent 协作网络
 
 ### 9.3 账本系统（区块链思想）
 
-**位置**：[DREAM-AGENT/ledger/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/ledger/)
+**位置**：DREAM-AGENT/ledger/（外部链接失效）
 
 三大账本：
 
@@ -1858,7 +1858,7 @@ Dream-Agent 协作网络
 
 ### 9.4 DREAM Token 激励机制
 
-**设计文件**：[DREAM-TOKEN-DESIGN.md](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/DREAM-TOKEN-DESIGN.md)
+**设计文件**：DREAM-TOKEN-DESIGN.md（外部链接失效）
 
 **核心参数**：
 
@@ -1942,7 +1942,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 
 #### 9.7.1 GitHub Actions 门禁
 
-**位置**：[github-actions/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/github-actions/)
+**位置**：github-actions/（外部链接失效）
 
 **自动化门禁**：
 - CI构建检查
@@ -1953,7 +1953,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 
 #### 9.7.2 飞书审批（关键节点人工确认）
 
-**文档入口**：[docs/feishu-collab/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/feishu-collab/)
+**文档入口**：docs/feishu-collab/（外部链接失效）
 
 **关键审批节点**：
 
@@ -2222,15 +2222,15 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 | **Evolution Orchestrator** | evolution-orchestrator.ts | [3-EVOLUTION/](../3-EVOLUTION/evolution-orchestrator.ts) | 🟢 |
 | **进化系统类型定义** | types.ts | [3-EVOLUTION/](../3-EVOLUTION/types.ts) | 🟢 |
 | **全链路集成测试** | evolution-fullstack.test.ts | [3-EVOLUTION/](../3-EVOLUTION/evolution-fullstack.test.ts) | 🟢 |
-| **Dream-Agent总览** | README.md | [DREAM-AGENT/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/README.md) | 🟢 |
-| **创始宣言** | MANIFESTO.md | [DREAM-AGENT/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/MANIFESTO.md) | 🟢 |
-| **协作架构** | 02-ARCHITECTURE.md | [DREAM-AGENT/docs/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/02-ARCHITECTURE.md) | 🟢 |
-| **协作宪法** | 00-AGENT-CONSTITUTION.md | [DREAM-AGENT/docs/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/00-AGENT-CONSTITUTION.md) | 🟢 |
-| **协作协议** | 01-COLLABORATION-PROTOCOL.md | [DREAM-AGENT/docs/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/01-COLLABORATION-PROTOCOL.md) | 🟢 |
-| **账本系统** | ledger/ | [DREAM-AGENT/ledger/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/ledger/README.md) | 🟢 |
-| **DREAM Token** | DREAM-TOKEN-DESIGN.md | [DREAM-AGENT/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/DREAM-TOKEN-DESIGN.md) | 🟢 |
-| **飞书协作** | feishu-collab/ | [DREAM-AGENT/docs/feishu-collab/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/feishu-collab/README.md) | 🟡 |
-| **GitHub门禁** | github-actions/ | [DREAM-AGENT/github-actions/](file:///Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/github-actions/README.md) | 🟢 |
+| **Dream-Agent总览** | README.md | DREAM-AGENT/（外部链接失效） | 🟢 |
+| **创始宣言** | MANIFESTO.md | DREAM-AGENT/（外部链接失效） | 🟢 |
+| **协作架构** | 02-ARCHITECTURE.md | DREAM-AGENT/docs/（外部链接失效） | 🟢 |
+| **协作宪法** | 00-AGENT-CONSTITUTION.md | DREAM-AGENT/docs/（外部链接失效） | 🟢 |
+| **协作协议** | 01-COLLABORATION-PROTOCOL.md | DREAM-AGENT/docs/（外部链接失效） | 🟢 |
+| **账本系统** | ledger/ | DREAM-AGENT/ledger/（外部链接失效） | 🟢 |
+| **DREAM Token** | DREAM-TOKEN-DESIGN.md | DREAM-AGENT/（外部链接失效） | 🟢 |
+| **飞书协作** | feishu-collab/ | DREAM-AGENT/docs/feishu-collab/（外部链接失效） | 🟡 |
+| **GitHub门禁** | github-actions/ | DREAM-AGENT/github-actions/（外部链接失效） | 🟢 |
 | **系统维护SKILL** | system-maintenance/ | [6-TRADING/skills/system-maintenance/](../6-TRADING/skills/system-maintenance/) | 🟢 |
 | **维护报告** | maintenance-reports/ | [1-ARCHITECTURE/.maintenance-reports/](../1-ARCHITECTURE/.maintenance-reports/) | 🟢 |
 

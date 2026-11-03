@@ -53,7 +53,7 @@ dreambuddy/
 
 ## 3. 分类映射（沿用现有逻辑）
 
-中台必须内置 `CATEGORY_TO_DEPARTMENT`，与 [content.server.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/7-ARTIFACT_HUB/content.server.ts) 保持一致；允许通过配置增量扩展，但默认值以现有为准。
+中台必须内置 `CATEGORY_TO_DEPARTMENT`，与 content.server.ts（外部链接失效） 保持一致；允许通过配置增量扩展，但默认值以现有为准。
 
 ## 4. 架构概览（方案 B：FS + SQLite）
 

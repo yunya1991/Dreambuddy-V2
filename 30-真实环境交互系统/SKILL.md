@@ -480,7 +480,7 @@ result = ab_runner.run_task_from_yaml({
 
 ### 线2 agent-browser 引擎场景（YAML）
 
-原生命令风格，键=命令，值=参数。详见 [agent-browser SKILL.md](file:///Users/zhangjiangtao/.trae-cn/skills/agent-browser/SKILL.md)。
+原生命令风格，键=命令，值=参数。详见 agent-browser SKILL.md（外部链接失效）。
 
 ### 验证断言类型
 

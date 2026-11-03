@@ -126,12 +126,12 @@
   - P0 期 NotImplementedError → P1 真实实例化：`backend=dual_write → _DualWrapper(legacy + sqlite)`；`backend=sqlite_unified → Sqlite*Repository`
   - `_DualWrapper` 动态代理：所有 Protocol 方法串行 → 两后端都调用；SQLite 端失败记 warning，不影响 JSON（Fail-Open）；Protocol 类通过 ABC.register() 注册为虚拟子类，`isinstance(x, TradeRepository)` 正确成立
   - 每 db_path schema init 缓存路径锁，`:memory:` 与文件库相互隔离（避免 schema 初始化污染）
-- **Changed** [trading_utils.py](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py)：
+- **Changed** [trading_utils.py](../../11-易经推理系统/scripts/memory_l4/trading_utils.py)：
   - `register_trade_to_l4()` 首行加 `_dal_write_trade_if_enabled(trade)`：
     - 仅当 DB_BACKEND ∈ {dual_write, sqlite_unified} 触发；默认 json_legacy 零成本
     - `_convert_tradingutils_trade_to_unified()` 25+ 列字段漂移 adapter（enums 容错、缺失字段默认值）
     - 所有 DAL 调用 try/except logger.warning（不阻塞 L4 Case 注册，Fail-Open）
-- **Changed** [v15_trader.py](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_trader.py)：
+- **Changed** [v15_trader.py](../../14-V15经典马丁策略/core/v15_trader.py)：
   - `_register_martin_trade_to_l4()` 在构造 TradeEvent 之后、注册 Case 之前注入 `_dal_write_martin_trade_if_enabled(...)`
   - 马丁 v15 无独立置信度 → 中性 0.5；strategy_source='martin_v15'；reduce_count=addon_level；martin_config/grid_params/regime/vol/sz/margin 快照全进 extra_payload JSONB
   - 同 Fail-Open：任何 DAL 失败只 `_log`，不影响 Case 注册与运行时
@@ -190,11 +190,11 @@
   - [json_legacy/kg_impl.py](../dreambuddy_dal/implementations/json_legacy/kg_impl.py)：别名累积；FTS 近似字符串匹配 BM25 分近似排名；N 跳子图 BFS（direction 三向 min_confidence 过滤）
 
 ### Changed（最小侵入接入，不破坏生产）
-- **Changed** 根 [conftest.py](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/conftest.py) SUBMODULES：加入 `"19-数据访问层"`（全局 pytest 可 `import dreambuddy_dal`，无需单独 sys.path 插入）
-- **Changed** 根 [pyproject.toml](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/pyproject.toml) `[tool.ruff.lint.isort]` known-first-party：加入 `"dreambuddy_dal"`（与 dreamos 并列一等公民）
-- **Changed** [polling_trader.py](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/polling_trader.py) 模块头部 docstring：新增 DAL 接入点注释（P1 后 `from dreambuddy_dal import get_trade_repo, get_position_repo, get_risk_repo`），不修改任何运行时逻辑
-- **Changed** [v15_trader.py](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/14-V15经典马丁策略/core/v15_trader.py) 模块头部 docstring：新增 DAL 接入点注释（P1 后 `from dreambuddy_dal import get_trade_repo, get_position_repo, get_config_repo`），不修改任何运行时逻辑
-- **Changed** [trading_utils.py](/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/trading_utils.py) 模块 docstring：新增 Experience 698940 Deprecation 注释，截止 2026-09-30，附 SCHEMA_DESIGN.md SSoT 链接
+- **Changed** 根 [conftest.py](../../conftest.py) SUBMODULES：加入 `"19-数据访问层"`（全局 pytest 可 `import dreambuddy_dal`，无需单独 sys.path 插入）
+- **Changed** 根 [pyproject.toml](../../pyproject.toml) `[tool.ruff.lint.isort]` known-first-party：加入 `"dreambuddy_dal"`（与 dreamos 并列一等公民）
+- **Changed** [polling_trader.py](../../11-易经推理系统/scripts/memory_l4/polling_trader.py) 模块头部 docstring：新增 DAL 接入点注释（P1 后 `from dreambuddy_dal import get_trade_repo, get_position_repo, get_risk_repo`），不修改任何运行时逻辑
+- **Changed** [v15_trader.py](../../14-V15经典马丁策略/core/v15_trader.py) 模块头部 docstring：新增 DAL 接入点注释（P1 后 `from dreambuddy_dal import get_trade_repo, get_position_repo, get_config_repo`），不修改任何运行时逻辑
+- **Changed** [trading_utils.py](../../11-易经推理系统/scripts/memory_l4/trading_utils.py) 模块 docstring：新增 Experience 698940 Deprecation 注释，截止 2026-09-30，附 SCHEMA_DESIGN.md SSoT 链接
 
 ### Deprecated（5 处独立 TradeRecord 定义，2026-09-30 清理）
 - **Deprecated** `11-易经推理系统/scripts/memory_l4/trading_utils.py::TradeRecord`（字段：coin / float price / pnl_pct 等 → 与 SSoT drift 23+ 处，切 `dreambuddy_dal.unified_models.TradeRecord`）
