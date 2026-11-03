@@ -536,8 +536,8 @@ tests/
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple, List
-from .drift_detector import psi  # TB1
-from .cognitive_interfaces import BetaState  # TB2
+from drift_detector import psi  # TB1（本目录非包，绝对 import）
+from cognitive_interfaces import BetaState  # TB2（绝对 import）
 
 
 @dataclass
@@ -633,7 +633,9 @@ def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_W
 
 ### 4.2 位置（含 Major #1 修复：与 TB5 GRPO import 路径统一）
 
-**regime_gate.py 放在 `4-MEMORY/9-工具与接口/`**（与 TB5 PolicySelectLoop 同目录，TB5 用相对 import `.regime_gate`），40-周期神经网络系统 通过绝对 import `from cognitive_loop_entry import ThompsonSamplingRegimeGate` 消费。
+**regime_gate.py 放在 `4-MEMORY/9-工具与接口/`**（与 TB5 PolicySelectLoop 同目录，同目录内一律**绝对 import**），40-周期神经网络系统 通过绝对 import `from cognitive_loop_entry import ThompsonSamplingRegimeGate` 消费。
+
+> **import 规约（2026-11-03 修订，P6 复核连带项）**：`4-MEMORY/9-工具与接口/` **不是 Python 包**（目录下无 `__init__.py`），所有模块一律使用**绝对 import**（如 `from drift_detector import compute_psi`），路径由宿主注入（`cognitive_mcp_server.py` 的函数级 sys.path）或 pytest rootdir prepend 负责。**禁止相对 import**——会报 `ImportError: attempted relative import with no known parent package`。云端现网 `drift_detector.py` 与 `test_drift_detector.py` 已按此约定实现。
 
 ```
 4-MEMORY/9-工具与接口/
@@ -641,7 +643,7 @@ def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_W
 ├── cognitive_loop_entry.py   # TB2（Beta verify 升级）
 ├── training_reward.py        # TB3（AlphaPareto 六维奖励）
 ├── regime_gate.py            # TB4 新增，Thompson Sampling regime gate ← 统一位置
-└── grpo_evolution.py         # TB5 新增，PolicySelectLoop（from .regime_gate import 相对 import ✅）
+└── grpo_evolution.py         # TB5 新增，PolicySelectLoop（`from regime_gate import ...` 绝对 import ✅）
 tests/
 └── test_regime_gate.py       # 新增
 ```
@@ -759,10 +761,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 import json
-from .drift_detector import classify_drift, PSI_MINOR_DRIFT, PSI_STABLE  # TB1
-from .cognitive_interfaces import BetaState  # TB2
-from .training_reward import compute_reward, pareto_score, RewardComponents  # TB3
-from .regime_gate import ThompsonSamplingRegimeGate  # TB4
+from drift_detector import classify_drift, PSI_MINOR_DRIFT, PSI_STABLE  # TB1（绝对 import）
+from cognitive_interfaces import BetaState  # TB2
+from training_reward import compute_reward, pareto_score, RewardComponents  # TB3
+from regime_gate import ThompsonSamplingRegimeGate  # TB4
 
 
 @dataclass
