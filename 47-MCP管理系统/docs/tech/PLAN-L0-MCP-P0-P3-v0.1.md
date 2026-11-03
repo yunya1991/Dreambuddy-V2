@@ -6,7 +6,7 @@
 > **对齐**: [SPEC-L0-three-layer-architecture v0.5](../../../44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) C 系列进度（§一）+ [SPEC-L0-DOMAIN-AGENTS v0.2](./SPEC-L0-DOMAIN-AGENTS-v0.2.md) Phase 0/Phase A
 > **约束**: 单人维护、FAIL-OPEN、云端 4C16G、零回归（C 系列既有阻断 job 全绿为每里程碑前置）、实盘写路径不触碰
 > **v0.2 修订**: 任务①合并原任务②——mcp_capabilities.yaml 为 B4 唯一载体，包含完整的**角色→能力标签→工具**三层映射；删除多余的 l0_capability_set.v1.yaml（与 ALIGNMENT B4 "单一载体" 冲突）
-> **v0.3 修订**: M1-M4 里程碑任务状态全量刷新；registry 升级至 v0.2（7 壳 24 工具 7 port，本地/云端双校验 EXIT=0）；TRAIN-BASE Phase 0+A 48/48 测试落地；REA shadow / bulk-read / 写面开放三项待窗口；壳后新锚点=静态 domain_transmission.json + observe() 消费入口
+> **v0.3 修订**: M1-M4 里程碑任务状态全量刷新；registry 升级至 v0.2（7 壳 24 工具 7 port，本地/云端双校验 EXIT=0）；TRAIN-BASE Phase 0+A 48/48 测试落地；REA shadow / bulk-read / 写面开放三项待窗口；壳后新锚点①静态 domain_transmission + ②observe() 消费入口已落地（2026-11-03，19 测试），下一锚点=③ training_reward.py 聚合 + ④ 标注管线 MVP
 
 ---
 
@@ -89,8 +89,8 @@
 
 | 锚点 | 性质 | 产出 | 依赖 | 阻塞 |
 |---|---|---|---|---|
-| ① 静态 `domain_transmission.json` v0.0 | COMM-SHADOW Phase 0 + L1 Phase 0 基石 | REA→STR / STR→REA 等域间静态传播矩阵 stub schema | 无（先写 stub，真实值等 Phase B DomainCouplingHead 推理） | 无 |
-| ② observe() 消费静态版本 | COMM-SHADOW P0 入口 | `AgentMailShadow.observe()` 加 `l1_transmission_path` 参数 | ① | 无 |
+| ① ✅ 静态 `domain_transmission.json` v0.0 | COMM-SHADOW Phase 0 + L1 Phase 0 基石 | `mcp_shells/_shared/assets/domain_transmission_static.json`：6 域 × 15 对传播矩阵（coupling/lags_min），`source=static` 明确标注，psi_corr/verify_corr 留待 Phase B | 无 | ✅ 2026-11-03 落地 |
+| ② ✅ observe() 消费静态版本 | COMM-SHADOW P0 入口 | `mcp_shells/_shared/agent_mail_shadow.py`：`AgentMailShadow(l1_transmission_path=)` + `observe()` 追加 `l1_insights`（coupling_consistency / l1_regime_match / l1_state）；S1-S3 硬约束 + FAIL-OPEN + 19 测试 | ① | ✅ 2026-11-03 落地 |
 | ③ `training_reward.py` 聚合 | 壳后 TRAIN-BASE 常量收敛 | V_ALPHA + 六维权重 + AlphaPareto 定义收敛到单一模块 | 无 | 无 |
 | ④ 标注数据管线 MVP | TRAIN-BASE Phase A → L1 训练闭环 | `collect_domain_discovery_data.py` 20 行 + JSONL schema | TB1-TB5 已落地 ✅ | 无 |
 | ⑤ BTCRegimeDetector + NeuralSDE dim64 regime 输入 | L1 Phase 0 静态架构 | regime 检测 k=3 + drift_net in_dim 18→21 真实接线 | ③ 静态 JSON | 无 |

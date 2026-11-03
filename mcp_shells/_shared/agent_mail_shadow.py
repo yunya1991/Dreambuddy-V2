@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""mcp_shells/_shared/agent_mail_shadow.py — AgentMail 影子观察器（COMM-SHADOW Phase 0）
+
+SPEC-L0-AGENT-COMM-SHADOW-v0.1 §2.1 + SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1 §4.1
+
+职责：
+  - 旁路观察 L0 壳信封，归一化为 trajectory 条目并落本地 JSONL
+  - 若存在 L1 域传播先验（domain_transmission_static.json），追加 l1_insights
+
+硬约束（COMM-SHADOW §5.2 S1-S3）：
+  S1 不触发：只写本地 JSONL，不 import / 调用任何域 agent
+  S2 独立 trace：落盘 trace_id 统一 shadow- 前缀
+  S3 零资源占用：无 DB / 无网络 / 无子进程，内存仅保留 max_entries 条
+
+FAIL-OPEN：静态先验缺失或损坏、落盘失败均不影响主链路（返回 None / 静默跳过）。
+"""
+
+from __future__ import annotations
+
+import itertools
+import json
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+STATIC_TRANSMISSION_PATH = (
+    Path(__file__).resolve().parent / "assets" / "domain_transmission_static.json"
+)
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_STORE_PATH = _REPO_ROOT / ".workbuddy" / "agent_mail" / "trajectories.jsonl"
+
+SHADOW_PREFIX = "shadow-"
+# 一致性判定三带：≥ strong 视为应耦合已耦合；≤ weak 视为不应耦合却耦合（drift）；
+# 中间带不参与判定，避免把中等先验当噪声。
+STRONG_COUPLING = 0.5
+WEAK_COUPLING = 0.3
+
+# 壳 source → L0 域名（SPEC-L0-MCP-PACKAGING registry 的 source 字段）
+_SOURCE_TO_DOMAIN = {
+    "l0.cognition.mcp": "cognition",
+    "l0.semantic-39.mcp": "semantic",
+    "l0.search.mcp": "search",
+    "l0.rea.mcp": "rea",
+    "l0.data.mcp": "data",
+    "l0.eval.mcp": "eval",
+    "l0.store-admin.mcp": "store-admin",
+}
+
+
+def _shadow_trace(trace_id: Any) -> str:
+    """S2：落盘 trace_id 统一 shadow- 前缀，与主链路 trace 解耦。"""
+    tid = str(trace_id or "").strip()
+    if tid.startswith(SHADOW_PREFIX):
+        return tid
+    if tid:
+        return SHADOW_PREFIX + tid
+    return SHADOW_PREFIX + uuid.uuid4().hex[:16]
+
+
+class AgentMailShadow:
+    """壳信封旁路观察器：只读消费 + 本地落盘 + L1 静态先验一致性比对。"""
+
+    def __init__(
+        self,
+        l1_transmission_path: Optional[str] = None,
+        trajectory_store_path: Optional[str] = None,
+        max_entries: int = 1000,
+    ) -> None:
+        self._l1_path = (
+            Path(l1_transmission_path) if l1_transmission_path else STATIC_TRANSMISSION_PATH
+        )
+        self._store_path = (
+            Path(trajectory_store_path) if trajectory_store_path else DEFAULT_STORE_PATH
+        )
+        self._max_entries = max(1, int(max_entries))
+        self._recent: List[Dict[str, Any]] = []
+
+    # ---------- L1 静态先验（FAIL-OPEN） ----------
+    def load_transmission(self) -> Optional[Dict[str, Any]]:
+        """加载静态域传播先验；缺失 / 损坏 / 结构不符一律返回 None。"""
+        try:
+            if not self._l1_path.exists():
+                return None
+            data = json.loads(self._l1_path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                return None
+            if not isinstance(data.get("domain_transmission"), dict):
+                return None
+            return data
+        except Exception:  # noqa: BLE001 — FAIL-OPEN 契约
+            return None
+
+    # ---------- 观察入口 ----------
+    def observe(self, envelope_trajectory: Any) -> Dict[str, Any]:
+        """观察一批壳信封（单条 dict 或 list），落盘并返回观察摘要。
+
+        返回：{observed, domains, store}，若静态先验可用则追加 l1_insights。
+        """
+        items = (
+            envelope_trajectory if isinstance(envelope_trajectory, list) else [envelope_trajectory]
+        )
+        entries = [
+            self._to_entry(item, seq) for seq, item in enumerate(items) if isinstance(item, dict)
+        ]
+        self._append(entries)
+
+        result: Dict[str, Any] = {
+            "observed": len(entries),
+            "domains": sorted({e["agent_domain"] for e in entries}),
+            "store": str(self._store_path),
+        }
+
+        transmission = self.load_transmission()
+        if transmission:
+            block = transmission["domain_transmission"]
+            result["l1_insights"] = {
+                "coupling_consistency": self._check_coupling_consistency(
+                    entries, block.get("drift_coupling") or {}
+                ),
+                "l1_regime_match": block.get("regime"),
+                "l1_state": block.get("state"),
+            }
+        return result
+
+    # ---------- 查询 ----------
+    def get_recent_trajectories(
+        self, domain: Optional[str] = None, limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        items = [e for e in self._recent if domain is None or e["agent_domain"] == domain]
+        return items[-max(1, int(limit)) :]
+
+    # ---------- 策略评估（SPEC §2.1 evaluate_policy） ----------
+    def evaluate_policy(
+        self, policy: str, trajectories: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """V = quality / max(cost, 1)；quality 取 poe_score 均值，cost 取 messages_sent 总和。"""
+        items = self._recent if trajectories is None else trajectories
+        if not items:
+            return {"policy": policy, "V": 0.0, "quality": 0.0, "cost": 0.0, "n": 0}
+        quality = sum(float(e.get("poe_score", 0.0) or 0.0) for e in items) / len(items)
+        cost = sum(float((e.get("cost") or {}).get("messages_sent", 1) or 0) for e in items)
+        return {
+            "policy": policy,
+            "V": round(quality / max(cost, 1.0), 4),
+            "quality": round(quality, 4),
+            "cost": cost,
+            "n": len(items),
+        }
+
+    # ---------- 报告 ----------
+    def generate_report(self, days: int = 7) -> str:
+        """生成影子观察周报（Markdown）。窗口按条目 ts 过滤。"""
+        cutoff = time.time() - max(1, int(days)) * 86400
+        items = [e for e in self._recent if float(e.get("ts", 0.0)) >= cutoff]
+        lines = [f"# AgentMail Shadow Report ({days}d)", "", f"- observations: {len(items)}"]
+        if not items:
+            return "\n".join(lines) + "\n- (no data)\n"
+
+        counts: Dict[str, int] = {}
+        for e in items:
+            counts[e["agent_domain"]] = counts.get(e["agent_domain"], 0) + 1
+        lines.append("- domains: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
+
+        ev = self.evaluate_policy("observed", items)
+        lines.append(f"- V: {ev['V']} (quality={ev['quality']}, cost={ev['cost']})")
+
+        transmission = self.load_transmission()
+        if transmission:
+            block = transmission["domain_transmission"]
+            cc = self._check_coupling_consistency(items, block.get("drift_coupling") or {})
+            lines.append(f"- l1_state: {block.get('state')} / regime: {block.get('regime')}")
+            lines.append(
+                f"- coupling_consistency: {cc['verdict']} (ratio={cc['consistency_ratio']})"
+            )
+        return "\n".join(lines) + "\n"
+
+    # ---------- 内部 ----------
+    def _to_entry(self, item: Dict[str, Any], seq: int) -> Dict[str, Any]:
+        meta = item.get("meta") or {}
+        source = str(item.get("source", ""))
+        domain = meta.get("domain") or _SOURCE_TO_DOMAIN.get(
+            source, source.split(".")[-2] if source.count(".") >= 2 else "unknown"
+        )
+        return {
+            "seq": seq,
+            "ts": time.time(),
+            "agent_domain": domain,
+            "agent_id": meta.get("agent_id", ""),
+            "action": meta.get("event_type") or meta.get("action") or "",
+            "cost": {
+                "messages_sent": int(meta.get("messages_sent", 1) or 1),
+                "latency_ms": float(meta.get("latency_ms", 0.0) or 0.0),
+            },
+            "cross_domain_refs": meta.get("cross_domain_refs", 0) or 0,
+            "poe_score": float(meta.get("poe_score", 0.0) or 0.0),
+            "trace_id": _shadow_trace(item.get("trace_id")),
+        }
+
+    def _append(self, entries: List[Dict[str, Any]]) -> None:
+        if not entries:
+            return
+        self._recent.extend(entries)
+        self._recent = self._recent[-self._max_entries :]
+        try:
+            self._store_path.parent.mkdir(parents=True, exist_ok=True)
+            with self._store_path.open("a", encoding="utf-8") as fh:
+                for entry in entries:
+                    fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception:  # noqa: BLE001 — S3 零干扰，落盘失败不阻断主链路
+            pass
+
+    def _check_coupling_consistency(
+        self, entries: List[Dict[str, Any]], drift_coupling: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """观察窗口内共现的域对，与静态先验三带比对（SPEC §4.1 一致性旁路）。"""
+        observed = sorted({e["agent_domain"] for e in entries})
+        checked: List[Dict[str, Any]] = []
+        for left, right in itertools.combinations(observed, 2):
+            meta = self._pair_entry(drift_coupling, left, right)
+            if meta is None:
+                continue
+            try:
+                coupling = float(meta.get("coupling", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                continue
+            if coupling >= STRONG_COUPLING:
+                band = "strong"
+            elif coupling <= WEAK_COUPLING:
+                band = "weak"
+            else:
+                continue  # 中等先验不参与判定
+            checked.append(
+                {
+                    "pair": f"{left}↔{right}",
+                    "static_coupling": coupling,
+                    "lags_min": meta.get("lags_min"),
+                    "band": band,
+                    "consistent": band == "strong",
+                }
+            )
+        if not checked:
+            return {
+                "checked_pairs": [],
+                "consistency_ratio": None,
+                "verdict": "insufficient_data",
+                "strong_threshold": STRONG_COUPLING,
+                "weak_threshold": WEAK_COUPLING,
+            }
+        ratio = sum(1 for c in checked if c["consistent"]) / len(checked)
+        return {
+            "checked_pairs": checked,
+            "consistency_ratio": round(ratio, 4),
+            "verdict": "consistent" if ratio >= STRONG_COUPLING else "drift",
+            "strong_threshold": STRONG_COUPLING,
+            "weak_threshold": WEAK_COUPLING,
+        }
+
+    @staticmethod
+    def _pair_entry(
+        drift_coupling: Dict[str, Any], left: str, right: str
+    ) -> Optional[Dict[str, Any]]:
+        """静态先验键序不固定，双向查找。"""
+        for key in (f"{left}↔{right}", f"{right}↔{left}"):
+            meta = drift_coupling.get(key)
+            if isinstance(meta, dict):
+                return meta
+        return None
+
+
+__all__ = ["AgentMailShadow", "STATIC_TRANSMISSION_PATH", "DEFAULT_STORE_PATH", "SHADOW_PREFIX"]
