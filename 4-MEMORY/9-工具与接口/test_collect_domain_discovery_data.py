@@ -343,3 +343,29 @@ def test_collect_windowed_is_idempotent_on_rerun(tmp_path):
     cdd.collect_windowed(**kwargs)
     cdd.collect_windowed(**kwargs)
     assert len(out.read_text().splitlines()) == first == 2
+
+
+def test_collect_windowed_skips_unfinished_window(tmp_path):
+    """未跑满的窗口不落盘: 否则去重后会把残缺统计冻结成永久样本。"""
+    ts0 = 1793700000.0
+    tnum = 1800
+    store = tmp_path / "traj.jsonl"
+    _write_entries(
+        store,
+        [
+            _window_entry("data", ts0 + 10, False),
+            _window_entry("data", ts0 + tnum + 10, True),
+        ],
+    )
+    out = tmp_path / "windowed.jsonl"
+    kwargs = {
+        "shadow_store_path": str(store),
+        "output_path": str(out),
+        "window_seconds": tnum,
+    }
+    # 第二窗还没结束 → 只采到第一窗
+    cdd.collect_windowed(**kwargs, now_ts=ts0 + tnum + 5)
+    assert len(out.read_text().splitlines()) == 1
+    # 第二窗结束后 → 补采第二窗
+    cdd.collect_windowed(**kwargs, now_ts=ts0 + 2 * tnum + 5)
+    assert len(out.read_text().splitlines()) == 2

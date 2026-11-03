@@ -317,22 +317,28 @@ def collect_windowed(
     btc_ts_path: Optional[str] = None,
     min_entries: int = 1,
     skip_existing: bool = True,
+    now_ts: Optional[float] = None,
 ) -> Path:
     """跨 regime 长期采集入口: 每个时间窗 1 样本 (per-window psi + regime 标签)。
 
-    周期任务友好: skip_existing=True 时按 window.start_ts 去重, 重复运行不追加旧窗口。
+    周期任务友好:
+      - skip_existing=True 时按 window.start_ts 去重, 重复运行不追加旧窗口
+      - 只采集**已结束**的窗口 (window_end_ts <= now), 避免把未跑满的窗口冻结成样本
     FAIL-OPEN: 无真实轨迹 (无 degraded/ts) 时写空文件返回, 调用方回退静态 target。
     """
     store = Path(shadow_store_path) if shadow_store_path else SHADOW_STORE_DEFAULT
     out = Path(output_path) if output_path else OUTPUT_DEFAULT
     out.parent.mkdir(parents=True, exist_ok=True)
+    reference_now = float(now_ts) if now_ts is not None else time.time()
     trajectories = _load_shadow_trajectories(store)
     series = load_regime_series(Path(btc_ts_path) if btc_ts_path else None)
     existing_starts = _existing_window_starts(out) if skip_existing else set()
     windows = [
         w
         for w in group_trajectories_by_window(trajectories, window_seconds)
-        if len(w["entries"]) >= min_entries and w["window_start_ts"] not in existing_starts
+        if len(w["entries"]) >= min_entries
+        and w["window_end_ts"] <= reference_now
+        and w["window_start_ts"] not in existing_starts
     ]
     samples = [
         build_window_sample(w, regime=regime_at(w["window_end_ts"], series)) for w in windows
