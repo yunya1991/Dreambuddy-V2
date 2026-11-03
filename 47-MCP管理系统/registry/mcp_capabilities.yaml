@@ -27,7 +27,7 @@
 #   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
 #   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
 schema_version: "1.1-mcp"
-registry_version: "0.2"
+registry_version: "0.3"
 last_updated: "2026-11-03"
 # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
 # 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
@@ -281,6 +281,33 @@ shells:
         read_write: read
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
+
+# ── Worker 角色→能力标签（46-DSH ADR-4 / DD2 定稿，A3 落地）────────────
+# 分工：「角色→能力标签」在此登记（唯一载体）；「能力标签→工具集」由上方
+# shells 段推导，不重复定义工具 schema。Router 只感知角色/标签，不感知全量
+# 工具面。每角色 ≤10 工具（SPEC §3.3 B2）。
+# 硬约束（ADR-9/H7）：Worker 默认只读——requires_mandate=true 的写工具
+# 禁止出现在任何 Worker 角色工具集中；写操作仅由编排侧/Verifier 持 Mandate 执行。
+# 首批三类起步（DD2）：研究 / 工程 / 验收；交易分析后置（避交易热路径 H5）。
+worker_roles:
+  research:
+    description: 研究 Worker——认知检索 / 金融语义 / REA 分析（只读）
+    shells: [l0.cognition.mcp, l0.semantic-39.mcp, l0.rea.mcp]
+    tools: [recall, unified_search, stats, health,
+            query_entity, semantic_lookup,
+            submit_rea_analyze, poll_rea_analyze]
+  engineer:
+    description: 工程 Worker——数据读取 / REA 分析与对比（只读）
+    shells: [l0.data.mcp, l0.rea.mcp, l0.cognition.mcp]
+    tools: [data_fetch, data_store_read, recall,
+            submit_rea_analyze, poll_rea_analyze,
+            submit_rea_compare, poll_rea_compare]
+  verifier:
+    description: 验收 Worker——评测 / 库管只读 / 证据检索（只读）
+    shells: [l0.eval.mcp, l0.store-admin.mcp, l0.cognition.mcp]
+    tools: [eval_analyze, eval_report,
+            store_admin_status, store_admin_query,
+            recall]
 
 # ── 枚举词典（校验器参照）───────────────────────────────────────
 enums:
