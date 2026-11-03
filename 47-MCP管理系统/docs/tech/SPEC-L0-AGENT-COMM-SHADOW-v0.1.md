@@ -395,6 +395,127 @@ Phase 2（TRAIN-BASE Phase 0 落地后）
 
 ---
 
+## §5.6 通信 payload 设计（2026-11-03 三问评估补入）
+
+> 来源：用户核心提问"通信层具体通信什么 / 价值增量怎么量化 / 要不要沙箱验证" + 跨域通信三问评估报告
+> 状态：设计完成，Phase 0 静态架构实现时同步引入
+
+### 5.6.1 4 类标准化 payload（按生命周期）
+
+| # | Payload | 谁发 | 谁收 | 格式 |
+|---|---|---|---|---|
+| **P1** | 域内信号快照 | 每个域自己的 verify/PSI/confidence 检测器 | AgentMail observe() + L1 NeuralSDE 输入 | `{domain, signal_type, value, timestamp, drift_level}` |
+| **P2** | 跨域关系图边 | L1 DomainCouplingHead 推理 | AgentMail 建议层 + TRAIN-BASE TB3 | `{from_domain, to_domain, coupling_weight, lags_min, psi_corr}` |
+| **P3** | **叠加印证假设（核心对象）** | AgentMail 建议层（消费 P1+P2 后生成） | 跨域组合验证沙箱 | 完整 schema 见 §5.6.2 |
+| **P4** | 验证回执 | 沙箱/回测/REA 做梦器 | 所有域的 verify + TRAIN-BASE TB5 GRPO | `{hypothesis_id, result, pnl_delta, sharpe_delta, trace_id}` |
+
+### 5.6.2 P3 叠加印证假设 schema（通信层核心对象）
+
+> 通信**不是**"rea 域告诉 sem 域有新实体"这种闲聊，而是：
+> rea 域 investigate_psi=0.15 + sem 域 verify_confidence=0.78 + 两域 coupling=0.72 + regime=bull_consolidation
+> → **假设 H-20261103-007：这组叠加印证应该提升方向预测准确率**
+
+```json
+{
+  "hypothesis_id": "H-{date}-{counter}",
+  "timestamp": "2026-11-03T14:30:00",
+
+  "trigger": {
+    "conditions": [
+      {"domain": "cognition", "signal": "verify_confidence", "op": ">=", "value": 0.8},
+      {"domain": "rea", "signal": "dreamer_V", "op": ">=", "value": 0.75}
+    ],
+    "cross_domain_coupling": {"from": "rea", "to": "semantic", "min_coupling": 0.55},
+    "regime_context": "bull_consolidation"
+  },
+
+  "prediction": {
+    "signal_combination": ["rea_investigate", "semantic_entity_resolve", "cognitive_verify"],
+    "combined_effect": {"direction": "bull_continuation", "confidence": 0.78, "time_horizon_min": 60},
+    "expected_delta": {"pnl_delta_pct": 8.2, "sharpe_delta": 0.14, "win_rate_delta": 0.08}
+  },
+
+  "validation_plan": {
+    "backtest_window": {"start": "2025-01-01", "end": "2026-10-31"},
+    "control_group": ["rea_only", "semantic_only", "cognition_only"],
+    "treatment": "rea+semantic+cognition",
+    "alpha_test": true,
+    "min_trades": 50
+  },
+
+  "source": {
+    "l1_inference": "l1-infer-<sha256>",
+    "rea_dreamer_trace": "dreamer-<sha256>",
+    "psi_correlation": 0.72
+  },
+
+  "status": "pending_validation"  // pending → validated / rejected / partially_valid
+}
+```
+
+### 5.6.3 P4 验证回执 schema
+
+```json
+{
+  "hypothesis_id": "H-20261103-007",
+  "timestamp": "2026-11-03T15:35:00",
+
+  "counterfactual_result": {
+    "treatment_alpha": 0.14,
+    "control_alpha_mean": 0.08,
+    "pnl_delta": 0.075,
+    "sharpe_delta": 0.16,
+    "win_rate_delta": 0.08,
+    "n_trades": 217,
+    "ci95": {"low": 0.03, "high": 0.25}
+  },
+
+  "path_confidence": {"combo": 0.76, "single_mean": 0.65, "direction_match": true},
+  "regime_consistency": {"context_match": true, "bull_alpha_delta": 0.14, "bear_alpha_delta": 0.02},
+
+  "result": "validated",
+  "trace_id": "sandbox-20261103-007",
+
+  "consumed_by": {
+    "TB3_reward_component": "pnl_delta_score=0.70",
+    "TB5_GRPO_v_adjusted": "v=0.83, v_adjusted=0.845",
+    "REA_dreamer_V_update": "ΔV_pnl=+0.015"
+  }
+}
+```
+
+### 5.6.4 payload 流转时序（与 §0.5.1 三观察点协议对齐）
+
+```
+P1 域内信号快照 ──→ (L1 NeuralSDE 输入) ──→ P2 跨域关系图边
+                                                    │
+                                    ┌──────────────┼──────────────┐
+                                    ▼              ▼              ▼
+                              AgentMail      REA 做梦器      OracleVerificationLayer
+                              建议层         V(π, T)
+                                    │              │              │
+                                    └──────────────┼──────────────┘
+                                                   ▼
+                                        P3 叠加印证假设 (核心对象)
+                                                   │
+                                                   ▼
+                              ┌────────────────────┼────────────────────┐
+                              ▼                    ▼                    ▼
+                    跨域组合验证沙箱      NeuralSDE 路径置信度      sector_transmission
+                    (CounterfactualEvaluator)      交叉验证         regime context
+                              │                    │                    │
+                              └────────────────────┼────────────────────┘
+                                                   ▼
+                                       Shadow 放量门禁 → P4 验证回执
+                                                   │
+                        ┌───────────────────┬─────┼─────┬──────────────────┐
+                        ▼                   ▼         ▼                   ▼
+                 TRAIN-BASE TB3      TB5 GRPO   REA 做梦器           DOMAIN-AGENTS
+                 pnl_delta_score    v_adjusted  V_new(π,T)           执行决策
+```
+
+---
+
 ## §6 影子 → 激活 升级判据（Phase 1-2 完成后评估）
 
 | # | 升级条件 | 判定方法 | 数据来源 |

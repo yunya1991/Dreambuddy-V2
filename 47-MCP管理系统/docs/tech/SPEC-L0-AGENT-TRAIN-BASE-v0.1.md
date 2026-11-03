@@ -545,17 +545,21 @@ from cognitive_interfaces import BetaState  # TB2（绝对 import，本目录非
 
 @dataclass
 class RewardComponents:
-    """AlphaPareto 六维奖励分量（B2 增量：过程奖励 + 转移平滑度 + Oracle 评分吸收）
+    """AlphaPareto 七维奖励分量（v0.1 原六维 + 2026-11-03 三问评估补第七维 pnl_delta_score）
     
     来源：外部调研 — OpenAI AgentPRM / Meta HiPRAG 实证「过程奖励 > 纯结果奖励」
     来源：外部调研 — Two Sigma Oracle 验证层（B5）吸收 oracle_confidence
+    来源：三问评估 — 通信层需要「实盘价值」维度，不能只有结构优化指标
     """
     p_verify_success: float      # 维度 1：TB2 Beta verify mean
     p_recall_hit: float          # 维度 2：同类事件 recall 命中率
     psi_stability: float         # 维度 3：1 - PSI(三重检测综合值) → 漂移越小越稳定
     citation_diversity: float    # 维度 4：PoE known_gaps 越少奖励越低 + 跨域引用数加权 + Oracle oracle_confidence 吸收
-    process_reward: float        # 维度 5（B2 新增）：中间 step 可验证子目标奖励（Query→Search→Read→Synthesize 每步）
-    transition_smoothness: float # 维度 6（B2 新增）：相邻 step 的 state 转移平滑度（transition probability entropy）
+    process_reward: float        # 维度 5：中间 step 可验证子目标奖励（Query→Search→Read→Synthesize 每步）
+    transition_smoothness: float # 维度 6：相邻 step 的 state 转移平滑度（transition probability entropy）
+    pnl_delta_score: float       # 维度 7（三问评估补）：跨域组合 vs 单域 baseline 的回测 Alpha 提升
+                                 # = clip((treatment_alpha - control_alpha_mean + 0.05) / 0.25, 0, 1)
+                                 # FAIL-OPEN：无沙箱验证回执时默认 0.5（中性）
 
 
 def compute_reward(
@@ -567,19 +571,31 @@ def compute_reward(
     cross_domain_refs: int,
     process_reward: float = 0.0,         # 维度 5：上游 step 奖励（缺省中性）
     transition_smoothness: float = 1.0,  # 维度 6：转移平滑度（缺省最平滑）
+    counterfactual_result: dict | None = None,  # 维度 7：三问评估补 P4 回执接入
 ) -> RewardComponents:
-    """AlphaPareto 六维奖励定义（维度定义唯一事实源；DOMAIN-AGENTS v0.2 §4 只引用不重复定义）
+    """AlphaPareto 七维奖励定义（维度定义唯一事实源；DOMAIN-AGENTS v0.2 §4 只引用不重复定义）
     
     P_verify_success = TB2 Beta mean
     P_recall_hit = recall_hits / recall_total
     psi_stability = 1 - PSI / PSI_MAX_CAP
     citation_diversity = (1 - known_gaps_count / 10) * (1 + 0.1 * cross_domain_refs)
+    pnl_delta_score = clip((treatment_alpha - control_alpha_mean + 0.05) / 0.25, 0, 1)
+                      FAIL-OPEN: counterfactual_result is None → 默认 0.5（中性）
     """
     p_verify = beta_state.mean
     p_recall = recall_hits / max(recall_total, 1)
     psi_cap = 1.0  # PSI > 1.0 按 1.0 算，防极端值
     psi_stab = max(0.0, 1.0 - min(psi_value, psi_cap))
     citation = max(0.0, (1.0 - min(known_gaps_count, 10) / 10.0)) * (1.0 + 0.1 * cross_domain_refs)
+    
+    # 维度 7：pnl_delta_score（三问评估补）
+    if counterfactual_result is not None:
+        treatment_alpha = counterfactual_result.get("treatment_alpha", 0.0)
+        control_alpha   = counterfactual_result.get("control_alpha_mean", 0.0)
+        alpha_delta     = treatment_alpha - control_alpha
+        pnl_delta_score = np.clip((alpha_delta + 0.05) / 0.25, 0.0, 1.0)  # 归一化到 [0, 1]
+    else:
+        pnl_delta_score = 0.5  # FAIL-OPEN：无沙箱回执时中性
     
     return RewardComponents(
         p_verify_success=p_verify,
@@ -588,11 +604,13 @@ def compute_reward(
         citation_diversity=citation,
         process_reward=process_reward,
         transition_smoothness=transition_smoothness,
+        pnl_delta_score=pnl_delta_score,
     )
 
 
-# 初版权重（六维，和=1.0）；影子期按 §6.5 校准协议回测后改常量，禁止运行期动态调整
-REWARD_WEIGHTS = (0.25, 0.20, 0.20, 0.15, 0.12, 0.08)
+# 初版权重（七维，和=1.0）；影子期按 §6.5 校准协议回测后改常量，禁止运行期动态调整
+# 维度 7 pnl_delta_score 初始权重偏低（0.10），等沙箱稳定后可校准上调
+REWARD_WEIGHTS = (0.23, 0.18, 0.18, 0.14, 0.12, 0.05, 0.10)
 
 
 def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_WEIGHTS) -> float:

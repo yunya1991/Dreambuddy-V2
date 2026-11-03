@@ -236,6 +236,35 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
 | D 语义 agent 自举 | Mandate 写门控 + 幂等外部 ID | M1① registry 已标 requires_mandate + M3 写治理 |
 | E 数据 agent 分析 | 数据壳只读工具面稳定 | M2⑥ 数据壳（只读先行） |
 
+### 4.4 Phase B Dream-RSI V 函数 alpha 分量（2026-11-03 三问评估补）
+
+> 来源：三问评估 "通信层不能只优化结构指标，必须有实盘价值维度"
+> 与 TRAIN-BASE TB3 第七维 `pnl_delta_score` 对齐，REA 做梦器 V(π, T) 同步升级
+
+**原 V 函数**（只含结构指标）：
+```
+V(π, T) = hypervolume(质量-成本点集, λ=0.1) - 0.1 × 并行度惩罚
+         + 0.1 × cross_domain_refs 加成
+```
+
+**升级后 V 函数**（结构 + alpha 双分量）：
+```
+V_new(π, T) = V(π, T)                                          # 原有结构指标（保持不变）
+             + α × mean([
+                 h.prediction.expected_delta.pnl_delta_pct
+                 for h in T.hypotheses
+                 if h.status == "validated"
+               ])
+```
+
+**参数**：
+- α 默认 0.1（小权重，防止 alpha 分量覆盖结构优化——结构稳定性是通信层的基础，不能牺牲）
+- 只有 status="validated" 的 P4 验证回执 hypothesis 才吸收进 Dream-RSI
+- status="partially_valid" → 0.5 权重吸收；status="rejected" → 不吸收
+- **无 P4 回执时**（沙箱未启动）：V_new = V（退化兼容，零影响）
+
+**与 COMM-SHADOW 闭环**：AgentMail observe() 消费 L1 DomainCouplingHead 推理的 cross_domain_coupling → 生成 P3 叠加印证假设 → 跨域组合验证沙箱跑反事实评估 → P4 验证回执 → 被 REA 做梦器吸收 → Dream-RSI 选最优策略 → 域内 agent 执行
+
 ---
 
 ## 5. 治理与验收

@@ -377,6 +377,62 @@ def _load_candidate_policies(self) -> list[dict]:
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
+### §4.5 跨域组合验证沙箱（2026-11-03 三问评估补，闭环验证层）
+
+> 来源：三问评估 "通信层要做沙箱，把叠加印证假设跑回测验证真实增量"
+> 位置：`23-四层闭环自进化交易架构/dreambuddy_evolution/core/domain_hypothesis_sandbox.py`
+> 特性：零 GPU，离线，不接实盘，单假设回测 ~2-5 分钟（CPU 4C16G）
+
+#### 4.5.1 已有资产复用
+
+| # | 组件 | 位置 | 复用点 |
+|---|---|---|---|
+| S1 | **CounterfactualEvaluator** | `23-.../core/counterfactual_evaluator.py` | 合成控制法 + alpha/beta 归因 |
+| S2 | **ShadowRLTracker + shadow_rl_samples.db** | `23-.../core/shadow_rl.py` | ~29 万影子样本库做历史基线 |
+| S3 | **ftc_backtest.py + reverse_backtest.py** | `23-.../adapters/ftc_backtest.py` | 正向/逆向回测 |
+| S4 | **NeuralSDE v1_path_sig** | `23-.../data/neural_sde_v1_path_sig.pt` | 路径置信度交叉验证 |
+| S5 | **sector_transmission.json** | `40-周期系统/` | regime context 验证 |
+| S6 | **SPEC-Shadow验证自动放量门禁** | `23-.../PLAN-Shadow验证自动放量门禁.md` | 自动接受/拒绝/部分接受门禁 |
+
+#### 4.5.2 沙箱执行流程
+
+```
+P3 叠加印证假设
+     │
+     ├─→ S1 CounterfactualEvaluator (合成控制法)
+     │     treatment = hypothesis.prediction.signal_combination
+     │     control_group = hypothesis.validation_plan.control_group
+     │     min_trades ≥ 50（统计显著性硬门禁）
+     │     输出：CounterfactualResult {treatment_alpha, control_alpha_mean, pnl_delta, sharpe_delta, n_trades, ci95}
+     │
+     ├─→ S4 NeuralSDE v1_path_sig (路径置信度交叉验证)
+     │     hypothesis.prediction.time_horizon_min 对应 NeuralSDE forecast step
+     │     输出：PathConfidenceDiff {combo_confidence, single_mean, direction_match}
+     │
+     ├─→ S5 sector_transmission.json (regime context 验证)
+     │     hypothesis.trigger.regime_context 匹配当前 regime？
+     │     历史回测里该 regime 下 alpha_delta > 其他 regime？
+     │     输出：RegimeConsistency {context_match, historical_alpha_in_regime, historical_delta_outside}
+     │
+     └─→ S6 Shadow 放量门禁（自动接受/拒绝/部分接受）
+           ✅ treatment_alpha > control_alpha_mean × 1.1
+           ✅ ci95.low > 0（统计显著）
+           ✅ PathConfidenceDiff.direction_match = true
+           ✅ min_trades ≥ 50
+           ✅ RegimeConsistency.context_match = true
+           → 输出 P4 验证回执 {result, counterfactual_result, path_confidence, regime_consistency, trace_id}
+```
+
+#### 4.5.3 TDD 验收（见 §6 验收项 11-17）
+
+#### 4.5.4 P4 回执消费闭环
+
+P4 验证回执被以下四个模块同步消费：
+1. **TRAIN-BASE TB3**：`compute_reward(counterfactual_result=...)` → pnl_delta_score 第七维
+2. **TRAIN-BASE TB5 GRPO**：`evolve_step(p4_receipts=...)` → v_adjusted（alpha 加权）
+3. **DOMAIN-AGENTS Phase B Dream-RSI**：`V_new(π, T) = V(π, T) + α × mean(validated_hypotheses.pnl_delta_pct)`
+4. **COMM-SHADOW observe()**：L1 DomainCouplingHead 推理结果经沙箱验证后回写标注数据
+
 ---
 
 ## §6 TDD 验收标准（Phase B 硬门禁）
@@ -393,6 +449,13 @@ def _load_candidate_policies(self) -> list[dict]:
 | 8 | **V 函数 hypervolume 提升** | Phase C 结束后，AgentMail 消费 L1 coupling 的 hypervolume ≥ 硬编码 baseline × 1.1 | Dream-RSI 不劣化保证 |
 | 9 | **L1 推理 trace_id** | 每条 domain_transmission.json 带 `trace_id: "l1-infer-<sha256>"`，可回溯 | H3 |
 | 10 | **L1 训练版本登记** | model_version 格式 `l1-domain-coupling-vX.Y`，与 COMM-SHADOW config_version 对账 | TRAIN-BASE §0.5.5 竞态修复 |
+| 11 | **Counterfactual alpha/beta 归因正确** | 合成控制法 treatment_alpha = 真实 PnL - 合成反事实，误差 < 0.05 | H2 合规：统计方法不训练 |
+| 12 | **影子验证不泄漏实盘** | 历史窗口严格 ≤ 假设生成时间点 `t_start ≤ t_generation`，无未来函数 | 量化黄金标准 |
+| 13 | **min_trades ≥ 50** | 任何假设 < 50 笔回测自动降级 `partially_valid` | 统计显著性硬约束 |
+| 14 | **沙箱 FAIL-OPEN** | 沙箱任何异常（CounterfactualEvaluator 抛错 / K-line 数据缺失）→ hypothesis.status 保持 `pending_validation`，**不阻塞主流程** | H4 |
+| 15 | **P4 回执 trace_id 可追溯** | 每条 P4 验证回执带 `trace_id: "sandbox-<sha256>"`，关联完整 CounterfactualResult JSON 落盘 | H3 |
+| 16 | **regime context 对齐** | `hypothesis.trigger.regime_context` 必须能在 `sector_transmission.json` 历史中找到匹配时段 | Shadow 放量门禁 |
+| 17 | **沙箱零 GPU** | CPU 4C16G 单假设回测 ≤ 5 分钟 | — |
 
 ---
 
