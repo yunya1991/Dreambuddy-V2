@@ -154,6 +154,25 @@ def compute_real_confidence_map(trajectories: List[Dict[str, Any]]) -> Dict[str,
 # ---------------------------------------------------------------------------
 # 跨 regime 长期采集: 按时间窗聚合 + 市场状态打标 (状态化 target 的输入)
 # ---------------------------------------------------------------------------
+def _existing_window_starts(path: Path) -> set[int]:
+    """已有输出文件里已采集的窗口起点 (用于周期任务去重)。坏行忽略。"""
+    if not path.exists():
+        return set()
+    starts: set[int] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            sample = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        win = sample.get("window")
+        if isinstance(win, dict) and win.get("start_ts") is not None:
+            starts.add(int(win["start_ts"]))
+    return starts
+
+
 def _entry_ts(entry: Dict[str, Any]) -> Optional[float]:
     try:
         return float(entry["ts"])
@@ -297,9 +316,11 @@ def collect_windowed(
     window_seconds: int = WINDOW_SECONDS_DEFAULT,
     btc_ts_path: Optional[str] = None,
     min_entries: int = 1,
+    skip_existing: bool = True,
 ) -> Path:
     """跨 regime 长期采集入口: 每个时间窗 1 样本 (per-window psi + regime 标签)。
 
+    周期任务友好: skip_existing=True 时按 window.start_ts 去重, 重复运行不追加旧窗口。
     FAIL-OPEN: 无真实轨迹 (无 degraded/ts) 时写空文件返回, 调用方回退静态 target。
     """
     store = Path(shadow_store_path) if shadow_store_path else SHADOW_STORE_DEFAULT
@@ -307,10 +328,11 @@ def collect_windowed(
     out.parent.mkdir(parents=True, exist_ok=True)
     trajectories = _load_shadow_trajectories(store)
     series = load_regime_series(Path(btc_ts_path) if btc_ts_path else None)
+    existing_starts = _existing_window_starts(out) if skip_existing else set()
     windows = [
         w
         for w in group_trajectories_by_window(trajectories, window_seconds)
-        if len(w["entries"]) >= min_entries
+        if len(w["entries"]) >= min_entries and w["window_start_ts"] not in existing_starts
     ]
     samples = [
         build_window_sample(w, regime=regime_at(w["window_end_ts"], series)) for w in windows
@@ -319,7 +341,7 @@ def collect_windowed(
         for sample in samples:
             fh.write(json.dumps(sample, ensure_ascii=False) + "\n")
     if not samples:
-        print(f"[WARN] 无可用采集窗口 (store={store}), 写入空文件: {out}")
+        print(f"[INFO] 无新窗口可写入 (store={store}, 已存在={len(existing_starts)}): {out}")
     return out
 
 

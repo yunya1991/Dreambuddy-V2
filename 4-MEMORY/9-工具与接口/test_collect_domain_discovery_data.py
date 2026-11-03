@@ -318,3 +318,28 @@ def test_collect_windowed_no_real_trajectories_writes_empty(tmp_path):
     out = tmp_path / "out.jsonl"
     written = cdd.collect_windowed(shadow_store_path=str(store), output_path=str(out))
     assert written == out and out.read_text() == ""
+
+
+def test_collect_windowed_is_idempotent_on_rerun(tmp_path):
+    """周期任务每小时跑一次: 同一窗口不得重复追加。"""
+    ts0 = 1793700000.0
+    tnum = 1800
+    store = tmp_path / "traj.jsonl"
+    _write_entries(
+        store,
+        [
+            _window_entry("data", ts0 + 10, False),
+            _window_entry("data", ts0 + tnum + 10, True),
+        ],
+    )
+    out = tmp_path / "windowed.jsonl"
+    kwargs = {
+        "shadow_store_path": str(store),
+        "output_path": str(out),
+        "window_seconds": tnum,
+    }
+    cdd.collect_windowed(**kwargs)
+    first = len(out.read_text().splitlines())
+    cdd.collect_windowed(**kwargs)
+    cdd.collect_windowed(**kwargs)
+    assert len(out.read_text().splitlines()) == first == 2
