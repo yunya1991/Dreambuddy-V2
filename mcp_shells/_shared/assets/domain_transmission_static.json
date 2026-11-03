@@ -18,63 +18,63 @@
     "regime": "bull",
     "drift_coupling": {
       "cognition↔rea": {
-        "coupling": 0.021,
+        "coupling": 0.015,
         "lags_min": 30
       },
       "cognition↔search": {
-        "coupling": 0.024,
+        "coupling": 0.017,
         "lags_min": 25
       },
       "cognition↔semantic": {
-        "coupling": 0.021,
+        "coupling": 0.015,
         "lags_min": 40
       },
       "cognition↔data": {
-        "coupling": 0.008,
+        "coupling": 0.006,
         "lags_min": 60
       },
       "cognition↔eval": {
-        "coupling": 0.014,
+        "coupling": 0.01,
         "lags_min": 50
       },
       "rea↔search": {
-        "coupling": 0.017,
+        "coupling": 0.012,
         "lags_min": 15
       },
       "rea↔semantic": {
-        "coupling": 0.015,
+        "coupling": 0.011,
         "lags_min": 15
       },
       "rea↔data": {
-        "coupling": 0.021,
+        "coupling": 0.016,
         "lags_min": 40
       },
       "rea↔eval": {
-        "coupling": 0.043,
+        "coupling": 0.031,
         "lags_min": 35
       },
       "search↔semantic": {
-        "coupling": 0.03,
+        "coupling": 0.021,
         "lags_min": 25
       },
       "search↔data": {
-        "coupling": 0.98,
+        "coupling": 0.985,
         "lags_min": 55
       },
       "search↔eval": {
-        "coupling": 0.977,
+        "coupling": 0.984,
         "lags_min": 45
       },
       "semantic↔data": {
-        "coupling": 0.028,
+        "coupling": 0.02,
         "lags_min": 45
       },
       "semantic↔eval": {
-        "coupling": 0.028,
+        "coupling": 0.019,
         "lags_min": 40
       },
       "data↔eval": {
-        "coupling": 0.979,
+        "coupling": 0.985,
         "lags_min": 30
       }
     }
@@ -88,21 +88,405 @@
       "L3_sensitive": 88.9
     }
   },
-  "generated_at": "2026-11-03T12:46:35.122827+00:00",
+  "generated_at": "2026-11-03T13:17:17.344380+00:00",
   "model_version": "l1-domain-coupling-v0.1",
-  "trace_id": "l1-head-infer-ccc1edc45897dd00",
+  "trace_id": "l1-head-infer-7d8264eb1b3a3621",
   "source": "neural_sde_head_infer",
-  "note": "Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100 steps, Mac Metal 推理 32 点 mean coupling. 主体冻结 (SPEC H2). Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100",
+  "note": "Phase B/D DomainCouplingHead v0.1: frozen NeuralSDE v1_dim64 (H2) + 2863 params Head, input_source=real_btc_1h_36factors, coupling target 来自真实域轨迹. Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100",
   "derived_from": "40-周期神经网络系统/sector_transmission.json（字段结构同构，语义映射到 L0 六域）",
   "pseudo_target_source": "phaseC_jsonl_85samples",
   "head_training": {
-    "n_steps": 300,
-    "final_loss": 0.0004,
+    "n_steps": 400,
+    "final_loss": 0.0003,
     "device": "mps",
     "pseudo_target_loaded": true,
     "target_source": "phaseC_jsonl_85samples",
     "target_n_samples": 85,
+    "seed": 42,
+    "input_source": "real_btc_1h_36factors",
+    "n_input_windows": 96
+  },
+  "pseudo_target_n_samples": 85,
+  "input_source": "real_btc_1h_36factors",
+  "input_stats": {
+    "input_source": "real_btc_1h_36factors",
+    "closes_path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/data/btc_closes_1h.json",
+    "factors_path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/data/exogenous_factors_36.json",
+    "n_windows": 96,
+    "n_candidates": 6009,
+    "seq_len": 64,
+    "n_step": 32,
+    "n_factors": 36,
+    "log_sig_real_dim": 15,
+    "log_sig_input_dim": 15,
+    "regime_counts": {
+      "0": 32,
+      "1": 32,
+      "2": 32
+    },
+    "price_z_range": [
+      -1.409,
+      3.26
+    ],
+    "log_sig_z_abs_max": 3.1,
+    "flow_factor_names": [
+      "etf_total_flow",
+      "funding_rate",
+      "exchange_inflow_24h"
+    ],
+    "flow_factor_coverage": {
+      "etf_total_flow": 0.0176,
+      "funding_rate": 0.1304,
+      "exchange_inflow_24h": 0.155
+    },
+    "regime_index_basis": "window_end",
     "seed": 42
   },
-  "pseudo_target_n_samples": 85
+  "regime_conditional_coupling": {
+    "bull": [
+      0.014,
+      0.0158,
+      0.0139,
+      0.0054,
+      0.0091,
+      0.0112,
+      0.0097,
+      0.0146,
+      0.0291,
+      0.0198,
+      0.9868,
+      0.9853,
+      0.0182,
+      0.0179,
+      0.9863
+    ],
+    "chop": [
+      0.0155,
+      0.0173,
+      0.0153,
+      0.006,
+      0.0101,
+      0.0124,
+      0.0109,
+      0.0161,
+      0.0313,
+      0.0216,
+      0.9854,
+      0.9838,
+      0.02,
+      0.0196,
+      0.9849
+    ],
+    "bear": [
+      0.0166,
+      0.0185,
+      0.0164,
+      0.0065,
+      0.0109,
+      0.0134,
+      0.0117,
+      0.0172,
+      0.033,
+      0.023,
+      0.9843,
+      0.9827,
+      0.0213,
+      0.0209,
+      0.9838
+    ]
+  },
+  "state_sensitivity": {
+    "regime": {
+      "groups": {
+        "bull": {
+          "n": 32,
+          "coupling_mean": [
+            0.014,
+            0.0158,
+            0.0139,
+            0.0054,
+            0.0091,
+            0.0112,
+            0.0097,
+            0.0146,
+            0.0291,
+            0.0198,
+            0.9868,
+            0.9853,
+            0.0182,
+            0.0179,
+            0.9863
+          ],
+          "coupling_std": [
+            0.0015,
+            0.0015,
+            0.0014,
+            0.0006,
+            0.001,
+            0.0012,
+            0.0011,
+            0.0014,
+            0.0022,
+            0.0018,
+            0.0014,
+            0.0014,
+            0.0017,
+            0.0017,
+            0.0014
+          ]
+        },
+        "chop": {
+          "n": 32,
+          "coupling_mean": [
+            0.0155,
+            0.0173,
+            0.0153,
+            0.006,
+            0.0101,
+            0.0124,
+            0.0109,
+            0.0161,
+            0.0313,
+            0.0216,
+            0.9854,
+            0.9838,
+            0.02,
+            0.0196,
+            0.9849
+          ],
+          "coupling_std": [
+            0.0012,
+            0.0012,
+            0.0012,
+            0.0005,
+            0.0008,
+            0.001,
+            0.0009,
+            0.0011,
+            0.0018,
+            0.0014,
+            0.0011,
+            0.0012,
+            0.0014,
+            0.0014,
+            0.0012
+          ]
+        },
+        "bear": {
+          "n": 32,
+          "coupling_mean": [
+            0.0166,
+            0.0185,
+            0.0164,
+            0.0065,
+            0.0109,
+            0.0134,
+            0.0117,
+            0.0172,
+            0.033,
+            0.023,
+            0.9843,
+            0.9827,
+            0.0213,
+            0.0209,
+            0.9838
+          ],
+          "coupling_std": [
+            0.0021,
+            0.0021,
+            0.002,
+            0.001,
+            0.0014,
+            0.0017,
+            0.0016,
+            0.002,
+            0.003,
+            0.0024,
+            0.002,
+            0.002,
+            0.0023,
+            0.0023,
+            0.002
+          ]
+        }
+      },
+      "mean_abs_delta": 0.00255,
+      "max_abs_delta": 0.0039,
+      "max_delta_pair": "rea↔eval",
+      "hidden_centroid_l2": {
+        "bull↔chop": 0.0876,
+        "bull↔bear": 0.1174,
+        "chop↔bear": 0.0383
+      }
+    },
+    "vol": {
+      "groups": {
+        "q0": {
+          "n": 32,
+          "coupling_mean": [
+            0.0158,
+            0.0176,
+            0.0156,
+            0.0062,
+            0.0103,
+            0.0127,
+            0.0111,
+            0.0164,
+            0.0318,
+            0.022,
+            0.9851,
+            0.9835,
+            0.0203,
+            0.0199,
+            0.9846
+          ],
+          "coupling_std": [
+            0.0012,
+            0.0012,
+            0.0011,
+            0.0005,
+            0.0008,
+            0.001,
+            0.0009,
+            0.0011,
+            0.0018,
+            0.0014,
+            0.0011,
+            0.0012,
+            0.0014,
+            0.0013,
+            0.0011
+          ]
+        },
+        "q1": {
+          "n": 32,
+          "coupling_mean": [
+            0.0156,
+            0.0174,
+            0.0154,
+            0.0061,
+            0.0101,
+            0.0125,
+            0.0109,
+            0.0162,
+            0.0314,
+            0.0217,
+            0.9853,
+            0.9837,
+            0.0201,
+            0.0197,
+            0.9848
+          ],
+          "coupling_std": [
+            0.0023,
+            0.0023,
+            0.0022,
+            0.001,
+            0.0015,
+            0.0019,
+            0.0017,
+            0.0021,
+            0.0033,
+            0.0027,
+            0.0021,
+            0.0022,
+            0.0026,
+            0.0025,
+            0.0022
+          ]
+        },
+        "q2": {
+          "n": 32,
+          "coupling_mean": [
+            0.0148,
+            0.0166,
+            0.0146,
+            0.0057,
+            0.0096,
+            0.0119,
+            0.0103,
+            0.0154,
+            0.0302,
+            0.0207,
+            0.986,
+            0.9845,
+            0.0191,
+            0.0187,
+            0.9856
+          ],
+          "coupling_std": [
+            0.0021,
+            0.0021,
+            0.002,
+            0.0009,
+            0.0014,
+            0.0017,
+            0.0015,
+            0.002,
+            0.0031,
+            0.0025,
+            0.002,
+            0.002,
+            0.0024,
+            0.0023,
+            0.002
+          ]
+        }
+      },
+      "mean_abs_delta": 0.001,
+      "max_abs_delta": 0.0016,
+      "max_delta_pair": "rea↔eval",
+      "hidden_centroid_l2": {
+        "q0↔q1": 0.0235,
+        "q0↔q2": 0.0744,
+        "q1↔q2": 0.0518
+      }
+    },
+    "flow": {
+      "groups": {
+        "q0": {
+          "n": 96,
+          "coupling_mean": [
+            0.0154,
+            0.0172,
+            0.0152,
+            0.006,
+            0.01,
+            0.0124,
+            0.0108,
+            0.016,
+            0.0311,
+            0.0215,
+            0.9855,
+            0.9839,
+            0.0198,
+            0.0194,
+            0.985
+          ],
+          "coupling_std": [
+            0.0019,
+            0.002,
+            0.0019,
+            0.0009,
+            0.0013,
+            0.0016,
+            0.0014,
+            0.0019,
+            0.0029,
+            0.0023,
+            0.0018,
+            0.0019,
+            0.0022,
+            0.0022,
+            0.0019
+          ]
+        }
+      },
+      "mean_abs_delta": 0.0,
+      "max_abs_delta": 0.0,
+      "max_delta_pair": "cognition↔rea",
+      "hidden_centroid_l2": {}
+    },
+    "coupling_std_across_samples": 0.00188
+  }
 }

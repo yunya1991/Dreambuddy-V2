@@ -1,0 +1,13 @@
+[Unit]
+Description=Dreambuddy L0 shell shadow trajectory driver (COMM-SHADOW alpha)
+After=network.target
+
+[Service]
+Type=oneshot
+User=luke
+Group=luke
+WorkingDirectory=/home/luke/dreambuddy
+Environment=AGENT_MAIL_SHADOW=1
+ExecStart=/home/luke/venv-trading/bin/python /home/luke/dreambuddy/mcp_shells/_shared/shadow_driver.py --domains data,eval,store_admin,rea --timeout 120
+TimeoutStartSec=300
+Nice=10

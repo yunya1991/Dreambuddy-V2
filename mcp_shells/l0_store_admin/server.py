@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict
 
@@ -181,8 +182,14 @@ def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
                 "id": req.get("id"),
                 "error": {"code": -32601, "message": f"Method not found: {name}"},
             }
+        started = time.perf_counter()
         result_text = handler(params.get("arguments", {}))
-        observe_envelope(result_text)  # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）
+        # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）：实测耗时 + 工具名补齐轨迹信号
+        observe_envelope(
+            result_text,
+            latency_ms=round((time.perf_counter() - started) * 1000.0, 3),
+            action=name,
+        )
         return {
             "jsonrpc": "2.0",
             "id": req.get("id"),

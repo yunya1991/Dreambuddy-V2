@@ -1,0 +1,11 @@
+[Unit]
+Description=Drive real L0 shell calls every 10 minutes (AgentMailShadow trajectories)
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

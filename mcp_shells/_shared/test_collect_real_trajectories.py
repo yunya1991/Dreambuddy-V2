@@ -44,6 +44,58 @@ def test_shadow_hook_disabled_by_default(tmp_path, monkeypatch):
     assert not store.exists()
 
 
+def test_shadow_hook_flag_file_enables(tmp_path, monkeypatch):
+    """运维开关：env 未设置时，flag 文件存在即开启；env=0 可覆盖。"""
+    flag = tmp_path / "ENABLED"
+    monkeypatch.setattr(shadow_hook, "FLAG_PATH", flag)
+    monkeypatch.delenv("AGENT_MAIL_SHADOW", raising=False)
+    monkeypatch.setenv("AGENT_MAIL_SHADOW_STORE", str(tmp_path / "flag.jsonl"))
+    shadow_hook._shadow = None
+    assert shadow_hook.enabled() is False
+    flag.write_text("", encoding="utf-8")
+    assert shadow_hook.enabled() is True
+    shadow_hook.observe_envelope(wrap({"x": 1}, "l0.data.mcp"))
+    shadow_hook._shadow = None
+    assert _read_entries(tmp_path / "flag.jsonl")
+
+    monkeypatch.setenv("AGENT_MAIL_SHADOW", "0")
+    assert shadow_hook.enabled() is False
+
+
+def test_shadow_hook_enriches_real_signals(tmp_path, monkeypatch):
+    """壳侧实测 latency/action 补进 meta；成功信封 poe=1.0，避免扁平常量。"""
+    monkeypatch.setenv("AGENT_MAIL_SHADOW", "1")
+    monkeypatch.setenv("AGENT_MAIL_SHADOW_STORE", str(tmp_path / "t.jsonl"))
+    monkeypatch.delenv("AGENT_MAIL_SHADOW_HEAD", raising=False)
+    shadow_hook._shadow = None
+    shadow_hook.observe_envelope(
+        wrap({"x": 1}, "l0.data.mcp"), latency_ms=12.5, action="data_fetch"
+    )
+    shadow_hook._shadow = None
+
+    entry = _read_entries(tmp_path / "t.jsonl")[0]
+    assert entry["action"] == "data_fetch"
+    assert entry["cost"]["latency_ms"] == 12.5
+    assert entry["poe_score"] == 1.0
+
+
+def test_shadow_driver_calls_shell_over_jsonrpc(tmp_path, monkeypatch):
+    """α：经壳 JSON-RPC 边界驱动真实调用，轨迹由壳内 observe_envelope 落盘。"""
+    from mcp_shells._shared.shadow_driver import drive_shadow
+
+    monkeypatch.setenv("AGENT_MAIL_SHADOW", "1")
+    store = tmp_path / "drv.jsonl"
+    summary = drive_shadow(domains=["eval"], store_path=str(store), timeout=90)
+    assert summary["calls"] >= 1
+    assert summary["domains"] == ["eval"]
+
+    entries = _read_entries(store)
+    assert len(entries) == summary["calls"]
+    assert {e["agent_domain"] for e in entries} == {"eval"}
+    assert entries[0]["action"] == "eval_report"
+    assert entries[0]["cost"]["latency_ms"] > 0.0
+
+
 def test_shadow_hook_observes_when_enabled(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENT_MAIL_SHADOW", "1")
     monkeypatch.setenv("AGENT_MAIL_SHADOW_STORE", str(tmp_path / "t.jsonl"))
