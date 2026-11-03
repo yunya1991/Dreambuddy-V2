@@ -17,9 +17,8 @@ AGI 阶段4增强点（只读，FAIL-OPEN）:
 - H: L3记录后 → TransferLearner 跨资产迁移（原型网络+MAML+反事实）
 - I: L3记录后 → CounterfactualEvaluator 反事实评估（合成控制法+alpha归因）
 """
-import sys
+
 import json
-import math
 import logging
 from pathlib import Path
 from typing import Any
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # 集中日志持久化：委托给 PipelineLoggingContext（FAIL-OPEN）
-from dreambuddy_evolution.core.pipeline_logging_context import PipelineLoggingContext
+from dreambuddy_evolution.core.pipeline_logging_context import PipelineLoggingContext  # noqa: E402
 
 _logging_ctx = PipelineLoggingContext()
 _logging_ctx.configure()
@@ -54,17 +53,19 @@ class EvolutionPipeline:
         # T3 可观测性：启动时记录 torch/SDE 后端可用性，消除隐性静默降级（FAIL-OPEN）
         try:
             from dreambuddy_evolution.engines.sde_solver import log_runtime_backends
+
             log_runtime_backends()
         except Exception as e:  # noqa: BLE001
             logger.debug("[FO] log_runtime_backends fail: %s", e)
 
-        self.gene_root = Path(gene_root) if gene_root else (
-            REPO_ROOT / "dreambuddy_evolution" / "gene_data"
+        self.gene_root = (
+            Path(gene_root) if gene_root else (REPO_ROOT / "dreambuddy_evolution" / "gene_data")
         )
 
         # L3/L4 初始化
-        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
         from dreambuddy_evolution.core.bellman_tracker import BellmanVTracker
+        from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         # D方案: ShadowRL 样本 JSONL 持久化，用绝对路径避免工作目录依赖
         _rl_persist = REPO_ROOT / "dreambuddy_evolution" / "gene_data" / "shadow_rl_samples.jsonl"
         self.shadow_rl = ShadowRLTracker(persist_path=_rl_persist)
@@ -73,6 +74,7 @@ class EvolutionPipeline:
 
         # Fix 3: 按维度独立的矛盾权重字典 + 持久化（委托 WeightStore）
         from dreambuddy_evolution.core.weight_store import WeightStore
+
         self._weight_store = WeightStore(gene_root=self.gene_root)
         self._contradiction_weight_factors: dict[str, float] = self._weight_store.load()
 
@@ -82,6 +84,7 @@ class EvolutionPipeline:
         # ShadowRLTrainer 初始化（REINFORCE 训练 + Thompson 采样）
         try:
             from dreambuddy_evolution.core.shadow_rl_trainer import ShadowRLTrainer
+
             self.shadow_rl_trainer = ShadowRLTrainer()
         except Exception as e:
             logger.debug("[FO] ShadowRLTrainer init fail: %s", e)
@@ -90,8 +93,8 @@ class EvolutionPipeline:
         # Shadow 自动放量门禁：启动恢复（activated_at 已存在 → 放量）FAIL-OPEN
         try:
             from dreambuddy_evolution.core.shadow_activation_gate import ShadowActivationGate
-            self._shadow_activation_gate = ShadowActivationGate(
-                "enable_causal_historical_samples")
+
+            self._shadow_activation_gate = ShadowActivationGate("enable_causal_historical_samples")
             self._shadow_activation_gate.reconcile_from_disk()
         except Exception as e:  # noqa: BLE001
             logger.debug("[FO] shadow activation reconcile fail: %s", e)
@@ -100,6 +103,7 @@ class EvolutionPipeline:
         # RegimeGateSwitch 初始化（市场状态路由）
         try:
             from dreambuddy_evolution.engines.regime_gate import RegimeGateSwitch
+
             self._regime_gate = RegimeGateSwitch()
         except Exception as e:
             logger.debug("[FO] RegimeGateSwitch init fail: %s", e)
@@ -122,6 +126,7 @@ class EvolutionPipeline:
         # 高阶基因因子桥接器（BCRM2.0/BDSM/战略层 → 阻力调制）
         try:
             from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
+
             self._bridge = SubSystemBridge(trader) if trader else None
         except Exception:
             self._bridge = None
@@ -135,15 +140,17 @@ class EvolutionPipeline:
 
         # 路径发现服务注入（委托模式，后续 Phase 逐步搬入实现）
         from dreambuddy_evolution.core.path_discovery_service import PathDiscoveryService
+
         self._path_discovery = PathDiscoveryService(pipeline=self)
 
         # 编排器注入（Facade 模式，委托给 EvolutionOrchestrator）
         from dreambuddy_evolution.core.evolution_orchestrator import EvolutionOrchestrator
+
         self._orchestrator = EvolutionOrchestrator(
             weight_store=self._weight_store,
             path_discovery=self._path_discovery,
             logging_ctx=self._logging,
-            pipeline=self
+            pipeline=self,
         )
 
     # ============ AGI 阶段4: 统一增强入口 ============
@@ -152,6 +159,7 @@ class EvolutionPipeline:
         """AGI 增强统一入口：开关检查 + FAIL-OPEN."""
         try:
             from dreambuddy_evolution.agi_config import is_enabled
+
             if not is_enabled(switch):
                 return fallback
         except Exception:
@@ -167,6 +175,7 @@ class EvolutionPipeline:
         if self._deep_reasoning is None:
             try:
                 from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
                 self._deep_reasoning = DeepReasoningEngine(signature_depth=3)
             except Exception as e:
                 logger.debug("[FO-AGI] DeepReasoningEngine init fail: %s", e)
@@ -179,6 +188,7 @@ class EvolutionPipeline:
             try:
                 from dreambuddy_evolution.adapters.ftc_evolution_bridge import FTCEvolutionBridge
                 from dreambuddy_evolution.adapters.ftc_orchestrator import FTCOrchestrator
+
                 _orch = FTCOrchestrator()
                 self._ftc_evolution_bridge = FTCEvolutionBridge(orchestrator=_orch)
             except Exception as e:
@@ -197,20 +207,20 @@ class EvolutionPipeline:
         """
         try:
             from datetime import datetime, timezone
+
             from dreambuddy_evolution.core.exogenous_data_bridge import (
-                build_exogenous_factors_for_cross_attention,
-                ImpactMultiplier,
                 CROSS_ATTENTION_FACTOR_METRICS,
+                ImpactMultiplier,
+                build_exogenous_factors_for_cross_attention,
             )
+
             now = datetime.now(timezone.utc)
 
             # Phase 2: 获取 event_context 并计算衰减系数
             cycle_phase, repricing_sub_phase = self._get_event_context()
             factor_names = [m[2] for m in CROSS_ATTENTION_FACTOR_METRICS]
             im = ImpactMultiplier()
-            multipliers = im.get_multipliers(
-                cycle_phase, factor_names, repricing_sub_phase
-            )
+            multipliers = im.get_multipliers(cycle_phase, factor_names, repricing_sub_phase)
 
             factors, _names = build_exogenous_factors_for_cross_attention(
                 timestamps=[now],
@@ -290,14 +300,18 @@ class EvolutionPipeline:
         try:
             from dreambuddy_evolution.core.causal_engine import CausalEngine
             from dreambuddy_evolution.core.exogenous_data_bridge import (
-                ImpactMultiplier, CROSS_ATTENTION_FACTOR_METRICS,
+                CROSS_ATTENTION_FACTOR_METRICS,
             )
 
             name_to_dim = {entry[2]: entry[3] for entry in CROSS_ATTENTION_FACTOR_METRICS}
 
             engine = CausalEngine()
             ate_results = engine.calibrate_multipliers(
-                factor_matrix, factor_names, returns, phases, name_to_dim,
+                factor_matrix,
+                factor_names,
+                returns,
+                phases,
+                name_to_dim,
             )
 
             im = self._get_impact_multiplier()
@@ -305,7 +319,8 @@ class EvolutionPipeline:
 
             logger.info(
                 "[Phase6] 校准完成: phases=%d, calibration=%s",
-                len(ate_results), calibration,
+                len(ate_results),
+                calibration,
             )
             return {"ate_results": ate_results, "calibration": calibration}
         except Exception as e:
@@ -317,6 +332,7 @@ class EvolutionPipeline:
         if not hasattr(self, "_impact_multiplier") or self._impact_multiplier is None:
             try:
                 from dreambuddy_evolution.core.exogenous_data_bridge import ImpactMultiplier
+
                 self._impact_multiplier = ImpactMultiplier()
             except Exception as e:
                 logger.debug("[FO-AGI] ImpactMultiplier init fail: %s", e)
@@ -328,6 +344,7 @@ class EvolutionPipeline:
         if self._strategy_synth is None:
             try:
                 from dreambuddy_evolution.core.strategy_synthesizer import StrategySynthesizer
+
                 self._strategy_synth = StrategySynthesizer(gene_root=self.gene_root)
             except Exception as e:
                 logger.debug("[FO-AGI] StrategySynthesizer init fail: %s", e)
@@ -339,6 +356,7 @@ class EvolutionPipeline:
         if self._transfer_learner is None:
             try:
                 from dreambuddy_evolution.core.transfer_learner import TransferLearner
+
                 self._transfer_learner = TransferLearner()
             except Exception as e:
                 logger.debug("[FO-AGI] TransferLearner init fail: %s", e)
@@ -349,7 +367,10 @@ class EvolutionPipeline:
         """懒初始化 CounterfactualEvaluator"""
         if self._counterfactual is None:
             try:
-                from dreambuddy_evolution.core.counterfactual_evaluator import CounterfactualEvaluator
+                from dreambuddy_evolution.core.counterfactual_evaluator import (
+                    CounterfactualEvaluator,
+                )
+
                 self._counterfactual = CounterfactualEvaluator()
             except Exception as e:
                 logger.debug("[FO-AGI] CounterfactualEvaluator init fail: %s", e)
@@ -361,11 +382,13 @@ class EvolutionPipeline:
     def _get_causal_engine(self) -> Any:
         """P3 懒初始化 CausalEngine"""
         from dreambuddy_evolution.agi_config import is_enabled
+
         if not is_enabled("enable_causal_engine"):
             return None
         if getattr(self, "_causal_engine", None) is None:
             try:
                 from dreambuddy_evolution.core.causal_engine import CausalEngine
+
                 self._causal_engine = CausalEngine()
             except Exception as e:
                 logger.debug("[FO-AGI] CausalEngine init fail: %s", e)
@@ -390,11 +413,13 @@ class EvolutionPipeline:
     def _get_contradiction_feedback(self) -> Any:
         """P3.5 懒初始化 ContradictionFeedback"""
         from dreambuddy_evolution.agi_config import is_enabled
+
         if not is_enabled("enable_contradiction_feedback"):
             return None
         if getattr(self, "_contradiction_feedback", None) is None:
             try:
                 from dreambuddy_evolution.core.contradiction_feedback import ContradictionFeedback
+
                 self._contradiction_feedback = ContradictionFeedback()
             except Exception as e:
                 logger.debug("[FO-AGI] ContradictionFeedback init fail: %s", e)
@@ -404,11 +429,15 @@ class EvolutionPipeline:
     def _get_exogenous_evaluator(self) -> Any:
         """Phase 1: 外生力量度量器（懒初始化）"""
         from dreambuddy_evolution.agi_config import get_switch as _gs
+
         if not _gs("enable_exogenous_strength", False):
             return None
         if self._exogenous_evaluator is None:
             try:
-                from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
+                from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+                    ExogenousStrengthEvaluator,
+                )
+
                 self._exogenous_evaluator = ExogenousStrengthEvaluator()
             except Exception as e:
                 logger.debug("[FO-Phase1] ExogenousStrengthEvaluator init fail: %s", e)
@@ -420,6 +449,7 @@ class EvolutionPipeline:
         if getattr(self, "_exogenous_bridge", None) is None:
             try:
                 from dreambuddy_evolution.core.exogenous_data_bridge import ExogenousDataBridge
+
                 self._exogenous_bridge = ExogenousDataBridge()
             except Exception as e:
                 logger.debug("[FO-Phase1] ExogenousDataBridge init fail: %s", e)
@@ -429,11 +459,15 @@ class EvolutionPipeline:
     def _get_structural_break_detector(self) -> Any:
         """Phase 2: 结构断裂检测器（懒初始化）"""
         from dreambuddy_evolution.agi_config import get_switch as _gs
+
         if not _gs("enable_structural_break_detection", False):
             return None
         if self._structural_break_detector is None:
             try:
-                from dreambuddy_evolution.core.structural_break_detector import StructuralBreakDetector
+                from dreambuddy_evolution.core.structural_break_detector import (
+                    StructuralBreakDetector,
+                )
+
                 self._structural_break_detector = StructuralBreakDetector()
             except Exception as e:
                 logger.debug("[FO-Phase2] StructuralBreakDetector init fail: %s", e)
@@ -443,11 +477,15 @@ class EvolutionPipeline:
     def _get_shift_accumulator(self) -> Any:
         """Phase 2: 矛盾转化积累器（懒初始化）"""
         from dreambuddy_evolution.agi_config import get_switch as _gs
+
         if not _gs("enable_contradiction_shift_detection", False):
             return None
         if self._shift_accumulator is None:
             try:
-                from dreambuddy_evolution.core.contradiction_shift_accumulator import ContradictionShiftAccumulator
+                from dreambuddy_evolution.core.contradiction_shift_accumulator import (
+                    ContradictionShiftAccumulator,
+                )
+
                 self._shift_accumulator = ContradictionShiftAccumulator()
             except Exception as e:
                 logger.debug("[FO-Phase2] ShiftAccumulator init fail: %s", e)
@@ -457,11 +495,15 @@ class EvolutionPipeline:
     def _get_elastic_resolver(self) -> Any:
         """Phase 3: 弹性约束解析器（懒初始化）"""
         from dreambuddy_evolution.agi_config import get_switch as _gs
+
         if not _gs("enable_elastic_constraint", False):
             return None
         if self._elastic_resolver is None:
             try:
-                from dreambuddy_evolution.core.elastic_constraint_resolver import ElasticConstraintResolver
+                from dreambuddy_evolution.core.elastic_constraint_resolver import (
+                    ElasticConstraintResolver,
+                )
+
                 self._elastic_resolver = ElasticConstraintResolver()
             except Exception as e:
                 logger.debug("[FO-Phase3] ElasticConstraintResolver init fail: %s", e)
@@ -471,11 +513,13 @@ class EvolutionPipeline:
     def _get_reflexivity_monitor(self) -> Any:
         """Phase 3: 反身性监测器（懒初始化）"""
         from dreambuddy_evolution.agi_config import get_switch as _gs
+
         if not _gs("enable_reflexivity_monitor", False):
             return None
         if self._reflexivity_monitor is None:
             try:
                 from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
+
                 self._reflexivity_monitor = ReflexivityMonitor()
             except Exception as e:
                 logger.debug("[FO-Phase3] ReflexivityMonitor init fail: %s", e)
@@ -487,6 +531,7 @@ class EvolutionPipeline:
         if getattr(self, "_signature_engine", None) is None:
             try:
                 from dreambuddy_evolution.core.signature_engine import SignatureEngine
+
                 self._signature_engine = SignatureEngine()
             except Exception as e:
                 logger.debug("[FO-AGI] SignatureEngine init fail: %s", e)
@@ -498,6 +543,7 @@ class EvolutionPipeline:
         if getattr(self, "_path_integral", None) is None:
             try:
                 from dreambuddy_evolution.core.path_integral import PathIntegralEngine
+
                 self._path_integral = PathIntegralEngine()
             except Exception as e:
                 logger.debug("[FO-AGI] PathIntegralEngine init fail: %s", e)
@@ -509,6 +555,7 @@ class EvolutionPipeline:
         if getattr(self, "_uncertainty_quant", None) is None:
             try:
                 from dreambuddy_evolution.core.uncertainty_quantifier import UncertaintyQuantifier
+
                 self._uncertainty_quant = UncertaintyQuantifier()
             except Exception as e:
                 logger.debug("[FO-AGI] UncertaintyQuantifier init fail: %s", e)
@@ -520,6 +567,7 @@ class EvolutionPipeline:
         if getattr(self, "_meta_cognition", None) is None:
             try:
                 from dreambuddy_evolution.engines.meta_cognition_gate import MetaCognitionGate
+
                 self._meta_cognition = MetaCognitionGate()
             except Exception as e:
                 logger.debug("[FO-AGI] MetaCognitionGate init fail: %s", e)
@@ -579,7 +627,7 @@ class EvolutionPipeline:
             f_bcrm_long = 1.0
             f_bcrm_short = 1.0
             if bcrm_dir == "long":
-                f_bcrm_long = 1.0 - alpha   # BCRM看多 → 做多顺风
+                f_bcrm_long = 1.0 - alpha  # BCRM看多 → 做多顺风
                 f_bcrm_short = 1.0 + alpha  # 做空逆风
             elif bcrm_dir == "short":
                 f_bcrm_short = 1.0 - alpha
@@ -612,9 +660,9 @@ class EvolutionPipeline:
             if dir_state == "LONG_ONLY":
                 f_bcrm_short *= 1.5  # 禁空 → 做空阻力更大
             elif dir_state == "SHORT_ONLY":
-                f_bcrm_long *= 1.5   # 禁多 → 做多阻力更大
+                f_bcrm_long *= 1.5  # 禁多 → 做多阻力更大
             elif dir_state == "FREEZE":
-                f_strategic *= 1.5   # 冻结 → 全局阻力更大
+                f_strategic *= 1.5  # 冻结 → 全局阻力更大
 
             # 5. 调制后的阻力值（clamp [0.01, 1.0]）
             R_up_mod = max(0.01, min(1.0, R_up * f_bcrm_long * f_bdsm_long * f_strategic))
@@ -678,19 +726,26 @@ class EvolutionPipeline:
         try:
             library = self._load_library()
             from dreambuddy_evolution.core import strategy_gene as sgs
+
             top_combos = sgs.top_combinations_by_ess(library, min_sample=0)
             for i, combo in enumerate(top_combos[:3]):  # 取 top-3
                 resolved_dir = self._resolve_action_direction(combo.get("action_ids", []))
                 ess = float(combo.get("ess", 0.5))
-                paths.append({
-                    "path_id": f"l2_gene_{i}",
-                    "source": "l2_gene",
-                    "direction": resolved_dir,
-                    "expected_return": ess * 0.3,  # ESS 越高期望收益越高
-                    "confidence": min(1.0, ess),
-                    "resistance": 1.0 - ess,  # ESS 高 = 阻力低
-                    "metadata": {"combo_id": combo.get("combo_id", ""), "ess": ess, "n": combo.get("n", 0)},
-                })
+                paths.append(
+                    {
+                        "path_id": f"l2_gene_{i}",
+                        "source": "l2_gene",
+                        "direction": resolved_dir,
+                        "expected_return": ess * 0.3,  # ESS 越高期望收益越高
+                        "confidence": min(1.0, ess),
+                        "resistance": 1.0 - ess,  # ESS 高 = 阻力低
+                        "metadata": {
+                            "combo_id": combo.get("combo_id", ""),
+                            "ess": ess,
+                            "n": combo.get("n", 0),
+                        },
+                    }
+                )
         except Exception as e:
             logger.debug("[FO] l2_gene path fail: %s", e)
 
@@ -705,26 +760,30 @@ class EvolutionPipeline:
                     # 趋势跟踪路径
                     direction = route.get("direction", "long")
                     conf = route.get("confidence", 0.5)
-                    paths.append({
-                        "path_id": "regime_trend",
-                        "source": "trend_following",
-                        "direction": direction,
-                        "expected_return": conf * 0.4,
-                        "confidence": conf,
-                        "resistance": 1.0 - conf,
-                        "metadata": {"regime": regime, "engine": "trend_following"},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "regime_trend",
+                            "source": "trend_following",
+                            "direction": direction,
+                            "expected_return": conf * 0.4,
+                            "confidence": conf,
+                            "resistance": 1.0 - conf,
+                            "metadata": {"regime": regime, "engine": "trend_following"},
+                        }
+                    )
                 elif engine in ("v15_grid", "grid"):
                     # 网格交易路径
-                    paths.append({
-                        "path_id": "regime_grid",
-                        "source": "grid_trading",
-                        "direction": "neutral",  # 网格多空双向
-                        "expected_return": 0.15,  # 网格收益稳健但不高
-                        "confidence": 0.6,
-                        "resistance": 0.4,
-                        "metadata": {"regime": regime, "engine": "grid_trading"},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "regime_grid",
+                            "source": "grid_trading",
+                            "direction": "neutral",  # 网格多空双向
+                            "expected_return": 0.15,  # 网格收益稳健但不高
+                            "confidence": 0.6,
+                            "resistance": 0.4,
+                            "metadata": {"regime": regime, "engine": "grid_trading"},
+                        }
+                    )
                 # CRISIS → pause，不添加路径
         except Exception as e:
             logger.debug("[FO] regime_gate path fail: %s", e)
@@ -735,15 +794,17 @@ class EvolutionPipeline:
                 bcrm_dir = self._bridge.get_bcrm_direction()
                 bcrm_conf = self._bridge.get_bcrm_confidence()
                 if bcrm_dir in ("long", "short"):
-                    paths.append({
-                        "path_id": "bcrm_technical",
-                        "source": "bcrm",
-                        "direction": bcrm_dir,
-                        "expected_return": bcrm_conf * 0.2,
-                        "confidence": bcrm_conf,
-                        "resistance": 1.0 - bcrm_conf,
-                        "metadata": {"bcrm_confidence": bcrm_conf},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "bcrm_technical",
+                            "source": "bcrm",
+                            "direction": bcrm_dir,
+                            "expected_return": bcrm_conf * 0.2,
+                            "confidence": bcrm_conf,
+                            "resistance": 1.0 - bcrm_conf,
+                            "metadata": {"bcrm_confidence": bcrm_conf},
+                        }
+                    )
         except Exception as e:
             logger.debug("[FO] bcrm path fail: %s", e)
 
@@ -753,25 +814,29 @@ class EvolutionPipeline:
                 bdsm_val = self._bridge.get_bdsm_valuation()
                 # BDSM > 0.7 高估 → 做空路径；< 0.3 低估 → 做多路径
                 if bdsm_val > 0.7:
-                    paths.append({
-                        "path_id": "bdsm_fundamental_short",
-                        "source": "bdsm",
-                        "direction": "short",
-                        "expected_return": (bdsm_val - 0.5) * 0.4,
-                        "confidence": (bdsm_val - 0.5) * 2,
-                        "resistance": 1.0 - (bdsm_val - 0.5),
-                        "metadata": {"bdsm_valuation": bdsm_val, "signal": "overvalued"},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "bdsm_fundamental_short",
+                            "source": "bdsm",
+                            "direction": "short",
+                            "expected_return": (bdsm_val - 0.5) * 0.4,
+                            "confidence": (bdsm_val - 0.5) * 2,
+                            "resistance": 1.0 - (bdsm_val - 0.5),
+                            "metadata": {"bdsm_valuation": bdsm_val, "signal": "overvalued"},
+                        }
+                    )
                 elif bdsm_val < 0.3:
-                    paths.append({
-                        "path_id": "bdsm_fundamental_long",
-                        "source": "bdsm",
-                        "direction": "long",
-                        "expected_return": (0.5 - bdsm_val) * 0.4,
-                        "confidence": (0.5 - bdsm_val) * 2,
-                        "resistance": 1.0 - (0.5 - bdsm_val),
-                        "metadata": {"bdsm_valuation": bdsm_val, "signal": "undervalued"},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "bdsm_fundamental_long",
+                            "source": "bdsm",
+                            "direction": "long",
+                            "expected_return": (0.5 - bdsm_val) * 0.4,
+                            "confidence": (0.5 - bdsm_val) * 2,
+                            "resistance": 1.0 - (0.5 - bdsm_val),
+                            "metadata": {"bdsm_valuation": bdsm_val, "signal": "undervalued"},
+                        }
+                    )
         except Exception as e:
             logger.debug("[FO] bdsm path fail: %s", e)
 
@@ -780,52 +845,69 @@ class EvolutionPipeline:
             if self._bridge is not None:
                 dir_state = self._bridge.get_direction_state()
                 war_state = self._bridge.get_war_state()
-                logger.info("[PathDiscovery] bridge: war=%s dir=%s bcrm_dir='%s' bdsm=%.2f",
-                             war_state, dir_state,
-                             self._bridge.get_bcrm_direction(),
-                             self._bridge.get_bdsm_valuation())
+                logger.info(
+                    "[PathDiscovery] bridge: war=%s dir=%s bcrm_dir='%s' bdsm=%.2f",
+                    war_state,
+                    dir_state,
+                    self._bridge.get_bcrm_direction(),
+                    self._bridge.get_bdsm_valuation(),
+                )
                 if war_state == "ALLOW" and dir_state in ("LONG_ONLY", "LONG_PREFER"):
-                    paths.append({
-                        "path_id": "strategic_macro_long",
-                        "source": "strategic",
-                        "direction": "long",
-                        "expected_return": 0.15,
-                        "confidence": 0.6,
-                        "resistance": 0.4,
-                        "metadata": {"war_state": war_state, "dir_state": dir_state},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "strategic_macro_long",
+                            "source": "strategic",
+                            "direction": "long",
+                            "expected_return": 0.15,
+                            "confidence": 0.6,
+                            "resistance": 0.4,
+                            "metadata": {"war_state": war_state, "dir_state": dir_state},
+                        }
+                    )
                 elif war_state == "ALLOW" and dir_state in ("SHORT_ONLY", "SHORT_PREFER"):
-                    paths.append({
-                        "path_id": "strategic_macro_short",
-                        "source": "strategic",
-                        "direction": "short",
-                        "expected_return": 0.15,
-                        "confidence": 0.6,
-                        "resistance": 0.4,
-                        "metadata": {"war_state": war_state, "dir_state": dir_state},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "strategic_macro_short",
+                            "source": "strategic",
+                            "direction": "short",
+                            "expected_return": 0.15,
+                            "confidence": 0.6,
+                            "resistance": 0.4,
+                            "metadata": {"war_state": war_state, "dir_state": dir_state},
+                        }
+                    )
                 elif war_state == "FREEZE":
                     # FREEZE 双候选竞争：short + neutral，由矛盾识别和 HJB 评分决定
-                    paths.append({
-                        "path_id": "strategic_freeze_defensive_short",
-                        "source": "strategic",
-                        "direction": "short",
-                        "expected_return": -0.05,
-                        "confidence": 0.55,
-                        "resistance": 0.6,
-                        "metadata": {"war_state": war_state, "dir_state": dir_state,
-                                     "signal": "freeze_defensive"},
-                    })
-                    paths.append({
-                        "path_id": "strategic_freeze_neutral",
-                        "source": "strategic",
-                        "direction": "neutral",
-                        "expected_return": 0.0,
-                        "confidence": 0.50,
-                        "resistance": 0.4,
-                        "metadata": {"war_state": war_state, "dir_state": dir_state,
-                                     "signal": "freeze_neutral"},
-                    })
+                    paths.append(
+                        {
+                            "path_id": "strategic_freeze_defensive_short",
+                            "source": "strategic",
+                            "direction": "short",
+                            "expected_return": -0.05,
+                            "confidence": 0.55,
+                            "resistance": 0.6,
+                            "metadata": {
+                                "war_state": war_state,
+                                "dir_state": dir_state,
+                                "signal": "freeze_defensive",
+                            },
+                        }
+                    )
+                    paths.append(
+                        {
+                            "path_id": "strategic_freeze_neutral",
+                            "source": "strategic",
+                            "direction": "neutral",
+                            "expected_return": 0.0,
+                            "confidence": 0.50,
+                            "resistance": 0.4,
+                            "metadata": {
+                                "war_state": war_state,
+                                "dir_state": dir_state,
+                                "signal": "freeze_neutral",
+                            },
+                        }
+                    )
         except Exception as e:
             logger.debug("[FO] strategic path fail: %s", e)
 
@@ -855,20 +937,26 @@ class EvolutionPipeline:
                         if isinstance(forecast, (list, np.ndarray)) and len(forecast) > 0:
                             end_price = float(np.asarray(forecast[-1]).item())
                             expected_move = (end_price - current_price) / current_price
-                            dr_dir = "long" if expected_move > 0.01 else ("short" if expected_move < -0.01 else "neutral")
-                            paths.append({
-                                "path_id": "deep_reasoning_mc",
-                                "source": "deep_reasoning",
-                                "direction": dr_dir,
-                                "expected_return": abs(expected_move),
-                                "confidence": max(0.0, min(1.0, 1.0 - min_res)),
-                                "resistance": max(0.01, min(1.0, min_res)),
-                                "metadata": {
-                                    "forecast_end": end_price,
-                                    "n_paths": 500,
-                                    "min_resistance": min_res,
-                                },
-                            })
+                            dr_dir = (
+                                "long"
+                                if expected_move > 0.01
+                                else ("short" if expected_move < -0.01 else "neutral")
+                            )
+                            paths.append(
+                                {
+                                    "path_id": "deep_reasoning_mc",
+                                    "source": "deep_reasoning",
+                                    "direction": dr_dir,
+                                    "expected_return": abs(expected_move),
+                                    "confidence": max(0.0, min(1.0, 1.0 - min_res)),
+                                    "resistance": max(0.01, min(1.0, min_res)),
+                                    "metadata": {
+                                        "forecast_end": end_price,
+                                        "n_paths": 500,
+                                        "min_resistance": min_res,
+                                    },
+                                }
+                            )
         except Exception as e:
             logger.debug("[FO] deep_reasoning path fail: %s", e)
 
@@ -896,22 +984,30 @@ class EvolutionPipeline:
                     fn=synth.validate_and_integrate,
                     fallback=None,
                     candidate={"action_ids": candidate_action_ids},
-                    price_data=np.array(market_data.get("close", [100.0]), dtype=float) if isinstance(market_data.get("close"), list) else None,
+                    price_data=(
+                        np.array(market_data.get("close", [100.0]), dtype=float)
+                        if isinstance(market_data.get("close"), list)
+                        else None
+                    ),
                     top_gene_sharpe=best_existing.get("confidence", 1.0),
                 )
                 if synth_result and synth_result.get("integrated"):
-                    paths.append({
-                        "path_id": "synthesized_new_gene",
-                        "source": "synthesized",
-                        "direction": best_existing["direction"],
-                        "expected_return": best_existing["expected_return"] * 0.5,  # 冷启动折扣
-                        "confidence": 0.3,  # 冷启动低置信度
-                        "resistance": 0.8,  # 新路径高阻力（未验证）
-                        "metadata": {
-                            "gene_id": synth_result.get("gene_id", ""),
-                            "cold_start_position": synth_result.get("cold_start_position", 0.05),
-                        },
-                    })
+                    paths.append(
+                        {
+                            "path_id": "synthesized_new_gene",
+                            "source": "synthesized",
+                            "direction": best_existing["direction"],
+                            "expected_return": best_existing["expected_return"] * 0.5,  # 冷启动折扣
+                            "confidence": 0.3,  # 冷启动低置信度
+                            "resistance": 0.8,  # 新路径高阻力（未验证）
+                            "metadata": {
+                                "gene_id": synth_result.get("gene_id", ""),
+                                "cold_start_position": synth_result.get(
+                                    "cold_start_position", 0.05
+                                ),
+                            },
+                        }
+                    )
         except Exception as e:
             logger.debug("[FO] synthesized path fail: %s", e)
 
@@ -921,8 +1017,9 @@ class EvolutionPipeline:
         """调试日志：打印所有发现的路径。"""
         try:
             _sources = [f"{p.get('source','?')}:{p.get('direction','?')}" for p in paths]
-            logger.info("[PathDiscovery] %s 发现 %d 条路径: %s",
-                        symbol, len(paths), ", ".join(_sources))
+            logger.info(
+                "[PathDiscovery] %s 发现 %d 条路径: %s", symbol, len(paths), ", ".join(_sources)
+            )
         except Exception as e:
             logger.debug("[FO] 路径调试日志 fail: %s", e)
 
@@ -982,6 +1079,7 @@ class EvolutionPipeline:
         self._last_dimension_predictions = {}
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             # T4（SPEC-各维度矛盾计算重建 §3）：维度力量评估 v2.0
             # 影子期只记录日志，不参与决策；放量后作为主矛盾裁决输入
             if get_switch("enable_dimension_force_v2", False):
@@ -989,6 +1087,7 @@ class EvolutionPipeline:
                     from dreambuddy_evolution.core.dimension_force_evaluator import (
                         DimensionForceEvaluator,
                     )
+
                     _dfe = getattr(self, "_dimension_force_evaluator", None)
                     if _dfe is None:
                         _dfe = DimensionForceEvaluator()
@@ -1009,6 +1108,7 @@ class EvolutionPipeline:
                 from dreambuddy_evolution.core.contradiction_identifier import (
                     PrimaryContradictionIdentifier,
                 )
+
                 # S4 修复（SPEC-双链路可观测性与状态同步修复 §2.3）：
                 # 缓存识别器实例，样本跨周期积累。此前每周期新建实例，
                 # 样本数恒为 1（<100 不触发落盘阈值），W6 学习样本从未持久化。
@@ -1019,7 +1119,9 @@ class EvolutionPipeline:
                 # Fix 3: 按维度独立取权重，传入 dict 供 identify 按维度调制
                 _wfs = getattr(self, "_contradiction_weight_factors", {})
                 primary_contradiction = identifier.identify(
-                    paths, market_data or {}, r_out,
+                    paths,
+                    market_data or {},
+                    r_out,
                     weight_factor=_wfs,
                     causal_engine=self._get_causal_engine(),
                     meta_cognition_gate=self._get_meta_cognition_gate(),
@@ -1031,6 +1133,7 @@ class EvolutionPipeline:
                     from dreambuddy_evolution.engines.reverse_derivation_integration import (
                         extract_dimension_predictions,
                     )
+
                     self._last_dimension_predictions = extract_dimension_predictions(paths)
                 except Exception as _e:
                     logger.debug("[FO] extract_dimension_predictions fail: %s", _e)
@@ -1051,10 +1154,12 @@ class EvolutionPipeline:
         # === Phase 3.2: TrendContinuationScorer 接入 — 填充 continuation_score ===
         try:
             from dreambuddy_evolution.agi_config import get_switch as _gs
+
             if _gs("enable_trend_continuation", True) and market_data:
                 from dreambuddy_evolution.core.trend_continuation import (
                     TrendContinuationScorer,
                 )
+
                 _tcs = TrendContinuationScorer()
                 for _p in paths:
                     if "continuation_score" not in _p:
@@ -1095,7 +1200,12 @@ class EvolutionPipeline:
                 _prices = market_data.get("close") or market_data.get("kline_close")
                 if _prices is not None:
                     import numpy as _np
-                    _price_arr = _np.asarray(_prices, dtype=float) if isinstance(_prices, list) else _np.array([float(_prices)])
+
+                    _price_arr = (
+                        _np.asarray(_prices, dtype=float)
+                        if isinstance(_prices, list)
+                        else _np.array([float(_prices)])
+                    )
                     self._last_structural_break = _sbd.detect_all(_price_arr)
         except Exception as _e:  # noqa: BLE001
             logger.debug("[FO-Phase2][StructBreak] fail: %s", _e)
@@ -1108,11 +1218,18 @@ class EvolutionPipeline:
                 _flat = []
                 for _dim, _tfs in _all_evals.items():
                     for _tf, _val in _tfs.items():
-                        _flat.append({
-                            "dimension": _dim, "timeframe": _tf,
-                            "direction": "bull" if _val > 0.55 else ("bear" if _val < 0.45 else "neutral"),
-                            "normalized_strength": _val,
-                        })
+                        _flat.append(
+                            {
+                                "dimension": _dim,
+                                "timeframe": _tf,
+                                "direction": (
+                                    "bull"
+                                    if _val > 0.55
+                                    else ("bear" if _val < 0.45 else "neutral")
+                                ),
+                                "normalized_strength": _val,
+                            }
+                        )
                 if _flat:
                     _acc.record(_flat)
                     self._last_shift_result = _acc.detect_shift(self._last_structural_break)
@@ -1120,16 +1237,23 @@ class EvolutionPipeline:
             logger.debug("[FO-Phase2][ShiftAcc] fail: %s", _e)
 
         # === Phase 2.5: 交叉验证层 (矛盾Transformer §5.1) — FAIL-OPEN ===
-        cv_result = {"confidence_mult": 1.0, "shift_signal": False,
-                     "head_adjustment": {}, "quality_change": {},
-                     "granger_reestimate_trigger": False}
+        cv_result = {
+            "confidence_mult": 1.0,
+            "shift_signal": False,
+            "head_adjustment": {},
+            "quality_change": {},
+            "granger_reestimate_trigger": False,
+        }
         try:
             from dreambuddy_evolution.agi_config import get_switch as _gs_cv
+
             if _gs_cv("enable_cross_validation_gate", False) and primary_contradiction is not None:
                 from dreambuddy_evolution.core.cross_validation_gate import CrossValidationGate
 
                 # A_dim (现在主矛盾): 从 primary_contradiction 获取
-                _a_dim = primary_contradiction.get("dimension") or primary_contradiction.get("primary_dimension")
+                _a_dim = primary_contradiction.get("dimension") or primary_contradiction.get(
+                    "primary_dimension"
+                )
                 _a_strength = float(primary_contradiction.get("strength", 0.0))
 
                 # G_dim (过去主矛盾): Granger 因果检验, 从价格序列派生 3 维度因子
@@ -1137,24 +1261,42 @@ class EvolutionPipeline:
                 _g_conf = 0.0
                 try:
                     if _gs_cv("enable_granger_pipeline", False):
-                        from dreambuddy_evolution.core.granger_pipeline_adapter import GrangerPipelineAdapter
+                        from dreambuddy_evolution.core.granger_pipeline_adapter import (
+                            GrangerPipelineAdapter,
+                        )
+
                         _gpa = GrangerPipelineAdapter()
                         # 从价格序列派生因子 + 计算对数收益率
                         _closes = market_data.get("close") if market_data else None
-                        if _closes is not None and isinstance(_closes, (list, np.ndarray)) and len(_closes) >= 30:
+                        if (
+                            _closes is not None
+                            and isinstance(_closes, (list, np.ndarray))
+                            and len(_closes) >= 30
+                        ):
                             import numpy as _np_cv
+
                             _price = _np_cv.asarray(_closes, dtype=float)
-                            _log_ret = _np_cv.diff(_np_cv.log(_price)) if len(_price) > 1 else _np_cv.array([])
-                            _ret = _np_cv.diff(_price) / _np_cv.maximum(_np_cv.abs(_price[:-1]), 1e-12)
+                            _log_ret = (
+                                _np_cv.diff(_np_cv.log(_price))
+                                if len(_price) > 1
+                                else _np_cv.array([])
+                            )
+                            _ret = _np_cv.diff(_price) / _np_cv.maximum(
+                                _np_cv.abs(_price[:-1]), 1e-12
+                            )
                             # 3 维度因子: 技术(动量) / 基本面(均值回归偏离) / 宏观(波动率)
                             _ma20 = _np_cv.convolve(_price, _np_cv.ones(20) / 20, mode="same")
-                            _vol20 = _np_cv.array([
-                                _np_cv.std(_ret[max(0, i - 20):i + 1]) if i >= 5 else 0.02
-                                for i in range(len(_ret))
-                            ])
+                            _vol20 = _np_cv.array(
+                                [
+                                    _np_cv.std(_ret[max(0, i - 20) : i + 1]) if i >= 5 else 0.02
+                                    for i in range(len(_ret))
+                                ]
+                            )
                             _factors_by_dim = {
                                 "technical": _ret,
-                                "fundamental": (_price - _ma20)[:-1] if len(_price) > 1 else _np_cv.array([]),
+                                "fundamental": (
+                                    (_price - _ma20)[:-1] if len(_price) > 1 else _np_cv.array([])
+                                ),
                                 "macro": _vol20,
                             }
                             _gr = _gpa.evaluate(_factors_by_dim, _log_ret)
@@ -1172,8 +1314,10 @@ class EvolutionPipeline:
                     enable_head_multipliers_mean_reversion=True,
                 )
                 cv_result = _gate.compare(
-                    G_dim=_g_dim, G_conf=_g_conf,
-                    A_dim=_a_dim, A_strength=_a_strength,
+                    G_dim=_g_dim,
+                    G_conf=_g_conf,
+                    A_dim=_a_dim,
+                    A_strength=_a_strength,
                     structural_break=_sb,
                 )
 
@@ -1184,6 +1328,7 @@ class EvolutionPipeline:
                 if _qc_detected:
                     try:
                         from dreambuddy_evolution.adapters.cognitive_bridge import CognitiveBridge
+
                         CognitiveBridge().record_quality_change(cv_result["quality_change"])
                     except Exception as e:
                         logger.debug("[FO] 质变认知记录 fail: %s", e)
@@ -1200,7 +1345,6 @@ class EvolutionPipeline:
                 # 质变事件 → 触发基因创新 (FTCEvolutionBridge.run_gene_innovation)
                 if _qc_detected and _gs_cv("enable_gene_innovation", False):
                     try:
-                        from dreambuddy_evolution.adapters.ftc_evolution_bridge import FTCEvolutionBridge
                         # 构建 FTCEvolutionBridge（复用现有 orchestrator/gene_root）
                         _bridge = self._get_ftc_evolution_bridge()
                         if _bridge is not None:
@@ -1208,7 +1352,9 @@ class EvolutionPipeline:
                             _bridge.run_gene_innovation(
                                 ripple_signals=None,
                                 reflection_insights=None,
-                                ftc_ess_convergence=bool(_shift and _shift.get("shift_detected", False)),
+                                ftc_ess_convergence=bool(
+                                    _shift and _shift.get("shift_detected", False)
+                                ),
                                 knowledge_alignments=None,
                             )
                     except Exception as _e:
@@ -1220,17 +1366,23 @@ class EvolutionPipeline:
                     if self._cv_heartbeat_count % 50 == 0:
                         logger.info(
                             "[CrossValidation] heartbeat #%d G_dim=%s A_dim=%s conf_mult=%.2f shift=%s",
-                            self._cv_heartbeat_count, _g_dim, _a_dim,
+                            self._cv_heartbeat_count,
+                            _g_dim,
+                            _a_dim,
                             float(cv_result.get("confidence_mult", 1.0)),
                             bool(cv_result.get("shift_signal", False)),
                         )
-                except Exception:
-                    pass
+                except Exception as _hb_e:
+                    logger.debug("[FO-Phase2.5][CV heartbeat] fail: %s", _hb_e)
         except Exception as _e:  # noqa: BLE001
             logger.debug("[FO-Phase2.5][CrossValidation] fail: %s", _e)
-            cv_result = {"confidence_mult": 1.0, "shift_signal": False,
-                         "head_adjustment": {}, "quality_change": {},
-                         "granger_reestimate_trigger": False}
+            cv_result = {
+                "confidence_mult": 1.0,
+                "shift_signal": False,
+                "head_adjustment": {},
+                "quality_change": {},
+                "granger_reestimate_trigger": False,
+            }
 
         # === Phase 3: 弹性约束 → 仓位倍数调整 ===
         try:
@@ -1241,9 +1393,14 @@ class EvolutionPipeline:
                 _candidates = []
                 for _dim, _tfs in _all_evals.items():
                     for _tf, _val in _tfs.items():
-                        _candidates.append({"dimension": _dim, "timeframe": _tf,
-                                           "direction": primary_contradiction.get("direction", "neutral"),
-                                           "strength": abs(_val - 0.5) * 2.0})
+                        _candidates.append(
+                            {
+                                "dimension": _dim,
+                                "timeframe": _tf,
+                                "direction": primary_contradiction.get("direction", "neutral"),
+                                "strength": abs(_val - 0.5) * 2.0,
+                            }
+                        )
                 if len(_candidates) >= 2:
                     # §15 层级加权排序：tier_bonus 加权
                     TIER_WEIGHT = {"short": 0.2, "medium": 0.3, "long": 0.5}
@@ -1253,7 +1410,8 @@ class EvolutionPipeline:
                     )
                     # §20 分层弹性约束：传入 timeframe
                     self._last_elastic_result = _elastic.resolve(
-                        _candidates[0], _candidates[1],
+                        _candidates[0],
+                        _candidates[1],
                         primary_tf=_candidates[0].get("timeframe", "medium"),
                         secondary_tf=_candidates[1].get("timeframe", "medium"),
                     )
@@ -1265,8 +1423,10 @@ class EvolutionPipeline:
         reflexivity_fuel = None  # 初始化，确保开关关闭时返回语句可访问
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if get_switch("enable_hjb_solver", True):
                 from dreambuddy_evolution.core.hjb_solver import HJBPathSolver
+
                 start_price = float(r_out.get("_last_price", 100.0))
                 vol = float(r_out.get("_last_vol", 0.02))
                 solver = HJBPathSolver()
@@ -1278,15 +1438,17 @@ class EvolutionPipeline:
                     if refl_monitor is not None:
                         refl_result = refl_monitor.check_self_influence()
                         # 兼容两种字段名
-                        detected = refl_result.get("self_influence_detected",
-                                    refl_result.get("detected", False))
-                        lambda_val = float(refl_result.get("influence_coefficient",
-                                            refl_result.get("lambda", 0.0)))
+                        detected = refl_result.get(
+                            "self_influence_detected", refl_result.get("detected", False)
+                        )
+                        lambda_val = float(
+                            refl_result.get("influence_coefficient", refl_result.get("lambda", 0.0))
+                        )
                         if detected and lambda_val > 0.02:
-                                reflexivity_fuel = {
-                                    "type": "leverage",  # P1 先行：默认杠杆型
-                                    "intensity": min(1.0, lambda_val),
-                                }
+                            reflexivity_fuel = {
+                                "type": "leverage",  # P1 先行：默认杠杆型
+                                "intensity": min(1.0, lambda_val),
+                            }
                 except Exception:
                     reflexivity_fuel = None  # FAIL-OPEN
 
@@ -1322,6 +1484,7 @@ class EvolutionPipeline:
             # 直接使用 CognitiveFunction（不依赖 enable_reflexivity_monitor 开关）
             if not hasattr(self, "_cognitive_fn"):
                 from dreambuddy_evolution.core.cognitive_function import CognitiveFunction
+
                 self._cognitive_fn = CognitiveFunction()
             if self._cognitive_fn is not None:
                 last_price = float(r_out.get("_last_price", 100.0))
@@ -1338,7 +1501,9 @@ class EvolutionPipeline:
                     price_signal = 0.5 + min(0.5, max(-0.5, (last_price - prev_price) / prev_price))
                 else:
                     price_signal = 0.5
-                info_signals = [{"type": "price", "signal": price_signal, "weight": 1.0}]
+                info_signals = [  # noqa: F841 — 预留多信号融合
+                    {"type": "price", "signal": price_signal, "weight": 1.0}
+                ]
                 _prev_belief = self._cognitive_fn.get_cognition()
                 _new_belief = self._cognitive_fn.update(price_signal, 1.0)
                 cognition_result = {
@@ -1406,8 +1571,15 @@ class EvolutionPipeline:
         return {
             "optimal_path": best if validated else None,
             "all_paths": scored,
-            "path_scores": [{"path_id": p["path_id"], "source": p["source"],
-                             "direction": p["direction"], "score": p["score"]} for p in scored],
+            "path_scores": [
+                {
+                    "path_id": p["path_id"],
+                    "source": p["source"],
+                    "direction": p["direction"],
+                    "score": p["score"],
+                }
+                for p in scored
+            ],
             "statistical_validation": {
                 "validated": validated,
                 "best_score": best["score"],
@@ -1416,11 +1588,15 @@ class EvolutionPipeline:
                 "low_conviction": low_conviction,
                 "reason": "validated" if validated else "score_below_threshold",
             },
-            "hjb_policy": {
-                "total_cost": hjb_policy["total_cost"],
-                "converged": hjb_policy["converged"],
-                "backend": hjb_policy["backend"],
-            } if hjb_policy is not None else None,
+            "hjb_policy": (
+                {
+                    "total_cost": hjb_policy["total_cost"],
+                    "converged": hjb_policy["converged"],
+                    "backend": hjb_policy["backend"],
+                }
+                if hjb_policy is not None
+                else None
+            ),
             "primary_contradiction": primary_contradiction,
             # 方向3: 每维度方向预测，供 ReverseDeriver 逆向推导
             "dimension_predictions": self._last_dimension_predictions,
@@ -1439,6 +1615,7 @@ class EvolutionPipeline:
     def _load_library(self):
         if self._library is None:
             from dreambuddy_evolution.core import strategy_gene as sgs
+
             self._library = sgs.load_gene_library(self.gene_root)
         return self._library
 
@@ -1471,6 +1648,7 @@ class EvolutionPipeline:
         """
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_microstructure_resistance", False):
                 return
             # 复用 exogenous_bridge 的 DAL 连接
@@ -1480,21 +1658,28 @@ class EvolutionPipeline:
             _repo = _bridge.get_repo()
             if _repo is None:
                 return
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta, timezone
+
             _now = datetime.now(timezone.utc)
             # funding_rate
             if "funding_rate" not in market_data:
                 _rows = _repo.query_metric_by_time(
-                    "funding_rate", "funding_rate_pct",
-                    _now - timedelta(hours=24), _now,
+                    "funding_rate",
+                    "funding_rate_pct",
+                    _now - timedelta(hours=24),
+                    _now,
                 )
                 if _rows:
-                    market_data["funding_rate"] = _rows[-1][2]  # value = (source, name, value, ts)[2]
+                    market_data["funding_rate"] = _rows[-1][
+                        2
+                    ]  # value = (source, name, value, ts)[2]
             # open_interest (current + previous)
             if "oi_current" not in market_data:
                 _rows = _repo.query_metric_by_time(
-                    "open_interest", "open_interest_value",
-                    _now - timedelta(days=2), _now,
+                    "open_interest",
+                    "open_interest_value",
+                    _now - timedelta(days=2),
+                    _now,
                 )
                 if len(_rows) >= 2:
                     market_data["oi_current"] = float(_rows[-1][2])
@@ -1505,12 +1690,16 @@ class EvolutionPipeline:
             if "okx_positions" not in market_data:
                 try:
                     _l_rows = _repo.query_metric_by_time(
-                        "long_short_ratio", "long_account_pct",
-                        _now - timedelta(days=2), _now,
+                        "long_short_ratio",
+                        "long_account_pct",
+                        _now - timedelta(days=2),
+                        _now,
                     )
                     _s_rows = _repo.query_metric_by_time(
-                        "long_short_ratio", "short_account_pct",
-                        _now - timedelta(days=2), _now,
+                        "long_short_ratio",
+                        "short_account_pct",
+                        _now - timedelta(days=2),
+                        _now,
                     )
                     if _l_rows and _s_rows:
                         market_data["okx_positions"] = {
@@ -1523,6 +1712,7 @@ class EvolutionPipeline:
             if "bids_depth" not in market_data or "asks_depth" not in market_data:
                 try:
                     import ccxt as _ccxt
+
                     _ex = _ccxt.okx()
                     _swap = symbol.replace("/", "-") + "-SWAP" if "/" in symbol else symbol
                     _ob = _ex.fetch_order_book(_swap, limit=10)
@@ -1536,6 +1726,7 @@ class EvolutionPipeline:
             if "ma_200" not in market_data:
                 try:
                     import numpy as _np
+
                     _closes = _np.array(market_data.get("close", []), dtype=float)
                     if _closes.size >= 200:
                         market_data["ma_200"] = float(_np.mean(_closes[-200:]))
@@ -1555,9 +1746,9 @@ class EvolutionPipeline:
 
         返回: {l1_r_vector, path_discovery, level0_d_star, action, l3_sample, l4_v, ...}
         """
-        from dreambuddy_evolution.core.resistance_vector import ResistanceVector
-        from dreambuddy_evolution.core.level0_path_cost import compute_g_diag, compute_d_star
         from dreambuddy_evolution.core import strategy_gene as sgs
+        from dreambuddy_evolution.core.level0_path_cost import compute_d_star
+        from dreambuddy_evolution.core.resistance_vector import ResistanceVector
 
         # ============ L1: 状态空间层 ============
         if rv is None:
@@ -1655,10 +1846,14 @@ class EvolutionPipeline:
         # 真实 PnL reward 由 TradeSettlementBridge._record_real_pnl_reward 在平仓时注入
         self.shadow_rl.record(
             symbol=symbol,
-            state={"R_up": r_out["R_up"], "R_down": r_out["R_down"],
-                   "R_smooth": r_out["R_smooth"], "R_flow": r_out["R_flow"],
-                   "R_reflexivity": r_out["R_reflexivity"],
-                   "quality_score": r_out.get("quality_score", 0.5)},
+            state={
+                "R_up": r_out["R_up"],
+                "R_down": r_out["R_down"],
+                "R_smooth": r_out["R_smooth"],
+                "R_flow": r_out["R_flow"],
+                "R_reflexivity": r_out["R_reflexivity"],
+                "quality_score": r_out.get("quality_score", 0.5),
+            },
             action=action,
             reward=0.0,  # Fix 1: 占位，真实 reward 由平仓事件注入
             next_state={},
@@ -1774,7 +1969,11 @@ class EvolutionPipeline:
                     "action": "WAIT",
                     "error": str(e),
                     "l1_r_vector": {},
-                    "path_discovery": {"all_paths": [], "optimal_path": None, "statistical_validation": {"validated": False}},
+                    "path_discovery": {
+                        "all_paths": [],
+                        "optimal_path": None,
+                        "statistical_validation": {"validated": False},
+                    },
                     "level0_d_star": "WAIT",
                     "l2_top_combo": None,
                     "aligned": False,
