@@ -42,6 +42,70 @@ def _device() -> str:
     return "cpu"
 
 
+def _load_jsonl_targets(jsonl_path: Path) -> tuple[torch.Tensor, str, int] | None:
+    """Phase C: 从 collect_domain_discovery_data.py 产出的 JSONL 构造 coupling target.
+
+    coupling 定义: 每对域 (a,b) 的 drift 状态**同向共现率**.
+      both_drift 权重 ×2, both_stable 权重 ×1, 归一化到 [0,1].
+
+    Returns (coupling_15d_tensor, source_label, n_samples) 或 None.
+    """
+    from dreambuddy_evolution.core.domain_coupling_head import PAIRS
+
+    if not jsonl_path.exists():
+        print(f"[WARN] JSONL 不存在: {jsonl_path}")
+        return None
+    lines = jsonl_path.read_text(encoding="utf-8").splitlines()
+    samples: list[dict[str, Any]] = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            samples.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    if not samples:
+        print(f"[WARN] JSONL 无有效样本: {jsonl_path}")
+        return None
+
+    N = len(samples)
+    # 预统计每个 pair 的 drift 共现
+    targets: list[float] = []
+    drift_events = 0
+    for a, b in PAIRS:
+        both_drift = 0
+        both_stable = 0
+        for s in samples:
+            ds = s.get("input", {}).get("domain_states", {})
+            da = ds.get(a, {}).get("drift", "unknown")
+            db = ds.get(b, {}).get("drift", "unknown")
+            if da == "drift" and db == "drift":
+                both_drift += 1
+            elif da == "stable" and db == "stable":
+                both_stable += 1
+        drift_events += both_drift
+        # coupling 公式: drift 同向权重高, stable 同向次之
+        raw = (both_drift * 2 + both_stable) / N * 0.5
+        targets.append(min(max(raw, 0.0), 1.0))
+
+    # 全 stable 样本场景: 用 static JSON coupling 平滑 (避免全 0)
+    if drift_events == 0:
+        print(f"[INFO] JSONL {N} 样本无 drift 事件, coupling 全 0, 用 static JSON 平滑")
+        static_t = _load_pseudo_target(STATIC_JSON)
+        if static_t is not None:
+            targets = [
+                round(t * 0.5 + s * 0.5, 3) for t, s in zip(targets, static_t.tolist(), strict=True)
+            ]
+
+    source_label = f"phaseC_jsonl_{N}samples" + ("_allstable" if drift_events == 0 else "")
+    print(
+        f"[INFO] Phase C JSONL target: N={N}, drift_events={drift_events}, "
+        f"mean={sum(targets)/len(targets):.3f}, source={source_label}"
+    )
+    return torch.tensor(targets, dtype=torch.float32), source_label, N
+
+
 def _load_pseudo_target(static_json: Path) -> torch.Tensor | None:
     """从 static JSON 读取 15 个 coupling 值作为 pseudo-target.
 
@@ -86,11 +150,15 @@ def train_head_and_infer(
     static_json: Path = STATIC_JSON,
     n_steps: int = 100,
     seed: int = 42,
+    jsonl_path: Path | None = None,
 ) -> dict[str, Any]:
     """主入口: 训练 DomainCouplingHead 并推理 coupling 15 维.
 
-    Returns dict: {coupling_15d: list[float], loss_curve: list[float], final_loss: float,
-                   inferred: bool, pseudo_target_loaded: bool}
+    Phase C 增强: 传 jsonl_path 时优先用 collect 产出的真实标注 JSONL
+    构造 coupling target; 否则 fallback 到 static JSON pseudo-target (P1 行为).
+
+    Returns dict: {coupling_15d, loss_curve, final_loss, inferred,
+                   pseudo_target_loaded, target_source, target_n_samples, n_steps}
     """
     torch.manual_seed(seed)
     dev = _device()
@@ -106,6 +174,8 @@ def train_head_and_infer(
 
     inferred = False
     pseudo_target_loaded = False
+    target_source = "none"
+    target_n_samples = 0
     loss_curve: list[float] = []
 
     try:
@@ -121,19 +191,34 @@ def train_head_and_infer(
         print(f"[WARN] NeuralSDE 加载失败, fallback 随机推理: {e}")
         sig_dim = 15
 
-    # ----- 2. pseudo-target -----
+    # ----- 2. target 构造 (Phase C JSONL 优先, P1 static JSON 兜底) -----
     pseudo_target = None
     if inferred:
-        pseudo_target = _load_pseudo_target(static_json)
-        if pseudo_target is not None:
-            pseudo_target = pseudo_target.to(dev)
-            pseudo_target_loaded = True
-            print(
-                f"[INFO] pseudo-target loaded: shape={pseudo_target.shape}, "
-                f"mean={pseudo_target.mean():.3f}"
-            )
-        else:
-            print("[WARN] pseudo-target 未加载, 使用 random target 仅验证训练链路")
+        # Phase C: 优先尝试 JSONL 真实标注
+        if jsonl_path is not None:
+            jsonl_result = _load_jsonl_targets(jsonl_path)
+            if jsonl_result is not None:
+                pseudo_target, target_source, target_n_samples = jsonl_result
+                pseudo_target = pseudo_target.to(dev)
+                pseudo_target_loaded = True
+                print(
+                    f"[INFO] Phase C JSONL target loaded: shape={pseudo_target.shape}, "
+                    f"mean={pseudo_target.mean():.3f}"
+                )
+
+        # Fallback: P1 static JSON pseudo-target
+        if not pseudo_target_loaded:
+            pseudo_target = _load_pseudo_target(static_json)
+            if pseudo_target is not None:
+                pseudo_target = pseudo_target.to(dev)
+                pseudo_target_loaded = True
+                target_source = "phaseB_static_json"
+                print(
+                    f"[INFO] pseudo-target loaded (P1 fallback): shape={pseudo_target.shape}, "
+                    f"mean={pseudo_target.mean():.3f}"
+                )
+            else:
+                print("[WARN] pseudo-target 未加载, 使用 random target 仅验证训练链路")
 
     # ----- 3. 训 Head -----
     head = DomainCouplingHead().to(dev)
@@ -217,6 +302,8 @@ def train_head_and_infer(
         "final_loss": final_loss,
         "inferred": inferred,
         "pseudo_target_loaded": pseudo_target_loaded,
+        "target_source": target_source,
+        "target_n_samples": target_n_samples,
         "n_steps": n_steps,
     }
 
@@ -259,12 +346,15 @@ def export_coupling_json(
     new_data["generated_at"] = dt.datetime.now(dt.timezone.utc).isoformat()
     new_data["model_version"] = "l1-domain-coupling-v0.1"
     new_data["source"] = "neural_sde_head_infer"
-    new_data["pseudo_target_source"] = "domain_transmission_static.json"
+    new_data["pseudo_target_source"] = result.get("target_source", "phaseB_static_json")
+    new_data["pseudo_target_n_samples"] = result.get("target_n_samples", 0)
     new_data["head_training"] = {
         "n_steps": result["n_steps"],
         "final_loss": round(result["final_loss"], 4),
         "device": "mps" if result.get("inferred") else "fallback",
         "pseudo_target_loaded": result["pseudo_target_loaded"],
+        "target_source": result.get("target_source", "none"),
+        "target_n_samples": result.get("target_n_samples", 0),
         "seed": 42,
     }
     old_note = old_data.get("note", "")
@@ -306,12 +396,19 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Phase B: train DomainCouplingHead + export coupling JSON"
+        description="Phase B/C: train DomainCouplingHead + export coupling JSON"
     )
     parser.add_argument("--steps", type=int, default=100)
     parser.add_argument("--dry-run", action="store_true", help="仅训练+推理+打印 diff, 不写文件")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--jsonl",
+        type=str,
+        default=None,
+        help="Phase C: collect_domain_discovery_data.py 产出的 JSONL 路径 (不传则用 P1 static JSON pseudo-target)",
+    )
     args = parser.parse_args()
 
-    result = train_head_and_infer(n_steps=args.steps, seed=args.seed)
+    jsonl = Path(args.jsonl) if args.jsonl else None
+    result = train_head_and_infer(n_steps=args.steps, seed=args.seed, jsonl_path=jsonl)
     export_coupling_json(result, dry_run=args.dry_run)
