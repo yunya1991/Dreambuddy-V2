@@ -225,6 +225,16 @@ def build_real_market_batch(
     from dreambuddy_evolution.core.signature_engine import SignatureEngine
 
     engine = SignatureEngine(depth=stats["sig_depth"])
+    try:
+        from dreambuddy_evolution.core import signature_engine as _se
+
+        engine_name = (
+            "signatory"
+            if engine._signatory_available
+            else ("esig" if _se._ESIG_AVAILABLE else "numpy")
+        )
+    except Exception:  # noqa: BLE001
+        engine_name = "unknown"
     raw_log_sigs: list[np.ndarray] = []
     for e in ends:
         window = closes[int(e) - n_step + 1 : int(e) + 1]
@@ -288,6 +298,8 @@ def build_real_market_batch(
         "n_factors": int(factors.shape[1]),
         "log_sig_real_dim": int(stats["sig_dim"]),
         "log_sig_input_dim": int(out_dim),
+        # ckpt 的 log_sig 统计由 esig/signatory 尺度拟合; numpy 降级尺度不同 → z 会发散
+        "log_sig_engine": engine_name,
         "regime_counts": {
             str(k): int(v) for k, v in zip(*np.unique(reg_label, return_counts=True), strict=True)
         },

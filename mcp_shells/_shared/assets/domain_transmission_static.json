@@ -88,7 +88,7 @@
       "L3_sensitive": 88.9
     }
   },
-  "generated_at": "2026-11-03T13:19:35.154231+00:00",
+  "generated_at": "2026-11-03T13:22:55.977103+00:00",
   "model_version": "l1-domain-coupling-v0.1",
   "trace_id": "l1-head-infer-7d8264eb1b3a3621",
   "source": "neural_sde_head_infer",
@@ -119,6 +119,7 @@
     "n_factors": 36,
     "log_sig_real_dim": 15,
     "log_sig_input_dim": 15,
+    "log_sig_engine": "esig",
     "regime_counts": {
       "0": 32,
       "1": 32,

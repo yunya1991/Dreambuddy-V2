@@ -38,9 +38,13 @@ def _read_entries(store: Path) -> list:
 # ---------- shadow_hook（壳生产接线） ----------
 def test_shadow_hook_disabled_by_default(tmp_path, monkeypatch):
     monkeypatch.delenv("AGENT_MAIL_SHADOW", raising=False)
+    # 云端可能已有运维 flag 文件 → 隔离为不存在的路径, 否则用例受环境影响
+    monkeypatch.setattr(shadow_hook, "FLAG_PATH", tmp_path / "ENABLED")
+    shadow_hook._shadow = None
     store = tmp_path / "t.jsonl"
     monkeypatch.setenv("AGENT_MAIL_SHADOW_STORE", str(store))
     shadow_hook.observe_envelope(wrap({"x": 1}, "l0.data.mcp"))
+    shadow_hook._shadow = None
     assert not store.exists()
 
 
