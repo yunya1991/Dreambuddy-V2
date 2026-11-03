@@ -23,6 +23,20 @@ import sys
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 _REPO = os.path.dirname(_SYS_DIR)
+# 统一信封映射层（SPEC-L0 §3.1，注册表 envelope_version 0.1）：
+# 优先走宿主注入的 PYTHONPATH；独立拉起时按文件路径加载，
+# 不新增 sys.path hack（SPEC §3.4 红线）
+try:
+    from mcp_shells._shared.envelope_wrap import wrap as _envelope_wrap
+except ImportError:
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location(
+        "envelope_wrap",
+        os.path.join(_REPO, "mcp_shells", "_shared", "envelope_wrap.py"),
+    )
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    _envelope_wrap = _mod.wrap
 _ALIASES_PATH = os.path.join(_REPO, "3.1-FRONTEND", "scripts", "entity_aliases.json")
 _DISTILL_SCRIPT = os.path.join(_THIS_DIR, "distill_aliases.py")
 _TRAINING_URL = "http://localhost:3001/api/training"
@@ -241,8 +255,11 @@ def main():
                 result = {"tools": TOOLS}
             elif method == "tools/call":
                 params = req.get("params", {})
+                _body = _dispatch(params.get("name", ""), params.get("arguments", {}))
+                # 统一信封：业务体原样透传到 envelope.data，零删零改
+                _env = _envelope_wrap(_body, "l0.semantic-39.mcp")
                 result = {"content": [{"type": "text",
-                                        "text": json.dumps(_dispatch(params.get("name", ""), params.get("arguments", {})), ensure_ascii=False)}]}
+                                        "text": json.dumps(_env, ensure_ascii=False)}]}
             else:
                 resp = {"jsonrpc": "2.0", "id": rid,
                         "error": {"code": -32601, "message": f"method not found: {method}"}}

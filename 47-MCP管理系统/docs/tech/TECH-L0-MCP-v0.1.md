@@ -1,9 +1,9 @@
 # TECH:L0 六域 MCP 封装 — 实现手册 v0.1
 
-> **版本**: v0.1 ｜ **日期**: 2026-11-02 ｜ **状态**: ✅ P0/M1 已落地，M2/M3/M4 开发手册
+> **版本**: v0.1 ｜ **日期**: 2026-11-03 ｜ **状态**: ✅ M1-M4 全部落地（2026-11-03 收尾验证通过：6 壳 24 工具真实拉起 + 统一信封校验 6/6 + 契约测试 22/22 全绿）
 > **上游**: [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（契约）· [PLAN-L0-MCP-P0-P3 v0.1](./PLAN-L0-MCP-P0-P3-v0.1.md)（路线）· [ALIGNMENT-46-47 v1.0](./ALIGNMENT-46-47-v1.0.md)（决议）
 > **读者**: M2/M3/M4 壳开发者 · 云端运维 · DSH Worker 消费方 · 壳后域内 agent 化 SPEC 作者
-> **边界**: 本手册只覆盖 **P0/M1 已落地**（注册表 v1 / 信封映射层 / 基线脚本 / 校验器 / 认知壳 6 工具 / 39 壳 4 工具）。M2/M3/M4 规划壳只在 §1 §3 引用占位结构，不展开实现。
+> **边界**: 本手册覆盖 **M1-M4 全部落地**（注册表 v1 / 信封映射层 / 基线脚本 / 校验器 / 认知壳 6 工具 / 39 壳 4 工具 / 数据壳 / 评测壳 / REA 壳 / 库管壳）。M2/M3/M4 壳实现细节见各壳 server.py 与契约测试。
 
 ---
 
@@ -506,3 +506,39 @@ SPEC DA1：壳进程按需拉起即退，job 状态必须落持久层——评�
 | （待更新） | M2 完成后 | 增补数据壳/评测壳实现细节 |
 | （待更新） | M3 完成后 | 增补 REA 壳/认知壳双模 |
 | （待更新） | M4 完成后 | 增补库管壳只读 + 45 契约评测 |
+
+
+---
+
+## §9 收尾验证记录（2026-11-03）
+
+### 9.1 真实拉起冒烟（6 壳 24 工具）
+
+以 luke 用户 stdio 真实拉起全部壳，initialize → tools/list → tools/call 全链路通过：
+
+| 壳 | 工具数 | 工具面 |
+|---|---|---|
+| 认知（cognitive） | 6 | recall / record / verify / stats / health / unified_search |
+| 语义（l0.semantic-39） | 4 | query_entity / semantic_lookup / distill_aliases / training_feed |
+| REA（l0.rea） | 6 | submit/poll × analyze/trace/compare（两段式） |
+| 数据（l0.data） | 4 | data_fetch / data_collect_once / data_store_read / data_store_write |
+| 评测（l0.eval） | 2 | eval_analyze / eval_report |
+| 库管（l0.store-admin） | 2 | store_admin_status / store_admin_query |
+
+### 9.2 统一信封校验
+
+6/6 壳真实工具调用返回完整 10 字段信封（ok/data/source/timestamp/degraded/meta/version/trace_id/idempotency_key/error_code）。
+
+**修复记录**：39 语义壳此前返回裸业务体（注册表登记 envelope_version 0.1 与实现不一致），已在 tools/call 响应构造处接入统一信封映射层，业务体原样透传到 envelope.data（零删零改）；独立拉起时按文件路径加载映射层，未新增 sys.path hack（SPEC §3.4 红线）。
+
+### 9.3 契约测试与门禁
+
+- 全量壳测试 22/22 全绿（以 luke 用户运行；REA 壳 job 持久层目录属主为 luke，ubuntu 用户运行会因写权限失败，属环境问题非代码缺陷）
+- 注册表校验通过：4 存量壳 + 3 规划壳 / 24 active 工具 / 上限 40
+- REA 影子双跑：三工具规范化比对 SHA-256 指纹一致（SHADOW-REPORT-L0-REA-M3.md）
+
+### 9.4 生产运行规约
+
+- 壳进程须以 **luke 用户**拉起（job 持久层 / 认知库数据目录属主为 luke）
+- PYTHONPATH=/home/luke/dreambuddy 由宿主 mcp.json env 注入
+- 云端 Python：/home/luke/venv-trading/bin/python3（3.12.3）
