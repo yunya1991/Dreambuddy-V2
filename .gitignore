@@ -27,6 +27,13 @@ threshold
 # 例外：44 三端协作系统的 GitHub 模板目录（templates 被 temp*/ 误伤）
 !44-三端协作架构系统/github/templates/
 !44-三端协作架构系统/github/templates/**
+# 例外：47 MCP 时序签名原型目录（temporal_signature_beta 被 temp*/ 误伤）
+!47-MCP管理系统/prototype/temporal_signature_beta/
+!47-MCP管理系统/prototype/temporal_signature_beta/**
+47-MCP管理系统/prototype/temporal_signature_beta/data/
+47-MCP管理系统/prototype/temporal_signature_beta/__pycache__/
+47-MCP管理系统/prototype/temporal_signature_beta/*.json
+47-MCP管理系统/prototype/temporal_signature_beta/*.md
 
 # 敏感配置文件
 .env
