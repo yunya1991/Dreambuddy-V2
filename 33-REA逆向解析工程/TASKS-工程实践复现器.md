@@ -1,6 +1,6 @@
 # REA 工程实践复现器演进 - Implementation Plan
 
-> **关联 SPEC**: [spec.md](./spec.md)
+> **关联 SPEC**: [SPEC-工程实践复现器.md](./SPEC-工程实践复现器.md)
 > **父工程**: 33-REA逆向解析工程
 
 ---
