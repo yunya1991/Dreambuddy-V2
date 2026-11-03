@@ -312,3 +312,85 @@ def test_domain_derives_from_unknown_source_without_crash(tmp_path):
     shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"))
     result = shadow.observe({"ok": True, "source": "custom.thing.mcp", "meta": {}})
     assert result["observed"] == 1
+
+
+# ---------- S0 观测层：同批去重 / 每域滑窗（SPEC §4.6.3 / §4.6.7） ----------
+def test_s0_window_dedupes_same_batch(tmp_path):
+    """同一次 observe() 的多个条目同属一批 → 每域只产生 1 个路径步。"""
+    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"))
+    result = shadow.observe(
+        [
+            _envelope("l0.data.mcp", poe_score=0.6, cross_domain_refs=1, messages_sent=2),
+            _envelope("l0.data.mcp", poe_score=0.8, cross_domain_refs=3, messages_sent=4),
+            _envelope("l0.data.mcp", poe_score=0.7, latency_ms=50.0),
+        ]
+    )
+    window = shadow.get_domain_window("data")
+    assert len(window) == 1, "同批 3 条应折叠为 1 步"
+    step = window[0]
+    assert step["n"] == 3
+    assert step["poe_score"] == pytest.approx(0.7)  # mean(0.6, 0.8, 0.7)
+    assert step["cross_domain_refs"] == pytest.approx(4 / 3)  # mean(1, 3, 0)
+    assert step["messages_sent"] == 7  # sum(2, 4, 1 缺省)
+    assert result["windows"]["data"]["steps"] == 1
+
+
+def test_s0_window_accumulates_across_batches(tmp_path):
+    """不同批次 → 独立路径步，时间戳单调递增。"""
+    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"))
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.5))
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.9))
+    window = shadow.get_domain_window("data")
+    assert len(window) == 2
+    assert window[0]["ts"] <= window[1]["ts"]
+    assert [s["poe_score"] for s in window] == [0.5, 0.9]
+
+
+def test_s0_window_prunes_by_minutes(tmp_path, monkeypatch):
+    """超出 window_minutes 的步被裁剪（滑窗语义）。"""
+    clock = {"now": 1000.0}
+    monkeypatch.setattr("mcp_shells._shared.agent_mail_shadow.time.time", lambda: clock["now"])
+    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"), window_minutes=1)
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.1))
+    clock["now"] += 120  # 2 分钟后：旧步已出窗
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.2))
+    window = shadow.get_domain_window("data")
+    assert len(window) == 1
+    assert window[0]["poe_score"] == pytest.approx(0.2)
+
+
+def test_s0_window_respects_max_steps(tmp_path, monkeypatch):
+    """窗口步数上限 max_steps（内存硬边界）。"""
+    clock = {"now": 1000.0}
+    monkeypatch.setattr("mcp_shells._shared.agent_mail_shadow.time.time", lambda: clock["now"])
+    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"), max_steps=3)
+    for i in range(5):
+        clock["now"] += 1
+        shadow.observe(_envelope("l0.data.mcp", poe_score=i / 10))
+    assert len(shadow.get_domain_window("data")) == 3
+
+
+def test_s0_window_fail_open_on_sparse_or_bad_input(tmp_path):
+    """无 meta / 未知域 / 单条观察均不得抛错，且窗口可为空。"""
+    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"))
+    shadow.observe({"ok": True, "source": "custom.thing.mcp"})
+    assert shadow.get_domain_window("unknown") == []
+    assert shadow.get_domain_window("data") == []
+    # 单条也能形成 1 步（≥3 点是 S1 提取器的门禁，不是 S0 的职责）
+    shadow.observe(_envelope("l0.data.mcp"))
+    assert len(shadow.get_domain_window("data")) == 1
+
+
+def test_s0_window_query_filter_by_minutes(tmp_path, monkeypatch):
+    """get_domain_window(window_minutes=...) 支持临时收窄窗口。"""
+    clock = {"now": 1000.0}
+    monkeypatch.setattr("mcp_shells._shared.agent_mail_shadow.time.time", lambda: clock["now"])
+    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"), window_minutes=10)
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.1))
+    clock["now"] += 600  # 10 分钟后仍在 10min 边界外
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.2))
+    clock["now"] += 60
+    shadow.observe(_envelope("l0.data.mcp", poe_score=0.3))
+    assert len(shadow.get_domain_window("data")) == 2
+    # 步间隔 60s：收窄到 1 分钟后只剩最新一步（下界严格开区间）
+    assert len(shadow.get_domain_window("data", window_minutes=1)) == 1

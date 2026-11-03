@@ -29,6 +29,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
+from mcp_shells._shared.shadow_hook import observe_envelope  # noqa: E402
 
 SHELL_SOURCE = "l0.eval.mcp"
 EVAL_BASE_URL = os.environ.get("EVAL_API_BASE", "http://127.0.0.1:8790").rstrip("/")
@@ -144,6 +145,7 @@ def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
                 "error": {"code": -32601, "message": f"Method not found: {name}"},
             }
         result_text = handler(params.get("arguments", {}))
+        observe_envelope(result_text)  # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）
         return {
             "jsonrpc": "2.0",
             "id": req.get("id"),

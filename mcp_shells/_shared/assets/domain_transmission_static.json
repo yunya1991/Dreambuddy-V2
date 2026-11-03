@@ -18,63 +18,63 @@
     "regime": "bull",
     "drift_coupling": {
       "cognition↔rea": {
-        "coupling": 0.049,
+        "coupling": 0.021,
         "lags_min": 30
       },
       "cognition↔search": {
-        "coupling": 0.047,
+        "coupling": 0.024,
         "lags_min": 25
       },
       "cognition↔semantic": {
-        "coupling": 0.022,
+        "coupling": 0.021,
         "lags_min": 40
       },
       "cognition↔data": {
-        "coupling": 0.02,
+        "coupling": 0.008,
         "lags_min": 60
       },
       "cognition↔eval": {
-        "coupling": 0.015,
+        "coupling": 0.014,
         "lags_min": 50
       },
       "rea↔search": {
-        "coupling": 0.128,
+        "coupling": 0.017,
         "lags_min": 15
       },
       "rea↔semantic": {
-        "coupling": 0.25,
+        "coupling": 0.015,
         "lags_min": 15
       },
       "rea↔data": {
-        "coupling": 0.25,
+        "coupling": 0.021,
         "lags_min": 40
       },
       "rea↔eval": {
-        "coupling": 0.076,
+        "coupling": 0.043,
         "lags_min": 35
       },
       "search↔semantic": {
-        "coupling": 0.126,
+        "coupling": 0.03,
         "lags_min": 25
       },
       "search↔data": {
-        "coupling": 0.122,
+        "coupling": 0.98,
         "lags_min": 55
       },
       "search↔eval": {
-        "coupling": 0.053,
+        "coupling": 0.977,
         "lags_min": 45
       },
       "semantic↔data": {
-        "coupling": 0.25,
+        "coupling": 0.028,
         "lags_min": 45
       },
       "semantic↔eval": {
-        "coupling": 0.081,
+        "coupling": 0.028,
         "lags_min": 40
       },
       "data↔eval": {
-        "coupling": 0.071,
+        "coupling": 0.979,
         "lags_min": 30
       }
     }
@@ -88,21 +88,21 @@
       "L3_sensitive": 88.9
     }
   },
-  "generated_at": "2026-11-03T10:44:11.736921+00:00",
+  "generated_at": "2026-11-03T12:46:35.122827+00:00",
   "model_version": "l1-domain-coupling-v0.1",
-  "trace_id": "l1-head-infer-911283382a97f054",
+  "trace_id": "l1-head-infer-ccc1edc45897dd00",
   "source": "neural_sde_head_infer",
   "note": "Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100 steps, Mac Metal 推理 32 点 mean coupling. 主体冻结 (SPEC H2). Phase B DomainCouplingHead v0.1 推理产出: NeuralSDE v1_dim64 (338KB) + 2863 params Head, 静态先验 coupling 作 pseudo-target 训 100",
   "derived_from": "40-周期神经网络系统/sector_transmission.json（字段结构同构，语义映射到 L0 六域）",
-  "pseudo_target_source": "phaseC_jsonl_150samples",
+  "pseudo_target_source": "phaseC_jsonl_85samples",
   "head_training": {
     "n_steps": 300,
-    "final_loss": 0.0003,
+    "final_loss": 0.0004,
     "device": "mps",
     "pseudo_target_loaded": true,
-    "target_source": "phaseC_jsonl_150samples",
-    "target_n_samples": 150,
+    "target_source": "phaseC_jsonl_85samples",
+    "target_n_samples": 85,
     "seed": 42
   },
-  "pseudo_target_n_samples": 150
+  "pseudo_target_n_samples": 85
 }

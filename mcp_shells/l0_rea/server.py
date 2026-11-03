@@ -31,6 +31,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
+from mcp_shells._shared.shadow_hook import observe_envelope  # noqa: E402
 
 SHELL_SOURCE = "l0.rea.mcp"
 JOBS_DIR = _REPO_ROOT / "33-REA逆向解析工程" / "reflection_data" / "mcp_jobs"
@@ -241,6 +242,7 @@ def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
                 "error": {"code": -32601, "message": f"Method not found: {name}"},
             }
         result_text = handler(params.get("arguments", {}))
+        observe_envelope(result_text)  # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）
         return {
             "jsonrpc": "2.0",
             "id": req.get("id"),

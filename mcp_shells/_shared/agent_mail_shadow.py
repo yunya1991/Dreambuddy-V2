@@ -45,6 +45,11 @@ SHADOW_PREFIX = "shadow-"
 STRONG_COUPLING = 0.5
 WEAK_COUPLING = 0.3
 
+# S0 观测层时序缓冲（SPEC-L0-L1-DOMAIN-DISCOVERY §4.6.4 / §4.6.7）
+# 同批去重：一次 observe() 的多条目折叠为每域 1 步（路径步），避免重复时间戳污染签名。
+DEFAULT_WINDOW_MINUTES = 60
+DEFAULT_MAX_STEPS = 128
+
 # 壳 source → L0 域名（SPEC-L0-MCP-PACKAGING registry 的 source 字段）
 _SOURCE_TO_DOMAIN = {
     "l0.cognition.mcp": "cognition",
@@ -75,7 +80,11 @@ class AgentMailShadow:
         l1_transmission_path: Optional[str] = None,
         trajectory_store_path: Optional[str] = None,
         max_entries: int = 1000,
+        head_infer: bool = True,
+        window_minutes: int = DEFAULT_WINDOW_MINUTES,
+        max_steps: int = DEFAULT_MAX_STEPS,
     ) -> None:
+        self._head_infer_enabled = bool(head_infer)
         self._l1_path = (
             Path(l1_transmission_path) if l1_transmission_path else STATIC_TRANSMISSION_PATH
         )
@@ -84,6 +93,10 @@ class AgentMailShadow:
         )
         self._max_entries = max(1, int(max_entries))
         self._recent: List[Dict[str, Any]] = []
+        # S0：每域滑窗（内存 only，不落盘、不新增 DB/网络，仍满足 S3）
+        self._window_minutes = max(1, int(window_minutes))
+        self._max_steps = max(1, int(max_steps))
+        self._windows: Dict[str, List[Dict[str, Any]]] = {}
 
     # ---------- L1 静态先验（FAIL-OPEN） ----------
     def load_transmission(self) -> Optional[Dict[str, Any]]:
@@ -109,8 +122,11 @@ class AgentMailShadow:
         items = (
             envelope_trajectory if isinstance(envelope_trajectory, list) else [envelope_trajectory]
         )
+        batch_id = uuid.uuid4().hex[:12]
         entries = [
-            self._to_entry(item, seq) for seq, item in enumerate(items) if isinstance(item, dict)
+            self._to_entry(item, seq, batch_id)
+            for seq, item in enumerate(items)
+            if isinstance(item, dict)
         ]
         self._append(entries)
 
@@ -119,6 +135,9 @@ class AgentMailShadow:
             "domains": sorted({e["agent_domain"] for e in entries}),
             "store": str(self._store_path),
         }
+        summary = self.get_window_summary()
+        if summary:
+            result["windows"] = summary
 
         transmission = self.load_transmission()
         if transmission:
@@ -145,6 +164,8 @@ class AgentMailShadow:
         条件: NeuralSDE ckpt 存在 + Head 可导入 + 推理无异常.
         否则 FAIL-OPEN 直接返回 static_coupling.
         """
+        if not self._head_infer_enabled:
+            return static_coupling
         head_result = self.head_infer_couplings()
         if head_result is None:
             return static_coupling
@@ -206,6 +227,32 @@ class AgentMailShadow:
         items = [e for e in self._recent if domain is None or e["agent_domain"] == domain]
         return items[-max(1, int(limit)) :]
 
+    # ---------- S0 观测层：每域时序步窗口 ----------
+    def get_domain_window(
+        self, domain: str, window_minutes: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """取某域滑窗内的时序步（按 ts 升序，ts 严格大于窗口下界）。
+
+        每个步 = 同一次 observe() 中该域所有条目的聚合（同批去重）。
+        供 S1 的 TemporalSignatureExtractor 消费；S0 阶段不消费。
+        """
+        steps = self._windows.get(domain) or []
+        if window_minutes is None or not steps:
+            return list(steps)
+        cutoff = float(steps[-1]["ts"]) - max(1, int(window_minutes)) * 60.0
+        return [s for s in steps if float(s["ts"]) > cutoff]
+
+    def get_window_summary(self) -> Dict[str, Dict[str, float]]:
+        """各域窗口摘要（steps / span_sec），用于 §4.6.7 数据门禁观测。"""
+        return {
+            domain: {
+                "steps": len(steps),
+                "span_sec": round(float(steps[-1]["ts"]) - float(steps[0]["ts"]), 1),
+            }
+            for domain, steps in sorted(self._windows.items())
+            if steps
+        }
+
     # ---------- 策略评估（SPEC §2.1 evaluate_policy） ----------
     def evaluate_policy(
         self, policy: str, trajectories: Optional[List[Dict[str, Any]]] = None
@@ -252,7 +299,7 @@ class AgentMailShadow:
         return "\n".join(lines) + "\n"
 
     # ---------- 内部 ----------
-    def _to_entry(self, item: Dict[str, Any], seq: int) -> Dict[str, Any]:
+    def _to_entry(self, item: Dict[str, Any], seq: int, batch_id: str = "") -> Dict[str, Any]:
         meta = item.get("meta") or {}
         source = str(item.get("source", ""))
         domain = meta.get("domain") or _SOURCE_TO_DOMAIN.get(
@@ -261,6 +308,7 @@ class AgentMailShadow:
         return {
             "seq": seq,
             "ts": time.time(),
+            "batch_id": batch_id,
             "agent_domain": domain,
             "agent_id": meta.get("agent_id", ""),
             "action": meta.get("event_type") or meta.get("action") or "",
@@ -270,6 +318,10 @@ class AgentMailShadow:
             },
             "cross_domain_refs": meta.get("cross_domain_refs", 0) or 0,
             "poe_score": float(meta.get("poe_score", 0.0) or 0.0),
+            # 真实信封质量信号（合成轨迹无此字段时保持缺省，不影响旧数据）
+            "ok": bool(item.get("ok", True)),
+            "degraded": bool(item.get("degraded", False)),
+            "error_code": str(item.get("error_code", "") or ""),
             "trace_id": _shadow_trace(item.get("trace_id")),
         }
 
@@ -278,6 +330,7 @@ class AgentMailShadow:
             return
         self._recent.extend(entries)
         self._recent = self._recent[-self._max_entries :]
+        self._ingest_windows(entries)
         try:
             self._store_path.parent.mkdir(parents=True, exist_ok=True)
             with self._store_path.open("a", encoding="utf-8") as fh:
@@ -285,6 +338,51 @@ class AgentMailShadow:
                     fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
         except Exception:  # noqa: BLE001 — S3 零干扰，落盘失败不阻断主链路
             pass
+
+    # ---------- S0 观测层：同批去重 → 每域一步 → 时间窗裁剪 ----------
+    def _ingest_windows(self, entries: List[Dict[str, Any]]) -> None:
+        """把本批条目折叠为每域 1 个时序步，并做时间窗 + 步数裁剪。
+
+        硬约束：纯内存结构，不落盘 / 不新增 DB/网络（S3）；任何异常静默降级。
+        """
+        try:
+            grouped: Dict[tuple, List[Dict[str, Any]]] = {}
+            for entry in entries:
+                key = (entry["agent_domain"], entry.get("batch_id", ""))
+                grouped.setdefault(key, []).append(entry)
+
+            touched = set()
+            for (domain, _batch), bucket in grouped.items():
+                self._windows.setdefault(domain, []).append(self._aggregate_step(bucket))
+                touched.add(domain)
+
+            for domain in touched:
+                steps = sorted(self._windows[domain], key=lambda s: float(s["ts"]))
+                newest = float(steps[-1]["ts"])
+                cutoff = newest - self._window_minutes * 60.0
+                self._windows[domain] = [s for s in steps if float(s["ts"]) > cutoff][
+                    -self._max_steps :
+                ]
+        except Exception:  # noqa: BLE001 — S3 零干扰，观测层失败不阻断主链路
+            pass
+
+    @staticmethod
+    def _aggregate_step(bucket: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """同批同域条目 → 1 个路径步（质量取均值，消息量取总和）。"""
+        n = len(bucket)
+        return {
+            "ts": max(float(e.get("ts", 0.0)) for e in bucket),
+            "poe_score": sum(float(e.get("poe_score", 0.0) or 0.0) for e in bucket) / n,
+            "cross_domain_refs": sum(float(e.get("cross_domain_refs", 0) or 0) for e in bucket) / n,
+            "messages_sent": sum(
+                float((e.get("cost") or {}).get("messages_sent", 1) or 0) for e in bucket
+            ),
+            "latency_ms": sum(
+                float((e.get("cost") or {}).get("latency_ms", 0.0) or 0.0) for e in bucket
+            )
+            / n,
+            "n": n,
+        }
 
     def _check_coupling_consistency(
         self, entries: List[Dict[str, Any]], drift_coupling: Dict[str, Any]

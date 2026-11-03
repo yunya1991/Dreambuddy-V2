@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from drift_detector import classify_drift
+from drift_detector import PSI_MINOR_DRIFT, classify_drift
 
 SHADOW_STORE_DEFAULT = (
     Path(__file__).resolve().parents[2] / ".workbuddy" / "agent_mail" / "trajectories.jsonl"
@@ -98,12 +98,55 @@ def build_domain_states(
         if d in active:
             psi = float(psi_map.get(d, _BASELINE_PSI[d]))
             conf = float(confidence_map.get(d, _BASELINE_CONFIDENCE[d]))
+        elif d in psi_map:
+            # 真实轨迹已给出该域的实测 psi（含未参与本条的域），优先使用
+            psi = float(psi_map[d])
+            conf = float(confidence_map.get(d, _BASELINE_CONFIDENCE[d]))
         else:
             psi = _perturb(_BASELINE_PSI[d], key=f"{seed_key}|psi|{d}", scale=0.03)
             conf = _perturb(_BASELINE_CONFIDENCE[d], key=f"{seed_key}|conf|{d}", scale=0.04)
         drift = classify_drift(psi)
         states[d] = {"drift": drift, "psi": round(psi, 4), "confidence_mean": round(conf, 4)}
     return states
+
+
+def compute_real_psi_map(trajectories: List[Dict[str, Any]]) -> Dict[str, float]:
+    """从真实 shadow 轨迹的 degraded 指标实测各域稳定态偏离度（psi 字段）。
+
+    仅消费带 degraded 字段的真实轨迹；合成轨迹（无该字段）不参与。
+    标定方式：PSI 对二值指标（成功/降级）在零基线参考下会退化为不可分箱，
+    因此把「退化率」线性标定到既有 H8 PSI 刻度：
+        psi = min(degraded_rate / PSI_MINOR_DRIFT, 1.0)
+    即退化率 10% = stable/minor 边界，25% = severe 阈值，100% 饱和为 1.0。
+    """
+    series: Dict[str, List[float]] = {}
+    for entry in trajectories:
+        domain = entry.get("agent_domain", "")
+        if domain not in DOMAINS or "degraded" not in entry:
+            continue
+        series.setdefault(domain, []).append(1.0 if entry.get("degraded") else 0.0)
+    psi_map: Dict[str, float] = {}
+    for domain, values in series.items():
+        if not values:
+            continue
+        degraded_rate = sum(values) / len(values)
+        psi_map[domain] = round(min(degraded_rate / PSI_MINOR_DRIFT, 1.0), 4)
+    return psi_map
+
+
+def compute_real_confidence_map(trajectories: List[Dict[str, Any]]) -> Dict[str, float]:
+    """真实轨迹各域成功率（1 - 降级比例）作为 confidence_mean 实测桥接。"""
+    series: Dict[str, List[float]] = {}
+    for entry in trajectories:
+        domain = entry.get("agent_domain", "")
+        if domain not in DOMAINS or "degraded" not in entry:
+            continue
+        series.setdefault(domain, []).append(1.0 if entry.get("degraded") else 0.0)
+    return {
+        domain: round(1.0 - sum(values) / len(values), 4)
+        for domain, values in series.items()
+        if values
+    }
 
 
 def build_reward(
@@ -178,12 +221,19 @@ def collect(
     out.parent.mkdir(parents=True, exist_ok=True)
 
     trajectories = _load_shadow_trajectories(store)
+    # 真实轨迹（带 degraded 字段）→ 实测 psi / 成功率；合成轨迹不参与
+    psi_map = compute_real_psi_map(trajectories)
+    confidence_map = compute_real_confidence_map(trajectories)
     samples: List[Dict[str, Any]] = []
 
     for entry in trajectories:
         samples.append(
             build_training_sample(
-                entry, source="phaseA_shadow_traj", seed_key=f"{seed_str}-t-{len(samples)}"
+                entry,
+                psi_map=psi_map,
+                confidence_map=confidence_map,
+                source="phaseA_shadow_traj",
+                seed_key=f"{seed_str}-t-{len(samples)}",
             )
         )
         if len(samples) >= num_samples:
@@ -212,6 +262,8 @@ __all__ = [
     "build_training_sample",
     "build_domain_states",
     "build_reward",
+    "compute_real_psi_map",
+    "compute_real_confidence_map",
     "DOMAINS",
     "OUTPUT_DEFAULT",
     "SHADOW_STORE_DEFAULT",
