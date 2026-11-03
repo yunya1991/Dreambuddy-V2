@@ -203,3 +203,82 @@ def test_export_json_backward_compatible(tmp_path):
     assert data["state_sensitivity"]["regime"]["mean_abs_delta"] == 0.001
     assert data["head_training"]["input_source"] == "real_btc_1h_36factors"
     assert data["head_training"]["n_input_windows"] == 48
+
+
+# ---------- Phase E: 状态化 (per-window + regime 打标) target ----------
+def _state_labeled_sample(regime_name: str, drifting_domains: list[str]) -> dict:
+    states = {
+        d: {
+            "drift": "severe_drift" if d in drifting_domains else "stable",
+            "psi": 1.0 if d in drifting_domains else 0.0,
+            "confidence_mean": 0.5,
+        }
+        for d in ("cognition", "rea", "search", "semantic", "data", "eval")
+    }
+    return {
+        "input": {"domain_states": states},
+        "reward": {"V_value": 0.5, "verify_success_rate": 0.5, "dreamer_V": 0.5},
+        "source": "phaseA_shadow_window",
+        "trace_id": f"window-{regime_name}",
+        "timestamp": "2026-11-03T00:00:00+00:00",
+        "bbox_count": None,
+        "window": {"window_seconds": 1800, "n_entries": 5},
+        "market_regime": {"name": regime_name, "label": 0},
+    }
+
+
+def test_load_jsonl_targets_per_sample_and_per_regime(tmp_path):
+    from dreambuddy_evolution.core.train_and_export_coupling import _load_jsonl_targets
+
+    path = tmp_path / "training.jsonl"
+    rows = [
+        _state_labeled_sample("bear", ["data", "eval"]),
+        _state_labeled_sample("bull", []),
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+
+    info = _load_jsonl_targets(path)
+    assert info is not None
+    assert info["per_sample"].shape == (2, 15)
+    assert info["n_samples"] == 2
+    assert info["n_state_labeled"] == 2
+    assert info["window_seconds"] == 1800
+    assert set(info["regime_targets"]) == {"bear", "bull"}
+    # bear 窗 data/eval 双 severe → 该对 target=1.0; bull 窗全 stable → 0
+    assert float(info["regime_targets"]["bear"].mean()) > float(
+        info["regime_targets"]["bull"].mean()
+    )
+    assert float(info["regime_targets"]["bull"].max()) == 0.0
+    # 未打标旧样本仍可读: 无 market_regime 时 regime_targets 为空
+    old = _state_labeled_sample("bear", ["data"])
+    del old["market_regime"]
+    path.write_text(json.dumps(old) + "\n")
+    info_old = _load_jsonl_targets(path)
+    assert info_old is not None
+    assert info_old["regime_targets"] == {}
+    assert info_old["n_state_labeled"] == 0
+
+
+def test_regime_target_matrix_maps_and_falls_back():
+    import numpy as np
+    import torch
+
+    from dreambuddy_evolution.core.train_and_export_coupling import (
+        _build_regime_target_matrix,
+    )
+
+    global_t = torch.full((15,), 0.2)
+    bear_t = torch.full((15,), 0.9)
+    bull_t = torch.zeros(15)
+    labels = np.array([0, 1, 2, 0])  # bull, chop(缺数据), bear, bull
+
+    matrix, labeled, by_regime = _build_regime_target_matrix(
+        global_t, {"bear": bear_t, "bull": bull_t}, labels
+    )
+    assert matrix.shape == (4, 15)
+    assert labeled == 3
+    assert by_regime == {"bull": 2, "bear": 1}
+    # chop 无真实采集数据 → 回退 global (0.2), 不伪造
+    assert torch.allclose(matrix[1], global_t)
+    assert torch.allclose(matrix[2], bear_t)
+    assert torch.allclose(matrix[0], bull_t)

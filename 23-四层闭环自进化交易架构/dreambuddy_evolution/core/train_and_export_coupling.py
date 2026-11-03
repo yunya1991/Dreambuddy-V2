@@ -45,22 +45,38 @@ def _device() -> str:
     return "cpu"
 
 
-def _load_jsonl_targets(jsonl_path: Path) -> tuple[torch.Tensor, str, int] | None:
-    """Phase C: 从 collect_domain_discovery_data.py 产出的 JSONL 构造 coupling target.
+_REGIME_NAMES = {0: "bull", 1: "chop", 2: "bear"}
+_DRIFT_LEVELS = {"stable": 0.0, "minor_drift": 0.5, "severe_drift": 1.0}
 
-    coupling 定义: 每对域 (a,b) 的 drift 状态**同向共现率**.
-      both_drift 权重 ×2, both_stable 权重 ×1, 归一化到 [0,1].
 
-    Returns (coupling_15d_tensor, source_label, n_samples) 或 None.
+def _pair_target(domain_states: dict[str, Any], pairs: list[tuple[str, str]]) -> list[float]:
+    """单样本 15 维 coupling target = 每对域 drift level 乘积."""
+    out: list[float] = []
+    for a, b in pairs:
+        la = _DRIFT_LEVELS.get(domain_states.get(a, {}).get("drift", "unknown"), 0.0)
+        lb = _DRIFT_LEVELS.get(domain_states.get(b, {}).get("drift", "unknown"), 0.0)
+        out.append(min(max(la * lb, 0.0), 1.0))
+    return out
+
+
+def _load_jsonl_targets(jsonl_path: Path) -> dict[str, Any] | None:
+    """Phase C/E: 从 collect 产出的 JSONL 构造 coupling target.
+
+    - 每条样本独立算 15 维 target (per-sample), 支撑状态化 (per-window) 训练
+    - 按 market_regime 标签分桶求均值 → regime_targets (仅含真实采集到的 regime)
+    - 未打标样本 (旧格式) 不参与 regime 分桶, 只贡献 global 均值
+
+    Returns dict | None:
+      {per_sample:(N,15) tensor, global:(15,) tensor, regime_targets:{name:(15,)},
+       n_samples, n_state_labeled, drift_samples, source}
     """
     from dreambuddy_evolution.core.domain_coupling_head import PAIRS
 
     if not jsonl_path.exists():
         print(f"[WARN] JSONL 不存在: {jsonl_path}")
         return None
-    lines = jsonl_path.read_text(encoding="utf-8").splitlines()
     samples: list[dict[str, Any]] = []
-    for line in lines:
+    for line in jsonl_path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
@@ -72,44 +88,91 @@ def _load_jsonl_targets(jsonl_path: Path) -> tuple[torch.Tensor, str, int] | Non
         print(f"[WARN] JSONL 无有效样本: {jsonl_path}")
         return None
 
-    N = len(samples)
-    # 预统计每个 pair 的 drift level 共现 (乘积均值)
-    drift_levels = {"stable": 0.0, "minor_drift": 0.5, "severe_drift": 1.0}
-    targets: list[float] = []
-    drift_samples_count = 0  # 至少一个域非 stable 的样本数
-    for a, b in PAIRS:
-        sum_la_lb = 0.0  # drift level 乘积和
-        both_drifted = 0  # 两者都非 stable
-        for s in samples:
-            ds = s.get("input", {}).get("domain_states", {})
-            da = ds.get(a, {}).get("drift", "unknown")
-            db = ds.get(b, {}).get("drift", "unknown")
-            la = drift_levels.get(da, 0.0)
-            lb = drift_levels.get(db, 0.0)
-            sum_la_lb += la * lb
-            if la > 0 and lb > 0:
-                both_drifted += 1
-            if la > 0 or lb > 0:
-                drift_samples_count += 1
-        # coupling = drift level 乘积均值 (severe×severe=1.0, minor×minor=0.25)
-        raw = sum_la_lb / N
-        targets.append(min(max(raw, 0.0), 1.0))
+    pairs = list(PAIRS)
+    per_sample: list[list[float]] = []
+    regime_rows: dict[str, list[list[float]]] = {}
+    n_state_labeled = 0
+    drift_samples = 0
+    for s in samples:
+        ds = s.get("input", {}).get("domain_states", {})
+        row = _pair_target(ds, pairs)
+        per_sample.append(row)
+        if any(v > 0 for v in row):
+            drift_samples += 1
+        regime = s.get("market_regime") or {}
+        name = regime.get("name") if isinstance(regime, dict) else None
+        if name:
+            n_state_labeled += 1
+            regime_rows.setdefault(str(name), []).append(row)
+
+    per_t = torch.tensor(per_sample, dtype=torch.float32)
+    global_t = per_t.mean(dim=0)
+    regime_targets = {
+        name: torch.tensor(rows, dtype=torch.float32).mean(dim=0)
+        for name, rows in regime_rows.items()
+    }
+    win_secs = [
+        s["window"]["window_seconds"]
+        for s in samples
+        if isinstance(s.get("window"), dict) and s["window"].get("window_seconds")
+    ]
+    window_seconds = int(max(set(win_secs), key=win_secs.count)) if win_secs else 0
 
     # 全 stable 样本场景: 用 static JSON coupling 平滑 (避免全 0)
-    if drift_samples_count == 0:
-        print(f"[INFO] JSONL {N} 样本全 stable, coupling 全 0, 用 static JSON 平滑")
+    if drift_samples == 0:
+        print(f"[INFO] JSONL {len(samples)} 样本全 stable, coupling 全 0, 用 static JSON 平滑")
         static_t = _load_pseudo_target(STATIC_JSON)
         if static_t is not None:
-            targets = [
-                round(t * 0.5 + s * 0.5, 3) for t, s in zip(targets, static_t.tolist(), strict=True)
-            ]
+            per_t = per_t * 0.5 + static_t.to(per_t.dtype).unsqueeze(0) * 0.5
+            global_t = per_t.mean(dim=0)
+            regime_targets = {
+                name: torch.tensor(rows, dtype=torch.float32).mean(dim=0) * 0.5 + static_t * 0.5
+                for name, rows in regime_rows.items()
+            }
 
-    source_label = f"phaseC_jsonl_{N}samples" + ("_allstable" if drift_samples_count == 0 else "")
-    print(
-        f"[INFO] Phase C JSONL target: N={N}, drift_samples={drift_samples_count}, "
-        f"mean={sum(targets)/len(targets):.3f}, source={source_label}"
+    source_label = f"phaseC_jsonl_{len(samples)}samples" + (
+        "_allstable" if drift_samples == 0 else ""
     )
-    return torch.tensor(targets, dtype=torch.float32), source_label, N
+    if regime_targets:
+        source_label += "_state" + "".join(sorted(regime_targets))
+    print(
+        f"[INFO] Phase C JSONL target: N={len(samples)}, drift_samples={drift_samples}, "
+        f"state_labeled={n_state_labeled}, regimes={sorted(regime_targets)}, "
+        f"global_mean={float(global_t.mean()):.3f}, source={source_label}"
+    )
+    return {
+        "per_sample": per_t,
+        "global": global_t,
+        "regime_targets": regime_targets,
+        "n_samples": len(samples),
+        "n_state_labeled": n_state_labeled,
+        "drift_samples": drift_samples,
+        "window_seconds": window_seconds,
+        "source": source_label,
+    }
+
+
+def _build_regime_target_matrix(
+    global_target: torch.Tensor,
+    regime_targets: dict[str, torch.Tensor],
+    regime_labels: "np.ndarray",
+) -> tuple[torch.Tensor, int, dict[str, int]]:
+    """把 per-regime target 映射到每个输入窗口 (缺数据 regime → global, 不伪造)。
+
+    Returns (target_matrix (N,15), n_labeled, labeled_by_regime)
+    """
+    n = int(len(regime_labels))
+    base = global_target.unsqueeze(0).expand(n, 15).clone()
+    labeled = 0
+    by_regime: dict[str, int] = {}
+    for i, r in enumerate(regime_labels.tolist()):
+        name = _REGIME_NAMES.get(int(r), f"g{int(r)}")
+        t = regime_targets.get(name)
+        if t is not None:
+            base[i] = t.to(base.dtype).to(base.device)
+            labeled += 1
+            by_regime[name] = by_regime.get(name, 0) + 1
+    return base, labeled, by_regime
 
 
 def _load_pseudo_target(static_json: Path) -> torch.Tensor | None:
@@ -232,6 +295,8 @@ def train_head_and_infer(
     pseudo_target_loaded = False
     target_source = "none"
     target_n_samples = 0
+    target_n_state_labeled = 0
+    jsonl_info: dict[str, Any] | None = None
     loss_curve: list[float] = []
 
     try:
@@ -250,16 +315,19 @@ def train_head_and_infer(
     # ----- 2. target 构造 (Phase C JSONL 优先, P1 static JSON 兜底) -----
     pseudo_target = None
     if inferred:
-        # Phase C: 优先尝试 JSONL 真实标注
+        # Phase C: 优先尝试 JSONL 真实标注 (per-sample + per-regime)
         if jsonl_path is not None:
-            jsonl_result = _load_jsonl_targets(jsonl_path)
-            if jsonl_result is not None:
-                pseudo_target, target_source, target_n_samples = jsonl_result
-                pseudo_target = pseudo_target.to(dev)
+            jsonl_info = _load_jsonl_targets(jsonl_path)
+            if jsonl_info is not None:
+                pseudo_target = jsonl_info["global"].to(dev)
+                target_source = str(jsonl_info["source"])
+                target_n_samples = int(jsonl_info["n_samples"])
+                target_n_state_labeled = int(jsonl_info["n_state_labeled"])
                 pseudo_target_loaded = True
                 print(
-                    f"[INFO] Phase C JSONL target loaded: shape={pseudo_target.shape}, "
-                    f"mean={pseudo_target.mean():.3f}"
+                    f"[INFO] Phase C JSONL target loaded: global shape={pseudo_target.shape}, "
+                    f"mean={pseudo_target.mean():.3f}, "
+                    f"regimes={sorted(jsonl_info['regime_targets'])}"
                 )
 
         # Fallback: P1 static JSON pseudo-target
@@ -303,6 +371,35 @@ def train_head_and_infer(
         else ("synthetic_randn" if inferred else "fallback_random_hidden")
     )
 
+    # ----- 2.6 状态化 target: 真实输入窗口按 regime 映射到 per-regime target -----
+    # 只有真实采集到该 regime 的窗口才用对应 target; 缺数据的 regime 回退 global, 不伪造.
+    target_matrix: torch.Tensor | None = None
+    target_by_regime: dict[str, list[float]] = {}
+    target_state_labeled = False
+    target_regime_coverage: dict[str, Any] = {}
+    if real is not None and pseudo_target_loaded and jsonl_info is not None:
+        n_in = int(real.n_samples)
+        regime_targets = jsonl_info["regime_targets"]
+        target_matrix, labeled_count, labeled_by_regime = _build_regime_target_matrix(
+            pseudo_target, regime_targets, real.regime_label
+        )
+        target_state_labeled = labeled_count > 0
+        for name, t in regime_targets.items():
+            target_by_regime[name] = [round(float(v), 4) for v in t.tolist()]
+        target_regime_coverage = {
+            "regimes_collected": sorted(regime_targets),
+            "windows_labeled": labeled_count,
+            "windows_total": n_in,
+            "labeled_fraction": round(labeled_count / n_in, 4) if n_in else 0.0,
+            "labeled_by_regime": labeled_by_regime,
+            "regime_target_means": {k: round(sum(v) / 15, 5) for k, v in target_by_regime.items()},
+        }
+        print(
+            f"[INFO] 状态化 target: collected_regimes={sorted(regime_targets)}, "
+            f"labeled_windows={labeled_count}/{n_in}, "
+            f"target_by_regime_mean={target_regime_coverage['regime_target_means']}"
+        )
+
     # ----- 3. 训 Head -----
     head = DomainCouplingHead().to(dev)
     optimizer = torch.optim.AdamW(head.parameters(), lr=1e-3, weight_decay=0.01)
@@ -335,11 +432,12 @@ def train_head_and_infer(
                 hidden = extractor.last_hidden
                 optimizer.zero_grad()
                 coupling = head(hidden, apply_mask=False)
-                target = (
-                    pseudo_target.unsqueeze(0).expand_as(coupling)
-                    if pseudo_target_loaded
-                    else torch.rand_like(coupling)
-                )
+                if target_matrix is not None:
+                    target = target_matrix[idx]  # 逐窗口状态化 target (B, 15)
+                elif pseudo_target_loaded:
+                    target = pseudo_target.unsqueeze(0).expand_as(coupling)
+                else:
+                    target = torch.rand_like(coupling)
                 loss = ((coupling - target) ** 2).mean()
                 loss.backward()
                 optimizer.step()
@@ -447,6 +545,15 @@ def train_head_and_infer(
         "input_meta": real.meta if real is not None else {},
         "regime_conditional": regime_conditional,
         "state_sensitivity": state_sensitivity,
+        # Phase E: 状态化 target (per-window 采集 + regime 打标)
+        "target_state_labeled": target_state_labeled,
+        "target_by_regime": target_by_regime,
+        "target_regime_coverage": target_regime_coverage,
+        "target_windows": {
+            "n_samples": target_n_samples,
+            "n_state_labeled_samples": target_n_state_labeled,
+            "window_seconds": int(jsonl_info.get("window_seconds", 0)) if jsonl_info else 0,
+        },
     }
 
 
@@ -508,6 +615,14 @@ def export_coupling_json(
         new_data["regime_conditional_coupling"] = result["regime_conditional"]
     if result.get("state_sensitivity"):
         new_data["state_sensitivity"] = result["state_sensitivity"]
+    # Phase E: 状态化 target 证据 (缺字段时如实标注 False, 不伪造 regime 覆盖)
+    new_data["target_state_labeled"] = bool(result.get("target_state_labeled", False))
+    new_data["target_windows"] = result.get("target_windows", {})
+    if result.get("target_by_regime"):
+        new_data["target_by_regime"] = result["target_by_regime"]
+    if result.get("target_regime_coverage"):
+        new_data["target_regime_coverage"] = result["target_regime_coverage"]
+    new_data["head_training"]["target_state_labeled"] = new_data["target_state_labeled"]
     src = result.get("input_source", "synthetic_randn")
     old_note = old_data.get("note", "")
     new_data["note"] = (

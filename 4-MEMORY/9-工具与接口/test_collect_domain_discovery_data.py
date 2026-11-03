@@ -174,3 +174,147 @@ def test_v_alpha_constant_stays_accessible():
     from training_reward import V_ALPHA  # noqa: F401
 
     assert V_ALPHA == 0.1
+
+
+# ---------- Phase E: 按时间窗聚合 + regime 打标 ----------
+def _window_entry(domain: str, ts: float, degraded: bool) -> dict:
+    return {"agent_domain": domain, "ts": ts, "degraded": degraded, "trace_id": f"{domain}-{ts}"}
+
+
+def _write_entries(store: Path, entries: list) -> None:
+    with store.open("a", encoding="utf-8") as fh:
+        for e in entries:
+            fh.write(json.dumps(e, ensure_ascii=False) + "\n")
+
+
+def _write_btc_ts(path: Path, timestamps_ms: list, closes: list, labels: list) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "timestamps_ms": timestamps_ms,
+                "closes": closes,
+                "regime_labels": labels,
+                "source": "test_fixture",
+            }
+        )
+    )
+
+
+def test_group_trajectories_by_window_splits_by_time():
+    ts0 = 1793700000.0
+    tnum = 1800
+    entries = [
+        _window_entry("data", ts0 + 10, False),
+        _window_entry("eval", ts0 + 20, True),
+        _window_entry("rea", ts0 + tnum + 5, True),
+        _window_entry("search", ts0 + 2 * tnum + 3, False),
+        # 无 degraded 字段的合成轨迹必须被排除
+        {"agent_domain": "cognition", "ts": ts0 + 1, "trace_id": "synth"},
+    ]
+    windows = cdd.group_trajectories_by_window(entries, window_seconds=tnum)
+    assert len(windows) == 3
+    assert [len(w["entries"]) for w in windows] == [2, 1, 1]
+    assert windows[0]["window_start_ts"] == int(ts0 // tnum) * tnum
+    assert windows[0]["window_end_ts"] - windows[0]["window_start_ts"] == tnum
+
+
+def test_window_psi_is_per_window_not_global():
+    """同一域在两个窗口的退化率不同 → psi 必须不同 (全局聚合会抹平这个差异)。"""
+    ts0 = 1793700000.0
+    tnum = 1800
+    # 窗口 A: data 0/4 退化 → psi=0 ; 窗口 B: data 4/4 退化 → psi=1.0 (severe)
+    entries_a = [_window_entry("data", ts0 + i, False) for i in range(4)]
+    entries_b = [_window_entry("data", ts0 + tnum + i, True) for i in range(4)]
+    wa = cdd.group_trajectories_by_window(entries_a + entries_b, window_seconds=tnum)
+    assert len(wa) == 2
+    sample_a = cdd.build_window_sample(wa[0])
+    sample_b = cdd.build_window_sample(wa[1])
+    psi_a = sample_a["input"]["domain_states"]["data"]["psi"]
+    psi_b = sample_b["input"]["domain_states"]["data"]["psi"]
+    assert psi_a == pytest.approx(0.0)
+    assert psi_b == pytest.approx(1.0)
+    for sample in (sample_a, sample_b):
+        for s in sample["input"]["domain_states"].values():
+            assert s["drift"] == classify_drift(s["psi"])
+    assert sample_b["window"]["degraded_count"] == 4
+    assert sample_b["window"]["domains"] == ["data"]
+
+
+def test_regime_at_maps_ts_to_last_completed_bar():
+    ts0_ms = 1793700000000
+    series = {
+        "timestamps_ms": [ts0_ms, ts0_ms + 3600_000, ts0_ms + 7200_000],
+        "closes": [100.0, 101.0, 99.0],
+        "regime_labels": [0, 1, 2],
+        "path": "fixture",
+    }
+    # 落在第二根 bar 内 (< 第三根开盘)
+    hit = cdd.regime_at((ts0_ms + 5000_000) / 1000.0, series)
+    assert hit["label"] == 1 and hit["name"] == "chop"
+    assert hit["bar_ts_ms"] == ts0_ms + 3600_000
+    # 早于第一根 → None
+    assert cdd.regime_at((ts0_ms - 1) / 1000.0, series) is None
+    # 无序列 → None (FAIL-OPEN)
+    assert cdd.regime_at(1.0, None) is None
+
+
+def test_load_regime_series_missing_returns_none(tmp_path):
+    assert cdd.load_regime_series(tmp_path / "no-such.json") is None
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json")
+    assert cdd.load_regime_series(bad) is None
+
+
+def test_collect_windowed_writes_state_labeled_samples(tmp_path):
+    ts0 = 1793700000.0
+    tnum = 1800
+    store = tmp_path / "traj.jsonl"
+    _write_entries(
+        store,
+        [
+            # 窗口 A: data 1/5 退化 → 退化率 20% → psi=0.8 (minor_drift)
+            _window_entry("data", ts0 + 10, False),
+            _window_entry("data", ts0 + 11, False),
+            _window_entry("data", ts0 + 12, False),
+            _window_entry("data", ts0 + 13, False),
+            _window_entry("data", ts0 + 20, True),
+            # 窗口 B: eval 2/2 退化 → psi=1.0 (severe_drift)
+            _window_entry("eval", ts0 + tnum + 5, True),
+            _window_entry("eval", ts0 + tnum + 6, True),
+        ],
+    )
+    btc = tmp_path / "btc_ts.json"
+    ts0_ms = int(ts0) * 1000
+    _write_btc_ts(
+        btc,
+        [ts0_ms, ts0_ms + 3600_000],
+        [100.0, 101.0],
+        [1, 0],  # 窗口 A 落在 chop bar, 窗口 B 落在 bull bar
+    )
+    out = tmp_path / "windowed.jsonl"
+
+    written = cdd.collect_windowed(
+        shadow_store_path=str(store),
+        output_path=str(out),
+        window_seconds=tnum,
+        btc_ts_path=str(btc),
+    )
+    rows = [json.loads(ln) for ln in written.read_text().splitlines()]
+    assert len(rows) == 2
+    assert all(r["source"] == "phaseA_shadow_window" for r in rows)
+    # 两窗 regime 不同, 且 psi 不同 → 状态化 target 的输入不再同构
+    assert [r["market_regime"]["name"] for r in rows] == ["chop", "bull"]
+    assert rows[0]["input"]["domain_states"]["data"]["psi"] == pytest.approx(0.8)
+    assert rows[1]["input"]["domain_states"]["eval"]["psi"] == pytest.approx(1.0)
+    # schema 必需字段仍在 (旧消费者兼容)
+    for r in rows:
+        assert {"input", "reward", "source", "trace_id", "timestamp", "bbox_count"} <= set(r)
+        assert r["window"]["n_entries"] >= 1
+
+
+def test_collect_windowed_no_real_trajectories_writes_empty(tmp_path):
+    store = tmp_path / "empty.jsonl"
+    store.write_text("")
+    out = tmp_path / "out.jsonl"
+    written = cdd.collect_windowed(shadow_store_path=str(store), output_path=str(out))
+    assert written == out and out.read_text() == ""
