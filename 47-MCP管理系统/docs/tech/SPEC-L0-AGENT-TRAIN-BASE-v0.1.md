@@ -49,7 +49,9 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 0.5.2 port 层 Principal 硬门禁（D1）
+### 0.5.2 port 层 Principal 硬门禁（D1）✅ 已落地（2026-11-04，commit 24f9564a）
+
+> **落地状态**：`dreambuddy_l0/ports/principal.py`（PrincipalMissingError + require_principal 装饰器，fail-closed）；挂载于 CognitiveMemoryAdapter.record/verify 与 JsonlStore.write；调度侧 7 处写调用已补传 `_principal={role: agent_admin}`；门禁功能测试 5/5 + 全量回归 139/139 通过。
 
 **问题**：PACKAGING Mandate 只在壳内拦截，跨域 agent 可以绕过壳直接 import port adapter 调用写接口。
 
@@ -98,7 +100,9 @@ def require_principal(min_role: str = "user"):
 | DataPort | （只读） | N/A |
 | SearchPort | （只读） | N/A |
 
-### 0.5.3 TRAIN-BASE Mandate 感知（D2）
+### 0.5.3 TRAIN-BASE Mandate 感知（D2）✅ 已落地（2026-11-04，commit 24f9564a）
+
+> **落地状态**：TB1-TB5 全部入口函数签名已含 `_principal: Optional[dict] = None`（TB1 drift_kill_switch 原有 + 本轮补齐 TB2 verify_beta / TB3 compute_reward / TB4 update / TB5 evolve_step）；替身类（FakeStore/FakeMemory）与既有测试已同步适配。
 
 所有 TRAIN-BASE TB1-TB5 模块签名新增 `_principal` 参数（默认 None，port 层硬门禁消费）。示例——TB1 drift_kill_switch：
 
