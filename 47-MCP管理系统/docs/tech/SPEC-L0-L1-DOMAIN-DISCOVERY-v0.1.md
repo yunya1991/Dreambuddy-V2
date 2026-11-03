@@ -435,6 +435,262 @@ P4 验证回执被以下四个模块同步消费：
 
 ---
 
+### 4.6 时序特征提取层（Phase B 前置，路径签名基线）
+
+> **来源**：用户洞察（"L0 通信层必须考虑不同 agent 的时序特征，趋势延续性是 40 周期系统核心假设，不用 GPT 式、用 BERT 类"）+ 三维评估（本地代码 × 传统金融 × AI 工程）
+> **调研报告**：[2026-11-03-L0通信层时序特征建模调研](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-03-L0通信层时序特征建模调研.md)
+> **认知**：VM-1793700900477-589cad59（禁自回归）/ VM-1793702513243-ef7a2ea3（选型决策），B 级
+
+#### 4.6.1 问题定位（为什么现有架构丢掉了时序）
+
+| 缺口 | 现状 | 后果 |
+|---|---|---|
+| **观测层** | `_to_entry()` 每条轨迹是单点快照（`poe_score / cross_domain_refs / latency_ms / messages_sent`），无窗口序列 | 时序流退化为点集 |
+| **编码层** | DomainCouplingHead 输入是 backbone hidden 的 mean-pool 单点 | 时序维度被压平，趋势/动量信息归零 |
+| **决策层** | `drift_coupling.lags_min` 是**人工先验**（`domain_transmission_static.json`） | 滞后关系未经实测，P3 触发条件（coupling≥0.55）不看时序形态 |
+
+**结论**：时序性不是"加个模型"，而是补齐这三层的观测-编码-决策链路。
+
+#### 4.6.2 选型决策（路径签名深度 3，非 Transformer）
+
+| 维度 | 证据 | 结论 |
+|---|---|---|
+| 本地代码 | `23-.../core/signature_engine.py` 已具备：`depth=3` 默认、`MAX_DEPTH=5`、**signatory → esig → numpy 三级 FAIL-OPEN**、显式时间增广路径 `(t, X_t)` 以捕获 lead-lag | 零改造即可用于 1D 信号流 |
+| 传统金融 | lead-lag 传导的数学本质 = 路径签名二级反对称项（signed area），美股网络研究已验证（arXiv:2201.08283）；Granger/VAR 需 ≥50–100 观测且滞后阶敏感 | 签名比 Granger 更适合**短窗小样本** |
+| AI 工程 | 低维短序列（4 通道 × ≤128 步）Transformer 严重过参数化（FaCTR 2025 / Frontiers 2023：1D ResNet/TCN 全面优于 Transformer）；签名 CPU <1ms、零训练 | 签名是**零成本强基线 + 永久降级兜底** |
+
+**硬性排除**：GPT 式自回归（误差累积+暴露偏差，TimeDART arXiv:2410.05711）；PatchTST 冷启动（标注 <1k 时 masked 预训练不稳）。
+
+**升级路径（仅在同时满足以下三条时评估）**：
+1. 签名基线 coupling 预测 MAE 连续 3 个 walk-forward 折 > 静态 baseline × 0.8（即不达标）
+2. 标注样本 > 5,000
+3. 无标签窗口 > 250,000（Mantis/CauKer 给出的预训练:标注 ≥ 50:1 下限）
+→ 此时再评估 1D ResNet/TCN，预训练目标**必须用金融 MAP（移动平均预测）**（arXiv:2506.16746），禁用标准值重建。
+
+#### 4.6.3 接口设计（TemporalSignatureExtractor，≤ 200 行）
+
+```python
+class TemporalSignatureExtractor:
+    """L0 跨域信号流的时序特征提取器（路径签名基线）。
+
+    复用 23-.../core/signature_engine.py（depth=3，三级 FAIL-OPEN）。
+    硬约束：
+      - T1 零训练（无预训练、无梯度）
+      - T2 只读窗口内数据归一化，禁止全局/未来统计量（无 look-ahead）
+      - T3 任何异常 → 返回零向量 + degraded=True（FAIL-OPEN，不阻断 Head）
+    """
+
+    def __init__(self, depth: int = 3, window_minutes: int = 60,
+                 step_minutes: int = 10, max_steps: int = 128):
+        self._engine = SignatureEngine(depth=depth)
+
+    def extract(self, entries: list[dict]) -> dict:
+        """输入 AgentMailShadow 轨迹条目，输出时序特征。
+
+        输出：
+          per_domain_sig: dict[domain, np.ndarray(14,)]   # 6 域 × 14 维
+          pair_signed_area: dict["A↔B", float]            # 15 对 lead-lag 强度
+          lag_estimate_min: dict["A↔B", int]              # 15 对滞后估计
+          feature_vector: np.ndarray(99,)                  # 84 + 15，供 Head
+          degraded: bool
+        """
+```
+
+**特征组成（99 维）**：
+
+| 组 | 维度 | 计算 | 语义 |
+|---|---|---|---|
+| 每域主通道签名 | 6 × 14 = 84 | `SignatureEngine.signature(zscore(poe_score 窗口))`（时间增广 2 通道，depth 3 → 2+4+8=14） | 本域信号路径形状（趋势/波动/反转形态） |
+| 跨域 signed area | 15 | 2D 路径 `(zscore_A, zscore_B)` depth 2 的反对称项 | **lead-lag 方向与强度**（谁领先谁） |
+| 滞后估计 | 15 | 窗口内互相关峰值位置的 argmax（粗粒度，10min 分辨率） | 替换 `lags_min` 人工先验 |
+
+**接入 Head**：`Linear(99 → 64)` 投影层（约 6.4k 参数），输出与 backbone hidden 拼接后喂 DomainCouplingHead。新增可训练参数总计 ~9.2k（Head 2.8k + 投影 6.4k），仍远低于 §6 验收项 1 的 5MB 上限。
+
+**输入来源（S0 已就绪）**：`extract()` 消费 `AgentMailShadow.get_domain_window(domain)` 返回的时序步列表（每步 = 同批聚合的 `{ts, poe_score, cross_domain_refs, messages_sent, latency_ms, n}`）。S0 已完成去重与滑窗，S1 不再需要重复实现。
+
+#### 4.6.4 窗口规格（数据驱动，先量化再定档）
+
+| 参数 | 初始值 | 依据 | 校准方式 |
+|---|---|---|---|
+| `window_minutes` | 60 | 传统金融：日内信息扩散 15–60min（Whaley 股票领先期权） | Phase 0 统计 `trajectories.jsonl` 每域每小时条数 |
+| `step_minutes` | 10 | 与影子观察粒度对齐 | 同上 |
+| `max_steps` | 128 | 签名深度 3 对 2 通道 → 14 维恒定，与步数无关；但 numpy 降级实现 O(n²) | 实测 CPU 耗时 |
+| `depth` | 3 | depth 4 在多通道下维度指数爆炸（2+4+8+16=30/通道） | 固定 |
+
+**前置量化任务（Phase 0 硬前置）**：统计每域每小时产出条数 `λ_d`。若 `λ_d × 60 < 3`（窗口内不足 3 点无法成签名），则该域降级为"不参与时序特征"，仅保留原 mean-pool 通路并标记 `insufficient_steps`。
+
+#### 4.6.5 反模式（禁止）
+
+| # | 禁止 | 理由 |
+|---|---|---|
+| Z1 | GPT 式自回归生成做时序编码 | 用户明确排除 + TimeDART 误差累积证据 |
+| Z2 | 微调 NeuralSDE 主体以接收时序输入 | H2 硬约束；时序特征必须走**外置零训练编码器** |
+| Z3 | 冷启动期直接上 PatchTST / Transformer | 标注 <1k 不稳；低维短序列 Transformer 过参数化 |
+| Z4 | 用全局统计量做签名前归一化 | look-ahead bias，违反量化黄金标准 |
+| Z5 | 用签名特征替换 mean-pool 通路 | 必须**并行拼接**，签名失效时回退原通路（T3） |
+| Z6 | 把 `l1_case_store.jsonl` 的 `source_counts` 当时序信号 | 实测 7,977/7,983 次不变（常量快照），方差≈0 → 签名会学出"伪趋势"。禁止作为域信号流；仅可作调度频率单变量 |
+| Z7 | 用"行数多"代替"信号有方差"作为数据门禁 | 密度高 ≠ 信息量大；入模前必须先做方差/单调性检验 |
+
+#### 4.6.6 合理性证伪条件（不达标就撤销时序层）
+
+时序层不是默认正确。必须通过以下消融，否则**回退到纯 mean-pool + 人工先验**：
+
+| # | 证伪实验 | 撤销条件 |
+|---|---|---|
+| F1 | **消融对比**：Head 输入 `[hidden]` vs `[hidden ‖ sig_99]`，同数据同折数 | coupling MAE 改善 < 10% → 撤销 |
+| F2 | **随机签名对照**：把 `sig_99` 替换为同分布随机向量重训 Head | 性能与真签名无显著差异（p>0.05）→ 说明是参数增量而非时序信息起作用，撤销 |
+| F3 | **lag 预测有效性**：签名派生的 `lag_estimate_min` vs 人工先验，在 walk-forward 上的预测误差 | MAE 不比人工先验低 → 保留人工先验，撤销 lag 分支 |
+| F4 | **端到端增益**：P4 沙箱 `pnl_delta` 在含时序特征 vs 不含，min_trades ≥ 50 | `treatment_alpha` 无提升 → 只保留作为诊断信号，不接 Head |
+| F5 | **数据充分性**：窗口内点数中位数 | 中位数 < 3 → 时序层不启用（§4.6.4 降级） |
+
+#### 4.6.7 实测数据体检（本地 + 云端 43.160.201.117）
+
+**本地（`.workbuddy/agent_mail/trajectories.jsonl`）**
+
+| 指标 | 实测值 | 门禁 | 判定 |
+|---|---|---|---|
+| 总条目 | 33 | — | — |
+| 时间跨度 | 1,562 秒（≈26 分钟） | 需 ≥ 数周连续积累 | ❌ 严重不足 |
+| 唯一时间戳 | 25（33 条中 8 条为同批多条目） | 需按唯一时间戳去重成路径步 | ✅ S0 已解决（`batch_id` 去重） |
+| 域分布 | data 11 / eval 9 / cognition 5 / search 5 / rea 2 / semantic 1 | 每域窗口内 ≥3 点 | ❌ rea、semantic 不达标 |
+| `poe_score == 0` 占比 | 9.1% | — | ✅ 信号非全零 |
+| 有效信号变化度 | 33 条中 23 种 (poe, refs) 组合 | — | ✅ 有一定区分度 |
+
+**云端（2026-11-03 实测，`/home/luke/dreambuddy`）**
+
+| 数据源 | 行数 | 时间跨度 | 密度（活跃小时中位） | 判定 |
+|---|---|---|---|---|
+| `39-金融语义蒸馏系统/semantic_events.jsonl` | 9,756 | 9.9 天 | 31 条/小时；6 个 term 各 5–13 条/小时；79.9% 数值可解析 | ✅ **真时序流**（域维度=交易决策口径，非 L0 6 域） |
+| `39-金融语义蒸馏系统/atomic_events.jsonl` | 3,929 | **33.7 天** | 5 条/小时；19 category × 56 metric | ✅ **真时序流**（市场侧信号，跨度最长） |
+| `39-金融语义蒸馏系统/contradiction_events.jsonl` | 1,376 | — | 用 `window_start/window_end` 而非单点 ts | ⚠️ 需窗口重采样 |
+| `34-前端应用训练系统/l1_case_store.jsonl` | 7,985 | 4.8 天 | 53 条/小时 | ❌ **伪信号陷阱**：`source_counts` 31 键中 7,977/7,983 次完全不变（Skill=30/Doc=30 恒定），是**静态配置快照**，非时序信号 |
+| `23-.../gene_data/shadow_rl_samples.jsonl` | 418,578 | 无 ts | state/action/reward/next_state | ⚠️ RL 样本池，**非时序流**（可作 F1 消融训练量） |
+| `40-周期神经网络系统/execution_trades.jsonl` | 32 | 3.0 天 | `pnl` 多为 null | ❌ F4 的 pnl ground truth 不足 |
+| `.workbuddy/agent_mail/trajectories.jsonl` | **18（α 首跑 2 轮）** | 2 轮 × 9 调用 | 10 分钟/轮（systemd timer） | ✅ **α 已接线（2026-11-03）**，见 §4.6.10；接入前该文件不存在 |
+
+**结论（修正版）**：
+
+1. **数据量已不是瓶颈**：云端有 33.7 天 / 3,929 条 + 9.9 天 / 9,756 条连续流，远超本地 33 条。
+2. **但数据域维度错配**：可用时序流（`semantic_events`/`atomic_events`）的"域维度"是**交易决策口径/市场指标**，而 L0 需要 6 个 agent 域。α 接线后云端已有 4 个真实壳域（data/eval/store-admin/rea）的轨迹，但**只有 4 个壳存在**（cognition/search/semantic 壳尚未实现），6 域覆盖仍不完整（见 §4.6.10）。
+3. **密度最高的源是陷阱**：`l1_case_store` 53 条/小时看似完美，但信号方差≈0（常量快照），签名会学出"伪趋势"。已列反模式 Z6。
+
+**分阶段执行（修正）**：
+
+| 阶段 | 动作 | 启动条件（数据门禁） |
+|---|---|---|
+| **S0（✅ 已落地 2026-11-03）** | 观测层改造：`observe()` 同批去重（`batch_id` → 每域 1 步）+ 每域滑窗（`window_minutes=60` / `max_steps=128`，纯内存）+ `get_domain_window()` / `get_window_summary()` 查询接口；`trajectories.jsonl` 持续积累 | 已完成（`mcp_shells` 53 项测试全通过） |
+| **S0.5（✅ 已执行 2026-11-03）** | 选源：<br>**α ✅** 云端接线 AgentMailShadow（壳调用链挂 `observe()`），积累真实域轨迹（结果见 §4.6.10）；<br>**β ✅** 先用 `semantic_events`+`atomic_events` 做方法原型验证（结果 F1/F2 未通过，见 §4.6.9） | α 已上线 timer；β 已出结论 |
+| **S1** | 实现 `TemporalSignatureExtractor` + 单测（验收 18/19/20/23） | ⛔ **暂缓**（β 未通过 F1/F2，见 §4.6.9）；重启条件：≥10 条连续流 + ≥6 个月 + 日级 horizon |
+| **S2** | 跑 F1/F2 消融（验收 21）+ F3 lag 对比（验收 22） | ⛔ 暂缓（同上；β 已用真实流预演过一次，结果见 §4.6.9） |
+| **S3** | 时序特征接入 DomainCouplingHead | ⛔ 暂缓（F1 未达标，按撤销条件不得接入） |
+| **撤销** | 回退 pure mean-pool + 人工先验 | 任一 F 项不达标 |
+
+#### 4.6.8 外部调研证据索引（正文规格的支撑材料）
+
+> 本表是 §4.6.2 选型与 §4.6.6 证伪条件的**证据索引**；完整调研过程见[调研报告](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-03-L0通信层时序特征建模调研.md)。两者冲突时**以本节及 §4.6.2 为准**。
+
+**时序架构（外部证据，非本项目选型）**
+
+| 架构 | 年份/出处 | 关键结论 | 对本项目的意义 |
+|---|---|---|---|
+| PatchTST | ICLR 2023, arXiv:2211.14730 | patch + channel-independence + masked 自监督；监督版 MSE 降 21.0%；自监督预训练+微调优于全监督；含 freeze/linear-probe 实验 | 未来升级候选（非默认） |
+| SimMTM | NeurIPS 2023, arXiv:2302.00861 | 10% 数据微调 MSE 0.591 vs 对比学习 TF-C 降 26.0% | 小样本可行性证据 |
+| 金融 MAP 预训练 | 2025, arXiv:2506.16746 | 股价序列直接 masked 值预测不适合，改用**移动平均预测**作代理任务 | §4.6.2 升级路径的预训练目标 |
+| DLinear | AAAI 2023, arXiv:2205.13504 | 单层线性在 9 个数据集击败当时全部 Transformer | 反对"必须上 Transformer" |
+| TimesNet | ICLR 2023, arXiv:2210.02186 | FFT 多周期 → 2D 折叠；参数/FLOPs 显著大于 PatchTST | 仅作对照 |
+| iTransformer | ICLR 2024, arXiv:2310.06625 | 对变量（非时间点）做 attention；无原生 masked 预训练 | 6 域多变量场景备选 |
+| TimeDART | arXiv:2410.05711 | 自回归"易过拟合时序噪声与异常，加剧误差累积" | **Z1 禁自回归的直接依据** |
+
+**传统金融范式（lead-lag / 传导建模）**
+
+| 方法 | 适用与局限 | 对本项目的意义 |
+|---|---|---|
+| Granger 因果 / VAR | 对滞后期高度敏感、两两分析、高维 O(N²·lags)；跨域 6 变量尚可 | 可作 lag 估计的对照基线（非首选） |
+| VECM / 协整（Johansen） | 小样本功效低，需 ≥50–100 观测；结构性断点易误判 | 数据量达标后再评估 |
+| 转移熵 TE（Schreiber） | 非线性的信息流向；样本饥渴、联合状态空间随历史指数膨胀 | 不适用本项目数据量 |
+| DCC-GARCH（Engle 2002） | 动态条件相关、波动联动 | 无（本项目是事件流非价格流） |
+| Heston lead-lag | 行业/截面动量领先-滞后 | 支撑"滞后窗口 1 日–数周"的经验区间 |
+| 路径签名 signed area | 二级反对称项直接度量 lead-lag（arXiv:2201.08283 美股验证） | **§4.6.3 跨域 15 对特征的数学依据** |
+
+**经验性滞后窗口（§4.6.4 的取值依据）**
+
+| 场景 | 经验滞后 | 出处 |
+|---|---|---|
+| 股票领先期权（日内） | 15–20 分钟 | Whaley |
+| 股指期货领先现货 | 1–5 分钟 | CSI300 研究 |
+| 大盘领先小盘 | 1 日 | "Leads, Lags, and Trading in Global Markets" |
+| ETF 资金流领先板块动量见顶 | 4–8 周 | Pomegra |
+| 行业动量形成期 | t-12 至 t-2 月（剔除最近 1 月） | Heston-Rouwenhorst |
+| 跨资产动量 lookback | 1 / 21 / 252 日 | EFMA 2021 |
+
+**小样本与验证硬标准（§4.6.6 / §4.6.7 的门禁依据）**
+
+| 标准 | 数值 | 出处 |
+|---|---|---|
+| 可信交易样本量 | ≥200 笔（理想 500+）；<100 笔 Sharpe 置信区间过宽 | Keel |
+| walk-forward OOS/IS Sharpe | 应在 70–90%；>90% 警惕 lookahead | 行业通行 |
+| 预训练 : 标注 样本比 | ≥50:1（CauKer 2025，100K 合成数据接近 1.89M 真实数据效果） | arXiv:2508.02879 / Mantis arXiv:2502.15637 |
+| 冻结 vs 全量微调差距 | linear probing 约低 5–7 个点 | Mantis ICLR 2026 |
+| 多重检验校正 | Deflated Sharpe Ratio | Bailey & López de Prado 2012 |
+
+#### 4.6.9 β 原型验证结果（2026-11-03，F1/F2/F3 预演）
+
+> 完整报告：[prototype/temporal_signature_beta/report.md](../../prototype/temporal_signature_beta/report.md) ｜ 代码 `proto_beta.py` ｜ 原始结果 `beta_result.json`
+> 数据：云端 `semantic_events.jsonl`（4 条达标流 / 3 对 / 平均 104 窗）+ `atomic_events.jsonl`（2 条达标流 / 1 对 / 588 窗）
+
+| 门槛 | 阈值 | 实测 | 结论 |
+|---|---|---|---|
+| **F1 消融** | 中位 MAE 改善 ≥10% | semantic **-0.68%**；atomic **-0.42%** | ❌ **未通过** |
+| **F2 随机对照** | ≥1/3 对 p<0.05 且方向为正 | semantic 0/3；atomic p=0.005 但**方向为负**（真签名劣于置换） | ❌ **未通过** |
+| **F3 lead-lag** | 一致率 ≥80% | semantic 66.7%；atomic 100%（单对且 lag 触边界，不可采信） | ⚠️ 方向存在，样本不足 |
+| 敏感性 | window 4/8/12 × coverage 0.4/0.5 | 中位改善始终在 ±1% 内 | 排除配置因素 |
+| 同流对照 | A 预测自身 | 仅 `反向信号软权重` +23.7%，其余持平/变差 | 窄正向线索 |
+
+**判定**：按 §4.6.6 预设撤销条件，**F1 未达标 → 时序层不接入 DomainCouplingHead，S1/S2/S3 暂缓**。
+
+**解读**：
+1. 低维事件流上，五维统计特征已吃掉可解释信息；签名 15 维主要增加方差。
+2. 随机对照多数对不劣于真签名 → 增量更像"自由度噪声"而非"时序结构"。
+3. 时序有用性取决于**信号是否连续可测**：稀疏事件触发流上窗口路径本身不可信。这直接印证 §4.6.7 的"数据源错配"判断。
+4. 因此前置条件从"实现编码器"改为"**先确保每域有连续高频信号**"（即 S0.5 选项 α）。
+
+**保留项**：`反向信号软权重` 同流 +23.7% 与 `BDSM→反向` lag=6 → 仅作为窄场景候选，不构成通用结论。
+
+**重新评估的触发条件**（三条同时满足才重启 S1）：≥10 条连续流、覆盖 ≥6 个月、且目标 horizon 改为日级（降低噪声）。
+
+#### 4.6.10 α 云端接线结果（2026-11-03）
+
+**接线方式（不是进程内直调，而是经过壳边界）**
+
+| 层 | 改动 | 说明 |
+|---|---|---|
+| 壳内计时 | 4 个壳 `tools/call` 分支实测 handler 耗时 | `observe_envelope(text, latency_ms=..., action=工具名)` |
+| 旁路开关 | `shadow_hook.enabled()`：显式 env > `.workbuddy/agent_mail/ENABLED` flag > 默认关 | 云端无需改 env 即可启停；`AGENT_MAIL_SHADOW=0` 可临时否决 |
+| meta 补齐 | 信封 meta 缺失时补 `latency_ms` / `event_type` / `poe_score`(成功 1.0、降级 0.0) / `messages_sent` | 以实测值为准，信封自带值零覆盖（Z7：连续信号交给真实 latency） |
+| 流量驱动 | `mcp_shells/_shared/shadow_driver.py` 按 MCP stdio JSON-RPC 拉起壳进程执行只读工具面 | 云端无 MCP host 常驻，必须由驱动产生真实壳调用 |
+| 调度 | `31-分布式计算部署/phase13/dreambuddy-shadow-driver.{service,timer}`，10 分钟一轮 | `User=luke`，`TimeoutStartSec=300` |
+
+**首跑实测（`sudo -u luke -H` 读取 `/home/luke/dreambuddy/.workbuddy/agent_mail/trajectories.jsonl`）**
+
+| 指标 | 实测 | 判定 |
+|---|---|---|
+| 条目 | 18（2 轮 × 9 调用；`systemctl start` 首跑 + timer 首触发） | ✅ 落盘生效 |
+| 域覆盖 | data 8 / store-admin 4 / rea 4 / eval 2 | ⚠️ 仅 4 域（云端只有 4 个壳） |
+| 动作 | data_fetch 4、data_collect_once 2、data_store_read 2、eval_report 2、store_admin_status/query 各 2、submit/poll_rea_trace 各 2 | ✅ 工具面真实 |
+| latency_ms | 0.021~46.1（eval 46ms、store_admin 29ms、data <3ms） | ✅ 连续真实信号 |
+| poe_score | 1.0 ×16 / 0.0 ×2 | ✅ 有方差（非全常量） |
+| trace_id | 100% `shadow-` 前缀 | ✅ S2 合规 |
+| 降级 | `data_store_read` 2 次 `unavailable`（云端 DAL container 无 `query_repo`） | ⚠️ 真实缺口，待 DAL 只读仓配置 |
+
+**与 S1 的关系**：α 只解决"有没有真实轨迹"，不解决"是否该上时序"——F1/F2 仍未通过（§4.6.9）。按 §4.6.6 撤销条件，S1/S2/S3 继续暂缓；α 的价值是让重启条件（≥10 条连续流、≥6 个月）**开始真实累积**而非靠合成样本。
+
+**已知缺口**：
+1. 6 域只覆盖 4 域（cognition/search/semantic 壳未实现）。
+2. 10 分钟 9 调用 ≈ 每域 6 步/小时，S0 去重后仍满足窗口 ≥3 步，但跨度需累积数周才可信。
+3. `cross_domain_refs` 壳侧无法感知，保持缺省 0；跨域共现只能由 S0 窗口层事后推导。
+
+---
+
 ## §6 TDD 验收标准（Phase B 硬门禁）
 
 | # | 验收项 | 标准 | 硬约束验证 |
@@ -456,6 +712,13 @@ P4 验证回执被以下四个模块同步消费：
 | 15 | **P4 回执 trace_id 可追溯** | 每条 P4 验证回执带 `trace_id: "sandbox-<sha256>"`，关联完整 CounterfactualResult JSON 落盘 | H3 |
 | 16 | **regime context 对齐** | `hypothesis.trigger.regime_context` 必须能在 `sector_transmission.json` 历史中找到匹配时段 | Shadow 放量门禁 |
 | 17 | **沙箱零 GPU** | CPU 4C16G 单假设回测 ≤ 5 分钟 | — |
+| 18 | **时序特征零训练** | `TemporalSignatureExtractor` 无 `requires_grad`、无 `.fit()`、无预训练权重文件 | §4.6 T1；H2 |
+| 19 | **时序无 look-ahead** | 签名前归一化只用窗口内统计量；单测：注入未来点 → 特征值不变 | §4.6 T2；量化黄金标准 |
+| 20 | **时序 FAIL-OPEN** | 空窗口 / 单点 / 异常输入 → 返回零向量 + `degraded=True`，Head 原通路不受影响 | §4.6 T3；H4 |
+| 21 | **时序特征消融达标** | F1 coupling MAE 改善 ≥ 10% 且 F2 随机对照显著（p<0.05） | §4.6.6 F1/F2 |
+| 22 | **lag 估计优于人工先验** | F3 walk-forward lag MAE < 静态 `lags_min` 先验 MAE | §4.6.6 F3 |
+| 23 | **时序层推理开销** | 6 域 × 60min 窗口单次 `extract()` < 20ms（CPU） | §4.6.4 实测 |
+| 24 | **数据充分性门禁** | 每域窗口内点数中位数 ≥ 3，否则该域降级 `insufficient_steps` | §4.6.6 F5 |
 
 ---
 
