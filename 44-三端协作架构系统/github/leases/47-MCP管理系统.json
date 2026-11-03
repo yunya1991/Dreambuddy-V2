@@ -21,6 +21,17 @@
       "base_sha": null,
       "started_at": "2026-11-03T23:57:22+08:00",
       "ttl_hours": 24,
+      "status": "released",
+      "released_at": "2026-11-04T00:10:41+08:00"
+    },
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-DSH-P2",
+      "session": "trae-local-superagent-p2",
+      "base_sha": null,
+      "started_at": "2026-11-04T00:10:41+08:00",
+      "ttl_hours": 24,
       "status": "active",
       "released_at": null
     }

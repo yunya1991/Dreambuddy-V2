@@ -484,8 +484,9 @@ class L0Foundation:
             "data": result.get("data"),
         }
         # P1.5 扩展字段（spec §9.1）：意图系统域 complexity/entities 透传
+        # T-DSH-P2: trace_id(ADR-7 观测主轴)/evidence_bundle(45 裁决凭证)透传
         context = context or {}
-        for _k in ("complexity", "entities"):
+        for _k in ("complexity", "entities", "trace_id", "evidence_bundle"):
             if context.get(_k) is not None:
                 case[_k] = context[_k]
         self._append_case(case)
