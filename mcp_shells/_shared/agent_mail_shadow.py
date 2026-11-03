@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""mcp_shells/_shared/agent_mail_shadow.py — AgentMail 影子观察器（COMM-SHADOW Phase 0）
+"""mcp_shells/_shared/agent_mail_shadow.py — AgentMail 影子观察器（COMM-SHADOW Phase 0 + P2）
 
 SPEC-L0-AGENT-COMM-SHADOW-v0.1 §2.1 + SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1 §4.1
 
 职责：
   - 旁路观察 L0 壳信封，归一化为 trajectory 条目并落本地 JSONL
   - 若存在 L1 域传播先验（domain_transmission_static.json），追加 l1_insights
+  - P2 增强: 识别 Phase A (source=static) vs Phase B (source=neural_sde_head_infer)
+    coupling 来源; 可选 DomainCouplingHead 推理, ckpt 缺失时 FAIL-OPEN 回退静态值.
 
 硬约束（COMM-SHADOW §5.2 S1-S3）：
   S1 不触发：只写本地 JSONL，不 import / 调用任何域 agent
   S2 独立 trace：落盘 trace_id 统一 shadow- 前缀
   S3 零资源占用：无 DB / 无网络 / 无子进程，内存仅保留 max_entries 条
 
-FAIL-OPEN：静态先验缺失或损坏、落盘失败均不影响主链路（返回 None / 静默跳过）。
+FAIL-OPEN：静态先验缺失或损坏、Head ckpt 缺失/推理失败、落盘失败均不影响主链路.
 """
 
 from __future__ import annotations
@@ -26,6 +28,13 @@ from typing import Any, Dict, List, Optional
 
 STATIC_TRANSMISSION_PATH = (
     Path(__file__).resolve().parent / "assets" / "domain_transmission_static.json"
+)
+# NeuralSDE checkpoint (Phase B Head 推理依赖; 缺失则 FAIL-OPEN)
+_NEURAL_SDE_CKPT = (
+    Path(__file__).resolve().parents[2]
+    / "23-四层闭环自进化交易架构"
+    / "data"
+    / "neural_sde_v1_dim64.pt"
 )
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STORE_PATH = _REPO_ROOT / ".workbuddy" / "agent_mail" / "trajectories.jsonl"
@@ -114,14 +123,81 @@ class AgentMailShadow:
         transmission = self.load_transmission()
         if transmission:
             block = transmission["domain_transmission"]
+            l1_meta = {
+                "transmission_source": transmission.get("source", "static"),
+                "model_version": transmission.get("model_version", "l1-domain-coupling-v0.0"),
+                "trace_id": transmission.get("trace_id", ""),
+                "generated_at": transmission.get("generated_at", ""),
+            }
+            coupling = self._resolve_couplings(block.get("drift_coupling") or {})
             result["l1_insights"] = {
-                "coupling_consistency": self._check_coupling_consistency(
-                    entries, block.get("drift_coupling") or {}
-                ),
+                **l1_meta,
+                "coupling_consistency": self._check_coupling_consistency(entries, coupling),
                 "l1_regime_match": block.get("regime"),
                 "l1_state": block.get("state"),
             }
         return result
+
+    # ---------- P2: Head 推理（FAIL-OPEN） ----------
+    def _resolve_couplings(self, static_coupling: Dict[str, Any]) -> Dict[str, Any]:
+        """Phase B: 尝试用 DomainCouplingHead 推理替换静态先验.
+
+        条件: NeuralSDE ckpt 存在 + Head 可导入 + 推理无异常.
+        否则 FAIL-OPEN 直接返回 static_coupling.
+        """
+        head_result = self.head_infer_couplings()
+        if head_result is None:
+            return static_coupling
+        # 用 Head 推理值替换 coupling (lags_min 保留静态先验)
+
+        from dreambuddy_evolution.core.domain_coupling_head import PAIRS
+
+        merged: Dict[str, Any] = dict(static_coupling)
+        for i, (a, b) in enumerate(PAIRS):
+            key = f"{a}↔{b}"
+            val = float(head_result[i])
+            existing = merged.get(key)
+            lags = existing.get("lags_min", 30) if existing else 30
+            merged[key] = {"coupling": val, "lags_min": lags}
+        return merged
+
+    def head_infer_couplings(self) -> Optional[List[float]]:
+        """尝试用 NeuralSDE + DomainCouplingHead 推理 15 维 coupling.
+
+        Returns 15 维 coupling list ∈ [0,1] 或 None (FAIL-OPEN).
+        S1 硬约束: 不触发域 agent / 不在初始化时 import torch — 懒加载.
+        """
+        if not _NEURAL_SDE_CKPT.exists():
+            return None
+        try:
+            import torch  # noqa: F401 — 懒加载, 避免无 GPU 环境 import 阻塞
+            from dreambuddy_evolution.core.domain_coupling_head import (
+                DomainCouplingHead,
+                NeuralSDEHiddenExtractor,
+                freeze_backbone,
+                load_neural_sde_v1_dim64,
+            )
+
+            dev = "mps" if torch.backends.mps.is_available() else "cpu"
+            drift_net, _ck = load_neural_sde_v1_dim64(str(_NEURAL_SDE_CKPT), device=dev)
+            freeze_backbone(drift_net)
+            head = DomainCouplingHead().to(dev)
+            head.eval()
+            # 推理 8 个点取 mean (B=16)
+            extractor = NeuralSDEHiddenExtractor(drift_net, device=dev)
+            sig_dim = 15
+            with extractor.capture():
+                _ = drift_net(
+                    0.5,
+                    torch.randn(16, 1, device=dev),
+                    torch.randn(16, sig_dim, device=dev),
+                )
+            hidden = extractor.last_hidden
+            coupling = head(hidden).detach().mean(dim=0).cpu().tolist()
+            extractor.remove()
+            return coupling
+        except Exception:  # noqa: BLE001 — FAIL-OPEN
+            return None
 
     # ---------- 查询 ----------
     def get_recent_trajectories(

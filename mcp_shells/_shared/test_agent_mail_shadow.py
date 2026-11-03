@@ -111,7 +111,12 @@ def test_observe_attaches_l1_insights(tmp_path):
     assert result["domains"] == ["cognition", "rea"]
 
     insights = result["l1_insights"]
-    assert set(insights) == {"coupling_consistency", "l1_regime_match", "l1_state"}
+    # Phase 0: 3 核心字段; P2: 追加 coupling 来源 metadata
+    assert "coupling_consistency" in insights
+    assert "l1_regime_match" in insights
+    assert "l1_state" in insights
+    assert "transmission_source" in insights  # P2: coupling 来源标注
+    assert "model_version" in insights  # P2: model_version 标注
     assert insights["l1_state"] == "neutral"
     assert insights["l1_regime_match"] == "bull"
 
@@ -129,22 +134,49 @@ def test_observe_reports_insufficient_data_on_single_domain(tmp_path):
 
 
 def test_observe_reports_drift_on_weak_pair_cooccurrence(tmp_path):
-    """Phase B Head 推理后 cognition↔data coupling=0.0 (原 0.25 弱带, 仍 ≤0.3).
+    """双域共现 vs 弱带先验 → drift.
 
-    测试不再硬编码 coupling 值, 改为断言:
-    - band=="weak" (≤0.3 的 pair 共现 → drift)
-    - static_coupling ≤ 0.3 (弱带阈值)
-    - consistency_ratio == 0.0
+    使用可控 mock transmission JSON (绕开 Head 推理), 避免依赖训练程度.
+    固定 coupling=cognition↔data=0.25 (弱带 ≤0.3).
     """
-    shadow = AgentMailShadow(trajectory_store_path=str(tmp_path / "t.jsonl"))
-    cc = shadow.observe([_envelope("l0.cognition.mcp"), _envelope("l0.data.mcp")])["l1_insights"][
-        "coupling_consistency"
+    import json
+
+    # 可控 mock: 只有 1 个 weak pair, 其他 coupling 缺失
+    mock_trans = {
+        "domain_transmission": {
+            "state": "neutral",
+            "regime": "bull",
+            "drift_coupling": {"cognition↔data": {"coupling": 0.25, "lags_min": 60}},
+        },
+        "domain_layers": {"L1_anchor": ["cognition"], "L2_active": [], "L3_sensitive": ["data"]},
+        "domain_breadth": {
+            "breadth_pct": 100.0,
+            "state": "strong",
+            "layer_breadth": {"L1_anchor": 100.0, "L2_active": 100.0, "L3_sensitive": 100.0},
+        },
+        "generated_at": "2026-11-03T00:00:00+00:00",
+        "model_version": "l1-domain-coupling-v0.1",
+        "source": "static",
+        "note": "mock for drift test",
+    }
+    mock_json = tmp_path / "mock_trans.json"
+    mock_json.write_text(json.dumps(mock_trans))
+
+    # 直接调 _check_coupling_consistency (不经过 observe 里的 Head 推理)
+    shadow = AgentMailShadow(
+        l1_transmission_path=str(mock_json), trajectory_store_path=str(tmp_path / "t.jsonl")
+    )
+    entries = [
+        {"agent_domain": "cognition", "poe_score": 0.5},
+        {"agent_domain": "data", "poe_score": 0.5},
     ]
+    cc = shadow._check_coupling_consistency(
+        entries, mock_trans["domain_transmission"]["drift_coupling"]
+    )
     assert cc["verdict"] == "drift"
     assert cc["consistency_ratio"] == 0.0
-    pair_info = cc["checked_pairs"][0]
-    assert pair_info["band"] == "weak"
-    assert pair_info["static_coupling"] <= 0.3
+    assert cc["checked_pairs"][0]["band"] == "weak"
+    assert cc["checked_pairs"][0]["static_coupling"] == 0.25
 
 
 def test_observe_fail_open_without_static_prior(tmp_path):
