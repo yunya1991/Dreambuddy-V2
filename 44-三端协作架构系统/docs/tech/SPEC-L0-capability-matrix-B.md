@@ -2,10 +2,10 @@
 
 > **版本**: v0.1 (2026-10-30)
 > **状态**: 待评审（开工SKILL 阶段 3 产出，用户确认门后进入阶段 4 评审）
-> **上游**: [l0-capability-matrix-SPEC-A.md](../../../.trae/documents/l0-capability-matrix-SPEC-A.md)（能力矩阵现状+断点 S1-S7）
+> **上游**: `本地草稿 ../../../.trae/documents/l0-capability-matrix-SPEC-A.md`（不入库）（能力矩阵现状+断点 S1-S7）
 > **约束**: 单人维护、FAIL-OPEN、云端 4C16G、禁止 MLflow/K8s/Kafka/DataHub 等重型工具、评审只读、零回归
 > **目标**: 从「五个能跑的能力」→「一个协同的能力矩阵」：能力可声明、事件可互通、检索可统一、知识可闭环
-> **与 SPEC-C 的关系（2026-10-30）**: [l0-three-layer-SPEC-C.md](../../../.trae/documents/l0-three-layer-SPEC-C.md) 已接管并重排本 SPEC 的协同化项（B1/B3/B4/B9 → C6/C7/C8/C12），本 SPEC 保留 B6/B7/B8 作为封装层后续批次。**评审以 SPEC-C 为主干，本 SPEC 作为子项清单。**
+> **与 SPEC-C 的关系（2026-10-30）**: `本地草稿 ../../../.trae/documents/l0-three-layer-SPEC-C.md`（不入库） 已接管并重排本 SPEC 的协同化项（B1/B3/B4/B9 → C6/C7/C8/C12），本 SPEC 保留 B6/B7/B8 作为封装层后续批次。**评审以 SPEC-C 为主干，本 SPEC 作为子项清单。**
 
 ---
 
