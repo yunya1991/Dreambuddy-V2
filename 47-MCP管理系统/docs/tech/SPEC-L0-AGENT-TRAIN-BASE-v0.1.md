@@ -345,13 +345,15 @@ def drift_kill_switch(drift_level: str, context: Dict[str, Any]) -> Dict[str, An
 | **RED 2** | 轻微漂移 `[0.5, 0.5, 0.5]` vs `[0.45, 0.5, 0.55]` | 0.05 ≤ psi < 0.1，classify = "stable" |
 | **RED 3** | 中等漂移 `[0.5, 0.5, 0.5]` vs `[0.3, 0.5, 0.7]` | 0.1 ≤ psi < 0.25，classify = "minor_drift" |
 | **RED 4** | 严重漂移 `[0.5, 0.5, 0.5]` vs `[0.1, 0.5, 0.9]` | psi ≥ 0.25，classify = "severe_drift" |
-| **RED 5** | 边界测试：psi = 0.1 exactly | classify = "stable"（边界加 epsilon 防浮点坑，复用 L0/L1 落地经验 VM-1792148857896） |
-| **RED 6** | 边界测试：psi = 0.25 exactly | classify = "minor_drift"（同上） |
+| **RED 5** | 边界测试：psi = 0.1 exactly | classify = "minor_drift"（0.1 严格归入中档；0.099999999 → stable，容差 1e-9，复用 VM-1792148857896） |
+| **RED 6** | 边界测试：psi = 0.25 exactly | classify = "severe_drift"（0.25 严格归入重档；0.249999999 → minor_drift，同上） |
 | **RED 7** ⭐B1 | KS 检验两组明显不同分布 [0-1] vs [4-5] | p-value < 0.01，ks_drifted = True |
 | **RED 8** ⭐B1 | classify_drift_triple(psi=0.15, ks_drifted=True) | "severe_drift"（PSI minor 但 KS drifted → severe） |
 | **RED 9** ⭐B6 | drift_kill_switch("severe_drift", {"reason": "PSI=0.3, KS=p=0.001", "trace_id": "t1"}) | action="kill_switch", level=2 |
+| **RED 10** ⭐B1 | classify_drift_triple：stable+KS / minor+KS / severe+KS | minor_drift / severe_drift / severe_drift（KS 命中升一档） |
+| **RED 11** | 上表 RED 9 的字段级断言（action/level/trace_id + stable→no_op） | action="kill_switch", level=2, trace_id="t1" |
 
-**验收标准**：pytest 9/9 passed，H8 硬约束在代码中明确标注，阈值无 env override 路径。
+**验收标准**：pytest 12/12 passed，H8 硬约束在代码中明确标注，阈值无 env override 路径。
 
 ### 1.5 算力
 

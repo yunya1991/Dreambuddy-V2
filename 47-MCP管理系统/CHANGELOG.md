@@ -1,5 +1,12 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB1 PSI 漂移检测器落地（本地接续云端开发）
+
+- 拉取云端未提交进度（`drift_detector.py` + `test_drift_detector.py`）到本地并完成开发
+- 修复 `classify_drift` 边界语义：改为 `<= threshold - 1e-9`，`0.099999999 → stable`、`0.1 → minor_drift`（原实现口径相反导致 2 条用例失败）
+- 补齐 SPEC §1.4 缺失功能：`classify_drift_triple`（PSI+KS 融合，KS 命中升一档）、`drift_kill_switch` 双形态（psi 阶梯 / 等级字符串 SPEC 形态）
+- 测试 10 → **12 条全绿**；同步修正 SPEC RED 5/6 边界预期与验收数（9/9 → 12/12）
+
 ## 2026-11-03 云端评审 REVIEW-AGENT-ARCH 7 项复核与修订
 
 云端评审（`REVIEW-AGENT-ARCH-v0.1.md`）提出 P1-P7 共 7 项存疑，本地逐项复核后处置：
