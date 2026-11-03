@@ -83,8 +83,11 @@ class AgentMailShadow:
         head_infer: bool = True,
         window_minutes: int = DEFAULT_WINDOW_MINUTES,
         max_steps: int = DEFAULT_MAX_STEPS,
+        signature_enabled: bool = False,
     ) -> None:
         self._head_infer_enabled = bool(head_infer)
+        self._signature_enabled = bool(signature_enabled)
+        self._extractor: Optional[Any] = None
         self._l1_path = (
             Path(l1_transmission_path) if l1_transmission_path else STATIC_TRANSMISSION_PATH
         )
@@ -138,6 +141,11 @@ class AgentMailShadow:
         summary = self.get_window_summary()
         if summary:
             result["windows"] = summary
+        if self._signature_enabled:
+            # S1（门禁自动开启）：附加定长签名特征；窗口不足 → 不附加，FAIL-OPEN
+            signatures = self._extract_signatures()
+            if signatures:
+                result["signatures"] = signatures
 
         transmission = self.load_transmission()
         if transmission:
@@ -156,6 +164,23 @@ class AgentMailShadow:
                 "l1_state": block.get("state"),
             }
         return result
+
+    # ---------- S1: 签名特征（门禁开启后才计算；FAIL-OPEN） ----------
+    def _extract_signatures(self) -> Optional[Dict[str, Any]]:
+        """用 S0 窗口计算签名特征；异常 / 未就绪返回 None（不污染 observe 返回体）。"""
+        if not self._windows:
+            return None
+        try:
+            if self._extractor is None:
+                from mcp_shells._shared.temporal_signature_extractor import (
+                    TemporalSignatureExtractor,
+                )
+
+                self._extractor = TemporalSignatureExtractor()
+            extracted = self._extractor.extract(self._windows)
+            return extracted if extracted.get("ready") else None
+        except Exception:  # noqa: BLE001 — FAIL-OPEN
+            return None
 
     # ---------- P2: Head 推理（FAIL-OPEN） ----------
     def _resolve_couplings(self, static_coupling: Dict[str, Any]) -> Dict[str, Any]:

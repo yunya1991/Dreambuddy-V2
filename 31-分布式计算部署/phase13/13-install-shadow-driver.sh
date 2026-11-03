@@ -22,6 +22,8 @@ fi
 # 1) 运维开关 + 轨迹目录（luke 属主）
 sudo -u luke -H mkdir -p "$REPO/.workbuddy/agent_mail"
 sudo -u luke -H touch "$REPO/.workbuddy/agent_mail/ENABLED"
+# 自动推进开关（数据达标后 S0.5→S1_READY；S3 仍需消融证据，不会自动改图）
+sudo -u luke -H touch "$REPO/.workbuddy/agent_mail/AUTO_PROMOTE"
 
 # 2) systemd 单元
 install -m 644 "$UNIT_SRC/dreambuddy-shadow-driver.service" /etc/systemd/system/

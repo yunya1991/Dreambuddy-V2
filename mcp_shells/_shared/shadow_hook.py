@@ -30,6 +30,7 @@ from typing import Any, Optional
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 FLAG_PATH = _REPO_ROOT / ".workbuddy" / "agent_mail" / "ENABLED"
+S1_FLAG = _REPO_ROOT / ".workbuddy" / "agent_mail" / "S1_ENABLED"
 
 _shadow: Optional[Any] = None
 
@@ -50,6 +51,17 @@ def enabled() -> bool:
     return flag_enabled()
 
 
+def _s1_enabled() -> bool:
+    """S1 开关：env AGENT_MAIL_S1 优先，其次门禁写入的 S1_ENABLED flag。"""
+    env = os.environ.get("AGENT_MAIL_S1")
+    if env is not None:
+        return env.strip() == "1"
+    try:
+        return S1_FLAG.exists()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _get_shadow() -> Any:
     global _shadow
     if _shadow is None:
@@ -58,6 +70,7 @@ def _get_shadow() -> Any:
         _shadow = AgentMailShadow(
             trajectory_store_path=os.environ.get("AGENT_MAIL_SHADOW_STORE") or None,
             head_infer=os.environ.get("AGENT_MAIL_SHADOW_HEAD", "0") == "1",
+            signature_enabled=_s1_enabled(),
         )
     return _shadow
 

@@ -208,13 +208,23 @@ def drive_shadow(
 
     results = [_drive_domain(d, SHELL_CALLS[d], python_bin, timeout, env) for d in selected]
     calls = [c for r in results for c in r["calls"]]
-    return {
+    summary: Dict[str, Any] = {
         "domains": selected,
         "calls": len(calls),
         "degraded": sum(1 for c in calls if c["degraded"]),
         "shells": results,
         "store": env.get("AGENT_MAIL_SHADOW_STORE", ""),
     }
+    # 数据门禁（默认关：开关未打开时零 IO 直接跳过，FAIL-OPEN 不影响驱动结果）
+    try:
+        from mcp_shells._shared.shadow_gate import maybe_promote
+
+        summary["gate"] = maybe_promote(
+            store_path=env.get("AGENT_MAIL_SHADOW_STORE") or store_path or None
+        )
+    except Exception as e:  # noqa: BLE001 — FAIL-OPEN
+        summary["gate"] = {"error": f"{type(e).__name__}: {e}"}
+    return summary
 
 
 def main() -> None:
