@@ -30,6 +30,7 @@ class FakeMemory:
         external_id: Optional[str] = None,
         quality: str = "C",
         created_at: str = "",
+        _principal: Optional[Dict[str, Any]] = None,  # D1：接受透传，不校验
     ) -> str:
         if external_id and external_id in self._ext:
             return self._ext[external_id]
@@ -54,7 +55,13 @@ class FakeMemory:
             self._ext[external_id] = mid
         return mid
 
-    def verify(self, memory_id: str, *, success: bool) -> bool:
+    def verify(
+        self,
+        memory_id: str,
+        *,
+        success: bool,
+        _principal: Optional[Dict[str, Any]] = None,  # D1：接受透传，不校验
+    ) -> bool:
         return memory_id in self._mem
 
     def export_entries(

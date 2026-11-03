@@ -72,6 +72,7 @@ def compute_reward(
     process_reward: float = 0.0,
     transition_smoothness: float = 1.0,
     counterfactual_result: Optional[dict] = None,
+    _principal: Optional[dict] = None,  # D2：Mandate 感知，port 层硬门禁消费
 ) -> RewardComponents:
     """AlphaPareto 七维奖励定义。
 

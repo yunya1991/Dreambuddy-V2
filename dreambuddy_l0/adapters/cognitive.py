@@ -17,6 +17,11 @@ import os
 import sys
 from typing import Any, Dict, List, Optional
 
+from dreambuddy_l0.ports.principal import (  # D1 Principal 硬门禁
+    ALLOWED_ROLES_MEMORY,
+    require_principal,
+)
+
 _DEFAULT_MEMORY_DIR = os.path.join("4-MEMORY", "9-工具与接口")
 
 
@@ -44,6 +49,7 @@ class CognitiveMemoryAdapter:
     ) -> List[Dict[str, Any]]:
         return list(self._entry.recall(context, top_k=top_k, min_quality=min_quality) or [])
 
+    @require_principal(ALLOWED_ROLES_MEMORY)  # D1：写接口硬门禁
     def record(
         self,
         content: str,
@@ -51,6 +57,7 @@ class CognitiveMemoryAdapter:
         tags: Optional[List[str]] = None,
         source: str = "",
         external_id: Optional[str] = None,
+        _principal: Optional[Dict[str, Any]] = None,
     ) -> str:
         return str(
             self._entry.record(
@@ -62,7 +69,14 @@ class CognitiveMemoryAdapter:
             )
         )
 
-    def verify(self, memory_id: str, *, success: bool) -> bool:
+    @require_principal(ALLOWED_ROLES_MEMORY)  # D1：写接口硬门禁
+    def verify(
+        self,
+        memory_id: str,
+        *,
+        success: bool,
+        _principal: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         res = self._entry.verify(memory_id, success=success)
         if isinstance(res, dict):
             return bool(res.get("success", True))

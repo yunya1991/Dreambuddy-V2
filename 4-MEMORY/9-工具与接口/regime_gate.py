@@ -31,7 +31,13 @@ class ThompsonSamplingRegimeGate:
         samples = {arm: random.betavariate(self.alpha[arm], self.beta[arm]) for arm in self.arms}
         return max(samples, key=samples.get)
 
-    def update(self, arm: str, success_rate: float, drift_detected: bool = False) -> None:
+    def update(
+        self,
+        arm: str,
+        success_rate: float,
+        drift_detected: bool = False,
+        _principal: Optional[dict] = None,  # D2：Mandate 感知，port 层硬门禁消费
+    ) -> None:
         """更新 arm 的 Beta 分布。
 
         Args:

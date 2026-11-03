@@ -19,7 +19,14 @@ class FakeStore:
         row = self._tables.get(table, {}).get(key)
         return {"row": row} if row else {"row": None, "error_code": "not_found"}
 
-    def write(self, table: str, *, data: Dict[str, Any], idempotency_key: str = "") -> bool:
+    def write(
+        self,
+        table: str,
+        *,
+        data: Dict[str, Any],
+        idempotency_key: str = "",
+        _principal: Optional[Dict[str, Any]] = None,  # D1：接受透传，不校验
+    ) -> bool:
         if idempotency_key and idempotency_key in self._idem:
             return True
         key = str(data.get("id", len(self._tables.get(table, {}))))

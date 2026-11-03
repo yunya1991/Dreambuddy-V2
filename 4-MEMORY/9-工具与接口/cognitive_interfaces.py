@@ -102,6 +102,7 @@ def verify_beta(
     evidence_confidence: float = 0.5,
     drift_detected: bool = False,
     beta_state: Optional["BetaState"] = None,
+    _principal: Optional[dict] = None,  # D2：Mandate 感知，port 层硬门禁消费
 ) -> VerifyResult:
     """Beta 分布更新（TB2 核心）。
 

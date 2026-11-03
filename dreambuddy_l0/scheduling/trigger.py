@@ -115,6 +115,7 @@ class SearchJobTrigger:
                     "created_at": now,
                 },
                 idempotency_key=dedupe,
+                _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
             )
             triggered.append(
                 {

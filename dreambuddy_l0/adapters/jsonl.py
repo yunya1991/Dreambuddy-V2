@@ -11,6 +11,11 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
+from dreambuddy_l0.ports.principal import (  # D1 Principal 硬门禁
+    ALLOWED_ROLES_STORE,
+    require_principal,
+)
+
 
 class _JsonlBase:
     def __init__(self, path: str) -> None:
@@ -67,7 +72,15 @@ class JsonlStore(_JsonlBase):
         row = (self._state()["tables"].get(table) or {}).get(str(key))
         return {"row": row} if row else {"row": None, "error_code": "not_found"}
 
-    def write(self, table: str, *, data: Dict[str, Any], idempotency_key: str = "") -> bool:
+    @require_principal(ALLOWED_ROLES_STORE)  # D1：写接口硬门禁
+    def write(
+        self,
+        table: str,
+        *,
+        data: Dict[str, Any],
+        idempotency_key: str = "",
+        _principal: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         if idempotency_key:
             if idempotency_key in self._state()["idem"]:
                 return True

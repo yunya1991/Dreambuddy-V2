@@ -74,6 +74,7 @@ class JobRunEventBridge:
                 tags=["L0调度", "job_runs", str(row.get("task_key", "")), state],
                 source=source,
                 external_id=run_id,
+                _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
             )
             return {
                 "recorded": True,

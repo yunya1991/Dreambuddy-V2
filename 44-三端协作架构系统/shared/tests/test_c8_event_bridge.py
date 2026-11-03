@@ -46,7 +46,7 @@ class SpyMemory(FakeMemory):
         super().__init__()
         self.calls = []
 
-    def record(self, content, *, tags=None, source="", external_id=None):
+    def record(self, content, *, tags=None, source="", external_id=None, _principal=None):
         self.calls.append(
             {
                 "content": content,
@@ -214,12 +214,18 @@ def test_cognitive_adapter_is_memory_port_and_passes_external_id():
     adapter = CognitiveMemoryAdapter(entry)
     assert isinstance(adapter, MemoryPort)
     assert (
-        adapter.record("run event", tags=["job_runs"], source="l0.scheduler", external_id="run-1")
+        adapter.record(
+            "run event",
+            tags=["job_runs"],
+            source="l0.scheduler",
+            external_id="run-1",
+            _principal={"role": "agent_admin"},  # D1：写接口需携带 principal
+        )
         == "M1"
     )
     assert entry.recorded[0]["external_id"] == "run-1"
     assert adapter.recall("job_runs", top_k=3) == [{"id": "M1", "content": "job_runs"}]
-    assert adapter.verify("M1", success=True) is True
+    assert adapter.verify("M1", success=True, _principal={"role": "agent_admin"}) is True
     assert entry.verified == [("M1", True)]
 
 

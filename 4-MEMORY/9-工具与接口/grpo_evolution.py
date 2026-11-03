@@ -124,6 +124,7 @@ class GRPOEvolutionLoop:
         known_gaps_count: int,
         cross_domain_refs: int,
         p4_receipts: Optional[List[dict]] = None,
+        _principal: Optional[dict] = None,  # D2：Mandate 感知，port 层硬门禁消费
     ) -> Optional[StrategyConfig]:
         """执行一轮策略进化。
 
