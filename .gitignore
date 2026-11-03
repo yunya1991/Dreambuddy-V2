@@ -59,6 +59,9 @@ deploy/ops/state/
 # === 产物/缓存/测试输出/回测报告 ===
 artifacts/
 data/
+# === 放行: Phase B NeuralSDE checkpoint (338KB 模型权重, 非缓存) ===
+!23-四层闭环自进化交易架构/data/
+!23-四层闭环自进化交易架构/data/neural_sde_v1_dim64.pt
 7-产物中台/系统研究索引体系/scripts/stress_test_output/
 12-三屏趋势系统/.cache/
 12-三屏趋势系统/ml/backtest_results/
