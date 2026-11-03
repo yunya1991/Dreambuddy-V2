@@ -752,9 +752,8 @@ GRPO（Group Relative Policy Optimization）选择理由：无 critic、训练�
 
 ```
 4-MEMORY/9-工具与接口/
-└── grpo_evolution.py        # 新增，GRPO 轻量 RL loop
-tests/
-└── test_grpo_loop.py        # 新增
+├── grpo_evolution.py        # 新增，GRPO 轻量 RL loop
+└── test_grpo_loop.py        # 新增（与实现同目录，绝对 import）
 ```
 
 ### 5.3 代码骨架
@@ -763,11 +762,10 @@ tests/
 # grpo_evolution.py（~120 行 + 注释）
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
-import json
-from drift_detector import classify_drift, PSI_MINOR_DRIFT, PSI_STABLE  # TB1（绝对 import）
+from typing import List, Optional
+from drift_detector import classify_drift  # TB1（绝对 import）
 from cognitive_interfaces import BetaState  # TB2
-from training_reward import compute_reward, pareto_score, RewardComponents  # TB3
+from training_reward import compute_reward, pareto_score  # TB3
 from regime_gate import ThompsonSamplingRegimeGate  # TB4
 
 
@@ -1039,27 +1037,27 @@ class GRPOEvolutionLoop:
                 drift_detected=(drift_level != "stable"),
             )
             
-            # 3. 候选策略评估（含当前策略，Dream-RSI 不劣化保证）
-            all_configs = [self.current_config] + self.candidates
+            # 3. 候选策略评估（当前策略单独算 baseline，Dream-RSI 不劣化保证）
+            current_score = self.evaluate_config(
+                self.current_config, beta_state, psi_value, recall_hits, recall_total,
+                known_gaps_count, cross_domain_refs,
+            )
             scores = [
                 (c, self.evaluate_config(
                     c, beta_state, psi_value, recall_hits, recall_total,
                     known_gaps_count, cross_domain_refs,
                 ))
-                for c in all_configs
+                for c in self.candidates
             ]
-            
+
             # 4. argmax 选最优（Dream-RSI argmax V 选择机制）
             best_config, best_score = max(scores, key=lambda x: x[1])
-            current_score = dict(scores)[self.current_config]
-            
-            # 5. 不劣化保证（核心原则）
-            if best_config == self.current_config or best_score >= current_score:
+
+            # 5. 不劣化保证（核心原则）：仅在严格改进时切换
+            if best_score > current_score:
                 self.current_config = best_config
                 return best_config
-            else:
-                # 改进策略没有优于当前 → 保持当前
-                return None
+            return None
         
         except Exception as e:
             # H4 硬约束：FAIL-OPEN，策略自动回退上一稳定版本
@@ -1095,10 +1093,10 @@ class GRPOEvolutionLoop:
 ### 6.1 开发顺序（硬约束依赖链）
 
 ```
-TB1 PSI drift_detector ── 1 天 ──→ TDD 验收 6/6 passed
+TB1 PSI drift_detector ── 1 天 ──→ TDD 验收 12/12 passed
     │
     ▼
-TB2 Beta verify 升级 ── 2 天 ──→ TDD 验收 6/6 passed + 零业务回归
+TB2 Beta verify 升级 ── 2 天 ──→ TDD 验收 8/8 passed + 零业务回归
     │
     ├──→ TB3 AlphaPareto  ── 1 天 ──→ TDD 验收 6/6 passed
     │
@@ -1119,12 +1117,12 @@ TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验�
 
 | TB | 硬约束验证 | TDD | 业务回归 | 算力 |
 |---|---|---|---|---|
-| TB1 PSI | H8 阈值硬编码，无 env override | 6/6 | 不涉及 | 1ms |
-| TB2 Beta | H1 壳零感知，envelope schema 零变化 | 6/6 | 旧 verify 零回归 | 1μs |
+| TB1 PSI | H8 阈值硬编码，无 env override | 12/12 | 不涉及 | 1ms |
+| TB2 Beta | H1 壳零感知，envelope schema 零变化 | 8/8 | 旧 verify 零回归 | 1μs |
 | TB3 AlphaPareto | — | 6/6 | 不涉及 | 10μs |
 | TB4 Thompson | — | 4/4 | 不涉及 | 10μs |
 | TB5 GRPO | H2 无 .train()/.backward() + H4 FAIL-OPEN | 5/5 | 不涉及 | 50ms |
-| **全局** | H1/H2/H4/H8 全覆盖 | **27/27** | verify 零回归 | 零 GPU |
+| **全局** | H1/H2/H4/H8 全覆盖 | **35/35** | verify 零回归 | 零 GPU |
 
 ### 6.3 影子验证（与 AgentMail 影子合并）
 

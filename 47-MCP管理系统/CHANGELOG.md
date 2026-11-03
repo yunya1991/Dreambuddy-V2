@@ -1,5 +1,14 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB5 PolicySelectLoop 落地（TB1-TB5 全部完成）
+
+- 新增 `grpo_evolution.py`：`StrategyConfig`（格式偏好，H2 冻结权重）+ `GRPOEvolutionLoop`（`evaluate_config` → 候选 argmax → 严格改进才切换）
+- 修正 SPEC 骨架两处逻辑坑：① `dict(scores)[self.current_config]` 不可用（可变 dataclass 不可哈希）→ current_score 单独计算；② 原 `best_score >= current_score` 使不劣化分支恒真、`else` 不可达 → 改为 `best_score > current_score`（RED 5 才成立）
+- H2/H4 代码内显式标注：无 `.train()/.backward()/.backprop`；异常时 FAIL-OPEN 并记 `history fallback`
+- 测试 `test_grpo_loop.py` RED 5 条全绿；TB1-TB5 联合回归 **35/35**
+- SPEC §5.2 路径修正为同目录；§5.3 import 收敛为实际依赖；§6.1/§6.2 数字对齐实测（TB1 12/12、TB2 8/8、全局 35/35）
+- 范围说明：`STRATEGY_CONFIG_SCHEMA` 常量与 `OracleVerificationLayer` 按 SPEC 标注留待 Phase A-C（本次仅落 TDD 5/5 的 loop）
+
 ## 2026-11-03 TB4 Thompson Sampling regime gate 落地
 
 - 新增 `regime_gate.py`：`ThompsonSamplingRegimeGate`（美林四段 arm），Beta 采样选 arm、部分成功率更新、`drift_detected=True` 全 arm 重置 Beta(1,1)、`get_confidence` 返回 Beta mean
