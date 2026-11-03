@@ -496,6 +496,62 @@ SPEC DA1：壳进程按需拉起即退，job 状态必须落持久层——评�
 - 云端 venv = `/home/luke/venv-trading/bin/python3` 3.12.3
 - PYTHONPATH = `/home/luke/dreambuddy`（壳 import 依赖）
 
+### 10.1 云端现状审计（2026-11-03 审计快照）
+
+**HEAD 对齐**：本地 / GitHub `yunya1991/Dreambuddy-V2` / 云端 VM-0-5-ubuntu → `e236bb1a` 三端严格一致
+
+**四联门禁**（云端实测）：
+```
+✅ 注册表 OK — 4 存量壳 + 3 规划壳 / 24 active 工具 / 上限 40
+✅ 能力集 OK — 3 角色 / 25 引用 / 14 唯一工具 / 交叉引用已对齐 47 registry
+OK: 能力声明与实现一致（五能力 / port / provides.impl 无漂移）
+OK: 白名单外无新增直连（C10 门禁）
+```
+
+**注册表 vs 代码落地**（md5 全一致，本地↔云端逐文件比对）：
+
+| shell_id | registry status | 本地代码 | 云端代码 | 行数 | md5 |
+|---|---|---|---|---|---|
+| l0.cognition.mcp（recall/record/verify/stats/health/unified_search） | available | ✅ `4-MEMORY/.../cognitive_mcp_server.py` | ✅ 同路径 | 897 | f2185e1f |
+| l0.semantic-39.mcp（query_entity/semantic_lookup/distill_aliases/training_feed） | available | ✅ `39-.../scripts/mcp_server.py` | ✅ 同路径 | 278 | — |
+| l0.rea.mcp（submit/poll × analyze/trace/compare） | available | ✅ `mcp_shells/l0_rea/server.py` | ✅ 同路径 | 284 | d6c54356 |
+| l0.rea-client.mcp（npm 133 工具占位） | **deprecated** | ❌ 已废弃 | ❌ 已废弃 | — | — |
+| l0.data.mcp（data_fetch/collect_once/store_read/store_write） | available | ✅ `mcp_shells/l0_data/server.py` | ✅ 同路径 | 309 | 8237a76a |
+| l0.eval.mcp（eval_analyze/eval_report） | available | ✅ `mcp_shells/l0_eval/server.py` | ✅ 同路径 | 187 | — |
+| l0.store-admin.mcp（store_admin_status/store_admin_query） | available | ✅ `mcp_shells/l0_store_admin/server.py` | ✅ 同路径 | 224 | — |
+| _shared/envelope_wrap.py | — | ✅ | ✅ | 109 | 503de28f |
+| mcp_capabilities.yaml schema 1.1-mcp | — | ✅ | ✅ | 296 | 95b77777 |
+
+**M1④ 基线报告**：`latency_baseline.md` 已落地（2026-11-02 云端跑过，N=100 冷启动）
+- recall in-proc P50 18.4ms → stdio 冷启动 P50 399.56ms（21.7×）
+- verify in-proc P50 197.35ms → stdio 冷启动 P50 700.81ms（3.6×）
+- stdio 冷启动含 Python 解释器 import 开销，真正跑 MCP 壳时宿主 pre-fork 可省
+
+**云端 NeuralSDE 模型资产**：
+- ✅ `neural_sde_v1.pt`（~1.2GB，100 epoch，final_loss 0.0119）
+- ❌ **缺口**：`neural_sde_v1_dim64.pt` + `neural_sde_v1_path_sig.pt`（本地有，云端无 → TRAIN-BASE Phase B DomainCouplingHead 增量训练 backbone 缺失，B2 阻塞项）
+
+**云端正在运行的关键服务**：
+| service | status | 说明 |
+|---|---|---|
+| cognitive-daemon.service | running | file-change watcher → cognitive loop |
+| dreambuddy-continual-training.service | running | 每 30min 主动持续训练（exit_policy 等） |
+| trailing-stop-runner.service | running | 16-control trailing stop runner（OKX real） |
+| yijing-data-server.service | running | port 8765 |
+| eval-api.service | running | port 8790 |
+| datacenter-scheduler.service | running | 18 collection pipeline |
+| fis-continual-training.service | running | 34 continual training (v0.5) |
+| signal-scanner.service | running | 12-trend 每 300s |
+| product-hub.service | running | Next.js 14 port 3456 |
+| dreambuddy-frontend.service | running | Next.js 15 |
+
+**硬约束**：MCP 壳本身**不是**独立 systemd 服务——stdio 模式由上层按需拉起，ssh-stdio 模式通过 `dreambuddy-remote` SSH 连接直接执行。
+
+**腾讯云 SSH 连接注意**：
+- 别名 `dreambuddy-remote` = `43.160.201.117`（旧 IP `43.136.205.155` 已失效，kex_exchange_identification 被远端主动关闭）
+- 首次连接需要微信扫码安全登录（exit 255 不是 QR 拦截，是高频 subprocess spawn 被 rate limit）
+- 基线脚本后台跑：`nohup sudo -u luke env PYTHONPATH=/home/luke/dreambuddy /home/luke/venv-trading/bin/python3 ... > /tmp/baseline.log 2>&1 &`
+
 ---
 
 ## 附录 A：版本演进
@@ -503,9 +559,11 @@ SPEC DA1：壳进程按需拉起即退，job 状态必须落持久层——评�
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | v0.1 | 2026-11-02 | 首版，覆盖 P0/M1 已落地模块 |
+| v0.1.1 | 2026-11-03 | 新增 §10.1 云端现状审计快照 + M1④ 基线报告引用 + L1/DOMAIN-DISCOVERY/TRAIN-BASE/COMM-SHADOW/Roadmap 交叉引用 |
 | （待更新） | M2 完成后 | 增补数据壳/评测壳实现细节 |
 | （待更新） | M3 完成后 | 增补 REA 壳/认知壳双模 |
 | （待更新） | M4 完成后 | 增补库管壳只读 + 45 契约评测 |
+
 
 
 ---
