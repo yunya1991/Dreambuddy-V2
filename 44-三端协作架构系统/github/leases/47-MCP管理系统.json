@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "47-MCP管理系统",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-DSH-P0",
+      "session": "trae-local-superagent-p0",
+      "base_sha": null,
+      "started_at": "2026-11-03T23:21:05+08:00",
+      "ttl_hours": 24,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}
