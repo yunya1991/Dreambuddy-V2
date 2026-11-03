@@ -104,9 +104,9 @@ elif layer == "DSH":
 ### 1.3 P0 数据源：polling_trader 交易环（已确认 ✅）
 
 **数据文件**:
-- 主路径: [all_trades.jsonl](../11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl)
+- 主路径: all_trades.jsonl（未入库）
 - 归档: `all_trades_archived_20260804.jsonl`
-- 统一索引: [all_trades_index.jsonl](../.workbuddy/trade_index/all_trades_index.jsonl)
+- 统一索引: all_trades_index.jsonl（未入库）
 
 **交易记录字段** (来源: [trade_index_builder.py](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/trade_index_builder.py#L335-L346) L335-346):
 
@@ -153,7 +153,7 @@ def compute_score_b_with_event_boost(continuity, confidence, event):
 
 ### 1.4 P1 数据源：认知闭环链（已确认 ✅）
 
-**数据库**: [cognitive_memory.db](../4-MEMORY/data/cognitive_memory.db)
+**数据库**: cognitive_memory.db（未入库）
 
 **memories 表 schema** (来源: [test_cognitive_memory_collector.py](../34-前端应用训练系统/tests/test_cognitive_memory_collector.py#L35-L57) L35-57):
 
@@ -403,7 +403,7 @@ def main():
 # L4: Bellman V(s) 回馈与进化寻优
 ```
 
-**shadow_validation 样本路径**: [gene_data/shadow_validation/](../23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/shadow_validation/)
+**shadow_validation 样本路径**: gene_data/shadow_validation/（未入库）
 
 **样本格式** (来自 CD-DONCHIAN-20-BREAK_samples.jsonl):
 

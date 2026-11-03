@@ -220,7 +220,7 @@ G 层 Graph 存储层  — GraphCompressor · 执行记录持久化 · 上下文
 - [registry/base.py](../../1-ARCHITECTURE/dreamos/registry/base.py): BaseNode 模板方法 — validate → execute_core → 异常 fallback → 自动计时 → F 链 EWMA+MAD 信号平滑
 - [adapters/base.py](../../1-ARCHITECTURE/dreamos/adapters/base.py): AdapterRegistry — FunctionAdapter/SkillAdapter/APIAdapter 三适配器分发
 - [evolution/engine.py](../../1-ARCHITECTURE/dreamos/evolution/engine.py): EvolutionEngine — LessonDistiller + GapAnalyzer + NodeOptimizer + TradingAnalysisEvaluator，含沙箱验证（新方案回测得分 > 现有 × 1.1）
-- G 层快照: [data/graph_store/](../../1-ARCHITECTURE/dreamos/data/graph_store/) 当前为 `ckpt_{timestamp}_{hash}.json` 快照式
+- G 层快照: data/graph_store/（未入库） 当前为 `ckpt_{timestamp}_{hash}.json` 快照式
 
 ### 3.2 维度对照表
 
@@ -260,7 +260,7 @@ G 层 Graph 存储层  — GraphCompressor · 执行记录持久化 · 上下文
 
 #### P0-1: Append-only 事件流升级 G 层
 
-**现状**: G 层是 [data/graph_store/](../../1-ARCHITECTURE/dreamos/data/graph_store/) 下的 `ckpt_{timestamp}_{hash}.json` 快照式存储，每轮一个 JSON。
+**现状**: G 层是 data/graph_store/（未入库） 下的 `ckpt_{timestamp}_{hash}.json` 快照式存储，每轮一个 JSON。
 
 **借鉴点**: Harness 的 `session/event` 机制 — 所有 model-visible 内容都 append 到事件流，支持 fork/resume/replay/search。
 
@@ -443,7 +443,7 @@ Harness 有 `dsh-plugin` topic。DreamOS 暂为专用系统不需要社区生态
   - [BaseNode](../../1-ARCHITECTURE/dreamos/registry/base.py)
   - [AdapterRegistry](../../1-ARCHITECTURE/dreamos/adapters/base.py)
   - [EvolutionEngine](../../1-ARCHITECTURE/dreamos/evolution/engine.py)
-  - [G 层快照目录](../../1-ARCHITECTURE/dreamos/data/graph_store/)
+  - G 层快照目录（未入库）
 
 ---
 

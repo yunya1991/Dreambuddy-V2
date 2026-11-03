@@ -584,7 +584,7 @@ Step 5: adapters/ 层按需适配（Grep 确认实际影响范围）
 - [algorithm_reducer.py](../../33-REA逆向解析工程/core/algorithm_reducer.py)
 
 ### 运行日志
-- [evolution_pipeline.log](../../23-四层闭环自进化交易架构/dreambuddy_evolution/logs/evolution_pipeline.log) L2-30
+- evolution_pipeline.log（未入库） L2-30
 - [audit_20260912_0013.md](../../23-四层闭环自进化交易架构/docs/audit_reports/audit_20260912_0013.md) L11-20
 - [model_validation_20260915_0011.md](../../23-四层闭环自进化交易架构/docs/audit_reports/model_validation_20260915_0011.md) L131-134
 

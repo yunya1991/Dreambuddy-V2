@@ -362,7 +362,7 @@ C 层每个节点执行后：
 | DSH | [CHAIN_INTEGRATION_SPEC.md](../dream-harness-bridge/docs/CHAIN_INTEGRATION_SPEC.md) | 端口统一方案 A（已实施） |
 | 中台 | [中台设计/README.md](../中台设计/README.md) | 三大中台索引 |
 | 中台 | [COMPANY_CENTRAL_HUB.md](../中台设计/COMPANY_CENTRAL_HUB.md) | 公司中枢设计 |
-| DSH 配置 | [cordis.yml](../dream-harness-bridge/.dsh-home/profiles/web/cordis.yml) | DSH/Cordis 插件配置 |
+| DSH 配置 | cordis.yml（未入库） | DSH/Cordis 插件配置 |
 | 前端3.1 | [v3-frontend-architecture.md](../../3.1-FRONTEND/docs/v3-frontend-architecture.md) (1751行) | 综合技术文档 + P0-P3 路线图 + 92 API 端点 |
 | 前端3.1 | [3.1-FRONTEND/README.md](../../3.1-FRONTEND/README.md) | 索引（已过时） |
 | Meta-Labeling | [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) | L1→L2→L3 决策链 |

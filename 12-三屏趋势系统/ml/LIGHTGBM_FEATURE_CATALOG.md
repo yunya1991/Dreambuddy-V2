@@ -200,7 +200,7 @@
 >
 > **V4特征整合计划**：详见 [engineering_algorithm_roadmap.md](../../12-三屏趋势系统/ml/engineering_algorithm_roadmap.md) Stage 1
 > **验证脚本**：[walk_forward_v4_validation.py](../../12-三屏趋势系统/ml/walk_forward_v4_validation.py)
-> **验证结果**：[stage1_improved_label_result.json](../../12-三屏趋势系统/ml/backtest_results/stage1_improved_label_result.json)
+> **验证结果**：stage1_improved_label_result.json（未入库）
 
 #### Stage 2.1 新增哲学特征（2维，假设DIP-001验证完成）
 
@@ -220,13 +220,13 @@
 > **对比Top 10特征**：V4特征主导DIP_BUY场景（4/7进Top30%），`halving_months_after`#1(237.8)，`weekly_ma200_distance`仍是唯一有效的V2抄底特征(#7, 82.2)
 >
 > **验证脚本**：[stage2_dip_buy_validation.py](../../12-三屏趋势系统/ml/stage2_dip_buy_validation.py)
-> **验证结果**：[stage2_dip_buy_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_dip_buy_result.json)
+> **验证结果**：stage2_dip_buy_result.json（未入库）
 
 #### Stage 2.4 冗余特征清理验证（2026-07-19）
 
 > **操作**：移除3个零重要性派生特征（`dip_buy_level`/`dip_buy_position_ratio`/`left_side_buy_signal`），特征总数 76→73
 > **验证脚本**：[stage2_4_cleanup_validation.py](../../12-三屏趋势系统/ml/stage2_4_cleanup_validation.py)
-> **验证结果**：[stage2_4_cleanup_result.json](../../12-三屏趋势系统/ml/backtest_results/stage2_4_cleanup_result.json)
+> **验证结果**：stage2_4_cleanup_result.json（未入库）
 
 **Stage 2.4 vs Stage 2.0/2.1 对比**：
 
@@ -265,7 +265,7 @@
 > - **决策**：✅ 正式集成到 FEATURE_NAMES，哲学特征从24维扩展到26维
 >
 > **验证脚本**：[v53_feature_correlation_analysis.py](../../12-三屏趋势系统/ml/v53_feature_correlation_analysis.py)、[v53_direction_d_validation.py](../../12-三屏趋势系统/ml/v53_direction_d_validation.py)、[v53_ablation_experiment.py](../../12-三屏趋势系统/ml/v53_ablation_experiment.py)、[v53_final_validation.py](../../12-三屏趋势系统/ml/v53_final_validation.py)
-> **验证结果**：[v53_direction_d_result.json](../../12-三屏趋势系统/ml/backtest_results/v53_direction_d_result.json)、[v53_ablation_result.json](../../12-三屏趋势系统/ml/backtest_results/v53_ablation_result.json)、[v53_final_validation.json](../../12-三屏趋势系统/ml/backtest_results/v53_final_validation.json)
+> **验证结果**：v53_direction_d_result.json（未入库）、v53_ablation_result.json（未入库）、v53_final_validation.json（未入库）
 
 ---
 

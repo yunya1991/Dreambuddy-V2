@@ -84,7 +84,7 @@
 
 ### 1.5.1 数据源与样本概况
 
-- **数据源**：[all_trades.jsonl](../../11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl)（L4 自进化系统全量交易记录）
+- **数据源**：all_trades.jsonl（未入库）（L4 自进化系统全量交易记录）
 - **样本量**：130 笔交易（做空 33 笔 / 做多 97 笔）
 - **分析维度**：方向（做多/做空）× regime × 币种 × PnL
 

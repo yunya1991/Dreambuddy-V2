@@ -245,7 +245,7 @@ CrossValidationGate 正式接入 `_select_optimal_path()` 主流程，4 个 agi_
 
 - [framework_comparison.py](../dreambuddy_evolution/core/framework_comparison.py) — 5 框架（交叉验证/Bayesian/互信息/Shapley/Granger）配对 walk-forward + DSR + PBO + Holm-Bonferroni 校正
 - BTC 30m 87598 期实测：F1 交叉验证 OOS 夏普 7.77, DSR=1.0，显著优于 F2/F4/F5（adj_p<0.001），与 F3 互信息相当
-- 结果: [framework_comparison_result.json](../dreambuddy_evolution/data/framework_comparison_result.json)
+- 结果: framework_comparison_result.json（未入库）
 
 ### 6. TDD-CV-005: Step 2/4/5 落地 — GrangerPipelineAdapter + head_multipliers 接入 + 自进化闭环阶段1
 
@@ -270,8 +270,8 @@ NeuralSDE 第 2/3 轮架构优化完成, 路径依赖 SDE 超越 GARCH 3.3x, v2 
 
 PoC v2 (200ep MSE + sig_dim=15 + z-score 归一化):
 - **MAE=269.51** vs GARCH=881.14, **ratio=0.31** (优于 GARCH 3.3x) ✅ PASS
-- 权重: [neural_sde_v1_path_sig_v2.pt](../dreambuddy_evolution/data/neural_sde_v1_path_sig_v2.pt)
-- 报告: [neural_sde_v1_poc_tdd007_v2.json](../dreambuddy_evolution/data/neural_sde_v1_poc_tdd007_v2.json)
+- 权重: neural_sde_v1_path_sig_v2.pt（未入库）
+- 报告: neural_sde_v1_poc_tdd007_v2.json（未入库）
 - 测试: 12 个新测试 (TDD-010 z-score / TDD-011 不截断 / TDD-012 QLIKE) + 86 全套无回归
 
 3 个根因修复:

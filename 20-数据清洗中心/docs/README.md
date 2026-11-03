@@ -15,4 +15,4 @@
 
 ## 子目录
 
-- [archive/](./archive/) — 历史归档（DATA_CLEANING_SPEC v1.0 归档版设计规格，设计冻结）
+- archive/（未入库） — 历史归档（DATA_CLEANING_SPEC v1.0 归档版设计规格，设计冻结）

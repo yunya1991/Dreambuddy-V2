@@ -164,7 +164,7 @@ def test_exit_manager_priority_chain_first_non_pass_wins():
 ### 1.4 v0.3 评审问题#1: all_trades.jsonl 实际数据量（已确认 ✅）
 
 - **SPEC v0.3 声称**: 37万条交易记录
-- **实际验证**: [all_trades.jsonl](../11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl) 仅 **152 条**
+- **实际验证**: all_trades.jsonl（未入库） 仅 **152 条**
 - **37万来源**: recall VM-1791796267529 确认是 trading_log_collector.py 统计的 polling_trader **日志文件**条数（非 all_trades.jsonl）
 - **v0.4 处理**: all_trades.jsonl 降为 P2 补充源；P0 改为 TDD 测试
 

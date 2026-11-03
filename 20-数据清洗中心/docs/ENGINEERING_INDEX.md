@@ -190,7 +190,7 @@ cd 20-数据清洗中心 && python -m pytest -q
 | 技术设计 | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) |
 | 接口规格 | [API_SPEC.md](./API_SPEC.md) |
 | 变更日志 | [CHANGELOG.md](./CHANGELOG.md) |
-| 历史归档 | [archive/](./archive/)（DATA_CLEANING_SPEC v1.0 设计冻结） |
+| 历史归档 | archive/（未入库）（DATA_CLEANING_SPEC v1.0 设计冻结） |
 | 项目文档索引 | [0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md) |
 
 ---

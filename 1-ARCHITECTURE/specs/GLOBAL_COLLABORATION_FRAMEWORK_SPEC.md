@@ -142,7 +142,7 @@ AI 产物 → DreamOS scheduler_data/artifacts（前端 artifact-utils.ts 直读
 | 位置 | 证据 |
 |------|------|
 | [bridge-client.ts](../../3.1-FRONTEND/src/lib/bridge-client.ts) L6-L7 | 前端统一入口默认 `http://127.0.0.1:3847`，`NEXT_PUBLIC_BRIDGE_URL` 可覆盖 |
-| [run_api_server.py](../dream-harness-bridge/integration/run_api_server.py) L16-L21 | `DHB_API_PORT=3847`，DSH integration 层承担统一入口 |
+| run_api_server.py（未入库） L16-L21 | `DHB_API_PORT=3847`，DSH integration 层承担统一入口 |
 | run_api_server.py L148-L161 | 原 `6-TRADING/bridge` 的 market/trade/skill/bridge 蓝图已迁移注册 |
 | [CHAIN_INTEGRATION_SPEC.md](../dream-harness-bridge/docs/CHAIN_INTEGRATION_SPEC.md) L45/L159/L247 | 设计决策：DSH :3080 不暴露给前端，仅 IPC 内部调用；前端不直接请求 :3080 |
 
@@ -178,7 +178,7 @@ AI 产物 → DreamOS scheduler_data/artifacts（前端 artifact-utils.ts 直读
 |------|------|
 | [SPEC-20260928-POSTGRESQL-CENTRALIZATION.md](../SPEC-20260928-POSTGRESQL-CENTRALIZATION.md) L37-L45 | 明确「产物中台与 3.1 前端不需要融合」，唯一通道是 HTTP 反代 |
 | [SPEC-20260929-L1-TRACE-PILOT.md](../SPEC-20260929-L1-TRACE-PILOT.md) L201-L253 | trace_id 链路已通：前端 → DSH → DreamOS → 产物中台 `/api/chain/artifacts` → `/ops/traces` 看板 |
-| [artifact-utils.ts](../../3.1-FRONTEND/src/app/api/artifacts/artifact-utils.ts) L20-L73 | 前端直读 DreamOS `scheduler_data/artifacts` 目录并返回 meta |
+| artifact-utils.ts（未入库） L20-L73 | 前端直读 DreamOS `scheduler_data/artifacts` 目录并返回 meta |
 
 **结论**：R3 非缺口。「融合」被重新定义为「trace 互通 + HTTP 反代 + 各自独立部署」，已实现。剩余的数据库统一（独立 SQLite → PostgreSQL 中心化）由 SPEC-20260928 承接，属 P3。
 
@@ -222,7 +222,7 @@ AI 产物 → DreamOS scheduler_data/artifacts（前端 artifact-utils.ts 直读
 | [reflector.py](../dreamos/core/compute/reflector.py) L64-L81 | ✅ 构造函数已预留 `cognitive_adapter` 参数 |
 | reflector.py L128-L177 | ⚠️ decide() 已调 `_recall_suggestions()` 加入 suggestions，但主体仍只有 预算/REDO/冲突/早终止 规则 |
 | reflector.py L181-L205 | `_recall_suggestions()` 是唯一接入点，异常 FAIL-OPEN 返回 `[]` |
-| [cognitive_loop_adapter.py](../dream-harness-bridge/integration/cognitive_loop_adapter.py) L29-L85 | ✅ recall() 封装已存在（MCP 不可用时 FAIL-OPEN） |
+| cognitive_loop_adapter.py（未入库） L29-L85 | ✅ recall() 封装已存在（MCP 不可用时 FAIL-OPEN） |
 
 **打通方案**（补齐四步，对齐 DSH SPEC v0.2 §4.4 分级触发）：
 1. Step1 recall：✅ 已有，保留

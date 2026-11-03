@@ -45,7 +45,7 @@
 | 三大 SKILL 支柱 | 6-Trading 32 个 + 1-ARCHITECTURE 25 个 + 科研 dream-science-* 系列 | 统一注册到 SKILL 能力中心 |
 | Autonomy Boundary | 124 个 SKILL 100% 覆盖（VM-1791226814783） | 作为 SKILL 执行的权限边界 |
 | DSH 8 Subagent | technical/sentiment/macro/flow/valuation/onchain/risk/portfolio | 作为系统节点能力的执行入口 |
-| 算法短路降级链 | [algorithm_enhanced_agent.py:72-156](../dream-harness-bridge/integration/algorithm_enhanced_agent.py#L72-L156) | 复用到 DSH 执行引擎 |
+| 算法短路降级链 | algorithm_enhanced_agent.py:72-156（未入库） | 复用到 DSH 执行引擎 |
 | SkillsRegistry | [skills-registry.ts:36-78](../../24-图结构上下文压缩/planner/skills-registry.ts#L36-L78) 支持按 chain/category/stage/tag 查询 | 扩展为统一 SKILL 能力注册中心 |
 
 ### 1.4 替代方案评估（排除框架锁定）
@@ -71,7 +71,7 @@
 
 **本方案部署决策**：编排层（S+A）和执行层（C）均部署在**前端侧（TypeScript）**，与现有 task-manager.ts 同进程。理由：
 1. 现有 `/api/task/stream` + task-manager.ts 已是编排入口，改动最小
-2. DSH Subagent 通过 IPC NDJSON 调用（已有 [algorithm_layer_bridge.py](../dream-harness-bridge/integration/algorithm_layer_bridge.py)），前端 TS 通过 HTTP/IPC 调用 Python 系统节点
+2. DSH Subagent 通过 IPC NDJSON 调用（已有 algorithm_layer_bridge.py（未入库）），前端 TS 通过 HTTP/IPC 调用 Python 系统节点
 3. 意图识别复用现有 [fallback-engine.ts](../../3.1-FRONTEND/src/lib/intent/fallback-engine.ts)（TS 实现），不引入 Python 依赖
 4. DreamOS Python 侧的 orchestrator_v2 作为被调用的系统节点能力，通过 HTTP API 暴露
 
@@ -483,7 +483,7 @@ SKILL 执行
 4. FAIL-OPEN 中性兜底（返回"无法完成"，不编造数据）
 
 **与现有代码的关系**：
-- 复用 [algorithm_enhanced_agent.py:72-156](../dream-harness-bridge/integration/algorithm_enhanced_agent.py#L72-L156) 的短路逻辑
+- 复用 algorithm_enhanced_agent.py:72-156（未入库） 的短路逻辑
 - 复用 [subagent_registry.py:30-112](../dream-harness-bridge/packages/python-server/subagent_registry.py#L30-L112) 的 8 Subagent
 - 复用 [skill_adapter.py](../dreamos/adapters/skill_adapter.py) 的 SKILL.md 解析（但执行逻辑改为节点优先）
 

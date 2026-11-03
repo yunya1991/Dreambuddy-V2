@@ -168,7 +168,7 @@ model = LSTMModel.load('models/v6_lstm.pkl')
 
 ## 参考
 
-- [Step5 LSTM调优结果](../backtest_results/step5_lstm_tuning.json)
-- [V6.0验证结果](../backtest_results/v60_lstm_baseline.json)
+- Step5 LSTM调优结果（未入库）
+- V6.0验证结果（未入库）
 - [models.py](../models.py) - LSTMModel实现
 - [version_manager.py](../version_manager.py) - 版本管理
