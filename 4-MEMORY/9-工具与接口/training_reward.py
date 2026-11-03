@@ -28,6 +28,10 @@ PNL_ALPHA_MARGIN: float = 0.05
 PNL_ALPHA_RANGE: float = 0.25
 PNL_NEUTRAL: float = 0.5  # FAIL-OPEN：无回执或缺字段时中性
 
+# TB5 GRPO P4 回执 alpha 加权系数（Dream-RSI V 函数，DOMAIN-DISCOVERY §4.5.4）
+# 硬编码常量，禁止运行期 env override（与 TB1 H8 同类约束）。
+V_ALPHA: float = 0.1
+
 
 @dataclass
 class RewardComponents:

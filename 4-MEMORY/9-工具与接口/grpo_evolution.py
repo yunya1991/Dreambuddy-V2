@@ -14,13 +14,16 @@ from typing import List, Optional, Tuple
 from cognitive_interfaces import BetaState
 from drift_detector import classify_drift
 from regime_gate import ThompsonSamplingRegimeGate
-from training_reward import compute_reward, pareto_score, pnl_delta_score_from_receipt
+from training_reward import (
+    PNL_NEUTRAL,
+    V_ALPHA,
+    compute_reward,
+    pareto_score,
+    pnl_delta_score_from_receipt,
+)
 
-# P4 回执 alpha 加权系数（Dream-RSI V 函数，DOMAIN-DISCOVERY §4.5.4）
-# 硬编码常量，禁止运行期 env override（与 TB1 H8 同类约束）。
-V_ALPHA: float = 0.1
-# pnl_delta_score 中性值（无有效回执时 v_adjusted 不偏移）
-PNL_NEUTRAL: float = 0.5
+# P4 回执 alpha 加权系数 / pnl_delta_score 中性值收敛至 training_reward.py，
+# 本文件不再重复定义（避免同源常量漂移，锚点③收敛动作）。
 
 
 @dataclass
