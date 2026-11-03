@@ -596,6 +596,16 @@ class CognitiveLoopEntry:
         # sort_mode == "score"：保持 F3 后的 score 排序，不调用 ACT-R（向后兼容）
         # ---------- END P1-4 ----------
 
+        # ---------- Phase A: TRAIN-BASE 排序（TB1+TB2+TB3） ----------
+        # SPEC-L0-DOMAIN-AGENTS v0.2 Phase A 验收：同类事件 recall 命中率 ↑ 15%
+        # H1 硬约束：零 MCP 壳改动（envelope schema 不变，此分支仅在 agent 内部）
+        if sort_mode == "train_base":
+            try:
+                dicts = self._rank_by_train_base(dicts)
+            except Exception:
+                pass  # FAIL-OPEN：保持原排序，不阻塞 recall
+        # ---------- END Phase A ----------
+
         # ---------- P1-3: 双时序知识图标记 ----------
         # 对 recall 结果添加 temporal_status（active/historical/superseded）
         # 不删除记忆，只标记（FAIL-OPEN）
@@ -1579,6 +1589,72 @@ class CognitiveLoopEntry:
                 os.replace(tmp_path, self._beta_state_path)
         except Exception:
             pass  # FAIL-OPEN
+
+    def _rank_by_train_base(self, dicts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Phase A: TRAIN-BASE 三阶段排序（TB1+TB2+TB3）。
+
+        训练基座权重注入 recall 排序：
+            train_base_score(r) = 原始 score ×
+                (0.5 + 0.5 × TB2_beta_mean) ×      # TB2 Beta 后验（0.5~1.0）
+                TB1_psi_gate ×                       # TB1 PSI>0.25 时 0.7 整体降权
+                citation_factor                      # TB3 citation_diversity (0.7~1.0)
+
+        H1: 零 MCP 壳改动；FAIL-OPEN：任何子阶段异常保持原始 score。
+        """
+        from drift_detector import PSI_MINOR_DRIFT
+
+        # ---------- TB1: PSI 全局 gate（一次计算，所有结果共享） ----------
+        # 没有基线分布数据 → 默认 stable（FAIL-OPEN）
+        psi_gate = 1.0
+        try:
+            baseline = self._load_psi_baseline()
+            if baseline and baseline["psi_value"] > PSI_MINOR_DRIFT:
+                psi_gate = 0.7  # severe_drift → recall 整体降权
+        except Exception:
+            psi_gate = 1.0  # FAIL-OPEN
+
+        # ---------- TB2 + TB3: 每条记忆的 Beta mean + citation_diversity ----------
+        for r in dicts:
+            try:
+                mid = r.get("id", "")
+                legacy_conf = float(r.get("confidence") or r.get("quality_score") or 0.5)
+                beta = self._load_beta_state(mid, legacy_confidence=legacy_conf)
+                beta_mean = beta.mean
+
+                # TB3 citation_diversity（近似：quality_level + known_gaps）
+                # 简化：quality_level A=0.8, B=0.6, C=0.4, D=0.2, S=1.0
+                ql_rank = {"S": 1.0, "A": 0.8, "B": 0.6, "C": 0.4, "D": 0.2}
+                ql = r.get("quality_level", "C")
+                citation = ql_rank.get(ql, 0.4)
+
+                orig_score = float(r.get("score", 0.0) or 0.0)
+                # 组合：原始 score × Beta boost × PSI gate × citation
+                boosted = orig_score * (0.5 + 0.5 * beta_mean) * psi_gate * (0.7 + 0.3 * citation)
+                r["score"] = round(boosted, 4)
+                # 标注 train_base 来源（不改变 envelope schema，FAIL-OPEN）
+                r["train_base_rank"] = {
+                    "beta_mean": round(beta_mean, 4),
+                    "psi_gate": psi_gate,
+                    "citation": citation,
+                }
+            except Exception:
+                pass  # FAIL-OPEN：单条异常保持原 score
+
+        dicts.sort(key=lambda x: x.get("score", 0.0) or 0.0, reverse=True)
+        return dicts
+
+    def _load_psi_baseline(self) -> Optional[dict]:
+        """加载 PSI 基线（本地持久化，TB1 影子跑时写入）。
+
+        FAIL-OPEN：文件缺失返回 None，train_base 排序走 psi_gate=1.0（不惩罚）。
+        """
+        baseline_path = _ARTIFACTS_DIR / "psi_baseline.json"
+        try:
+            if baseline_path.exists():
+                return json.loads(baseline_path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+        return None
 
     def _check_poe_trust(self, memory_id: str) -> tuple[bool, Optional[str]]:
         """P1-1: PoE 信任机制 — 按 poe_mode 分流验证路径。

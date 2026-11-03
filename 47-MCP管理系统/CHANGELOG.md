@@ -1,5 +1,16 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 Phase A 认知 agent 参数化（train_base recall 排序）落地
+
+- `recall(sort_mode="train_base")` 新增第三种排序模式，TB1+TB2+TB3 三阶段注入 recall 结果
+- 排序公式：`boosted = score × (0.5+0.5×β_mean) × ψ_gate × (0.7+0.3×citation)`
+- TB1：PSI > 0.25 → `psi_gate=0.7` 全局 recall 降权；基线从 `psi_baseline.json`（TB1 影子跑写入）
+- TB2：每条记忆的 Beta 后验 mean 提升（verify 多次成功的记忆更靠前）
+- TB3：citation_diversity ≈ quality_level rank（S=1.0/A=0.8/B=0.6/C=0.4/D=0.2）
+- H1 硬约束满足：零 MCP 壳改动，所有改动在 agent 侧 `cognitive_loop_entry.py` 内部
+- FAIL-OPEN：PSI 基线缺失/文件损坏 → `psi_gate=1.0`；单条 Beta 加载异常 → 保留原 score
+- 测试 `test_train_base_recall.py` RED 5 条全绿；TB1-TB5+PhaseA 联合 **40/40**
+
 ## 2026-11-03 影子验证合并跑 TB1-TB5（真实 DB 数据）
 
 - 新增 `tb_shadow_run.py`（与 TB1-TB5 同目录，绝对 import）：影子跑脚本，零业务回写
