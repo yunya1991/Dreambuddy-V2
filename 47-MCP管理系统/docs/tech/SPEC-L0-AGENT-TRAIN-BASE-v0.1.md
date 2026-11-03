@@ -231,8 +231,7 @@ PSI（Population Stability Index）小团队友好型漂移监控方案（SPEC-L
 ```
 4-MEMORY/9-工具与接口/
 └── drift_detector.py       # 新增，全域 import 复用
-tests/
-└── test_drift_detector.py  # 新增
+    test_drift_detector.py  # 新增（与实现同目录，绝对 import）
 ```
 
 ### 1.3 代码骨架
@@ -379,12 +378,10 @@ def drift_kill_switch(drift_level: str, context: Dict[str, Any]) -> Dict[str, An
 
 ```
 4-MEMORY/9-工具与接口/
-├── cognitive_interfaces.py   # 修改 verify 接口契约（BetaState 持久化字段）
-├── cognitive_loop_entry.py  # 新增 _beta_verify_adapter() + 修改 verify() 内部调用 adapter
+├── cognitive_interfaces.py   # 修改：新增 BetaState / VerifyResult / verify_beta
+├── cognitive_loop_entry.py   # 新增 _beta_verify_adapter() + Beta 后验持久化 + verify() 内部调用
 ├── drift_detector.py         # TB1 新增，import 依赖（不修改）
-tests/
-├── test_beta_verify.py      # 新增
-└── test_verify_baseline.py  # 回归：升级前后 verify 行为一致（零业务回归）
+└── test_beta_verify.py       # 新增（与实现同目录，绝对 import）
 ```
 
 **adapter 层设计**（Major #2 修复 — 骨架签名 vs 实际代码 `verify(memory_id, success: bool, known_gaps_update)` 的桥接）：
@@ -500,8 +497,12 @@ def verify_beta(memory_id: str, success_rate: float,
 | **RED 4** | drift_detected=True → Beta 状态重置为 Beta(1,1) | PSI 漂移触发 Bayesian reset |
 | **RED 5** | PoE evidence_confidence=0.8 → success_rate=0.7 → adjusted_rate=0.56 | PoE 修正正确性 |
 | **RED 6** | envelope 返回体与旧 verify schema 兼容（data 字段含 confidence 键） | **H1 壳零感知**：cognitive_mcp_server.py return 行零改动 |
+| **RED 7** | 连续两次 verify success=True | 第二次 Beta α 在第一次后验基础上累加（持久化生效） |
+| **RED 8** | adapter 桥接 `success=False` + `drift_detected=True` | Beta(1,2)、data_schema_version="0.2-beta" |
 
-**验收标准**：pytest 6/6 passed + 旧 verify 行为零回归 + envelope schema 零变化。
+**零业务回归实现口径**：无持久化 Beta 后验时，以记忆现有 `confidence` 作为先验种子（伪计数总量=1，即 `Beta(c, 1-c)`），因此 confidence 0.5 + 一次全成功 → `Beta(1.5,0.5)` → mean 0.75 ≥ 0.7（RED 1）；有后验后只做正常 Beta 累加。
+
+**验收标准**：pytest 8/8 passed + 旧 verify 行为零回归（返回字典保留全部旧键）+ envelope schema 零变化。
 
 ### 2.5 算力
 

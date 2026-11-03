@@ -364,6 +364,8 @@ class CognitiveLoopEntry:
 
         self._memory_id = memory_id
         self._storage_path = storage_path
+        # TB2: Beta(α,β) 后验持久化（跟随 storage_path 同目录，避免测试间互相污染）
+        self._beta_state_path: Path = Path(storage_path).parent / "beta_states.json"
 
         # B3: recall SLA 埋点统计（FAIL-OPEN，统计失败不阻塞 recall）
         # 计数器：total=总 recall 次数；cache_hits=缓存命中次数；sla_breaches=超 200ms 次数
@@ -1241,7 +1243,11 @@ class CognitiveLoopEntry:
     # ============================================================
 
     def verify(
-        self, memory_id: str, success: bool = True, known_gaps_update: Optional[List[str]] = None
+        self,
+        memory_id: str,
+        success: bool = True,
+        known_gaps_update: Optional[List[str]] = None,
+        drift_detected: bool = False,
     ) -> Dict[str, Any]:
         """
         A8 校验验证 — 更新记忆置信度并可能触发蒸馏（Phase1 扩展：连续成功计数 → AUTO 草案）。
@@ -1250,11 +1256,13 @@ class CognitiveLoopEntry:
             memory_id: 记忆ID
             success: 校验是否通过
             known_gaps_update: 验证后更新的已知局限列表（仅 success=True 时生效）
+            drift_detected: TB1 PSI 漂移检测结果 → True 时 Beta 先验重置
 
         Returns:
             更新结果。Phase1 新增子键 "voyager"：
               {memory_id, domain, tags, voyager_overall, consecutive_positive_count,
                meets_draft_threshold, auto_draft_generated, draft_id, draft_path}
+            TB2 新增子键：confidence / beta_alpha / beta_beta / drift_detected / data_schema_version
         """
         # P1-L1-2: PoE 信任机制 — 查询 Evidence Ledger 是否有 receipt
         # SPEC §2.3.4：无 receipt 的产出不被信任
@@ -1321,11 +1329,16 @@ class CognitiveLoopEntry:
         old_quality = mem.get("quality_level", "C")
         old_confidence = float(mem.get("confidence") or 0.0)
 
-        # 贝叶斯更新
-        if success:
-            new_confidence = min(1.0, old_confidence + 0.1)
-        else:
-            new_confidence = max(0.0, old_confidence - 0.15)
+        # TB2: Beta 分布更新（adapter 桥接旧 bool 签名，零外部 API 变化）
+        beta_result = self._beta_verify_adapter(
+            memory_id,
+            success=success,
+            known_gaps_update=known_gaps_update,
+            drift_detected=drift_detected,
+            legacy_confidence=old_confidence,
+            evidence_confidence=1.0 if poe_trust else 0.8,
+        )
+        new_confidence = float(beta_result["confidence"])
 
         # 计算新质量等级
         vc = int(mem.get("verify_count") or 0)
@@ -1480,7 +1493,92 @@ class CognitiveLoopEntry:
             "receipt_hash": receipt_hash,
             "poe_quality_cap": poe_quality_cap,
             "poe_blocked": poe_blocked,
+            # TB2: Beta 分布扩展（信封 schema 不变，仅 data 内新增键）
+            "confidence": beta_result["confidence"],
+            "beta_alpha": beta_result["beta_alpha"],
+            "beta_beta": beta_result["beta_beta"],
+            "drift_detected": beta_result["drift_detected"],
+            "data_schema_version": beta_result["data_schema_version"],
         }
+
+    def _beta_verify_adapter(
+        self,
+        memory_id: str,
+        success: bool,
+        known_gaps_update: Optional[List[str]] = None,
+        drift_detected: bool = False,
+        legacy_confidence: Optional[float] = None,
+        evidence_confidence: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Adapter：桥接旧 verify(success: bool) → Beta verify(success_rate: float)。
+
+        - success=True → success_rate=1.0；success=False → 0.0
+        - legacy_confidence 仅在无持久化 Beta 状态时作为先验种子（零业务回归）
+        - evidence_confidence 缺省按 PoE 信任度取值（可信 1.0 / 不可信 0.8）
+        - drift_detected=True → 先验重置 Beta(1,1)
+        """
+        from cognitive_interfaces import BetaState, verify_beta
+
+        success_rate = 1.0 if success else 0.0
+        if evidence_confidence is None:
+            poe_trust, _ = self._check_poe_trust(memory_id)
+            evidence_confidence = 1.0 if poe_trust else 0.8
+
+        beta_state = self._load_beta_state(memory_id, legacy_confidence=legacy_confidence)
+        result = verify_beta(
+            memory_id=memory_id,
+            success_rate=success_rate,
+            evidence_confidence=evidence_confidence,
+            drift_detected=drift_detected,
+            beta_state=beta_state,
+        )
+        self._save_beta_state(
+            memory_id,
+            BetaState(alpha=result.data["beta_alpha"], beta=result.data["beta_beta"]),
+        )
+        return {
+            "memory_id": memory_id,
+            "confidence": result.data["confidence"],
+            "known_gaps": known_gaps_update or [],
+            "beta_alpha": result.data["beta_alpha"],
+            "beta_beta": result.data["beta_beta"],
+            "drift_detected": drift_detected,
+            "data_schema_version": result.data["data_schema_version"],
+        }
+
+    def _load_beta_state(self, memory_id: str, legacy_confidence: Optional[float] = None) -> "Any":
+        """读取记忆的 Beta 后验；无记录时以 legacy confidence 作为先验种子（伪计数总量=1）。"""
+        from cognitive_interfaces import BetaState
+
+        try:
+            with VOYAGER_LOCK:
+                raw = json.loads(self._beta_state_path.read_text(encoding="utf-8"))
+            item = raw.get(memory_id)
+            if item:
+                return BetaState(alpha=float(item["alpha"]), beta=float(item["beta"]))
+        except Exception:
+            pass  # FAIL-OPEN：文件缺失/损坏 → 退回先验
+
+        if legacy_confidence is None:
+            return BetaState(1.0, 1.0)
+        c = min(0.999, max(0.001, float(legacy_confidence)))
+        return BetaState(alpha=c, beta=1.0 - c)
+
+    def _save_beta_state(self, memory_id: str, state: "Any") -> None:
+        """持久化 Beta 后验（FAIL-OPEN，写失败不影响 verify 主流程）。"""
+        try:
+            with VOYAGER_LOCK:
+                try:
+                    raw = json.loads(self._beta_state_path.read_text(encoding="utf-8"))
+                except Exception:
+                    raw = {}
+                raw[memory_id] = {"alpha": state.alpha, "beta": state.beta}
+                self._beta_state_path.parent.mkdir(parents=True, exist_ok=True)
+                tmp_path = self._beta_state_path.with_suffix(".json.tmp")
+                tmp_path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+                os.replace(tmp_path, self._beta_state_path)
+        except Exception:
+            pass  # FAIL-OPEN
 
     def _check_poe_trust(self, memory_id: str) -> tuple[bool, Optional[str]]:
         """P1-1: PoE 信任机制 — 按 poe_mode 分流验证路径。

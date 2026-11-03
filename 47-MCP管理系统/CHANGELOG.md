@@ -1,5 +1,13 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 TB2 Beta 分布 verify 升级落地
+
+- `cognitive_interfaces.py` 新增 `BetaState` / `VerifyResult` / `verify_beta`（SPEC §2 骨架），TB3 可直接 `from cognitive_interfaces import BetaState`
+- `cognitive_loop_entry.py` 新增 `_beta_verify_adapter`（bool → success_rate 桥接）+ `_load_beta_state` / `_save_beta_state`（后验持久化于 `storage_path` 同目录 `beta_states.json`），`verify()` 增加可选 `drift_detected` 参数（TB1 PSI 漂移 → Bayesian reset）
+- 零业务回归口径：无持久化后验时以记忆现有 confidence 作先验种子（`Beta(c, 1-c)`），conf 0.5 + 一次成功 → mean 0.75 ≥ 0.7；旧返回键全部保留，新增 `confidence/beta_alpha/beta_beta/drift_detected/data_schema_version`
+- 测试 `test_beta_verify.py` RED 8 条全绿；回归：`test_drift_detector` 12/12、PoE / Evidence Ledger / M6 契约 / 认知 session 等用例通过（`test_p0_1_hook_wiring`、`test_auto_access::test_mcp_tool_call_stats` 为既有 envelope 断言失败，stash 复验确认与 TB2 无关）
+- 同步修正 SPEC §1.2/§2.2 测试路径为实际同目录，§2.4 增补 RED 7/8，验收 6/6 → **8/8**
+
 ## 2026-11-03 TB1 PSI 漂移检测器落地（本地接续云端开发）
 
 - 拉取云端未提交进度（`drift_detector.py` + `test_drift_detector.py`）到本地并完成开发

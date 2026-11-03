@@ -12,16 +12,17 @@ SPEC: SPEC-CognitiveSystem-Evolution.md §3.5 M6
   - 不强制已有类继承 ABC（渐进式，先定义后对齐）
   - EvidenceLedger 可作为 EvidenceSink 的实现，暂不强制继承
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
-
+from typing import Any, Optional
 
 # ============================================================
 # 结果类型 dataclass
 # ============================================================
+
 
 @dataclass
 class RecallResult:
@@ -33,6 +34,7 @@ class RecallResult:
         knowledge: 知识库召回结果
         confidence: 综合置信度 0.0-1.0
     """
+
     memories: list[dict] = field(default_factory=list)
     skills: list[dict] = field(default_factory=list)
     knowledge: list[dict] = field(default_factory=list)
@@ -49,14 +51,93 @@ class MonitorResult:
         targets: 需要验证的目标 ID 列表
         calibration: 校准系数 0.0-1.0（默认 1.0 = 无校准）
     """
+
     action: str = "proceed"
     targets: list[str] = field(default_factory=list)
     calibration: float = 1.0
 
 
 # ============================================================
+# TB2 Beta 分布 verify（SPEC-L0-AGENT-TRAIN-BASE v0.1 §2）
+# ============================================================
+
+
+@dataclass
+class BetaState:
+    """Beta(α, β) 置信度分布 — 支持部分成功/部分失败。
+
+    alpha: 成功伪计数；beta: 失败伪计数。
+    """
+
+    alpha: float = 1.0
+    beta: float = 1.0
+
+    @property
+    def mean(self) -> float:
+        total = self.alpha + self.beta
+        if total <= 0.0:
+            return 0.5
+        return self.alpha / total
+
+    def update(self, success_rate: float, weight: float = 1.0) -> "BetaState":
+        """按成功率更新分布（success_rate ∈ [0,1]）。"""
+        rate = min(1.0, max(0.0, float(success_rate)))
+        return BetaState(
+            alpha=self.alpha + rate * weight,
+            beta=self.beta + (1.0 - rate) * weight,
+        )
+
+
+@dataclass
+class VerifyResult:
+    """verify 结果（信封 schema 零变化，业务体放 data）。"""
+
+    ok: bool = True
+    data: dict = field(default_factory=dict)
+
+
+def verify_beta(
+    memory_id: str,
+    success_rate: float,
+    evidence_confidence: float = 0.5,
+    drift_detected: bool = False,
+    beta_state: Optional["BetaState"] = None,
+) -> VerifyResult:
+    """Beta 分布更新（TB2 核心）。
+
+    Args:
+        success_rate: [0,1] 部分成功率
+        evidence_confidence: PoE 证据链置信度，修正 success_rate
+        drift_detected: TB1 漂移检测结果 → True 时重置先验（Bayesian reset）
+        beta_state: 已有后验（None 表示无信息先验 Beta(1,1)）
+    """
+    if drift_detected or beta_state is None:
+        state = BetaState(1.0, 1.0)
+    else:
+        state = beta_state
+
+    adjusted_rate = min(1.0, max(0.0, float(success_rate))) * min(
+        1.0, max(0.0, float(evidence_confidence))
+    )
+    new_state = state.update(adjusted_rate)
+
+    return VerifyResult(
+        ok=True,
+        data={
+            "memory_id": memory_id,
+            "confidence": new_state.mean,
+            "beta_alpha": new_state.alpha,
+            "beta_beta": new_state.beta,
+            "drift_detected": drift_detected,
+            "data_schema_version": "0.2-beta",
+        },
+    )
+
+
+# ============================================================
 # L3 路由层接口
 # ============================================================
+
 
 class CognitiveRouter(ABC):
     """L3 路由层接口 — Intent-Engine → 三库加权召回。
@@ -85,6 +166,7 @@ class CognitiveRouter(ABC):
 # L2 Evidence Ledger 接口
 # ============================================================
 
+
 class EvidenceSink(ABC):
     """L2 Evidence Ledger 接口 — 集中化决策审计 trail。
 
@@ -111,6 +193,7 @@ class EvidenceSink(ABC):
 # ============================================================
 # L4 元认知层接口（研究探索项）
 # ============================================================
+
 
 class MetacogMonitor(ABC):
     """L4 元认知层接口（研究探索项）— 自我监控+错误检测。
