@@ -113,7 +113,7 @@
 - [SKILL索引](../工作索引/SKILL_INDEX.md)
 - [部门矩阵](../工作索引/DEPARTMENT_MATRIX.md)
 - [公司中枢设计](./COMPANY_CENTRAL_HUB.md)
-- [治理中枢化设计](../../docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)
+- [治理中枢化设计](../../7-产物中台/docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)
 
 ---
 

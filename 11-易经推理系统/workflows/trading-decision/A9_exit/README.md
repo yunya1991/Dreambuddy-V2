@@ -17,4 +17,4 @@
 - `ClassicExitAdapter` → 封装 ClassicExitSystem（四优先级 CLOSE/REDUCE/RAISE_TP/HOLD）
 - `SimpleExitAdapter` → 内置 ATR 逻辑镜像
 
-详见技术设计文档 [TECHNICAL_DESIGN.md §9.8](../../docs/TECHNICAL_DESIGN.md#98-dreamos-离场模块集成yijingexitadapter--exitmoduleselector)。
+详见技术设计文档 [TECHNICAL_DESIGN.md §9.8](../../../docs/TECHNICAL_DESIGN.md#98-dreamos-离场模块集成yijingexitadapter--exitmoduleselector)。

@@ -6,7 +6,7 @@
  
 ## 1. 背景
  
-约束层文档 [trading-communication-protocol-v2.md](file:///Users/zhangjiangtao/WorkBuddy/_tmp_merge_dream_v2/constraints/workflows-spec/trading-communication-protocol-v2.md) 已定义 A0-A9 的三环架构与定时触发节奏，但主干尚缺“可直接运行的定时调度层”工作流，导致协议落地停留在示例与本地函数调用。
+约束层文档 trading-communication-protocol-v2.md（外部链接失效） 已定义 A0-A9 的三环架构与定时触发节奏，但主干尚缺“可直接运行的定时调度层”工作流，导致协议落地停留在示例与本地函数调用。
  
 当前仓库已具备：
  

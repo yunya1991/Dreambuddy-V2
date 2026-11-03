@@ -690,10 +690,10 @@ Time ─────────────────────────
 
 ## 十、参考来源
 
-- [intent_engine.py](../dreamos/core/sense/intent_engine.py) — S 层源码
-- [graph_planner.py](../dreamos/core/arrange/graph_planner.py) — A 层源码
-- [graph_executor.py](../dreamos/core/compute/graph_executor.py) — C 层源码
-- [store.py](../dreamos/core/graph_store/store.py) — G 层源码
-- [reflection-protocol.ts](../dream-harness-bridge/packages/bridge-core/src/reflection-protocol.ts) — 反射协议（已实现）
-- [intent-gateway plugin](../dream-harness-bridge/packages/cordis-plugin-intent-gateway/lib/index.js) — S 层映射（已实现）
+- [intent_engine.py](dreamos/core/sense/intent_engine.py) — S 层源码
+- [graph_planner.py](dreamos/core/arrange/graph_planner.py) — A 层源码
+- [graph_executor.py](dreamos/core/compute/graph_executor.py) — C 层源码
+- [store.py](dreamos/core/graph_store/store.py) — G 层源码
+- [reflection-protocol.ts](dream-harness-bridge/packages/bridge-core/src/reflection-protocol.ts) — 反射协议（已实现）
+- [intent-gateway plugin](dream-harness-bridge/packages/cordis-plugin-intent-gateway/lib/index.js) — S 层映射（已实现）
 - [dream-harness-bridge/SPEC.md](./dream-harness-bridge/SPEC.md) v0.4 — 硬约束与架构 Spec

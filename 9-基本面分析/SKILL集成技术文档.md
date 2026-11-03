@@ -17,8 +17,8 @@
 
 与现有框架对齐：
 
-- 基本面总体模块与路由约定见 [基本面研究文档.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E7%A0%94%E7%A9%B6%E6%96%87%E6%A1%A3.md#L242-L372)。
-- 基本面工程独立化与页面/后端边界演进见 [基本面独立化架构与清理规划.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E7%8B%AC%E7%AB%8B%E5%8C%96%E6%9E%B6%E6%9E%84%E4%B8%8E%E6%B8%85%E7%90%86%E8%A7%84%E5%88%92.md#L33-L59)。
+- 基本面总体模块与路由约定见 基本面研究文档.md（外部链接失效）。
+- 基本面工程独立化与页面/后端边界演进见 基本面独立化架构与清理规划.md（外部链接失效）。
 
 ## 2. 集成红线（强制）
 
@@ -37,19 +37,19 @@
 - `gate-info-research`
 - `gate-info-coinanalysis`
 
-这些 Skill 当前已通过标准化脚本做部分字段抽取与质量标注，可作为“资金流/微观结构/情绪”主力来源与兜底来源（见 [sync_web3_skill_snapshot.py](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/flow/scripts/sync_web3_skill_snapshot.py#L168-L260) 的解析策略示例）。
+这些 Skill 当前已通过标准化脚本做部分字段抽取与质量标注，可作为“资金流/微观结构/情绪”主力来源与兜底来源（见 sync_web3_skill_snapshot.py（外部链接失效） 的解析策略示例）。
 
 ### 3.2 Binance（开源在库可复用）
 
 本仓库已内置 Binance Skills Hub 源码（用于开源 Skill 复用）：
 
-- 入口说明：[binance-skills-hub-main/README.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%B8%81%E5%AE%89Skill/binance-skills-hub-main/README.md)
+- 入口说明：binance-skills-hub-main/README.md（外部链接失效）
 - BTC 首期建议白名单：
-  - `crypto-market-rank`（榜单/社交热度/聪明钱流入/地址 PnL）：[SKILL.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%B8%81%E5%AE%89Skill/binance-skills-hub-main/skills/binance-web3/crypto-market-rank/SKILL.md)
-  - `query-token-info`（标的画像、实时市场数据与 K 线）：[SKILL.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%B8%81%E5%AE%89Skill/binance-skills-hub-main/skills/binance-web3/query-token-info/SKILL.md)
+  - `crypto-market-rank`（榜单/社交热度/聪明钱流入/地址 PnL）：SKILL.md（外部链接失效）
+  - `query-token-info`（标的画像、实时市场数据与 K 线）：SKILL.md（外部链接失效）
   - `query-address-info`（地址持仓与仓位）：本项目 `.trae/skills/query-address-info/SKILL.md`
 - 风险提示：
-  - Binance Spot 相关 skill（含鉴权、交易写入）仅作为未来“执行层”能力候选，不纳入基本面链路（参考 [binance/spot/SKILL.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%B8%81%E5%AE%89Skill/binance-skills-hub-main/skills/binance/spot/SKILL.md) 的鉴权与主网确认规范）。
+  - Binance Spot 相关 skill（含鉴权、交易写入）仅作为未来“执行层”能力候选，不纳入基本面链路（参考 binance/spot/SKILL.md（外部链接失效） 的鉴权与主网确认规范）。
 
 ### 3.3 OKX（新增接入候选，BTC 首期）
 
@@ -82,11 +82,11 @@
 - 资金流：`ops/nanoclaw/core_task1/flow/`（脚本与回测/产物路径）
 - 叙事：`ops/nanoclaw/core_task1/narrative/`
 - Schema（已存在的 SSoT）：
-  - [flow_brief_request.schema.json](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json)
-  - [flow_brief_receipt.schema.json](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/schema/flow_brief_receipt.schema.json)
-  - [narrative_contract.schema.json](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/schema/narrative_contract.schema.json)
-  - [news_contract.schema.json](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/schema/news_contract.schema.json)
-- 多 Agent 桥接（下游消费）：[multi_agent_bridge.mjs](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/scripts/multi_agent_bridge.mjs)
+  - flow_brief_request.schema.json（外部链接失效）
+  - flow_brief_receipt.schema.json（外部链接失效）
+  - narrative_contract.schema.json（外部链接失效）
+  - news_contract.schema.json（外部链接失效）
+- 多 Agent 桥接（下游消费）：multi_agent_bridge.mjs（外部链接失效）
 
 ## 5. 数据契约（SSoT）与落盘规范
 
@@ -190,7 +190,7 @@
 
 bindBase 命名建议：
 
-- 统一遵循 [基本面研究文档.md 的字段命名模板](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E7%A0%94%E7%A9%B6%E6%96%87%E6%A1%A3.md#L631-L718) 的“key__asset__venue__market”风格。
+- 统一遵循 基本面研究文档.md 的字段命名模板（外部链接失效） 的“key__asset__venue__market”风格。
 - 示例：
   - `funding_rate_bps__btc__okx__perp`
   - `oi_usd__btc__okx__perp`
@@ -211,7 +211,7 @@ bindBase 命名建议：
 强制约束（重申）：
 
 - 缺失或冲突证据：只允许输出降风险动作建议，且必须写明 `missing_data[]/conflict_reasons[]`。
-- 建议至少保留 `source_diversity/concentration_risk/bot_suspect_ratio/latency_sec` 维度，便于 `EvidenceScore` 可复算（对齐 [基本面研究文档.md 对叙事模块的扩展建议](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E7%A0%94%E7%A9%B6%E6%96%87%E6%A1%A3.md#L258-L267)）。
+- 建议至少保留 `source_diversity/concentration_risk/bot_suspect_ratio/latency_sec` 维度，便于 `EvidenceScore` 可复算（对齐 基本面研究文档.md 对叙事模块的扩展建议（外部链接失效））。
 
 覆盖率口径（叙事与情绪，B2：数据源 bucket 覆盖率）：
 
@@ -289,7 +289,7 @@ P0.5（2026-04-08）补充口径：
 
 ## 8. 与多 Agent 自动化交易系统对接
 
-现有桥接脚本 [multi_agent_bridge.mjs](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/ops/nanoclaw/core_task1/scripts/multi_agent_bridge.mjs) 已包含：
+现有桥接脚本 multi_agent_bridge.mjs（外部链接失效） 已包含：
 
 - `buildSentimentFromNarrativeRegistry`：将叙事输出转为 sentiment-analyst 可消费字段
 - `buildNarrativeFromRegistry`：将叙事 top narrative 转为 narrative-analyst 输出
@@ -326,7 +326,7 @@ P0.5（2026-04-08）补充口径：
 
 对应执行计划文件：
 
-- [2026-04-08-btc-skill-p0-integration.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/docs/superpowers/plans/2026-04-08-btc-skill-p0-integration.md)
+- 2026-04-08-btc-skill-p0-integration.md（外部链接失效）
 
 ### 11.1 文件边界（新增/修改/测试）
 
@@ -483,7 +483,7 @@ cd frontend && npm run lint
 
 Task7 执行计划：
 
-- 计划文件：[2026-04-08-task7-pre-release-gate-gray.md](file:///Users/zhangjiangtao/ft_userdata/%E5%9F%BA%E6%9C%AC%E9%9D%A2%E5%88%86%E6%9E%90_fundamental/docs/superpowers/plans/2026-04-08-task7-pre-release-gate-gray.md)
+- 计划文件：2026-04-08-task7-pre-release-gate-gray.md（外部链接失效）
 - 目标：
   - 建立发布前门禁脚本（测试/编译/lint）
   - 将长跑测试拆分为 slow 组并引入确定性 fast 测试

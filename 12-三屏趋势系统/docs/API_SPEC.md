@@ -1210,7 +1210,7 @@ python -m pytest tests/ -v
 | 文档 | 说明 |
 |------|------|
 | [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md) | 技术设计文档（完整版） |
-| [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) | 工程索引 |
+| [ENGINEERING_INDEX.md](ENGINEERING_INDEX.md) | 工程索引 |
 | [STRATEGY_LINES.md](STRATEGY_LINES.md) | 策略线管理总纲 |
 | [CHANGELOG.md](CHANGELOG.md) | 变更日志 |
 | [PITD_PHYSICS_ALGORITHM_DESIGN.md](PITD_PHYSICS_ALGORITHM_DESIGN.md) | PITD 物理算法设计 |

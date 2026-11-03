@@ -62,15 +62,15 @@
 
 **已确认缺失的数据源（降级处理）**:
 
-- **ReflectionEngine 历史未持久化**: [reflection_engine.py L42-L121](../../../dreambuddy_core/reflection_engine.py#L42-L121) `calculate_cs()` / `apply_reward()` 仅内存计算，返回值未落盘
+- **ReflectionEngine 历史未持久化**: [reflection_engine.py L42-L121](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/reflection_engine.py#L42-L121) `calculate_cs()` / `apply_reward()` 仅内存计算，返回值未落盘
 - **ESS/gmax/cluster 历史轨迹未持久化**: tight_coupling_orchestrator 7步闭环的 reflect/learn/feedback 产出未写入文件
 - **降级方案**: 区块4"进化证据"显示"进化引擎数据接入中"占位，不阻塞 MVP 1-3 区块。后续单独排期实现 ReflectionEngine 持久化（新增 `reflection_history.jsonl`，Phase 2 范围）
 
 **进化系统代码资产（参考）**:
 
 - **演化子池建仓**: [polling_trader.py L7448-L7515](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L7448-L7515) — `source_tag="evolution"` / `strategy_source="evolution"`、25U 硬上限、5x isolated
-- **闭环 7 步产出**: [tight_coupling_orchestrator.py L37-L60](../../../dreambuddy_core/tight_coupling_orchestrator.py#L37-L60)（ri 触发）+ [L150-L182](../../../dreambuddy_core/tight_coupling_orchestrator.py#L150-L182)（cs / ess_delta / gmax_mult / cluster_weight_mult / anti_pattern_flag，内存传递未落盘）
-- **涟漪引擎**: [ripple_engine.py L58-L87](../../../dreambuddy_core/ripple_engine.py#L58-L87) `compute_ri()` + `get_ri_action()`
+- **闭环 7 步产出**: [tight_coupling_orchestrator.py L37-L60](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/tight_coupling_orchestrator.py#L37-L60)（ri 触发）+ [L150-L182](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/tight_coupling_orchestrator.py#L150-L182)（cs / ess_delta / gmax_mult / cluster_weight_mult / anti_pattern_flag，内存传递未落盘）
+- **涟漪引擎**: [ripple_engine.py L58-L87](../../../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/ripple_engine.py#L58-L87) `compute_ri()` + `get_ri_action()`
 - **认知记忆**: `mcp_cognitive` MCP server（recall/record/verify/stats/health），数据库 `4-MEMORY/data/cognitive_memory.db`
 
 ---

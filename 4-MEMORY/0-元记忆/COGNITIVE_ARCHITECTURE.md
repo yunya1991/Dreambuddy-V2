@@ -782,7 +782,7 @@ python3 cognitive_superpowers.py --suggest "测试驱动开发"
 
 #### 5.5.7 已落地回测结果（v3.2 新增，v3.3 扩展）
 
-> **实现**: [cognitive_backtest.py](../../9-工具与接口/cognitive_backtest.py) 统一回测框架，复用 `evaluation_engine.compute_path_advantage` / `decide_learning_action`，TDD 11/11 通过（[test_cognitive_backtest_unified.py](../../9-工具与接口/test_cognitive_backtest_unified.py)）。
+> **实现**: [cognitive_backtest.py](../9-工具与接口/cognitive_backtest.py) 统一回测框架，复用 `evaluation_engine.compute_path_advantage` / `decide_learning_action`，TDD 11/11 通过（[test_cognitive_backtest_unified.py](../9-工具与接口/test_cognitive_backtest_unified.py)）。
 
 **卡控策略**: 报告 + 告警，不强制回滚。`path_advantage >= +0.2` 标记通过(upgrade)，`< +0.2` 标记观察(observe)，`<= -0.2` 标记告警(alert)。
 

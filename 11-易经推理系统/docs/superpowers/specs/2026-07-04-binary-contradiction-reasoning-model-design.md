@@ -37,7 +37,7 @@
 | 评价标准 | 预测准确率 | 决策质量（盈亏比+胜率）|
 | 不确定性 | 视为噪声 | 视为本质，用分支应对 |
 
-详见 [易经价值定位](../../skills/1-TRADE/A8-theory-practice-verification/references/yijing_value_positioning.md)。
+详见 [易经价值定位](../../../skills/1-TRADE/A8-theory-practice-verification/references/yijing_value_positioning.md)。
 
 ---
 
@@ -607,7 +607,7 @@ BCRMOutput(
 >>>>>>> origin/trae/agent-TBnFsw
 
 > 来源：外部输入评估（千问分析）— 易经精髓之一，BCRM 的关键增量
-> 详见 [外部输入评估](../../skills/1-TRADE/A8-theory-practice-verification/references/external_input_evaluation_qwen.md)
+> 详见 [外部输入评估](../../../skills/1-TRADE/A8-theory-practice-verification/references/external_input_evaluation_qwen.md)
 
 <<<<<<< HEAD
 ### 5.2.1 变爻与卦象转化的区别

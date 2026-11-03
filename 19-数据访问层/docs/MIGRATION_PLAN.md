@@ -299,7 +299,7 @@ openssl dgst -sha256 data/archive/${ARCHIVE_TS}.tar.gz.enc \
 **P3 验收：**
 - ✅ Cron 连续跑 7 天：0 非零 exit；backup 每日 1 文件；integrity 全部 = ok
 - ✅ 冷备份还原演练成功：从 W8 备份还原 → integrity ok + 近 10 交易 md5 100% 匹配
-- ✅ 根工程 [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) §0.3 表追加 19-数据访问层入口行
+- ✅ 根工程 [ENGINEERING_INDEX.md](ENGINEERING_INDEX.md) §0.3 表追加 19-数据访问层入口行
 
 ---
 

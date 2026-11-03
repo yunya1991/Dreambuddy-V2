@@ -62,13 +62,13 @@
 
 | 文件 | 行数 | 功能 |
 |------|------|------|
-| [dynamic_intent_recognizer.py](file:///workspace/experiments/ab-trading/core/intent_engine/dynamic_intent_recognizer.py) | 1087 | 动态意图识别器 + S思维链LLM降级 |
+| [dynamic_intent_recognizer.py](core/intent_engine/dynamic_intent_recognizer.py) | 1087 | 动态意图识别器 + S思维链LLM降级 |
 
 ### 2.2 测试文件
 
 | 文件 | 行数 | 功能 |
 |------|------|------|
-| [test_dynamic_intent_recognizer.py](file:///workspace/experiments/ab-trading/test_dynamic_intent_recognizer.py) | 340 | 7大场景测试 + 200轮压力测试 |
+| [test_dynamic_intent_recognizer.py](test_dynamic_intent_recognizer.py) | 340 | 7大场景测试 + 200轮压力测试 |
 
 ---
 

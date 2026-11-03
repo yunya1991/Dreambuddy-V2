@@ -5,7 +5,7 @@
 > 所有者: DreamBuddy v2 易经推理系统工作组
 > 版本: v1.1
 > 关联 Spec: [2026-08-19-market-morphology-evolution-design.md](./2026-08-19-market-morphology-evolution-design.md)（形态演化引擎基础）
-> 关联代码: [data_server_fixed.py](../../11-易经推理系统/data_server_fixed.py) `get_morph_cycle()` / [parameter_mapper.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/parameter_mapper.py)
+> 关联代码: [data_server_fixed.py](../../../11-易经推理系统/data_server_fixed.py) `get_morph_cycle()` / [parameter_mapper.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/parameter_mapper.py)
 
 ---
 
@@ -15,9 +15,9 @@
 
 | 模块 | 现状 | 缺口 |
 |---|---|---|
-| **周期曲线预测** | FFT top-3 + Hermite 样条，静态计算（[data_server_fixed.py:2056](../../11-易经推理系统/data_server_fixed.py)） | 无误差追踪，无在线学习，预测不随真实轨迹修正 |
-| **在线学习** | 周级更新 ScoreComposer 指标权重（[weekly_online_learning.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/scripts/weekly_online_learning.py)） | 未覆盖 ParameterMapper 参数，无预测误差反馈闭环 |
-| **ParameterMapper 集成** | 输出仅写入 JSON payload（[run_evolution_pipeline.py:362](../../11-易经推理系统/scripts/memory_l4/bcrm2/run_evolution_pipeline.py)） | **BCRM 2.0 主流程未读取这些参数**，是"孤儿"扩展层 |
+| **周期曲线预测** | FFT top-3 + Hermite 样条，静态计算（[data_server_fixed.py:2056](../../../11-易经推理系统/data_server_fixed.py)） | 无误差追踪，无在线学习，预测不随真实轨迹修正 |
+| **在线学习** | 周级更新 ScoreComposer 指标权重（[weekly_online_learning.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/scripts/weekly_online_learning.py)） | 未覆盖 ParameterMapper 参数，无预测误差反馈闭环 |
+| **ParameterMapper 集成** | 输出仅写入 JSON payload（[run_evolution_pipeline.py:362](../../../11-易经推理系统/scripts/memory_l4/bcrm2/run_evolution_pipeline.py)） | **BCRM 2.0 主流程未读取这些参数**，是"孤儿"扩展层 |
 | **snapshot 输入** | (L, T, C) 来自历史平滑值，CLI batch 离线全量重算 | 非实时，无前瞻性，参数总是滞后于市场 |
 | **板块权重** | 默认 identity betas（β=1.0, α=0, corr=0.5） | 未接入真实板块 β/α/corr 数据 |
 
@@ -1726,7 +1726,7 @@ elif path == "/api/alpha/rollback": self._json(rollback_alpha())
 
 ### 9.1 当前周期曲线算法（待重构）
 
-- **位置**: [data_server_fixed.py:2056](../../11-易经推理系统/data_server_fixed.py) `get_morph_cycle()`
+- **位置**: [data_server_fixed.py:2056](../../../11-易经推理系统/data_server_fixed.py) `get_morph_cycle()`
 - **算法**: FFT top-3 频率叠加 + Hermite 样条过渡
 - **问题**: 静态计算，无误差追踪，无在线学习
 
@@ -1755,7 +1755,7 @@ elif path == "/api/alpha/rollback": self._json(rollback_alpha())
 
 ### 9.3 现有在线学习机制（参考）
 
-- **位置**: [weekly_online_learning.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/scripts/weekly_online_learning.py)
+- **位置**: [weekly_online_learning.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/scripts/weekly_online_learning.py)
 - **对象**: ScoreComposer 指标权重 + regime 中心
 - **频率**: 周级（手动触发）
 - **方法**: 网格搜索 45 组 + 随机扰动 128 次

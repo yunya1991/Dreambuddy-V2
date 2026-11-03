@@ -94,5 +94,5 @@ A系列研报(周报+日报) ──→ 基本面方向 + 置信度 ────�
 
 | 文档 | 说明 |
 |------|------|
-| [ENGINEERING_INDEX.md](../12-三屏趋势系统/ENGINEERING_INDEX.md) | **完整工程索引**（目录结构、API清单、配置参数、依赖关系、外部接口） |
+| [ENGINEERING_INDEX.md](docs/ENGINEERING_INDEX.md) | **完整工程索引**（目录结构、API清单、配置参数、依赖关系、外部接口） |
 | [docs/trend-screen-system-design.md](../12-三屏趋势系统/docs/trend-screen-system-design.md) | 技术设计文档（五大算法、数据流、核心原理） |

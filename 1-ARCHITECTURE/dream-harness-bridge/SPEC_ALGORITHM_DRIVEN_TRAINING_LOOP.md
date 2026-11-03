@@ -9,9 +9,9 @@
 > - [SPEC.md](./SPEC.md) v0.4 — dream-harness-bridge 分层嵌入主 Spec
 > - [RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md](../RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md) v0.2 — 全栈对齐调研（含边界守护理论）
 > - [SPEC_INTENT_DREAMOS_OPTIMIZATION.md](./SPEC_INTENT_DREAMOS_OPTIMIZATION.md) — 意图识别优化评估
-> - [../intent-recognition-spec/intent-taxonomy.md](../intent-recognition-spec/intent-taxonomy.md) — 6×30 对话意图权威规范
+> - ../intent-recognition-spec/intent-taxonomy.md（链接失效） — 6×30 对话意图权威规范
 > - [D-调研方法论.md](../../2-KNOWLEDGE/5-METHODOLOGY/D-调研方法论.md) — 调研方法论
-> - [project_memory.md](../../../../../.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/project_memory.md) — 硬约束清单
+> - project_memory.md（链接失效） — 硬约束清单
 
 ---
 
@@ -636,7 +636,7 @@ dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/
 | [SPEC_INTENT_DREAMOS_OPTIMIZATION.md](./SPEC_INTENT_DREAMOS_OPTIMIZATION.md) | 兄弟 SPEC，意图识别优化；本文件将其"算法驱动"维度补全 |
 | [RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md](../RESEARCH_DREAMOS_HARNESS_FULL_ALIGNMENT.md) | 调研基础，P0-1 事件流升级是本方案 Phase 3 的前置 |
 | [D-调研方法论.md](../../2-KNOWLEDGE/5-METHODOLOGY/D-调研方法论.md) | 方法论来源 |
-| [project_memory.md](../../../../../.trae-cn/memory/projects/-Users-zhangjiangtao-WorkBuddy-dreambuddy-v2--p2-5f8e8db8067187fd2690/project_memory.md) | 硬约束清单来源 |
+| project_memory.md（链接失效） | 硬约束清单来源 |
 
 ---
 

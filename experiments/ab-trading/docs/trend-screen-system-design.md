@@ -257,7 +257,7 @@ P(趋势|信号) ∝ Σ[权重 × (0.5 + speed/200 + acceleration/200)]
 **收盘价确认规则**：仅使用已收盘K线计算，当前未完成的K线不算跌破。
 **全部跌破时禁止开多仓**。
 
-核心函数: [`get_dynamic_stop_loss()`](../../../experiments/ab-trading/strategy_params.py#L71-L170)
+核心函数: [`get_dynamic_stop_loss()`](../../../14-V15经典马丁策略/lib/strategy_params.py#L71-L170)
 
 ### 5.3 波动率调整止盈/加仓幅度
 
@@ -273,7 +273,7 @@ BTC基准参数：
 vol_mult = 币波动率 / BTC波动率  (clamp 0.5 ~ 2.5)
 ```
 
-核心函数: [`get_vol_adjusted_params()`](../../../experiments/ab-trading/strategy_params.py#L193-L219)
+核心函数: [`get_vol_adjusted_params()`](../../../14-V15经典马丁策略/lib/strategy_params.py#L193-L219)
 
 ---
 

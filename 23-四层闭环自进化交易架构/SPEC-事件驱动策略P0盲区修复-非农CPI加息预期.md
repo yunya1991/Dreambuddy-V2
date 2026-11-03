@@ -71,7 +71,7 @@ if not event_ctx.get("in_fomc_cycle", False):
 
 #### 3.1.1 FredCollector.SERIES 扩展
 
-**文件**：[18-数据获取中心/data_center/collectors/macro/fred_collector.py](../../18-数据获取中心/data_center/collectors/macro/fred_collector.py#L26-L29)
+**文件**：[18-数据获取中心/data_center/collectors/macro/fred_collector.py](../18-数据获取中心/data_center/collectors/macro/fred_collector.py#L26-L29)
 
 **变更**：`SERIES` 元组追加三个序列：
 
@@ -92,7 +92,7 @@ SERIES = (
 
 #### 3.1.2 FedEventCollector 用 cme-fedwatch PyPI 包替换爬虫
 
-**文件**：[18-数据获取中心/data_center/collectors/macro/fed_event_collector.py](../../18-数据获取中心/data_center/collectors/macro/fed_event_collector.py#L42-L129)
+**文件**：[18-数据获取中心/data_center/collectors/macro/fed_event_collector.py](../18-数据获取中心/data_center/collectors/macro/fed_event_collector.py#L42-L129)
 
 **变更**：`_fetch_fedwatch_from_investing()` 改为 `_fetch_fedwatch_from_cme()`，使用 `cme-fedwatch 0.2.1` PyPI 包：
 
@@ -163,7 +163,7 @@ def _fetch_fedwatch_from_cme() -> dict:
 
 #### 3.1.3 UsEconomicCalendarCollector 追加 CESI 标准化
 
-**文件**：[18-数据获取中心/data_center/collectors/macro/us_economic_calendar_collector.py](../../18-数据获取中心/data_center/collectors/macro/us_economic_calendar_collector.py#L208-L225)
+**文件**：[18-数据获取中心/data_center/collectors/macro/us_economic_calendar_collector.py](../18-数据获取中心/data_center/collectors/macro/us_economic_calendar_collector.py#L208-L225)
 
 **变更**：`fetch()` 方法在 `surprise = data["actual"] - data["forecast"]` 后追加 CESI 标准化：
 
@@ -814,8 +814,8 @@ cme-fedwatch>=0.2.1
 - 数据管线 SPEC: [SPEC-数据管线打通与能力落地.md](./SPEC-数据管线打通与能力落地.md)
 - EventDrivenStrategy: [event_driven_strategy.py](./dreambuddy_evolution/engines/event_driven_strategy.py)
 - PrimaryContradictionDetector: [primary_contradiction_detector.py](./dreambuddy_evolution/engines/primary_contradiction_detector.py)
-- FredCollector: [fred_collector.py](../../18-数据获取中心/data_center/collectors/macro/fred_collector.py)
-- FedEventCollector: [fed_event_collector.py](../../18-数据获取中心/data_center/collectors/macro/fed_event_collector.py)
-- UsEconomicCalendarCollector: [us_economic_calendar_collector.py](../../18-数据获取中心/data_center/collectors/macro/us_economic_calendar_collector.py)
+- FredCollector: [fred_collector.py](../18-数据获取中心/data_center/collectors/macro/fred_collector.py)
+- FedEventCollector: [fed_event_collector.py](../18-数据获取中心/data_center/collectors/macro/fed_event_collector.py)
+- UsEconomicCalendarCollector: [us_economic_calendar_collector.py](../18-数据获取中心/data_center/collectors/macro/us_economic_calendar_collector.py)
 - 认知记忆: VM-1790952663890-dca3391e（调研结论）、VM-1789631187004（hike_prob=0 兜底反模式）
 

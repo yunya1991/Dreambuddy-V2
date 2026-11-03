@@ -5,7 +5,7 @@
 > 关联文档:
 > - [BCRM 2.0 满仓算力倾斜 + 三维度离场时机优化](2026-08-18-bcrm2-mode-evolution-design.md)（S2/S3/S4 开关）
 > - [MorphCycle 周期动态修正](2026-08-19-morph-cycle-dynamic-correction-design.md)（前置层）
-> - [TECHNICAL_DESIGN.md](../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) 9.6/9.7 节（YijingExitSystem + ClassicExitSystem）
+> - [TECHNICAL_DESIGN.md](../../../11-易经推理系统/docs/TECHNICAL_DESIGN.md) 9.6/9.7 节（YijingExitSystem + ClassicExitSystem）
 > 实现策略: **渐进提取**（单文件双模块，核心层不动，扩展层委托）
 > 方法论: **严格 TDD**（先接口骨架→逐个策略迁移→核心层等价验证）
 > 回滚铁律: 扩展层策略全关时，`_execute_trade` 行为等价于引入前（卦象主离场 + Classic 兜底原封不动）

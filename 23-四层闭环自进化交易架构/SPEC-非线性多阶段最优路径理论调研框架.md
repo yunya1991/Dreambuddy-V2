@@ -74,7 +74,7 @@
 |:---|:---|:---|
 | **① 层级语义断裂** | [exogenous_strength_evaluator.py#L324](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/exogenous_strength_evaluator.py#L324) 按 strength 取 max；[evolution_pipeline.py#L884-L886](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L884-L886) 按 strength 排序取 top2 | 反弹阶段会误判短期多头为 primary，长期空头降为 secondary，弹性约束方向反 |
 | **② 制度切换断裂** | [hjb_solver.py#L194,L213-L214](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L194) GBM 单制度恒定 μ/σ；[L160-L174](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/hjb_solver.py#L160-L174) 静态矛盾调制整个 horizon | 无法表达"反弹→重新主导→级联"多制度演变 |
-| **③ 闭环反馈断裂** | [reflexivity_monitor.py#L187](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L187) adjust_strength 线性、未回流；[contradiction_shift_accumulator](file:///Users/zhangjiangtao/WorkBuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/core/contradiction_shift_accumulator.py) 仅记录不驱动 | 反身性只监测不反馈；质变被检测但不触发路径切换 |
+| **③ 闭环反馈断裂** | [reflexivity_monitor.py#L187](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/reflexivity_monitor.py#L187) adjust_strength 线性、未回流；[contradiction_shift_accumulator](dreambuddy_evolution/core/contradiction_shift_accumulator.py) 仅记录不驱动 | 反身性只监测不反馈；质变被检测但不触发路径切换 |
 
 ### 3.2 已具备的正确组件
 

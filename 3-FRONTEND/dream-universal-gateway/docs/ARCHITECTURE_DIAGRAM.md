@@ -270,9 +270,9 @@ flowchart LR
 ### 7.1 用户层
 | 文件 | 职责 |
 |------|------|
-| [src/app/chat](../../../3-FRONTEND/dream-universal-gateway/src/app/chat) | 主对话界面 |
+| src/app/chat（链接失效） | 主对话界面 |
 | [src/app/dashboard/page.tsx](../../../3-FRONTEND/dream-universal-gateway/src/app/dashboard/page.tsx) | 仪表盘主页面 |
-| [src/app/notebook](../../../3-FRONTEND/dream-universal-gateway/src/app/notebook) | 笔记本（步骤执行状态） |
+| src/app/notebook（链接失效） | 笔记本（步骤执行状态） |
 | [src/app/board](../../../3-FRONTEND/dream-universal-gateway/src/app/board) | 审批流 |
 | [src/app/page.tsx](../../../3-FRONTEND/dream-universal-gateway/src/app/page.tsx) | 首页路由 |
 

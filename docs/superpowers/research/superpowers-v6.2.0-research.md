@@ -219,9 +219,9 @@ Skill 目录允许包含除 `SKILL.md` 之外的文件，遵循 `writing-skills/
 
 | 类型 | 示例 | 引用方式 |
 |---|---|---|
-| 测试规范参考 | `test-driven-development/writing-good-tests.md` | "When writing or changing any test, read [writing-good-tests.md](writing-good-tests.md) ..."（`test-driven-development/SKILL.md` L206-L211） |
+| 测试规范参考 | `test-driven-development/writing-good-tests.md` | "When writing or changing any test, read [writing-good-tests.md](../../../4-MEMORY/0-元记忆/superpowers/skills/test-driven-development/writing-good-tests.md) ..."（`test-driven-development/SKILL.md` L206-L211） |
 | 调试技术合集 | `systematic-debugging/root-cause-tracing.md`、`defense-in-depth.md`、`condition-based-waiting.md` | "See `root-cause-tracing.md` in this directory ..."（`systematic-debugging/SKILL.md` L113, L279-L283） |
-| 子代理 prompt 模板 | `subagent-driven-development/{implementer,task-reviewer,re-review}-prompt.md`；`requesting-code-review/code-reviewer.md` | "Template: [implementer-prompt.md](implementer-prompt.md)"（`subagent-driven-development/SKILL.md` L232, L300, L345） |
+| 子代理 prompt 模板 | `subagent-driven-development/{implementer,task-reviewer,re-review}-prompt.md`；`requesting-code-review/code-reviewer.md` | "Template: [implementer-prompt.md](../../../4-MEMORY/0-元记忆/superpowers/skills/subagent-driven-development/implementer-prompt.md)"（`subagent-driven-development/SKILL.md` L232, L300, L345） |
 | 可执行脚本 | `systematic-debugging/find-polluter.sh`；`subagent-driven-development/scripts/{review-package,sdd-workspace,task-brief}`；`brainstorming/scripts/server.cjs` 等 | "run this skill's `scripts/task-brief PLAN_FILE N`"（`subagent-driven-development/SKILL.md` L206-L216） |
 | 跨宿主工具映射 | `using-superpowers/references/{antigravity,codex,gemini,pi}-tools.md` | "read its reference file for special instructions"（`using-superpowers/SKILL.md` L52-L58） |
 | 反理性化反例库 | `systematic-debugging/test-academic.md`、`test-pressure-1.md` 等 | 用于 writing-skills 的 RED 阶段 baseline 测试 |

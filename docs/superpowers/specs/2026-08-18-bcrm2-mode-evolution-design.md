@@ -2,7 +2,7 @@
 
 > 日期: 2026-08-18
 > 状态: 待用户审阅 → 用户批准后进入 writing-plans → TDD 实现
-> 关联上游提案: [PROP-20260818 BCRM2-FULL-POSITION-EXIT-OPTIMIZATION.md](../../11-易经推理系统/docs/proposals/PROP-20260818-BCRM2-FULL-POSITION-EXIT-OPTIMIZATION.md)
+> 关联上游提案: [PROP-20260818 BCRM2-FULL-POSITION-EXIT-OPTIMIZATION.md](../../../11-易经推理系统/docs/proposals/PROP-20260818-BCRM2-FULL-POSITION-EXIT-OPTIMIZATION.md)
 > 实现策略: **A. 双轨并行（4 个独立 Feature Flag + 100% 可切回旧路径）** 用户 2026-08-18 确认
 > 方法论: **严格 TDD 测试先行**（每段 Phase A/B/C 先 RED→GREEN→REFACTOR）
 > 回滚铁律: 任何一个开关关闭时，生产代码行为 100% 等价于开关引入前的 commit

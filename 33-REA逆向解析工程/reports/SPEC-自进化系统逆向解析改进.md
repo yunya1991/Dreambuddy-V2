@@ -571,7 +571,7 @@ Step 5: adapters/ 层按需适配（Grep 确认实际影响范围）
 - [ENGINEERING_INDEX.md](../../23-四层闭环自进化交易架构/docs/ENGINEERING_INDEX.md) L13-17, L101-123
 - [API_SPEC.md](../../23-四层闭环自进化交易架构/docs/API_SPEC.md) L466-493
 - [SPEC-金融逆向推导子系统.md](../../23-四层闭环自进化交易架构/docs/SPEC-金融逆向推导子系统.md) L166-200
-- [SPEC-矛盾论实现断裂修复与阻力场升级.md](../../23-四层闭环自进化交易架构/docs/SPEC-矛盾论实现断裂修复与阻力场升级.md)
+- [SPEC-矛盾论实现断裂修复与阻力场升级.md](../../23-四层闭环自进化交易架构/SPEC-矛盾论实现断裂修复与阻力场升级.md)
 
 ### 代码实现
 - [evolution_pipeline.py](../../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py) L37-66, L72-105, L152-177, L1101-1143, L1257-1317

@@ -1,7 +1,7 @@
 # DreamBuddy V2 总设计文档（已归档）
 
 > ⚠️ **本文档已归档（2026-07-31）**。架构唯一事实源（SSoT）已迁移至：
-> **[1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](./1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0**
+> **[1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0**
 >
 > 本文件保留作为历史参考，不再维护。所有架构设计、硬约束、模块边界、技术债全景以 SSoT v3.0 为准。
 >

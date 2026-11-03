@@ -10,9 +10,9 @@
 
 ### 现状
 
-`FiveDomainHeuristicScorer`（[five_domain_scorer.py](../../11-易经推理系统/scripts/memory_l4/five_domain_scorer.py)）接收五维原始评分(0-100)并映射到决策（war_state/mask/cap/...），决策映射层（6个不等式）实现完整。但 **原始评分从未从市场数据计算过**：
+`FiveDomainHeuristicScorer`（[five_domain_scorer.py](../../../11-易经推理系统/scripts/memory_l4/five_domain_scorer.py)）接收五维原始评分(0-100)并映射到决策（war_state/mask/cap/...），决策映射层（6个不等式）实现完整。但 **原始评分从未从市场数据计算过**：
 
-- [polling_trader.py:1100](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L1100) 调用 `score_and_decide(persist=True)` 不传 `raw_scores_by_class`
+- [polling_trader.py:1100](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L1100) 调用 `score_and_decide(persist=True)` 不传 `raw_scores_by_class`
 - `enable_five_domain=False`，scorer 恒返回 fail-open 默认值 `{dao:50, tian:50, di:50, jiang:50, fa:70}`
 
 ### 目标
@@ -58,7 +58,7 @@
 
 ### 集成点
 
-修改 [polling_trader.py:1100](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L1100) `_run_once_five_domain_daily_update()`：
+修改 [polling_trader.py:1100](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L1100) `_run_once_five_domain_daily_update()`：
 
 ```python
 # 当前（问题）
@@ -79,7 +79,7 @@ else:
 
 ### 开关控制
 
-`enable_five_domain=False`（[strategy_algo_layer.py](../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py) 的总开关）时：
+`enable_five_domain=False`（[strategy_algo_layer.py](../../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py) 的总开关）时：
 - feature computer 不执行
 - scorer 返回 fail-open 默认值
 - 字节等价「战略层不存在」
@@ -103,7 +103,7 @@ else:
 | 机构资金净流入 | 稳定币市值变化/ETF流入流出/CEX储备变化 | 外部API | fail-open→50 |
 | 政策景气度 | 监管信号方向(SEC/CFTC动向) | 外部API | fail-open→50 |
 | 变化率（一阶差分） | 上述指标增速变化方向 | 依赖前三项 | fail-open→50 |
-| 大周期位置 | 4年周期锚点 t_rel 位置 | [morph_cycle_predictor.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/morph_cycle_predictor.py) `cycle4y_theory()` | ✅ 计算 |
+| 大周期位置 | 4年周期锚点 t_rel 位置 | [morph_cycle_predictor.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/morph_cycle_predictor.py) `cycle4y_theory()` | ✅ 计算 |
 
 三层道架构（§三 L102-106）：
 - 宏观道（全球流动性周期 M2/利率方向/央行资产负债表）→ fail-open
@@ -117,9 +117,9 @@ else:
 | 子指标 | 量化方式 | 数据来源 | 本次实现 |
 |--------|----------|----------|----------|
 | 日历季节性 | Q1效应/Q4效应/周末效应/减半周期季节性 | 日历+历史K线 | ✅ 计算（§七标注"第一个落地"） |
-| 美林时钟位置 | 复苏/过热/滞胀/衰退四阶段 | [merrill_clock_features.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/merrill_clock_features.py) | ✅ 计算 |
+| 美林时钟位置 | 复苏/过热/滞胀/衰退四阶段 | [merrill_clock_features.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/merrill_clock_features.py) | ✅ 计算 |
 | 波动率周期 | VIX/ATR分位 | ATR(现有) | ✅ ATR分位计算（VIX无数据→用ATR代理） |
-| 流动性周期 | QE/QT阶段 | [merrill_clock_features.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/merrill_clock_features.py) `liquidity_credit_features()` | ✅ 计算 |
+| 流动性周期 | QE/QT阶段 | [merrill_clock_features.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/merrill_clock_features.py) `liquidity_credit_features()` | ✅ 计算 |
 | 政策情绪（T1） | FinBERT 情感分 + Odaily policy_sentiment | SentimentEngine + SQLite 72h 窗口 | ✅ 计算（4h 聚合 → 日级注入，详见§二情绪数据消费频率约束） |
 
 **输出**：`seasonality_score ∈ [-1, +1]`，叠加到前置层 Level 评分上（§三 L132）。
@@ -135,9 +135,9 @@ else:
 | 子指标 | 量化方式 | 数据来源 | 本次实现 |
 |--------|----------|----------|----------|
 | regime 代理 | 后置层5态识别→分数映射 | enhance_result.regime | ✅ 计算 |
-| 弹簧力场5MA | MA30/65/128/200 + 1400大周期 | [polling_trader.py:5230](../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L5230) `_compute_spring_force_field()` | ✅ 计算 |
-| 八卦坤地(支撑阻力) | ~15特征 | [bagua_feature_engine.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/bagua_feature_engine.py) | ✅ 计算 |
-| 艮山(市场结构) | ~14特征 | [bagua_feature_engine.py](../../11-易经推理系统/scripts/memory_l4/bcrm2/bagua_feature_engine.py) | ✅ 计算 |
+| 弹簧力场5MA | MA30/65/128/200 + 1400大周期 | [polling_trader.py:5230](../../../11-易经推理系统/scripts/memory_l4/polling_trader.py#L5230) `_compute_spring_force_field()` | ✅ 计算 |
+| 八卦坤地(支撑阻力) | ~15特征 | [bagua_feature_engine.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/bagua_feature_engine.py) | ✅ 计算 |
+| 艮山(市场结构) | ~14特征 | [bagua_feature_engine.py](../../../11-易经推理系统/scripts/memory_l4/bcrm2/bagua_feature_engine.py) | ✅ 计算 |
 | 斐波那契+枢纽点 | ~20特征 | 现有 | ✅ 计算 |
 | 盘整持续时间 | 价格振幅/ATR比值 | 现有K线 | ✅ 计算（补强） |
 | Follow-through Day | 下跌→上涨转换信号 | 现有K线 | ✅ 计算（补强） |
@@ -162,7 +162,7 @@ else:
 | 子指标 | 权重 | 量化方式 | 数据来源 | 本次实现 |
 |--------|------|----------|----------|----------|
 | 智 | 20% | 因子覆盖度/回测完整度/样本外验证 | 系统自省 | ✅ 计算 |
-| 信 | 25% | IC/胜率/盈亏比 | [trading_utils.py](../../11-易经推理系统/scripts/memory_l4/trading_utils.py) PerformanceStats | ✅ 计算 |
+| 信 | 25% | IC/胜率/盈亏比 | [trading_utils.py](../../../11-易经推理系统/scripts/memory_l4/trading_utils.py) PerformanceStats | ✅ 计算 |
 | 仁 | 25% | 单笔风险≤1-2%/连续亏损降仓 | RiskManager配置 | ✅ 计算 |
 | 勇 | 15% | 执行果断 | 系统自省 | ✅ 计算 |
 | 严 | 15% | 止损/回撤/单日交易次数/仓位上限 | 系统自省 | ✅ 计算 |
@@ -179,15 +179,15 @@ else:
 
 | 子指标 | 权重 | 量化方式 | 数据来源 | 本次实现 |
 |--------|------|----------|----------|----------|
-| 策略库完备性 | 20% | 6类策略是否实现 | [strategy_algo_layer.py](../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py) STYLE_ORDER | ✅ 计算 |
+| 策略库完备性 | 20% | 6类策略是否实现 | [strategy_algo_layer.py](../../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py) STYLE_ORDER | ✅ 计算 |
 | 策略适配度 | 25% | 地形vs策略匹配 | allowed_style_mask | ✅ 计算 |
 | 风控规则完整度 | 25% | 止损/回撤/仓位/相关性 | RiskManager | ✅ 计算 |
-| 回测验证度 | 20% | 样本外/夏普/最大回撤/换手率 | [backtest_result.json](../../11-易经推理系统/scripts/memory_l4/new_methodology_backtest_result.json) | ✅ 计算 |
+| 回测验证度 | 20% | 样本外/夏普/最大回撤/换手率 | backtest_result.json（链接失效） | ✅ 计算 |
 | 复盘迭代机制 | 10% | 定期归因/降权/退役 | 系统自省 | ✅ 计算 |
 
 ### 评分标准化
 
-§八 L1160：每个子指标统一用 Z-score/分位数/tanh 映射到 0~100，复用现有 `_normalize_0_100`（[strategy_algo_layer.py:26](../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py#L26)）。
+§八 L1160：每个子指标统一用 Z-score/分位数/tanh 映射到 0~100，复用现有 `_normalize_0_100`（[strategy_algo_layer.py:26](../../../11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py#L26)）。
 
 ### 庙算总分（§五 L968-970）
 

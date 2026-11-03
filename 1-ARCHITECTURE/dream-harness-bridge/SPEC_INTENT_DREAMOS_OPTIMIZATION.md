@@ -7,7 +7,7 @@
 > **关联**: 替代 `PROP-20260829-hermes-drives-dreamos*.md` 两份 Hermes 旧方案
 
 > ⚠️ **架构定位更新（2026-09-16）**：意图识别的权威规范已明确为
-> [`intent-recognition-spec/intent-taxonomy.md`](../../1-ARCHITECTURE/intent-recognition-spec/intent-taxonomy.md)，
+> `intent-recognition-spec/intent-taxonomy.md`（链接失效），
 > 采用 **6×30 对话意图体系**，落地于 DreamOS 操作系统内核 S 层。
 > 本 SPEC 评估的前端 35 型正典（intent-schema.ts）作为过渡方案，最终应迁移到 DreamOS 内核统一意图识别。
 > 意图识别分两层：对话意图（内核 6×30）+ 策略意图（交易能力域 7 种）。

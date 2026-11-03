@@ -3,7 +3,7 @@
 > **版本**: v3.1 | **日期**: 2026-10-11
 > **状态**: P0→P3 全阶段交付完成（136 tests GREEN）+ 3 新 Protocol（knowledge/skill/cognitive_repo）
 > **定位**: 本子系统文件级入口索引（找文件、找运行入口、找配置）
-> **上一级索引**: 根目录 [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) v3.0（全项目工程入口）
+> **上一级索引**: 根目录 [ENGINEERING_INDEX.md](ENGINEERING_INDEX.md) v3.0（全项目工程入口）
 > **子系统 SSoT**: [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) v1.0
 
 ---

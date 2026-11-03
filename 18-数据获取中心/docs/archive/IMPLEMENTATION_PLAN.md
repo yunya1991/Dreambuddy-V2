@@ -1,9 +1,9 @@
 # 数据获取中心 — 实现计划
 
-> **定位：** 基于 [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) v1.0 的分阶段落地计划
+> **定位：** 基于 [TECHNICAL_DESIGN.md](../TECHNICAL_DESIGN.md) v1.0 的分阶段落地计划
 > **版本：** v1.5（M1-M5 全部完成） | **更新日期：** 2026-08-24
 > **方法论：** TDD（Red-Green-Refactor）+ 代码驱动 + 成熟库薄封装
-> **关联：** [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) §10 迁移路径
+> **关联：** [TECHNICAL_DESIGN.md](../TECHNICAL_DESIGN.md) §10 迁移路径
 
 ---
 

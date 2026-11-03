@@ -921,7 +921,7 @@ cd 10-经典指标系统 && python -m pytest test_*.py -v
 | 风控规则 | [rules/](./13-通用风控模块/rules/) |
 | 趋势过滤 | [strategy_params.py](./14-V15经典马丁策略/lib/strategy_params.py) |
 | 离场系统 | [classic_exit_system.py](./10-经典指标系统/classic_exit_system.py) |
-| 进程管理 | [master_daemon.py](./ops/master_daemon.py) |
+| 进程管理 | [master_daemon.py](deploy/ops/master_daemon.py) |
 | 运维部署 | [ops/launchd/](./10-经典指标系统/ops/launchd/) |
 
 ### 10.3 按角色导航

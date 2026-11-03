@@ -18,7 +18,7 @@
 |------|---------|-------------|---------|---------|
 | **A. 价格特征管道** | [feature_engineer.py](../../12-三屏趋势系统/ml/feature_engineer.py) `TrendFeatureEngineer` | [models.py](../../12-三屏趋势系统/ml/models.py) `LightGBMModel` | ~30维 | `ml/models/current/` |
 | **B. 阻力特征管道** | [lr_feature_engineer.py](../../12-三屏趋势系统/ml/lr_feature_engineer.py) `LeastResistanceFeatureEngineer` | [models.py](../../12-三屏趋势系统/ml/models.py) `LightGBMModel` | 67+维（含哲学26维） | `ml/models/current/` |
-| **C. 集成推理管道** | [algo_ensemble.py](file:///Users/zhangjiangtao/WorkBuddy-v2/12-三屏趋势系统/ml/algo_ensemble.py) `extract_ensemble_features` | [algo_ensemble.py](../../12-三屏趋势系统/ml/algo_ensemble.py) `EnsemblePredictor` | 62维（含哲学26维） | `ml/models/ensemble/` |
+| **C. 集成推理管道** | [algo_ensemble.py](algo_ensemble.py) `extract_ensemble_features` | [algo_ensemble.py](../../12-三屏趋势系统/ml/algo_ensemble.py) `EnsemblePredictor` | 62维（含哲学26维） | `ml/models/ensemble/` |
 
 ---
 

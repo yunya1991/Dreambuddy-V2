@@ -1,7 +1,7 @@
 # 工程索引 — 15-监控告警系统
 
 > **版本**: v1.0 | **更新日期**: 2026-08-02
-> **定位**: 模块级工程索引（L3 辅助模块），对齐 [DOC_STANDARD.md](../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.1 / §4
+> **定位**: 模块级工程索引（L3 辅助模块），对齐 [DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) §3.1 / §4
 
 ---
 
@@ -302,9 +302,9 @@ python -m pytest tests/ -v
 |------|------|
 | 用户文档 | [../README.md](../README.md) |
 | 技术设计 | [./TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) |
-| 项目文档索引 | [../../../0-系统文档管理/INDEX.md](../../../0-系统文档管理/INDEX.md) |
-| 文档规范 | [../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md](../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) |
-| 标杆参照 | [../../../14-V15经典马丁策略/docs/ENGINEERING_INDEX.md](../../../14-V15经典马丁策略/docs/ENGINEERING_INDEX.md) |
+| 项目文档索引 | [../../../0-系统文档管理/INDEX.md](../../0-系统文档管理/INDEX.md) |
+| 文档规范 | [../../../0-系统文档管理/1-规范体系/DOC_STANDARD.md](../../0-系统文档管理/1-规范体系/DOC_STANDARD.md) |
+| 标杆参照 | [../../../14-V15经典马丁策略/docs/ENGINEERING_INDEX.md](../../14-V15经典马丁策略/docs/ENGINEERING_INDEX.md) |
 
 ---
 

@@ -14,7 +14,7 @@
 
 ### 2.1 核心理念（双维度编排架构）
 
-依据 [SPEC.md](./SPEC.md) v1.0，本模块实现「双维度编排架构」：
+依据 [SPEC.md](docs/archive/SPEC.md) v1.0，本模块实现「双维度编排架构」：
 
 - **思维链简化**：S/C/F 链作为固定五步思维顺序，不含具体实现
 - **AI 推理动态化**：每个思维步骤是决策点，AI 动态选择技能并评估置信度
@@ -42,10 +42,10 @@
 
 | 文档 | 说明 |
 |------|------|
-| [SPEC.md](./SPEC.md) | 规格说明（双维度编排架构规范 v1.0） |
-| [TECHNICAL-DOC.md](./TECHNICAL-DOC.md) | 技术文档 |
-| [IMPLEMENTATION.md](./IMPLEMENTATION.md) | 实现说明 |
-| [THEORY-AND-PRACTICE.md](./THEORY-AND-PRACTICE.md) | 理论与实践 |
+| [SPEC.md](docs/archive/SPEC.md) | 规格说明（双维度编排架构规范 v1.0） |
+| [TECHNICAL-DOC.md](docs/archive/TECHNICAL-DOC.md) | 技术文档 |
+| [IMPLEMENTATION.md](docs/archive/IMPLEMENTATION.md) | 实现说明 |
+| [THEORY-AND-PRACTICE.md](docs/archive/THEORY-AND-PRACTICE.md) | 理论与实践 |
 
 > 注：以上文档为非标准格式（L3 实验模块允许自由命名，见 [DOC_CLASSIFICATION.md](../0-系统文档管理/1-规范体系/DOC_CLASSIFICATION.md) §3.1）。待集成到主线后规范化为 docs/ 目录下的标准文档。
 

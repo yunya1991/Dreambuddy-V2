@@ -679,7 +679,7 @@ neo4j>=5.0.0
 
 ### 11.1 中信建投参考
 
-详见 [7-EXTERNAL-RESEARCH/finance/risk-models/中信建投知识库管理体系调研.md](../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/risk-models/中信建投知识库管理体系调研.md)
+详见 [7-EXTERNAL-RESEARCH/finance/risk-models/中信建投知识库管理体系调研.md](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/finance/risk-models/中信建投知识库管理体系调研.md)
 
 ### 11.2 术语表
 

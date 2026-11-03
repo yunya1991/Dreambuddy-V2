@@ -18,7 +18,7 @@
 | [数据管道](./数据管道.md) | 数据源清单/ETL流程/新鲜度标准/降级策略 | 数据管道体系 |
 | [软件工程自检测自修复自迭代实践调研](./软件工程自检测自修复自迭代实践调研笔记_20260929.md) | 自检测/自修复/自迭代三阶段实践调研笔记 | 调研沉淀（2026-09-29） |
 | [金融交易系统可观测性实践调研](./金融交易系统可观测性实践调研.md) | 交易系统可观测性建设（指标/日志/追踪）调研 | 调研沉淀 |
-| [预存问题修复7组25测试](./预存问题修复7组25测试.md) | exit_engine timeout仲裁+kline事件驱动注入+resistance funding/oi符号修复(+→-)+event_window FOMC时区归一化+okx_market TTL缓存+重试3次+stale降级_last_good | 2026-10-09 |
+| 预存问题修复7组25测试（链接失效） | exit_engine timeout仲裁+kline事件驱动注入+resistance funding/oi符号修复(+→-)+event_window FOMC时区归一化+okx_market TTL缓存+重试3次+stale降级_last_good | 2026-10-09 |
 
 ## 关联域
 

@@ -25,9 +25,9 @@
 
 | ID | 名称 | 子系统 | 定位 | 存储位置 | 成熟度 | 统一接口 |
 |----|------|--------|------|---------|--------|---------|
-| AM-TRD-001 | 交易 L4 记忆 | 11-易经推理系统 | 交易策略案例库 + 知识图谱 + 蒸馏 | [11-易经推理系统/scripts/memory_l4/](../../11-易经推理系统/scripts/memory_l4/) | 高（标杆） | ✅ v1.0.0 |
-| AM-EXP-001 | 实验记忆 | experiments/ab-trading | AB 实验记录 + 进化路径 | [experiments/ab-trading/core/memory/](../../experiments/ab-trading/core/memory/) | 中 | ❌ 待封装 |
-| AM-ORC-001 | 编排记忆 | dreamos（1-ARCHITECTURE） | 编排执行记忆 + 对话记忆 | [1-ARCHITECTURE/dreamos/core/memory/](../../1-ARCHITECTURE/dreamos/core/memory/) | 中 | ❌ 待封装 |
+| AM-TRD-001 | 交易 L4 记忆 | 11-易经推理系统 | 交易策略案例库 + 知识图谱 + 蒸馏 | [11-易经推理系统/scripts/memory_l4/](../../../11-易经推理系统/scripts/memory_l4/) | 高（标杆） | ✅ v1.0.0 |
+| AM-EXP-001 | 实验记忆 | experiments/ab-trading | AB 实验记录 + 进化路径 | [experiments/ab-trading/core/memory/](../../../experiments/ab-trading/core/memory/) | 中 | ❌ 待封装 |
+| AM-ORC-001 | 编排记忆 | dreamos（1-ARCHITECTURE） | 编排执行记忆 + 对话记忆 | [1-ARCHITECTURE/dreamos/core/memory/](../../../1-ARCHITECTURE/dreamos/core/memory/) | 中 | ❌ 待封装 |
 | AM-RSK-001 | 风控记忆 | 13-通用风控模块 | 风控规则 + 告警案例 | 13-通用风控模块/memory/（待建） | 低（待建） | - |
 | AM-OPS-001 | 运维记忆 | 15-监控告警系统 | 故障案例 + 性能基线 | 15-监控告警系统/memory/（待建） | 低（待建） | - |
 
@@ -45,7 +45,7 @@
 | **核心组件** | CBR 案例库、KG 知识图谱、蒸馏引擎、统计引擎 |
 | **技术栈** | Python + SQLite + JSON |
 | **成熟度** | 高 — 已经有完整的四层记忆架构 |
-| **统一接口** | ✅ 已实现（v1.0.0）— [app_memory_interface.py](../../11-易经推理系统/scripts/memory_l4/app_memory_interface.py) |
+| **统一接口** | ✅ 已实现（v1.0.0）— [app_memory_interface.py](../../../11-易经推理系统/scripts/memory_l4/app_memory_interface.py) |
 | **接口规范版本** | v1.0（7 标准接口 + 2 便捷方法） |
 | **最后更新** | 2026-07-26 |
 | **健康状态** | ✅ 运行中（pipeline_connected: true, schema_compliance: 0.9365） |
@@ -173,16 +173,16 @@
 | `distill_candidates()` | 蒸馏候选 | - | 可上升为总记忆的候选列表 | ✅ AM-TRD-001 |
 | `healthcheck()` | 健康检查 | - | 状态 + 最后更新时间 | ✅ AM-TRD-001 |
 
-**标杆实现参考**：[AM-TRD-001 app_memory_interface.py](../../11-易经推理系统/scripts/memory_l4/app_memory_interface.py)
+**标杆实现参考**：[AM-TRD-001 app_memory_interface.py](../../../11-易经推理系统/scripts/memory_l4/app_memory_interface.py)
 
 **设计模式**：适配器模式（Adapter Pattern）— 不修改现有代码，在其上封装统一接口。
 
 **记忆 ID 规范**：`AM-{SYSTEM_CODE}-{TYPE}-{RAW_ID}`
 - 示例：`AM-TRD-001-CASE-TC_BATCH_001`
 
-**接口语义隔离原则**：`filters` 的字段语义由各应用记忆系统自行定义，总记忆系统不规定具体字段名。AM-TRD-001 中的 `inst_id`、`regime` 等是交易记忆的业务字段，不是规范要求。详见 [MEMORY_SYSTEM_ARCHITECTURE.md §4.2](../MEMORY_SYSTEM_ARCHITECTURE.md)。
+**接口语义隔离原则**：`filters` 的字段语义由各应用记忆系统自行定义，总记忆系统不规定具体字段名。AM-TRD-001 中的 `inst_id`、`regime` 等是交易记忆的业务字段，不是规范要求。详见 [MEMORY_SYSTEM_ARCHITECTURE.md §4.2](../../MEMORY_SYSTEM_ARCHITECTURE.md)。
 
-详细接口规范见：[9-工具与接口/](../9-工具与接口/)（待建设）
+详细接口规范见：[9-工具与接口/](../../9-工具与接口/)（待建设）
 
 ---
 
@@ -190,7 +190,7 @@
 
 要注册新的应用记忆系统：
 
-1. 在 [APP_MEMORY_REGISTRY.md](./APP_MEMORY_REGISTRY.md) 中添加条目
+1. 在 [APP_MEMORY_REGISTRY.md](../../6-应用记忆索引/APP_MEMORY_REGISTRY.md) 中添加条目
 2. 提供：名称、定位、存储位置、技术栈、成熟度
 3. 实现统一接口（或制定接入计划）
 4. 设置心跳上报机制

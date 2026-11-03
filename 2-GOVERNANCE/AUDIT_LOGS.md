@@ -191,4 +191,4 @@ interface TradeAuditRecord {
 
 - [治理章程](./GOVERNANCE_CHARTER.md)
 - [合规规则](./COMPLIANCE_RULES.md)
-- [盘后审计SKILL](../SKILL/dream-posttrade-mrm-audit/)
+- 盘后审计SKILL（链接失效）

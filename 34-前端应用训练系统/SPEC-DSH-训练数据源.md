@@ -79,7 +79,7 @@ elif layer == "DSH":
 
 ### 1.2 现有采集器的 DSH 层覆盖度（不足）
 
-**来源**: [run_continual_training.py](file:///Users/zhangjiango/WorkBuddy/dreambuddy-v2/34-前端应用训练系统/scripts/run_continual_training.py#L95-L103) L95-103
+**来源**: run_continual_training.py（外部链接失效） L95-103
 
 | 采集器 | layer_tags | actions 特征 | DSH 适用性 |
 |--------|-----------|-------------|-----------|

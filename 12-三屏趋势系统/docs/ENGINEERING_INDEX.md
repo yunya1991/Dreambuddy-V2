@@ -7,7 +7,7 @@
 > 更新日期: 2026-10-11（新增 data_center_adapter / data_driven_screens / start_services）
 > **主线策略**: V4 + 波浪互斥融合 — BTC 年化 56.43%，夏普 1.41，回撤 -43.31%
 > **副线策略**: V5.5 ML 基线 — 实验状态，需重新设计特征工程
-> **策略线管理**: [docs/STRATEGY_LINES.md](docs/STRATEGY_LINES.md) — 主副线隔离规则
+> **策略线管理**: [docs/STRATEGY_LINES.md](STRATEGY_LINES.md) — 主副线隔离规则
 
 ---
 
@@ -245,13 +245,13 @@
 | [`data/__init__.py`](../../12-三屏趋势系统/data/__init__.py) | 1 | — | 数据包导出 |
 | [`data/market_data.py`](../../12-三屏趋势系统/data/market_data.py) | ~120 | `fetch_candles()`<br>`resample_candles()`<br>`_get_okx_client()` | **K线数据**。从 OKX API 获取K线，支持跨周期重采样(5m→1h→4h→1D) |
 | [`data/fundamental_data.py`](../../12-三屏趋势系统/data/fundamental_data.py) | ~450 | `fetch_fundamental_data()`<br>`fetch_fundamental_by_timeframe()`<br>`_parse_a1_daily()`<br>`_parse_weekly_report()`<br>`_merge_fundamental()` | **Path A 数据源**。解析A系列研报(周报MD + A1日报JSON)，输出方向+置信度 |
-| [`data/tavily_data.py`](file:///Users/zhangjiangjiangtao/WorkBuddy/dreambuddy-v2/12-三屏趋势系统/data/tavily_data.py) | ~510 | `fetch_all_tavily_dimensions()`<br>`collect_miner_economics()`<br>`collect_onchain_valuation()`<br>`collect_macro_finance()`<br>`collect_cross_market()`<br>`tavily_search()`<br>`_parse_number_near()` | **Path B 数据源**。Tavily API 实时搜索4维基本面数据（矿工/链上/宏观/跨市场），30分钟缓存，SDK+HTTP双模式，年份过滤 |
+| `data/tavily_data.py`（外部链接失效） | ~510 | `fetch_all_tavily_dimensions()`<br>`collect_miner_economics()`<br>`collect_onchain_valuation()`<br>`collect_macro_finance()`<br>`collect_cross_market()`<br>`tavily_search()`<br>`_parse_number_near()` | **Path B 数据源**。Tavily API 实时搜索4维基本面数据（矿工/链上/宏观/跨市场），30分钟缓存，SDK+HTTP双模式，年份过滤 |
 
 ### 3.4 signal_pool/ 信号池
 
 | 文件 | 行数 | 核心类/函数 | 职责描述 |
 |------|------|------------|---------|
-| [`signal_pool/pool.json`](../../12-三屏趋势系统/signal_pool/pool.json) | — | — | **信号池缓存**。多币种多策略Freqtrade信号缓存 |
+| `signal_pool/pool.json`（链接失效） | — | — | **信号池缓存**。多币种多策略Freqtrade信号缓存 |
 | [`signal_pool/scanner.py`](../../12-三屏趋势系统/signal_pool/scanner.py) | ~150 | `scan_signals()`<br>`update_pool()`<br>`get_signal()` | **信号池扫描器**。多币种多策略扫描，信号入池与查询 |
 
 ### 3.5 backtest/ 回测引擎
@@ -430,7 +430,7 @@ python3 ml/label_samples.py --train --lookahead 7
 
 ## 5. 双线策略架构
 
-> 完整策略线管理规则见 [docs/STRATEGY_LINES.md](docs/STRATEGY_LINES.md)
+> 完整策略线管理规则见 [docs/STRATEGY_LINES.md](STRATEGY_LINES.md)
 
 ### 5.1 架构总览
 

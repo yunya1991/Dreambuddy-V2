@@ -7,10 +7,10 @@
 > **归属**: 46-DSH架构 ｜ 层级: L1(零 token 确定性层)
 > **定位**: 将 Super-agent「统一 Trigger 抽象 + 两级过滤」思想落地为三层架构下的**事件驱动 L1 网关**——外部异步事件的零 token 第一道门,命中 L1 能力则确定性闭环,未命中则携带 L0 供给的六维上下文升级 L2
 > **依据**:
-> - [调研报告第九章(事件驱动×存算分离×L0L1L2)](../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)
-> - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.1（§1.7 L0 出口层 / §1.8 DSH 升级）
+> - [调研报告第九章(事件驱动×存算分离×L0L1L2)](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)
+> - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.1（§1.7 L0 出口层 / §1.8 DSH 升级）
 > - **上位设计**:[DESIGN-DSH-ARCH-UPGRADE-v0.2.md](DESIGN-DSH-ARCH-UPGRADE-v0.2.md)(本 SPEC 是其 ① 入口层的实现规格)
-> - 姊妹 SPEC:[SACG_A_SUPERAGENT_CONNECTION_SPEC.md](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(契约桥接,评审时可决定先后/并行)
+> - 姊妹 SPEC:[SACG_A_SUPERAGENT_CONNECTION_SPEC.md](../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(契约桥接,评审时可决定先后/并行)
 > - 认知记忆:VM-1793586560886(三层视角结论)、VM-1792148857896(L0 统一信封与 degraded≠ok(None) 约定)
 
 ---

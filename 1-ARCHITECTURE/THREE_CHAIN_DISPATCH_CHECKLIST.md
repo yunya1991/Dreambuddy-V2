@@ -412,7 +412,7 @@ deployed_canary                            deployed_full
 
 | Schema | 说明 | 文件路径 |
 |--------|------|----------|
-| `anchor_registry` | 锚点注册 | [anchor_registry.schema.json](file:///Users/zhangjiangtao/WorkBuddy-v2/9-基本面分析/ops/nanoclaw/core_task1/schema/anchor_registry.schema.json) |
+| `anchor_registry` | 锚点注册 | [anchor_registry.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/anchor_registry.schema.json) |
 | `delta_registry` | Delta注册 | [delta_registry.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/delta_registry.schema.json) |
 | `event_mapping.policy` | 事件映射策略 | [event_mapping.policy.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/event_mapping.policy.json) |
 | `flow_brief_contract` | 简报契约 | [flow_brief_request.schema.json](../9-基本面分析/ops/nanoclaw/core_task1/schema/flow_brief_request.schema.json) |

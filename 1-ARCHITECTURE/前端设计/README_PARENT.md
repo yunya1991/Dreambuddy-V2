@@ -37,14 +37,14 @@ Layer 3: 产物源 (~/.workbuddy/)    ← 现有文件系统
 
 | 文档 | 说明 | 优先级 |
 |------|------|--------|
-| [docs/INTENT_ROUTER.md](docs/INTENT_ROUTER.md) | **意图识别与路由引擎（系统灵魂，核心文档）** | ⭐⭐⭐ |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 总体架构方案 | ⭐⭐⭐ |
-| [docs/TRADING_CONFIG_DESIGN.md](docs/TRADING_CONFIG_DESIGN.md) | **交易参数配置+下单门禁（v2.1新增核心）** | ⭐⭐⭐ |
-| [docs/STRATEGY_CONFIG_DESIGN.md](docs/STRATEGY_CONFIG_DESIGN.md) | **策略设置+定时执行（v2.2新增核心）** | ⭐⭐⭐ |
-| [docs/UI_SPEC.md](docs/UI_SPEC.md) | 前端UI详细规范（含术语禁用清单） | ⭐⭐ |
-| [docs/API_CONFIG_DESIGN.md](docs/API_CONFIG_DESIGN.md) | API连接凭证管理 | ⭐⭐ |
-| [docs/CHANNEL_DESIGN.md](docs/CHANNEL_DESIGN.md) | 通信渠道功能详细设计 | ⭐ |
-| [docs/CHAIN_ORCHESTRATOR.md](docs/CHAIN_ORCHESTRATOR.md) | 内部链路执行器（用户不可见） | ⭐ |
+| [docs/INTENT_ROUTER.md](../../3-FRONTEND/dream-universal-gateway/docs/INTENT_ROUTER.md) | **意图识别与路由引擎（系统灵魂，核心文档）** | ⭐⭐⭐ |
+| [docs/ARCHITECTURE.md](../../3-FRONTEND/dream-universal-gateway/docs/ARCHITECTURE.md) | 总体架构方案 | ⭐⭐⭐ |
+| [docs/TRADING_CONFIG_DESIGN.md](../../3-FRONTEND/dream-universal-gateway/docs/TRADING_CONFIG_DESIGN.md) | **交易参数配置+下单门禁（v2.1新增核心）** | ⭐⭐⭐ |
+| [docs/STRATEGY_CONFIG_DESIGN.md](../../3-FRONTEND/dream-universal-gateway/docs/STRATEGY_CONFIG_DESIGN.md) | **策略设置+定时执行（v2.2新增核心）** | ⭐⭐⭐ |
+| [docs/UI_SPEC.md](../../3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md) | 前端UI详细规范（含术语禁用清单） | ⭐⭐ |
+| [docs/API_CONFIG_DESIGN.md](../../3-FRONTEND/dream-universal-gateway/docs/API_CONFIG_DESIGN.md) | API连接凭证管理 | ⭐⭐ |
+| [docs/CHANNEL_DESIGN.md](../../3-FRONTEND/dream-universal-gateway/docs/CHANNEL_DESIGN.md) | 通信渠道功能详细设计 | ⭐ |
+| [docs/CHAIN_ORCHESTRATOR.md](../../3-FRONTEND/dream-universal-gateway/docs/CHAIN_ORCHESTRATOR.md) | 内部链路执行器（用户不可见） | ⭐ |
 
 ## 设计原则
 

@@ -19,7 +19,7 @@
 | 战略层 → 自进化 | `SubSystemBridge.get_war_state()` | [subsystem_bridge.py:L45-66](../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) | war_state → Feynman温度T → ESS评分调制 |
 | 战略层 → 自进化 | `get_ess_temperature()` | [subsystem_bridge.py:L64-66](../23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py) | ALLOW=1.0/COOLDOWN=0.5/RESTRICT=0.2/FREEZE=0.1 |
 | BCRM2.0 → 自进化(开仓) | `compute_bcrm_entry_weight_factor()` | [entry_signal_governor.py:L84-133](../23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py) | 反向信号分层：≥0.95硬否决/0.85-0.95×0.5/0.80-0.85×0.7 |
-| BCRM2.0 → 自进化(离场) | `_decide_impl()` 规则2b | [exit_engine.py:L374-423](file:///Users/zhangjiangtao/WorkBuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/exit_engine/exit_engine.py) | 反向信号分层减仓：30%/50%/70%(BDSM共振) |
+| BCRM2.0 → 自进化(离场) | `_decide_impl()` 规则2b | [exit_engine.py:L374-423](dreambuddy_evolution/engines/exit_engine/exit_engine.py) | 反向信号分层减仓：30%/50%/70%(BDSM共振) |
 | BDSM → 自进化(开仓) | `_apply_bdsm_direction_constraint` | polling_trader.py | direction_constraint: LONG_ONLY/SHORT_ONLY/NEUTRAL |
 | BDSM → 自进化(离场) | exit_action/trend_stop | exit_engine.py | bds_score/bds_score<-0.3→SHORT_ONLY |
 

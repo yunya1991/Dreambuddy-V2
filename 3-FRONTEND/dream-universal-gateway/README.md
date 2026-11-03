@@ -190,9 +190,9 @@ pnpm start
 
 ## 🔗 相关文档
 
-- [前端系统设计](../3-FRONTEND/FRONTEND_SYSTEM.md)
-- [网关中台设计](../1-ARCHITECTURE/中台设计/GATEWAY_HUB.md)
-- [产物中台设计](../7-ARTIFACT_HUB/ARTIFACT_HUB.md)
+- [前端系统设计](../FRONTEND_SYSTEM.md)
+- [网关中台设计](../../1-ARCHITECTURE/中台设计/GATEWAY_HUB.md)
+- 产物中台设计（链接失效）
 - [项目总览](../README.md)
 
 ---

@@ -347,7 +347,7 @@ while (还有节点) {
   5. 提交
 ```
 
-**实现位置**：[dev-chain.ts](../3-FRONTEND/dream-universal-gateway/src/lib/dev-chain.ts) 的 `executeS5` 增加 TDD 约束。
+**实现位置**：dev-chain.ts（链接失效） 的 `executeS5` 增加 TDD 约束。
 
 **门禁规则**：
 - 如果 Claude 先写代码再补测试，删除代码重来
@@ -500,7 +500,7 @@ while (还有节点) {
 
 - [WORKBUDDY_OS_MODULAR_ARCHITECTURE.md](../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md) - 模块化架构技术文档
 - [SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) - 系统总体架构
-- [intent-recognition-engine-design.md](../1-ARCHITECTURE/intent-recognition-engine-design.md) - 意图识别引擎设计
+- intent-recognition-engine-design.md（链接失效） - 意图识别引擎设计
 
 ### 9.2 实现文件
 

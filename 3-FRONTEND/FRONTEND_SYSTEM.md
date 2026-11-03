@@ -439,4 +439,4 @@ CMD ["node", "server.js"]
 
 - [前端设计文档索引](../1-ARCHITECTURE/前端设计/README.md)
 - [网关中台设计](../1-ARCHITECTURE/中台设计/GATEWAY_HUB.md)
-- [WorkBuddy集成](./FRONTEND_WB_INTEGRATION.md)
+- [WorkBuddy集成](dream-universal-gateway/docs/FRONTEND_WB_INTEGRATION.md)

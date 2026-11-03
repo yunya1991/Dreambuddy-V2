@@ -4,7 +4,7 @@
 > **v0.2 变更**: 按 [ALIGNMENT-46-47 v1.0](../../../47-MCP管理系统/docs/tech/ALIGNMENT-46-47-v1.0.md) 落定 G1/G3/B2/B4/B5：新增 ADR-9 写主体与 settle 归属、ADR-10 壳实例拓扑；ADR-3 补 paused 子因；ADR-4 改为引用 47 注册表；术语改「45 业务门禁」
 > **升级对象**: 当前单会话 DSH(0.1.5-rc.2) → 常驻、多任务、可验收的 DSH 多 agent 架构
 > **外部前提(不展开)**: L0 通过稳定工具面(port / MCP)对外供给。**MCP 域设计以 47-MCP管理系统 SPEC v0.3 为 SSoT**([SPEC-L0-MCP-PACKAGING](../../../47-MCP管理系统/docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md));本设计只依赖"存在稳定工具面 + 主体权限矩阵"这一契约,不依赖具体封装形态。
-> **承接文档**: [DESIGN-SUPERAGENT-FUSION v0.2](DESIGN-SUPERAGENT-FUSION.md) ｜ [ANALYSIS 双维梳理](ANALYSIS-SUPERAGENT-ARCH-DATAFLOW.md) ｜ [SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2](SPEC-EVENT-DRIVEN-L1-GATEWAY.md) ｜ [SACG_A SUPERVAGENT CONNECTION SPEC v0.2](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)
+> **承接文档**: [DESIGN-SUPERAGENT-FUSION v0.2](DESIGN-SUPERAGENT-FUSION.md) ｜ [ANALYSIS 双维梳理](ANALYSIS-SUPERAGENT-ARCH-DATAFLOW.md) ｜ [SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2](SPEC-EVENT-DRIVEN-L1-GATEWAY.md) ｜ [SACG_A SUPERVAGENT CONNECTION SPEC v0.2](../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)
 
 ---
 
@@ -222,7 +222,7 @@ Router → Worker → 工具面 → L0 全链路透传 `trace_id`,落 `dreamos_s
 | **本文件** | DSH 升级主线设计(架构/ADR/路径) |
 | [DESIGN-SUPERAGENT-FUSION](DESIGN-SUPERAGENT-FUSION.md) | 吸收策略(借壳灌芯 A→B),为本设计提供"吸收什么" |
 | [SPEC-EVENT-DRIVEN-L1-GATEWAY](SPEC-EVENT-DRIVEN-L1-GATEWAY.md) | 本设计 ① 入口层的实现规格(P0) |
-| [SACG_A SPEC](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) | 本设计 ③ 契约层的实现规格(P0) |
+| [SACG_A SPEC](../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) | 本设计 ③ 契约层的实现规格(P0) |
 | [REPORT-L0-MCP-DSH-IMPACT](REPORT-L0-MCP-DSH-IMPACT-v1.1.md) | 给定出口的评估与建议(**上游输入,不在本设计范围**) |
 | [SPEC-L0-MCP-PACKAGING v0.3](../../../47-MCP管理系统/docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md) | **MCP 域 SSoT**:壳契约/写工具治理/能力集注册表(本设计 ADR-4/9/10 的实现依据) |
 | [ALIGNMENT-46-47 v1.0](../../../47-MCP管理系统/docs/tech/ALIGNMENT-46-47-v1.0.md) | 双方交界审查与开工顺序(本 v0.2 修订来源) |

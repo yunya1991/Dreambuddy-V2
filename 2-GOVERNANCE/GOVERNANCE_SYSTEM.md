@@ -320,5 +320,5 @@ dream-pretrade-gatekeeper
 ## 🚀 快速链接
 
 - [治理章程](./GOVERNANCE_CHARTER.md)
-- [合规规则](../合规/COMPLIANCE_RULES.md)
+- [合规规则](COMPLIANCE_RULES.md)
 - [SKILL索引](../1-ARCHITECTURE/工作索引/SKILL_INDEX.md)

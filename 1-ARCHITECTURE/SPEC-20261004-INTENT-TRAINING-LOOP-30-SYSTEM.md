@@ -8,8 +8,8 @@
 **关联文档**:
 - [SPEC-20260929-DREAMOS-渐进式能力演进路线.md](./SPEC-20260929-DREAMOS-渐进式能力演进路线.md) v3.0（两大训练核心 + P0-P5 路线）
 - [SPEC_ALGORITHM_DRIVEN_TRAINING_LOOP.md](./dream-harness-bridge/SPEC_ALGORITHM_DRIVEN_TRAINING_LOOP.md) v0.1（三层分工：算法驱动 / Harness 评审训练 / Agent 接管）
-- [INTENT_ROUTER.md](../3.1-FRONTEND/dream-universal-gateway/docs/INTENT_ROUTER.md) v3.0（35 型正典 + 4 级管线）
-- [intent-taxonomy.md](./intent-recognition-spec/intent-taxonomy.md) v1.1（6×30 对话意图规范）
+- [INTENT_ROUTER.md](../3-FRONTEND/dream-universal-gateway/docs/INTENT_ROUTER.md) v3.0（35 型正典 + 4 级管线）
+- intent-taxonomy.md（链接失效） v1.1（6×30 对话意图规范）
 - [30-真实环境交互系统/SKILL.md](../30-真实环境交互系统/SKILL.md) v2.2（四引擎架构 + 协同 skill）
 
 ---

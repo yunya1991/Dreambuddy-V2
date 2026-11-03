@@ -56,8 +56,8 @@ Step 7 (完成)
 | `GATE3-CHAIN-PHASE.md` | GATE 3 详情：D-Z-E三链阶段跳转 | [查看](GATE3-CHAIN-PHASE.md) |
 | `INTEGRATION.md` | 三层门禁集成：完整流程 + 故障排查 | [查看](INTEGRATION.md) |
 | `../scripts/chain_guard.py` | GATE 3 实现脚本 | [查看](../scripts/chain_guard.py) |
-| `../../scripts/step_controller.py` | GATE 1+2 实现脚本 | [查看](../../scripts/step_controller.py) |
-| `../../AGENTS.md` | 使用时必须遵守的规则 | [查看](../../AGENTS.md) |
+| `../../scripts/step_controller.py` | GATE 1+2 实现脚本 | [查看](../../16-调控系统/scripts/step_controller.py) |
+| `../../AGENTS.md` | 使用时必须遵守的规则 | [查看](../../2-KNOWLEDGE/wiki/AGENTS.md) |
 | `../4-PROTOCOL/PROTOCOL.md` | 三链接力协议 | [查看](../4-PROTOCOL/PROTOCOL.md) |
 
 ---

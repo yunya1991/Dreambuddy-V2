@@ -39,7 +39,7 @@ Dream-MultiSkill架构由六大核心系统组成：
 相关文档：
 
 - [公司中枢设计](./中台设计/COMPANY_CENTRAL_HUB.md)
-- [治理中枢化设计](../docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)
+- [治理中枢化设计](../7-产物中台/docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)
 
 ---
 

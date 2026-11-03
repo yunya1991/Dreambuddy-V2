@@ -2,7 +2,7 @@
 
 > **Spec ID**: COG-P2P3-2026-08-05
 > **创建日期**: 2026-08-05
-> **关联文档**: [COGNITIVE_ARCHITECTURE.md](../../../0-元记忆/COGNITIVE_ARCHITECTURE.md) §5.4 P2/P3 进化方向
+> **关联文档**: [COGNITIVE_ARCHITECTURE.md](../../../../0-元记忆/COGNITIVE_ARCHITECTURE.md) §5.4 P2/P3 进化方向
 > **基线**: P0 理论补全 + P1 机制增强已完成（v3.2，TDD 9/9 通过）
 > **硬约束**: 每项代码落地必须通过认知回测，`path_advantage ≥ +0.2` 才允许升级（对齐 project_memory）
 
@@ -345,7 +345,7 @@ right_channel_enabled: Dict[str, bool] = {
 
 ## 5. P3 文档对齐（理论注脚）
 
-P3 三项随 P2 落地补注脚到 [COGNITIVE_ARCHITECTURE.md](../../../0-元记忆/COGNITIVE_ARCHITECTURE.md)：
+P3 三项随 P2 落地补注脚到 [COGNITIVE_ARCHITECTURE.md](../../../../0-元记忆/COGNITIVE_ARCHITECTURE.md)：
 
 ### 5.1 P3-10 自由能统一理论
 

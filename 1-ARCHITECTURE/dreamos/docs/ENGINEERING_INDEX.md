@@ -4,7 +4,7 @@
 > **版本**: v2.6.0
 > **更新日期**: 2026-10-11
 > **维护者**: Dream OS Core Team
-> **关联文档**: [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md) | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)
+> **关联文档**: [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../SYSTEM_ARCHITECTURE_OVERVIEW.md) | [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md)
 
 ---
 
@@ -21,7 +21,7 @@
 ### 0.2 变更流程
 
 1. 修改代码 → 同步更新本文档对应章节
-2. 架构变更 → 先更新 [SYSTEM_ARCHITECTURE_OVERVIEW.md](../SYSTEM_ARCHITECTURE_OVERVIEW.md)，再同步本文档
+2. 架构变更 → 先更新 [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../SYSTEM_ARCHITECTURE_OVERVIEW.md)，再同步本文档
 3. 新增模块 → 在 §3 系统索引中增加条目
 
 ### 0.3 必读入口

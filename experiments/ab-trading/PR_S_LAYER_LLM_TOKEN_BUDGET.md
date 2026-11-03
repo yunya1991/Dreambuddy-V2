@@ -64,13 +64,13 @@
 
 | 文件 | 行数 | 功能 |
 |------|------|------|
-| [s_layer_llm_integration.py](file:///workspace/experiments/ab-trading/core/intent_engine/s_layer_llm_integration.py) | 792 | S层LLM集成 + Token预算 + 接管管理 |
+| [s_layer_llm_integration.py](core/intent_engine/s_layer_llm_integration.py) | 792 | S层LLM集成 + Token预算 + 接管管理 |
 
 ### 2.2 测试文件
 
 | 文件 | 行数 | 功能 |
 |------|------|------|
-| [test_s_layer_llm_integration.py](file:///workspace/experiments/ab-trading/test_s_layer_llm_integration.py) | 486 | 30个测试用例 + 100轮压力测试 |
+| [test_s_layer_llm_integration.py](test_s_layer_llm_integration.py) | 486 | 30个测试用例 + 100轮压力测试 |
 
 ---
 
@@ -338,9 +338,9 @@ python test_s_layer_llm_integration.py -v
 
 ### C. 关联文档
 
-- [SYSTEM_ARCHITECTURE_OVERVIEW.md](file:///workspace/1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) - S层三层递进架构
-- [dreambuddy-os/SKILL.md](file:///workspace/1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md) - 系统SKILL定义
-- [classic_driver.py](file:///workspace/experiments/ab-trading/core/classic_driver.py) - 经典指标系统驱动
+- [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) - S层三层递进架构
+- [dreambuddy-os/SKILL.md](../../1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md) - 系统SKILL定义
+- [classic_driver.py](core/classic_driver.py) - 经典指标系统驱动
 
 ---
 

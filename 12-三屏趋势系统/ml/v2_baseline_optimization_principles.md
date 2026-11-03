@@ -424,7 +424,7 @@ v5              大版本架构升级（需充分验证）
 | [`ml/four_objective_framework_design.md`](../../12-三屏趋势系统/ml/four_objective_framework_design.md) | 四类目的+动态实践闭环设计 |
 | [`ml/v2_baseline_optimization_principles.md`](../../12-三屏趋势系统/ml/v2_baseline_optimization_principles.md) | 本文档 · V4基线优化原则 |
 | [`docs/TECHNICAL_DESIGN.md`](../../12-三屏趋势系统/docs/TECHNICAL_DESIGN.md) | 技术设计文档 |
-| [`ENGINEERING_INDEX.md`](../../12-三屏趋势系统/ENGINEERING_INDEX.md) | 工程索引（完整版） |
+| [`ENGINEERING_INDEX.md`](../docs/ENGINEERING_INDEX.md) | 工程索引（完整版） |
 
 ---
 

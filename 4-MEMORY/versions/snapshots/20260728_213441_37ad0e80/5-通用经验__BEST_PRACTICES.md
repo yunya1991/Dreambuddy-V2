@@ -16,7 +16,7 @@
 | **等级** | A（可信级） |
 | **验证次数** | 5 次 |
 | **来源** | 三屏趋势重构 / 调控系统修复 / L3调度器优化 / 文档统一管理 / 记忆系统设计 |
-| **关联文档** | [A1_RESEARCH_METHOD.md](../2-方法论记忆/A1_RESEARCH_METHOD.md) |
+| **关联文档** | [A1_RESEARCH_METHOD.md](../../../2-方法论记忆/A1_RESEARCH_METHOD.md) |
 | **标签** | 调研, 方法论, 效率 |
 
 ### 实践描述
@@ -54,7 +54,7 @@
 | **等级** | A（可信级） |
 | **验证次数** | 3 次 |
 | **来源** | 技术债治理 / 性能优化 / 架构梳理 |
-| **关联文档** | [CONTRADICTION_METHOD.md](../2-方法论记忆/CONTRADICTION_METHOD.md) |
+| **关联文档** | [CONTRADICTION_METHOD.md](../../../2-方法论记忆/CONTRADICTION_METHOD.md) |
 | **标签** | 方法论, 优先级, 矛盾论 |
 
 ### 实践描述
@@ -92,7 +92,7 @@
 | **等级** | A（可信级） |
 | **验证次数** | 4 次 |
 | **来源** | 三屏趋势文档校验 / 调控系统接口校验 / 经典指标索引校验 / 全局文档债梳理 |
-| **关联文档** | [A8_THEORY_PRACTICE.md](../2-方法论记忆/A8_THEORY_PRACTICE.md) |
+| **关联文档** | [A8_THEORY_PRACTICE.md](../../../2-方法论记忆/A8_THEORY_PRACTICE.md) |
 | **标签** | 文档, 校验, 技术债 |
 
 ### 实践描述
@@ -132,7 +132,7 @@
 | **等级** | A（可信级） |
 | **验证次数** | 多次 |
 | **来源** | DEBT_INDEX.md 实践 + DOC_DEBT_INDEX.md 实践 |
-| **关联文档** | [DEBT_INDEX.md](../../DEBT_INDEX.md) |
+| **关联文档** | [DEBT_INDEX.md](../../../../DEBT_INDEX.md) |
 | **标签** | 技术债, 管理, 流程 |
 
 ### 实践描述
@@ -175,7 +175,7 @@
 | **等级** | B（待验证） |
 | **验证次数** | 刚启动 |
 | **来源** | 记忆系统设计理念 |
-| **关联文档** | [MEMORY_SYSTEM_ARCHITECTURE.md](../MEMORY_SYSTEM_ARCHITECTURE.md) |
+| **关联文档** | [MEMORY_SYSTEM_ARCHITECTURE.md](../../../MEMORY_SYSTEM_ARCHITECTURE.md) |
 | **标签** | 复盘, 记忆, 持续改进 |
 
 ### 实践描述

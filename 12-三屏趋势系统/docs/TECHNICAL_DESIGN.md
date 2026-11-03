@@ -1908,7 +1908,7 @@ score = 0.4 × (sharpe / V4_sharpe)
 | [`ml/v2_baseline_optimization_principles.md`](../ml/v2_baseline_optimization_principles.md) | V4基线优化原则（独立完整文档） |
 | [`ml/four_objective_framework_design.md`](../ml/four_objective_framework_design.md) | 四类目的+动态实践闭环设计 |
 | [`docs/TECHNICAL_DESIGN.md`](../docs/TECHNICAL_DESIGN.md) | 本文档 · 技术设计 |
-| [`ENGINEERING_INDEX.md`](../ENGINEERING_INDEX.md) | 工程索引（完整版） |
+| [`ENGINEERING_INDEX.md`](ENGINEERING_INDEX.md) | 工程索引（完整版） |
 
 ---
 

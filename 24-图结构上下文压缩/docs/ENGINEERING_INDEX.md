@@ -245,4 +245,4 @@
 - **可视化**：[`visualization.ts`](../visualization.ts)
 - **Planner**：[`planner/index.ts`](../planner/index.ts)
 - **SKILL 文档**：[`skills/graph-compressor/SKILL.md`](../skills/graph-compressor/SKILL.md)
-- **已有文档**：[`SPEC.md`](../SPEC.md) / [`TECHNICAL-DOC.md`](../TECHNICAL-DOC.md) / [`IMPLEMENTATION.md`](../IMPLEMENTATION.md) / [`THEORY-AND-PRACTICE.md`](../THEORY-AND-PRACTICE.md)
+- **已有文档**：[`SPEC.md`](archive/SPEC.md) / [`TECHNICAL-DOC.md`](archive/TECHNICAL-DOC.md) / [`IMPLEMENTATION.md`](archive/IMPLEMENTATION.md) / [`THEORY-AND-PRACTICE.md`](archive/THEORY-AND-PRACTICE.md)

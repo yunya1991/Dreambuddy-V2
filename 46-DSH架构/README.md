@@ -36,9 +36,9 @@
 
 | 文档 | 位置 | 关系 |
 | --- | --- | --- |
-| Super-agent 调研与对比分析 | [2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md](../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md) | 调研依据(含第八/九章专项分析) |
-| SACG-A × Super-agent 连接 SPEC | [SACG_A_SUPERAGENT_CONNECTION_SPEC.md](../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) | 姊妹 SPEC(契约桥接 P0) |
-| 系统架构总览 v4.1 | [SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | 口径唯一依据(SSoT) |
-| DSH Subagent 详设 | [DSH_SUBAGENT_ARCHITECTURE_SPEC.md](../../1-ARCHITECTURE/dream-harness-bridge/docs/DSH_SUBAGENT_ARCHITECTURE_SPEC.md) | C 层执行体现状 |
-| RESEARCH_DEEPSEEK_HARNESS | [RESEARCH_DEEPSEEK_HARNESS.md](../../1-ARCHITECTURE/前端设计/RESEARCH_DEEPSEEK_HARNESS.md) | Harness 机制调研 |
-| SACG↔Harness 映射(旧口径,已归档) | [RESEARCH_SACG_HARNESS_MAPPING.md](../../1-ARCHITECTURE/RESEARCH_SACG_HARNESS_MAPPING.md) | 历史留档,禁止作为实现依据 |
+| Super-agent 调研与对比分析 | [2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md](../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md) | 调研依据(含第八/九章专项分析) |
+| SACG-A × Super-agent 连接 SPEC | [SACG_A_SUPERAGENT_CONNECTION_SPEC.md](../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md) | 姊妹 SPEC(契约桥接 P0) |
+| 系统架构总览 v4.1 | [SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) | 口径唯一依据(SSoT) |
+| DSH Subagent 详设 | [DSH_SUBAGENT_ARCHITECTURE_SPEC.md](../1-ARCHITECTURE/dream-harness-bridge/docs/DSH_SUBAGENT_ARCHITECTURE_SPEC.md) | C 层执行体现状 |
+| RESEARCH_DEEPSEEK_HARNESS | [RESEARCH_DEEPSEEK_HARNESS.md](../1-ARCHITECTURE/前端设计/RESEARCH_DEEPSEEK_HARNESS.md) | Harness 机制调研 |
+| SACG↔Harness 映射(旧口径,已归档) | [RESEARCH_SACG_HARNESS_MAPPING.md](../1-ARCHITECTURE/RESEARCH_SACG_HARNESS_MAPPING.md) | 历史留档,禁止作为实现依据 |

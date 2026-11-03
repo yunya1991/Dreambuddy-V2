@@ -2,8 +2,8 @@
 
 > **版本**: v1.0 ｜ **日期**: 2026-11-02 ｜ **状态**: 定稿(评审输入件)
 > **依据三份文档**:
-> 1. [Super-agent 调研与对比分析](../../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)(调研+逐项映射,第一~九章)
-> 2. [SACG_A_SUPERAGENT_CONNECTION_SPEC](../../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(契约桥接,待评审)
+> 1. [Super-agent 调研与对比分析](../../../2-KNOWLEDGE/7-EXTERNAL-RESEARCH/technical/architecture/2026-11-02-DeepSeek-Super-agent架构调研与DreamOS对比分析.md)(调研+逐项映射,第一~九章)
+> 2. [SACG_A_SUPERAGENT_CONNECTION_SPEC](../../../1-ARCHITECTURE/specs/SACG_A_SUPERAGENT_CONNECTION_SPEC.md)(契约桥接,待评审)
 > 3. [SPEC-EVENT-DRIVEN-L1-GATEWAY](SPEC-EVENT-DRIVEN-L1-GATEWAY.md)(事件驱动网关,待评审)
 > **口径**: v4.0 新 SACG(S=认知规划/A=OKR验收/C=执行驱动/G=压缩沉淀)
 

@@ -3,8 +3,8 @@
 > **版本**: v1.0 | **日期**: 2026-08-24
 > **定位**: DreamBuddy V2 统一数据访问层（Data Access Layer, DAL）：Repository 协议抽象、SQLite 统一库架构、零停机双写迁移策略
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) · [SCHEMA_DESIGN.md](./SCHEMA_DESIGN.md) · [MIGRATION_PLAN.md](./MIGRATION_PLAN.md)
-> **关联 SSoT**: [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) v3.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0
-> **兄弟子系统**: [18-数据获取中心](../18-数据获取中心/) — 采集层（外→内），本系统 = 存储访问层（内→内），职责边界见 §2.5
+> **关联 SSoT**: [ENGINEERING_INDEX.md](ENGINEERING_INDEX.md) v3.0 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v3.0
+> **兄弟子系统**: [18-数据获取中心](../../18-数据获取中心/) — 采集层（外→内），本系统 = 存储访问层（内→内），职责边界见 §2.5
 
 ---
 
@@ -29,11 +29,11 @@
 - ❌ 不做多机部署 / 分布式锁 / 连接池 — PostgreSQL 阶段再做（参见 §7）
 - ❌ 不做 Grafana/BI 报表接出
 - ❌ 不做用户权限 / 多租户
-- ❌ 不做数据采集 / SDK 适配 / API 调用爬取 — 归 [18-数据获取中心](../18-数据获取中心/)
+- ❌ 不做数据采集 / SDK 适配 / API 调用爬取 — 归 [18-数据获取中心](../../18-数据获取中心/)
 
 ### 0.2 SSoT 层级 & 冲突处理优先级
 
-对齐全项目 [ENGINEERING_INDEX.md](../ENGINEERING_INDEX.md) §0.2 SSoT 体系：
+对齐全项目 [ENGINEERING_INDEX.md](ENGINEERING_INDEX.md) §0.2 SSoT 体系：
 
 | 层级 | 文档 | 冲突时优先级 |
 |------|------|-------------|

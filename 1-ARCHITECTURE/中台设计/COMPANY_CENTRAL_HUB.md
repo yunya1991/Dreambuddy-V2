@@ -86,4 +86,4 @@
 - [PRODUCT_HUB.md](./PRODUCT_HUB.md)
 - [PRODUCT_HUB_FULL.md](./PRODUCT_HUB_FULL.md)
 - [GATEWAY_HUB.md](./GATEWAY_HUB.md)
-- [2026-05-16-artifact-hub-v2-governance-central-design.md](../../docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)
+- [2026-05-16-artifact-hub-v2-governance-central-design.md](../../7-产物中台/docs/superpowers/specs/2026-05-16-artifact-hub-v2-governance-central-design.md)

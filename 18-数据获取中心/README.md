@@ -2,7 +2,7 @@
 
 DataBuddy 的**唯一数据入口与信息收口层**——万能爬虫 + 信息搜集工具。统一 `DataRecord` 契约，CLI + Python 库双形态，逐步收口 `9-基本面分析`/`12-三屏趋势系统` 的散落采集代码。
 
-> 设计文档：[docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) ｜ 实现计划：[docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)
+> 设计文档：[docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) ｜ 实现计划：[docs/IMPLEMENTATION_PLAN.md](docs/archive/IMPLEMENTATION_PLAN.md)
 
 ## 变更日志
 

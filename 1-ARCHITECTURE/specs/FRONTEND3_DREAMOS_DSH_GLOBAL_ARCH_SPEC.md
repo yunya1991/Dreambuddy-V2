@@ -143,8 +143,8 @@
 | jev-judge | 通过 Python IPC 接入 harness（3 个 Harness 事件） | C 层 Aggregator 聚合后调用 | ⚠️ 在 harness 层未进 C 层 |
 
 **关键证据**：
-- [graph_executor.py](../../dreamos/) L100-106：`execute()` 签名无认知/jeval/subagent 接口
-- [reflector.py](../../dreamos/) L127-140：当前只有 REDO 逻辑，无认知查询
+- graph_executor.py（链接失效） L100-106：`execute()` 签名无认知/jeval/subagent 接口
+- reflector.py（链接失效） L127-140：当前只有 REDO 逻辑，无认知查询
 - `cognitive_loop_adapter.py` L62-85：recall 封装已存在，MCP 不可用时返回 `[]`（FAIL-OPEN）
 - recall 记忆 VM-1786324739691：Reflector REDO 机制已验证运行（95 次/日，max_retries=2）
 

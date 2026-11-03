@@ -3,7 +3,7 @@
 > **版本**: v4.6.1 | **日期**: 2026-09-11
 > **定位**: 易经推理系统的技术架构、设计原则、核心算法与系统边界
 > **关联文档**: [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md)（工程索引） · [CHANGELOG.md](./CHANGELOG.md)（代码级变更日志）
-> **关联 Spec**: [方案 C：CBR 双闭环+Elder-ray+三层弹性闸门](../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) v3.0（已全量上线，8 开关默认开启）
+> **关联 Spec**: [方案 C：CBR 双闭环+Elder-ray+三层弹性闸门](../../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) v3.0（已全量上线，8 开关默认开启）
 
 ---
 
@@ -27,7 +27,7 @@
 | L0 | `constraints/system-index/engineering-architecture.md` | 约束层面最高 |
 | L0 | 本文件（TECHNICAL_DESIGN.md） | 架构层面最高 |
 | L0 | [ENGINEERING_INDEX.md](./ENGINEERING_INDEX.md) | 工程索引层面 |
-| L1 | 前置层技术细节（本文第3.5章 + [前置层设计文档](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md)） | 该子模块内最高 |
+| L1 | 前置层技术细节（本文第3.5章 + [前置层设计文档](../../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md)） | 该子模块内最高 |
 | L1 | BCRM 2.0 技术细节（本文第4章） | 该子模块内最高 |
 | L2 | 各模块内联注释 / docstring | 代码级 |
 
@@ -675,7 +675,7 @@ QMM 输出经过 Gate 验证后才可用于决策：
 
 ### 3.5 前置层 — 市场形态演化引擎 ✅ v4.3 新增
 
-> **关联文档**：[2026-08-19-morph-cycle-dynamic-correction-design.md](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md)（动态修正与全局同步架构设计，v1.1 Implemented）
+> **关联文档**：[2026-08-19-morph-cycle-dynamic-correction-design.md](../../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md)（动态修正与全局同步架构设计，v1.1 Implemented）
 > **关联代码**：`scripts/memory_l4/bcrm2/` 目录下的 `indicators.py`、`score_composer.py`、`temporal_smoother.py`、`regime_mapper.py`、`parameter_mapper.py`、`morph_cycle_predictor.py`、`shadow_logger.py`
 
 #### 3.5.1 定位与核心问题
@@ -2278,7 +2278,7 @@ export OKX_TD_MODE=isolated
 
 ### 监控适配器
 
-**文件**: [15-监控告警系统/adapters/yijing_adapter.py](../../15-监控告警系统/adapters/yijing_adapter.py)
+**文件**: 15-监控告警系统/adapters/yijing_adapter.py（链接失效）
 
 | 监控项 | 检查逻辑 | 告警级别 |
 |--------|----------|----------|
@@ -2463,8 +2463,8 @@ export OKX_TD_MODE=isolated
 | 2026-08-24 | v4.6.1 | **L3/L4 仓位归属语义重构 + 分层职责严格对齐**：①**核心修复 is_trial 仓位基线**：删除旧实现 `is_trial: position_usdt ×= 0.4` 简单乘法；重构 `_open_position L8224-L8292` 仓位流向：**L3 后置层（弹簧做多做空分档 + v4 风险评分仓位调整 + 形态乘数 position_mult）只在正常开仓（is_trial=False）时完整应用**；**轻仓试错（is_trial=True）全部跳过 L3 校准**，日志输出「轻仓试错(过滤层接管仓位) | 跳过L3弹簧/形态/v4分档 → 交由 ElasticGate3L/F1 弹性闸门控制最终仓位」，完全由 L4 过滤层 EG3L 的 F1 下界 0.10 弹性档控制试错仓仓位（BLOCK=0.10 / WEAK=0.30 / STANDARD=0.50 ...），使 Spec F1 永不 BLOCK 语义真正等价于仓位下限不被 L3 再叠加削弱或放大；②**七层职责速查表重写**：L3 标注「正常开仓=调仓位大小；轻仓试错=跳过」、L4 标注「统一共识评分 + 基础门槛 + 接管试错仓仓位」；③**关键分层修正说明升级 v4.5→v4.6.1**：明确 6 条核心边界（L3 不介入试错 / L4 接管试错仓位 / 删除 is_trial×0.4 / L4 唯一硬门槛只有 score_consensus<0.40 / G-04/最大持仓归 L5 / 动态阈值基于 30-150 笔聚合）；④**新增 §2.2b.4 L3/L4 仓位归属语义章节**：含仓位流向总览 ASCII 图、旧vs新设计理由对照表（4 项对比）、代码锚点；⑤架构七层图 L4 节点更新为三分支判定（①<0.40 不开仓 ②≥+conf达标→正常 ③≥+conf不够→试错，试错跳过 L3）；⑥版本号 v4.6→v4.6.1；实盘验证：进程 PID=25232 启动成功；当前 5/5 持仓满容量待腾出后触发「过滤层共识分低于基础门槛」「轻仓试错(共识分达标)」「跳过L3接管仓位」「PhaseC S_P= w_src=」等新日志 | DreamBuddy v2 |
 | 2026-08-24 | v4.6 | **过滤层统一基础阈值门控 + 方案C子系统生效审计增强**：①**核心重构 L4 过滤层判定逻辑（v4.5→v4.6 语义修正）**：删除「P1=BLOCK → is_trial=True」的单因子绑定，改为 P1/Elder/BCRM 三层均产出 Score → ElasticGate3L 加权（支持 ThreeLayerWeighter 动态权重 w_p:w_e:w_b）→ `score_consensus` 与 `_gate_base_threshold（默认0.40）` 做判断：<base_threshold→不开仓（唯一硬门槛）、≥且 confidence 不达标→轻仓试错 is_trial=True（统一 P1=WEAK/STANDARD/BLOCK 三标签的试错通道）；②**新增 §2.2b.3 过滤层统一基础阈值门控**：包含判定流程图、动态阈值调节规则（近30笔胜率<40%或亏-3%→+0.03，胜率≥60%且盈>2%→-0.02，边界[0.25,0.60]，冷却30min）、TradeRecord 新增 score_consensus/gate_base_threshold 两字段、方案C子系统生效审计方法（日志中 w_src/fail_open/calibrated/WinProb样本数/BTCλ条件 可直接判断是否生效）；③**EG3L 明细日志可见性增强**：PhaseC 仓位调控追加 S_P/S_E/S_B/cons/w_p/w_e/w_b/w_src/src 字段，解决 v4.5 无法确认 3LW、做空收紧是否真实生效的黑盒问题；④**ThreeLayerWeighter（SW-C3）调用链路核查**：权重已透传至 ElasticGate3L.compute()，但 v4.6 日志显示实盘 w_src=fail_open（需要 ≥30 笔 BCRM 盈亏样本做回归校准才产出动态权重）；⑤**WinProb（SW-C7）恒=1.00 原因确认**：`sample_count=0 < G2 MIN_SAMPLES=20` 触发旁路，需 CBR Jsonl 建库积累样本；⑥版本号 v4.5→v4.6；代码锚点见 §2.2b.3 | DreamBuddy v2 |
 | 2026-08-24 | v4.5 | **七层交易决策栈梳理 + 方案 C 全量上线 + P1 升级版分层定位修正 + SL 下限保护 + 试错评估周期**：①§2.2 四层功能架构补充 v4.5 视角说明（与七层栈互补）；②**新增 §2.2b 七层交易决策栈（纵向交易决策链）**：L0 五计庙算战略层 → L1 前置层市场形态识别 → L2 核心层 BCRM 2.0 信号 → L3 后置校准层（弹簧力场+五维权重+WinProb+做空三重收紧，调仓位不拦截）→ L4 过滤层（P1升级版：原均线/Elder-ray日线/BCRM N=5连续信号三道并行拦截 + CBR/ElasticGate3L/BTC自反/WinProb/组合熔断G-02/G-04）→ L5 策略层下单确认 → L6 持仓管理与离场层（ExitManager链式+卦象主离场，已删除 Classic 兜底备用层）；③七层职责边界速查表（动作类型/典型操作/失败旁路）；④关键分层修正说明（COIN做空教训：Elder/BCRM连续属过滤层L4拦截，Score_B/做空收紧属后置校准层L3调仓位）；⑤方案 C 8 开关默认全部 True（SW-C1 CBR建库 / SW-C2 Elder-ray / SW-C3 三层权重 / SW-C4 ElasticGate3L / SW-C5 BTC自反 / SW-C6 WinProb / SW-C7 BCRMContinuityObs / SW-C8 组合熔断），开仓必经所有风控链路，G-04 单日 3% 回撤全开关旁路 24h；⑥删除 classic 备用离场层（polling_trader L7208-7394）；⑦VOLATILE_DROP threshold_mult 1.30→1.15 + effective_threshold 上限 clip 0.98，修复做空阈值 >1.0 硬禁问题；⑧confidence 阈值分层（engine_min_confidence_threshold vs confidence_threshold，解决进化值覆盖冲突）；⑨**新增 §2.2b.1 SL/TP 价格空间下限保护**（XAG 案例修复）：ATR 极低时 SL 最低 1.5%（试错仓 2.0%）、TP 最低 3.0%（试错仓 4.0%），轻仓试错核心是仓位小而非 SL 近；⑩**新增 §2.2b.2 轻仓试错评估周期**：持仓≥30min 后触发趋势评估（仅一次），趋势确认→加仓信号、趋势不明→维持、趋势逆转→平仓；TradeRecord 新增 is_trial/trial_eval_done/trial_open_ts 三字段；⑪关联文档 [方案 C Spec v3.0](../../docs/superpowers/specs/2026-08-23-cbr-ema-winprob-enhancement-spec.md) 已上线生效；版本号 v4.4→v4.5 | DreamBuddy v2 |
-| 2026-08-20 | v4.4 | **持仓与离场管理层纳入技术文档**：①§2.2 四层功能架构图在决策层与支撑层之间新增「持仓与离场管理层」；②**新增 §3.6 持仓与离场管理层 — ExitManager 策略链**（5 个小节：架构设计/核心接口/6 个 ExitStrategy 子类/exit_strategy_log 贡献值追踪/测试覆盖与实盘验证）；③§15.7 新增 Phase 6 持仓与离场管理层已完成；④关联文档 [2026-08-20-exit-manager-design.md](../docs/superpowers/specs/2026-08-20-exit-manager-design.md)；版本号 v4.3→v4.4 | DreamBuddy v2 |
-| 2026-08-20 | v4.3 | **前置层市场形态演化引擎纳入技术文档**：①§0.1/§0.2 文档范围新增前置层 + SSoT 层级新增 L1 前置层技术细节；②§2.2 四层功能架构图在编排层与决策层之间新增「前置层」；③§3.1 三引擎协同架构图新增前置层参数输入路径；④**新增 §3.5 前置层 — 市场形态演化引擎**（8 个小节：定位/6层流水线/MorphCyclePredictor/大小周期弹性边界约束/ParameterMapper/Shadow模式/Phase C渐进上线/与核心层集成），覆盖 Phase A/B/C 三阶段全部实现，24 个测试文件 157 个测试用例通过；⑤§14.1 负责范围新增前置层；⑥§15.5 新增 Phase 5 前置层已完成；⑦关联文档 [2026-08-19-morph-cycle-dynamic-correction-design.md](../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md) v1.1 Implemented；版本号 v4.2→v4.3 | DreamBuddy v2 |
+| 2026-08-20 | v4.4 | **持仓与离场管理层纳入技术文档**：①§2.2 四层功能架构图在决策层与支撑层之间新增「持仓与离场管理层」；②**新增 §3.6 持仓与离场管理层 — ExitManager 策略链**（5 个小节：架构设计/核心接口/6 个 ExitStrategy 子类/exit_strategy_log 贡献值追踪/测试覆盖与实盘验证）；③§15.7 新增 Phase 6 持仓与离场管理层已完成；④关联文档 [2026-08-20-exit-manager-design.md](../../docs/superpowers/specs/2026-08-20-exit-manager-design.md)；版本号 v4.3→v4.4 | DreamBuddy v2 |
+| 2026-08-20 | v4.3 | **前置层市场形态演化引擎纳入技术文档**：①§0.1/§0.2 文档范围新增前置层 + SSoT 层级新增 L1 前置层技术细节；②§2.2 四层功能架构图在编排层与决策层之间新增「前置层」；③§3.1 三引擎协同架构图新增前置层参数输入路径；④**新增 §3.5 前置层 — 市场形态演化引擎**（8 个小节：定位/6层流水线/MorphCyclePredictor/大小周期弹性边界约束/ParameterMapper/Shadow模式/Phase C渐进上线/与核心层集成），覆盖 Phase A/B/C 三阶段全部实现，24 个测试文件 157 个测试用例通过；⑤§14.1 负责范围新增前置层；⑥§15.5 新增 Phase 5 前置层已完成；⑦关联文档 [2026-08-19-morph-cycle-dynamic-correction-design.md](../../docs/superpowers/specs/2026-08-19-morph-cycle-dynamic-correction-design.md) v1.1 Implemented；版本号 v4.2→v4.3 | DreamBuddy v2 |
 | 2026-08-06 | v4.2 | **宏观特征优化 + 风控规则改造**：①§9.3.1 新增宏观特征层章节（MacroFeatures 24特征/6维度+两级开关机制+v4前向贪心选择验证）；②BTC启用3个验证有效特征（fgi_zscore+fgi_extreme_fear+hash_rate_trend，BTC验证得分+23.8%）；③BCRM2Adapter增加macro_config参数+缓存键含macro_config哈希（配置变更自动重训）；④§11.3.1 风控规则改造：移除连续亏损笔数触发，改为亏损金额>权益×20%触发（默认可用150U→阈值30U）；⑤进化系统适配（yijing_monitor/self_evolution_engine 默认值与白名单同步）；版本号 v4.1→v4.2 | DreamBuddy v2 |
 | 2026-08-05 | v4.1 | **认知科学 P2 落地与实盘修复**：①P2-9 主动推理事前预测落地（`prediction_engine.py` + `prediction_bridge.py`，开仓生成 prediction，平仓计算 prediction_error 驱动贝叶斯，TDD 通过）；②P2-7 静息态反刍落地（`rumination_engine.py`，daemon 空闲>30min 统计聚类近7天 episode 产出 C 级假设记忆，TDD 通过）；③P2-8 双通道回测环境就绪（`experiments/ab-trading/core/dual_channel/`：胼胝体整合器+双通道运行器+AB 对比框架，9/9 测试通过，BTC 500bars 回测 path_advantage=-0.2315 待 metrics 调优）；④反刍实盘路径 bug 修复（`_find_episodes_dir()` 多路径搜索替代硬编码，找到 85 个 episode 文件）；⑤反刍模块详细日志增强（idle 检查/触发原因/执行流程/样本详情）；⑥认知回测框架扩展（`cognitive_backtest.py` 新增 P2-9/P2-7 回测，4/5 项 path_advantage ≥ +0.2）；⑦实盘重启（polling_trader 加载 P2-9 prediction；cognitive_daemon 加载 P2-7 路径修复+日志，PID 31219）；版本号 v4.0→v4.1 | DreamBuddy v2 |
 | 2026-08-05 | v4.0 | **五角校验 v4 风险评分风控版**：①§4.1.1c 五角校验架构重写为 v4（五源风险信号综合评分+风险注意力动态加权+仓位/杠杆/止盈/止损双向调控+v3双预警底线）；②§1.3 核心指标更新为 BTC/ETH/SOL 6000bars/5folds 回测（夏普10.16→10.20、回撤10.12%→10.34%、收益135.31%→139.40%，四项标准全通过）；③推理链更新五角校验输出字段（risk_score/risk_level/leverage_factor/tp_adjustment）；④§8.1 性能基线更新；⑤v1/v2 方向投票+贝叶斯优化方案废弃；版本号 v3.0→v4.0 | DreamBuddy v2 |
