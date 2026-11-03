@@ -1,5 +1,22 @@
 # CHANGELOG — 47-MCP管理系统
 
+## 2026-11-03 云端评审 REVIEW-AGENT-ARCH 7 项复核与修订
+
+云端评审（`REVIEW-AGENT-ARCH-v0.1.md`）提出 P1-P7 共 7 项存疑，本地逐项复核后处置：
+
+| 项 | 复核结论 | 修订 |
+|---|---|---|
+| P1 奖励维度不一致 | 成立（且实际会 TypeError） | TRAIN-BASE §3 统一为六维 + 6 权重（和=1.0）+ RED 6；DOMAIN-AGENTS §4.1 改为只引用 |
+| P2 45 PG 表数 | **不成立**（实测 8 条 CREATE TABLE，第 9 处为注释） | 无需修改 |
+| P3 GRPO 术语误用 | 成立 | TRAIN-BASE §5 更名 PolicySelectLoop + 借喻声明 |
+| P4 论文引用 | 成立（编号有误） | 更正 Alpha-R1 2512.23515 / EvolveR 2510.16079 / AlphaPareto 2609.34188；ADTS 标待验证 |
+| P5 经验值无校准 | 成立 | 新增 TRAIN-BASE §6.5 影子期校准协议（离线校准，禁止运行期自调） |
+| P6 代码落点未创建 | 成立（表述风险） | DOMAIN-AGENTS §6 标注"计划新增" |
+| P7 agent_mail 未创建 | 确认非缺陷 | 无需修订 |
+
+- 新增评审文档 `docs/tech/REVIEW-AGENT-ARCH-v0.1.md`（含 §3.1 本地复核结论）
+- CHANGELOG 与三份 SPEC 同步修订；TRAIN-BASE 代码块已通过 py_compile 校验
+
 ## 2026-11-03 M2/M3 收口缺口修复（注册表/双模/CI/trace_id）
 
 ### 修正

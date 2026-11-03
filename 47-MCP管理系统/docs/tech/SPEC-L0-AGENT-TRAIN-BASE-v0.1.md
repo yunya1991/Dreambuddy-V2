@@ -196,7 +196,7 @@ TB1 PSI drift_detector（全域复用，零依赖）
     ▼
 TB2 Beta 分布 verify 升级（依赖 TB1 PSI 漂移门控）
     │
-    ├──→ TB3 AlphaPareto 四维奖励定义（依赖 TB2 Beta 置信度）
+    ├──→ TB3 AlphaPareto 六维奖励定义（依赖 TB2 Beta 置信度）
     │
     ├──→ TB4 Thompson Sampling regime gate（依赖 TB1 PSI 漂移检测 regime shift）
     │
@@ -369,7 +369,7 @@ def drift_kill_switch(drift_level: str, context: Dict[str, Any]) -> Dict[str, An
 
 ### 2.1 目标
 
-当前 `cognitive_loop_entry.verify()` 是二项式更新（success=True → confidence + Δ）。Beta 分布升级后支持**部分成功/部分失败**（如"10 次调用 7 次成功 2 次超时 1 次调用方未处理"），并为 TB3 AlphaPareto 奖励函数和 TB5 GRPO loop 提供置信度分布基础。
+当前 `cognitive_loop_entry.verify()` 是二项式更新（success=True → confidence + Δ）。Beta 分布升级后支持**部分成功/部分失败**（如"10 次调用 7 次成功 2 次超时 1 次调用方未处理"），并为 TB3 AlphaPareto 奖励函数和 TB5 PolicySelectLoop 提供置信度分布基础。
 
 **为什么依赖 TB1 PSI**：verify 的历史分布基线需要 PSI 监控——如果 verify 的 Beta 分布漂移了（PSI > 0.25），说明认知系统整体置信度结构变了，应该触发反思。
 
@@ -512,11 +512,11 @@ def verify_beta(memory_id: str, success_rate: float,
 
 ---
 
-## §3 TB3：AlphaPareto 四维奖励定义（认知/评测共用）
+## §3 TB3：AlphaPareto 六维奖励定义（认知/评测共用）
 
 ### 3.1 目标
 
-为 TB5 GRPO loop 提供多目标奖励函数，**替代手动权重调优**。四维向量奖励沿 Pareto 前沿优化（AlphaPareto arXiv 2504）。
+为 TB5 PolicySelectLoop 提供多目标奖励函数，**替代手动权重调优**。六维向量奖励沿 Pareto 前沿优化（AlphaPareto，arXiv 2609.34188；引用编号 2026-11-03 本地联网复核，原 2504 有误）。
 
 **为什么依赖 TB2**：P1（P_verify_success）和 P3（psi_stability）的计算依赖 TB2 Beta verify 的置信度分布和 TB1 PSI 漂移值。
 
@@ -524,7 +524,7 @@ def verify_beta(memory_id: str, success_rate: float,
 
 ```
 4-MEMORY/9-工具与接口/
-└── training_reward.py       # 新增，AlphaPareto 四维奖励定义
+└── training_reward.py       # 新增，AlphaPareto 六维奖励定义
 tests/
 └── test_alpha_pareto.py     # 新增
 ```
@@ -562,8 +562,10 @@ def compute_reward(
     recall_total: int,
     known_gaps_count: int,
     cross_domain_refs: int,
+    process_reward: float = 0.0,         # 维度 5：上游 step 奖励（缺省中性）
+    transition_smoothness: float = 1.0,  # 维度 6：转移平滑度（缺省最平滑）
 ) -> RewardComponents:
-    """AlphaPareto 四维奖励定义（SPEC-L0-DOMAIN-AGENTS v0.2 §4.1）
+    """AlphaPareto 六维奖励定义（维度定义唯一事实源；DOMAIN-AGENTS v0.2 §4 只引用不重复定义）
     
     P_verify_success = TB2 Beta mean
     P_recall_hit = recall_hits / recall_total
@@ -581,13 +583,20 @@ def compute_reward(
         p_recall_hit=p_recall,
         psi_stability=psi_stab,
         citation_diversity=citation,
+        process_reward=process_reward,
+        transition_smoothness=transition_smoothness,
     )
 
 
-def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = (0.3, 0.25, 0.25, 0.2)) -> float:
-    """Pareto 前沿综合评分（初版用加权和，后续升级为 MAP 流形感知）"""
-    components = [reward.p_verify_success, reward.p_recall_hit, 
-                  reward.psi_stability, reward.citation_diversity]
+# 初版权重（六维，和=1.0）；影子期按 §6.5 校准协议回测后改常量，禁止运行期动态调整
+REWARD_WEIGHTS = (0.25, 0.20, 0.20, 0.15, 0.12, 0.08)
+
+
+def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = REWARD_WEIGHTS) -> float:
+    """Pareto 前沿综合评分（初版用六维加权和，后续升级为 MAP 流形感知）"""
+    components = [reward.p_verify_success, reward.p_recall_hit,
+                  reward.psi_stability, reward.citation_diversity,
+                  reward.process_reward, reward.transition_smoothness]
     return sum(w * c for w, c in zip(weights, components))
 ```
 
@@ -600,8 +609,9 @@ def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = (0.3, 0.
 | **RED 3** | PSI > 1.0 边界 | psi_stability = 0.0（cap 生效） |
 | **RED 4** | known_gaps > 10 边界 | citation_diversity 下限 0.0（cap 生效） |
 | **RED 5** | recall_total=0 边界 | p_recall_hit = 0.0（除零保护） |
+| **RED 6** | 权重完整性：`len(REWARD_WEIGHTS) == 6` 且 `sum(REWARD_WEIGHTS) == 1.0` | 返回 True（容差 1e-9） |
 
-**验收标准**：pytest 5/5 passed。
+**验收标准**：pytest 6/6 passed（含 RED 6 六维权重完整性）。
 
 ### 3.5 算力
 
@@ -623,15 +633,15 @@ def pareto_score(reward: RewardComponents, weights: Tuple[float, ...] = (0.3, 0.
 
 ### 4.2 位置（含 Major #1 修复：与 TB5 GRPO import 路径统一）
 
-**regime_gate.py 放在 `4-MEMORY/9-工具与接口/`**（与 TB5 GRPO loop 同目录，TB5 用相对 import `.regime_gate`），40-周期神经网络系统 通过绝对 import `from cognitive_loop_entry import ThompsonSamplingRegimeGate` 消费。
+**regime_gate.py 放在 `4-MEMORY/9-工具与接口/`**（与 TB5 PolicySelectLoop 同目录，TB5 用相对 import `.regime_gate`），40-周期神经网络系统 通过绝对 import `from cognitive_loop_entry import ThompsonSamplingRegimeGate` 消费。
 
 ```
 4-MEMORY/9-工具与接口/
 ├── drift_detector.py         # TB1（PSI 漂移检测，TB4 依赖）
 ├── cognitive_loop_entry.py   # TB2（Beta verify 升级）
-├── training_reward.py        # TB3（AlphaPareto 四维奖励）
+├── training_reward.py        # TB3（AlphaPareto 六维奖励）
 ├── regime_gate.py            # TB4 新增，Thompson Sampling regime gate ← 统一位置
-└── grpo_evolution.py         # TB5 新增，GRPO loop（from .regime_gate import 相对 import ✅）
+└── grpo_evolution.py         # TB5 新增，PolicySelectLoop（from .regime_gate import 相对 import ✅）
 tests/
 └── test_regime_gate.py       # 新增
 ```
@@ -722,13 +732,15 @@ class ThompsonSamplingRegimeGate:
 
 ---
 
-## §5 TB5：GRPO 轻量 RL loop（冻结权重，调策略输出格式）
+## §5 TB5：PolicySelectLoop（GRPO 借喻；冻结权重，调策略输出格式）
+
+> **术语声明（P3 修订，2026-11-03）**：本节沿用 "GRPO" 仅作**借喻**。TB5 实现为**冻结权重 + 候选策略配置 argmax 选择**（`evaluate_config` → `argmax`），无梯度更新、无策略网络，与业界 GRPO（Group Relative Policy Optimization）定义不同。对外表述统一用 **PolicySelectLoop / ConfigEvolution**；代码类名 `GRPOEvolutionLoop` 为历史兼容保留。
 
 ### 5.1 目标
 
-**冻结 LLM 权重，只调策略输出格式**——这是 H2 硬约束（不引入神经网络权重微调）。奖励函数用 TB3 AlphaPareto 四维向量，regime gate 用 TB4 Thompson Sampling，漂移检测用 TB1 PSI。
+**冻结 LLM 权重，只调策略输出格式**——这是 H2 硬约束（不引入神经网络权重微调）。奖励函数用 TB3 AlphaPareto 六维向量，regime gate 用 TB4 Thompson Sampling，漂移检测用 TB1 PSI。
 
-GRPO（Group Relative Policy Optimization）选择理由：无 critic、训练快、零 GPU、金融友好（Alpha-R1 arXiv 2507 验证市场客观反馈可替代人类偏好）。
+GRPO（Group Relative Policy Optimization）选择理由：无 critic、训练快、零 GPU、金融友好（Alpha-R1 arXiv 2512.23515 验证市场客观反馈可替代人类偏好；编号 2026-11-03 复核，原 2507 有误）。
 
 ### 5.2 位置
 
@@ -976,7 +988,7 @@ class GRPOEvolutionLoop:
         """评估某个策略配置的 Reward
         
         1. 用配置过滤 known_gaps / evidence_confidence
-        2. 用 TB3 AlphaPareto 算四维奖励
+        2. 用 TB3 AlphaPareto 算六维奖励
         3. 用 pareto_score 加权综合
         """
         # 应用策略配置过滤
@@ -1082,7 +1094,7 @@ TB1 PSI drift_detector ── 1 天 ──→ TDD 验收 6/6 passed
     ▼
 TB2 Beta verify 升级 ── 2 天 ──→ TDD 验收 6/6 passed + 零业务回归
     │
-    ├──→ TB3 AlphaPareto  ── 1 天 ──→ TDD 验收 5/5 passed
+    ├──→ TB3 AlphaPareto  ── 1 天 ──→ TDD 验收 6/6 passed
     │
     └──→ TB4 Thompson Sampling ── 1 天 ──→ TDD 验收 4/4 passed
     │
@@ -1103,10 +1115,10 @@ TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验�
 |---|---|---|---|---|
 | TB1 PSI | H8 阈值硬编码，无 env override | 6/6 | 不涉及 | 1ms |
 | TB2 Beta | H1 壳零感知，envelope schema 零变化 | 6/6 | 旧 verify 零回归 | 1μs |
-| TB3 AlphaPareto | — | 5/5 | 不涉及 | 10μs |
+| TB3 AlphaPareto | — | 6/6 | 不涉及 | 10μs |
 | TB4 Thompson | — | 4/4 | 不涉及 | 10μs |
 | TB5 GRPO | H2 无 .train()/.backward() + H4 FAIL-OPEN | 5/5 | 不涉及 | 50ms |
-| **全局** | H1/H2/H4/H8 全覆盖 | **26/26** | verify 零回归 | 零 GPU |
+| **全局** | H1/H2/H4/H8 全覆盖 | **27/27** | verify 零回归 | 零 GPU |
 
 ### 6.3 影子验证（与 AgentMail 影子合并）
 
@@ -1123,11 +1135,33 @@ TB5 GRPO loop ── 2 天 ──→ TDD 验收 5/5 passed + H2/H4 硬约束验�
 
 ---
 
+## §6.5 影子期校准协议（P5 修订，2026-11-03）
+
+**适用对象**（本文与关联 SPEC 中的初版拍定值）：
+
+| 参数 | 初值 | 位置 | 校准指标 |
+|---|---|---|---|
+| AlphaPareto 六维权重 | 0.25 / 0.20 / 0.20 / 0.15 / 0.12 / 0.08 | 本文 §3.3 `REWARD_WEIGHTS` | 影子期人机复核一致率 ≥ 0.8（高分/低分结论吻合） |
+| PSI 三档 | <0.1 稳定 / 0.1–0.25 轻微 / >0.25 严重 | 本文 §1、DOMAIN-AGENTS §4 | 对人工标注漂移事件的 ROC-AUC ≥ 0.75 |
+| H5 贝叶斯 VaR 阈值 | <0.3 拦截 / <0.5 降为建议 | DOMAIN-AGENTS §5.1 | 误拦截率 ≤ 5% 且漏拦截率 ≤ 10% |
+| V 函数 λ / 跨域加成 | λ=0.1 / +0.1 × refs | COMM-SHADOW §3 | 与人工排序 Spearman ρ ≥ 0.7 |
+
+**流程（离线校准，非运行期自调）**：
+
+1. 影子期（≥2 周且 ≥200 条 agent 结论）只观察不写回，原始数据落 `47-MCP管理系统/registry/calibration/shadow_YYYYMMDD.jsonl`
+2. 每两周产出校准报告 `registry/calibration/report_YYYYMMDD.md`（样本量 + 上表指标 + 建议新权值/阈值）
+3. 人工评审通过后，**改源码常量并补回归测试（一次提交）**；禁止运行期动态调整参数（H8 硬约束不变）
+4. 校准报告与代码 commit 双向链接，作为 V-S 系列影子判据之外的补充证据
+
+**门禁**：样本量 < 200 或指标未达标时，禁止改初值，只能延长影子期并记录原因。
+
+---
+
 ## §7 与演进路线的衔接
 
 | 演进阶段 | TRAIN-BASE 依赖 | TRAIN-BASE 产出给演进阶段 |
 |---|---|---|
 | ① MCP 壳层 | 壳层 envelope.data 业务体透传稳定（观察） | 零依赖 |
-| ② AGENT 域内 agent | TB1-TB5 是 Phase A-E 的前置 | TB1 PSI → 评测 OOD；TB2 Beta → 贝叶斯 VaR；TB3 四维奖励 → 所有 agent 训练评估；TB4 regime gate → REA/周期神经网络；TB5 GRPO → agent 自进化 |
+| ② AGENT 域内 agent | TB1-TB5 是 Phase A-E 的前置 | TB1 PSI → 评测 OOD；TB2 Beta → 贝叶斯 VaR；TB3 六维奖励 → 所有 agent 训练评估；TB4 regime gate → REA/周期神经网络；TB5 PolicySelectLoop → agent 自进化 |
 | ③ 单独算法训练 | — | TRAIN-BASE **就是单独算法训练的基础设施层** |
 | ④ 底层通信升级 | AgentMail 影子需要 TB1 PSI 做跨域交互轨迹的漂移评估 | TB1 PSI + TB3 pareto_score → 跨域通信 V 函数的 components |

@@ -251,6 +251,8 @@ def V_communication(trajectories: list[dict], policy: dict) -> float:
     return normalized_quality / normalized_cost - parallelism_penalty
 ```
 
+> **初值状态（P5 修订，2026-11-03）**：`+0.1 × cross_domain_refs` 与 `λ=0.1` 均为初版拍定值，校准协议见 TRAIN-BASE v0.1 §6.5（影子期 ≥200 条结论后离线校准，人工评审通过后改常量，禁止运行期自调）。
+
 ---
 
 ## §5 影子硬约束（S1/S2/S3，H9 已记录）

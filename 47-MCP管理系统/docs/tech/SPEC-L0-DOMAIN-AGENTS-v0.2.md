@@ -20,7 +20,7 @@
 |---|---|---|---|
 | **学习范式**（Algorithm） | Agent 用什么算法从经验里"学"？ | ✅ 贝叶斯置信度更新 + EWMA 衰减 + 幂律遗忘 + PoE 证据链 | ⚠️ 缺 GRPO 轻量 RL 进化 + Thompson Sampling regime gate |
 | **数据底座**（Infrastructure） | Agent "从哪里学"、"学完存哪"？ | ✅ Replay Buffer + 贝叶斯在线学习 S 层 + CUSUM/EWMA 漂移检测 + DynamicDistillEngine | ⚠️ 缺 PSI 漂移监控（小团队友好型，20 行代码）+ Beta 分布完整 verify |
-| **治理约束**（Governance） | Agent "学歪了"谁来拦？ | ✅ Mandate 写门控 + FAIL-OPEN + trace_id 全链路 | ⚠️ 缺贝叶斯 VaR 验收（实盘风控域）+ AlphaPareto 四维奖励多目标权衡 |
+| **治理约束**（Governance） | Agent "学歪了"谁来拦？ | ✅ Mandate 写门控 + FAIL-OPEN + trace_id 全链路 | ⚠️ 缺贝叶斯 VaR 验收（实盘风控域）+ AlphaPareto 六维奖励多目标权衡 |
 
 ### 1.2 MCP 壳完成了什么、没完成什么
 
@@ -85,15 +85,18 @@ REA 33 展示了成熟范式：壳只暴露 `rea_analyze / rea_trace / rea_compa
 | EvolveR 自蒸馏闭环（v0.2 新增） | 高评分 PoE 结论 → 蒸馏成"策略原则" → 存入记忆库 → 下次做梦器检索 | 直接复用 DynamicDistillEngine + 记忆库 + recall 三件套 | 零改；调 cognitive record |
 | 主动 recall 优化 | 根据调用方角色（researcher/engineer/verifier）调 recall 策略 + PSI 漂移调整排序 | 壳 role scope 声明 → agent 消费 | 壳 role scope 声明 |
 
-**GRPO 奖励函数定义**（AlphaPareto 四维向量，§评估 §4.1）：
-```python
-Reward = tuple([
-    alpha  * P_verify_success,      # 维度 1：验证成功率
-    beta   * P_recall_hit,          # 维度 2：检索命中率
-    gamma  * (1 - psi_drift),       # 维度 3：PSI 稳定性（漂移越小奖励越高）
-    delta  * citation_diversity,    # 维度 4：证据多样性（PoE known_gaps 越少奖励越低）
-])
-```
+**GRPO 奖励函数定义**（AlphaPareto 六维；维度与权重唯一事实源 = TRAIN-BASE v0.1 §3.3，本文只引用不重复定义）：
+
+| 维度 | 分量 | 初版权重（影子期校准见 TRAIN-BASE §6.5） |
+|---|---|---|
+| 1 | P_verify_success（TB2 Beta mean） | 0.25 |
+| 2 | P_recall_hit | 0.20 |
+| 3 | psi_stability = 1 − PSI | 0.20 |
+| 4 | citation_diversity | 0.15 |
+| 5 | process_reward（B2 新增） | 0.12 |
+| 6 | transition_smoothness（B2 新增） | 0.08 |
+
+六维权重和 = 1.0；实现以 `training_reward.py`（计划新增）为准，本文不维护第二份权重。PSI 三档与 H5 贝叶斯 VaR 阈值同样纳入 TRAIN-BASE §6.5 校准表。
 
 **PSI 实现（20 行 Python，§评估 §4.1）**：
 ```python
@@ -133,7 +136,7 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
 | 增量 | 训练算法 | 说明 | 壳侧改动 |
 |---|---|---|---|
 | PSI OOD 漂移检测（v0.2 新增） | 评测输入集 vs 历史基线的 PSI 值 → PSI > 0.25 触发自动 retrain 建议 | 全域复用 `drift_detector.py`（认知域已有） | 壳薄包，agent 在壳内 |
-| AlphaPareto 四维奖励（v0.2 新增） | `Reward = (P_verify_success, P_recall_hit, psi_stability, citation_diversity)` | 沿 Pareto 前沿优化，无需手动权重（§评估 §2.3） | 零改 |
+| AlphaPareto 六维奖励（v0.2 新增） | `Reward = (P_verify_success, P_recall_hit, psi_stability, citation_diversity)` | 沿 Pareto 前沿优化，无需手动权重（§评估 §2.3） | 零改 |
 | 贝叶斯 VaR 回测（v0.2 新增） | verify 置信度分布 → Agent 决策 VaR → 置信度 < 0.3 拦截、< 0.5 降为建议 | SR 11-7 对齐（§评估 §2.5） | 零改；agent 内部验收 gate |
 | OOD 漂移自动告警 | 测试集分布偏移 → 主动通知沉淀 | PSI 接入后自然实现 | 零改 |
 | verify 闭环 | 评测 verdict → cognitive verify（质量评分高 → 升级记忆） | SPEC ALIGNMENT §七 | 调 cognitive verify |
@@ -198,7 +201,7 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
   │  │  ─────────────────────────────────────────────────────────────────────────── │       │
   │  │  PSI drift_detector.py（20 行，全域复用）                                      │       │
   │  │  Beta 分布 verify 升级（`cognitive_interfaces.py`）                            │       │
-  │  │  AlphaPareto 四维奖励定义（认知/评测共用）                                     │       │
+  │  │  AlphaPareto 六维奖励定义（认知/评测共用）                                     │       │
   │  │  GRPO 轻量 RL loop 原型（冻结权重，只调输出格式）                              │       │
   │  │  Thompson Sampling regime gate 原型                                           │       │
   │  └─────────────────────────────────────────────────────────────────────────────┘       │
@@ -219,7 +222,7 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
 |---|---|---|---|---|
 | PSI drift_detector.py | `4-MEMORY/9-工具与接口/` 新增 | ~50 行 | 零 GPU，O(N) 毫秒级 | 无 |
 | Beta 分布 verify 升级 | `cognitive_interfaces.py` 修改 | ~80 行 | 零 GPU，O(1) 纳秒级 | 无 |
-| AlphaPareto 四维奖励定义 | agent 内部常量文件 | ~20 行 | 零 GPU，O(1) | 无 |
+| AlphaPareto 六维奖励定义 | agent 内部常量文件 | ~20 行 | 零 GPU，O(1) | 无 |
 | GRPO 轻量 RL loop 原型 | agent 内部 loop | ~150 行 | 零 GPU，冻结权重，秒级/轮 | Beta verify + AlphaPareto |
 | Thompson Sampling regime gate 原型 | `40-周期神经网络` 接入 | ~60 行 | 零 GPU，O(K) 微秒级 | PSI drift_detector |
 
@@ -283,13 +286,15 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
 |---|---|---|---|
 | PSI 漂移监控 | O(N) 直方图对比，毫秒级 | Python 原生 numpy，零依赖 | `4-MEMORY/9-工具与接口/drift_detector.py` |
 | Beta 分布 verify 升级 | O(1) 分布更新，纳秒级 | `math.beta_inv` 函数，零依赖 | `cognitive_interfaces.py` |
-| AlphaPareto 四维奖励 | O(1) 向量计算 | Python 原生 tuple | agent 内部常量文件 |
+| AlphaPareto 六维奖励 | O(1) 向量计算 | Python 原生 tuple | agent 内部常量文件 |
 | GRPO 轻量 RL loop | O(K) K=策略数 × 迭代次数，秒级 | 冻结 LLM 权重，只调策略输出格式（JSON 字段 reorder / known_gaps 调整） | agent 内部 loop |
 | 贝叶斯 VaR 回测 | O(N) verify 历史 × 正态分布 CDF | `scipy.stats.norm.cdf`，秒级 | 45 验收 gate |
 | Thompson Sampling | O(K) Beta 分布采样，微秒级 | `random.betavariate`，零依赖 | 40-周期神经网络接入 |
 | EvolveR 自蒸馏 | 等价 DynamicDistillEngine ✅ 已落地 | 现有蒸馏引擎 | `cognitive_loop_entry.py` |
 
 **结论**：零 GPU、单 CPU 4C16G 全环节可跑。所有训练算法都是"贝叶斯 + 统计检验 + 策略格式调优"，不涉及梯度下降/神经网络权重更新。
+
+> **代码落点状态（P6 复核，2026-11-03）**：`drift_detector.py` / `training_reward.py` / `regime_gate.py` / `grpo_evolution.py` 均为**计划新增**——实测 `4-MEMORY/9-工具与接口/` 下仅存在 `cognitive_loop_entry.py` / `cognitive_interfaces.py`。本 v0.2 只定义契约，不代表已落地。
 
 ---
 
@@ -306,10 +311,10 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
 | PoE 证据链 | ❌ | ✅ Evidence-First |
 | 做梦器假设探索 | ❌ | ✅ REA investigation_workflow |
 | 反思自批判 | ❌ | ✅ REA reflection + L4 ReflectionNode |
-| PSI 漂移监控 | ❌ | ✅ drift_detector.py（v0.2 新增） |
+| PSI 漂移监控 | ❌ | ✅ drift_detector.py（v0.2 引入，计划新增） |
 | GRPO 轻量 RL 进化 | ❌ | ✅ 冻结权重，调策略格式（v0.2 新增） |
 | Thompson Sampling regime gate | ❌ | ✅ 美林时钟四段 arm（v0.2 新增） |
-| AlphaPareto 四维奖励 | ❌ | ✅ verify_success / recall_hit / psi_stability / citation_diversity（v0.2 新增） |
+| AlphaPareto 六维奖励 | ❌ | ✅ verify_success / recall_hit / psi_stability / citation_diversity / process_reward / transition_smoothness（v0.2 新增） |
 | EvolveR 自蒸馏闭环 | ❌ | ✅ 蒸馏 → 原则库 → 检索 → RL 进化（v0.2 新增） |
 | 贝叶斯 VaR 回测 | ❌ | ✅ SR 11-7 对齐（v0.2 新增） |
 | 主动沉淀广义认知 | ❌ | ✅ REA cognitive_integration |
@@ -322,13 +327,15 @@ def psi(expected: list[float], actual: list[float], bins=10) -> float:
 
 | 编号 | 论文 | 我们的映射 |
 |---|---|---|
-| 1 | Alpha-R1 (arXiv 2507) GRPO + 市场反馈 RLHF | GRPO 奖励函数接 verify 评分 |
-| 2 | EvolveR (arXiv 2505) 自蒸馏→原则库→检索→RL | 直接映射记忆库 + 蒸馏引擎 |
-| 3 | AlphaPareto (arXiv 2504) 四维向量奖励 + MAP | 四维奖励定义 |
-| 4 | ADTS (arXiv 2502) Thompson Sampling regime gate | 美林时钟四段 arm |
+| 1 | Alpha-R1 (arXiv 2512.23515) GRPO + 市场反馈 RLHF | GRPO 奖励函数接 verify 评分 |
+| 2 | EvolveR (arXiv 2510.16079) 自蒸馏→原则库→检索→RL | 直接映射记忆库 + 蒸馏引擎 |
+| 3 | AlphaPareto (arXiv 2609.34188) 六维向量奖励 + MAP | 六维奖励定义 |
+| 4 | ADTS（**arXiv 编号待验证**）Thompson Sampling regime gate | 美林时钟四段 arm |
 | 5 | DeepSeek Super-agent (dsh-superagent-prototype) | 架构对标 |
 | 6 | ACT-R 激活-延迟-效用 | recall 排序升级参考 |
 | 7 | Friston 预测编码自由能原理 | 预测误差门控理论基础 |
 | 8 | EU AI Act 2026.8 | 合规框架 |
 | 9 | MAS SAFR Agent 运行时治理 | Safeguard + Filter + Audit + Recourse 四件套 |
 | 10 | SR 11-7 贝叶斯 VaR 回测 | 实盘风控验收 |
+
+> **引用核验声明（P4 修订，2026-11-03）**：1-3 的 arXiv 编号已本地联网复核并更正（原 2507/2505/2504 有误）；SR 11-7 为美联储监管指引（非论文）；4 的 ADTS 未检索到对应论文，标注待验证；其余条目为内部评估报告引用，未逐条核对。
