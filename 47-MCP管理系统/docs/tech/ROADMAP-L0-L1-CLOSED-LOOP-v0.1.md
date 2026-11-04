@@ -1,6 +1,6 @@
 # 演进路线排期总览 v0.1
 
-> 日期：2026-11-03
+> **版本**: v0.1 ｜ **更新日期**: 2026-11-03
 > 用途：三端对齐审查 / 每日站会参考 / 阻塞项跟踪
 > 前置：四 SPEC 补入三问评估完成（COMM-SHADOW §5.6 + TRAIN-BASE TB3 第七维 + DOMAIN-AGENTS Dream-RSI alpha + DOMAIN-DISCOVERY §4.5 沙箱）
 

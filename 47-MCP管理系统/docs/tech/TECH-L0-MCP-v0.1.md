@@ -1,6 +1,6 @@
 # TECH:L0 六域 MCP 封装 — 实现手册 v0.1
 
-> **版本**: v0.1 ｜ **日期**: 2026-11-03 ｜ **状态**: ✅ M1-M4 全部落地（2026-11-03 收尾验证通过：6 壳 24 工具真实拉起 + 统一信封校验 6/6 + 契约测试 22/22 全绿）
+> **版本**: v0.1 ｜ **更新日期**: 2026-11-04 ｜ **状态**: ✅ M1-M4 全部落地 + D1/D2 已落（2026-11-04 复核：6 壳 24 工具真实拉起、统一信封 6/6、契约测试全绿、L0 测试 EXIT=0、四联门禁注册表 7 存量壳 / 24 工具通过）
 > **上游**: [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（契约）· [PLAN-L0-MCP-P0-P3 v0.1](./PLAN-L0-MCP-P0-P3-v0.1.md)（路线）· [ALIGNMENT-46-47 v1.0](./ALIGNMENT-46-47-v1.0.md)（决议）
 > **读者**: M2/M3/M4 壳开发者 · 云端运维 · DSH Worker 消费方 · 壳后域内 agent 化 SPEC 作者
 > **边界**: 本手册覆盖 **M1-M4 全部落地**（注册表 v1 / 信封映射层 / 基线脚本 / 校验器 / 认知壳 6 工具 / 39 壳 4 工具 / 数据壳 / 评测壳 / REA 壳 / 库管壳）。M2/M3/M4 壳实现细节见各壳 server.py 与契约测试。
@@ -46,6 +46,8 @@ SPEC 回答"**为什么这样设计、契约长什么样**"，PLAN 回答"**M1�
 | **壳** | 纯协议转换层（stdin/stdout JSON-RPC → port 函数调用） | 不含业务逻辑、不训练模型、不新建 port |
 | **adapter** | 壳内的三段之一：把 port 返回包信封、把 MCP 入参解包成 port 入参 | 不是独立模块、不做持久化 |
 | **域内 agent** | 门后自治推理（壳上线之外的私有可迭代层） | 壳零感知、壳不路由到 agent |
+
+> **D1 补充（2026-11-04）**：六 port Protocol 之外新增 [principal.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/dreambuddy_l0/ports/principal.py)（75 行）——`PrincipalMissingError` + `require_principal` 装饰器，对写类 port 方法做 fail-closed 身份硬门禁。它是**写门禁装饰器，不是第 7 个 Protocol**，不计入六 port 上限。
 
 ### 1.2 壳不算 port 上限
 
@@ -496,16 +498,24 @@ SPEC DA1：壳进程按需拉起即退，job 状态必须落持久层——评�
 - 云端 venv = `/home/luke/venv-trading/bin/python3` 3.12.3
 - PYTHONPATH = `/home/luke/dreambuddy`（壳 import 依赖）
 
-### 10.1 云端现状审计（2026-11-03 审计快照）
+### 10.1 云端现状审计（2026-11-04 审计快照）
 
-**HEAD 对齐**：本地 / GitHub `yunya1991/Dreambuddy-V2` / 云端 VM-0-5-ubuntu → `e236bb1a` 三端严格一致
+**HEAD 对齐**：本地 / GitHub `yunya1991/Dreambuddy-V2` / 云端 VM-0-5-ubuntu → `789f26e4b5` 三端严格一致（2026-11-04 完成双端分叉对齐：云端 `24f9564a`（D1/D2 port Principal 硬门禁）+ `045abbfb9a`（文档标注）已 rebase 进本地主线）
 
 **四联门禁**（云端实测）：
 ```
-✅ 注册表 OK — 4 存量壳 + 3 规划壳 / 24 active 工具 / 上限 40
+✅ 注册表 OK — 7 存量壳 + 0 规划壳 / 24 active 工具 / 上限 40
 ✅ 能力集 OK — 3 角色 / 25 引用 / 14 唯一工具 / 交叉引用已对齐 47 registry
 OK: 能力声明与实现一致（五能力 / port / provides.impl 无漂移）
 OK: 白名单外无新增直连（C10 门禁）
+```
+
+**云端运行日志**（2026-11-04 实采）：
+```
+shadow-driver.timer   每 10min（20:06 / 20:16 / 20:26 三轮，4 壳 9 调用，degraded=1: data_store_read=unavailable）
+ablation-loop.timer   每 6h（18:11:51→18:12:37，18981 条轨迹，f2_pass=true / f1_pass=false，n=4455）
+PROMOTION_STATE       stage=S1_READY（skipped: ablation_not_passed）
+L0 测试               pytest mcp_shells dreambuddy_l0 → EXIT=0 全绿
 ```
 
 **注册表 vs 代码落地**（md5 全一致，本地↔云端逐文件比对）：
@@ -514,11 +524,12 @@ OK: 白名单外无新增直连（C10 门禁）
 |---|---|---|---|---|---|
 | l0.cognition.mcp（recall/record/verify/stats/health/unified_search） | available | ✅ `4-MEMORY/.../cognitive_mcp_server.py` | ✅ 同路径 | 897 | f2185e1f |
 | l0.semantic-39.mcp（query_entity/semantic_lookup/distill_aliases/training_feed） | available | ✅ `39-.../scripts/mcp_server.py` | ✅ 同路径 | 278 | — |
-| l0.rea.mcp（submit/poll × analyze/trace/compare） | available | ✅ `mcp_shells/l0_rea/server.py` | ✅ 同路径 | 284 | d6c54356 |
+| l0.rea.mcp（submit/poll × analyze/trace/compare） | available | ✅ `mcp_shells/l0_rea/server.py` | ✅ 同路径 | 292 | 789490d2 |
 | l0.rea-client.mcp（npm 133 工具占位） | **deprecated** | ❌ 已废弃 | ❌ 已废弃 | — | — |
-| l0.data.mcp（data_fetch/collect_once/store_read/store_write） | available | ✅ `mcp_shells/l0_data/server.py` | ✅ 同路径 | 309 | 8237a76a |
-| l0.eval.mcp（eval_analyze/eval_report） | available | ✅ `mcp_shells/l0_eval/server.py` | ✅ 同路径 | 187 | — |
-| l0.store-admin.mcp（store_admin_status/store_admin_query） | available | ✅ `mcp_shells/l0_store_admin/server.py` | ✅ 同路径 | 224 | — |
+| l0.data.mcp（data_fetch/collect_once/store_read/store_write） | available | ✅ `mcp_shells/l0_data/server.py` | ✅ 同路径 | 318 | 88f21820 |
+| l0.eval.mcp（eval_analyze/eval_report） | available | ✅ `mcp_shells/l0_eval/server.py` | ✅ 同路径 | 196 | bd68ed17 |
+| l0.store-admin.mcp（store_admin_status/store_admin_query） | available | ✅ `mcp_shells/l0_store_admin/server.py` | ✅ 同路径 | 233 | 8c9f3b93 |
+| dreambuddy_l0/ports/principal.py（D1 写门禁，非 Protocol） | — | ✅ | ✅ | 75 | 116a82f5 |
 | _shared/envelope_wrap.py | — | ✅ | ✅ | 109 | 503de28f |
 | mcp_capabilities.yaml schema 1.1-mcp | — | ✅ | ✅ | 296 | 95b77777 |
 

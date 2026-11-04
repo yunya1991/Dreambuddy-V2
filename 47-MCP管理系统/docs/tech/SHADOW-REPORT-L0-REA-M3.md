@@ -1,6 +1,6 @@
 # SHADOW-REPORT-L0-REA — M3⑨ REA shadow 双跑窗口报告
 
-- **日期**: 2026-11-02
+- **版本**: v0.1 ｜ **更新日期**: 2026-11-02
 - **壳**: mcp_shells/l0_rea/server.py（REA_MCP_SHADOW=1）
 - **依据**: PLAN-L0-MCP-P0-P3-v0.1 M3⑨ ｜ SPEC-L0-MCP-PACKAGING §3.2
 - **双跑窗口**: 单次窗口，三工具各 1 job（analyze / trace / compare）

@@ -1,6 +1,6 @@
 # SPEC-L0-L1-DOMAIN-DISCOVERY v0.1
 
-> 日期：2026-11-03
+> **版本**: v0.1 ｜ **更新日期**: 2026-11-04
 > 来源：用户洞察 + 本地 L1 模型资产盘点 + 2026-11-03 闭环评估报告
 > 状态：设计完成，**不阻塞 M1-M4 壳落地**，COMM-SHADOW Phase 1 前启动编码
 > 上游：TRAIT-BASE TB1-TB5（标注数据生产）、40-周期系统 sector_transmission.json（传导图架构）
