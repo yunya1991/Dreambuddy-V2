@@ -29,8 +29,8 @@
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
-| [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E1-E4 实施路径 | 🟡 v0.1 初稿，待调研回填 §7 |
-| docs/tech/research/ | LLM 涌现做法 + 生物学/复杂系统原理调研 | ⏳ 进行中 |
+| [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E1-E5 实施路径 | 🟡 v0.2：E-BIZ 北极星（§0.4）+ 调研回填（§7），Phase 未开工 |
+| docs/tech/research/ | [LLM 涌现调研](./docs/tech/research/RESEARCH-LLM-EMERGENCE-v0.1.md) + [生物学原理调研](./docs/tech/research/RESEARCH-BIO-EMERGENCE-v0.1.md) | ✅ v0.1 完成（60+ 来源） |
 | experiments/ | 可复现实验记录（反事实验证、广播联动观测） | ⬜ 未开始 |
 | metrics/ | emergence_metrics.json 历史快照 | ⬜ 未开始 |
 
