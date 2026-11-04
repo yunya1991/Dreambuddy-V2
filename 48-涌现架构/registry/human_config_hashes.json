@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-11-05T00:00:00+08:00",
+  "purpose": "SPEC-EMERGENCE-EVOLUTION §1 E2 判据口径基线：人工配置结构向量 hash 集。生成物结构向量不在本集且编辑距离>=k(=2) 才计为「人未写过」",
+  "struct_vector_spec": {
+    "fields": [
+      "switches_bitmask: 8 个核心 enable flag 位掩码（顺序固定见 switch_order）",
+      "bdsm_flags: [independent_open, direction_overlay, short_trial, war_state_check] 4 位",
+      "env_flags: [bcrm_direction_state_check, strategy_independent_open, rag_hotpath, rag_feedback, case_distill, tee] 6 位",
+      "phase_flags: [mode_switch, ev_radar, multi_horizon, ranked_tp, regime_macro_s5] 5 位",
+      "threshold_bins: [confidence 按 0.05 分箱, max_positions 整数, position_pct×100 整数, interval 秒/60 整数]",
+      "coins_hash: 18 标的排序后 sha256 前 16 位"
+    ],
+    "edit_distance": "位掩码汉明距离 + threshold_bins 曼哈顿距离 + coins_hash 不等则 +2；k=2",
+    "switch_order": ["cbr_cycle_log", "elder_ray_c4", "win_prob_factor", "three_layer_weighter", "elastic_gate_3l", "bcrm_continuity_obs", "btc_self_reflex_valve", "portfolio_risk_fuses"]
+  },
+  "human_configs": [
+    {
+      "id": "cloud_live_polling_trader_2026-11-05",
+      "source": "/etc/systemd/system/yijing-polling-trader.service @ 43.160.201.117（云端实盘权威配置）",
+      "code_defaults": "11-易经推理系统/scripts/memory_l4/polling_trader.py L776-789/L943-982/L1192-1195",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [16, 5, 20, 5],
+        "coins": ["AMZN", "BNB", "BTC", "ETH", "GOOGL", "HYPE", "LINK", "MU", "NVDA", "OKB", "PUMP", "SKHYNIX", "SNDK", "SOL", "SPCX", "UNI", "XAG", "XAU"],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "raw_params": {
+        "interval": 300, "confidence": 0.7955, "max_positions": 5, "position_pct": 0.20,
+        "bdsm_short_trial_cloud_override": "ENABLE_BDSM_SHORT_TRIAL=1（代码默认 0，云端 Environment 覆盖）",
+        "boost_env": ["ODAILY_ENGINE_BOOST=1", "FUND_7ENGINES_BOOST=1"]
+      },
+      "notes": "代码默认与云端差异仅 BDSM_SHORT_TRIAL 一处；其余开关取代码默认即实盘值"
+    }
+  ],
+  "known_gaps": [
+    "washout/washout_reversal/pump_dump_reversal 三场景策略参数未纳入本版本（属子策略空间，E0 后续扩充）",
+    "BDSM/BCRM 子系统内部阈值参数（非开关级）未纳入位掩码，后续作为 threshold_bins 扩展"
+  ]
+}
