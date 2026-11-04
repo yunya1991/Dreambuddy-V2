@@ -199,6 +199,7 @@
 | **★ Jev 决策模型接入辩论** | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） **v1.1** | ✅ 已落地 | C质量门控+B评审校验+A补充评分+D DPO偏好，43 tests GREEN |
 | **★ 44-三端协作架构系统** | [44-三端协作架构系统/README.md](../44-三端协作架构系统/README.md) | ✅ README + docs/tech 8 份 SPEC | 本地评审 / GitHub 存证 / 云端运行三端协同；L0 契约测试在 `shared/tests/` |
 | **★ 47-MCP管理系统** | [47-MCP管理系统/README.md](../47-MCP管理系统/README.md) · [docs/tech/](../47-MCP管理系统/docs/tech/) | ✅ README + docs/tech 11 份（4 SPEC + TECH v0.1.1 + ROADMAP + PLAN + REVIEW + SHADOW + ALIGNMENT） | L0 六域 MCP 封装 + 训练基座（TB1-TB5，48/48 TDD）+ 域内 agent 路线；契约注册表在 `registry/`，壳在 `mcp_shells/` |
+| **★ 48-涌现架构** | [48-涌现架构/README.md](../48-涌现架构/README.md) | 🟡 README + SPEC-EMERGENCE-EVOLUTION v0.1（初稿） | 智能涌现研究/度量/实验域：E1-E5 可证伪判据 + Phase E1-E4 路径；不动 35/46/47 既有定义与门禁 |
 | **★ L0 三层目标架构（SPEC-C）** | [44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md](../44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) **v0.4** | ✅ C1-C13 已落地（G0 全关闭） | L0-P 封装 / L0-I 互联 / L0-S 调度；C10 gated、C11 检索触发、C12 health 聚合、C13 只读旁路；契约测试入 `l0-contracts` 阻断 job |
 | **★ L0 公共门面代码** | [dreambuddy_l0/](../dreambuddy_l0/) | ✅ 六 port + 六 fake + adapters | 新代码唯一入口：`ports/`（Protocol）+ `fakes/` + `adapters/`（jsonl/cognitive）+ `scheduling/`（registry/windows/job_runs/event_bridge/trigger/health/sidecar）+ `search/` |
 
