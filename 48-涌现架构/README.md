@@ -29,7 +29,7 @@
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
-| [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E1-E6 实施路径 | 🟡 v0.2：三类涌现定义（§0.4：A 机制/B 价值/C 需求驱动）+ 调研回填（§7），Phase 未开工 |
+| [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E0-E6 实施路径 | 🟡 v0.3：评审后修订（25/30 修改后接受），Phase E0-E6 未开工；E0 人工基线最先行 |
 | docs/tech/research/ | [LLM 涌现调研](./docs/tech/research/RESEARCH-LLM-EMERGENCE-v0.1.md) + [生物学原理调研](./docs/tech/research/RESEARCH-BIO-EMERGENCE-v0.1.md) | ✅ v0.1 完成（60+ 来源） |
 | experiments/ | 可复现实验记录（反事实验证、广播联动观测） | ⬜ 未开始 |
 | metrics/ | emergence_metrics.json 历史快照 | ⬜ 未开始 |
