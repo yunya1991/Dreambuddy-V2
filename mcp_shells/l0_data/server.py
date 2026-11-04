@@ -37,6 +37,36 @@ SHELL_SOURCE = "l0.data.mcp"
 # 写面 Ban 开关（SPEC §3.3：写工具默认禁用；宿主 Mandate 经 env 授权）
 _WRITE_ENABLED = os.environ.get("L0_DATA_WRITE_ENABLED", "0") == "1"
 
+# DAL 显式路径声明（与 l0_store_admin 一致；中文目录名无法直接 import）
+_DAL_ROOT = _REPO_ROOT / "19-数据访问层"
+
+# data_store_read 表白名单（禁任意表，仅映射 DAL repo 方法）
+_MM_TABLE = "mm_metrics"
+
+
+def _get_market_macro_repo():
+    """惰性加载 sqlite_unified MarketMacroRepository；失败返回 None（FAIL-OPEN）。
+
+    为什么绕过 di 工厂：di 默认 backend=json_legacy（迁移过渡后端），
+    mm_metrics 只存在于 sqlite_unified 单库（18-数据获取中心 sink 写入的 SSoT）。
+    走 di 会得到 legacy 的"假空"结果，掩盖链路真相。
+    壳不改写 DB_BACKEND（SPEC §3.5 硬约束），而是显式绑定本表所在的实现类。
+    DAL_DB_PATH 未显式配置时指向 DAL 自带数据目录；env 已设则尊重不动。
+    """
+    if str(_DAL_ROOT) not in sys.path:
+        sys.path.insert(0, str(_DAL_ROOT))
+    db_path = os.environ.get("DAL_DB_PATH") or str(_DAL_ROOT / "data" / "dreambuddy_core.db")
+    try:
+        from dreambuddy_dal.implementations.sqlite_unified import (
+            SqliteMarketMacroRepository,
+        )
+    except Exception:
+        return None
+    try:
+        return SqliteMarketMacroRepository(db_path)
+    except Exception:
+        return None
+
 
 def _get_l0():
     from dreambuddy_l0.facade import get_l0
@@ -102,8 +132,14 @@ def _handle_data_collect_once(args: Dict[str, Any]) -> str:
 
 
 def _handle_data_store_read(args: Dict[str, Any]) -> str:
-    """Store 语义：只读查询（经 DAL Repository 协议，禁裸 SQL）。"""
-    table = args.get("table", "")
+    """Store 语义：只读查询（经 DAL MarketMacroRepository，表白名单，禁裸 SQL）。
+
+    支持表：mm_metrics
+      filters 含 sub_category+metric_name+start_ts+end_ts → query_metric_by_time
+      filters 含 sub_category+metric_name（无时间窗）      → query_latest_metric
+      缺 sub_category/metric_name → invalid（防全表扫描）
+    """
+    table = str(args.get("table", "") or "").strip()
     if not table:
         return json.dumps(
             wrap(
@@ -115,30 +151,89 @@ def _handle_data_store_read(args: Dict[str, Any]) -> str:
             ),
             ensure_ascii=False,
         )
-    filters = args.get("filters") or None
-    limit = min(int(args.get("limit", 100)), 100)
-    try:
-        from dreambuddy_dal.di import get_container
-
-        container = get_container()
-        # 只读查询经 Repository 协议（DAL 方言能力集声明），壳不感知后端
-        repo = getattr(container, "query_repo", None) or getattr(container, "read_repo", None)
-        if repo is None:
-            return json.dumps(
-                wrap(
-                    None,
-                    SHELL_SOURCE,
-                    degraded=True,
-                    error_code="unavailable",
-                    meta={"reason": "no read repository available in DAL container"},
-                ),
-                ensure_ascii=False,
-            )
-        result = (
-            repo.query(table, filters=filters, limit=limit)
-            if hasattr(repo, "query")
-            else {"rows": []}
+    if table != _MM_TABLE:
+        return json.dumps(
+            wrap(
+                None,
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"reason": f"unsupported table: {table!r} (whitelist: {_MM_TABLE})"},
+            ),
+            ensure_ascii=False,
         )
+    filters = args.get("filters") if isinstance(args.get("filters"), dict) else {}
+    sub_category = str(filters.get("sub_category") or "").strip()
+    metric_name = str(filters.get("metric_name") or "").strip()
+    if not sub_category or not metric_name:
+        return json.dumps(
+            wrap(
+                None,
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"reason": "filters.sub_category and filters.metric_name are required"},
+            ),
+            ensure_ascii=False,
+        )
+    start_ts = filters.get("start_ts")
+    end_ts = filters.get("end_ts")
+    limit = min(int(args.get("limit", 100)), 100)
+    repo = _get_market_macro_repo()
+    if repo is None:
+        return json.dumps(
+            wrap(
+                None,
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="unavailable",
+                meta={"reason": "dal market_macro repo unavailable"},
+            ),
+            ensure_ascii=False,
+        )
+    try:
+        from datetime import datetime, timezone
+
+        if start_ts is not None and end_ts is not None:
+            s_dt = datetime.fromtimestamp(int(start_ts), tz=timezone.utc)
+            e_dt = datetime.fromtimestamp(int(end_ts), tz=timezone.utc)
+            res = repo.query_metric_by_time(sub_category, metric_name, s_dt, e_dt)
+            # List[Tuple[source, metric_name, value, datetime]]
+            rows = [
+                {
+                    "source": r[0],
+                    "metric_name": r[1],
+                    "metric_value": r[2],
+                    "timestamp": int(r[3].timestamp()) if hasattr(r[3], "timestamp") else r[3],
+                }
+                for r in (res or [])
+            ][:limit]
+            result = {
+                "rows": rows,
+                "table": table,
+                "sub_category": sub_category,
+                "metric_name": metric_name,
+            }
+        else:
+            res = repo.query_latest_metric(sub_category, metric_name)
+            # Tuple[source, value, datetime] | None
+            rows = []
+            if res is not None:
+                rows = [
+                    {
+                        "source": res[0],
+                        "metric_value": res[1],
+                        "timestamp": (
+                            int(res[2].timestamp()) if hasattr(res[2], "timestamp") else res[2]
+                        ),
+                    }
+                ]
+            result = {
+                "rows": rows,
+                "table": table,
+                "sub_category": sub_category,
+                "metric_name": metric_name,
+            }
         return json.dumps(wrap(result, SHELL_SOURCE), ensure_ascii=False)
     except Exception as e:
         return json.dumps(

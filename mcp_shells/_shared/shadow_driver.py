@@ -38,7 +38,17 @@ SHELL_CALLS: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {
         ("data_fetch", {"scope": "yijing.bcrm2"}),
         ("data_fetch", {"scope": "market.ticker", "params": {"symbol": "BTC-USDT-SWAP"}}),
         ("data_collect_once", {}),
-        ("data_store_read", {"table": "mm_metrics", "limit": 5}),
+        (
+            "data_store_read",
+            {
+                "table": "mm_metrics",
+                "filters": {
+                    "sub_category": "tether_current",
+                    "metric_name": "usdt_circulating_usd_bln",
+                },
+                "limit": 5,
+            },
+        ),
     ],
     "eval": [
         ("eval_report", {}),

@@ -47,8 +47,12 @@ _CASES = [
 ]
 
 
-def _call_tool(shell: str, name: str, arguments: dict) -> dict:
-    """拉起壳进程（env 带 MCP_TRACE_ID），返回解析后的统一信封。"""
+def _call_tool(shell: str, name: str, arguments: dict, store_path: Path) -> dict:
+    """拉起壳进程（env 带 MCP_TRACE_ID），返回解析后的统一信封。
+
+    AGENT_MAIL_SHADOW_STORE 指向测试临时路径，隔离 shadow store，
+    避免测试调用污染生产 trajectories.jsonl。
+    """
     server = _REPO_ROOT / "mcp_shells" / shell / "server.py"
     reqs = (
         json.dumps({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}})
@@ -64,6 +68,7 @@ def _call_tool(shell: str, name: str, arguments: dict) -> dict:
     )
     env = dict(os.environ)
     env["MCP_TRACE_ID"] = TRACE_ID
+    env["AGENT_MAIL_SHADOW_STORE"] = str(store_path)
     proc = subprocess.run(
         [sys.executable, str(server)],
         input=reqs,
@@ -85,9 +90,9 @@ def _call_tool(shell: str, name: str, arguments: dict) -> dict:
     _CASES,
     ids=[c[0] for c in _CASES],
 )
-def test_trace_id_passthrough(shell, source, tool, arguments):
+def test_trace_id_passthrough(shell, source, tool, arguments, tmp_path):
     """MCP_TRACE_ID 从宿主 env 贯穿到壳信封，且 source/version 与注册表一致。"""
-    env = _call_tool(shell, tool, arguments)
+    env = _call_tool(shell, tool, arguments, tmp_path / "traces.jsonl")
     assert env["trace_id"] == TRACE_ID
     assert env["source"] == source
     # 注册表 envelope_version 统一 0.1（V6 对齐实现）

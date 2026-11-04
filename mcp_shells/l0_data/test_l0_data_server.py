@@ -102,3 +102,47 @@ def test_data_store_read_requires_table():
     env = _call_tool("data_store_read", {})
     assert env["ok"] is False
     assert env["error_code"] == "invalid"
+
+
+def test_data_store_read_unsupported_table():
+    """表白名单：非 mm_metrics 的表明确 invalid（禁任意表查询）。"""
+    env = _call_tool("data_store_read", {"table": "tr_trades"})
+    assert env["ok"] is False
+    assert env["error_code"] == "invalid"
+    assert "whitelist" in json.dumps(env)
+
+
+def test_data_store_read_requires_metric_filters():
+    """mm_metrics 缺 sub_category/metric_name：invalid（防全表扫描）。"""
+    env = _call_tool("data_store_read", {"table": "mm_metrics", "limit": 5})
+    assert env["ok"] is False
+    assert env["error_code"] == "invalid"
+    assert "sub_category" in json.dumps(env)
+
+
+def test_data_store_read_dal_wired():
+    """DAL 接线验证：mm_metrics 合法 filters 不得再返回 import/get_container 类错误。
+
+    本地 19-数据访问层/data/dreambuddy_core.db 存在时应 ok=True；
+    DAL 或库不可用时允许 unavailable（FAIL-OPEN），但 reason 必须是
+    repo/查询层错误，而非 sys.path/API 层错误（回归历史根因）。
+    """
+    env = _call_tool(
+        "data_store_read",
+        {
+            "table": "mm_metrics",
+            "filters": {
+                "sub_category": "tether_current",
+                "metric_name": "usdt_circulating_usd_bln",
+            },
+            "limit": 5,
+        },
+    )
+    if env["ok"]:
+        assert isinstance(env["data"]["rows"], list)
+        assert env["data"]["table"] == "mm_metrics"
+    else:
+        assert env["error_code"] == "unavailable"
+        reason = json.dumps(env)
+        assert "No module named" not in reason
+        assert "get_container" not in reason
