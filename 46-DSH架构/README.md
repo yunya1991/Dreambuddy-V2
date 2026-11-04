@@ -17,7 +17,9 @@
         ├── SPEC-EVENT-DRIVEN-L1-GATEWAY.md        # 事件驱动 L1 网关 v0.2(待复核)
         ├── DESIGN-DSH-ARCH-UPGRADE-v0.2.md        # 域主线设计(决议落定)
         ├── ANALYSIS-L0-MCP-ENCAPSULATION.md       # MCP 化评估(归档,以 47 为准)
-        └── REPORT-L0-MCP-DSH-IMPACT-v1.1.md      # MCP 影响报告(归档,以 47 为准)
+        ├── REPORT-L0-MCP-DSH-IMPACT-v1.1.md      # MCP 影响报告(归档,以 47 为准)
+        ├── INVENTORY-EVENT-SOURCES-v0.1.md        # 事件源盘点清单(事件网关任务0前置)
+        └── G0-PROTOTYPE-CONTRACT-CHECK-v0.1.md    # dsh-superagent 契约核实清单(SACG_A G0 前置)
 ```
 
 ## 本域文档
@@ -31,6 +33,8 @@
 | [docs/tech/ANALYSIS-L0-MCP-ENCAPSULATION.md](docs/tech/ANALYSIS-L0-MCP-ENCAPSULATION.md)（📚 评估归档,实现以 47 为准） | 📚 已归档 | L0 能力 MCP 化评估(定位=对外出口,内部仍 in-process;六域分级) |
 | [docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md](docs/tech/DESIGN-DSH-ARCH-UPGRADE-v0.2.md) | ✅ v0.2 决议落定,可进 P0 | **域主线设计**:DSH 架构升级(七层目标架构 + 10 条 ADR + P0-P3 路径 + 7 红线) |
 | [docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.1.md](docs/tech/REPORT-L0-MCP-DSH-IMPACT-v1.1.md)（📚 评估归档,实现以 47 为准） | 📚 已归档(v1.1 勘误) | **正式报告**:L0 MCP 封装对 DSH 升级的影响评估与建议(六维矩阵+风险册+分阶段路线) |
+| [docs/tech/INVENTORY-EVENT-SOURCES-v0.1.md](docs/tech/INVENTORY-EVENT-SOURCES-v0.1.md) | 🟡 v0.1 初稿 | **P0 前置①**:事件源盘点(本地 launchd 27 项已实测/远端待复核);事件意图导出与 A5 回放集依据 |
+| [docs/tech/G0-PROTOTYPE-CONTRACT-CHECK-v0.1.md](docs/tech/G0-PROTOTYPE-CONTRACT-CHECK-v0.1.md) | 🟡 v0.1 初稿,**阻塞待原型** | **P0 前置②**:G0 契约核实清单(Mandate schema 8 项 + 上下文注入 hook 5 项);实测原型不在本地,待用户决策获取途径 |
 
 ## 相关文档(物理位置不动,避免断链;本表为导航)
 
