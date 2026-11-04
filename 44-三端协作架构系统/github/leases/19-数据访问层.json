@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "19-数据访问层",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-20261031-dal-freshdb",
+      "session": "local-fix-0017",
+      "base_sha": "0b1e73c0201990da39840ed4efd8e3bbc7a82120",
+      "started_at": "2026-10-31T00:17:07+08:00",
+      "ttl_hours": 24,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}

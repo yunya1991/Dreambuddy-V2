@@ -10,6 +10,7 @@ Protocol 字段 ↔ schema_init 真实列 的差异处理（在 __init__ 内 ALT
 | mm_long_short_ratio: long_account/short_account | long_accounts/short_accounts | 复数列名映射    |
 | 所有 Decimal 参数                           | REAL 列（schema_init 约定）| float(str(d)) 无损转换 |
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -75,25 +76,31 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
 
     # ------------------------------------------------------------------ 补列
     def _ensure_proto_columns(self) -> None:
-        """Protocol 需要但 schema_init 缺列，ALTER TABLE 幂等补。"""
+        """Protocol 需要但 schema_init 缺列，ALTER TABLE 幂等补。
+
+        G0-6：表不存在（全新库）时跳过，建表归 init_db_schema。
+        """
+        from .schema_init import _table_exists
+
         with get_sqlite_connection(self.db_path) as conn:
             # mm_open_interest 需要 sum_open_interest_value → 补 oi_sum_value REAL
-            cols_oi = {c[1] for c in conn.execute("PRAGMA table_info(mm_open_interest)").fetchall()}
-            if "oi_sum_value" not in cols_oi:
-                conn.execute(
-                    "ALTER TABLE mm_open_interest ADD COLUMN oi_sum_value REAL DEFAULT 0"
-                )
+            if _table_exists(conn, "mm_open_interest"):
+                cols_oi = {
+                    c[1] for c in conn.execute("PRAGMA table_info(mm_open_interest)").fetchall()
+                }
+                if "oi_sum_value" not in cols_oi:
+                    conn.execute(
+                        "ALTER TABLE mm_open_interest ADD COLUMN oi_sum_value REAL DEFAULT 0"
+                    )
             # mm_taker_volume 需要 buy_sell_volume_diff → 补 taker_vol_diff REAL
+            if not _table_exists(conn, "mm_taker_volume"):
+                return
             cols_tv = {c[1] for c in conn.execute("PRAGMA table_info(mm_taker_volume)").fetchall()}
             if "taker_vol_diff" not in cols_tv:
-                conn.execute(
-                    "ALTER TABLE mm_taker_volume ADD COLUMN taker_vol_diff REAL DEFAULT 0"
-                )
+                conn.execute("ALTER TABLE mm_taker_volume ADD COLUMN taker_vol_diff REAL DEFAULT 0")
 
     # ================================================================ 5.1 恐惧贪婪
-    def upsert_fear_greed(
-        self, value: int, value_classification: str, ts: datetime
-    ) -> bool:
+    def upsert_fear_greed(self, value: int, value_classification: str, ts: datetime) -> bool:
         unix = _to_unix_sec(ts)
         with get_sqlite_connection(self.db_path) as conn:
             conn.execute(
@@ -160,10 +167,7 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 """,
                 (symbol, s, e),
             ).fetchall()
-        return [
-            (r[0], _back_dec(r[1]), _from_unix_sec(r[2]))
-            for r in rows
-        ]
+        return [(r[0], _back_dec(r[1]), _from_unix_sec(r[2])) for r in rows]
 
     # ================================================================ 5.3 持仓量
     def upsert_open_interest(
@@ -196,10 +200,7 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 """,
                 (symbol, s, e),
             ).fetchall()
-        return [
-            (r[0], _back_dec(r[1]), _back_dec(r[2]), _from_unix_sec(r[3]))
-            for r in rows
-        ]
+        return [(r[0], _back_dec(r[1]), _back_dec(r[2]), _from_unix_sec(r[3])) for r in rows]
 
     # ================================================================ 5.4 爆仓
     def upsert_liquidation(
@@ -225,8 +226,14 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                     (symbol, timestamp, liq_long_usdt, liq_short_usdt, liq_total_usdt, raw_payload)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (symbol, unix, long_usdt, short_usdt, total_usdt,
-                 f'{{"side":"{side_up}","order_qty":{_d(order_quantity)},"price":{_d(price)}}}'),
+                (
+                    symbol,
+                    unix,
+                    long_usdt,
+                    short_usdt,
+                    total_usdt,
+                    f'{{"side":"{side_up}","order_qty":{_d(order_quantity)},"price":{_d(price)}}}',
+                ),
             )
         return True
 
@@ -249,6 +256,7 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
             ).fetchall()
         for sym, l_usd, s_usd, t_usd, ts, raw in rows:
             import json as _json
+
             try:
                 payload = _json.loads(raw) if raw else {}
             except Exception:
@@ -260,24 +268,29 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 max(float(l_usd or 0), float(s_usd or 0)) / max(p_price, 1e-9),
             )
             price = payload.get("price", p_price)
-            total_qty = (
-                max(float(l_usd or 0) + float(s_usd or 0), float(t_usd or 0))
-                / max(p_price, 1e-9)
+            total_qty = max(float(l_usd or 0) + float(s_usd or 0), float(t_usd or 0)) / max(
+                p_price, 1e-9
             )
-            out.append((
-                sym,
-                _back_dec(order_qty),
-                side,
-                _back_dec(price),
-                _back_dec(total_qty),
-                _from_unix_sec(ts),
-            ))
+            out.append(
+                (
+                    sym,
+                    _back_dec(order_qty),
+                    side,
+                    _back_dec(price),
+                    _back_dec(total_qty),
+                    _from_unix_sec(ts),
+                )
+            )
         return out
 
     # ================================================================ 5.5 多空比
     def upsert_long_short_ratio(
-        self, symbol: str, long_account: Decimal, short_account: Decimal,
-        long_short_ratio: Decimal, ts: datetime,
+        self,
+        symbol: str,
+        long_account: Decimal,
+        short_account: Decimal,
+        long_short_ratio: Decimal,
+        ts: datetime,
     ) -> bool:
         unix = _to_unix_sec(ts)
         with get_sqlite_connection(self.db_path) as conn:
@@ -288,7 +301,9 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (
-                    symbol, unix, _d(long_short_ratio),
+                    symbol,
+                    unix,
+                    _d(long_short_ratio),
                     int(float(str(long_account))),
                     int(float(str(short_account))),
                 ),
@@ -317,8 +332,13 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
 
     # ================================================================ 5.6 Taker 主动买卖量
     def upsert_taker_volume(
-        self, symbol: str, buy_vol: Decimal, sell_vol: Decimal,
-        buy_sell_volume_diff: Decimal, buy_sell_volume_ratio: Decimal, ts: datetime,
+        self,
+        symbol: str,
+        buy_vol: Decimal,
+        sell_vol: Decimal,
+        buy_sell_volume_diff: Decimal,
+        buy_sell_volume_ratio: Decimal,
+        ts: datetime,
     ) -> bool:
         unix = _to_unix_sec(ts)
         with get_sqlite_connection(self.db_path) as conn:
@@ -330,9 +350,12 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    symbol, unix,
-                    _d(buy_vol), _d(sell_vol),
-                    _d(buy_sell_volume_diff), _d(buy_sell_volume_ratio),
+                    symbol,
+                    unix,
+                    _d(buy_vol),
+                    _d(sell_vol),
+                    _d(buy_sell_volume_diff),
+                    _d(buy_sell_volume_ratio),
                 ),
             )
         return True
@@ -355,8 +378,14 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 (symbol, s, e),
             ).fetchall()
         return [
-            (r[0], _back_dec(r[1]), _back_dec(r[2]),
-             _back_dec(r[3]), _back_dec(r[4]), _from_unix_sec(r[5]))
+            (
+                r[0],
+                _back_dec(r[1]),
+                _back_dec(r[2]),
+                _back_dec(r[3]),
+                _back_dec(r[4]),
+                _from_unix_sec(r[5]),
+            )
             for r in rows
         ]
 
@@ -412,10 +441,7 @@ class SqliteMarketMacroRepository(MarketMacroRepository):
                 """,
                 (sub_category, metric_name, s, e),
             ).fetchall()
-        return [
-            (r[0], r[1], float(r[2] or 0), _from_unix_sec(r[3]))
-            for r in rows
-        ]
+        return [(r[0], r[1], float(r[2] or 0), _from_unix_sec(r[3])) for r in rows]
 
     def query_latest_metric(
         self,
