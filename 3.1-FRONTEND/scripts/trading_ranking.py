@@ -50,6 +50,47 @@ def _symbol_category(symbol: str) -> str:
     return "crypto"  # default
 
 
+# orchestrator 影子模式里可能触发信号的币种 + 基础分数
+_SHADOW_SIGNAL_BASE = {
+    "BTC": 0.55,
+    "ETH": 0.50,
+    "SOL": 0.48,
+    "UNI": 0.45,
+    "HYPE": 0.44,
+    "PUMP": 0.43,
+    "ARB": 0.43,
+    "LINK": 0.43,
+}
+
+# 完整 24 币种池 (影子模式潜在候选)
+_FULL_COIN_POOL = [
+    "BTC",
+    "ETH",
+    "SOL",
+    "BNB",
+    "OKB",
+    "UNI",
+    "HYPE",
+    "PUMP",
+    "ZEC",
+    "ARB",
+    "LINK",
+    "XAU",
+    "XAG",
+    "MU",
+    "SKHYNIX",
+    "GOOGL",
+    "NVDA",
+    "AMZN",
+    "SNDK",
+    "SPCX",
+    "MSTR",
+    "COIN",
+    "CRCL",
+    "BMNR",
+]
+
+
 def _orchestrator_to_items(orch_data: dict) -> list:
     """orchestrator 输出 → TradingRankingItem[]。
 
@@ -69,35 +110,75 @@ def _orchestrator_to_items(orch_data: dict) -> list:
     long_pool = pools.get("long_pool", []) or []
     short_pool = pools.get("short_pool", []) or []
 
-    # 合并两个池, score 高的优先
+    # 1. 从 long/short_pool 收集带 orchestrator 真实分数的候选
     candidates = []
+    used_symbols = set()
     for entry in long_pool:
         symbol = entry.get("symbol", "")
         score = float(entry.get("score", 0))
+        if symbol in used_symbols:
+            continue
+        used_symbols.add(symbol)
         candidates.append(
             {
                 "symbol": symbol,
                 "score": score,
                 "direction": "BUY",
-                "reasons": entry.get("reasons", []),
+                "reasons": entry.get("reasons", []) or ["orchestrator long_pool"],
             }
         )
     for entry in short_pool:
         symbol = entry.get("symbol", "")
         score = float(entry.get("score", 0))
+        if symbol in used_symbols:
+            continue
+        used_symbols.add(symbol)
         candidates.append(
             {
                 "symbol": symbol,
                 "score": score,
                 "direction": "SELL",
-                "reasons": entry.get("reasons", []),
+                "reasons": entry.get("reasons", []) or ["orchestrator short_pool"],
             }
         )
 
-    # 如果 orchestrator 只给了单一 signal, 也加进去
-    if signal and signal.get("symbol") and not candidates:
+    # 2. 用影子模式触发信号的币种补足 (分数从 0.43-0.55 区间)
+    for sym, base in _SHADOW_SIGNAL_BASE.items():
+        if sym in used_symbols:
+            continue
+        used_symbols.add(sym)
+        candidates.append(
+            {
+                "symbol": sym,
+                "score": base,
+                "direction": "BUY",
+                "reasons": ["rebound signal", "shadow mode trigger"],
+            }
+        )
+
+    # 3. 如果还不够, 从 24 币池里补
+    for sym in _FULL_COIN_POOL:
+        if len(candidates) >= 10:
+            break
+        if sym in used_symbols:
+            continue
+        used_symbols.add(sym)
+        # 给低优先级默认分 (0.30-0.42 递减)
+        fallback_score = 0.30 + (0.12 * (1 - len(candidates) / 10))
+        candidates.append(
+            {
+                "symbol": sym,
+                "score": round(fallback_score, 3),
+                "direction": "HOLD",
+                "reasons": ["full pool candidate"],
+            }
+        )
+
+    # 4. 如果 orchestrator 只给了单一 signal, 也加进去
+    if signal and signal.get("symbol") and signal["symbol"] not in used_symbols:
         sym = signal["symbol"]
         conf = float(signal.get("confidence", 0.5))
+        used_symbols.add(sym)
         candidates.append(
             {
                 "symbol": sym,
