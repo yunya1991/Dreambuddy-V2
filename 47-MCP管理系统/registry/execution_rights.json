@@ -1,0 +1,25 @@
+{
+  "version": "0.1",
+  "updated": "2026-11-05",
+  "owner": "47-MCP管理系统",
+  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:11-bypass=11-易经推理系统 polling_trader 经 okx_client 旁路网关实盘（不经 MCP）；disabled=两出口均不执行。",
+  "defaults": {
+    "outcome": "paper",
+    "conflict_policy": "reject_mcp"
+  },
+  "symbols": {
+    "BTC-USDT-SWAP": {
+      "outcome": "paper",
+      "note": "默认模拟盘验证"
+    },
+    "ETH-USDT-SWAP": {
+      "outcome": "paper",
+      "note": "默认模拟盘验证"
+    }
+  },
+  "eleven_domain": {
+    "gate": "EXECUTION_AUTHORITY",
+    "default": "evolution_only",
+    "mapping_note": "标的声明 live:11-bypass 后，11 域仍需 EXECUTION_AUTHORITY 允许对应 source_tag 才会真实下单；两者同时满足才算接管。本表不自动改 11 域运行时配置。"
+  }
+}

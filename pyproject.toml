@@ -141,6 +141,12 @@ ignore = [
 # C5 第八批：legacy 存量风格文件（仅连接工厂 2 行收编改动），不重排存量风格
 "11-易经推理系统/scripts/memory_l4/bcrm2/storage.py" = ["F841", "F401", "I001"]
 "11-易经推理系统/scripts/memory_l4/kg_store.py" = ["I001", "F541"]
+# 2026-11-05：polling_trader 主循环为 1.8 万行 legacy 实盘文件（HEAD 存量 94 个 lint 错误），
+# 不重排存量风格，仅保证新改动语义正确；后续重构时再分批清零
+"11-易经推理系统/scripts/memory_l4/polling_trader.py" = [
+    "F841", "E741", "E722", "B007", "C416",
+]
+"11-易经推理系统/scripts/memory_l4/tests/test_shadow_mode_gate.py" = ["F841"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dreamos", "dreambuddy_dal"]

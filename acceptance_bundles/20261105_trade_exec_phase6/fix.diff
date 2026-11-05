@@ -1,0 +1,299 @@
+# fix.diff — trade-exec MCP v0.4 剩余项 2026-11-05T20:00:10+08:00
+
+## git status (scoped)
+ M 47-MCP管理系统/README.md
+ M 47-MCP管理系统/registry/mcp_capabilities.yaml
+ M mcp_shells/_shared/envelope_wrap.py
+ M mcp_shells/_shared/shadow_driver.py
+ M mcp_shells/test_trace_id_coverage.py
+?? 23-四层闭环自进化交易架构/dreambuddy_evolution/core/execution_sample_loader.py
+?? 23-四层闭环自进化交易架构/dreambuddy_evolution/core/executor_agent.py
+?? 23-四层闭环自进化交易架构/tests/test_execution_sample_loader.py
+?? 23-四层闭环自进化交易架构/tests/test_executor_agent.py
+?? 47-MCP管理系统/docs/tech/OPT-L0-SHADOW-DATA-GOV-v0.1.md
+?? 47-MCP管理系统/docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md
+?? 47-MCP管理系统/docs/tech/SPEC-L0-DATA-AGENT-v0.1.md
+?? 47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md
+?? 47-MCP管理系统/docs/tech/data-agents/
+?? 47-MCP管理系统/registry/execution_rights.json
+?? mcp_shells/_shared/rotate_trajectories.py
+?? mcp_shells/l0_trade_exec/
+
+## git diff --stat (tracked)
+ 47-MCP管理系统/README.md                      |  3 +
+ 47-MCP管理系统/registry/mcp_capabilities.yaml | 86 ++++++++++++++++++++++++++-
+ mcp_shells/_shared/envelope_wrap.py           | 44 +++++++++++++-
+ mcp_shells/_shared/shadow_driver.py           |  7 +++
+ mcp_shells/test_trace_id_coverage.py          | 10 +++-
+ 5 files changed, 144 insertions(+), 6 deletions(-)
+
+## git diff (tracked, scoped)
+diff --git a/47-MCP管理系统/README.md b/47-MCP管理系统/README.md
+index 485ad8d2d3..c60ad03906 100644
+--- a/47-MCP管理系统/README.md
++++ b/47-MCP管理系统/README.md
+@@ -22,12 +22,15 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约
+ | [docs/tech/ALIGNMENT-46-47-v1.0.md](./docs/tech/ALIGNMENT-46-47-v1.0.md) | 与 46-DSH 升级文档的对齐审查：6 冲突 + 3 架构缺口 + 合并开工顺序 + Go/No-Go | 开工前终审输入 |
+ | [docs/tech/TECH-L0-MCP-v0.1.md](./docs/tech/TECH-L0-MCP-v0.1.md) | MCP 技术设计：壳层 envelope、工具注册表、能力集、已落地工具测试方法；§10.1 云端审计快照（v0.1.1） | ✅ M1①-④ 已落地；基线报告已生成 |
+ | [docs/tech/SPEC-L0-DOMAIN-AGENTS-v0.2.md](./docs/tech/SPEC-L0-DOMAIN-AGENTS-v0.2.md) | 域内 agent SPEC：Phase A-E 路线 + Dream-RSI `V_new(π,T)` α 分量 | ✅ v0.2；Phase A 已落地 |
++| [docs/tech/SPEC-L0-DATA-AGENT-v0.1.md](./docs/tech/SPEC-L0-DATA-AGENT-v0.1.md) | 数据域 agent L0 底层能力管理协议：六子 agent 独立子协议（[data-agents/](./docs/tech/data-agents/)）+ DAL 查询面扩展 + P0-P3 路线 | ✅ v0.1；P0/P1/P2 已落地（macro/chain/flow/breadth/capital_flow/sentiment 六子协议文件已登记） |
+ | [docs/tech/SPEC-L0-AGENT-TRAIN-BASE-v0.1.md](./docs/tech/SPEC-L0-AGENT-TRAIN-BASE-v0.1.md) | 训练基座 SPEC：TB1 PSI / TB2 Beta verify / TB3 AlphaPareto 七维 / TB4 Thompson / TB5 GRPO | ✅ TB1-TB5 + Phase A **48/48 TDD**，影子验证 PASS |
+ | [docs/tech/SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1.md](./docs/tech/SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1.md) | L0/L1 域发现 SPEC：静态 domain_transmission、observe() 消费、P4 沙箱（§4.5）、窗口化采集（§3.3 / §4.6.12） | ✅ Phase 0 + Phase E 已落地：`mcp_shells/_shared/assets/domain_transmission_static.json` + `agent_mail_shadow.py`（19 测试）+ `collect_windowed` 窗口化采集（18 测试，云端每小时定时任务；当前仅 bear 单桶） |
+ | [docs/tech/SPEC-L0-AGENT-COMM-SHADOW-v0.1.md](./docs/tech/SPEC-L0-AGENT-COMM-SHADOW-v0.1.md) | COMM-SHADOW SPEC：第二观察点旁路 + §5.6 四类 payload（domain_hypothesis / transmission_evidence / validation_receipt / cross_domain_coupling） | 🟡 Phase 0 已落地（静态旁路 observe）；shadow 双跑等 bcrm2 切流窗口 |
+ | [docs/tech/ROADMAP-L0-L1-CLOSED-LOOP-v0.1.md](./docs/tech/ROADMAP-L0-L1-CLOSED-LOOP-v0.1.md) | L0/L1 闭环路线图：12 里程碑 + 4 阻塞（B1/B2 已消解，B3 GPU / B4 bcrm2 仍阻塞） | ✅ 状态已按实测回填（三端 HEAD 一致） |
+ | [docs/tech/PLAN-L0-MCP-P0-P3-v0.1.md](./docs/tech/PLAN-L0-MCP-P0-P3-v0.1.md) | MCP 封装 P0-P3 实施计划（任务拆解 + 依赖 + 验收） | ✅ 计划文档 |
+ | [docs/tech/REVIEW-AGENT-ARCH-v0.1.md](./docs/tech/REVIEW-AGENT-ARCH-v0.1.md) | Agent 架构评审记录（争议点 + 结论 + 待办） | ✅ 评审归档 |
++| [docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md) | L0 交易执行 MCP SPEC：四 Port 契约 + paper 主出口 + 实盘旁路（遵守实盘链路永不暴露 MCP） | 🟢 v0.4 阶段一~六已落地（2026-11-05 云端端到端 + 影子驱动 + 小时级消费端验证通过） |
++| [docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md) | trade-exec MCP SPEC 评审报告（2 P0 / 5 P1 / 4 P2） | ✅ v0.1 已出，P0/P1/P2 已封口（E0b 上游阻塞除外） |
+ | [docs/tech/SHADOW-REPORT-L0-REA-M3.md](./docs/tech/SHADOW-REPORT-L0-REA-M3.md) | REA 域 M3 影子报告（观察点对比 + 门槛值） | ✅ 影子归档 |
+ 
+ ## 外部关联文档（原位保留，本模块登记索引）
+diff --git a/47-MCP管理系统/registry/mcp_capabilities.yaml b/47-MCP管理系统/registry/mcp_capabilities.yaml
+index 56151a9b57..ceeeadd9b7 100644
+--- a/47-MCP管理系统/registry/mcp_capabilities.yaml
++++ b/47-MCP管理系统/registry/mcp_capabilities.yaml
+@@ -27,8 +27,8 @@
+ #   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
+ #   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
+ schema_version: "1.1-mcp"
+-registry_version: "0.3"
+-last_updated: "2026-11-03"
++registry_version: "0.4"
++last_updated: "2026-11-05"
+ # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
+ # 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
+ single_source_of_truth: true
+@@ -282,6 +282,79 @@ shells:
+         requires_mandate: false
+         annotations: { readOnlyHint: true, destructiveHint: false }
+ 
++  # 壳 ⑦ 交易执行 MCP（SPEC-L0-TRADE-EXEC-MCP v0.2 落地）
++  # 硬约束：仅承载 paper 模拟盘模式，绝不触真实交易所；
++  # 实盘 live 由 11 域 okx_client 旁路网关直连，不经过本壳。
++  # 壳内无 OKX API credentials、无签名逻辑、仅 HTTP GET 公开 ticker。
++  - shell_id: l0.trade-exec.mcp
++    capability_id: l0.trade-exec
++    transport: stdio
++    shell_path: "mcp_shells/l0_trade_exec/server.py"
++    shell_cmd: "python3 {path}"
++    envelope_version: "0.1"
++    status: available
++    capabilities:
++      shadow_capable: true
++      training_hooks: [on_order_filled, on_risk_rejected, on_signal_skipped]  # 执行样本 → ml_data/samples.jsonl，供 23/42 域进化
++      oracle_verifiable: true
++    tools:
++      - name: place_order
++        port: event
++        domain: trade-exec
++        read_write: write
++        requires_mandate: true
++        annotations: { readOnlyHint: false, destructiveHint: true }
++      - name: cancel_order
++        port: event
++        domain: trade-exec
++        read_write: write
++        requires_mandate: true
++        annotations: { readOnlyHint: false, destructiveHint: true }
++      - name: get_positions
++        port: event
++        domain: trade-exec
++        read_write: read
++        requires_mandate: false
++        annotations: { readOnlyHint: true, destructiveHint: false }
++      - name: get_balance
++        port: event
++        domain: trade-exec
++        read_write: read
++        requires_mandate: false
++        annotations: { readOnlyHint: true, destructiveHint: false }
++      # ── 阶段二新增：RiskCheckPort + AccountPort + PositionPort.reconcile ──
++      - name: pre_trade_check
++        port: event
++        domain: trade-exec
++        read_write: read
++        requires_mandate: false
++        annotations: { readOnlyHint: true, destructiveHint: false }
++      - name: get_account_mode
++        port: event
++        domain: trade-exec
++        read_write: read
++        requires_mandate: false
++        annotations: { readOnlyHint: true, destructiveHint: false }
++      - name: reconcile
++        port: event
++        domain: trade-exec
++        read_write: read
++        requires_mandate: false
++        annotations: { readOnlyHint: true, destructiveHint: false }
++      # ── 阶段三新增：23/42 信号接入 ──
++      - name: read_signals
++        port: event
++        domain: trade-exec
++        read_write: read
++        requires_mandate: false
++        annotations: { readOnlyHint: true, destructiveHint: false }
++      - name: ingest_signal
++        port: event
++        domain: trade-exec
++        read_write: write
++        requires_mandate: true
++        annotations: { readOnlyHint: false, destructiveHint: true }
++
+ # ── Worker 角色→能力标签（46-DSH ADR-4 / DD2 定稿，A3 落地）────────────
+ # 分工：「角色→能力标签」在此登记（唯一载体）；「能力标签→工具集」由上方
+ # shells 段推导，不重复定义工具 schema。Router 只感知角色/标签，不感知全量
+@@ -308,12 +381,19 @@ worker_roles:
+     tools: [eval_analyze, eval_report,
+             store_admin_status, store_admin_query,
+             recall]
++  executor:
++    description: 执行 Worker——交易执行观测（trade-exec 壳，只读）
++    shells: [l0.trade-exec.mcp]
++    tools: [get_positions, get_balance, pre_trade_check,
++            get_account_mode, reconcile, read_signals]
++    # 硬约束（ADR-9/H7）：Worker 角色只读，禁止纳入 requires_mandate=true 的写工具。
++    # place_order / cancel_order / ingest_signal 仅由编排侧（持 Mandate）调用。
+ 
+ # ── 枚举词典（校验器参照）───────────────────────────────────────
+ enums:
+   transport: [stdio, ssh-stdio, http, in-process]
+   port: [memory, collector, search, store, analysis, event]
+-  domain: [cognition, search, semantic, data, eval, rea, store-admin]
++  domain: [cognition, search, semantic, data, eval, rea, store-admin, trade-exec]
+   read_write: [read, write, read-write]
+   status: [available, degraded, planned, deprecated]
+   envelope_version: ["0.1", "0.2"]
+diff --git a/mcp_shells/_shared/envelope_wrap.py b/mcp_shells/_shared/envelope_wrap.py
+index f2bed57c3c..8d4f438341 100644
+--- a/mcp_shells/_shared/envelope_wrap.py
++++ b/mcp_shells/_shared/envelope_wrap.py
+@@ -17,10 +17,50 @@ from __future__ import annotations
+ 
+ import os
+ import time
++from pathlib import Path
+ from typing import Any, Dict, Optional
+ 
+ ENVELOPE_VERSION = "0.1"
+ 
++# 注册表自描述能力（v1.1-mcp）：壳运行时注入 meta.{shadow_capable, oracle_verifiable, config_version}
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_REGISTRY_PATH = _REPO_ROOT / "47-MCP管理系统" / "registry" / "mcp_capabilities.yaml"
++_CAPS_CACHE: Optional[Dict[str, Dict[str, Any]]] = None
++
++
++def _registry_caps(source: str) -> Dict[str, Any]:
++    """按壳 source 查注册表 capabilities。FAIL-OPEN：任何异常返回空 dict。"""
++    global _CAPS_CACHE
++    if os.environ.get("MCP_CAPS_INJECT", "1") == "0":
++        return {}
++    try:
++        if _CAPS_CACHE is None:
++            import yaml  # 惰性导入，壳进程默认不依赖
++
++            with open(_REGISTRY_PATH, "r", encoding="utf-8") as f:
++                reg = yaml.safe_load(f) or {}
++            caps: Dict[str, Dict[str, Any]] = {}
++            for shell in reg.get("shells", []) or []:
++                sid = shell.get("shell_id")
++                if not sid:
++                    continue
++                item = dict(shell.get("capabilities") or {})
++                item["config_version"] = str(reg.get("registry_version", ""))
++                caps[sid] = item
++            _CAPS_CACHE = caps
++        return _CAPS_CACHE.get(source, {})
++    except Exception:  # noqa: BLE001 — FAIL-OPEN，不阻断信封
++        return {}
++
++
++def _inject_caps(meta: Dict[str, Any], source: str) -> Dict[str, Any]:
++    """把注册表能力字段补进 meta（只补缺失键，不覆盖调用方显式值）。"""
++    caps = _registry_caps(source)
++    for key in ("shadow_capable", "oracle_verifiable", "config_version"):
++        if key in caps and key not in meta:
++            meta[key] = caps[key]
++    return meta
++
+ # SPEC-L0 §3.1 ERROR_CODES 枚举
+ ERROR_CODES = {
+     "not_found",
+@@ -50,7 +90,7 @@ def wrap(
+         "source": source,
+         "timestamp": time.time(),
+         "degraded": degraded,
+-        "meta": meta or {},
++        "meta": _inject_caps(dict(meta or {}), source),
+         "version": ENVELOPE_VERSION,
+         "trace_id": trace_id or os.environ.get("MCP_TRACE_ID", ""),
+         "idempotency_key": idempotency_key,
+@@ -101,7 +141,7 @@ def wrap_merge_partial(
+         "source": source,
+         "timestamp": partial.get("timestamp", time.time()),
+         "degraded": degraded,
+-        "meta": partial.get("meta", {}),
++        "meta": _inject_caps(dict(partial.get("meta") or {}), source),
+         "version": ENVELOPE_VERSION,
+         "trace_id": partial.get("trace_id") or os.environ.get("MCP_TRACE_ID", ""),
+         "idempotency_key": partial.get("idempotency_key", ""),
+diff --git a/mcp_shells/_shared/shadow_driver.py b/mcp_shells/_shared/shadow_driver.py
+index d62b8b392c..3d709b5411 100644
+--- a/mcp_shells/_shared/shadow_driver.py
++++ b/mcp_shells/_shared/shadow_driver.py
+@@ -60,6 +60,12 @@ SHELL_CALLS: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {
+     "rea": [
+         ("submit_rea_trace", {"target": "mcp_shells/_shared", "feature": "信封包装"}),
+     ],
++    "trade_exec": [
++        ("get_balance", {}),
++        ("get_positions", {}),
++        ("read_signals", {"sources": ["23", "42"], "limit": 5}),
++        # place_order / cancel_order / ingest_signal 是写工具，不在本只读驱动计划内
++    ],
+ }
+ 
+ _SHELL_DIR = {
+@@ -67,6 +73,7 @@ _SHELL_DIR = {
+     "eval": "l0_eval",
+     "store_admin": "l0_store_admin",
+     "rea": "l0_rea",
++    "trade_exec": "l0_trade_exec",
+ }
+ 
+ 
+diff --git a/mcp_shells/test_trace_id_coverage.py b/mcp_shells/test_trace_id_coverage.py
+index cf59fb3cde..f34e0be192 100644
+--- a/mcp_shells/test_trace_id_coverage.py
++++ b/mcp_shells/test_trace_id_coverage.py
+@@ -5,7 +5,7 @@
+ V5 trace_id 贯穿率 100%）。本测试只走各壳的 invalid / not_found 只读路径：
+ 零写盘、零外部服务依赖，CI 可直接跑。
+ 
+-覆盖壳：l0.data.mcp / l0.eval.mcp / l0.rea.mcp / l0.store-admin.mcp
++覆盖壳：l0.data.mcp / l0.eval.mcp / l0.rea.mcp / l0.store-admin.mcp / l0.trade-exec.mcp
+ """
+ 
+ import json
+@@ -44,6 +44,12 @@ _CASES = [
+         "store_admin_query",
+         {},  # 缺 repo → invalid，不触 19-DAL
+     ),
++    (
++        "l0_trade_exec",
++        "l0.trade-exec.mcp",
++        "place_order",
++        {},  # 缺 symbol/side/size → invalid，零写盘、零行情请求
++    ),
+ ]
+ 
+ 
+@@ -69,6 +75,8 @@ def _call_tool(shell: str, name: str, arguments: dict, store_path: Path) -> dict
+     env = dict(os.environ)
+     env["MCP_TRACE_ID"] = TRACE_ID
+     env["AGENT_MAIL_SHADOW_STORE"] = str(store_path)
++    # trade-exec 壳 import 时会初始化 paper 账本，隔离到测试临时目录，避免污染生产 ledger
++    env["TRADE_EXEC_LEDGER_DIR"] = str(store_path.parent / "ledger")
+     proc = subprocess.run(
+         [sys.executable, str(server)],
+         input=reqs,
