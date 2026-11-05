@@ -1,57 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
 
-const BACKEND_HOST = 'http://127.0.0.1:9094';
+const execFileAsync = promisify(execFile);
 
-async function proxy(request: NextRequest, segments: string[]): Promise<NextResponse> {
+export const runtime = 'nodejs';
+export const revalidate = 60; // 60秒缓存
+
+// 所有 /api/fundamental/** 子路径统一走本地 aggregator (替代原 9094 反代)
+async function handleFundamental(segments: string[]): Promise<NextResponse> {
   const subPath = segments.join('/');
-  const backendUrl = `${BACKEND_HOST}/fundamental/${subPath}`;
 
-  let body: string | undefined;
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
+  if (subPath === 'snapshot') {
+    const scriptPath = path.join(process.cwd(), 'scripts', 'fundamental_snapshot.py');
     try {
-      body = JSON.stringify(await request.json());
-    } catch {
-      body = undefined;
+      const { stdout } = await execFileAsync('python3', [scriptPath], {
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 15000,
+      });
+      const data = JSON.parse(stdout.trim());
+      return NextResponse.json(data);
+    } catch (err: any) {
+      return NextResponse.json(
+        {
+          modules: {},
+          timestamp: null,
+          source: 'error',
+          degraded: true,
+          error: err?.message || String(err),
+        },
+        { status: 503 },
+      );
     }
   }
 
-  try {
-    const res = await fetch(backendUrl, {
-      method: request.method,
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      cache: 'no-store',
-    });
-
-    const text = await res.text();
-    let data: unknown;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
-    }
-    return NextResponse.json(data, { status: res.status });
-  } catch (error) {
-    console.error('[api/fundamental] proxy error:', error);
-    return NextResponse.json(
-      { error: '无法连接基本面分析后端服务（9094）' },
-      { status: 503 }
-    );
-  }
+  return NextResponse.json(
+    { error: `未实现的基本面子路径: ${subPath}`, available: ['snapshot'] },
+    { status: 404 },
+  );
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
-  return proxy(request, path);
+  return handleFundamental(path);
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
-  return proxy(request, path);
+  return handleFundamental(path);
 }

@@ -732,23 +732,34 @@ def _resolve_core_db() -> str:
 
 # chain 指标定义 (sub_category + metric_name → output_key)
 _CHAIN_METRICS = [
-    ("btc_onchain", "active_addresses", "active_addresses_24h"),
-    ("btc_onchain", "hash_rate", "hash_rate"),
+    # btc_onchain: 真实 metric_name (DB 只有这些)
     ("btc_onchain", "difficulty_change_pct", "difficulty_change_pct"),
+    ("btc_onchain", "difficulty_progress_pct", "difficulty_progress_pct"),
     ("btc_onchain", "mempool_count", "mempool_count"),
-    ("exchanges_whales", "ex_summary_inflowUsd24h", "exchange_inflow_24h"),
-    ("exchanges_whales", "ex_bal_BTC_total", "exchange_balance_btc"),
-    ("exchanges_whales", "whales_transfer_count", "large_transfers_24h"),
-    ("exchanges_whales", "whale_netflow_to_ex_usd", "whale_netflow_24h"),
+    ("btc_onchain", "mempool_fee_btc", "mempool_fee_btc"),
+    ("btc_onchain", "mempool_size_kb", "mempool_size_kb"),
+    ("btc_onchain", "remaining_blocks", "remaining_blocks"),
+    ("btc_onchain", "tip_height", "tip_height"),
+    # exchanges_whales: DB 里是 us_DXXXXX 格式, 取几个有意义的
+    ("exchanges_whales", "us_SP500_value", "sp500_equity_value"),
+    ("exchanges_whales", "us_VIXCLS_value", "vix_value"),
+    ("exchanges_whales", "us_DTWEXBGS_value", "dollar_index_value"),
 ]
 
-# macro 指标定义 (sub_category + metric_name → output_key)
 _MACRO_METRICS = [
-    ("DX-Y.NYB", "close", "DXY"),
-    ("^TNX", "close", "US10Y"),
-    ("^VIX", "close", "VIX"),
-    ("GC=F", "close", "Gold"),
-    ("macro_us_stocks", "sp500", "SP500"),
+    # macro: metric_name 全是 "value" (DB 实际结构)
+    ("DX-Y.NYB", "value", "DXY"),
+    ("^TNX", "value", "US10Y"),
+    ("^VIX", "value", "VIX"),
+    ("GC=F", "value", "Gold"),
+    ("SP500", "value", "SP500"),
+    ("WALCL", "value", "Fed_liquidity"),  # Fed 资产负债表
+    ("FEDFUNDS", "value", "Fed_rate"),  # 联邦基金利率
+    ("CPIAUCSL", "value", "CPI"),  # CPI
+    ("PPIACO", "value", "PPI"),  # PPI
+    ("DCOILWTICO", "value", "WTI"),  # 原油
+    ("CL=F", "value", "Oil_futures"),  # 原油期货
+    ("NASDAQCOM", "value", "NASDAQ"),  # 纳指
 ]
 
 
