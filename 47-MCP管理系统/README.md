@@ -29,8 +29,8 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约�
 | [docs/tech/ROADMAP-L0-L1-CLOSED-LOOP-v0.1.md](./docs/tech/ROADMAP-L0-L1-CLOSED-LOOP-v0.1.md) | L0/L1 闭环路线图：12 里程碑 + 4 阻塞（B1/B2 已消解，B3 GPU / B4 bcrm2 仍阻塞） | ✅ 状态已按实测回填（三端 HEAD 一致） |
 | [docs/tech/PLAN-L0-MCP-P0-P3-v0.1.md](./docs/tech/PLAN-L0-MCP-P0-P3-v0.1.md) | MCP 封装 P0-P3 实施计划（任务拆解 + 依赖 + 验收） | ✅ 计划文档 |
 | [docs/tech/REVIEW-AGENT-ARCH-v0.1.md](./docs/tech/REVIEW-AGENT-ARCH-v0.1.md) | Agent 架构评审记录（争议点 + 结论 + 待办） | ✅ 评审归档 |
-| [docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md) | L0 交易执行 MCP SPEC：四 Port 契约 + paper 主出口 + 实盘旁路（遵守实盘链路永不暴露 MCP） | 🟢 v0.4 阶段一~六已落地（2026-11-05 云端端到端 + 影子驱动 + 小时级消费端验证通过） |
-| [docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md) | trade-exec MCP SPEC 评审报告（2 P0 / 5 P1 / 4 P2） | ✅ v0.1 已出，P0/P1/P2 已封口（E0b 上游阻塞除外） |
+| [docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md) | L0 交易执行 MCP SPEC：四 Port 契约 + paper 主出口 + 实盘旁路（遵守实盘链路永不暴露 MCP） | 🟢 v0.5 阶段一~七已落地（2026-11-06 补 ExitCheckPort/`check_exit` + 定容钳位 + 13/16/22/11 域对标矩阵 §11） |
+| [docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md) | trade-exec MCP SPEC 评审报告（2 P0 / 5 P1 / 4 P2） | ✅ v0.1 已出；v0.5 P0 已封口（16/22 域分层不并入，见 SPEC §11） |
 | [docs/tech/SHADOW-REPORT-L0-REA-M3.md](./docs/tech/SHADOW-REPORT-L0-REA-M3.md) | REA 域 M3 影子报告（观察点对比 + 门槛值） | ✅ 影子归档 |
 
 ## 外部关联文档（原位保留，本模块登记索引）

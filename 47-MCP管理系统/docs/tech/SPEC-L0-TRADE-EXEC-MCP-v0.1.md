@@ -1,6 +1,6 @@
 # SPEC-L0-TRADE-EXEC-MCP v0.1
 
-- 状态：🟢 v0.4 已落地（阶段一~六完成；2026-11-05 云端 43.160.201.117 端到端 + 影子驱动 + 小时级消费端验证通过）
+- 状态：🟢 v0.5 已落地（阶段一~七完成；2026-11-06 补 ExitCheckPort + 定容钳位 + 13/16/22/11 域能力对标矩阵）
 - 日期：2026-11-05
 - 上游：47-MCP管理系统（L0 四层范式、统一信封、**实盘链路永不暴露 MCP 硬约束**）、13-通用风控模块、16-调控系统、22-执行引擎中心、11-易经推理系统（执行器保留）、23-四层闭环自进化交易架构（信号输出口）
 - 下游：trade-exec MCP 壳（mcp_shells 第 7 壳，**paper 模式主出口**）、四 Port 适配器、模拟盘运行时、**实盘旁路网关（不经 MCP）**
@@ -105,11 +105,13 @@ get_account_mode() -> {mode, exchange, endpoints}
 ### 2.2 trade-exec 壳（mcp_shells 第 7 壳）
 - 复用 _shared 基建（shadow_hook/agent_mail_shadow 信封落盘）
 - **壳 source = `l0.trade-exec.mcp`**（与注册表 `shell_id` 严格一致；多词统一连字符，修正早期 `l0.trade_exec.mcp` 漂移）
-- 工具集（9 个，v0.3 实况）：
+- 工具集（10 个，v0.5 实况）：
   - 写：place_order / cancel_order / ingest_signal（`requires_mandate=true`，`readOnlyHint:false`）
-  - 读：get_positions / get_balance / pre_trade_check / get_account_mode / reconcile / read_signals
+  - 读：get_positions / get_balance / pre_trade_check / check_exit / get_account_mode / reconcile / read_signals
+- **定容钳位（v0.5）**：`place_order` 调用 13 域 `PositionSizer` 后以建议值为**上限**收紧 size（`_apply_sizing_clamp`，只可减小不可放大，建议缺失/为 0 时不生效），并在 `meta.sizing.{requested_size, applied_size, clamped}` 记账。`skip_sizing` 为测试专用旁路。
+- **`check_exit`（v0.5 新增，ExitCheckPort）**：逐仓调用 13 域 `RiskEngine.check_exit`（ExitEngine + exit_rules），返回 `action / should_exit / priority / reason / reduce_frac`；**只读建议不下单**，引擎不可用时全线 HOLD + `degraded=true`（FAIL-OPEN）。
 - **注册表映射**：port=event，domain=trade-exec（注册表 enums 新增 trade-exec）
-- **`executor` 角色 = 只读**（v0.3 纠正）：ADR-9/H7 硬约束规定 Worker 角色不得持有写工具，`validate_mcp_registry.py` 第 9 条为硬门禁。executor 工具集仅 6 个只读工具；place_order / cancel_order / ingest_signal 仅由**编排侧（持宿主 Mandate）**调用，不进入任何 worker role。
+- **`executor` 角色 = 只读**（v0.5 起 7 个）：ADR-9/H7 硬约束规定 Worker 角色不得持有写工具，`validate_mcp_registry.py` 第 9 条为硬门禁。executor 工具集仅 7 个只读工具（含 v0.5 新增 check_exit）；place_order / cancel_order / ingest_signal 仅由**编排侧（持宿主 Mandate）**调用，不进入任何 worker role。
 - **能力自描述（v1.1-mcp）**：`capabilities.{shadow_capable:true, training_hooks:[on_order_filled,on_risk_rejected,on_signal_skipped], oracle_verifiable:true}`；`envelope_wrap.wrap()` 按 `source` 自动注入 `meta.{shadow_capable, oracle_verifiable, config_version}`（FAIL-OPEN + `MCP_CAPS_INJECT=0` 可关）
 - stdio 协议；300 秒级轮询交易风格下延迟无障碍
 
@@ -278,11 +280,14 @@ get_account_mode() -> {mode, exchange, endpoints}
 |---|---|---|
 | 注册表声明"运行时自动注入 capabilities"但无实现 | P2 | ✅ 已修（`envelope_wrap` 统一注入） |
 | 壳 source `l0.trade_exec.mcp` 与注册表 `l0.trade-exec.mcp` 不一致 | P2 | ✅ 已修（统一连字符） |
-| `executor` 角色误含写工具（注册表校验 3 ERR） | P0 | ✅ 已修（改为 6 只读工具） |
+| `executor` 角色误含写工具（注册表校验 3 ERR） | P0 | ✅ 已修（只读工具集，v0.5 起 7 个含 check_exit） |
 | 训练样本无消费端 | P1 | ✅ Phase 0 + 小时级增量落盘（`execution_sample_loader.py`） |
 | 无 executor domain agent 运行时 | P1 | ✅ Phase 1a 规则骨架（`executor_agent.py`）；Phase 1b 策略训练待样本 |
 | 小时级窗口采集未含 trade-exec | P2 | ✅ 以独立管线接入 windowed-collect（不改 6 域维度契约） |
-| `human_baseline.json` 缺失（E0b v3） | P2 | ⛔ **上游阻塞**：48 域 SPEC v0.5 明确"E0b 仅剩 polling_trader 回放器缺口"，回放器未建，无法产出 OOS 基线；本域不做伪造数据 |
+| 13 域 `check_exit` 无消费方（MCP 无离场查询） | P0 | ✅ 已修（v0.5 新增 `check_exit` 工具，Fail-OPEN） |
+| 13 域 PositionSizer 建议不生效（只记账不钳位） | P0 | ✅ 已修（`_apply_sizing_clamp`，只收紧不放大） |
+| `server.py` 注释误称已接入 16 域 capital_allocator | P0 | ✅ 已修（注释纠正为"未接入"，见 §11 P1） |
+| `human_baseline.json` 缺失（E0b v3） | P2 | 🟡 **部分**：48 域已产出 `human_baseline.json`（33 笔实盘 / OOS 9 笔）+ 回放器；但本 SPEC 要求的**逐条 `execution_exit` 双出口标注**（paper:trade-exec-mcp / live:11-bypass）尚未补 → 见 §11 P2 |
 
 ## §10 executor agent（Phase 1 设计边界）
 
@@ -293,3 +298,57 @@ get_account_mode() -> {mode, exchange, endpoints}
 - **硬约束**：agent 只能建议，最终下单仍经 `place_order` 的 ExecutionRights 闸门 + RiskBridge（fail-closed）；不得绕过 Mandate
 - **Phase 1a（已落地）**：`dreambuddy_evolution/core/executor_agent.py` — 规则底座 + 可注入 policy + 硬钳位，6 测试
 - **Phase 1b（待执行）**：策略网络训练，前置 = ≥2 周 paper 样本（`execution_policy_training.jsonl` 行数 ≥ N）
+
+---
+
+## §11 13/16/22/11 域交易执行能力对标与分层边界（2026-11-06 实测）
+
+### 11.1 覆盖度总览
+
+| 域 | 覆盖度 | 判定 |
+|---|---|---|
+| 13-通用风控模块 | 🟡 约 60%（v0.5 后） | 事前风控 + 定容 + 离场决策已桥接；L1/ML/Alert 未暴露 |
+| 16-调控系统 | ❌ 约 0% | 资金分配 / 移动止损 / 退出执行器均未接入（属运行时实盘层） |
+| 22-执行引擎中心 | ❌ 0% | `mcp_shells/` 对 `tee_core` 零引用（属真实执行层，不进 paper 壳） |
+| 11-易经推理系统 | ❌ 不应进入 | 实盘主链路，受"实盘链路永不暴露 MCP"硬约束 |
+
+### 11.2 逐项接线表
+
+| 能力 | 来源 | MCP 状态 | 证据 |
+|---|---|---|---|
+| 事前风控 gate（回撤/杠杆/并发/连亏/黑窗/置信度） | 13 `RiskEngine.pre_trade_check` | ✅ | `RiskBridge.check` → `PreTradeGate` |
+| 仓位计算 | 13 `PositionSizer.calculate_position` | ✅ v0.5 起**钳位生效** | `_apply_sizing_clamp` |
+| 离场决策（止损/止盈/时间退出） | 13 `RiskEngine.check_exit` → `ExitEngine` | ✅ v0.5 新增 `check_exit` 工具 | 只读建议，FAIL-OPEN |
+| L1 评估 / ML 模型 / 告警 | 13 `l1_assessor` / `ml_model` / `alert` | ❌ P2 | 未暴露 |
+| 分标的资金分配 | 16 `capital_allocator` | ❌ P1 | 实盘资金层，paper 不复制 |
+| 移动止损 | 16 `trailing_stop` + `trailing-stop-runner.service` | ❌ P1 | 云端独立服务（300s，真实 OKX） |
+| 退出执行器 | 16 `exit_executor` | ❌ P1 | 与 `check_exit` 建议解耦：执行仍属实盘旁路 |
+| A9 退出决策 / 统一持仓查询 | 16 `a9_exit_decision` / `unified_position_query` | ❌ P2 | 未接入 |
+| TEE 11 步执行链 / SmartTWAP / 滑点估计 / OKX 适配 | 22 `tee_core` | ❌ P1（滑点可借） | 属真实执行层；云端 `YIJING_ENABLE_TEE` 未设 → 实际未启用 |
+| 实盘下单 / 撤单（okx_client） | 11 `polling_trader` | ❌ 硬约束禁止 | 旁路执行，不经 MCP |
+| 执行权限门禁 | 11 `EXECUTION_AUTHORITY` | ⚠️ 双轨 | MCP `execution_rights.json`（paper/live 路由） vs 11 `EXECUTION_AUTHORITY`（实盘 source_tag 放行）；`live:11-bypass` 后仍需 11 域放行 |
+| 信号幂等 | 11 `is_signal_executed` vs MCP `executed_signals` | ⚠️ 双轨 | 两套独立账本，无同步口径（P2） |
+
+### 11.3 落地清单（P0 已封口 / P1-P2 排期）
+
+**P0（v0.5 已完成）**
+1. ✅ 修正 `server.py` 误导性注释（原写"16 capital_allocator / 13 PositionSizer"，实际只调 13）
+2. ✅ 新增 `check_exit` 工具，为 13 域 `ExitEngine` 提供消费方（只读、FAIL-OPEN）
+3. ✅ PositionSizer 建议改为**上限钳位**，不再"只记账不生效"
+
+**P1（未排期）**
+4. 16 域 `trailing_stop` 在 paper 侧镜像（表 + 每轮 `check_exit` 后检查）
+5. 22 域 `SlippageEstimator` 替代 paper 固定 5bps（不引入 TEE 依赖）
+6. `capital_allocator` 是否下沉 paper：需先明确"paper 资金池是否模拟多标的分配"
+
+**P2（未排期）**
+7. 13 域 L1Assessor / ML / Alert 暴露为只读工具
+8. 幂等账本双轨统一口径（MCP `executed_signals` ↔ 11 域 `is_signal_executed`）
+9. `human_baseline.json` 补逐条 `execution_exit` 双出口标注（E0b v3）
+
+### 11.4 分层结论
+
+- **13 域**：唯一应当完整桥接进 MCP 的域（通用风控 = 执行前决策层）。v0.5 后 P0 缺口已清，剩余为 P2 观测类。
+- **16 域**：资金调控/移动止损属**实盘运行时**，在云端由独立服务承担；paper 侧只做"建议镜像"，不做资金真实分配。
+- **22 域**：真实执行引擎（TEE/TWAP/滑点），与 paper 内存账本不同层，**不并入**；仅滑点模型可复用。
+- **11 域**：实盘主链路，硬约束禁止进 MCP。需持续关注双轨（执行权、幂等）的一致性风险。

@@ -643,6 +643,73 @@ class RiskBridge:
         except Exception as e:  # noqa: BLE001
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
+    @classmethod
+    def check_exit(
+        cls,
+        *,
+        coin: str,
+        side: str,
+        entry_price: float,
+        current_price: float,
+        position_size: float,
+        unrealized_pnl_pct: float = 0.0,
+        account_balance: float = 0.0,
+        held_seconds: float = 0.0,
+    ) -> Dict[str, Any]:
+        """离场决策（13 域 ExitEngine.check_exit）。
+
+        Fail-OPEN：只读建议，不可用时返回 HOLD + degraded，不阻断任何执行。
+        """
+        cls._try_load()
+        if not cls._available or cls._engine is None:
+            return {
+                "ok": False,
+                "action": "HOLD",
+                "reason": f"RiskEngine 不可用: {cls._last_error or 'unknown'}",
+                "degraded": True,
+            }
+        try:
+            from core.context import (  # noqa: E402
+                Direction,
+                MarketSnapshot,
+                PositionState,
+                RiskContext,
+            )
+
+            direction = Direction.LONG if side in ("buy", "long") else Direction.SHORT
+            position = PositionState(
+                coin=coin,
+                side=direction,
+                entry_price=entry_price,
+                current_price=current_price,
+                position_size=position_size,
+                position_age_sec=held_seconds,
+                unrealized_pnl_pct=unrealized_pnl_pct,
+            )
+            market = MarketSnapshot(coin=coin, price=current_price)
+            ctx = RiskContext(
+                total_equity=account_balance,
+                available_balance=account_balance,
+                positions=[],
+            )
+            result = cls._engine.check_exit(position, market, ctx)
+            action = getattr(result.action, "name", str(result.action))
+            return {
+                "ok": True,
+                "action": action,
+                "should_exit": action != "HOLD",
+                "priority": getattr(result.priority, "name", str(result.priority)),
+                "reason": result.reason,
+                "reduce_frac": result.reduce_frac,
+            }
+        except Exception as e:  # noqa: BLE001
+            return {
+                "ok": False,
+                "action": "HOLD",
+                "reason": f"ExitEngine 执行异常: {type(e).__name__}: {e}",
+                "degraded": True,
+            }
+
 
 _risk_bridge = RiskBridge()
 
@@ -879,6 +946,26 @@ def _wrap_paper(
     return json.dumps(env, ensure_ascii=False)
 
 
+def _apply_sizing_clamp(sz: float, sizing: Dict[str, Any]) -> float:
+    """定容钳位：PositionSizer 建议作为上限，只可收紧不可放大。
+
+    建议缺失/非正时保持原值（例如行情不可用），并在 sizing 里记录决策依据。
+    """
+    if not sizing.get("ok"):
+        return sz
+    suggested = float(sizing.get("base_size_coins") or 0.0)
+    if suggested <= 0:
+        return sz
+    sizing["requested_size"] = sz
+    if sz > suggested:
+        sizing["applied_size"] = suggested
+        sizing["clamped"] = True
+        return suggested
+    sizing["applied_size"] = sz
+    sizing["clamped"] = False
+    return sz
+
+
 def _handle_place_order(args: Dict[str, Any]) -> str:
     inst_id = str(args.get("symbol") or args.get("inst_id") or "").strip()
     side = str(args.get("side") or "").strip().lower()
@@ -941,7 +1028,7 @@ def _handle_place_order(args: Dict[str, Any]) -> str:
 
     # ── 执行管道（SPEC §1.5 固定顺序）─────────────────────────
     # 1. RiskCheckPort（fail-closed：RiskEngine 不可用则拒绝）
-    # 2. 定容（16 capital_allocator / 13 PositionSizer）
+    # 2. 定容（13 PositionSizer 钳位；16 capital_allocator 属实盘资金层，未接入，见 SPEC §11 P1）
     # 3. OrderPort（撮合）
     risk_result: Dict[str, Any] = {}
     sizing_result: Dict[str, Any] = {}
@@ -994,11 +1081,8 @@ def _handle_place_order(args: Dict[str, Any]) -> str:
                 current_positions=pos,
                 position_modifier=risk_result.get("position_modifier", 1.0),
             )
-            # 不自动覆盖 size（调用方显式传入为准），但在 meta 里记账
-            if sizing_result.get("ok") and sizing_result.get("base_size_coins", 0) > 0:
-                # 如果 SPEC 要求自动定容：sz_f = min(sz_f, sizing_result["base_size_coins"])
-                # 当前保守实现：不覆盖，仅在 risk meta 里记录建议
-                pass
+            # 定容钳位：PositionSizer 建议作为上限，只可收紧不可放大（skip_sizing 可跳过）
+            sz_f = _apply_sizing_clamp(sz_f, sizing_result)
 
     # ── 3. OrderPort（撮合）──
     started = time.perf_counter()
@@ -1049,7 +1133,15 @@ def _handle_place_order(args: Dict[str, Any]) -> str:
     if sizing_result.get("ok"):
         extra_meta["sizing"] = {
             k: sizing_result[k]
-            for k in ("base_size_usdt", "base_size_coins", "position_tier", "leverage")
+            for k in (
+                "base_size_usdt",
+                "base_size_coins",
+                "position_tier",
+                "leverage",
+                "requested_size",
+                "applied_size",
+                "clamped",
+            )
             if k in sizing_result
         }
     _emit_sample(
@@ -1144,6 +1236,49 @@ def _handle_pre_trade_check(args: Dict[str, Any]) -> str:
         {"risk": risk, "sizing": sizing},
         latency_ms,
         extra_meta={"risk": risk, "sizing": sizing if sizing.get("ok") else None},
+    )
+
+
+def _handle_check_exit(args: Dict[str, Any]) -> str:
+    """离场决策查询（SPEC §1.2 ExitCheckPort）：13 域 ExitEngine 对 paper 持仓逐仓评估。
+
+    只读建议，不下单；FAIL-OPEN（引擎不可用 → HOLD + degraded）。
+    """
+    started = time.perf_counter()
+    inst_id = str(args.get("symbol") or args.get("inst_id") or "").strip()
+    bal = _ledger.get_balance()["balance"]
+    positions = _ledger.get_positions(inst_id or None)["positions"]
+
+    decisions: List[Dict[str, Any]] = []
+    for p in positions:
+        avg_px = float(p.get("avg_px") or 0.0)
+        mark_px = float(p.get("mark_px") or 0.0)
+        size = float(p.get("pos") or 0.0)
+        notional = avg_px * size
+        pnl_pct = (float(p.get("upl") or 0.0) / notional * 100.0) if notional > 0 else 0.0
+        res = _risk_bridge.check_exit(
+            coin=p.get("coin", ""),
+            side=p.get("side", "long"),
+            entry_price=avg_px,
+            current_price=mark_px,
+            position_size=size,
+            unrealized_pnl_pct=pnl_pct,
+            account_balance=bal,
+        )
+        decisions.append({"inst_id": p.get("inst_id"), **res})
+
+    latency_ms = (time.perf_counter() - started) * 1000.0
+    degraded = any(d.get("degraded") for d in decisions)
+    return _wrap_paper(
+        {
+            "decisions": decisions,
+            "count": len(decisions),
+            "should_exit_count": sum(1 for d in decisions if d.get("should_exit")),
+        },
+        latency_ms,
+        degraded=degraded,
+        error_code="exit_engine_unavailable" if degraded else "",
+        reason="ExitEngine 不可用，全部 HOLD" if degraded else "",
     )
 
 
@@ -1479,6 +1614,7 @@ TOOL_HANDLERS = {
     "get_positions": _handle_get_positions,
     "get_balance": _handle_get_balance,
     "pre_trade_check": _handle_pre_trade_check,
+    "check_exit": _handle_check_exit,
     "get_account_mode": _handle_get_account_mode,
     "reconcile": _handle_reconcile,
     "read_signals": _handle_read_signals,
@@ -1582,6 +1718,24 @@ def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
                         },
                     },
                     "required": ["symbol"],
+                },
+            },
+            {
+                "name": "check_exit",
+                "description": (
+                    "Evaluate exit decisions for paper positions via 13-domain ExitEngine "
+                    "(ExitCheckPort, SPEC §1.2). Read-only advisory: returns action/reason/reduce_frac, "
+                    "never places orders. FAIL-OPEN: engine unavailable → all HOLD + degraded."
+                ),
+                "annotations": {"readOnlyHint": True, "destructiveHint": False},
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {
+                            "type": "string",
+                            "description": "OKX instId; omit to evaluate all paper positions",
+                        }
+                    },
                 },
             },
             {

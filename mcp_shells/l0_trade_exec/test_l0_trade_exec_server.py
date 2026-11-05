@@ -2,7 +2,7 @@
 """交易执行壳（l0.trade-exec.mcp）契约测试 — 阶段三/四验收。
 
 覆盖（全部零网络、零外部服务依赖）：
-  - tools/list 工具面与注册表登记一致（9 工具 + 写工具 annotations）
+  - tools/list 工具面与注册表登记一致（10 工具 + 写工具 annotations）
   - 统一信封结构（ok/degraded/meta.mode=paper/meta.cost）
   - 注册表自描述能力注入（meta.shadow_capable / oracle_verifiable / config_version）
   - 执行权闸门：live:11-bypass / disabled 标的 → execution_rights_conflict
@@ -27,6 +27,7 @@ READ_TOOLS = {
     "get_positions",
     "get_balance",
     "pre_trade_check",
+    "check_exit",
     "get_account_mode",
     "reconcile",
     "read_signals",
@@ -224,3 +225,75 @@ def test_account_mode_reports_rights(env):
     assert rights["available"] is True
     assert rights["defaults"]["outcome"] == "paper"
     assert "ETH-USDT-SWAP" in rights["declared_symbols"]
+
+
+def _seed_ledger(env, positions: dict) -> None:
+    led_dir = Path(env["TRADE_EXEC_LEDGER_DIR"])
+    led_dir.mkdir(parents=True, exist_ok=True)
+    (led_dir / "paper_ledger.json").write_text(
+        json.dumps(
+            {
+                "balance": 1000.0,
+                "initial_capital": 1000.0,
+                "realized_pnl": 0.0,
+                "fee_paid": 0.0,
+                "positions": positions,
+                "pending_orders": {},
+                "fills": [],
+                "executed_signals": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_check_exit_empty_positions(env):
+    """无持仓时 check_exit 返回空决策集，不报错（Fail-Open）。"""
+    res = _call("check_exit", {}, env)
+    assert res["ok"] is True
+    assert res["data"]["count"] == 0
+    assert res["data"]["should_exit_count"] == 0
+
+
+def test_check_exit_evaluates_paper_position(env):
+    """有持仓时逐仓调用 13 域 ExitEngine，返回 action/should_exit/reason。"""
+    _seed_ledger(
+        env,
+        {
+            "BTC": {
+                "inst_id": "BTC-USDT-SWAP",
+                "pos_side": "long",
+                "pos": 0.1,
+                "avg_px": 50000.0,
+                "opened_at": "2026-11-05T00:00:00+00:00",
+            }
+        },
+    )
+    res = _call("check_exit", {"symbol": "BTC-USDT-SWAP"}, env)
+    assert res["data"]["count"] == 1
+    d = res["data"]["decisions"][0]
+    assert d["inst_id"] == "BTC-USDT-SWAP"
+    assert d["action"] in {"CLOSE", "REDUCE", "HOLD", "RAISE_TP"}
+    assert isinstance(d["should_exit"], bool)
+
+
+def test_sizing_clamp_never_upsizes():
+    """PositionSizer 建议只作上限：超限收紧、未超限保持、建议缺失不生效。"""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("trade_exec_server_under_test", SERVER)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    sizing = {"ok": True, "base_size_coins": 0.01}
+    assert mod._apply_sizing_clamp(0.5, sizing) == 0.01
+    assert sizing["clamped"] is True
+    assert sizing["requested_size"] == 0.5
+
+    sizing2 = {"ok": True, "base_size_coins": 0.01}
+    assert mod._apply_sizing_clamp(0.005, sizing2) == 0.005
+    assert sizing2["clamped"] is False
+
+    # 建议缺失/为 0（如行情不可用）→ 不改变原值
+    assert mod._apply_sizing_clamp(0.5, {"ok": False}) == 0.5
+    assert mod._apply_sizing_clamp(0.5, {"ok": True, "base_size_coins": 0}) == 0.5

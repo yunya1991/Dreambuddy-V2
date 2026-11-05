@@ -329,6 +329,13 @@ shells:
         read_write: read
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
+      # ── 阶段七新增：ExitCheckPort（13 域 ExitEngine，只读建议）──
+      - name: check_exit
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
       - name: get_account_mode
         port: event
         domain: trade-exec
@@ -384,7 +391,7 @@ worker_roles:
   executor:
     description: 执行 Worker——交易执行观测（trade-exec 壳，只读）
     shells: [l0.trade-exec.mcp]
-    tools: [get_positions, get_balance, pre_trade_check,
+    tools: [get_positions, get_balance, pre_trade_check, check_exit,
             get_account_mode, reconcile, read_signals]
     # 硬约束（ADR-9/H7）：Worker 角色只读，禁止纳入 requires_mandate=true 的写工具。
     # place_order / cancel_order / ingest_signal 仅由编排侧（持 Mandate）调用。
