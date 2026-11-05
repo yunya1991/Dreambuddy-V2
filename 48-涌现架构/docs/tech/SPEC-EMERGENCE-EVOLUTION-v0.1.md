@@ -186,7 +186,11 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 - **落地状态（2026-11-05）**：🟡 设施落盘 + 首次真实评估完成——`experiments/e5_cbr_holdout/cbr_holdout.py`（SCAN 式：5 市场原语中位数分箱 → cell 组合整体扣留 + 逐 eligible cell 池化评估；组合法=逐原语贡献 logistic 线性组合，基线=kNN 检索复用；配对符号翻转置换检验 10k 次 + 显式方向检查 + 同态误差辅助指标 + insufficient_data 联动 E6 需求单 gap_type=case_sparse）；11 测试全绿（含 SCAN 性质 toy 检验：训练未见 (1,1,0,0) 组合时组合法 5/5 泛化、kNN 0/5）；M6 已接入 `metrics/emergence_metrics.py`
 - **首次真实评估结果（如实记录）**：162 回测案例（washout 69 + pump_dump 93，统一 5 原语 schema，entry_price 剔除）、8 eligible cell、n_eval=150 → **inconclusive**：组合 0.66 vs 检索 0.66 池化打平（improvement=0.0, p=1.0；逐 cell 互有胜负，如 cell[0,1,1,1,0] 组合 0.625 vs 检索 0.375，cell[1,1,0,1,0] 反之），同态误差 0.067（表征弱同态）。按验收口径：当前不申报 E1 候选，也不记证伪——数据现实制约：生产 evolution_cases/ 仅 1 案例（远低于 min_cases=30），实验只能用回测导出薄特征案例（5 原语、confidence 三特征高度相关），原语多样性不足以让组合法发挥结构优势；待真实闭环案例积累后重跑
 - **shadow_rl 回填（2026-11-06，样本与原语双扩容）**：新增 `load_shadow_rl_cases` 适配器，改接 23 域 `gene_data/shadow_rl_samples.jsonl`（42.17 万行 / 16.59 万唯一 5 维市场状态向量）。口径：只取入场决策（long/light_long/short，过滤 85% 的 WAIT），原语换成 `R_up/R_down/R_smooth/R_flow/R_reflexivity` 五个**独立**市场状态维度 + `is_short` 第 6 维（`assign_cells` 参数化 `n_continuous`）。关键数据现实：reward 92.9% 为 0（未平仓占位），保留会让任何模型都预测负类、准确率虚高到 95% → **`drop_zero=True` 丢弃后用 reward>0 作标签**，有效样本 2857 条、正例 48.2%（自然平衡）；分层采样 + eligible cell 均匀抽样 8 个控制 O(n²) 成本
-- **回填后真实结果（如实记录）**：2857 案例 / 30 eligible cell / 评估 8 cell / n_eval=498 → **falsified**：组合法 45.2% vs kNN 检索 53.6%（improvement=-8.4pp，p=0.0071 显著为负），同态误差 **0.015**（表征同态成立，相似状态→相似结果，故检索天然占优）。**关键限定（已写入结果 `limitation` 字段）**：组合器是线性 logistic，市场状态→收益关系高度非线性时线性组合必然劣势——本结果只证伪「**线性**组合泛化」，不等于「组合泛化不可能」；需升级非线性组合器（MLP/GBDT）复测才能对 E1 判据下最终结论。M6 已优先读取该结果
+- **两轮真实结果（如实记录，2026-11-06）**：2857 案例 / 30 eligible cell / 评估 8 cell / n_eval=498，同态误差 **0.015**（表征同态成立，相似状态→相似结果，检索天然占优）
+  - **第一轮·线性 logistic**：组合法 45.2% vs kNN 53.6%（improvement=-8.4pp，p=0.0071）→ **falsified**
+  - **第二轮·非线性 MLP（单隐层 tanh，16 单元，已排除「组合器能力不足」混淆项）**：组合法 50.2% vs kNN 53.6%（improvement=-3.4pp，p=0.237）→ **inconclusive**（差距从 -8.4pp 收窄到 -3.4pp，但未超越检索且不显著）
+  - **判读**：两轮均未出现「组合优于检索」，E1 判据**不成立**；但更深层事实是**该原语集对标签预测力本身弱**——kNN 也仅 53.6%（近随机），MLP 仅 50.2%。故当前结论是「在此原语/标签口径下 E1 不可判定」，不是「E1 永久不可满足」。下一步应换更强原语（多步 horizon / 相对收益分位）或换标签口径，而非继续调组合器容量
+  - M6 已优先读取该结果（`e5_holdout_shadow_rl_result.json`），`limitation` 字段机器可读防误读
 - 内容：把某类市场原语（如某 regime 形态）从 CBR 案例库**整体扣留**，测试系统能否用其余案例**组合**出对该新形态的正确响应
 - 辅助指标：同态误差——结构相似的行情应激活相似的案例/因子组合，作为 CBR 表征质量连续监控
 - **度量 M6**（E1 判据金标准）：holdout 形态上组合响应成功率 vs 最近邻检索复用基线

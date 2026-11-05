@@ -338,6 +338,62 @@ def composition_predict(
     return [float(v) for v in 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))]
 
 
+def mlp_composition_predict(
+    train: List[Dict[str, Any]],
+    holdout: List[Dict[str, Any]],
+    hidden: Tuple[int, ...] = (16,),
+    max_iter: int = 1500,
+    alpha: float = 1e-3,
+    seed: int = 0,
+) -> List[float]:
+    """非线性组合器：单隐层 MLP 逐原语非线性组合。
+
+    E1 判据要求「组合法 vs 检索复用」。上一轮线性 logistic 在 shadow_rl 上
+    falsified（45.2% vs kNN 53.6%），但市场状态→收益高度非线性时线性组合天然
+    劣势——本函数用于排除「组合器能力不足」这一混淆项。sklearn 不可用时
+    FAIL-OPEN 回退线性组合器并记录。
+    """
+    if not train or not holdout:
+        return []
+    x_train, x_hold, y_train = _standardize(train, holdout)
+    if len(np.unique(y_train)) < 2:
+        return [float(y_train.mean())] * len(x_hold)
+    try:
+        from sklearn.neural_network import MLPClassifier
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN 回退线性
+        logger.warning("sklearn 不可用，回退 logistic 组合器: %s", exc)
+        return composition_predict(train, holdout)
+
+    clf = MLPClassifier(
+        hidden_layer_sizes=hidden,
+        activation="tanh",
+        solver="adam",
+        alpha=alpha,
+        max_iter=max_iter,
+        random_state=seed,
+        early_stopping=False,
+        learning_rate_init=0.01,
+    )
+    clf.fit(x_train, y_train)
+    return [float(p) for p in clf.predict_proba(x_hold)[:, 1]]
+
+
+def _limitation_text(compositor: str) -> str:
+    """结果可信度限定（机器可读，防误读为「E1 永久证伪」）。"""
+    if compositor == "logistic":
+        return (
+            "组合法为线性 logistic；若原语→结果关系非线性，线性组合天然劣势。"
+            "falsified 只证伪「线性组合泛化」，不等于「组合泛化不可能」——"
+            "需升级为非线性组合器（MLP/GBDT）复测才能对 E1 判据下最终结论。"
+        )
+    return (
+        "组合法为单隐层 tanh MLP（非线性），已排除「线性组合器能力不足」混淆项。"
+        "若仍 falsified，说明在当前 5 维市场状态原语上组合泛化不优于 kNN 检索复用；"
+        "但 2857 样本仍有容量/过拟合空间，须结合同态误差与逐 cell 分布解读，"
+        "不据此宣布「E1 永久不可满足」。"
+    )
+
+
 # ============================================================
 # 显著性与判定
 # ============================================================
@@ -465,24 +521,31 @@ def run(
     max_cases: Optional[int] = None,
     label_mode: str = "positive",
     max_holdout_cells: int = 8,
+    compositor: str = "both",
 ) -> Dict[str, Any]:
     """E5 主流程：加载 → 分箱 → 逐 eligible cell holdout 评估 → 池化显著性检验。
 
     source:
       - "backtest"（默认）：11 域双库回测案例（162 条，原语 3 confidence 高度相关）
       - "shadow_rl"：23 域 shadow_rl_samples（5 维独立市场状态，可分层采样到 2 万条）
+    compositor:
+      - "both"（默认）：MLP 非线性为主判据 + logistic 线性对照，同 fold 对比
+      - "mlp"：只跑非线性组合器
+      - "logistic"：只跑线性组合器（旧口径，可复现上一轮 falsified）
     """
     rng = np.random.default_rng(seed)
+    model_name = {
+        "mlp": "mlp_tanh_h16",
+        "logistic": "logistic_linear",
+        "both": "mlp_tanh_h16+logistic_linear",
+    }.get(compositor, compositor)
     result: Dict[str, Any] = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "status": "ok",
         "source": source,
-        "composition_model": "logistic_linear",
-        "limitation": (
-            "组合法为线性 logistic；若原语→结果关系非线性，线性组合天然劣势。"
-            "falsified 只证伪「线性组合泛化」，不等于「组合泛化不可能」——"
-            "需升级为非线性组合器（MLP/GBDT）复测才能对 E1 判据下最终结论。"
-        ),
+        "compositor": compositor,
+        "composition_model": model_name,
+        "limitation": _limitation_text(compositor),
     }
 
     try:
@@ -541,25 +604,34 @@ def run(
 
     # 池化评估：每个 eligible cell 依次整体扣留，模型在其余案例上训练后预测该 cell
     comp_correct: List[float] = []
+    comp_linear_correct: List[float] = []
     knn_correct: List[float] = []
     per_cell: List[Dict[str, Any]] = []
     for cell in cells:
         train, holdout = holdout_split(cases, cell)
-        comp_p = composition_predict(train, holdout)
+        if compositor == "logistic":
+            comp_p = composition_predict(train, holdout)
+            lin_p: Optional[List[float]] = comp_p
+        else:
+            comp_p = mlp_composition_predict(train, holdout, seed=seed)
+            lin_p = composition_predict(train, holdout) if compositor == "both" else None
         knn_p = knn_baseline_predict(train, holdout, k=knn_k)
         labels = [c["label"] for c in holdout]
         cc = [float(int(p >= 0.5) == y) for p, y in zip(comp_p, labels, strict=True)]
         kc = [float(int(p >= 0.5) == y) for p, y in zip(knn_p, labels, strict=True)]
         comp_correct.extend(cc)
         knn_correct.extend(kc)
-        per_cell.append(
-            {
-                "cell": list(cell),
-                "n": len(holdout),
-                "acc_composition": sum(cc) / len(cc),
-                "acc_knn": sum(kc) / len(kc),
-            }
-        )
+        entry: Dict[str, Any] = {
+            "cell": list(cell),
+            "n": len(holdout),
+            "acc_composition": sum(cc) / len(cc),
+            "acc_knn": sum(kc) / len(kc),
+        }
+        if lin_p is not None:
+            lc = [float(int(p >= 0.5) == y) for p, y in zip(lin_p, labels, strict=True)]
+            comp_linear_correct.extend(lc)
+            entry["acc_composition_linear"] = sum(lc) / len(lc)
+        per_cell.append(entry)
 
     n_eval = len(comp_correct)
     acc_comp = float(np.mean(comp_correct)) if n_eval else 0.0
@@ -580,6 +652,9 @@ def run(
         homomorphism_error=homomorphism_error(cases, rng=rng),
         per_cell=per_cell,
     )
+    if comp_linear_correct:
+        result["acc_composition_linear"] = float(np.mean(comp_linear_correct))
+        result["improvement_linear"] = result["acc_composition_linear"] - acc_knn
     if v == "insufficient_data":
         result["status"] = "insufficient_data"
         result["reason"] = f"n_eval={n_eval} < min_eval={min_eval}"
@@ -594,6 +669,7 @@ def main() -> int:
     parser.add_argument("--source", default="backtest", choices=["backtest", "shadow_rl"])
     parser.add_argument("--max-cases", type=int, default=None, help="分层采样上限（shadow_rl）")
     parser.add_argument("--label-mode", default="positive", choices=["median", "positive"])
+    parser.add_argument("--compositor", default="both", choices=["both", "mlp", "logistic"])
     parser.add_argument("--n-perm", type=int, default=10000)
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
@@ -603,6 +679,7 @@ def main() -> int:
         max_cases=args.max_cases,
         label_mode=args.label_mode,
         n_perm=args.n_perm,
+        compositor=args.compositor,
     )
     if args.out:
         out = Path(args.out)

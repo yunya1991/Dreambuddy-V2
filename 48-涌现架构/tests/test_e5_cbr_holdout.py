@@ -496,8 +496,57 @@ def test_run_shadow_rl_source_reports_metadata(tmp_path):
     )
     assert result["source"] == "shadow_rl"
     assert result["label_mode"] == "positive"
+    assert result["compositor"] == "both"
     # 部分 reward=0 被丢弃（drop_zero 默认开），故 loaded < 400
     assert 350 <= result["n_cases_loaded"] < 400
     assert result["n_cases"] <= 200
     assert 0.0 <= result["pos_ratio"] <= 1.0
     assert result["status"] in ("ok", "insufficient_data")
+    if result["status"] == "ok":
+        # both 模式必须同时产出非线性主判据与线性对照
+        assert "acc_composition_linear" in result
+        assert result["composition_model"] == "mlp_tanh_h16+logistic_linear"
+
+
+# ============================================================
+# 非线性组合器（2026-11-06）：排除「线性组合器能力不足」混淆项
+# ============================================================
+
+
+def _xor_cases(n: int, rng: np.random.Generator) -> list:
+    """二维 XOR 概念 + 4 维常数列（占位），线性不可分。"""
+    x = rng.random((n, 2)) * 2 - 1
+    y = (x[:, 0] * x[:, 1] > 0).astype(int)
+    feats = np.hstack([x, np.zeros((n, 4))])
+    return [
+        {"features": f, "label": int(lbl), "cell": (0, 0, 0, 0, 0, 0)}
+        for f, lbl in zip(feats, y, strict=True)
+    ]
+
+
+def _acc(probs, cases) -> float:
+    return sum(int(int(p >= 0.5) == c["label"]) for p, c in zip(probs, cases, strict=True)) / len(
+        cases
+    )
+
+
+def test_mlp_beats_linear_on_nonlinear_concept():
+    rng = np.random.default_rng(0)
+    train = _xor_cases(600, rng)
+    test = _xor_cases(200, rng)
+
+    mlp_acc = _acc(ch.mlp_composition_predict(train, test, seed=0), test)
+    lin_acc = _acc(ch.composition_predict(train, test), test)
+
+    assert mlp_acc > 0.8  # 非线性关系上 MLP 应能学会
+    assert mlp_acc > lin_acc + 0.1  # 且显著优于线性
+
+
+def test_mlp_handles_single_class_train_set():
+    train = [{"features": np.zeros(6), "label": 1} for _ in range(10)]
+    hold = [{"features": np.ones(6), "label": 1} for _ in range(3)]
+    assert ch.mlp_composition_predict(train, hold) == [1.0, 1.0, 1.0]
+
+
+def test_mlp_empty_inputs_return_empty():
+    assert ch.mlp_composition_predict([], []) == []
