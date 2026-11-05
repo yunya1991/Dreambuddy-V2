@@ -17,10 +17,12 @@ async function trendRequest<T = any>(endpoint: string): Promise<T> {
   const url = `${TREND_BASE}${endpoint}`;
   // GET 请求不设置 Content-Type，避免触发 CORS 预检（OPTIONS）
   // 后端 BaseHTTPRequestHandler 不支持 OPTIONS 方法
-  // 60s 超时：后端首次冷启动需 OKX 拉取 15-20s + compute_full_trading_signal 3-6s，
-  // 三个 API 并发首屏拉取时可能叠加，30s 不够会 abort "signal is aborted without reason"
+  // 180s 超时：后端首次冷启动需 OKX 拉取 15-20s + compute_full_trading_signal 3-6s。
+  // 关键: BaseHTTPRequestHandler 单线程串行处理，三个 API 并发命中时排队:
+  //   req1 (trend) = 60s, req2 (wave) 排队60s+处理60s = 120s, req3 同理
+  // 所以需要 >=180s 才能保证三个并发请求都在超时前完成
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60_000);
+  const timeoutId = setTimeout(() => controller.abort(), 180_000);
 
   try {
     const response = await fetch(url, {

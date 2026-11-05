@@ -20,9 +20,9 @@ async function bdsmRequest<T = any>(endpoint: string): Promise<T> {
   const url = `${BDSM_BASE}${endpoint}`;
   // GET 请求不设置 Content-Type，避免触发 CORS 预检（OPTIONS）
   // 后端 BaseHTTPRequestHandler 不支持 OPTIONS 方法
-  // 30s 超时：后端读 JSON 文件 + 30s 缓存，通常 < 100ms
+  // 120s 超时：冷启动后通常 <100ms，但需要等同端口并发的 trend/wave 请求先完成
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+  const timeoutId = setTimeout(() => controller.abort(), 120_000);
 
   try {
     const response = await fetch(url, {
