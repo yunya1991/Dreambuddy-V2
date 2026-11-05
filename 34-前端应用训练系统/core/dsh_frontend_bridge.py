@@ -92,6 +92,24 @@ IN_PROCESS_HANDLERS: Dict[str, Dict[str, Any]] = {
         "handler": "_handle_orchestrator_v2",
         "tools": ["orchestrator"],
     },
+    # Knowledge search (RAG: fts/vector/hybrid)
+    "knowledge.search": {
+        "module": None,
+        "handler": "_handle_knowledge_search",
+        "tools": ["search"],
+    },
+    # Skill index (scan_skills/build_registry/drift/conflicts)
+    "skill.index": {
+        "module": None,
+        "handler": "_handle_skill_index",
+        "tools": ["list", "query", "drift", "conflicts", "stats"],
+    },
+    # User memory (SQLite user_memory.db, 与认知系统物理隔离)
+    "user.memory": {
+        "module": None,
+        "handler": "_handle_user_memory",
+        "tools": ["get", "put", "delete", "list", "search"],
+    },
 }
 
 
@@ -281,6 +299,400 @@ def _handle_orchestrator_v2(args: Dict[str, Any]) -> Dict[str, Any]:
             "ok": False,
             "error_code": "shell_degraded",
             "meta": {"reason": f"orchestrator_error: {type(e).__name__}: {e}"},
+        }
+
+
+# ── Knowledge search handler ──────────────────────────────────────────
+
+
+def _resolve_rag_infra_dir() -> Optional[str]:
+    repo_root = _resolve_repo_root()
+    candidate = os.path.normpath(os.path.join(repo_root, "2-KNOWLEDGE", "9-RAG-INFRA"))
+    if os.path.isdir(candidate):
+        if candidate not in sys.path:
+            sys.path.insert(0, candidate)
+        return candidate
+    return None
+
+
+def _handle_knowledge_search(args: Dict[str, Any]) -> Dict[str, Any]:
+    """内联 handler: RAG 检索 (fts/vector/hybrid), 包装 knowledge_search_adapter.py 原逻辑。"""
+    rag_dir = _resolve_rag_infra_dir()
+    query = args.get("query", "")
+    top_k = int(args.get("top_k", 5))
+    method = args.get("method", "hybrid")
+
+    if not query:
+        return {
+            "ok": True,
+            "data": {"results": [], "method": method, "degraded": False},
+            "error_code": None,
+            "meta": {"shell_id": "knowledge.search"},
+        }
+    if rag_dir is None:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": "rag_infra_not_found"},
+        }
+
+    _keyword_search = _hybrid_search = _vector_search = None
+    try:
+        from rag_engine.keyword_search import keyword_search as _keyword_search  # noqa: F811
+    except Exception:
+        pass
+    try:
+        from rag_engine.hybrid_retriever import hybrid_search as _hybrid_search  # noqa: F811
+    except Exception:
+        pass
+    try:
+        from vector_store.search import search as _vector_search  # noqa: F811
+    except Exception:
+        pass
+
+    results, degraded = [], False
+    try:
+        if method == "fts":
+            if _keyword_search:
+                raw = _keyword_search(query, top_k=top_k)
+                results = _format_knowledge_results(raw, "fts")
+            else:
+                degraded = True
+        elif method == "vector":
+            if _vector_search:
+                raw = _vector_search(query, top_k=top_k)
+                results = _format_knowledge_results(raw, "vector")
+            else:
+                degraded = True
+        else:
+            if _hybrid_search:
+                raw = _hybrid_search(query, top_k=top_k)
+                results = _format_knowledge_results(raw, "hybrid")
+            elif _keyword_search:
+                raw = _keyword_search(query, top_k=top_k)
+                results = _format_knowledge_results(raw, "fts")
+                degraded = True
+            else:
+                degraded = True
+    except Exception as e:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": f"search_error: {type(e).__name__}: {e}"},
+        }
+
+    return {
+        "ok": True,
+        "data": {"results": results[:top_k], "method": method, "degraded": degraded},
+        "error_code": None,
+        "meta": {"shell_id": "knowledge.search"},
+    }
+
+
+def _format_knowledge_results(raw, method: str) -> list:
+    formatted = []
+    for r in raw or []:
+        formatted.append(
+            {
+                "content": r.get("content", ""),
+                "score": round(float(r.get("score", r.get("final_score", 0))), 4),
+                "source": r.get("source_file", r.get("source", "")),
+                "heading": r.get("heading", ""),
+                "domain": r.get("domain", ""),
+            }
+        )
+    return formatted
+
+
+# ── Skill index handler ────────────────────────────────────────────────
+
+
+def _resolve_skill_indexer_dir() -> Optional[str]:
+    repo_root = _resolve_repo_root()
+    candidate = os.path.normpath(
+        os.path.join(repo_root, "1-ARCHITECTURE", "skills", "dream-skill-index-governance")
+    )
+    if os.path.isdir(candidate):
+        if candidate not in sys.path:
+            sys.path.insert(0, candidate)
+        return candidate
+    return None
+
+
+def _handle_skill_index(args: Dict[str, Any]) -> Dict[str, Any]:
+    """内联 handler: Skill 索引 (list/query/drift/conflicts/stats), 包装 skill_index_adapter.py 原逻辑。"""
+    skill_dir = _resolve_skill_indexer_dir()
+    command = args.get("command", "list")
+    if skill_dir is None:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": "skill_indexer_not_found"},
+        }
+
+    try:
+        from skill_indexer import (
+            ALL_SKILL_ROOTS,
+            build_registry,
+            detect_conflicts,
+            detect_drift,
+            scan_skills,
+        )
+    except Exception as e:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": f"skill_indexer_import_failed: {type(e).__name__}: {e}"},
+        }
+
+    try:
+        roots = ALL_SKILL_ROOTS
+        entries = scan_skills(roots)
+
+        if command == "list":
+            registry = build_registry(entries)
+            return {
+                "ok": True,
+                "data": registry,
+                "error_code": None,
+                "meta": {"shell_id": "skill.index"},
+            }
+
+        if command == "query":
+            trigger = args.get("trigger")
+            category = args.get("category")
+            status = args.get("status")
+            matched = []
+            for e in entries:
+                if trigger is not None and trigger not in e.triggers:
+                    continue
+                if category is not None and e.category != category:
+                    continue
+                if status is not None and e.status != status:
+                    continue
+                matched.append(
+                    {
+                        "name": e.name,
+                        "description": e.description,
+                        "version": e.version,
+                        "status": e.status,
+                        "category": e.category,
+                        "triggers": e.triggers,
+                        "cognitive_links": e.cognitive_links,
+                        "confidence": e.confidence,
+                        "apply_count": e.apply_count,
+                        "last_verified": e.last_verified,
+                        "path": str(e.path),
+                    }
+                )
+            return {
+                "ok": True,
+                "data": {"schema_version": "1.0", "count": len(matched), "skills": matched},
+                "error_code": None,
+                "meta": {"shell_id": "skill.index"},
+            }
+
+        if command == "drift":
+            return {
+                "ok": True,
+                "data": detect_drift(entries),
+                "error_code": None,
+                "meta": {"shell_id": "skill.index"},
+            }
+
+        if command == "conflicts":
+            return {
+                "ok": True,
+                "data": detect_conflicts(entries),
+                "error_code": None,
+                "meta": {"shell_id": "skill.index"},
+            }
+
+        if command == "stats":
+            by_status, by_category = {}, {}
+            for e in entries:
+                by_status[e.status] = by_status.get(e.status, 0) + 1
+                by_category[e.category] = by_category.get(e.category, 0) + 1
+            return {
+                "ok": True,
+                "data": {
+                    "total_count": len(entries),
+                    "by_status": by_status,
+                    "by_category": by_category,
+                    "roots_scanned": len(roots),
+                },
+                "error_code": None,
+                "meta": {"shell_id": "skill.index"},
+            }
+
+        return {
+            "ok": False,
+            "error_code": "not_found",
+            "meta": {
+                "reason": f"unknown command: {command}",
+                "available": ["list", "query", "drift", "conflicts", "stats"],
+            },
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": f"skill_index_error: {type(e).__name__}: {e}"},
+        }
+
+
+# ── User memory handler ────────────────────────────────────────────────
+
+
+def _resolve_user_memory_db() -> str:
+    repo_root = _resolve_repo_root()
+    # 和 user_memory_adapter.py 原有路径一致
+    candidates = [
+        os.path.normpath(os.path.join(repo_root, "scheduler_data", "user_memory.db")),
+        os.path.normpath(os.path.join(repo_root, "3.1-FRONTEND", "scripts", "user_memory.db")),
+    ]
+    for c in candidates:
+        d = os.path.dirname(c)
+        if not os.path.isdir(d):
+            os.makedirs(d, exist_ok=True)
+        return c
+    return candidates[0]
+
+
+def _ensure_user_memory_schema(conn) -> None:
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS user_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT UNIQUE NOT NULL,
+            value TEXT NOT NULL,
+            category TEXT DEFAULT 'general',
+            source TEXT DEFAULT 'frontend',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_um_key ON user_memories(key)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_um_category ON user_memories(category)")
+    conn.commit()
+
+
+def _handle_user_memory(args: Dict[str, Any]) -> Dict[str, Any]:
+    """内联 handler: 用户层记忆 SQLite 操作, 与 cognitive memory 物理隔离。"""
+    import sqlite3
+
+    command = args.get("command", "list")
+    db_path = _resolve_user_memory_db()
+
+    try:
+        conn = sqlite3.connect(db_path)
+        _ensure_user_memory_schema(conn)
+        cur = conn.cursor()
+
+        if command == "get":
+            key = args.get("key", "")
+            cur.execute(
+                "SELECT id,key,value,category,source,created_at,updated_at FROM user_memories WHERE key=?",
+                (key,),
+            )
+            row = cur.fetchone()
+            cols = ["id", "key", "value", "category", "source", "created_at", "updated_at"]
+            conn.close()
+            if row:
+                return {
+                    "ok": True,
+                    "data": dict(zip(cols, row, strict=True)),
+                    "error_code": None,
+                    "meta": {"shell_id": "user.memory"},
+                }
+            return {
+                "ok": True,
+                "data": None,
+                "error_code": None,
+                "meta": {"shell_id": "user.memory", "reason": "not_found"},
+            }
+
+        if command == "put":
+            key = args.get("key", "")
+            value = args.get("value", "")
+            category = args.get("category", "general")
+            source = args.get("source", "frontend")
+            cur.execute(
+                "INSERT OR REPLACE INTO user_memories(key,value,category,source,updated_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP)",
+                (key, value, category, source),
+            )
+            conn.commit()
+            conn.close()
+            return {
+                "ok": True,
+                "data": {"key": key, "rows": cur.rowcount},
+                "error_code": None,
+                "meta": {"shell_id": "user.memory"},
+            }
+
+        if command == "delete":
+            key = args.get("key", "")
+            cur.execute("DELETE FROM user_memories WHERE key=?", (key,))
+            conn.commit()
+            conn.close()
+            return {
+                "ok": True,
+                "data": {"key": key, "rows": cur.rowcount},
+                "error_code": None,
+                "meta": {"shell_id": "user.memory"},
+            }
+
+        if command == "list":
+            category = args.get("category")
+            if category:
+                cur.execute(
+                    "SELECT id,key,value,category,source,created_at,updated_at FROM user_memories WHERE category=? ORDER BY updated_at DESC",
+                    (category,),
+                )
+            else:
+                cur.execute(
+                    "SELECT id,key,value,category,source,created_at,updated_at FROM user_memories ORDER BY updated_at DESC LIMIT 200"
+                )
+            rows = cur.fetchall()
+            cols = ["id", "key", "value", "category", "source", "created_at", "updated_at"]
+            conn.close()
+            return {
+                "ok": True,
+                "data": [dict(zip(cols, r, strict=True)) for r in rows],
+                "error_code": None,
+                "meta": {"shell_id": "user.memory", "count": len(rows)},
+            }
+
+        if command == "search":
+            q = args.get("query", "")
+            cur.execute(
+                "SELECT id,key,value,category,source,created_at,updated_at FROM user_memories WHERE key LIKE ? OR value LIKE ? ORDER BY updated_at DESC LIMIT 50",
+                (f"%{q}%", f"%{q}%"),
+            )
+            rows = cur.fetchall()
+            cols = ["id", "key", "value", "category", "source", "created_at", "updated_at"]
+            conn.close()
+            return {
+                "ok": True,
+                "data": [dict(zip(cols, r, strict=True)) for r in rows],
+                "error_code": None,
+                "meta": {"shell_id": "user.memory", "count": len(rows)},
+            }
+
+        conn.close()
+        return {
+            "ok": False,
+            "error_code": "not_found",
+            "meta": {
+                "reason": f"unknown command: {command}",
+                "available": ["get", "put", "delete", "list", "search"],
+            },
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": f"user_memory_error: {type(e).__name__}: {e}"},
         }
 
 
@@ -532,6 +944,9 @@ HANDLER_TO_SHELL_ID: Dict[str, str] = {
     "debate": "c-drive.debate",
     "synthesizer": "synthesizer",
     "orchestrator": "orchestrator",
+    "knowledge_search": "knowledge.search",
+    "skill_index": "skill.index",
+    "user_memory": "user.memory",
 }
 
 HANDLER_TO_ROLE: Dict[str, str] = {
@@ -548,6 +963,9 @@ HANDLER_TO_ROLE: Dict[str, str] = {
     "debate": "research",
     "synthesizer": "research",
     "orchestrator": "engineer",
+    "knowledge_search": "research",
+    "skill_index": "research",
+    "user_memory": "research",
 }
 
 
