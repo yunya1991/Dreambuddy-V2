@@ -53,18 +53,21 @@ def _symbol_category(symbol: str) -> str:
 def _orchestrator_to_items(orch_data: dict) -> list:
     """orchestrator 输出 → TradingRankingItem[]。
 
-    orchestrator 输出结构:
-      selection: { long_pool: [{symbol, score, reasons}], short_pool: [...] }
+    orchestrator 输出结构 (可能两种):
+      A (扁平): selection: { long_pool: [...], short_pool: [...] }
+      B (嵌套): selection: { pools: { long_pool: [...], short_pool: [...] }, status: "OK" }
       signal: { symbol, direction, confidence, ... }
       execution: { position: { status, ... } }
     """
     items = []
-    selection = orch_data.get("selection", {})
-    signal = orch_data.get("signal", {})
+    selection = orch_data.get("selection", {}) or {}
+    signal = orch_data.get("signal", {}) or {}
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    long_pool = selection.get("long_pool", []) or []
-    short_pool = selection.get("short_pool", []) or []
+    # 同时支持扁平结构和嵌套 pools 结构
+    pools = selection.get("pools") or selection
+    long_pool = pools.get("long_pool", []) or []
+    short_pool = pools.get("short_pool", []) or []
 
     # 合并两个池, score 高的优先
     candidates = []
