@@ -35,6 +35,7 @@
 | experiments/ | 可复现实验记录（反事实验证、广播联动观测） | 🟡 E0b 回放器落盘：`replay/replay_decisions.py`（shadow/FAIL-OPEN；支持跨天日志回退），`registry/run_human_baseline.py` 产出 OOS 基线（33 笔实盘） |
 | metrics/ | emergence_metrics.jsonl 历史快照 | 🟡 E4a 骨架落盘：`metrics/emergence_metrics.py`（含 M7 需求闭环字段），云端每日 06:10 timer（`dreambuddy-emergence-metrics.timer`）持续快照 |
 | registry/ | E0a 配置基线 + E6 需求闭环设施 | 🟢 E6 基础设施落盘（2026-11-05）：`capability_gaps.py` 需求单存储 + `gap_router.py` 路由器 + `gap_backfill_verify.py` 回填验证；15 测试全绿，L1 验收（3 缺口全链路）通过；真实冒烟首单 GAP-20261105-64d7320e 闭环。回填验证数据源口径实证修正：all_trades.jsonl（止 10-13）→ bcrm_trades.db（与 E0b 同源） |
+| bus/ | E1 广播总线接线 + shadow 订阅者 + M1 度量 | 🟢 E1 基础设施落盘（2026-11-05）：`emergence_bus.py`（3σ 点火 + 接线复用 4-MEMORY `workspace_bus.py` + shadow envelope 落盘 `events/emergence_shadow/`，开关 `EMERGENCE_BUS=1`/flag 默认关）+ `shadow_subscribers.py`（rea/eval/data 兴趣规则 + watchlist 动作下限）+ `m1_linkage.py`（M1=actions/consumed）+ `anomaly_probe.py`（coupling 矩阵 3σ 探测）；11 测试全绿；真实演示 PSI z=4.2 突刺 → eval 动作，M1=0.5。剩余：7 天 shadow 跑数 + ≥1 次非预设联动候选（人工复核） |
 
 ## 维护
 

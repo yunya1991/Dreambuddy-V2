@@ -131,6 +131,8 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 ### Phase E1 — 广播总线接线复用（估 2 天，v0.4 重订：不再从零实现）
 
+- **落地状态（2026-11-05）**：🟢 基础设施已落盘——`bus/emergence_bus.py`（3σ 点火 + 接线复用 `workspace_bus.py` + envelope 落盘 `events/emergence_shadow/bus_*.jsonl`，开关默认关）+ `bus/shadow_subscribers.py`（rea/eval/data 兴趣规则：rea↔coupling / eval↔psi / data↔数据质量；watchlist 新入列+优先级升级=动作下限）+ `bus/m1_linkage.py` + `bus/anomaly_probe.py`（coupling 矩阵 3σ 探测，首跑 0 异常如实记录）；11 测试全绿；真实演示 PSI z=4.2 → eval 消费+动作、rea 消费无动作、data 自身不计消费，M1=0.5。剩余：shadow 跑 7 天 M1 落盘 + ≥1 次非预设联动候选（人工复核）；PSI 实时探测待 drift_detector 历史序列接口接入
+
 - **v0.4 关键修订**：原"最小实现"改**接线复用**——GWT bus 真实实现已存在：`4-MEMORY/9-工具与接口/workspace_bus.py`（pub/sub+ignite+FAIL-OPEN，**从未被生产 import**），shadow 广播通道复用 mcp_shells `agent_mail_shadow.py` envelope→JSONL + `shadow_hook.py`/`shadow_driver.py`。**删去**"向 47 提交 L0-I 契约扩展申请"（v0.4 判定：L0-I 定义在 44 域、47 全文无此词、shadow 落盘本不需要契约——阻塞是自我强加）
 - 内容：任一域 PSI 突刺 / coupling 异常 → 事件广播到 rea/eval/data 三域 → 记录非目标域的响应；**接线点**：生产 import `workspace_bus.py`，shadow 期直接落盘 envelope JSONL 到 `events/emergence_shadow/*.jsonl`
 - **设计要点（BIO 条件 #5）**：(a) 广播前必须有竞争/点火阈值（建议取 3σ 偏离），不能什么都广播；(b) 广播内容必须**改变接收模块行为**，否则总线只是消息队列，不算 GWT

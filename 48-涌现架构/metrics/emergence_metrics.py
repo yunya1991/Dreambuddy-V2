@@ -154,6 +154,20 @@ def _m7_demand_loop() -> Dict[str, Any]:
         return {"value": None, "status": "unavailable", "note": str(exc)}
 
 
+def _m1_linkage() -> Dict[str, Any]:
+    """M1 广播联动率（E1）：非目标域消费并产生动作的比例。"""
+    try:
+        _bus_dir = str(_REPO_ROOT / "48-涌现架构" / "bus")
+        if _bus_dir not in sys.path:
+            sys.path.insert(0, _bus_dir)
+        import m1_linkage
+
+        result = m1_linkage.compute_m1()
+        return {"value": result, "status": result.get("status", "ok")}
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
+
+
 def collect() -> Dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     return {
@@ -166,6 +180,7 @@ def collect() -> Dict[str, Any]:
         },
         "complexity_trajectory": _complexity_trajectory(),
         "m7_demand_loop": _m7_demand_loop(),
+        "m1_broadcast_linkage": _m1_linkage(),
     }
 
 
