@@ -1,6 +1,6 @@
-# SPEC-49 神经网络交易系统框架协议 v0.10
+# SPEC-49 神经网络交易系统框架协议 v0.11
 
-- 状态：🟡 v0.10 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 全部评审决议 + 实施路线；本文只定义架构、协议契约、提案与路线，不含实现代码）
+- 状态：🟡 v0.11 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 全部评审决议 + 实施路线 + 封装执行层修订；本文只定义架构、协议契约、提案与路线，不含实现代码）
 - 日期：2026-11-05
 - 归属：49-交易框架协议（交易域总体框架与协议唯一事实源）
 - 上游输入：数据层（18 采集 / 19 DAL / 20 清洗 / 21 特征 / 38 数据库）、39 金融语义蒸馏、9 基本面分析
@@ -8,7 +8,7 @@
 - 协调层：42 神经网络交易协调层（插件总线 / 参数治理 / 信号归一化）
 - 子交易系统：11-BCRM2.0、11-BDSM、29 事件驱动（以及未来插件）
 - **矛盾裁决与最终决策层：23 四层闭环自进化交易架构**
-- 执行层：L0 trade-exec MCP（paper 唯一出口）、11 域 okx_client 旁路网关（live 唯一出口）
+- 封装执行层（EXEC / L1.5）：执行层 paper MCP（历史名 `l0.trade-exec.mcp`；paper 唯一出口）、11 域交易执行器 / okx_client 旁路（live 唯一出口）；**13/16/22/11 执行器不属于 L0**
 - 分析层：L2 DreamOS / DSH Worker（只读观察，不进入闭环）
 - **代码基线**：工作区代码快照约 `be75caa7`（2026-11-05 08:31Z）；trade-exec 相关文件来自 `1eb0076`（通过 git 对象读取）。提交基线为 `f27fddfc`（2026-11-05 15:42Z）；`1eb0076` 之后的提交均为 48-涌现架构（emergence），未触及 23/40/42/43/trade-exec，故本 SPEC 的交易域核验结论仍适用。技术文档可能滞后，**文档与代码冲突处以代码为准**；工作区尚未同步 origin/main 全部对象。
 
@@ -25,7 +25,7 @@
 - **协调层**：42 作为插件总线，把宏观约束与各子交易系统的候选信号统一归一化。
 - **子交易系统层**：BCRM2.0、BDSM、29 事件驱动（未来可插入更多策略）——它们是**传感器与候选信号源**。
 - **矛盾裁决与最终决策层**：23 通过矛盾系统 + 矛盾 Transformer 识别宏观与微观冲突，做矛盾转化与最小阻力路径求解，输出唯一最终决策信号。
-- **执行层**：L0 trade-exec MCP（paper）/ 11 旁路（live）。
+- **封装执行层（EXEC / L1.5）**：执行层 paper MCP（paper）/ 11 交易执行器旁路（live）；**不属于 L0**。
 - **反馈层**：成交/PnL/拒单 → 样本 → 训练/进化 → 反哺 23 与宏观层。
 
 ### 0.2 23 的定位：矛盾裁决器 + 最终决策器（本版核心修正）
@@ -47,7 +47,7 @@
 3. **所有子交易系统必须消费宏观弹性约束**：BCRM2.0、BDSM、29、23 无例外；未来插件同样必须订阅。
 4. **42 = 插件总线 + 约束分发 + 参数治理**：新增策略通过 `registry.yaml` + `adapters/` 接入，零代码侵入。
 5. **23 = 矛盾裁决器 + 唯一最终决策出口（全标的）**：识别宏观/微观冲突、做矛盾转化与最小阻力路径求解，输出 FinalDecisionSignal v1。
-6. **执行统一收口**：paper 走 L0 trade-exec MCP；live 走 11 域 okx_client 旁路，**实盘链路永不暴露 MCP**。
+6. **执行统一收口**：paper 走**封装执行层 paper MCP**；live 走 11 交易执行器 / okx_client 旁路，**实盘链路永不暴露 MCP**。13/16/22/11 执行器属执行层，**不归入 L0**。
 7. **L1 闭环、L2 只读**：L1 自身是“信号→执行→反馈→训练→再信号”的闭环；L2 只能通过 `l1.trading.mcp` 只读观察。
 8. **13 风控优先**：任何宏观约束、42 参数、23 裁决都不得放宽 13 风控门禁。
 9. **编号口径**：40 周期神经网络、42 协调层、43 战略承接；41 是文件索引系统，不参与交易链。
@@ -76,17 +76,21 @@
 
 ## §1 分层与模块映射
 
-### 1.1 七层职责
+### 1.1 七层职责（含封装执行层）
 
 | 层 | 组成 | 职责 | 不做什么 |
 |---|---|---|---|
 | **输入层** | 18/19/20/21/38、39、9 | 行情、宏观、特征、语义、基本面 | 不产生交易信号 |
 | **宏观弹性约束层** | 40 → 43 | 长周期结构约束 → 战略档位/仓位带/风控守卫 | 不下单、不直接出交易信号 |
 | **协调层** | 42 | 插件注册、SignalSchema 归一化、约束分发、参数治理 | 不做策略判断、不下单 |
-| **子交易系统层** | 11-BCRM2.0、11-BDSM、29 | 传感器 + 候选信号生成；必须受宏观约束 | 不绕过 42、不直接下单 |
+| **子交易系统层** | 11-BCRM2.0、11-BDSM、11-event-arbitrage、11-washout、29 | 传感器 + 候选信号生成；必须受宏观约束 | 不绕过 42、不直接下单 |
 | **矛盾裁决与最终决策层** | **23** | **矛盾识别/转化 + 矛盾 Transformer + 最小阻力路径 + 最终决策** | 不执行下单 |
-| **执行层** | L0 trade-exec MCP（paper）/ 11 旁路（live） | 风控→定容→执行→对账 | 不改写策略、不触实盘（MCP） |
-| **反馈层** | L0 样本、11 成交、23 训练/进化 | 样本→训练→进化→反哺 23 与宏观层 | 不直接改生产参数（须走门禁） |
+| **封装执行层（EXEC / L1.5）** | **13 风控 / 16 定容 / 22 执行 / 11 交易执行器 + paper MCP / 11 live bypass** | 风控→定容→执行→对账；paper MCP 与 live 旁路统一收口 | **不属于 L0**；不改写策略、不触实盘（MCP） |
+| **反馈层** | 执行层样本、11 成交、23 训练/进化 | 样本→训练→进化→反哺 23 与宏观层 | 不直接改生产参数（须走门禁） |
+
+> **分层更正（2026-11-06）**：13/16/22 与 11 交易执行器属于**封装执行层（EXEC / L1.5）**，**不属于 L0**。L0 只保留数据（18/19/20/21/38）、认知（35/4-MEMORY）、语义（39）、REA（33）。
+>
+> **术语更正**：历史章节中的 `L0 trade-exec MCP` / `l0.trade-exec.mcp` 均指**封装执行层 paper MCP**；目标命名为 `exec.trade.mcp`，迁移项 R-EXEC-04。
 
 ### 1.2 模块映射
 
@@ -102,11 +106,11 @@
 | 11-BDSM | 子交易系统 | 基本面/价值驱动 | `bdsm_snapshot_*.json`、`direction_constraint` / `cap_multiplier` |
 | 29 事件驱动 | 子交易系统 | 离散宏观事件脉冲 | `EventSignal`、`event_driven_state.json`（由 23 写） |
 | **23 四层闭环自进化** | **决策层** | **矛盾裁决 + 最终决策** | FinalDecisionSignal v1、`23_signal_state.json`（目标） |
-| L0 trade-exec MCP | 执行层 | paper 唯一出口 | 9 工具、paper 账本、执行样本 |
-| 11 okx_client | 执行层 | live 唯一出口（旁路） | 实盘订单、成交（不经 MCP） |
-| 13 通用风控 | 执行层 | 事前风控（fail-closed） | RiskCheckPort |
-| 16 调控系统 | 执行层 | 资金定容 | capital_allocator / control |
-| 22 执行引擎 | 执行层 | 订单路由/算法/滑点/审计 | OrderPort |
+| 执行层 paper MCP（历史名 `l0.trade-exec.mcp`） | **封装执行层** | paper 唯一出口 | 9 工具、paper 账本、执行样本 |
+| 11 交易执行器（okx_client） | **封装执行层** | live 唯一出口（旁路） | 实盘订单、成交（不经 MCP） |
+| 13 通用风控 | **封装执行层** | 事前风控（fail-closed） | RiskCheckPort |
+| 16 调控系统 | **封装执行层** | 资金定容 | capital_allocator / control |
+| 22 执行引擎 | **封装执行层** | 订单路由/算法/滑点/审计 | OrderPort |
 
 ### 1.3 编号口径
 
@@ -150,9 +154,9 @@
 │  三条作用通道：路径评分 / 弹性仓位 / 交叉验证阈值                    │
 │      输出：FinalDecisionSignal v1（唯一最终决策）                    │
 ├─────────────────────────────────────────────────────────────────────┤
-│  执行层                                                              │
-│  paper：L0 trade-exec MCP（13→16→22→对账）                           │
-│  live ：11 域 okx_client 旁路（EXECUTION_AUTHORITY + execution_rights）│
+│  封装执行层（EXEC / L1.5，不属于 L0）                                 │
+│  paper：执行层 paper MCP（13 风控→16 定容→22 执行→对账）              │
+│  live ：11 交易执行器 → okx_client 旁路（EXECUTION_AUTHORITY + rights）│
 ├─────────────────────────────────────────────────────────────────────┤
 │  反馈层：成交/PnL/拒单/跳过 → 样本 → 训练/进化 → 反哺 23 / 40 / 43    │
 └─────────────────────────────────────────────────────────────────────┘
@@ -341,16 +345,18 @@ action / strategic_tier(43) / position_tier(23) / position_mult / regime / d_sta
 + constraint_id / constraint_applied_at
 ```
 
-### 2.7 执行层
+### 2.7 封装执行层（Execution Layer / L1.5）
 
+- **分层归属**：13 风控、16 定容、22 执行、11 交易执行器属于本层，**不属于 L0**；L0 只提供数据/认知/语义/REA。
 - **paper（现状）**：`23 信号 → 前置过滤(中性/过期/幂等) → 执行权 → 行情+定容 → 13 风控(fail-closed) → paper 下单 → 落账`。RiskCheckPort 已真实桥接 13；**16 定容与 22 执行引擎尚未接线**，定容由 13 的 `RiskEngine.calculate_position` 或 `risk_exposure_hint × balance` 兜底；OrderPort 为自包含 `OKXPaperLedger`。
 - **paper（目标）**：接入 16 `capital_allocator` 与 22 `tee_core`（P3）。
-- **live**：`23 信号 → 11 polling_trader（EXECUTION_AUTHORITY）→ okx_client 直连`；不经 MCP。
+- **live**：`23 信号 → 11 交易执行器（EXECUTION_AUTHORITY）→ okx_client 直连`；不经 MCP。
 - **标的级互斥**：`47-MCP管理系统/registry/execution_rights.json` 声明 `paper / live:11-bypass / disabled`；同一标的同一时刻单出口。
+- **命名迁移**：现有 `mcp_shells/l0_trade_exec` / `l0.trade-exec.mcp` 是历史命名，逻辑归属执行层；目标命名 `exec.trade.mcp`，迁移项 R-EXEC-04。
 
 ### 2.8 反馈层
 
-- L0 trade-exec 产出执行样本：`on_order_filled / on_risk_rejected / on_signal_skipped` → `ml_data/samples.jsonl`。
+- 执行层 paper MCP 产出执行样本：`on_order_filled / on_risk_rejected / on_signal_skipped` → `ml_data/samples.jsonl`。
 - `execution_sample_loader` → `execution_policy_training.jsonl` → `executor_agent` 策略。
 - 23 的 Shadow-RL / 基因库 / Bellman 反馈；真实平仓 PnL 经 `trade_settlement_bridge` 回注 L3。
 - 反馈可反哺 40/43 的约束校准（建议制，须经 P5/P6 或战略门禁采纳，不得直接改模型权重）。
@@ -362,11 +368,11 @@ action / strategic_tier(43) / position_tier(23) / position_mult / regime / d_sta
 输入层 → 40 → 43 → 42（MacroElasticConstraint）
       → BCRM2 / BDSM / 29（受约束候选信号）
       → 23 双链路矛盾裁决 + 最小阻力路径 → FinalDecisionSignal
-      → L0 paper / 11 live
+      → 封装执行层 paper / 11 live
       → 成交/PnL/拒单反馈 → 样本 → 训练/进化 → 反哺 23 / 40 / 43
 
 【L2 观察面（闭环外）】
-L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/43 状态、L0 持仓/余额/事前风控
+L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/43 状态、执行层持仓/余额/事前风控
           ✗ 不触发信号   ✗ 不触发执行   ✗ 不参与训练
 ```
 
@@ -504,9 +510,9 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 - 进程内返回 dict 与文件字段同名。
 - 输出前只做**约束复核**（更保守值），不重复相乘；保留 `constraint_id` / `constraint_applied_at`。
 
-### 3.7 L0 trade-exec 调用契约
+### 3.7 封装执行层 paper MCP 调用契约
 
-见 [SPEC-L0-TRADE-EXEC-MCP-v0.1](../47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md)。
+见 [SPEC-L0-TRADE-EXEC-MCP-v0.1](../47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md)（历史命名；逻辑归属执行层）。
 
 - 工具：`place_order` / `cancel_order` / `ingest_signal`（写，需 Mandate）；`get_positions` / `get_balance` / `pre_trade_check` / `get_account_mode` / `reconcile` / `read_signals`（读）。
 - 现状：9 工具（3 写 + 6 读）；`requires_mandate` 由注册表/宿主强制，server 代码本身不校验。
@@ -514,8 +520,8 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 - 前置过滤顺序：中性/过期/幂等 → 执行权 → 行情+定容 → 风控 → paper 下单 → 落账。
 - **13/16/22 现状（远端 `b4e661b4` 核验）**：13 已通过 `RiskBridge` 接线（`pre_trade_check` + `calculate_position`/PositionSizer）；16 `capital_allocator` **未 import**；22 `tee_core` **未 import**，OrderPort 为自包含 `OKXPaperLedger`。详见 §12.6。
 - **6-TRADING 旁路**：`dream_trade_exec.py` 直连 OKX `/trade/order`；`trade_exec_api.py` 独立 paper/live API；需 R-L0-03 收口。
-- **23 唯一出口闸门（目标，P2/P4）**：L0 `ingest_signal` 只接受 `source=23-evolution`（或经 L1 编排校验的 inline 信号）；`source=42` 仅用于只读观测，执行侧必须拒绝。`read_signals` 默认源改为 `["23"]`，42 原始信号只用于分析。
-- `forward_signal` 只允许 `source=23-evolution` 且 `mode=live` 的信号进入 L0。
+- **23 唯一出口闸门（目标，P2/P4）**：执行层 paper MCP `ingest_signal` 只接受 `source=23-evolution`（或经 L1 编排校验的 inline 信号）；`source=42` 仅用于只读观测，执行侧必须拒绝。`read_signals` 默认源改为 `["23"]`，42 原始信号只用于分析。
+- `forward_signal` 只允许 `source=23-evolution` 且 `mode=live` 的信号进入执行层 paper MCP。
 - 执行侧 `fail-closed`；信号侧 `fail-open`。
 
 ### 3.8 L1 交易层 MCP 工具契约（`l1.trading.mcp`，10 工具）
@@ -529,9 +535,9 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | 5 | `get_strategic_extension` | read | L2 Worker / 编排侧 | 否 | 读 43 战略承接 |
 | 6 | `get_decision_diagnostics` | read | L2 Worker / 编排侧 | 否 | 读 23 主矛盾/质变/交叉验证/路径诊断 |
 | 7 | `get_training_status` | read | L2 Worker / 编排侧 | 否 | 训练样本/策略行/版本状态 |
-| 8 | `get_positions` | read | L2 Worker / 编排侧 | 否 | 代理 L0 `get_positions` |
-| 9 | `get_balance` | read | L2 Worker / 编排侧 | 否 | 代理 L0 `get_balance` |
-| 10 | `forward_signal` | write | **L1 闭环内部（非 L2）** | ✅ | 23 信号 → L0 `ingest_signal`（paper） |
+| 8 | `get_positions` | read | L2 Worker / 编排侧 | 否 | 代理执行层 `get_positions` |
+| 9 | `get_balance` | read | L2 Worker / 编排侧 | 否 | 代理执行层 `get_balance` |
+| 10 | `forward_signal` | write | **L1 闭环内部（非 L2）** | ✅ | 23 信号 → 执行层 `ingest_signal`（paper） |
 
 > **设计态**：`mcp_shells/l1_trading/` 当前不存在；本表是评审通过后落地的工具契约，不是已实现接口。
 >
@@ -552,7 +558,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | `risk_gate_status` | 13（engine 可用/熔断/黑名单） | 实时 | — | live | ① 否决 |
 | `semantic_context` | 39 `l3_synthesis` / 矛盾事件摘要 | 6h/日 | 48h | shadow 先行 | ③ 主矛盾先验 |
 | `fundamental_context` | 9 FinBERT / 五维分 | 日 | 72h | shadow 先行 | ③ 主矛盾先验 |
-| `execution_feedback` | L0 fills/PnL、11 平仓 | 事件 | — | live | ⑨ Bellman reward |
+| `execution_feedback` | 执行层 fills/PnL、11 平仓 | 事件 | — | live | ⑨ Bellman reward |
 | 公共字段 | `constraint_id / ts / expires_at / mode / component_sources` | — | — | — | 42 合并 |
 
 **注入点与防重复**：
@@ -593,7 +599,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
   → 子交易系统适配器：应用约束 → 候选 SignalSchema
   → 23 双链路矛盾识别 + 矛盾 Transformer + 最小阻力路径
   → FinalDecisionSignal v1（唯一输出）
-  → L0 paper / 11 live
+  → 封装执行层 paper / 11 live
   → 成交/PnL/拒单 → 样本 → 训练/进化
   → 反哺 23 / 40 / 43
 ```
@@ -658,7 +664,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 2. 在 `42/adapters/` 新增适配器（五步，见 §3.4）。
 3. 明确该策略的约束消费点（§3.5）与 `strategy_overrides`。
 4. 以 `mode=shadow` 先上总线；通过 paper 对比后转 `live`。
-5. 不得新增直连交易所路径；执行仍走 L0 / 11 旁路。
+5. 不得新增直连交易所路径；执行仍走封装执行层 / 11 旁路。
 
 ### 4.6 23 双角色与防重复
 
@@ -684,7 +690,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 ### 5.1 闭环结构
 
 ```text
-23 FinalDecisionSignal → L0 paper / 11 live 执行
+23 FinalDecisionSignal → 封装执行层 paper / 11 live 执行
         → 成交/PnL/拒单/跳过反馈
         → 样本落盘 → executor_agent / 23 L3-L4 训练进化
         → 反哺 23；约束校准建议反哺 40/43（建议制，需门禁采纳）
@@ -763,7 +769,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | 输出未 SignalSchema 化 | 裸 dict + `event_driven_state.json` shadow；无 `signal_id/expires_at` | 消费方各自造字段 | P2 |
 | Bellman reward 无真实回报 | 两条链路都用 `quality_score−0.5`；真实 PnL 只注入 ShadowRL（占位 0.0） | 训练信号偏差 | P4 |
 | 16/22 未真正接入 trade-exec MCP | 13 已接线（RiskBridge）；16 `capital_allocator` 未 import；22 `tee_core` 未 import；OrderPort 为自包含 paper ledger | 执行管道与 SPEC 目标不符 | P3 |
-| 6-TRADING 直连旁路 | `dream_trade_exec.py` 直连 OKX 签名下单；`trade_exec_api.py` 独立 paper/live API | 绕过 L0/23/13 | P3 |
+| 6-TRADING 直连旁路 | `dream_trade_exec.py` 直连 OKX 签名下单；`trade_exec_api.py` 独立 paper/live API | 绕过执行层/23/13 | P3 |
 | 23 不可用无降级协议 | 当前无“仅离场/平仓接管、禁止开仓”的实现 | 单点故障风险 | P2 |
 | 23 双重角色中立性 | 自身候选与仲裁未隔离；无自票上限/独立复核 | 自评偏置风险 | P2 |
 | 23 全标的调度未实现 | 当前约 50 币/小时；无高风险 300s 分层 | 与“全标的唯一权威”不匹配 | P2 |
@@ -774,10 +780,10 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | `dimension_force_v2` 注释过时 | 实际经 T5 参与裁决；注释仍称“只记录日志” | 文档落后 | P2 |
 | 29 Phase3 未完成 | Phase1/2 已接，共享事件层未做 | 事件驱动仍影子 | P3 |
 | 11 子池直下单绕过 23 | bcrm(5)/bdsm(3)/event_arbitrage(2)/washout(2) 用 11 自身方向/置信度直接 `okx_client.place_order`；仅 evolution 池走 23 | 23 唯一出口未闭环 | P4 |
-| L0 MCP 允许 42 原始信号执行 | `ingest_signal` source 枚举含 `42`；`read_signals` 默认 `["23","42"]` | 可直接绕过 23 | P2/P4 |
+| 执行层 paper MCP 允许 42 原始信号执行 | `ingest_signal` source 枚举含 `42`；`read_signals` 默认 `["23","42"]` | 可直接绕过 23 | P2/P4 |
 | live 旁路不经 13 | 11 全文无 `RiskEngine/13-通用风控` 引用；paper 经 RiskBridge | “13 优先”在 live 落空 | P3/P4 |
-| 12 Aster 直连 DEX | `12-三屏趋势系统/live/aster_executor.py` 用自身 .env 凭证直连 | 完全脱离 23/L0/13 | P3 |
-| 14/16 执行器 | 14 V15 与 16 `exit_executor` 经 `OKXSimulatedClient` 下单；16 为平仓路径 | 旁路 23/L0 | P3/P4 |
+| 12 Aster 直连 DEX | `12-三屏趋势系统/live/aster_executor.py` 用自身 .env 凭证直连 | 完全脱离 23/执行层/13 | P3 |
+| 14/16 执行器 | 14 V15 与 16 `exit_executor` 经 `OKXSimulatedClient` 下单；16 为平仓路径 | 旁路 23/执行层 | P3/P4 |
 | 双 regime 体系 | 11 自有 regime 表 + BCRM `_regime_multipliers` + 23 `regime_mult` | 语义重叠/冲突 | P2 |
 | 五域状态双通道 | 11 five_domain 同时经 SubSystemBridge（内存）与 42 适配器（`11-bcrm`） | 未来 23 订阅 42 时需去重 | P2 |
 | 多乘数叠加 | 11 `_combined_mult`、23 `regime_mult`、43 `position_band`、42 params、13 modifier 无统一顺序 | 重复缩放/抵消 | P2 |
@@ -802,14 +808,14 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **P0（本次）** | 49 协议 v0.7 评审：七层架构、MacroElasticConstraint v1、FinalDecisionSignal v1、UpperLayerContext v1、23 矛盾裁决定位、代码核验与冲突审计、评审决议 | SPEC 评审通过；merge 后 v1 契约进入禁改期（DEC-03） |
 | **P1** | 42 总线：多源合并 + TTL、`macro_constraint`/`elastic_params` 分发、registry 加 `horizon`、路径环境变量；**11→42 状态文件适配（R-42-05）**；子系统桥接改读 42；统一 `source` 命名 | 6 源共存；约束可订阅；无硬编码路径 |
 | **P1.5** | L1 交易层 MCP 实现（`l1.trading.mcp` + 注册表；10 工具契约测试） | 只读面可用；写工具 Mandate 生效 |
-| **P2** | 40→43→42 约束合并：消费 `strategy_mapping`；统一 war_state 来源；23 消费宏观约束（UpperLayerContext）；C→D 映射**先冻结、shadow 对比**；`DominanceResolver` 成对支配；接入 `AttentionAggregator` 与事件驱动主矛盾检测器；修正 CV 阈值（1.0/0.4）；**23 降级（DEC-06）、中立性（DEC-10）、全标的 1h/高风险 300s（DEC-07）**；D2 接 19-DAL（DEC-16）；L0 `source=23-evolution` 闸门 | 合并约束可查询；23 三条通道叠加宏观约束；主矛盾对抗选择占比 ≥90%（现状约 30% 基线） |
-| **P3** | 子交易系统接入约束：BCRM2/BDSM/29 全部应用；插件契约上线；W6 样本链路稳定；**16 `capital_allocator` + 22 `tee_core` 实际接线（R-L0-02）**；12 Aster 与 6-TRADING 直连路径收口（R-L0-03） | 四系统约束命中率可观测；FULL_FREEZE 实测否决；paper 管道 13→16→22 完整 |
+| **P2** | 40→43→42 约束合并：消费 `strategy_mapping`；统一 war_state 来源；23 消费宏观约束（UpperLayerContext）；C→D 映射**先冻结、shadow 对比**；`DominanceResolver` 成对支配；接入 `AttentionAggregator` 与事件驱动主矛盾检测器；修正 CV 阈值（1.0/0.4）；**23 降级（DEC-06）、中立性（DEC-10）、全标的 1h/高风险 300s（DEC-07）**；D2 接 19-DAL（DEC-16）；执行层 `source=23-evolution` 闸门 | 合并约束可查询；23 三条通道叠加宏观约束；主矛盾对抗选择占比 ≥90%（现状约 30% 基线） |
+| **P3** | 子交易系统接入约束：BCRM2/BDSM/29 全部应用；插件契约上线；W6 样本链路稳定；**16 `capital_allocator` + 22 `tee_core` 接入封装执行层（R-L0-02）**；12 Aster 与 6-TRADING 直连路径收口（R-L0-03）；执行层 paper MCP 命名迁移（R-EXEC-04） | 四系统约束命中率可观测；FULL_FREEZE 实测否决；paper 管道 13→16→22 完整 |
 | **P4** | 23 唯一出口 + 执行收口：11 子池（bcrm/bdsm/strategy/event_arbitrage/washout）降为信号源；**A0-A9 保留信号源、执行只认 23（DEC-09）**；12/14/16 `exit_executor` 迁移；live 接入 13（DEC-13）；FinalDecisionSignal SignalSchema 化；Bellman reward 统一 | 单信号出口；单标的单执行出口；live 经 13 |
 | **P5** | 训练/反馈闭环：执行策略 Phase 1b、约束校准建议、L2 只读 MCP 分析；shadow→live 晋升 | 训练行达标；约束晋升 live；L2 SLO 达标 |
 
 > **P0/P1 门禁**：
 > - v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更须版本号 + ADR（DEC-03）。
-> - **§12.1 评审列 31 项未全部回填前，禁止任何 P1 动工**（DEC-04）；未回填期间只能做评审、文档与只读验证。
+> - **§12.1 评审列 32 项未全部回填前，禁止任何 P1 动工**（DEC-04）；未回填期间只能做评审、文档与只读验证。
 > - 详细实施路线、M0/P1 任务清单、开关与回滚矩阵见 **§13**。
 
 ---
@@ -859,8 +865,8 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | `11-易经推理系统/scripts/memory_l4/polling_trader.py` | 11 实盘主 daemon |
 | `29-事件驱动策略系统/README.md` | 29 事件驱动 |
 | `39-金融语义蒸馏系统/SPEC.md` | 39 语义蒸馏 |
-| `mcp_shells/l0_trade_exec/server.py` | L0 交易执行 MCP（paper；origin/main `1eb0076`，本地未同步） |
-| `47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md` | L0 执行 MCP SPEC（origin/main `1eb0076`，本地未同步） |
+| `mcp_shells/l0_trade_exec/server.py` | 封装执行层 paper MCP（历史名 `l0.trade-exec`；origin/main `1eb0076`，本地未同步） |
+| `47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md` | 执行层 paper MCP SPEC（历史名；origin/main `1eb0076`，本地未同步） |
 | `47-MCP管理系统/registry/execution_rights.json` | 标的级执行权注册表（origin/main `1eb0076`，本地未同步） |
 | `mcp_shells/l1_trading/` | L1 交易层 MCP（**设计态，未创建**；评审后落地） |
 
@@ -888,7 +894,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | 14 | 42 不是 MCP 壳；bus_state 当前 10 条全 bdsm；params 零消费者 | `mcp_capabilities.yaml` 无 42；`signal_bus.py`；`runtime/bus_state.json`；grep `params_active` |
 | 15 | 43 `shadow=True` 硬编码；档位 `light_defense`；不读 strategy_mapping | `signal_publisher.py:145-156,153,176`；`cycle_state_adapter.py:29-31` |
 | 16 | 硬编码路径：42=6 适配器、23=2、43=3、40=22 | 全树 grep `/home/luke/dreambuddy` |
-| 17 | L0 trade-exec 9 工具、paper-only、execution_rights 三态；16/22 未接线 | `server.py:1476-1488`；`execution_rights.json`；SPEC-L0 §4 |
+| 17 | 封装执行层 paper MCP 9 工具、paper-only、execution_rights 三态；16/22 未接线 | `server.py:1476-1488`；`execution_rights.json`；SPEC-L0 §4 |
 | 18 | L1 交易层 MCP 未实现；49 仅 SPEC | `mcp_shells/l1_trading/` 不存在；`49-交易框架协议/` 仅 SPEC.md |
 
 ---
@@ -902,12 +908,12 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | ID | 类别 | 冲突 | 目标规则 / 处理 | 阶段 |
 |---|---|---|---|---|
 | A-01 | 信号权 | 11 的 bcrm(5)/bdsm(3)/event_arbitrage(2)/washout(2) 子池用自身方向/置信度直接下单；仅 evolution 池走 23 | **已决议 DEC-01**：子池降为信号源，经 42 透传给 23；11 仅保留 live 执行网关；过渡期显式双轨 | P4 |
-| A-02 | 信号权 | L0 `ingest_signal` 支持 `source=42`；`read_signals` 默认 `["23","42"]`，可绕过 23 | `ingest_signal` 仅接受 `23-evolution`；`read_signals` 默认 `["23"]`；42 只读 | P2/P4 |
+| A-02 | 信号权 | 执行层 paper MCP `ingest_signal` 支持 `source=42`；`read_signals` 默认 `["23","42"]`，可绕过 23 | `ingest_signal` 仅接受 `23-evolution`；`read_signals` 默认 `["23"]`；42 只读 | P2/P4 |
 | A-03 | 决策权 | 11 的 A0-A9/BCRM/BDSM 与 23 的 action/tier 双权威，冲突无优先级 | **已决议 DEC-02**：23 为全标的唯一决策权威；11 的 A0-A9/BCRM/BDSM 降为信号源，只做风控钳位与执行 | P4 |
 | A-04 | 决策权 | 11 自有 regime 表 + BCRM `_regime_multipliers` + 23 `regime_mult` 三套 regime | 宏观 regime 单一源 40/43；23 内部 regime 只用于路径；11 regime 退役/只读 | P2 |
 | A-05 | 信号权 | 29 仅有 mock 循环，开/平仓是占位；SPEC 曾称“可独立执行” | 改为“mock/影子”；不列为执行权威 | P3 |
-| A-06 | 信号权 | 6-TRADING `dream_trade_exec.py` 直连 OKX 签名下单；`trade_exec_api.py` 独立 paper/live API | 收口到 L0/11，或明确只读/调试用途（R-L0-03） | P3 |
-| A-07 | 执行权 | 文档称 13/16/22 已统一 L0 MCP，但代码仅 13 接线；16/22 未 import | 13 保持；16/22 实际接线（R-L0-02）；文档与代码对齐 | P3 |
+| A-06 | 信号权 | 6-TRADING `dream_trade_exec.py` 直连 OKX 签名下单；`trade_exec_api.py` 独立 paper/live API | 收口到执行层/11，或明确只读/调试用途（R-L0-03） | P3 |
+| A-07 | 执行权 | 文档称 13/16/22 已统一封装执行层，但代码仅 13 接线；16/22 未 import | 13 保持；16/22 实际接线（R-L0-02）；文档与代码对齐 | P3 |
 | A-08 | 降级 | 23 不可用时无“仅离场/平仓、禁止开仓”的实现 | **DEC-06**：仅 11 离场/平仓模块接管，禁止新开仓 | P2 |
 | A-09 | 中立性 | 23 自身候选与最终仲裁未隔离 | **DEC-10**：自票上限 + 独立矛盾证据复核 + 审计 | P2 |
 | A-10 | 调度 | 23 当前约 50 币/小时，与“全标的唯一权威”不匹配 | **DEC-07**：全标的 1h；高风险 300s | P2 |
@@ -924,8 +930,8 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | C-05 | 时序 | 40/43/42/23 均“每小时”，无先后约束；42 可能读到上一轮 43 | 目标顺序 40:05 → 43:18/48 → 42:50 → 23:55；23 记录各源 age | P2 |
 | C-06 | 数据流 | 11→42 无跨进程落地方式，42 适配器仍直读各自源 | **DEC-08**：11 写状态文件；42 只读适配器消费（R-42-05） | P1 |
 | D-01 | 执行/风控 | 11 live 旁路全文无 13 RiskEngine 引用；paper 经 RiskBridge | 11 建仓前接 13 `pre_trade_check`；过渡期声明 11 自有风控 | P3/P4 |
-| D-02 | 执行 | 12 `live/aster_executor.py` 用自身 .env 凭证直连 DEX | P3 迁移首位：改走 L0 paper 或 11 旁路 | P3 |
-| D-03 | 执行 | 14 V15 与 16 `exit_executor` 经 `OKXSimulatedClient` 下单；16 平仓路径 | 14 声明 paper 隔离；16 收口到 11/L0 | P3/P4 |
+| D-02 | 执行 | 12 `live/aster_executor.py` 用自身 .env 凭证直连 DEX | P3 迁移首位：改走执行层 paper 或 11 旁路 | P3 |
+| D-03 | 执行 | 14 V15 与 16 `exit_executor` 经 `OKXSimulatedClient` 下单；16 平仓路径 | 14 声明 paper 隔离；16 收口到 11/执行层 | P3/P4 |
 | D-04 | 阶段 | P3 写“16/22 接入”，P4 又写“12/14/16 迁移”；L1 MCP 无实现阶段 | P3=16 capital_allocator + 22；P4=12/14/16 exit_executor；新增 P1.5 L1 MCP | P0 |
 | D-05 | 状态 | `event_driven_state.json` 由 23 写，42 标 `29-event`、MCP 标 `23-evolution` | 目标 `23_signal_state.json`；迁移期只读镜像；source 统一 `23-evolution` | P2 |
 | E-01 | 文档 | 架构图把 `13→16→22`、全系统受约束画成现状 | §0.5 阅读口径；§6/§11 为现状 | P0 |
@@ -959,7 +965,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 3. **单一 position_mult 所有者**：23 输出最终 position_mult；11 只做风控钳位；42 params 只进 macro_mult；13 最终钳位。
 4. **42 明确输入-only**：原始候选信号只进 23，不得直连执行；23 输出只读镜像。
 5. **单一 regime 源**：40/43 宏观 regime 统一；23 内部 regime 只用于路径；11 自有 regime 退役。
-6. **状态文件收口**：23 写 `23_signal_state.json`，11/42/L0 只读；迁移期 `event_driven_state.json` 仅镜像。
+6. **状态文件收口**：23 写 `23_signal_state.json`，11/42/执行层只读；迁移期 `event_driven_state.json` 仅镜像。
 
 ### 11.4 UpperLayerContext 最小接线顺序（已存在未接线优先）
 
@@ -974,7 +980,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 
 ### 11.5 结论
 
-最尖锐的五个冲突：**A-01（11 子池绕过 23）、A-02（L0 允许 42 原始信号执行）、D-01（live 不经 13）、C-01（多乘数叠加）、A-03（11 vs 23 双决策权威）**。这五项决定“23 唯一出口 + 13 风控优先”是否真正成立；其余冲突多为契约/命名/文档口径问题，可在 P1/P2 一并收口。
+最尖锐的五个冲突：**A-01（11 子池绕过 23）、A-02（执行层允许 42 原始信号执行）、D-01（live 不经 13）、C-01（多乘数叠加）、A-03（11 vs 23 双决策权威）**。这五项决定“23 唯一出口 + 13 风控优先”是否真正成立；其余冲突多为契约/命名/文档口径问题，可在 P1/P2 一并收口。
 
 ---
 
@@ -1002,11 +1008,11 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **R-42-03** | registry 缺 horizon | registry 增加 `horizon` 必填并 CI 校验 | `registry.yaml`；validator | 所有插件声明 horizon | P1 | ☐ |
 | **R-42-04** | 路径硬编码 | 统一 `DREAMBUDDY_ROOT`/环境变量；42/23/43/40 全量替换 | 42/23/43/40 | grep `/home/luke` = 0 | P1 | ☐ |
 | **R-43-01** | 43 不读 strategy_mapping；shadow 未晋升 | 43 合并 40 `strategy_mapping` 仓位带/risk_guards；按 shadow→live 门禁晋升 | 43 `cycle_state_adapter`；42 约束 | 合并约束可查询；晋升有 paper 证据 | P2 | ☐ |
-| **R-L0-01** | L0 允许 42 原始信号执行 | `ingest_signal` 仅接受 `23-evolution`；`read_signals` 默认 `["23"]`；42 只读 | `l0_trade_exec/server.py`；注册表 | source=42 执行被拒；审计可查 | P2/P4 | ☐ |
-| **R-L0-02** | 13 已接线；16/22 仅在注释/自包含实现，未真正 import | 13 保持 RiskBridge 前置；**16 `capital_allocator` → sizing**；**22 `tee_core` → OrderPort**；L0 MCP 作为统一编排面（DEC-17） | `l0_trade_exec/server.py`；16/22 adapters | paper 管道 13→16→22 完整；订单可对账；无直连旁路 | P3 | ☐ |
-| **R-EXEC-01** | 12 Aster 直连 DEX | 迁移 12 到 L0 paper 或 11 旁路；移除独立凭证路径 | `12-三屏趋势系统/live/aster_executor.py` | 无独立 DEX 直连；execution_rights 覆盖 | P3 | ☐ |
-| **R-EXEC-02** | 14/16 执行器旁路 | 14 声明 paper 隔离；16 `exit_executor` 收口到 11/L0 | 14/16 | 平仓路径统一；无双出口 | P3/P4 | ☐ |
-| **R-STATE-01** | `event_driven_state.json` 双身份 | 23 写 `23_signal_state.json`；11/42/L0 只读；迁移期旧文件镜像 | `event_receiver.py`；11/42/L0 | 单写者；source=23-evolution；旧文件只读 | P2 | ☐ |
+| **R-L0-01** | 执行层 paper MCP 允许 42 原始信号执行 | `ingest_signal` 仅接受 `23-evolution`；`read_signals` 默认 `["23"]`；42 只读 | `mcp_shells/l0_trade_exec/server.py`；注册表 | source=42 执行被拒；审计可查 | P2/P4 | ☐ |
+| **R-L0-02** | 13 已接线；16/22 仅在注释/自包含实现，未真正 import | 13 保持 RiskBridge 前置；**16 `capital_allocator` → sizing**；**22 `tee_core` → OrderPort**；封装执行层作为统一编排面（DEC-17） | `mcp_shells/l0_trade_exec/server.py`；16/22 adapters | paper 管道 13→16→22 完整；订单可对账；无直连旁路 | P3 | ☐ |
+| **R-EXEC-01** | 12 Aster 直连 DEX | 迁移 12 到执行层 paper 或 11 旁路；移除独立凭证路径 | `12-三屏趋势系统/live/aster_executor.py` | 无独立 DEX 直连；execution_rights 覆盖 | P3 | ☐ |
+| **R-EXEC-02** | 14/16 执行器旁路 | 14 声明 paper 隔离；16 `exit_executor` 收口到 11/执行层 | 14/16 | 平仓路径统一；无双出口 | P3/P4 | ☐ |
+| **R-STATE-01** | `event_driven_state.json` 双身份 | 23 写 `23_signal_state.json`；11/42/执行层只读；迁移期旧文件镜像 | `event_receiver.py`；11/42/执行层 | 单写者；source=23-evolution；旧文件只读 | P2 | ☐ |
 | **R-DATA-01** | 双 war_state / 双 regime | 43 为宏观 war_state 唯一源；11 五域为局部；40/43 为 regime 唯一源 | `subsystem_bridge`；43/11 | 每周期单一 canonical 值；审计可追溯 | P2 | ☐ |
 | **R-DOC-01** | 文档落后（CUSUM/30%/3 组件） | 修正 docstring/SPEC：Welch t-test、HJB 70%、6 组件、final_loss 0.0119、4/32 默认 | 23 docs；SPEC | 文档与 §10 一致 | P0 | ☐ |
 | **R-23-09** | 23 不可用时无降级协议 | **仅 11 子池离场/平仓模块接管，禁止新开仓**；按标的白名单；降级事件审计（DEC-06） | `polling_trader` 离场模块；23 健康检查 | 23 模拟不可用时无新开仓；平仓可用；审计可查 | P2 | ☐ |
@@ -1014,11 +1020,14 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **R-23-11** | 23 全标的覆盖的调度/算力未定 | **全标的 1h；高风险标的 300s**；分批/限流；记录各标的 age（DEC-07） | 23 调度；11 调用 | 全标的覆盖；高风险 300s；无积压 | P2 | ☐ |
 | **R-23-12** | L1 MCP 诊断暴露边界未定 | **只暴露摘要 + 置信度；原始权重/张量不下发**（DEC-15） | `l1.trading.mcp` `get_decision_diagnostics` | L2 仅见摘要；审计字段脱敏 | P3 | ☐ |
 | **R-42-05** | 11→42 无跨进程落地方式 | **11 写状态文件；42 只读适配器消费**（DEC-08） | 11 子池状态；42 adapters | 42 可读 11 状态；无内存耦合 | P1 | ☐ |
-| **R-L0-03** | 6-TRADING 两条直连路径 | `dream_trade_exec.py` 直连 OKX、`trade_exec_api.py` OKXCLI 需收口到 L0/11，或明确只读/调试用途 | `6-TRADING/scripts`、`6-TRADING/bridge/api` | 无生产直连旁路；用途标注清晰 | P3 | ☐ |
+| **R-L0-03** | 6-TRADING 两条直连路径 | `dream_trade_exec.py` 直连 OKX、`trade_exec_api.py` OKXCLI 需收口到执行层/11，或明确只读/调试用途 | `6-TRADING/scripts`、`6-TRADING/bridge/api` | 无生产直连旁路；用途标注清晰 | P3 | ☐ |
+| **R-EXEC-04** | 执行层 paper MCP 仍用历史名 `l0.trade-exec` | 逻辑归属执行层；目标命名 `exec.trade.mcp`；47 注册表迁移 + 旧名别名兼容 | `mcp_shells/l0_trade_exec`、47 registry | 新名可用；旧名别名；无 L0 误导 | P3 | ☐ |
 | **R-GOV-01** | `execution_rights` 治理未定义 | 47 维护注册表；变更**双人审批**；默认 paper；审计变更记录（DEC-26） | 47 registry；`execution_rights.json` | 变更可审计；默认 paper；无双人越权 | P3 | ☐ |
 | **R-DATA-02** | 符号宇宙/数据保留未定义 | 11 当前标的池；W6 保留 2000 条；语义上下文 48h；后续按 paper 扩充（DEC-27） | 23 数据管线；W6 | 保留期可配置；无无限增长 | P3 | ☐ |
 
-> **评审门禁**：已决议 DEC-01～DEC-30 见 §12.5；§12.1 的“评审”列仍需逐项回填（31 项）。**未回填前不得进入 P1**（DEC-04）。
+> **评审门禁**：已决议 DEC-01～DEC-30 见 §12.5；§12.1 的“评审”列仍需逐项回填（32 项）。**未回填前不得进入 P1**（DEC-04）。
+>
+> **命名说明**：R-L0-01/02/03 中的 “L0” 为历史命名，实际归属**封装执行层**；R-EXEC-04 负责 paper MCP 命名迁移。
 
 ### 12.2 重点提案卡（评审重点）
 
@@ -1112,14 +1121,14 @@ P0 契约冻结（本 SPEC）
 | **DEC-14** | 契约所有权：**49 拥有交易域四契约；47 拥有 MCP 注册表；23 拥有实现** | 治理 |
 | **DEC-15** | L1 MCP 诊断：**只暴露摘要 + 置信度；原始权重/张量不下发** | R-23-12 / 安全 |
 | **DEC-16** | D2 数据**统一接 19-DAL**（OI/清算）；覆盖率 ≥90% 才进 live | R-23-03 |
-| **DEC-17** | 13/16/22 统一为 **L0 trade-exec MCP 能力**（13 风控 / 16 定容 / 22 执行）；12/14/16 迁移需谨慎，按远端代码与文档逐项核验 | R-L0-02 / R-L0-03 |
+| **DEC-17** | 13/16/22 统一为 **封装执行层能力**（paper MCP；13 风控 / 16 定容 / 22 执行）；12/14/16 迁移需谨慎，按远端代码与文档逐项核验 | R-L0-02 / R-L0-03 / R-EXEC-04 |
 | **DEC-18** | 42 **input-only**；23 输出仅只读镜像供 L2，不参与裁决 | R-42-01 / §2.4 |
 | **DEC-19** | 单一 war_state/regime：**43 为宏观唯一源**；11 五域仅兜底；40/43 为 regime 唯一源 | R-DATA-01 |
 | **DEC-20** | 乘数所有权：**23 独占 `position_mult`**；11 只钳位；13 最终 | R-11-03 / §4.2 |
-| **DEC-21** | 23 输出文件 `23_signal_state.json`：**23 唯一写者**；11/42/L0 只读；P2 切换 | R-STATE-01 |
+| **DEC-21** | 23 输出文件 `23_signal_state.json`：**23 唯一写者**；11/42/执行层只读；P2 切换 | R-STATE-01 |
 | **DEC-22** | UpperLayerContext：**文件 + 适配器**；高频字段进程内缓存 | R-23-08 |
 | **DEC-23** | 23 降级范围：**仅平仓/减仓模块**；按标的白名单；禁止开仓 | R-23-09 |
-| **DEC-24** | 16/22 在 L0 MCP 内：**16 定容、22 执行；L0 编排；47 管注册表** | R-L0-02 |
+| **DEC-24** | 16/22 在**封装执行层**内：**16 定容、22 执行；执行层编排；47 管注册表** | R-L0-02 |
 | **DEC-25** | 6-TRADING：`dream_trade_exec.py` **降为调试/回放并移除生产凭证**；`trade_exec_api.py` **仅 demo** | R-L0-03 |
 | **DEC-26** | `execution_rights`：**47 维护；双人审批；paper 默认** | R-GOV-01 |
 | **DEC-27** | 符号宇宙/数据保留：**11 当前标的池；W6 2000 条；语义 48h** | R-DATA-02 |
@@ -1129,7 +1138,7 @@ P0 契约冻结（本 SPEC）
 
 > **待决策：无。** DEC-01～DEC-30 已全部拍板。剩余为执行动作：§12.1 评审回填（P1 前）、责任人名单与截止时间（P1 前）、§12 拆 issue（P1 后）。
 
-### 12.6 L0 trade-exec MCP 与 13/16/22 的调用关系（远端核验）
+### 12.6 封装执行层与 13/16/22/11 的调用关系（远端核验）
 
 > 核验基线：`origin/main` `b4e661b4`（2026-11-05 16:01Z）；核心文件 `mcp_shells/l0_trade_exec/server.py`。
 
@@ -1147,14 +1156,14 @@ P0 契约冻结（本 SPEC）
 
 ```text
 23 FinalDecisionSignal
-  → L0 trade-exec MCP
+  → 封装执行层 paper MCP
       → RiskCheckPort(13 RiskEngine, fail-closed)
       → SizingPort(16 capital_allocator)
       → OrderPort(22 tee_core adapters/algorithms)
       → PositionPort(reconcile)
       → paper 账本/执行信封
 
-live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
+live: 11 交易执行器 → 13 pre_trade_check → okx_client（不经 MCP）
 ```
 
 **结论**：13 已统一；16/22 是“接口已收口、实现未接线”，不能描述成已上线能力。P3 的 R-L0-02 是 16/22 的实际接线工作；6-TRADING 两条路径是新增旁路，需 R-L0-03 收口。
@@ -1178,13 +1187,13 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 |---|---|---|---|---|
 | **A. 薄上游** | 42 单实例 + 多源合并/TTL；11 四子池状态文件 + 42 只读适配器；`horizon`；环境变量 | 1-2 周 | M0 评审 | P1 任务清单 |
 | **B. 23 影子核心** | C→D 冻结核对；DominanceResolver；AttentionAggregator；事件主矛盾检测；W6；D2 19-DAL；HJB 文档 | 2-3 周 | M0；可与 A 并行 | M2 shadow 报告 |
-| **C. 治理与基线** | 31 项评审回填；契约冻结；paper 基线；ADR；周评审 | 3-5 天 + 持续 | 立即 | M0 交付 |
+| **C. 治理与基线** | 32 项评审回填；契约冻结；paper 基线；ADR；周评审 | 3-5 天 + 持续 | 立即 | M0 交付 |
 
 ### 13.3 里程碑
 
 | 里程碑 | 时间 | 内容 | 验收 |
 |---|---|---|---|
-| **M0** | 本周 | 评审回填、契约冻结、paper 基线、shadow 开关、回滚演练 | 31/31 评审；基线可复现；开关/回滚可用 |
+| **M0** | 本周 | 评审回填、契约冻结、paper 基线、shadow 开关、回滚演练 | 32/32 评审；基线可复现；开关/回滚可用 |
 | **M1** | 1-2 周 | 薄上游 A：42 总线、11→42 状态文件、horizon、环境变量 | 6 源共存；0 硬编码路径；11 四子池可读；horizon 100% |
 | **M2** | 3-4 周 | 23 影子核心 B：Dominance/C→D/Attention/事件/W6/D2 | shadow 对比 ≥2 周；生产行为不变 |
 | **M3** | 5-7 周 | 40/43→42→23 约束链；UpperLayerContext 注入；shadow→live 门禁 | 宏观约束进入 23；三通道生效；晋升有 paper 证据 |
@@ -1196,13 +1205,13 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 
 | ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
 |---|---|---|---|---|---|---|
-| **M0-01** | §12.1 的 31 项评审回填；标记通过/需修改/拒绝 | 评审记录 | 31/31 有结论；阻塞项清单 | — | — | ☐ |
+| **M0-01** | §12.1 的 32 项评审回填；标记通过/需修改/拒绝 | 评审记录 | 32/32 有结论；阻塞项清单 | — | — | ☐ |
 | **M0-02** | 四份 v1 契约冻结：版本号、hash、ADR 模板 | 49 SPEC；ADR | 4/4 冻结；变更流程可用 | — | 恢复上一版 | ☐ |
 | **M0-03** | Paper 基线：记录当前 action/tier/position_mult/PnL/约束命中率 | 基线脚本；报告 | 可重复运行；报告路径固定；覆盖 11 当前标的池 | `BASELINE_MODE=1` | 关闭脚本 | ☐ |
 | **M0-04** | Shadow 开关登记：Dominance/C→D/Attention/Event/W6/D2 | `agi_config`/env | 6 个开关默认 0；文档齐全 | 各开关 | 置 0 | ☐ |
 | **M0-05** | 回滚演练：开关关闭、bus 恢复、11 半开 | 运维脚本 | 5 分钟内回到基线 | — | — | ☐ |
 
-**M0 出口条件**：31/31 评审回填；基线报告可复现；6 个 shadow 开关可独立开关；回滚演练通过。未满足则不得进入 P1。
+**M0 出口条件**：32/32 评审回填；基线报告可复现；6 个 shadow 开关可独立开关；回滚演练通过。未满足则不得进入 P1。
 
 ### 13.5 P1 任务清单（薄上游，1-2 周）
 
@@ -1274,7 +1283,7 @@ M6（训练/反馈/约束校准）
 
 ### 13.9 评审与变更治理
 
-- **M0 门禁**：31/31 评审回填前，只允许 B 轨道 shadow 工作；P1 生产改动必须等评审。
+- **M0 门禁**：32/32 评审回填前，只允许 B 轨道 shadow 工作；P1 生产改动必须等评审。
 - **每周评审**：A/B 轨道各自周报；shadow 报告、指标、阻塞项；未达标不进入下一里程碑。
 - **变更流程**：任何 v1 契约变更需 ADR + 版本号；任何新开关需登记默认值/回滚动作。
 - **合并顺序**：P1 先于 B 的 live 晋升；M3 前不得开启 `ENABLE_CONSTRAINT_CONSUME`；M5 前不得开启 `ENABLE_23_ONLY_OUTLET`。
@@ -1325,7 +1334,7 @@ M6（训练/反馈/约束校准）
 
 ## 附：v0.6 修复建议
 
-1. 新增 §12 修复建议（v0.6 为 23 项提案；v0.9 增至 31 项：R-23×12 / R-11×3 / R-42×5 / R-43×1 / R-L0×3 / R-EXEC×2 / R-STATE×1 / R-DATA×2 / R-GOV×1 / R-DOC×1）。
+1. 新增 §12 修复建议（v0.6 为 23 项提案；v0.11 增至 32 项：R-23×12 / R-11×3 / R-42×5 / R-43×1 / R-L0×3 / R-EXEC×3 / R-STATE×1 / R-DATA×2 / R-GOV×1 / R-DOC×1）。
 2. 每项含问题、根因、改动面、验收、阶段、评审列；重点提案卡 6 项（R-23-01/02/06、R-11-01/02、R-L0-01）。
 3. 新增修复依赖顺序（§12.3）与 8 条评审清单（§12.4）。
 4. 新增 6 个开放问题（§12.5），需评审拍板后回填 §12.1 的“评审”列。
@@ -1338,7 +1347,7 @@ M6（训练/反馈/约束校准）
 1. **DEC-01**：11 四个子池（bcrm/bdsm/event_arbitrage/washout）降为信号源；`11-strategy` 废弃（归 43 `strategic_extension`）；信号经 42 协调层透传给 23；11 只保留 live 执行网关。
 2. **DEC-02**：23 的唯一决策权威覆盖全标的。
 3. **DEC-03**：v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更需版本号 + ADR。
-4. **DEC-04**：§12.1 评审列 23 项未全部回填前，禁止任何 P1 动工（v0.9 已增至 31 项）。
+4. **DEC-04**：§12.1 评审列 23 项未全部回填前，禁止任何 P1 动工（v0.11 已增至 32 项）。
 5. **DEC-05**：R-23-01 验收加入 shadow ≥2 周硬性时间窗。
 6. §12.5 改为“评审决议与待决策清单”，新增 14 项待决策（#1-#14）及补充 8 项（#15-#22）。
 
@@ -1360,8 +1369,8 @@ M6（训练/反馈/约束校准）
 1. **`11-strategy` 废弃**：11 子池改为四个（bcrm / bdsm / event_arbitrage / washout）；战略层统一由 43 `strategic_extension` 提供。
 2. 记录 **DEC-18～DEC-30**：42 input-only、单一 war_state/regime、乘数所有权、23 输出文件、UpperLayerContext 传输、23 降级范围、16/22 L0 边界、6-TRADING 处置、execution_rights 治理、符号/数据保留、canonical source、40 P5/P6、评审流程。
 3. §12.5 待决策清零；剩余为评审回填、责任人与截止时间、§12 拆 issue。
-4. §12.1 修复建议增至 **31 项**（新增 R-GOV-01、R-DATA-02）。
-5. §12.1 评审门禁更新为 **31 项**；未回填不得进入 P1（DEC-04）。
+4. §12.1 修复建议增至 **32 项**（新增 R-GOV-01、R-DATA-02、R-EXEC-04）。
+5. §12.1 评审门禁更新为 **32 项**；未回填不得进入 P1（DEC-04）。
 
 ---
 
@@ -1374,3 +1383,14 @@ M6（训练/反馈/约束校准）
 5. 明确 M0/P1/B 出口条件，以及开关默认值与回滚动作。
 6. 明确合并顺序：P1 先于 B 的 live 晋升；M3 前不得开 `ENABLE_CONSTRAINT_CONSUME`；M5 前不得开 `ENABLE_23_ONLY_OUTLET`。
 7. 仍只改 SPEC，不实现。
+
+---
+
+## 附：v0.11 封装执行层修订
+
+1. **新增/明确封装执行层（EXEC / L1.5）**：13 风控、16 定容、22 执行、11 交易执行器属于执行层，**不属于 L0**。
+2. **L0 只保留数据（18/19/20/21/38）、认知（35/4-MEMORY）、语义（39）、REA（33）**；不再包含执行。
+3. 执行层 paper MCP 保留历史名 `l0.trade-exec.mcp`，目标命名 `exec.trade.mcp`；新增 **R-EXEC-04** 负责迁移与别名兼容。
+4. §1.1/§1.2/§2.1/§2.7/§2.8/§2.9/§3.7/§3.8/§4/§5/§6/§7/§9/§10/§11/§12/§13 统一改为“封装执行层”。
+5. §12.1 修复建议增至 **32 项**；评审门禁更新为 **32 项**。
+6. 历史章节中的 `L0 trade-exec` 均按 §1.1 的术语更正理解为封装执行层 paper MCP。
