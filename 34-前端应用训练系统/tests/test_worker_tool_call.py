@@ -140,11 +140,12 @@ class TestShellFailure:
         assert r["error_code"] == "unavailable"
         assert r["meta"]["degraded"] is True
 
-    def test_shell_call_exception_unavailable(self):
+    def test_shell_call_exception_degraded(self):
+        """HC-7: transport 层 call() 异常 → shell_degraded (可 retry+degrade), 不是 unavailable"""
         mgr = make_manager(fail_tools={"recall"})
         r = call_worker_tool("research", "recall", checker=allow_all, manager=mgr, flags=ON)
         assert r["ok"] is False
-        assert r["error_code"] == "unavailable"
+        assert r["error_code"] == "shell_degraded"
         assert r["meta"]["degraded"] is True
 
 

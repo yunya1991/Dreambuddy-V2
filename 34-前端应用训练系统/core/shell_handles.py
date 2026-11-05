@@ -144,7 +144,15 @@ class ShellHandleManager:
             shell = self._shells.get(shell_id)
 
             # HC-4: 强制重拉 或 壳死了 → cleanup + 重拉起
-            need_restart = force_new or (shell is not None and not shell.is_alive())
+            # is_alive 可能不存在于旧 FakeShell 等壳实现 → 默认 alive
+            shell_alive = True
+            if shell is not None and hasattr(shell, "is_alive"):
+                try:
+                    shell_alive = bool(shell.is_alive())
+                except Exception:
+                    shell_alive = True  # 防壳崩溃时 is_alive 本身也抛
+
+            need_restart = force_new or (shell is not None and not shell_alive)
             if need_restart and shell is not None:
                 if not self._restart_allowed(shell_id) and not force_new:
                     # force_new 是显式请求重拉, 绕过 HC-5 上限
