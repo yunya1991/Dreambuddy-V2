@@ -250,6 +250,42 @@ def _m6_compositional_generalization() -> Dict[str, Any]:
         return {"value": None, "status": "unavailable", "note": str(exc)}
 
 
+def _e4b_readout() -> Dict[str, Any]:
+    """E4b ①：recall 读回率（写→召回→改变行动）。数据源 events/memory_readout/*.jsonl。"""
+    try:
+        if str(_METRICS_DIR) not in sys.path:
+            sys.path.insert(0, str(_METRICS_DIR))
+        import e4b_readout
+
+        return e4b_readout.compute_readout_rate()
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
+
+
+def _e4b_cascade() -> Dict[str, Any]:
+    """E4b ②：级联 σ（复用 E1 shadow 总线事件流）。样本不足如实 insufficient_data。"""
+    try:
+        if str(_METRICS_DIR) not in sys.path:
+            sys.path.insert(0, str(_METRICS_DIR))
+        import e4b_cascade
+
+        return e4b_cascade.compute_cascade()
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
+
+
+def _e4b_self_correction() -> Dict[str, Any]:
+    """E4b ③：反思→修复 join 比例（session 级时序代理，非因果）。"""
+    try:
+        if str(_METRICS_DIR) not in sys.path:
+            sys.path.insert(0, str(_METRICS_DIR))
+        import e4b_reflection
+
+        return e4b_reflection.compute_self_correction_rate()
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
+
+
 def collect() -> Dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     return {
@@ -265,6 +301,9 @@ def collect() -> Dict[str, Any]:
         "m1_broadcast_linkage": _m1_linkage(),
         "m3_counterfactual_coupling": _m3_counterfactual(),
         "m6_compositional_generalization": _m6_compositional_generalization(),
+        "e4_readout_rate": _e4b_readout(),
+        "e4_cascade_sigma": _e4b_cascade(),
+        "e4_self_correction_rate": _e4b_self_correction(),
     }
 
 

@@ -2,7 +2,7 @@
 
 > 日期：2026-11-05（v0.1 初稿 → v0.2 调研回填+E-BIZ → v0.3 正反方辩论评审后修订 → v0.4 架构×数据流双维深度评审 → v0.5 六维实证评审封口）
 > 来源：用户提问"系统能否出现智能涌现效应"+ 两线调研 + 用户"涌现什么"方向修正 + v0.3 评审裁决（25/30，修改后接受）+ v0.4 双维评审（P0×5 + P1×7）
-> 状态：🟢 v0.5 落地中——E0a（配置 hash）+ E0b（回放器 + 33 笔实盘 OOS 基线）+ E4a（metrics 骨架 + 云端每日 timer）已落盘（2026-11-05）；下一阶段 E6/E1/E3/E5 并行候选，E4b 埋点依赖 E1/E6 事件流，E2 放最后
+> 状态：🟢 v0.5 落地中——E0a（配置 hash）+ E0b（回放器 + 33 笔实盘 OOS 基线）+ E4a（metrics 骨架 + 云端每日 timer）+ E4b（三埋点设施 + 首跑，两项代理退化已标注）已落盘（2026-11-05）；下一阶段 E6/E1/E3/E5 并行候选，E2 放最后
 > 变更（v0.4→v0.5，六维实证评审）：K 线回填标记完成（btc_1h_ts.json fetched 11-04，5022 根至 11-05）；ckpt 日期修正（10-06 → 实际 11-03，重训前置降级为常规步骤）；E0b 估时回调 5-7 → 3-4 天；登记第三轮评审记录（修改后接受）
 > 上游：35-广义认知 C1-C4（SPEC-CognitiveSystem-Evolution v0.2）、46-DSH、47-MCP、44-三端协作架构、4-MEMORY workspace_bus.py、19-数据访问层
 > 下游：Phase E0b-E6 实施任务、48/experiments 实验记录、48/metrics 度量快照
@@ -173,6 +173,11 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
   - `cascade_sigma`（跨模块事件级联追踪）：E1 上线后启用，M1 复用 workspace_bus 事件日志
   - `e4_self_correction_rate`（hermes 反思→实际修复链路）：**v0.4 补（P1 M4）**：HermesReflector 需落盘 `reflection_id` + 后续修复动作映射，反思→修复 join 链路补映射表
 - 验收：E4a 连续 7 天有数据且云端可读；E4b 埋点链路有单测覆盖
+
+- **落地状态（2026-11-05）**：🟡 三埋点设施落盘 + 首次真实数据跑通，两项代理退化已如实标注、级联样本不足——`metrics/e4b_readout.py`（recall/action 事件 append-only JSONL，event_id 幂等；`backfill_from_sessions` 从 `.cognitive/sessions` 零侵入回填；readout_rate 口径=动作 ts 严格晚于 recall 且 changed_decision）+ `metrics/e4b_cascade.py`（复用 `events/emergence_shadow/bus_*.jsonl` + `resp_*.jsonl`，σ=总消费/被点火，级联尺寸分布 + log-log 幂律斜率 + σ∈[0.8,1.25] 临界带）+ `metrics/e4b_reflection.py`（`suggestions.md` 生成时间 × 同 session 72h 内修复动作时序 join）；13 测试全绿（48 域全套 85/85）；三字段已接入 `emergence_metrics.collect()`
+- **首次真实结果（如实记录）**：①readout 回填 884 session → 884 recall / 884 action（1768 事件，二次跑 n_appended=0 幂等），rate=**1.0** 但 `evidence_grade=pipeline_only`——会话域 recall 在会话起始、动作必然随后，率必然趋近 1，属**退化代理**，仅验证管道，不构成 E4 证据；②cascade `n_events=1`、σ=2.0、幂律斜率 null → `status=insufficient_data`（E1 shadow 事件仅 1 条，需 7 天积累）；③reflection 882 条建议 / 849 条同 session 72h 内有修复动作 = **0.9626**，同为 `pipeline_only` 退化代理
+- **已升级为 E6 缺口（不申报 E4）**：`trading_recall_log_missing`（路由 11-易经推理系统，polling_trader `_inject_cognitive_recall` 仅文本日志无结构化 memory_ids）+ `reflection_log_missing`（路由 35-广义认知，HermesReflector 未落盘 reflection_id→修复映射），补齐后可把两项代理升级为真实度量
+- **边界遵守**：只读消费 `.cognitive/sessions` 与 `events/emergence_shadow/`，未改动 11/35/46 域代码
 
 ### Phase E5 — CBR holdout 原语组合泛化实验（估 2 天，LLM §6.5 / SCAN 式）
 

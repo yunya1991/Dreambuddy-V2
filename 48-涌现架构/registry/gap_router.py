@@ -30,6 +30,8 @@ ROUTE_TABLE = {
     "case_sparse": "evolution-case-ingest",
     "coupling_unsupported": "19-数据访问层",
     "backtest_evaluator_missing": "45-评测系统",
+    "trading_recall_log_missing": "11-易经推理系统",
+    "reflection_log_missing": "35-广义认知",
 }
 
 CLAIM_ALERT_HOURS = 48
