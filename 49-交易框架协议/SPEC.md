@@ -1,6 +1,6 @@
-# SPEC-49 神经网络交易系统框架协议 v0.6
+# SPEC-49 神经网络交易系统框架协议 v0.7
 
-- 状态：🟡 v0.6 评审稿（已按代码核验 + 架构一致性审计 + 修复建议；本文只定义架构、协议契约与提案，不含实现代码）
+- 状态：🟡 v0.7 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 评审决议；本文只定义架构、协议契约与提案，不含实现代码）
 - 日期：2026-11-05
 - 归属：49-交易框架协议（交易域总体框架与协议唯一事实源）
 - 上游输入：数据层（18 采集 / 19 DAL / 20 清洗 / 21 特征 / 38 数据库）、39 金融语义蒸馏、9 基本面分析
@@ -46,7 +46,7 @@
 2. **宏观层只是约束，不是决策**：40/43 调制 23 的评分、仓位与阈值，不直接产生交易信号。
 3. **所有子交易系统必须消费宏观弹性约束**：BCRM2.0、BDSM、29、23 无例外；未来插件同样必须订阅。
 4. **42 = 插件总线 + 约束分发 + 参数治理**：新增策略通过 `registry.yaml` + `adapters/` 接入，零代码侵入。
-5. **23 = 矛盾裁决器 + 唯一最终决策出口**：识别宏观/微观冲突、做矛盾转化与最小阻力路径求解，输出 FinalDecisionSignal v1。
+5. **23 = 矛盾裁决器 + 唯一最终决策出口（全标的）**：识别宏观/微观冲突、做矛盾转化与最小阻力路径求解，输出 FinalDecisionSignal v1。
 6. **执行统一收口**：paper 走 L0 trade-exec MCP；live 走 11 域 okx_client 旁路，**实盘链路永不暴露 MCP**。
 7. **L1 闭环、L2 只读**：L1 自身是“信号→执行→反馈→训练→再信号”的闭环；L2 只能通过 `l1.trading.mcp` 只读观察。
 8. **13 风控优先**：任何宏观约束、42 参数、23 裁决都不得放宽 13 风控门禁。
@@ -210,6 +210,8 @@
 | 11-BDSM | `enable_bdsm_war_state_check` 默认 False，独立验证 | 打开校验，改读 43/42 的 `war_state`；`cap_multiplier` 受约束 |
 | 29 事件驱动 | 独立影子；`event_dominance` 有 `filter_level` 骨架 | 发布时叠加宏观档位；事件强度 × 约束乘数；四档否决 |
 | 未来插件 | — | 按 §3.4 插件契约接入，必须订阅 `macro_constraint` |
+
+> **DEC-01 决议（2026-11-06）**：11 的 bcrm / bdsm / strategy / event_arbitrage / washout 五个子池**全部作为信号源**，经 42 协调层透传给 23；11 不再以子池为单位直接下单，只保留 live 执行网关。**DEC-02**：23 的唯一决策权威覆盖全标的。
 
 > 子交易系统是“传感器 + 候选信号源”，不是最终决策者。它们的量变（力量累积、排序变化）由 23 转化为质变与最终决策。
 
@@ -424,7 +426,10 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | source | 含义 | 备注 |
 |---|---|---|
 | `11-bcrm` | BCRM2.0 战术/战略 | 11 内部战略层与 43 是不同源，勿混用 |
-| `bdsm` | BDSM 快照 | 每日 23:50 |
+| `bdsm` | BDSM 快照 | 每日 23:50；历史命名，迁移期可双写 `11-bdsm` |
+| `11-strategy` | 11 战略子池 | DEC-01 信号源 |
+| `11-event-arbitrage` | 11 事件套利子池 | DEC-01 信号源 |
+| `11-washout` | 11 洗盘子池 | DEC-01 信号源 |
 | `29-event` | 事件驱动 | 由 23 写状态、42 转发 |
 | `40-cycle` | 40 周期信号 | `symbol=MACRO` |
 | `strategic_extension` | 43 战略承接 | 文档别名 `43-strategic-extension` **废弃** |
@@ -773,13 +778,17 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 
 | 阶段 | 内容 | 验收 |
 |---|---|---|
-| **P0（本次）** | 49 协议 v0.5 评审：七层架构、MacroElasticConstraint v1、FinalDecisionSignal v1、UpperLayerContext v1、23 矛盾裁决定位、代码核验与冲突审计 | SPEC 评审通过；字段冻结 |
+| **P0（本次）** | 49 协议 v0.7 评审：七层架构、MacroElasticConstraint v1、FinalDecisionSignal v1、UpperLayerContext v1、23 矛盾裁决定位、代码核验与冲突审计、评审决议 | SPEC 评审通过；merge 后 v1 契约进入禁改期（DEC-03） |
 | **P1** | 42 总线：多源合并 + TTL、`macro_constraint`/`elastic_params` 分发、registry 加 `horizon`、路径环境变量；子系统桥接改读 42；统一 `source` 命名 | 6 源共存；约束可订阅；无硬编码路径 |
 | **P1.5** | L1 交易层 MCP 实现（`l1.trading.mcp` + 注册表；10 工具契约测试） | 只读面可用；写工具 Mandate 生效 |
 | **P2** | 40→43→42 约束合并：消费 `strategy_mapping`；统一 war_state 来源；23 消费宏观约束（UpperLayerContext）；C→D 维度重建；`_select_optimal_path` 真正矛盾对抗；接入 `AttentionAggregator` 与事件驱动主矛盾检测器；修正 CV 阈值（1.0/0.4）；L0 `source=23-evolution` 闸门 | 合并约束可查询；23 三条通道叠加宏观约束；主矛盾对抗选择占比 ≥90%（现状约 30% 基线） |
 | **P3** | 子交易系统接入约束：BCRM2/BDSM/29 全部应用；插件契约上线；W6 样本链路稳定；16 `capital_allocator` + 22 `tee_core` 接入 trade-exec MCP；12 Aster 迁移 | 四系统约束命中率可观测；FULL_FREEZE 实测否决；paper 管道完整 |
 | **P4** | 23 唯一出口 + 执行收口：11 子池（bcrm/bdsm/strategy/event_arbitrage/washout）收口；12/14/16 `exit_executor` 迁移；live 接入 13；FinalDecisionSignal SignalSchema 化；Bellman reward 统一 | 单信号出口；单标的单执行出口；live 经 13 |
 | **P5** | 训练/反馈闭环：执行策略 Phase 1b、约束校准建议、L2 只读 MCP 分析；shadow→live 晋升 | 训练行达标；约束晋升 live；L2 SLO 达标 |
+
+> **P0/P1 门禁**：
+> - v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更须版本号 + ADR（DEC-03）。
+> - **§12.1 评审列 23 项未全部回填前，禁止任何 P1 动工**（DEC-04）；未回填期间只能做评审、文档与只读验证。
 
 ---
 
@@ -870,9 +879,9 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 
 | ID | 类别 | 冲突 | 目标规则 / 处理 | 阶段 |
 |---|---|---|---|---|
-| A-01 | 信号权 | 11 的 bcrm(5)/bdsm(3)/strategy(3)/event_arbitrage(2)/washout(2) 子池用自身方向/置信度直接下单；仅 evolution 池走 23 | 子池降为信号源；执行统一经 23 FinalDecisionSignal；过渡期显式双轨 | P4 |
+| A-01 | 信号权 | 11 的 bcrm(5)/bdsm(3)/strategy(3)/event_arbitrage(2)/washout(2) 子池用自身方向/置信度直接下单；仅 evolution 池走 23 | **已决议 DEC-01**：子池降为信号源，经 42 透传给 23；11 仅保留 live 执行网关；过渡期显式双轨 | P4 |
 | A-02 | 信号权 | L0 `ingest_signal` 支持 `source=42`；`read_signals` 默认 `["23","42"]`，可绕过 23 | `ingest_signal` 仅接受 `23-evolution`；`read_signals` 默认 `["23"]`；42 只读 | P2/P4 |
-| A-03 | 决策权 | 11 的 A0-A9/BCRM/BDSM 与 23 的 action/tier 双权威，冲突无优先级 | 23 输出最终 action/position_mult；11 只做风控钳位与执行 | P4 |
+| A-03 | 决策权 | 11 的 A0-A9/BCRM/BDSM 与 23 的 action/tier 双权威，冲突无优先级 | **已决议 DEC-02**：23 为全标的唯一决策权威；11 的 A0-A9/BCRM/BDSM 降为信号源，只做风控钳位与执行 | P4 |
 | A-04 | 决策权 | 11 自有 regime 表 + BCRM `_regime_multipliers` + 23 `regime_mult` 三套 regime | 宏观 regime 单一源 40/43；23 内部 regime 只用于路径；11 regime 退役/只读 | P2 |
 | A-05 | 信号权 | 29 仅有 mock 循环，开/平仓是占位；SPEC 曾称“可独立执行” | 改为“mock/影子”；不列为执行权威 | P3 |
 | B-01 | 契约 | `forward_signal` 要求 `mode=live`，SignalSchema 无 `mode` 字段 | SignalSchema 增加 `mode(live/paper/shadow)`；`shadow` 为兼容字段 | P0 |
@@ -948,7 +957,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 
 | ID | 对应问题 | 修复建议 | 改动面 | 验收 | 阶段 | 评审 |
 |---|---|---|---|---|---|---|
-| **R-23-01** | §6.1 路径选择纯 argmax；外生度量可替换主矛盾 | 新增 `DominanceResolver`：候选路径两两按矛盾维度比较，输出主导者+理由；argmax 仅作 shadow 回退；外生度量降为**先验**，不得整体替换 | `evolution_pipeline._select_optimal_path`；新增 `core/dominance_resolver.py`；`contradiction_identifier` 输出 | 主导者判定可追溯；paper 对比不劣于 argmax；shadow 先行 | P2 | ☐ |
+| **R-23-01** | §6.1 路径选择纯 argmax；外生度量可替换主矛盾 | 新增 `DominanceResolver`：候选路径两两按矛盾维度比较，输出主导者+理由；argmax 仅作 shadow 回退；外生度量降为**先验**，不得整体替换 | `evolution_pipeline._select_optimal_path`；新增 `core/dominance_resolver.py`；`contradiction_identifier` 输出 | 主导者判定可追溯；**shadow ≥2 周硬性时间窗**；paper 对比不劣于 argmax | P2 | ☐ |
 | **R-23-02** | C 编号仍是路径来源映射 | 建立 C→D 映射层：identifier 输出 D1-D4/C6/C7/C8/NEWS，保留 C 别名双写；迁移期按 D 裁决、C 仅审计 | `contradiction_identifier.py`；`dimension_force_evaluator.py` | identifier 输出 D 标签；C 别名兼容；主矛盾口径不漂移 | P2 | ☐ |
 | **R-23-03** | D2 仅 long_short_ratio + funding_rate，缺 OI/清算 | D2 增补 OI/清算；19-DAL 取数；缺失走 percentile→neutral；监控非空率 | `dimension_force_evaluator.evaluate_d2`；19-DAL | D2 非空率 ≥90%；降级可观测 | P3 | ☐ |
 | **R-23-04** | W6 样本链路曾断裂 | 保证单实例缓存；`contradiction_samples.json` 原子写 + 监控；≥500 样本触发学习并记录权重变化 | `contradiction_identifier`；云端 cron | 样本持续增长；学习触发可观测；权重版本可追溯 | P3 | ☐ |
@@ -956,7 +965,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **R-23-06** | AttentionAggregator 未接线；A_dim 用识别器 | 用 `last_attn_weights` 聚合出 A_dim，作为 CV gate 的第三源；与现有 A_dim 双跑 shadow 对比 | `cross_validation_gate`；`evolution_pipeline` Phase 2.5 | A_dim 来源开关化；分歧统计可比；不影响现有裁决 | P2 | ☐ |
 | **R-23-07** | 事件驱动主矛盾检测器未接线 | 注册开关 `enable_primary_contradiction_detector`；在 pipeline 调用，shadow 先行 | `agi_config`；`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | P2 | ☐ |
 | **R-23-08** | 23 仅消费 11 war_state | 实现 §3.9 UpperLayerContext v1 与 9 个注入点；按 §11.4 顺序接线 | 23 data_pipeline / R 向量 / identify / tier / position_mult | 每字段有消费者与审计；无重复乘数 | P2-P4 | ☐ |
-| **R-11-01** | 11 五子池直接下单绕过 23 | 子池降为信号源；执行统一经 23；过渡期用 execution_rights 标注双轨 | `polling_trader` 子池；`execution_rights.json` | 除 11 旁路/evolution 外无直连下单 | P4 | ☐ |
+| **R-11-01** | 11 五子池直接下单绕过 23 | 子池降为信号源，经 **42** 透传给 23；11 仅保留 live 执行网关（**全标的**）；过渡期用 execution_rights 标注双轨 | `polling_trader` 子池；`execution_rights.json`；42 adapters | 除 11 旁路外无直连下单；23 输出覆盖全标的 | P4 | ☐ |
 | **R-11-02** | live 旁路不经 13 | 11 下单前调 13 `pre_trade_check`；13 不可用则 fail-closed 或显式豁免（需评审） | `polling_trader` 建仓入口 | live 订单 100% 经 13；拒单可审计 | P3/P4 | ☐ |
 | **R-11-03** | 多乘数叠加 | 23 独占 `position_mult`；11 只做风控钳位；公式见 §4.2 | `polling_trader`；`engine_router` | 同一仓位只缩放一次；审计可复算 | P2 | ☐ |
 | **R-42-01** | bus_state 整文件覆盖 | 单 SignalBus 实例；按 `signal_id` 合并 + TTL + 原子写 | `signal_bus.py`；adapters | 6 源共存；重启不丢；过期剪枝 | P1 | ☐ |
@@ -971,6 +980,8 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **R-STATE-01** | `event_driven_state.json` 双身份 | 23 写 `23_signal_state.json`；11/42/L0 只读；迁移期旧文件镜像 | `event_receiver.py`；11/42/L0 | 单写者；source=23-evolution；旧文件只读 | P2 | ☐ |
 | **R-DATA-01** | 双 war_state / 双 regime | 43 为宏观 war_state 唯一源；11 五域为局部；40/43 为 regime 唯一源 | `subsystem_bridge`；43/11 | 每周期单一 canonical 值；审计可追溯 | P2 | ☐ |
 | **R-DOC-01** | 文档落后（CUSUM/30%/3 组件） | 修正 docstring/SPEC：Welch t-test、HJB 70%、6 组件、final_loss 0.0119、4/32 默认 | 23 docs；SPEC | 文档与 §10 一致 | P0 | ☐ |
+
+> **评审门禁**：已决议 DEC-01～DEC-05 见 §12.5；§12.1 的“评审”列仍需逐项回填（23 项）。**未回填前不得进入 P1**（DEC-04）。
 
 ### 12.2 重点提案卡（评审重点）
 
@@ -1042,14 +1053,44 @@ P0 契约冻结（本 SPEC）
 7. **数据依赖**：19-DAL/42/13/16 的字段是否真实可得？缺失时降级是否保守？
 8. **文档同步**：是否同步 §6/§10/§11 与相关 SPEC，避免再次“文档落后”？
 
-### 12.5 开放问题（需评审拍板）
+### 12.5 评审决议与待决策清单
 
-1. 11 的 bcrm/bdsm 子池是**彻底退役**还是**保留为信号源**？是否允许按标的双轨？
-2. 23 是否成为**所有标的**的唯一决策权威，还是仅 evolution 池？若仅 evolution，如何解释“唯一出口”？
-3. 42 是否允许发布 23 输出镜像（只读）？还是完全输入-only？
-4. D2 的 OI/清算优先从 19-DAL 取，还是新建采集器？
-5. UpperLayerContext 用**文件**还是**进程内对象**传递？文件方案可审计但有时延；进程内方案低时延但跨进程难。
-6. live 接 13 的 fail-closed 是否接受短期停单风险？过渡豁免的审批人是谁？
+**已决议（2026-11-06）**：
+
+| ID | 决议 | 影响 |
+|---|---|---|
+| **DEC-01** | 11 的五个子池（bcrm / bdsm / strategy / event_arbitrage / washout）**降为信号源**；信号作为“矛盾源”经 **42 协调层**透传给 **23**，不再直接下单 | R-11-01 / R-42-01 目标明确 |
+| **DEC-02** | 23 的“唯一决策权威”**覆盖全标的**（不仅是 evolution 池） | A-03 / R-11-01 语义成立；需补全标的覆盖调度（见待决策 #2） |
+| **DEC-03** | v0.6 为**冻结前最后一版**；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入**禁改期**；变更须版本号 + ADR | P0“字段冻结”成立 |
+| **DEC-04** | **§12.1 评审列未回填前，禁止任何 P1 动工**；merge 只代表“可评审”，不代表“可实施” | 评审门禁 |
+| **DEC-05** | R-23-01 验收加入 **shadow ≥2 周** 硬性时间窗；不得仅以“不劣于 argmax”通过 | 总表验收补强 |
+
+**待决策（按阻塞级别）**：
+
+| # | 级别 | 决策点 | 建议 |
+|---|---|---|---|
+| 1 | P1 阻塞 | 11→42 的信号落地方式：状态文件 / 事件推送 / 进程内适配器？42 适配器如何读取 11 的 300s 状态？ | 优先状态文件 + 42 适配器只读；避免跨进程内存耦合 |
+| 2 | P1 阻塞 | 23 全标的覆盖的调度与算力：每小时还是 300s？覆盖多少标的？是否分批？ | 先按 11 当前标的池全量、1h 节奏；300s 仅高风险标的 |
+| 3 | P1 阻塞 | 11 作为执行网关的角色边界：A0-A9 是否保留为信号源？`EXECUTION_AUTHORITY` 是否对 `23-evolution` 全标的放行？ | 保留 A0-A9 为信号源；执行只认 23 输出 |
+| 4 | P1 阻塞 | 42 是否允许发布 23 输出只读镜像？还是完全 input-only？ | input-only；23 输出经独立只读镜像供 L2 |
+| 5 | P1/P2 | 单一 war_state/regime 源：43 为宏观唯一源、11 五域为局部，是否确认？ | 确认；43 唯一，11 兜底 |
+| 6 | P2 | 乘数所有权：23 独占 `position_mult`、11 只钳位，是否确认？ | 确认；见 §4.2 唯一公式 |
+| 7 | P2 | 23 输出文件：`23_signal_state.json` 的写者/读者/切换时点？ | 23 唯一写者；11/42/L0 只读；P2 切换 |
+| 8 | P2 | UpperLayerContext 传输：文件 vs 进程内对象？ | 文件 + 适配器（可审计）；高频字段进程内缓存 |
+| 9 | P2 | D2 数据：19-DAL 取 OI/清算，还是新建采集器？覆盖率门槛？ | 先 19-DAL；覆盖率 ≥90% 才进 live |
+| 10 | P3 | live 接 13 的 fail-closed 政策与过渡豁免审批人？ | 默认 fail-closed；豁免需人工审批且限标的/时限 |
+| 11 | P3 | 16/22 接入顺序、12 Aster 迁移窗口、14/16 执行器归属？ | 16→22→12→14/16；按标的灰度 |
+| 12 | P3 | `execution_rights` 治理：谁有权改标的级 paper/live/disabled？ | 47 域维护，变更需双人审批 |
+| 13 | P4 | 40 P5/P6 解锁标准与时间窗？ | 维持门禁；X1 达标后再议 |
+| 14 | 流程 | 评审责任人/截止时间；§12 何时拆成 tracking issues？ | 建议 P1 后拆 issue；本 SPEC 保留索引 |
+| 15 | P1 | 23 不可用时的降级策略：fail-closed 停单，还是 11 子池临时代管？ | 建议 fail-closed；若允许代管，必须显式开关 + 限时 |
+| 16 | P2 | 23 双重角色（策略参与者 + 最终仲裁者）的中立性：自身候选是否限权/自票上限/独立复核？ | 建议自票上限 + 独立矛盾证据复核 + 审计 |
+| 17 | P2 | C→D 映射的具体对应关系与验收口径（C1→D2、C2→D4、C3→D3、C4→D1…） | 建议按 §2.6.2 提案冻结映射，先 shadow |
+| 18 | P2 | `DominanceResolver` 算法选型：成对支配 / Bradley-Terry / 其他；argmax 回退策略 | 建议成对支配 + 可解释矩阵；shadow 对比 |
+| 19 | P2 | 契约所有权与变更流程：49 / 47 / 23 各拥有哪些契约；ADR 模板 | 49 拥有交易域四契约；47 拥有 MCP 注册表；23 拥有实现 |
+| 20 | P3 | L1 MCP `get_decision_diagnostics` 的脱敏边界：L2 可见多少主矛盾/路径细节？ | 建议只暴露摘要+置信度，原始张量/权重不下发 |
+| 21 | P3 | 符号宇宙与数据保留：全标的范围、W6/语义上下文保留期 | 先按 11 当前标的池；样本保留 2000 条/语义 48h |
+| 22 | P1 | 五个子池的 canonical source 命名与迁移期双写 | 建议 `11-bcrm` / `bdsm`(→`11-bdsm`) / `11-strategy` / `11-event-arbitrage` / `11-washout` |
 
 ---
 
@@ -1101,3 +1142,14 @@ P0 契约冻结（本 SPEC）
 3. 新增修复依赖顺序（§12.3）与 8 条评审清单（§12.4）。
 4. 新增 6 个开放问题（§12.5），需评审拍板后回填 §12.1 的“评审”列。
 5. 本轮仍只改 SPEC，不实现任何修复。
+
+---
+
+## 附：v0.7 评审决议
+
+1. **DEC-01**：11 五个子池（bcrm/bdsm/strategy/event_arbitrage/washout）降为信号源，经 42 协调层透传给 23；11 只保留 live 执行网关。
+2. **DEC-02**：23 的唯一决策权威覆盖全标的。
+3. **DEC-03**：v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更需版本号 + ADR。
+4. **DEC-04**：§12.1 评审列 23 项未全部回填前，禁止任何 P1 动工。
+5. **DEC-05**：R-23-01 验收加入 shadow ≥2 周硬性时间窗。
+6. §12.5 改为“评审决议与待决策清单”，新增 14 项待决策（#1-#14）及补充 8 项（#15-#22）。
