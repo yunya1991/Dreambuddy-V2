@@ -1,11 +1,13 @@
-# SPEC-EMERGENCE-EVOLUTION v0.3
+# SPEC-EMERGENCE-EVOLUTION v0.4
 
-> 日期：2026-11-05（v0.1 初稿 → v0.2 调研回填+E-BIZ → v0.3 正反方辩论评审后修订）
-> 来源：用户提问"系统能否出现智能涌现效应"+ 两线调研 + 用户"涌现什么"方向修正 + Devil's Advocate 评审裁决（25/30，修改后接受）
-> 状态：🟡 v0.3——评审 P0 四条已修；Phase E0-E6 未开工
-> 上游：35-广义认知 C1-C4（SPEC-CognitiveSystem-Evolution v0.2）、46-DSH、47-MCP
-> 下游：Phase E0-E6 实施任务、48/experiments 实验记录、48/metrics 度量快照
-> 变更（v0.2→v0.3）：新增 Phase E0 人工策略池基线；E2"人未写过"操作化封口；E5(b) 对齐三件套；E6 补超时告警+注册流程；E1 改契约扩展申请；E4 拆期；§5 门禁补消融归因排期+人工复核关
+> 日期：2026-11-05（v0.1 初稿 → v0.2 调研回填+E-BIZ → v0.3 正反方辩论评审后修订 → v0.4 架构×数据流双维深度评审 Devil's Advocate 裁决）
+> 来源：用户提问"系统能否出现智能涌现效应"+ 两线调研 + 用户"涌现什么"方向修正 + v0.3 评审裁决（25/30，修改后接受）+ v0.4 双维评审（P0×5 + P1×7）
+> 状态：🟡 v0.4——v0.4 评审 P0×5 已全部封口；E0a（配置 hash）已落盘；E0b（基线 OOS）因数据源/回放器缺口需前置修补
+> 上游：35-广义认知 C1-C4（SPEC-CognitiveSystem-Evolution v0.2）、46-DSH、47-MCP、44-三端协作架构、4-MEMORY workspace_bus.py、19-数据访问层
+> 下游：Phase E0b-E6 实施任务、48/experiments 实验记录、48/metrics 度量快照
+> 变更（v0.3→v0.4，架构×数据流双维评审）：
+>  **P0 封口（5 项）**：①E3 regime 数字以 artifact 重核（bull 2760/chop 1534/bear 728）+ 补 head 重训前置；②ablation gate 引用从"不存在"改为 §4 E2 明确新建；③OOD 隔离加代码级强制点（案例库+verify 黑名单参数）；④E0 前置补 polling_trader 决策回放器 + K 线回填；⑤readout 断链加 recall 落盘事件
+>  **P1 关键修（7 项）**：E1 从"最小实现"改为复用既有 workspace_bus.py + shadow envelope；L0-I 契约申请改为 44 域或删除；E2 边界声明补 33-REA；E0 状态从"未开工"改为"E0a 已落盘/E0b 待前置修补"；E4a 云端可读复用 deploy/git-sync.sh；M2 明确两做梦器 schema 统一；M4 反思→修复 join 链路补映射
 
 ---
 
@@ -69,7 +71,7 @@ C 类的自然原型：**stigmergy**（BIO §2.1 蚁群信息素间接通信）�
 |---|---|---|
 | E1 | 🟡 弱种子 | CBR/KNN 是检索复用，**不是组合生成**；evolution-case-ingest 只在三场景（washout/washout_reversal/pump_dump_reversal） |
 | E2 | 🟡 种子未开 | 做梦器 V(π,T) 路径寻优存在，但只在人写的策略空间内搜索 |
-| E3 | 🟡 起步即受挫 | DomainCouplingHead 已训出 coupling（15 对域），但 β 原型报告：签名特征中位改善 -0.68%，方向为负；当前 regime 数据修复后（bull 4074/chop 2832/bear 1349）尚未重测 |
+| E3 | 🟡 起步即受挫 | DomainCouplingHead 已训出 coupling（15 对域），但 β 原型报告：签名特征中位改善 -0.68%，方向为负；regime 数字以 artifact 重核（**v0.4 修正**：`btc_1h_ts.json` fetched 2026-11-04，bull 2760/chop 1534/bear 728，n=5022）；coupling ckpt 日期 2026-10-06 早于修复日 → head 需重训后才能重测（v0.4 前置步骤） |
 | E4 | ✅ 部分具备 | hermes 反思 + debate 正反方 + FAIL-OPEN + dream-acceptance-verify 五维验收在跑；但反思产物进主决策链的比例未度量 |
 | E5 | ❌ 无度量 | 无能力-规模曲线追踪 |
 
@@ -81,10 +83,10 @@ C 类的自然原型：**stigmergy**（BIO §2.1 蚁群信息素间接通信）�
 
 | # | 资产 | 位置 | 对应判据 | 距可用差距 |
 |---|---|---|---|---|
-| S1 | GWT Workspace Bus 设计 | 35 C4 元认知层（研究探索项） | E1/E5 | **未落地**，需最小实现 |
+| S1 | GWT Workspace Bus | 真实实现已存在：`4-MEMORY/9-工具与接口/workspace_bus.py`（10月12日，pub/sub+ignite+FAIL-OPEN，**从未被生产 import**） | E1/E5 | **已实现但闲置**——v0.4 修订：E1 改为接线复用而非从零实现；mcp_shells `agent_mail_shadow.py`+`shadow_hook.py` 可直接承载 shadow 广播 |
 | S2 | 做梦器 V(π,T) 路径寻优 | REA 做梦器 | E2 | 只在人写策略空间内，需升级为结构变体生成 |
 | S3 | 认知记忆贝叶斯蒸馏（C→B→A→S） | 4-MEMORY | E5 前提 | 单向压缩，缺反向"蒸馏出新假设" |
-| S4 | DomainCouplingHead（15 对域耦合） | 23 四层闭环 | E3 | 已训练；regime 数据 11-04 修复后待重测 |
+| S4 | DomainCouplingHead（15 对域耦合） | 23 四层闭环，ckpt `23/data/neural_sde_v1_dim64.pt`（2026-10-06） | E3 | **v0.4 补充**：ckpt 早于 regime artifact（11-04）→ E3 前置步骤=head 用修复后数据重训；regime 数字以 artifact 为准（bull 2760/chop 1534/bear 728，非原文 4074/2832/1349） |
 | S5 | debate 正反方 + 6 维裁判 | dream-* SKILL | E4 | 仅在辩论闭环，未进交易决策主链 |
 | S6 | hermes 反思 + L4 自迭代 | dream-self-iteration-workflow | E4 | 反思→SKILL 生成链路存在，触发率未度量 |
 | S7 | MoE 3 experts + Cross-Attention | 23 四层闭环 | E3 | expert 特化程度未度量 |
@@ -115,45 +117,52 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 > 原则：每个 Phase 都是"接现有机制 + 布度量"，不新建大模块；全部 shadow 先行。
 
-### Phase E0 — 人工策略池基线（估 2 天，v0.3 评审新增，E-BIZ 判据③前置）
+### Phase E0 — 人工策略池基线（v0.3 新增，v0.4 重估工期）
 
-- 内容：盘点当前全部人工编写策略/开关组合，在统一 walk-forward OOS 区间跑基线，产出 `48/registry/human_baseline.json`（每条：配置 hash、结构向量、OOS PnL/夏普/回撤、区间）
-- 同时产出 `48/registry/human_config_hashes.json`——E2 判据"人未写过"的口径基线（结构向量 hash 集 + 编辑距离计算函数）
+- **状态快照（v0.4 重认）**：E0a 已落盘——`48/registry/human_config_hashes.json`（含云端实盘配置结构向量 schema+id）、`struct_vector.py`（编辑距离 k=2）；**E0b（OOS 基线运行）因数据源+回放器缺口需前置修补，估时从 2 天升至 5-7 天**
+- **前置补丁（v0.4 发现）**：
+  1. **K 线回填至当前**：本地 `11-易经推理系统/scripts/data/klines/*.csv` 1H 止于 2026-07~08 月，DAL `dal_unified.db` 0 表——需用 19-数据访问层采集能力回填 18 标的至当前
+  2. **polling_trader 决策回放器（新建 shadow 模块）**：现有 11/ 下全部回测（evolution_backtest.py、bcrm2/walk_forward+portfolio、pentagon）均为子系统回测，无一回放 polling_trader 实盘完整决策链——需新建轻量 replay 模块（shadow 性质，不触发实盘交易）
+- 内容（不变）：盘点当前全部人工编写策略/开关组合，在统一 walk-forward OOS 区间跑基线，产出 `48/registry/human_baseline.json`（每条：配置 hash、结构向量、OOS PnL/夏普/回撤、区间）
 - **度量 M0**：基线覆盖率（人工策略池中完成 OOS 评测的比例）
-- 验收：基线文件落盘 + 覆盖率 100% + 区间满足 §5 OOD 隔离纪律
+- 验收：基线文件落盘 + 覆盖率 100% + 区间满足 §5 OOD 隔离纪律（v0.4 P0#3 强制：入库黑名单参数）
 - **没有 E0，E-BIZ 与 E2 判据永久不可判定——E0 是全部后续 Phase 的前置**
 
-### Phase E1 — 最小广播总线（估 2-3 天）
+### Phase E1 — 广播总线接线复用（估 2 天，v0.4 重订：不再从零实现）
 
-- 内容：GWT bus 最小实现——任一域 PSI 突刺 / coupling 异常 → 事件广播到 rea/eval/data 三域 → 记录非目标域的响应
-- 接入点：**向 47 提交 L0-I 契约扩展申请**（新增消息类型），获批前不实施（v0.3 评审修订：消除边界自违）；获批前先用落盘事件文件做 shadow 验证
-- **设计要点（BIO 条件 #5 加固）**：(a) 广播前必须有竞争/点火阈值，不能什么都广播；(b) 广播内容必须**改变接收模块行为**，否则总线只是消息队列，不算 GWT
-- **度量 M1**：广播事件被非目标域消费并产生动作的比例；**动作下限定义（v0.3 封口）**：仅记日志/仅 ACK 不算动作，必须改变接收模块的后续输出（如参数调整、触发计算、产出新内容）
-- **观测目标**：是否出现"非预设的跨域联动响应"（E1 信号）
-- 验收：广播链路 shadow 跑 7 天，M1 落盘，出现 ≥1 次非预设联动即记为候选事件（人工复核）
+- **v0.4 关键修订**：原"最小实现"改**接线复用**——GWT bus 真实实现已存在：`4-MEMORY/9-工具与接口/workspace_bus.py`（pub/sub+ignite+FAIL-OPEN，**从未被生产 import**），shadow 广播通道复用 mcp_shells `agent_mail_shadow.py` envelope→JSONL + `shadow_hook.py`/`shadow_driver.py`。**删去**"向 47 提交 L0-I 契约扩展申请"（v0.4 判定：L0-I 定义在 44 域、47 全文无此词、shadow 落盘本不需要契约——阻塞是自我强加）
+- 内容：任一域 PSI 突刺 / coupling 异常 → 事件广播到 rea/eval/data 三域 → 记录非目标域的响应；**接线点**：生产 import `workspace_bus.py`，shadow 期直接落盘 envelope JSONL 到 `events/emergence_shadow/*.jsonl`
+- **设计要点（BIO 条件 #5）**：(a) 广播前必须有竞争/点火阈值（建议取 3σ 偏离），不能什么都广播；(b) 广播内容必须**改变接收模块行为**，否则总线只是消息队列，不算 GWT
+- **度量 M1**：广播事件被非目标域消费并产生动作的比例；**动作下限**（v0.3 封口，v0.4 保留）：仅记日志/仅 ACK 不算动作，必须改变接收模块后续输出
+- 验收：shadow 跑 7 天，M1 落盘，出现 ≥1 次非预设联动记为候选事件（人工复核）
 
-### Phase E2 — 做梦器升级为假设生成器（估 1 周）
+### Phase E2 — 做梦器升级为假设生成器（估 1 周，v0.4 补 ablation gate + 边界协议）
 
-- 内容：做梦器 shadow 模式生成 N 个**策略结构变体**（开关组合/执行顺序/阈值的结构化扰动，非参数微调），走现有 ablation gate + V 函数筛选
+- 内容：做梦器 shadow 模式生成 N 个**策略结构变体**（开关组合/执行顺序/阈值的结构化扰动，非参数微调），过 ablation gate + V 函数筛选
+- **v0.4 关键补充**：
+  - **ablation gate 落地（P0#2）**：全仓 grep 无实现——E2 前置步骤=**新建 ablation gate 最小实现**（过拟合+稳定性双判据，阈值定义权属 45-评测系统，v0.4 明确：gate 不复用 45 现有 backtest.py 统计内核，而是封装为决策级准入）
+  - **做梦器边界声明（P1）**：`§8` 边界补 33-REA 域；改造 `33-REA逆向解析工程/core/reflection/dreaming.py` 属越界，需经 REA 域协商；同时仓内另有 `4-MEMORY/9-工具与接口/dreaming_engine.py`（记忆卫生）——**E2 需统一两做梦器的"生成批→verify"schema**（P1 M2）
 - 硬约束：生成物必须过 STRATEGY_CONFIG_SCHEMA 校验；不优于基线即丢弃；零执行权
-- **"人未写过"判读**（v0.3 封口）：按 §1 E2 操作化定义，对照 `48/registry/human_config_hashes.json`（E0 产出）；verify 结论须经**人工复核**确认（不自评发证）
-- **grokking 纪律（LLM §6.2）**：对"样本内已饱和"策略不立即判死刑，继续探索足够轮次；监控策略复杂度轨迹——先升后降=真泛化，只升不降=在背行情
-- **正负反馈配平（BIO 条件 #3）**：做梦器变异（正反馈）必须与记忆衰减/置信降级（负反馈）显式配平，防策略泡沫自我强化
+- **"人未写过"判读**（v0.3 封口，v0.4 保留）：按 §1 E2 操作化定义，对照 `48/registry/human_config_hashes.json`；verify 结论须经**人工复核**确认
+- **正负反馈配平**：做梦器变异（正反馈）必须与记忆衰减/置信降级（负反馈）显式配平，防策略泡沫自我强化
 - **度量 M2**（E2 判据）：`verify 成功 且 满足编辑距离≥k 的产物数 / 总生成数`
 - 验收：M2 比率可追踪；比率从 0 变非 0 且经人工复核 = E2 硬证据候选
 
-### Phase E3 — coupling 反事实验证（估 3 天）
+### Phase E3 — coupling 反事实验证（估 4 天，v0.4 补 head 重训前置）
 
-- 内容：训练好的 DomainCouplingHead 对"trajectories 中从未出现的域状态组合"推理，与后续真实窗口对比
-- 前提：regime 序列已修复（2026-11-04：bull 4074/chop 2832/bear 1349，none 0），跨 regime 数据可用
+- **v0.4 前置补丁（P0#1）**：ckpt `neural_sde_v1_dim64.pt` 日期 2026-10-06 早于 regime artifact（2026-11-04），head 是用旧数据训的——**E3 先补 head 重训**（用 `btc_1h_ts.json` 重核后 regime：bull 2760/chop 1534/bear 728，n=5022），不重训则"训练好 head + 修复后数据"组合不成立
+- 内容：重训后 DomainCouplingHead 对"trajectories 中从未出现的域状态组合"推理，与后续真实窗口对比
 - **度量 M3**（E3 判据）：反事实预测 MAE vs 单域 baseline，置换检验 p<0.05 **且方向为正**
 - 注意：F2 口径需补方向检查（β 报告暴露的缺陷，p=0.005 但方向为负也通过）
 - 验收：M3 显著为正 → E3 候选；为负 → 记录证伪，head 结构迭代
 
-### Phase E4 — 涌现度量面板（拆期：骨架 1 天 + 埋点 2-3 天，v0.3 评审修订）
+### Phase E4 — 涌现度量面板（拆期：骨架 1 天 + 埋点 3-4 天，v0.4 补 readout 落盘）
 
-- **E4a 骨架（1 天）**：`48-涌现架构/metrics/emergence_metrics.json`，每日 timer 落盘已有数据可算的字段：`e2_self_generated_ratio / e5_capability_scale_curve / complexity_trajectory`
-- **E4b 埋点（2-3 天）**：`readout_rate`（记忆写入→召回→改变行动全链埋点，现状只写不读需新建链路，LLM §6.4 induction head 类比）；`cascade_sigma`（跨模块事件级联追踪，现状不存在需新建）；`e4_self_correction_rate`（hermes 反思→实际修复链路追踪）
+- **E4a 骨架（1 天）**：`48-涌现架构/metrics/emergence_metrics.json`，每日 timer 落盘已有数据可算的字段；**v0.4 补（P1 数据源）**：timer 复用 launchd 先例（项目已有 `com.dreambuddy.etl-worker.plist`）；"云端可读"复用 `deploy/git-sync.sh` 周期性推送（全库无独立 metrics 上云通道，git-sync 最安全）
+- **E4b 埋点（3-4 天）**：
+  - `readout_rate`（**v0.4 重勘 P0#5**）：原"记忆只写不读"不准确——主链 `polling_trader.py` L17011 `_inject_cognitive_recall` 已消费，L10163 平仓后 verify 更新 boost；**真正断链**是 recall 无持久化日志——召回→决策改变→结果无 joinable 记录。**修复**：recall 事件（memory_ids + 后续动作）落盘到 `events/memory_readout/*.jsonl`，readout_rate 统计"写→召回→改变行动"全链比例
+  - `cascade_sigma`（跨模块事件级联追踪）：E1 上线后启用，M1 复用 workspace_bus 事件日志
+  - `e4_self_correction_rate`（hermes 反思→实际修复链路）：**v0.4 补（P1 M4）**：HermesReflector 需落盘 `reflection_id` + 后续修复动作映射，反思→修复 join 链路补映射表
 - 验收：E4a 连续 7 天有数据且云端可读；E4b 埋点链路有单测覆盖
 
 ### Phase E5 — CBR holdout 原语组合泛化实验（估 2 天，LLM §6.5 / SCAN 式）
@@ -167,17 +176,16 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 - 内容：主链缺口 → 需求单 → 自动路由 → 能力补齐 → 回填验证
   1. **缺口信号源盘点**：BDSM 基本面缺币种数据 / 回测发现因子有利但样本不足 / CBR 某域案例稀疏 / coupling head 发现域耦合但无数据支撑
-  2. **需求单 schema**（stigmergy 信息素）：`{gap_type, evidence, expected_value, target_domain_hint, created_by, status}`，落共享存储即完成"广播"
-  3. **路由器**：gap_type → 能力域映射表（19 数据采集 / 因子工程 / evolution-case-ingest / wind 数据），失败 FAIL-OPEN 不影响主链；**新 gap_type 注册流程（v0.3 新增）**：未知 gap_type 落 `48/registry/gap_type_proposals.jsonl` + 人工评审入映射表，禁止静默丢弃；**需求单超时告警（v0.3 新增，防静默黑洞）**：需求单超 48h 未被认领 → 告警到 metrics + 每日摘要，超 7 天 → 标记 expired 并计入 M7 分母
-  4. **回填验证**：能力补齐后对比主链指标前后变化
-- **度量 M7**（C 类判据）：`gap_resolved_rate`（需求单被解决比例）、`time_to_capability`（缺口→补齐时长）、`主链指标改善显著性`
-- **验收分两级（v0.3 评审修订，防确认偏误）**：**L1 链路验证**——构造 3 个已知可解缺口（如故意扣留某币种基本面），全链路自动跑通即可（不声称涌现）；**L2 涌现证据**——候选资格仅在真实运行中**自发产生**的缺口被闭环解决时成立，构造性缺口不算
-- 接入点：需求单存储复用 L0-I 通道或落盘文件（与 E1 bus 同源但更简单——需求单是持久化的，事件是瞬时的）
+  2. **需求单 schema**（stigmergy 信息素）：`{gap_type, evidence, expected_value, target_domain_hint, created_by, status}`，落共享存储即完成"广播"；**v0.4 定**：存储路径= `48/registry/capability_gaps.jsonl`（原二选一，现明确）
+  3. **路由器**：gap_type → 能力域映射表（19 数据采集 / 因子工程 / evolution-case-ingest / wind 数据），失败 FAIL-OPEN；未知 gap_type 落 `48/registry/gap_type_proposals.jsonl` + 人工评审；超 48h 未认领告警，超 7 天 expired
+  4. **回填验证**（**v0.4 补 P1 M7 口径**）：能力补齐后对比主链指标前后变化——**主链指标已存在**：`11-易经推理系统/.workbuddy/memory_l4/stats/all_trades.jsonl` + `daily_summary_*.json`（更新至 2026-10-13），直接作前后对比基准；gap 解决后跑 Wilcoxon signed-rank 检验对比补齐前后 14 天 PnL 序列
+- **度量 M7**（C 类判据）：`gap_resolved_rate`、`time_to_capability`、`主链指标改善显著性`
+- **验收分两级**：L1 链路验证（构造 3 个已知可解缺口）/ L2 涌现证据（真实运行自发产生）
 
-### 依赖与顺序
+### 依赖与顺序（v0.4 更新）
 
-**E0 最先行**（人工策略池基线——E-BIZ 判据③与 E2 口径的共同前置，没有它北极星不可判定）→ E4a 骨架（1 天）→ E6 / E1 / E3 / E5 可并行（E6 需求单是 bus 持久化简化版可先验证 stigmergy；E1 受 47 契约申请节奏约束）→ E4b 埋点（依赖 E1/E6 的事件流）→ E2 改造量最大放最后。
-（与 BIO 线"GWT bus 优先级最高"不冲突：bus 前需先有度量判定"广播是否改变接收者行为"。）
+**E0 最先行**（人工策略池基线——E-BIZ 判据③与 E2 口径的共同前置，没有它北极星不可判定；**v0.4 补**：E0 前置修补=K 线回填 + polling_trader 回放器）→ E4a 骨架（1 天）→ E6 / E1 / E3 / E5 可并行（**v0.4 删**：E1 受 47 契约申请节奏约束——已改为复用 workspace_bus+shadow envelope，无外部阻塞）→ E4b 埋点（依赖 E1/E6 事件流）→ E2 改造量最大放最后。
+（BIO 线"GWT bus 优先级最高"不冲突：bus 前需先有度量判定"广播是否改变接收者行为"。）
 
 ---
 
@@ -194,7 +202,7 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 > C 类（E-DEMAND）无独立 E 编号判据行——其判据即 §0.4 四条（结构化缺口信号/自动路由/主链指标显著改善/FAIL-OPEN），M7 为其度量载体。
 
-**涌现宣称门禁**（七关全过才可宣称）：对应判据度量显著 + 连续 ≥7 天 + 可复现 + 辩论正反方评审 + **消融归因**（涌现声明 = 总收益 − 脚手架贡献 − 数据红利；**v0.3 落地**：对照实验设计=冻结脚手架（固定接口与数据流、仅自适应部分自由进化）vs 全量运行的双跑对比，随 E2/E6 首个候选事件执行，无对照实验结果则该关自动不通过）+ **OOD walk-forward 隔离**（验证区间在时间上完全后置，且该区间行情不得进入案例库与记忆升级流程，LLM §6.7 LiveCodeBench 纪律）+ **人工/外部复核**（关键宣称的最终判定由人工作出，系统度量只提供证据包，不自评发证）。另设两道上轨护栏：**双度量**（任何能力指标同时报非连续 0/1 与连续口径，两条曲线同向才可申报，Schaeffer 判据 #1）与**稳健性压测**（行情微噪声/案例乱序/发言轮换下决策输出高方差者否决，判据 #7）。单点轶事不算数。
+**涌现宣称门禁**（七关全过才可宣称）：对应判据度量显著 + 连续 ≥7 天 + 可复现 + 辩论正反方评审 + **消融归因**（涌现声明 = 总收益 − 脚手架贡献 − 数据红利；**v0.3 落地**：对照实验设计=冻结脚手架（固定接口与数据流、仅自适应部分自由进化）vs 全量运行的双跑对比，随 E2/E6 首个候选事件执行，无对照实验结果则该关自动不通过）+ **OOD walk-forward 隔离**（**v0.4 P0#3 强制点**：案例库入库接口 `evolution-case-ingest` 加 `exclude_out_of_sample_interval` 参数强制拒绝黑名单区间行情；记忆 verify→贝叶斯升级路径 `bayesian_memory_updater.py` 加 `is_in_oos_interval` hook——无强制点则门禁只是自律口号，验收时会被判定为 P0 缺陷）+ **人工/外部复核**（关键宣称的最终判定由人工作出，系统度量只提供证据包，不自评发证）。另设两道上轨护栏：**双度量**（任何能力指标同时报非连续 0/1 与连续口径，两条曲线同向才可申报，Schaeffer 判据 #1）与**稳健性压测**（行情微噪声/案例乱序/发言轮换下决策输出高方差者否决，判据 #7）。单点轶事不算数。
 
 ---
 
@@ -203,7 +211,7 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 | # | 反模式 | 为什么禁止 |
 |---|---|---|
 | X1 | 把"某次输出看起来聪明"当涌现 | 轶事不可证伪；必须走度量 |
-| X2 | 为出涌现指标而放宽 gate/阈值 | 污染选择压力，指标即刻失效（古德哈特定律） |
+| X2 | 为出涌现指标而放宽 gate/阈值 | 污染选择压力，指标即刻失效（古德哈特定律）；**v0.4 补充**：全仓 grep 无 ablation gate 实现——E2 前置步骤=新建 gate，阈值定义权属 45-评测系统 |
 | X3 | 涌现名义下加黑盒大模块 | 违反 100% 可审计原则（DOMAIN-DISCOVERY X7 同构） |
 | X4 | 生产链路直接跑生成策略 | 违反零执行权/REA 决策分离硬约束 |
 | X5 | 把规模增长当涌现 | E5 要求的是**相变拐点**，不是线性变好 |
@@ -237,17 +245,29 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 度量怀疑论 ×2；GWT bus 最重要缺口 ×2；多样性压力 ×2；古德哈特防护 ×2。
 
-### 7.4 评审记录（2026-11-05，正反方辩论 + 裁判 6 维评分）
+### 7.4 评审记录
 
+**第一轮（v0.3，2026-11-05）**：正反方辩论 + 裁判 6 维评分
 - 流程：debate-pro-side 正方论证 / debate-con-side Devil's Advocate 反方攻击（8 条）/ debate-adjudication-methodology 终裁
 - 评分：**25/30**（逻辑有效性 3/5 最低，其余 4-5）→ 裁决：**修改后接受**，无概念性死罪
-- 反方有效攻击（已修）：E2 判据定义性循环（→操作化封口）、消融归因空转（→对照实验双跑落地）、E6 静默黑洞（→超时告警+注册流程）、E-BIZ 无基线（→新增 Phase E0）、E5(b) 与 §7.2 自相矛盾（→对齐三件套）、M1/M7 确认偏误（→动作下限+验收分级）、E4 工期低估（→拆期 E4a/E4b）
+- 反方有效攻击（已修 v0.3）：E2 判据定义性循环（→操作化封口）、消融归因空转（→对照实验双跑落地）、E6 静默黑洞（→超时告警+注册流程）、E-BIZ 无基线（→新增 Phase E0）、E5(b) 与 §7.2 自相矛盾（→对齐三件套）、M1/M7 确认偏误（→动作下限+验收分级）、E4 工期低估（→拆期 E4a/E4b）
 - 驳回：E6 查表=人工指派（强版本）、E6 驱动 19 违反边界声明
+
+**第二轮（v0.4，2026-11-05）**：架构×数据流双维深度评审（Devil's Advocate）
+- 流程：两路独立 Explore 并行检索 + 代码级证据核查 + 裁判抽查 3 关键 artifact
+- 裁决：**修改后接受（第二轮），但发现比上轮更硬的 5 项 P0 直接阻断**
+- **P0（5 项，已全部封口入 v0.4）**：
+  1. E3 前置数据被 artifact 证伪（regime 数字 2760/1534/728 vs SPEC 4074/2832/1349；ckpt 先于修复日）→ E3 补 head 重训前置
+  2. §6 X2 守卫的 ablation gate 代码不存在（全仓 grep 仅 48 域自引）→ E2 前置新建 gate
+  3. OOD 隔离无强制点（案例库+verify 无黑名单 hook，门禁=自律口号）→ §5 加代码级强制点
+  4. E0 主链无回放器 + K 线停滞近 4 个月（现有回测全是子系统；1H K 线止于 07-08 月）→ E0 前置补回放器+K 线回填
+  5. readout 断链（记忆已被主链消费但无持久化召回日志，无 joinable 链路）→ E4 补 recall 落盘事件
+- **P1（已封口 7 项）**：E1 重复建设（bus 已闲置实现）→ 改复用；L0-I 契约受理方错位 → 删错契约；E2 越界 33-REA → §8 补边界；E0 状态误报 → 如实标注；E4a 云端可读无机制 → 复用 git-sync；M2 两做梦器 schema 未统一 → 补统一；M4 反思→修复无 join → 补映射
 
 ---
 
-## §8 边界声明
+## §8 边界声明（v0.4 扩域）
 
-- C1-C4 认知四层定义权在 35；L0 契约/壳治理权在 46/47；交易策略进化在 23
-- 本域只做：涌现判据、度量、实验、假设生成机制的**设计与观测**
-- 本域不做：改写既有域的 schema/阈值/门禁；生产链路变更
+- C1-C4 认知四层定义权在 35；L0 契约/壳治理权在 46/47；交易策略进化在 23；做梦器（V(π,T) 寻优）在 33-REA（**v0.4 补**：改造 `dreaming.py` 属越界，需经 REA 域协商）；K 线数据采集在 19-数据访问层；GWT bus 真实实现归属 4-MEMORY（`workspace_bus.py`，48 域只接线不复用所有权）
+- 本域只做：涌现判据、度量、实验、假设生成机制的**设计与观测**；对既有域代码的引用=只读调研，改写需协商
+- 本域不做：改写既有域的 schema/阈值/门禁；生产链路变更；放宽既有既定时（ablation gate / PSI 阈值保持，VM-1793798309647 硬约束）
