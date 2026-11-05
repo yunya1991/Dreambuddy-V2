@@ -105,6 +105,18 @@ def _fail(code: str, trace_id: Optional[str], degraded: bool = False) -> Dict[st
     return {"ok": False, "data": None, "error_code": code, "meta": meta}
 
 
+def _fail_degraded(
+    code: str,
+    trace_id: Optional[str],
+    meta: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """HC-7: shell_degraded 信封 — degraded=True + 自定义 meta(含 reason)。"""
+    m: Dict[str, Any] = {"trace_id": trace_id, "degraded": True}
+    if meta:
+        m.update(meta)
+    return {"ok": False, "data": None, "error_code": code, "meta": m}
+
+
 def _audit(recorder: Optional[Callable[[Dict[str, Any]], None]], entry: Dict[str, Any]) -> None:
     try:
         if recorder is not None:
@@ -155,10 +167,47 @@ def call_worker_tool(
         if handle is None:
             return _audit_and(recorder, entry, _fail("unavailable", trace_id, degraded=True))
 
+        # SPEC-DSH-P5 HC-6/HC-7: try-retry-degrade 三态
+        # HC-6: 传输层失败(壳 crash/SSH 断连/超时) → 重拉壳 → 重试 1 次
+        # HC-7: 重试仍败 → degrade 信封(ok=false,error_code=shell_degraded)
         try:
             result = handle.call(tool, args)
-        except Exception:
-            return _audit_and(recorder, entry, _fail("unavailable", trace_id, degraded=True))
+        except Exception as exc:
+            # HC-6: 自动重拉壳 + 重试
+            if manager is not None:
+                retry_handle = None
+                try:
+                    retry_handle = manager.get_handle(shell_id, force_new=True)
+                except Exception:
+                    retry_handle = None
+                if retry_handle is not None:
+                    try:
+                        result = retry_handle.call(tool, args)
+                    except Exception as retry_exc:
+                        # HC-7: 重试仍败 → degrade 信封, 不抛
+                        return _audit_and(
+                            recorder,
+                            entry,
+                            _fail_degraded(
+                                "shell_degraded",
+                                trace_id,
+                                meta={"reason": str(retry_exc), "original": str(exc)},
+                            ),
+                        )
+                else:
+                    # manager 重拉也拿不到(开关关/超上限) → degrade
+                    return _audit_and(
+                        recorder,
+                        entry,
+                        _fail_degraded("shell_degraded", trace_id, meta={"reason": str(exc)}),
+                    )
+            else:
+                # 无 manager → 直接 degrade
+                return _audit_and(
+                    recorder,
+                    entry,
+                    _fail_degraded("shell_degraded", trace_id, meta={"reason": str(exc)}),
+                )
 
         if isinstance(result, dict) and "ok" in result:
             envelope = result
