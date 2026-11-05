@@ -29,11 +29,11 @@
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
-| [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E0-E6 实施路径 | 🟡 v0.5：六维实证评审封口（第三轮，修改后接受）；E0a 已落盘，E0b 仅剩回放器缺口（K 线已回填），达到可开工状态 |
+| [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E0-E6 实施路径 | 🟡 v0.5：六维实证评审封口（第三轮，修改后接受）；E0a/E0b/E4a 已落盘（2026-11-05） |
 | [docs/tech/REVIEW-CHECKLIST-v0.1.md](./docs/tech/REVIEW-CHECKLIST-v0.1.md) | SPEC 评审六维检查清单（引用存在性/数据健康度/版本一致性/存量盘点/门禁强制等级/可观测性） | ✅ v0.1：SPEC 升版评审必跑 |
 | docs/tech/research/ | [LLM 涌现调研](./docs/tech/research/RESEARCH-LLM-EMERGENCE-v0.1.md) + [生物学原理调研](./docs/tech/research/RESEARCH-BIO-EMERGENCE-v0.1.md) | ✅ v0.1 完成（60+ 来源） |
-| experiments/ | 可复现实验记录（反事实验证、广播联动观测） | ⬜ 未开始 |
-| metrics/ | emergence_metrics.json 历史快照 | ⬜ 未开始 |
+| experiments/ | 可复现实验记录（反事实验证、广播联动观测） | 🟡 E0b 回放器落盘：`replay/replay_decisions.py`（shadow/FAIL-OPEN；支持跨天日志回退），`registry/run_human_baseline.py` 产出 OOS 基线（33 笔实盘） |
+| metrics/ | emergence_metrics.jsonl 历史快照 | 🟡 E4a 骨架落盘：`metrics/emergence_metrics.py`，云端每日 06:10 timer（`dreambuddy-emergence-metrics.timer`）持续快照 |
 
 ## 维护
 
