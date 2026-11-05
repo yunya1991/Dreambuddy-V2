@@ -10,8 +10,10 @@ export const revalidate = 0; // 实时拉 orchestrator, 不缓存
 
 export async function GET(request: NextRequest) {
   const scriptPath = path.join(process.cwd(), 'scripts', 'trading_ranking.py');
+  // 优先用 venv-trading (orchestrator_v2 依赖), fallback 到系统 python3
+  const pythonBin = process.env.TRADING_PYTHON || '/home/luke/venv-trading/bin/python';
   try {
-    const { stdout } = await execFileAsync('python3', [scriptPath], {
+    const { stdout } = await execFileAsync(pythonBin, [scriptPath], {
       maxBuffer: 10 * 1024 * 1024,
       timeout: 90000, // orchestrator 冷启动 30s+, 给足 90s
     });
