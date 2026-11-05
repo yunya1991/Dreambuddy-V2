@@ -1,0 +1,117 @@
+{
+  "ts": "2026-11-05T15:14:50.204216+00:00",
+  "status": "ok",
+  "sources": {
+    "washout_reversal": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/tests/washout_reversal_backtest_cases.jsonl",
+    "pump_dump_reversal": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/tests/pump_dump_reversal_backtest_cases.jsonl"
+  },
+  "n_cases": 162,
+  "n_eligible_cells": 8,
+  "verdict": "inconclusive",
+  "n_eval": 150,
+  "acc_composition": 0.66,
+  "acc_knn": 0.66,
+  "improvement": 0.0,
+  "p_value": 1.0,
+  "obs_diff": 0.0,
+  "direction_positive": false,
+  "homomorphism_error": 0.06712451786988907,
+  "per_cell": [
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "n": 22,
+      "acc_composition": 0.7272727272727273,
+      "acc_knn": 0.7272727272727273
+    },
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        1,
+        1
+      ],
+      "n": 22,
+      "acc_composition": 0.6818181818181818,
+      "acc_knn": 0.6818181818181818
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "n": 8,
+      "acc_composition": 0.625,
+      "acc_knn": 0.375
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        1,
+        1
+      ],
+      "n": 22,
+      "acc_composition": 0.8181818181818182,
+      "acc_knn": 0.8636363636363636
+    },
+    {
+      "cell": [
+        1,
+        1,
+        0,
+        1,
+        0
+      ],
+      "n": 11,
+      "acc_composition": 0.7272727272727273,
+      "acc_knn": 0.8181818181818182
+    },
+    {
+      "cell": [
+        1,
+        1,
+        0,
+        1,
+        1
+      ],
+      "n": 17,
+      "acc_composition": 0.5882352941176471,
+      "acc_knn": 0.5882352941176471
+    },
+    {
+      "cell": [
+        1,
+        1,
+        1,
+        1,
+        0
+      ],
+      "n": 19,
+      "acc_composition": 0.47368421052631576,
+      "acc_knn": 0.42105263157894735
+    },
+    {
+      "cell": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "n": 29,
+      "acc_composition": 0.6206896551724138,
+      "acc_knn": 0.6551724137931034
+    }
+  ]
+}

@@ -172,6 +172,8 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 ### Phase E5 — CBR holdout 原语组合泛化实验（估 2 天，LLM §6.5 / SCAN 式）
 
+- **落地状态（2026-11-05）**：🟡 设施落盘 + 首次真实评估完成——`experiments/e5_cbr_holdout/cbr_holdout.py`（SCAN 式：5 市场原语中位数分箱 → cell 组合整体扣留 + 逐 eligible cell 池化评估；组合法=逐原语贡献 logistic 线性组合，基线=kNN 检索复用；配对符号翻转置换检验 10k 次 + 显式方向检查 + 同态误差辅助指标 + insufficient_data 联动 E6 需求单 gap_type=case_sparse）；11 测试全绿（含 SCAN 性质 toy 检验：训练未见 (1,1,0,0) 组合时组合法 5/5 泛化、kNN 0/5）；M6 已接入 `metrics/emergence_metrics.py`
+- **首次真实评估结果（如实记录）**：162 回测案例（washout 69 + pump_dump 93，统一 5 原语 schema，entry_price 剔除）、8 eligible cell、n_eval=150 → **inconclusive**：组合 0.66 vs 检索 0.66 池化打平（improvement=0.0, p=1.0；逐 cell 互有胜负，如 cell[0,1,1,1,0] 组合 0.625 vs 检索 0.375，cell[1,1,0,1,0] 反之），同态误差 0.067（表征弱同态）。按验收口径：当前不申报 E1 候选，也不记证伪——数据现实制约：生产 evolution_cases/ 仅 1 案例（远低于 min_cases=30），实验只能用回测导出薄特征案例（5 原语、confidence 三特征高度相关），原语多样性不足以让组合法发挥结构优势；待真实闭环案例积累后重跑
 - 内容：把某类市场原语（如某 regime 形态）从 CBR 案例库**整体扣留**，测试系统能否用其余案例**组合**出对该新形态的正确响应
 - 辅助指标：同态误差——结构相似的行情应激活相似的案例/因子组合，作为 CBR 表征质量连续监控
 - **度量 M6**（E1 判据金标准）：holdout 形态上组合响应成功率 vs 最近邻检索复用基线
