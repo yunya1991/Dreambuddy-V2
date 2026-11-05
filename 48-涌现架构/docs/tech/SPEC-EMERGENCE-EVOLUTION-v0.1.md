@@ -2,7 +2,7 @@
 
 > 日期：2026-11-05（v0.1 初稿 → v0.2 调研回填+E-BIZ → v0.3 正反方辩论评审后修订 → v0.4 架构×数据流双维深度评审 → v0.5 六维实证评审封口）
 > 来源：用户提问"系统能否出现智能涌现效应"+ 两线调研 + 用户"涌现什么"方向修正 + v0.3 评审裁决（25/30，修改后接受）+ v0.4 双维评审（P0×5 + P1×7）
-> 状态：🟡 v0.5——v0.4 评审 P0×5 已全部封口；E0a（配置 hash）已落盘；E0b（基线 OOS）仅剩回放器缺口（K 线已回填，v0.5 实证）
+> 状态：🟢 v0.5 落地中——E0a（配置 hash）+ E0b（回放器 + 33 笔实盘 OOS 基线）+ E4a（metrics 骨架 + 云端每日 timer）已落盘（2026-11-05）；下一阶段 E6/E1/E3/E5 并行候选，E4b 埋点依赖 E1/E6 事件流，E2 放最后
 > 变更（v0.4→v0.5，六维实证评审）：K 线回填标记完成（btc_1h_ts.json fetched 11-04，5022 根至 11-05）；ckpt 日期修正（10-06 → 实际 11-03，重训前置降级为常规步骤）；E0b 估时回调 5-7 → 3-4 天；登记第三轮评审记录（修改后接受）
 > 上游：35-广义认知 C1-C4（SPEC-CognitiveSystem-Evolution v0.2）、46-DSH、47-MCP、44-三端协作架构、4-MEMORY workspace_bus.py、19-数据访问层
 > 下游：Phase E0b-E6 实施任务、48/experiments 实验记录、48/metrics 度量快照
@@ -175,6 +175,7 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 ### Phase E6 — 需求驱动闭环（capability-pull loop，C 类主战场，估 3-4 天）
 
+- **落地状态（2026-11-05）**：🟢 基础设施已落盘——`registry/capability_gaps.py`（需求单存储+状态机）+ `gap_router.py`（5 类映射+48h 告警/7 天过期）+ `gap_backfill_verify.py`（Wilcoxon 前后 14 天）；`tests/` 15 用例全绿，L1 验收（3 缺口全链路）通过，真实冒烟首单闭环。**口径实证修正**：回填验证数据源 all_trades.jsonl（更新止 2026-10-13）→ bcrm_trades.db（trades 表 exit_time+pnl_pct，与 E0b 基线同源）。剩余：信号源自动接入（需 11/19/23 域协商，FAIL-OPEN 挂载）+ L2 真实运行自发证据
 - 内容：主链缺口 → 需求单 → 自动路由 → 能力补齐 → 回填验证
   1. **缺口信号源盘点**：BDSM 基本面缺币种数据 / 回测发现因子有利但样本不足 / CBR 某域案例稀疏 / coupling head 发现域耦合但无数据支撑
   2. **需求单 schema**（stigmergy 信息素）：`{gap_type, evidence, expected_value, target_domain_hint, created_by, status}`，落共享存储即完成"广播"；**v0.4 定**：存储路径= `48/registry/capability_gaps.jsonl`（原二选一，现明确）

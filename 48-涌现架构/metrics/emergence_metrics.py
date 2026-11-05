@@ -7,17 +7,22 @@
   - complexity_trajectory：策略复杂度轨迹（人工配置结构向量的开关位数/阈值分箱跨度）
 
 FAIL-OPEN：任何数据源缺失记 null，不阻断。
+
+M7（E6 需求闭环率，2026-11-05 落地）：gap_resolved_rate / time_to_capability / 状态分布，
+数据源 48-涌现架构/registry/capability_gaps.jsonl。
 """
 
 from __future__ import annotations
 
 import json
 import sqlite3
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_REPO_ROOT / "48-涌现架构" / "registry"))
 _METRICS_DIR = _REPO_ROOT / "48-涌现架构" / "metrics"
 _TRAJECTORIES = _REPO_ROOT / ".workbuddy" / "agent_mail" / "trajectories.jsonl"
 _ARCHIVE_DIR = _REPO_ROOT / ".workbuddy" / "agent_mail" / "archive"
@@ -109,6 +114,46 @@ def _complexity_trajectory() -> Dict[str, Any]:
         return {"value": None, "status": "unavailable"}
 
 
+def _m7_demand_loop() -> Dict[str, Any]:
+    """M7 需求闭环率：resolved 占比 / 平均 time_to_capability（小时）/ 状态分布。"""
+    try:
+        import capability_gaps as cg
+
+        gaps: List[Dict[str, Any]] = cg.load_gaps()
+        if not gaps:
+            return {"value": None, "status": "no_gaps_yet"}
+        by_status: Dict[str, int] = {}
+        ttc_hours: List[float] = []
+        for g in gaps:
+            s = g.get("status", "open")
+            by_status[s] = by_status.get(s, 0) + 1
+            if s == "resolved":
+                try:
+                    created = datetime.fromisoformat(
+                        (g.get("created_at") or "").replace("Z", "+00:00")
+                    )
+                    resolved = datetime.fromisoformat(
+                        (g.get("resolved_at") or "").replace("Z", "+00:00")
+                    )
+                    ttc_hours.append((resolved - created).total_seconds() / 3600)
+                except ValueError:
+                    continue
+        closed = sum(by_status.get(s, 0) for s in ("resolved", "expired", "rejected"))
+        return {
+            "value": {
+                "total": len(gaps),
+                "by_status": by_status,
+                "gap_resolved_rate": by_status.get("resolved", 0) / closed if closed else None,
+                "avg_time_to_capability_hours": (
+                    sum(ttc_hours) / len(ttc_hours) if ttc_hours else None
+                ),
+            },
+            "status": "ok",
+        }
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
+
+
 def collect() -> Dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     return {
@@ -120,6 +165,7 @@ def collect() -> Dict[str, Any]:
             "trades": _trades_count(),
         },
         "complexity_trajectory": _complexity_trajectory(),
+        "m7_demand_loop": _m7_demand_loop(),
     }
 
 

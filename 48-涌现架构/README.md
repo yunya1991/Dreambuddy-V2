@@ -33,7 +33,8 @@
 | [docs/tech/REVIEW-CHECKLIST-v0.1.md](./docs/tech/REVIEW-CHECKLIST-v0.1.md) | SPEC 评审六维检查清单（引用存在性/数据健康度/版本一致性/存量盘点/门禁强制等级/可观测性） | ✅ v0.1：SPEC 升版评审必跑 |
 | docs/tech/research/ | [LLM 涌现调研](./docs/tech/research/RESEARCH-LLM-EMERGENCE-v0.1.md) + [生物学原理调研](./docs/tech/research/RESEARCH-BIO-EMERGENCE-v0.1.md) | ✅ v0.1 完成（60+ 来源） |
 | experiments/ | 可复现实验记录（反事实验证、广播联动观测） | 🟡 E0b 回放器落盘：`replay/replay_decisions.py`（shadow/FAIL-OPEN；支持跨天日志回退），`registry/run_human_baseline.py` 产出 OOS 基线（33 笔实盘） |
-| metrics/ | emergence_metrics.jsonl 历史快照 | 🟡 E4a 骨架落盘：`metrics/emergence_metrics.py`，云端每日 06:10 timer（`dreambuddy-emergence-metrics.timer`）持续快照 |
+| metrics/ | emergence_metrics.jsonl 历史快照 | 🟡 E4a 骨架落盘：`metrics/emergence_metrics.py`（含 M7 需求闭环字段），云端每日 06:10 timer（`dreambuddy-emergence-metrics.timer`）持续快照 |
+| registry/ | E0a 配置基线 + E6 需求闭环设施 | 🟢 E6 基础设施落盘（2026-11-05）：`capability_gaps.py` 需求单存储 + `gap_router.py` 路由器 + `gap_backfill_verify.py` 回填验证；15 测试全绿，L1 验收（3 缺口全链路）通过；真实冒烟首单 GAP-20261105-64d7320e 闭环。回填验证数据源口径实证修正：all_trades.jsonl（止 10-13）→ bcrm_trades.db（与 E0b 同源） |
 
 ## 维护
 
