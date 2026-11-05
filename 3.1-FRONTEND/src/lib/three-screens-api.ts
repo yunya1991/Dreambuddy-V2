@@ -9,7 +9,9 @@
  * 后端已设置 Access-Control-Allow-Origin: *，可直接从浏览器跨域调用。
  */
 
-const TREND_BASE = process.env.NEXT_PUBLIC_TREND_SYSTEM_URL || 'http://127.0.0.1:8765';
+// 优先用环境变量，默认走 nginx 反代 /api/trend → 127.0.0.1:8765
+// 浏览器不能访问 127.0.0.1，必须走同域相对路径
+const TREND_BASE = process.env.NEXT_PUBLIC_TREND_SYSTEM_URL || '/api/trend';
 
 async function trendRequest<T = any>(endpoint: string): Promise<T> {
   const url = `${TREND_BASE}${endpoint}`;
