@@ -1,93 +1,104 @@
 #!/usr/bin/env python3
 """
-认知系统 HTTP Adapter — 单次请求模式调用 cognitive_mcp_server 的 5 个工具。
+认知系统 HTTP Adapter — 单次请求模式调用认知 MCP 壳 (B 方案重构版)。
 
-用法:
+用法 (完全兼容原格式):
   python3 cognitive_adapter.py recall '{"context":"test","top_k":3,"min_quality":"C"}'
+  python3 cognitive_adapter.py record '{"content":"经验","quality_level":"B","tags":"tag1"}'
+  python3 cognitive_adapter.py verify '{"memory_id":"VM-xxx","success":true}'
+  python3 cognitive_adapter.py stats '{}'
+  python3 cognitive_adapter.py health '{}'
 
-stdout: 单行 JSON 响应 {"ok": true, "data": {...}} 或 {"ok": false, "error": "..."}
-stderr: 错误日志和 import 噪音（不污染 stdout）
+内部路由:
+  tool_name → call_tool('research', tool_name, args) 完整链路
+  → ShellHandleManager → StdioShell(fake_mode/ssh-stdio) → cognitive_mcp_server
 
-设计:
-  - 复刻 dream-harness-bridge P0-5 IPC 模式 (VM-1789618914215)
-  - FAIL-OPEN: 异常返回 {ok: false, error, traceback}, 不崩溃
-  - stdout 行过滤: import 和 handler 执行期间重定向 stdout 到 stderr
-  - 不改 4-MEMORY 后端, 仅在 3.1-FRONTEND 接入层新增 adapter
+壳复用: 进程内首次拉起后复用 (ADR-10), 后续 call 不重复 Popen
+健康检查: HC-4 is_alive(), HC-6 transport fail 自动重拉 retry, HC-7 degrade
+
+Fail-Open: dsh_frontend_bridge.call_tool 内部兜底
 """
-import sys
-import os
+
 import json
+import os
+import sys
 import traceback
 
 
-def _resolve_mcp_dir():
-    """解析 4-MEMORY/9-工具与接口 绝对路径，支持多种 cwd。"""
+def _resolve_34_core_dir() -> str:
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # 路径 1: 3.1-FRONTEND/scripts/ → ../../4-MEMORY/9-工具与接口
-    candidate1 = os.path.normpath(os.path.join(script_dir, '..', '..', '4-MEMORY', '9-工具与接口'))
-    if os.path.exists(candidate1):
-        return candidate1
-    return candidate1  # 返回不存在的路径，让 import 报错
+    return os.path.normpath(os.path.join(script_dir, "..", "..", "34-前端应用训练系统", "core"))
+
+
+# 认知 MCP 壳 shell_id + 默认角色
+_SHELL_ID = "l0.cognition.mcp"
+_DEFAULT_ROLE = "research"
+
+
+# 47 registry 里认知壳的 6 个工具
+_COGNITIVE_TOOLS = {"recall", "unified_search", "record", "verify", "stats", "health"}
 
 
 def _safe_print(payload):
-    """唯一向 stdout 输出的入口，确保单行 JSON。"""
     sys.stdout = sys.__stdout__
-    sys.stdout.write(json.dumps(payload, ensure_ascii=False) + '\n')
+    sys.stdout.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
     sys.stdout.flush()
 
 
 def main():
+    core_dir = _resolve_34_core_dir()
+    if os.path.isdir(core_dir) and core_dir not in sys.path:
+        sys.path.insert(0, core_dir)
+
     if len(sys.argv) < 2:
-        _safe_print({"ok": False, "error": "missing tool_name argument"})
+        _safe_print(
+            {
+                "ok": False,
+                "error": "missing tool_name argument",
+                "available": sorted(_COGNITIVE_TOOLS),
+            }
+        )
         return
 
     tool_name = sys.argv[1]
-    args_raw = sys.argv[2] if len(sys.argv) > 2 else '{}'
+    args_raw = sys.argv[2] if len(sys.argv) > 2 else "{}"
     try:
         args = json.loads(args_raw) if args_raw else {}
     except json.JSONDecodeError as e:
         _safe_print({"ok": False, "error": f"invalid args JSON: {e}"})
         return
 
-    # === 关键: import 和 handler 执行期间把 stdout 重定向到 stderr ===
-    # 避免任何 import 噪音或 handler 内部 print 污染真 stdout
     sys.stdout = sys.stderr
 
     try:
-        mcp_dir = _resolve_mcp_dir()
-        if mcp_dir not in sys.path:
-            sys.path.insert(0, mcp_dir)
-        from cognitive_mcp_server import TOOL_HANDLERS  # noqa
-    except Exception as e:
-        _safe_print({
-            "ok": False,
-            "error": f"import_failed: {type(e).__name__}: {e}",
-            "traceback": traceback.format_exc(),
-        })
-        return
+        from dsh_frontend_bridge import call_tool
 
-    if tool_name not in TOOL_HANDLERS:
-        _safe_print({
-            "ok": False,
-            "error": f"unknown tool: {tool_name}. available: {sorted(TOOL_HANDLERS.keys())}",
-        })
-        return
-
-    try:
-        result_text = TOOL_HANDLERS[tool_name](args)
-        # result_text 是 JSON 字符串, 再 parse 一次拿到结构化数据
-        try:
-            data = json.loads(result_text)
-        except (json.JSONDecodeError, TypeError):
-            data = {"raw": result_text}
-        _safe_print({"ok": True, "data": data})
+        if tool_name not in _COGNITIVE_TOOLS:
+            _safe_print(
+                {
+                    "ok": False,
+                    "error": f"unknown cognitive tool: {tool_name}",
+                    "available": sorted(_COGNITIVE_TOOLS),
+                }
+            )
+            return
+        result = call_tool(_DEFAULT_ROLE, tool_name, args)
     except Exception as e:
-        _safe_print({
+        result = {
             "ok": False,
-            "error": f"handler_error: {type(e).__name__}: {e}",
+            "error": f"bridge_error: {type(e).__name__}: {e}",
             "traceback": traceback.format_exc(),
-        })
+        }
+
+    # 适配前端现有消费格式: {ok:true, data:{...}} 或 {ok:false, error:"..."}
+    if isinstance(result, dict):
+        if result.get("ok") is False:
+            _safe_print(result)
+            return
+        data = result.get("data")
+        _safe_print({"ok": True, "data": data if data is not None else result.get("output")})
+    else:
+        _safe_print({"ok": True, "data": result})
 
 
 if __name__ == "__main__":
