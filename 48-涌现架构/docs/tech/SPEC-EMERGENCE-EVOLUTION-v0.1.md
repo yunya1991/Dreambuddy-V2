@@ -141,6 +141,10 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 ### Phase E2 — 做梦器升级为假设生成器（估 1 周，v0.4 补 ablation gate + 边界协议）
 
+- **落地状态（2026-11-05）**：🟡 设施落盘 + 首次真实批次完成——`experiments/e2_hypothesis/variant_generator.py`（策略结构变体：开关位翻转/阈值分箱平移/标的集增删，确定性 seed；schema 校验；编辑距离≥k「人未写过」判读；正负反馈配平 keep_ratio 确定性丢弃并双向计数）+ `ablation_gate.py`（**新建**决策级准入最小实现：过拟合退化 + 分片稳定性双判据 + 最小样本 + 不优于基线即拒；阈值权属 45，本地护栏不放宽）+ `batch_schema.py`（统一两做梦器「生成批→verify」envelope，space 标注 + M2 统计）+ `run_e2.py`（主流程 + E6 需求单去重）。21 测试全绿（48 域全套 72/72）
+- **首次真实批次（如实记录）**：基于 live 人工配置生成 32/32 结构变体全部通过 schema 校验且全部满足编辑距离≥2（n_novel=32）；**verify_status=evaluator_missing**——45/11 域尚无 config 级回测评估器（输入结构变体 → 输出 IS/OOS/分片指标），gate 全部如实不准入，**M2=0.0**，不伪造；已发 E6 需求单 `backtest_evaluator_missing`（created_by=e2_hypothesis，路由 45-评测系统，同类型 open 单不重复发单）
+- **边界遵守**：只读引用 33-REA `core/reflection/dreaming.py`（编排空间 V 寻优，未改造）与 4-MEMORY `dreaming_engine.py`（记忆卫生）；E2 生成物零执行权，仅落批次 JSON 供评估器与人工复核
+- **已知缺口**：§1 E2 结构向量含「执行顺序编码」，但 `human_config_hashes.json` 基线 schema 无该字段——本轮按现有 5 字段口径实现，执行顺序编码待 E0 基线 schema 扩展后补齐（判据不虚报）
 - 内容：做梦器 shadow 模式生成 N 个**策略结构变体**（开关组合/执行顺序/阈值的结构化扰动，非参数微调），过 ablation gate + V 函数筛选
 - **v0.4 关键补充**：
   - **ablation gate 落地（P0#2）**：全仓 grep 无实现——E2 前置步骤=**新建 ablation gate 最小实现**（过拟合+稳定性双判据，阈值定义权属 45-评测系统，v0.4 明确：gate 不复用 45 现有 backtest.py 统计内核，而是封装为决策级准入）

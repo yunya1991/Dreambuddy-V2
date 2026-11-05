@@ -29,6 +29,7 @@ ROUTE_TABLE = {
     "factor_insufficient_samples": "因子工程",
     "case_sparse": "evolution-case-ingest",
     "coupling_unsupported": "19-数据访问层",
+    "backtest_evaluator_missing": "45-评测系统",
 }
 
 CLAIM_ALERT_HOURS = 48

@@ -1,0 +1,1947 @@
+{
+  "schema_version": "1.0",
+  "batch_id": "BATCH-20261105-2ea039d8",
+  "generated_at": "2026-11-05T15:40:29.371048+00:00",
+  "generator": "e2_hypothesis_variant_generator",
+  "space": "trading_struct_vector",
+  "items": [
+    {
+      "variant_id": "V-2b80f5573da0571d",
+      "struct_vector": {
+        "switches_bitmask": "11100111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "2b80f5573da0571d",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "2b80f5573da0571d"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "switch_flip"
+    },
+    {
+      "variant_id": "V-b739e61c9fa497ec",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          14,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "b739e61c9fa497ec",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "b739e61c9fa497ec"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "threshold_shift"
+    },
+    {
+      "variant_id": "V-2441150b89e7e9b9",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11001",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "2441150b89e7e9b9",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "2441150b89e7e9b9"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "phase_flip"
+    },
+    {
+      "variant_id": "V-04edf6c7d7607511",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          18,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "04edf6c7d7607511",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "04edf6c7d7607511"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "threshold_shift"
+    },
+    {
+      "variant_id": "V-f2c1520029a918b3",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "9ab3c60b64a05bcf"
+      },
+      "vector_hash": "f2c1520029a918b3",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "f2c1520029a918b3"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "coin_change"
+    },
+    {
+      "variant_id": "V-341226671fdc5c1d",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "000111",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "341226671fdc5c1d",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "341226671fdc5c1d"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-32c18655f8586655",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "a277e77202b4370a"
+      },
+      "vector_hash": "32c18655f8586655",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "32c18655f8586655"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "coin_change"
+    },
+    {
+      "variant_id": "V-e15b2b1bd94c195e",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          3,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "e15b2b1bd94c195e",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "e15b2b1bd94c195e"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "threshold_shift"
+    },
+    {
+      "variant_id": "V-c82776309dd4826c",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "712c621979b505d9"
+      },
+      "vector_hash": "c82776309dd4826c",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "c82776309dd4826c"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "coin_change"
+    },
+    {
+      "variant_id": "V-9fe4495a17836e66",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "010110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "9fe4495a17836e66",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "9fe4495a17836e66"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-67ec40dce1272b8d",
+      "struct_vector": {
+        "switches_bitmask": "11001111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "67ec40dce1272b8d",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "67ec40dce1272b8d"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "switch_flip"
+    },
+    {
+      "variant_id": "V-4f9f11eb44e4285f",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          7,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "4f9f11eb44e4285f",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "4f9f11eb44e4285f"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "threshold_shift"
+    },
+    {
+      "variant_id": "V-67f8c76bc4c09173",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "0010",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "67f8c76bc4c09173",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "67f8c76bc4c09173"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "bdsm_flip"
+    },
+    {
+      "variant_id": "V-d365d1e4b27ed229",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "0111",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "d365d1e4b27ed229",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "d365d1e4b27ed229"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "bdsm_flip"
+    },
+    {
+      "variant_id": "V-c70bc6796b45aea0",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "6a8526e027aa57f6"
+      },
+      "vector_hash": "c70bc6796b45aea0",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "c70bc6796b45aea0"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "coin_change"
+    },
+    {
+      "variant_id": "V-7d6f14d1a7b5f25f",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "01011",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "7d6f14d1a7b5f25f",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "7d6f14d1a7b5f25f"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "phase_flip"
+    },
+    {
+      "variant_id": "V-df325e483e5df5df",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "101010",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "df325e483e5df5df",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "df325e483e5df5df"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-277ced2be8c64715",
+      "struct_vector": {
+        "switches_bitmask": "11111010",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "277ced2be8c64715",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "277ced2be8c64715"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "switch_flip"
+    },
+    {
+      "variant_id": "V-56e56882c42e853f",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          18,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "56e56882c42e853f",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "56e56882c42e853f"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "threshold_shift"
+    },
+    {
+      "variant_id": "V-3c59e8c5cf84c934",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "100110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "3c59e8c5cf84c934",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "3c59e8c5cf84c934"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-d939c0b49c32a446",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "011111",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "d939c0b49c32a446",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "d939c0b49c32a446"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-97878d870193f2e1",
+      "struct_vector": {
+        "switches_bitmask": "01110111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "97878d870193f2e1",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "97878d870193f2e1"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "switch_flip"
+    },
+    {
+      "variant_id": "V-2d3ab6f0e982cef4",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "111110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "2d3ab6f0e982cef4",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "2d3ab6f0e982cef4"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-eee09b0da25df386",
+      "struct_vector": {
+        "switches_bitmask": "00111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "eee09b0da25df386",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "eee09b0da25df386"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "switch_flip"
+    },
+    {
+      "variant_id": "V-28a04c6c16779d35",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "881465021c34f625"
+      },
+      "vector_hash": "28a04c6c16779d35",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "28a04c6c16779d35"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "coin_change"
+    },
+    {
+      "variant_id": "V-41001de6e64845d4",
+      "struct_vector": {
+        "switches_bitmask": "11101110",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "41001de6e64845d4",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "41001de6e64845d4"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "switch_flip"
+    },
+    {
+      "variant_id": "V-3ac01171614940e6",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "0100",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "3ac01171614940e6",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "3ac01171614940e6"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "bdsm_flip"
+    },
+    {
+      "variant_id": "V-d82b69b05aab4b23",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "00111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "d82b69b05aab4b23",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "d82b69b05aab4b23"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "phase_flip"
+    },
+    {
+      "variant_id": "V-b2e7f271370e2070",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11010",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "b2e7f271370e2070",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "b2e7f271370e2070"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "phase_flip"
+    },
+    {
+      "variant_id": "V-98f1eb423968c0ab",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "10110",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "98f1eb423968c0ab",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "98f1eb423968c0ab"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "phase_flip"
+    },
+    {
+      "variant_id": "V-0fe4bae0c8ef3432",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "011100",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "HYPE",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "b9ebc80bfa785a09"
+      },
+      "vector_hash": "0fe4bae0c8ef3432",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "0fe4bae0c8ef3432"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "env_flip"
+    },
+    {
+      "variant_id": "V-690dc1c267b10807",
+      "struct_vector": {
+        "switches_bitmask": "11111111",
+        "bdsm_flags": "1110",
+        "env_flags": "001110",
+        "phase_flags": "11111",
+        "threshold_bins": [
+          16,
+          5,
+          20,
+          5
+        ],
+        "coins": [
+          "AMZN",
+          "BNB",
+          "BTC",
+          "ETH",
+          "GOOGL",
+          "LINK",
+          "MU",
+          "NVDA",
+          "OKB",
+          "PUMP",
+          "SKHYNIX",
+          "SNDK",
+          "SOL",
+          "SPCX",
+          "UNI",
+          "XAG",
+          "XAU"
+        ],
+        "coins_hash": "2bf47d5445c154fc"
+      },
+      "vector_hash": "690dc1c267b10807",
+      "novelty": {
+        "is_human_written": false,
+        "min_distance": 2,
+        "nearest_config_id": "cloud_live_polling_trader_2026-11-05",
+        "vector_hash": "690dc1c267b10807"
+      },
+      "gate": {
+        "admitted": false,
+        "status": "evaluator_missing",
+        "reasons": [
+          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+        ],
+        "is_oos_degradation": null,
+        "stability_win_ratio": null,
+        "n_trades": null
+      },
+      "verify": {
+        "success": null,
+        "evaluated_by": null,
+        "reason": "evaluator_missing"
+      },
+      "space": "trading_struct_vector",
+      "transform": "coin_change"
+    }
+  ],
+  "stats": {
+    "n_generated": 32,
+    "n_novel": 32,
+    "n_verified": 0,
+    "n_verified_success": 0,
+    "n_gate_admitted": 0,
+    "n_novel_verified": 0,
+    "m2_ratio": 0.0
+  },
+  "meta": {
+    "registry": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/registry/human_config_hashes.json",
+    "seed": 42,
+    "min_novelty": 2,
+    "feedback": {
+      "keep_ratio": 1.0,
+      "n_kept": 32,
+      "n_dropped": 0,
+      "dropped_min_distances": []
+    },
+    "attempts": 99,
+    "evaluator": null
+  },
+  "status": "ok",
+  "verify_status": "evaluator_missing"
+}

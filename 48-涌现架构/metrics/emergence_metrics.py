@@ -83,13 +83,37 @@ def _trades_count() -> Optional[int]:
         return None
 
 
+_E2_RESULT = _REPO_ROOT / "48-涌现架构" / "experiments" / "e2_hypothesis" / "e2_batch_result.json"
+
+
 def _e2_ratio() -> Dict[str, Any]:
-    """E2 自生成比率。当前做梦器未升级为结构变体生成器——如实记 0 并标注状态。"""
-    return {
-        "value": 0.0,
-        "status": "generator_not_upgraded",
-        "note": "E2 做梦器升级（结构变体生成）未落地，比率按定义恒 0；升级后自动开始统计",
-    }
+    """E2 自生成比率（M2）：读 e2_hypothesis 批次结果。未跑过 → 如实 not_run。
+
+    M2 = (verify 成功 且 编辑距离>=k) / 总生成数。评估器缺位时 M2 恒 0，
+    status=evaluator_missing（不伪造）。
+    """
+    try:
+        if not _E2_RESULT.exists():
+            return {
+                "value": 0.0,
+                "status": "generator_not_run",
+                "note": "E2 结构变体生成批尚未运行",
+            }
+        d = json.loads(_E2_RESULT.read_text(encoding="utf-8"))
+        stats = d.get("stats") or {}
+        return {
+            "value": stats.get("m2_ratio", 0.0),
+            "status": d.get("verify_status", "ok"),
+            "note": {
+                "n_generated": stats.get("n_generated"),
+                "n_novel": stats.get("n_novel"),
+                "n_gate_admitted": stats.get("n_gate_admitted"),
+                "n_novel_verified": stats.get("n_novel_verified"),
+                "evaluated_at": d.get("generated_at"),
+            },
+        }
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
 
 
 def _complexity_trajectory() -> Dict[str, Any]:
