@@ -1,0 +1,37 @@
+{
+ "schema_version": "1.0",
+ "generated_at": "2026-11-05T11:44:50.241344",
+ "purpose": "E0b 人工策略池 OOS 基线（SPEC-EMERGENCE-EVOLUTION v0.5 §4 E0）：E-BIZ 判据③对照基准（涌现策略须优于本基线）",
+ "data_source": {
+  "trades_db": "11-易经推理系统/scripts/data/bcrm_trades.db",
+  "note": "实盘真实成交（非模拟回测）；单配置池，known_gaps 见 human_config_hashes.json"
+ },
+ "baselines": [
+  {
+   "config_id": "cloud_live_polling_trader_2026-11-05",
+   "source": "/etc/systemd/system/yijing-polling-trader.service @ 43.160.201.117（云端实盘权威配置）",
+   "oos_window": {
+    "start": "2026-11-04T00:32:59.037896+00:00",
+    "end": "2026-11-05T01:47:17.720001+00:00",
+    "fraction": 0.3
+   },
+   "is_metrics": {
+    "n_trades": 24,
+    "total_pnl_pct": -0.686,
+    "sharpe_per_trade": -1.8408,
+    "max_drawdown_pct": 0.7129,
+    "win_rate": 0.4167,
+    "status": "ok"
+   },
+   "oos_metrics": {
+    "n_trades": 9,
+    "total_pnl_pct": -0.2707,
+    "sharpe_per_trade": -3.572,
+    "max_drawdown_pct": 0.2835,
+    "win_rate": 0.1111,
+    "status": "ok"
+   },
+   "generated_at": "2026-11-05T11:44:50.241329"
+  }
+ ]
+}
