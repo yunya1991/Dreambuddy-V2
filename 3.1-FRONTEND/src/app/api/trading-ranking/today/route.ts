@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
       maxBuffer: 10 * 1024 * 1024,
       timeout: 90000, // orchestrator 冷启动 30s+, 给足 90s
     });
-    const data = JSON.parse(stdout.trim());
+    // 防御性解析: 只取最后一行 JSON (前面可能有 orchestrator 日志噪音)
+    const lines = stdout.trim().split('\n').filter((l: string) => l.trim());
+    const jsonLine = lines.find((l: string) => l.trim().startsWith('{')) || lines[lines.length - 1];
+    const data = JSON.parse(jsonLine);
     // 前端 RankingPage.tsx 期望: { success, items: [], metrics }
     return NextResponse.json(data);
   } catch (err: any) {

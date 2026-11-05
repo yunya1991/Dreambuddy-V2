@@ -157,22 +157,24 @@ def main():
     if os.path.isdir(core_dir) and core_dir not in sys.path:
         sys.path.insert(0, core_dir)
 
+    # 抑制 orchestrator/call_handler 内部所有 print/日志到 stdout
+    # (它们会污染 execFileAsync 捕获的 JSON 输出)
+    _real_stdout = sys.stdout
     sys.stdout = sys.stderr
     try:
         from dsh_frontend_bridge import call_handler
+
+        items = []
+        orch_ok = False
+        try:
+            r = call_handler("orchestrator", {"node_output": {"symbol": "BTC"}})
+            if r.get("ok") and r.get("output"):
+                orch_ok = True
+                items = _orchestrator_to_items(r["output"])
+        except Exception:
+            pass
     finally:
-        sys.stdout = sys.__stdout__
-
-    items = []
-    orch_ok = False
-
-    try:
-        r = call_handler("orchestrator", {"node_output": {"symbol": "BTC"}})
-        if r.get("ok") and r.get("output"):
-            orch_ok = True
-            items = _orchestrator_to_items(r["output"])
-    except Exception:
-        pass
+        sys.stdout = _real_stdout
 
     # 兜底: 如果 orchestrator 没数据, 返回空 items (前端已有 mock 降级)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
