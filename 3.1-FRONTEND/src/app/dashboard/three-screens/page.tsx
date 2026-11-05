@@ -86,7 +86,10 @@ export default function ThreeScreensPage() {
     }
   }, [setScreen1]);
 
-  // === V4-wave-strategy 轮询（Screen2/3 战术执行层，2 分钟，错峰 60s）===
+  // === V4-wave-strategy 轮询（Screen2/3 战术执行层，2 分钟，错峰）===
+  // 关键：8765 后端是单线程 BaseHTTPRequestHandler，串行处理请求。
+  // trend 首次冷启动需 ~60s，wave 如果并发命中会排队等 trend 完成后才能处理，
+  // 导致 wave 总耗时 = 60s(queue) + 处理时间。所以必须让 wave 等 trend 完成后再启动。
   const fetchWave = useCallback(async (sym: string) => {
     setWaveStatus(s => ({ ...s, loading: true, error: null }));
     try {
@@ -107,6 +110,10 @@ export default function ThreeScreensPage() {
       }));
     }
   }, [setScreen2, setScreen3]);
+
+  // wave 是否已启动：等 trend 首次完成（lastUpdated 有值 + 不在 loading）后再启动，
+  // 避免并发命中单线程后端排队导致 wave 超时失败
+  const [waveStarted, setWaveStarted] = useState(false);
 
   // === Data-driven-screens 轮询（多维基本面，5 分钟，错峰 120s）===
   const fetchDataDriven = useCallback(async (sym: string) => {
@@ -177,17 +184,25 @@ export default function ThreeScreensPage() {
       timer = setTimeout(() => runWithBackoff(sym), delay);
     };
 
-    // 首屏立即拉取（之前 60s 错峰延迟导致首屏看不到 Screen2 数据）
-    // 后续轮询按 WAVE_INTERVAL_MS 错峰，仍保留 backoff 防雪崩
+    // 等 trend 首次完成后才启动（避免并发命中单线程后端排队）
+    if (!waveStarted) return;
     runWithBackoff(symbol);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [symbol, fetchWave]);
+  }, [waveStarted, symbol, fetchWave]);
 
-  // 切币时重置 dataDrivenStarted，让新币种 trend 完成后重新等待启动
+  // Starter: 等 trend 首次完成后再启动 wave
   useEffect(() => {
+    if (trendStatus.lastUpdated && !trendStatus.loading && !waveStarted) {
+      setWaveStarted(true);
+    }
+  }, [trendStatus.lastUpdated, trendStatus.loading, waveStarted]);
+
+  // 切币时重置 waveStarted 和 dataDrivenStarted
+  useEffect(() => {
+    setWaveStarted(false);
     setDataDrivenStarted(false);
   }, [symbol]);
 
