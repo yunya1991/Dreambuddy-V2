@@ -1,97 +1,51 @@
 #!/usr/bin/env python3
+"""Chain data adapter — 薄 wrapper, 全部逻辑下放到 dsh_frontend_bridge data.dal_query 壳。
+
+用法 (兼容原格式, 零前端 route 改动):
+  python3 chain_data_query.py
+  python3 chain_data_query.py '{}'
+
+后端链路: call_tool('research', 'data.dal_query', {command:'chain'}) → SQLite mm_metrics
 """
-chain_data_query.py — 从 19-数据访问层 mm_metrics 表查询链上指标
-供 /api/data/chain Next.js API Route 调用
-只读，返回 JSON，FAIL-OPEN
-"""
+
 import json
 import os
-import sqlite3
 import sys
-from datetime import datetime, timezone
-
-# 3.1-FRONTEND/scripts/ → ../../../ = 仓库根；可被 DREAMBUDDY_CORE_DB 覆盖
-DB_PATH = os.environ.get("DREAMBUDDY_CORE_DB") or os.path.normpath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), '..', '..', '..',
-    '19-数据访问层', 'data', 'dreambuddy_core.db'
-))
+import traceback
 
 
-def query_latest(sub_category: str, metric_name: str):
-    """查询单个指标最新值"""
-    try:
-        conn = sqlite3.connect(DB_PATH, timeout=5)
-        row = conn.execute(
-            """
-            SELECT metric_value, timestamp
-            FROM mm_metrics
-            WHERE sub_category = ? AND metric_name = ?
-            ORDER BY timestamp DESC
-            LIMIT 1
-            """,
-            (sub_category, metric_name),
-        ).fetchone()
-        conn.close()
-        if row:
-            return {"value": row[0], "ts": row[1]}
-    except Exception as e:
-        print(f"query error: {e}", file=sys.stderr)
-    return None
+def _resolve_34_core_dir() -> str:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.normpath(os.path.join(script_dir, "..", "..", "34-前端应用训练系统", "core"))
 
 
 def main():
-    output = {"degraded": False}
+    core_dir = _resolve_34_core_dir()
+    if os.path.isdir(core_dir) and core_dir not in sys.path:
+        sys.path.insert(0, core_dir)
 
+    # bridge call 期间把 stdout 重定向到 stderr, 避免 import 噪音污染
+    sys.stdout = sys.stderr
     try:
-        # 活跃地址
-        addr = query_latest("btc_onchain", "active_addresses")
-        if addr:
-            output["active_addresses_24h"] = int(addr["value"]) if addr["value"] else None
-            output["active_addresses_ts"] = addr["ts"]
+        from dsh_frontend_bridge import call_tool
 
-        # 算力
-        hr = query_latest("btc_onchain", "hash_rate")
-        if hr:
-            output["hash_rate"] = hr["value"]
-
-        # 难度变化
-        diff = query_latest("btc_onchain", "difficulty_change_pct")
-        if diff:
-            output["difficulty_change_pct"] = diff["value"]
-
-        # 内存池
-        mempool = query_latest("btc_onchain", "mempool_count")
-        if mempool:
-            output["mempool_count"] = mempool["value"]
-
-        # 交易所流入
-        inflow = query_latest("exchanges_whales", "ex_summary_inflowUsd24h")
-        if inflow:
-            output["exchange_inflow_24h"] = inflow["value"]
-
-        # 交易所余额
-        ex_bal = query_latest("exchanges_whales", "ex_bal_BTC_total")
-        if ex_bal:
-            output["exchange_balance_btc"] = ex_bal["value"]
-
-        # 鲸鱼转账数
-        whale_count = query_latest("exchanges_whales", "whales_transfer_count")
-        if whale_count:
-            output["large_transfers_24h"] = int(whale_count["value"]) if whale_count["value"] else None
-
-        # 鲸鱼净流入
-        netflow = query_latest("exchanges_whales", "whale_netflow_to_ex_usd")
-        if netflow:
-            output["whale_netflow_24h"] = netflow["value"]
-
-        output["timestamp"] = datetime.now(timezone.utc).isoformat()
-        output["source"] = "dal"
-
+        result = call_tool("research", "data.dal_query", {"command": "chain"})
     except Exception as e:
-        output["degraded"] = True
-        output["error"] = str(e)
+        result = {
+            "ok": False,
+            "error": f"bridge_error: {type(e).__name__}: {e}",
+            "traceback": traceback.format_exc(),
+        }
 
-    print(json.dumps(output, ensure_ascii=False))
+    # 恢复 stdout
+    sys.stdout = sys.__stdout__
+    if result.get("ok") is False:
+        output = {"degraded": True, "error": result.get("error_code", "unknown")}
+    else:
+        output = result.get("data", {}) or {}
+        output.setdefault("degraded", False)
+    sys.stdout.write(json.dumps(output, ensure_ascii=False, default=str) + "\n")
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":

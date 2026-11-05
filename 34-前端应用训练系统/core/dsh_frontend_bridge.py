@@ -110,6 +110,18 @@ IN_PROCESS_HANDLERS: Dict[str, Dict[str, Any]] = {
         "handler": "_handle_user_memory",
         "tools": ["get", "put", "delete", "list", "search"],
     },
+    # Data DAL query (SQLite mm_metrics: chain/market/macro 指标查询)
+    "data.dal_query": {
+        "module": None,
+        "handler": "_handle_dal_query",
+        "tools": ["chain", "market", "macro", "metric"],
+    },
+    # Shell runtime stats (壳健康度/调用量, 前端监控用)
+    "shell.stats": {
+        "module": None,
+        "handler": "_handle_shell_stats",
+        "tools": ["stats", "health"],
+    },
 }
 
 
@@ -696,6 +708,231 @@ def _handle_user_memory(args: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
+# ── Data DAL query handler ────────────────────────────────────────────
+
+
+def _resolve_core_db() -> str:
+    """解析 dreambuddy_core.db 路径 (和 chain_data_query.py 原有逻辑一致)。"""
+    env_path = os.environ.get("DREAMBUDDY_CORE_DB")
+    if env_path and os.path.isfile(env_path):
+        return env_path
+    repo_root = _resolve_repo_root()
+    candidates = [
+        os.path.normpath(os.path.join(repo_root, "19-数据访问层", "data", "dreambuddy_core.db")),
+        os.path.normpath(
+            os.path.join(repo_root, "34-前端应用训练系统", "data", "dreambuddy_core.db")
+        ),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    # 不存在时返回第一个候选, 让后面 sqlite3.connect 报错
+    return candidates[0]
+
+
+# chain 指标定义 (sub_category + metric_name → output_key)
+_CHAIN_METRICS = [
+    ("btc_onchain", "active_addresses", "active_addresses_24h"),
+    ("btc_onchain", "hash_rate", "hash_rate"),
+    ("btc_onchain", "difficulty_change_pct", "difficulty_change_pct"),
+    ("btc_onchain", "mempool_count", "mempool_count"),
+    ("exchanges_whales", "ex_summary_inflowUsd24h", "exchange_inflow_24h"),
+    ("exchanges_whales", "ex_bal_BTC_total", "exchange_balance_btc"),
+    ("exchanges_whales", "whales_transfer_count", "large_transfers_24h"),
+    ("exchanges_whales", "whale_netflow_to_ex_usd", "whale_netflow_24h"),
+]
+
+# macro 指标定义 (sub_category + metric_name → output_key)
+_MACRO_METRICS = [
+    ("DX-Y.NYB", "close", "DXY"),
+    ("^TNX", "close", "US10Y"),
+    ("^VIX", "close", "VIX"),
+    ("GC=F", "close", "Gold"),
+    ("macro_us_stocks", "sp500", "SP500"),
+]
+
+
+def _query_metric(conn, sub_cat: str, name: str):
+    cur = conn.execute(
+        "SELECT metric_value, timestamp FROM mm_metrics WHERE sub_category=? AND metric_name=? ORDER BY timestamp DESC LIMIT 1",
+        (sub_cat, name),
+    )
+    return cur.fetchone()
+
+
+def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
+    """内联 handler: SQLite mm_metrics 查询 (chain/market/macro 指标)。
+
+    args: {command: "chain"|"market"|"macro"|"metric", sub_category?, metric_name?}
+    """
+    import sqlite3
+    from datetime import datetime, timezone
+
+    command = args.get("command", "chain")
+    db_path = _resolve_core_db()
+    if not os.path.isfile(db_path):
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": "core_db_not_found", "path": db_path},
+        }
+
+    try:
+        conn = sqlite3.connect(db_path, timeout=5)
+        output = {"source": "dal", "degraded": False}
+
+        if command == "metric":
+            # 单指标查询: {sub_category, metric_name}
+            sub_cat = args.get("sub_category", "")
+            name = args.get("metric_name", "")
+            row = _query_metric(conn, sub_cat, name)
+            conn.close()
+            if row:
+                return {
+                    "ok": True,
+                    "data": {
+                        "value": row[0],
+                        "ts": row[1],
+                        "sub_category": sub_cat,
+                        "metric_name": name,
+                    },
+                    "error_code": None,
+                    "meta": {"shell_id": "data.dal_query"},
+                }
+            return {
+                "ok": True,
+                "data": None,
+                "error_code": None,
+                "meta": {"shell_id": "data.dal_query", "reason": "not_found"},
+            }
+
+        if command == "chain":
+            for sub_cat, name, out_key in _CHAIN_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    val = row[0]
+                    if out_key in ("active_addresses_24h", "large_transfers_24h") and val:
+                        val = int(val)
+                    output[out_key] = val
+                    output[out_key + "_ts"] = row[1]
+
+        elif command == "market":
+            sub_cat = args.get("sub_category", "")
+            name = args.get("metric_name", "")
+            if sub_cat and name:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output["value"] = row[0]
+                    output["ts"] = row[1]
+                else:
+                    output["degraded"] = True
+                    output["error"] = f"metric not found: {sub_cat}/{name}"
+            else:
+                conn.close()
+                return {
+                    "ok": False,
+                    "error_code": "invalid",
+                    "meta": {"reason": "market needs sub_category+metric_name"},
+                }
+
+        elif command == "macro":
+            for sub_cat, name, out_key in _MACRO_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+
+        conn.close()
+        output["timestamp"] = datetime.now(timezone.utc).isoformat()
+        return {
+            "ok": True,
+            "data": output,
+            "error_code": None,
+            "meta": {"shell_id": "data.dal_query", "command": command},
+        }
+
+    except Exception as e:
+        return {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": f"dal_query_error: {type(e).__name__}: {e}"},
+        }
+
+
+# ── Shell stats handler ────────────────────────────────────────────────
+
+
+def _handle_shell_stats(args: Dict[str, Any]) -> Dict[str, Any]:
+    """内联 handler: ShellHandleManager stats (健康度/调用量/活跃壳)。
+
+    args: {command: "stats"|"health"}
+    """
+    command = args.get("command", "stats")
+
+    # 直接 import manager (不能走 get_manager() 因为我们要统计同一个进程的 manager)
+    core_dir = _resolve_34_core_dir()
+    if core_dir not in sys.path:
+        sys.path.insert(0, core_dir)
+
+    mgr = get_manager()
+    specs = mgr._specs_cached()
+    shells = mgr._shells  # dict: shell_id → ShellHandle
+
+    alive, dead = 0, 0
+    shells_info = []
+    for sid, shell in shells.items():
+        alive_check = True
+        if hasattr(shell, "is_alive"):
+            try:
+                alive_check = bool(shell.is_alive())
+            except Exception:
+                alive_check = True
+        if alive_check:
+            alive += 1
+        else:
+            dead += 1
+        shells_info.append(
+            {
+                "shell_id": sid,
+                "alive": alive_check,
+                "status": specs.get(sid, {}).get("status", "unknown"),
+                "transport": specs.get(sid, {}).get("transport", "unknown"),
+            }
+        )
+
+    stats = mgr.stats()
+
+    if command == "health":
+        return {
+            "ok": True,
+            "data": {
+                "total_shells": len(shells),
+                "alive": alive,
+                "dead": dead,
+                "registered_specs": len(specs),
+                "handles_issued": {k: v.get("handles_issued", 0) for k, v in stats.items()},
+                "shells": shells_info,
+            },
+            "error_code": None,
+            "meta": {"shell_id": "shell.stats"},
+        }
+
+    # command == "stats" 或其他
+    return {
+        "ok": True,
+        "data": {
+            "total_shells": len(shells),
+            "alive": alive,
+            "dead": dead,
+            "registered_specs": len(specs),
+            "shell_ids": sorted(specs.keys()),
+            "in_process_handlers": sorted(IN_PROCESS_HANDLERS.keys()),
+            "handles_issued": stats,
+        },
+        "error_code": None,
+        "meta": {"shell_id": "shell.stats"},
+    }
+
+
 def launcher_factory(spec: Dict[str, Any]) -> Optional[Any]:
     """根据 shell spec 选 launcher, 返回已拉起的壳对象 (带 .call/.is_alive/.close)。
 
@@ -947,6 +1184,8 @@ HANDLER_TO_SHELL_ID: Dict[str, str] = {
     "knowledge_search": "knowledge.search",
     "skill_index": "skill.index",
     "user_memory": "user.memory",
+    "dal_query": "data.dal_query",
+    "shell_stats": "shell.stats",
 }
 
 HANDLER_TO_ROLE: Dict[str, str] = {
@@ -966,6 +1205,8 @@ HANDLER_TO_ROLE: Dict[str, str] = {
     "knowledge_search": "research",
     "skill_index": "research",
     "user_memory": "research",
+    "dal_query": "research",
+    "shell_stats": "research",
 }
 
 

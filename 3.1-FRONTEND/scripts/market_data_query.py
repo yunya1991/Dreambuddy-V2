@@ -1,95 +1,55 @@
 #!/usr/bin/env python3
+"""Market data adapter — 薄 wrapper, 全部逻辑下放到 dsh_frontend_bridge data.dal_query 壳。
+
+用法 (兼容原格式, 零前端 route 改动):
+  python3 market_data_query.py '{"sub_category":"btc_onchain","metric_name":"hash_rate"}'
+  python3 market_data_query.py '{"command":"macro"}'
 """
-market_data_query.py — 从 19-数据访问层 mm_metrics 表查询市场指标
-供 /api/data/market Next.js API Route 调用
-只读读操作，返回 JSON
-"""
+
 import json
 import os
-import sqlite3
 import sys
-from datetime import datetime, timezone, timedelta
-
-# 3.1-FRONTEND/scripts/ → ../../../ = 仓库根；可被 DREAMBUDDY_CORE_DB 覆盖
-DB_PATH = os.environ.get("DREAMBUDDY_CORE_DB") or os.path.normpath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), '..', '..', '..',
-    '19-数据访问层', 'data', 'dreambuddy_core.db'
-))
+import traceback
 
 
-def query_latest(sub_category: str, metric_names: list[str]) -> dict:
-    """查询指定 sub_category 下各 metric 的最新值"""
-    result = {}
-    try:
-        conn = sqlite3.connect(DB_PATH, timeout=5)
-        for metric in metric_names:
-            row = conn.execute(
-                """
-                SELECT metric_value, timestamp
-                FROM mm_metrics
-                WHERE sub_category = ? AND metric_name = ?
-                ORDER BY timestamp DESC
-                LIMIT 1
-                """,
-                (sub_category, metric),
-            ).fetchone()
-            if row:
-                result[metric] = {"value": row[0], "ts": row[1]}
-        conn.close()
-    except Exception as e:
-        result["_error"] = str(e)
-    return result
+def _resolve_34_core_dir() -> str:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.normpath(os.path.join(script_dir, "..", "..", "34-前端应用训练系统", "core"))
 
 
 def main():
-    output = {
-        "funding_rate": {},
-        "fear_greed": {},
-        "long_short_ratio": {},
-        "degraded": False,
-    }
+    core_dir = _resolve_34_core_dir()
+    if os.path.isdir(core_dir) and core_dir not in sys.path:
+        sys.path.insert(0, core_dir)
 
+    args_raw = sys.argv[1] if len(sys.argv) > 1 else "{}"
     try:
-        # 资金费率
-        fr = query_latest("funding_rate", ["funding_rate_pct", "funding_rate_annualized_pct"])
-        if "funding_rate_pct" in fr:
-            output["funding_rate"]["rate_pct"] = fr["funding_rate_pct"]["value"]
-            output["funding_rate"]["ts"] = fr["funding_rate_pct"]["ts"]
-        if "funding_rate_annualized_pct" in fr:
-            output["funding_rate"]["annualized_pct"] = fr["funding_rate_annualized_pct"]["value"]
+        args = json.loads(args_raw) if args_raw else {}
+    except json.JSONDecodeError as e:
+        sys.stdout.write(json.dumps({"degraded": True, "error": f"invalid args JSON: {e}"}) + "\n")
+        return
 
-        # 恐惧贪婪
-        fg = query_latest("crypto_fear_greed", ["value"])
-        if "value" in fg:
-            val = fg["value"]["value"]
-            output["fear_greed"]["value"] = val
-            output["fear_greed"]["ts"] = fg["value"]["ts"]
-            if val <= 25:
-                output["fear_greed"]["classification"] = "Extreme Fear"
-            elif val <= 45:
-                output["fear_greed"]["classification"] = "Fear"
-            elif val <= 55:
-                output["fear_greed"]["classification"] = "Neutral"
-            elif val <= 75:
-                output["fear_greed"]["classification"] = "Greed"
-            else:
-                output["fear_greed"]["classification"] = "Extreme Greed"
+    # bridge call 期间把 stdout 重定向到 stderr
+    sys.stdout = sys.stderr
+    try:
+        from dsh_frontend_bridge import call_tool
 
-        # 多空比
-        lsr = query_latest("long_short_ratio", ["long_short_ratio", "long_account_pct", "short_account_pct"])
-        if "long_short_ratio" in lsr:
-            output["long_short_ratio"]["ratio"] = lsr["long_short_ratio"]["value"]
-            output["long_short_ratio"]["ts"] = lsr["long_short_ratio"]["ts"]
-        if "long_account_pct" in lsr:
-            output["long_short_ratio"]["long_pct"] = lsr["long_account_pct"]["value"]
-        if "short_account_pct" in lsr:
-            output["long_short_ratio"]["short_pct"] = lsr["short_account_pct"]["value"]
-
+        result = call_tool("research", "data.dal_query", args)
     except Exception as e:
-        output["degraded"] = True
-        output["error"] = str(e)
+        result = {
+            "ok": False,
+            "error": f"bridge_error: {type(e).__name__}: {e}",
+            "traceback": traceback.format_exc(),
+        }
 
-    print(json.dumps(output, ensure_ascii=False))
+    sys.stdout = sys.__stdout__
+    if result.get("ok") is False:
+        output = {"degraded": True, "error": result.get("error_code", "unknown")}
+    else:
+        output = result.get("data", {}) or {}
+        output.setdefault("degraded", False)
+    sys.stdout.write(json.dumps(output, ensure_ascii=False, default=str) + "\n")
+    sys.stdout.flush()
 
 
 if __name__ == "__main__":
