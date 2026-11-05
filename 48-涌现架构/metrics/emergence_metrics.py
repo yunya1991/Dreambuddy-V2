@@ -168,6 +168,34 @@ def _m1_linkage() -> Dict[str, Any]:
         return {"value": None, "status": "unavailable", "note": str(exc)}
 
 
+_E3_RESULT = (
+    _REPO_ROOT / "48-涌现架构" / "experiments" / "e3_coupling" / "counterfactual_result.json"
+)
+
+
+def _m3_counterfactual() -> Dict[str, Any]:
+    """M3 反事实耦合（E3）：读 e3_coupling 评估结果。未跑过 → 如实 not_run。"""
+    try:
+        if not _E3_RESULT.exists():
+            return {"value": None, "status": "not_run"}
+        d = json.loads(_E3_RESULT.read_text(encoding="utf-8"))
+        return {
+            "value": {
+                "verdict": d.get("verdict"),
+                "n_pairs": d.get("n_pairs"),
+                "mae_coupled": d.get("mae_coupled"),
+                "mae_ablated": d.get("mae_ablated"),
+                "median_improvement_pct": d.get("median_improvement_pct"),
+                "p_value": d.get("p_value"),
+                "direction_positive": d.get("direction_positive"),
+                "evaluated_at": d.get("ts"),
+            },
+            "status": "ok",
+        }
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        return {"value": None, "status": "unavailable", "note": str(exc)}
+
+
 def collect() -> Dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     return {
@@ -181,6 +209,7 @@ def collect() -> Dict[str, Any]:
         "complexity_trajectory": _complexity_trajectory(),
         "m7_demand_loop": _m7_demand_loop(),
         "m1_broadcast_linkage": _m1_linkage(),
+        "m3_counterfactual_coupling": _m3_counterfactual(),
     }
 
 

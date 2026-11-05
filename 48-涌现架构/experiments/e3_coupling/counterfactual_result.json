@@ -1,0 +1,28 @@
+{
+  "verdict": "inconclusive",
+  "n_pairs": 150,
+  "n_oos": 45,
+  "mae_coupled": 0.021866,
+  "mae_ablated": 0.024012,
+  "median_improvement": 0.001293,
+  "median_improvement_pct": 5.383,
+  "p_value": 0.05529,
+  "direction_positive": true,
+  "n_perm": 10000,
+  "train_frac": 0.7,
+  "ts": "2026-11-05T14:49:42.753192+00:00",
+  "data_sources": [
+    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/l1_training/domain_discovery_training.jsonl",
+    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/l1_training/domain_discovery_training_real.jsonl"
+  ],
+  "n_series_raw": 151,
+  "coupling_source": "e3_shadow_retrain",
+  "spec": "SPEC-EMERGENCE-EVOLUTION v0.5 §4 E3",
+  "gap_filed": false,
+  "retrain_meta": {
+    "target_source": "phaseC_jsonl_150samples",
+    "final_loss": 0.013115565292537212,
+    "n_steps": 120,
+    "input_source": "real_btc_1h_36factors"
+  }
+}

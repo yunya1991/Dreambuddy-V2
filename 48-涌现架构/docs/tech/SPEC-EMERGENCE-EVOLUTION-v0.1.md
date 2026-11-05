@@ -153,11 +153,13 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 ### Phase E3 — coupling 反事实验证（估 4 天，v0.4 补 head 重训前置）
 
-- **v0.4 前置补丁（P0#1，v0.5 修正日期）**：ckpt `neural_sde_v1_dim64.pt` 实际 mtime 2026-11-03（原记 10-06 有误）仍早于 regime artifact（2026-11-04）一天，head 是用旧数据训的——**E3 先补 head 重训**（用 `btc_1h_ts.json` 重核后 regime：bull 2760/chop 1534/bear 728，n=5022），不重训则"训练好 head + 修复后数据"组合不成立
+- **落地状态（2026-11-05）**：🟡 设施落盘 + 首次真实评估完成——`experiments/e3_coupling/retrain_head_shadow.py`（120 步 shadow 重训：phaseC_jsonl_150samples target + real_btc_1h_36factors 输入 + regime 32/32/32 分层，final_loss 0.013 单调收敛；**生产 static JSON/ckpt 零触碰**，产物全落 48 域 artifacts/）+ `coupling_counterfactual.py`（对角 ridge 严格抽项 + 固定耦合系数防拟合吸收 + 符号翻转置换检验 10k 次 + 显式方向检查 + insufficient_data 联动 E6 需求单）；14 测试全绿；M3 已接入 `metrics/emergence_metrics.py`
+- **首次真实评估结果（如实记录）**：①生产 static JSON coupling → **falsified**（p=0.0029 显著但方向负，中位改善 -16.6%——β 原型方向为负第二次实证）；②E3 shadow 重训 coupling → **inconclusive**（方向扳正 +5.38%，p=0.055 距 0.05 阈值一步——重训把方向从负扳正，但 150 对样本中 76% 为 static_fill 合成数据，功效不足）。按验收口径：当前不申报 E3 候选，不重复证伪结论，待真实域状态时间序列积累后重跑
+- **v0.4 前置补丁（P0#1，v0.5 修正日期）**：ckpt `neural_sde_v1_dim64.pt` 实际 mtime 2026-11-03（原记 10-06 有误）仍早于 regime artifact（2026-11-04）一天，head 是用旧数据训的——**E3 先补 head 重训**（用 `btc_1h_ts.json` 重核后 regime：bull 2760/chop 1534/bear 728，n=5022），不重训则"训练好 head + 修复后数据"组合不成立 ✅ 已完成（shadow）
 - 内容：重训后 DomainCouplingHead 对"trajectories 中从未出现的域状态组合"推理，与后续真实窗口对比
 - **度量 M3**（E3 判据）：反事实预测 MAE vs 单域 baseline，置换检验 p<0.05 **且方向为正**
-- 注意：F2 口径需补方向检查（β 报告暴露的缺陷，p=0.005 但方向为负也通过）
-- 验收：M3 显著为正 → E3 候选；为负 → 记录证伪，head 结构迭代
+- 注意：F2 口径需补方向检查（β 报告暴露的缺陷，p=0.005 但方向为负也通过）✅ 已内置（方向为负且显著 → falsified，有 β 教训回归测试）
+- 验收：M3 显著为正 → E3 候选；为负 → 记录证伪，head 结构迭代；**样本功效不足 → inconclusive 如实记录 + E6 数据需求单**
 
 ### Phase E4 — 涌现度量面板（拆期：骨架 1 天 + 埋点 3-4 天，v0.4 补 readout 落盘）
 
