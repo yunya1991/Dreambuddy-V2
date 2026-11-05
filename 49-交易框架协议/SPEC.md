@@ -1,6 +1,6 @@
-# SPEC-49 神经网络交易系统框架协议 v0.9
+# SPEC-49 神经网络交易系统框架协议 v0.10
 
-- 状态：🟡 v0.9 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 全部评审决议；本文只定义架构、协议契约与提案，不含实现代码）
+- 状态：🟡 v0.10 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 全部评审决议 + 实施路线；本文只定义架构、协议契约、提案与路线，不含实现代码）
 - 日期：2026-11-05
 - 归属：49-交易框架协议（交易域总体框架与协议唯一事实源）
 - 上游输入：数据层（18 采集 / 19 DAL / 20 清洗 / 21 特征 / 38 数据库）、39 金融语义蒸馏、9 基本面分析
@@ -810,6 +810,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 > **P0/P1 门禁**：
 > - v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更须版本号 + ADR（DEC-03）。
 > - **§12.1 评审列 31 项未全部回填前，禁止任何 P1 动工**（DEC-04）；未回填期间只能做评审、文档与只读验证。
+> - 详细实施路线、M0/P1 任务清单、开关与回滚矩阵见 **§13**。
 
 ---
 
@@ -1160,6 +1161,127 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 
 ---
 
+## §13 实施路线与推进节奏
+
+### 13.1 原则
+
+1. **先契约后实现**：四份 v1 契约（SignalSchema / FinalDecisionSignal / MacroElasticConstraint / UpperLayerContext）在 merge 后禁改；变更走 ADR。
+2. **先 shadow 后 live**：23 的核心改动（DominanceResolver、C→D、AttentionAggregator、事件检测器）默认 shadow，生产行为不变。
+3. **先薄上游后完整上游**：先打通 42 输入总线与 11→42 状态文件，再消费 40/43 宏观约束。
+4. **执行收口最后做**：11 子池、12/14/16、live 13 的收口放在 P3/P4，按标的灰度。
+5. **每步可回滚**：所有新能力必须有开关、验收指标、回滚动作。
+6. **评审门禁**：DEC-04 未满足前只允许 shadow-only 工作（B 轨道），不允许 P1 生产改动。
+
+### 13.2 三条并行轨道
+
+| 轨道 | 内容 | 周期 | 前置 | 产出 |
+|---|---|---|---|---|
+| **A. 薄上游** | 42 单实例 + 多源合并/TTL；11 四子池状态文件 + 42 只读适配器；`horizon`；环境变量 | 1-2 周 | M0 评审 | P1 任务清单 |
+| **B. 23 影子核心** | C→D 冻结核对；DominanceResolver；AttentionAggregator；事件主矛盾检测；W6；D2 19-DAL；HJB 文档 | 2-3 周 | M0；可与 A 并行 | M2 shadow 报告 |
+| **C. 治理与基线** | 31 项评审回填；契约冻结；paper 基线；ADR；周评审 | 3-5 天 + 持续 | 立即 | M0 交付 |
+
+### 13.3 里程碑
+
+| 里程碑 | 时间 | 内容 | 验收 |
+|---|---|---|---|
+| **M0** | 本周 | 评审回填、契约冻结、paper 基线、shadow 开关、回滚演练 | 31/31 评审；基线可复现；开关/回滚可用 |
+| **M1** | 1-2 周 | 薄上游 A：42 总线、11→42 状态文件、horizon、环境变量 | 6 源共存；0 硬编码路径；11 四子池可读；horizon 100% |
+| **M2** | 3-4 周 | 23 影子核心 B：Dominance/C→D/Attention/事件/W6/D2 | shadow 对比 ≥2 周；生产行为不变 |
+| **M3** | 5-7 周 | 40/43→42→23 约束链；UpperLayerContext 注入；shadow→live 门禁 | 宏观约束进入 23；三通道生效；晋升有 paper 证据 |
+| **M4** | 7-10 周 | BCRM2/BDSM/29 约束消费；16/22 实际接线；6-TRADING 收口 | 四系统受约束；paper 管道 13→16→22 |
+| **M5** | 10-14 周 | 11 子池收口；live 13；23 唯一输出；12/14/16 迁移 | 单信号出口；单标的单执行出口；live 经 13 |
+| **M6** | 持续 | 训练/反馈/约束校准；L2 只读 MCP | 训练行达标；约束晋升；SLO 达标 |
+
+### 13.4 M0 任务清单（评审与基线）
+
+| ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
+|---|---|---|---|---|---|---|
+| **M0-01** | §12.1 的 31 项评审回填；标记通过/需修改/拒绝 | 评审记录 | 31/31 有结论；阻塞项清单 | — | — | ☐ |
+| **M0-02** | 四份 v1 契约冻结：版本号、hash、ADR 模板 | 49 SPEC；ADR | 4/4 冻结；变更流程可用 | — | 恢复上一版 | ☐ |
+| **M0-03** | Paper 基线：记录当前 action/tier/position_mult/PnL/约束命中率 | 基线脚本；报告 | 可重复运行；报告路径固定；覆盖 11 当前标的池 | `BASELINE_MODE=1` | 关闭脚本 | ☐ |
+| **M0-04** | Shadow 开关登记：Dominance/C→D/Attention/Event/W6/D2 | `agi_config`/env | 6 个开关默认 0；文档齐全 | 各开关 | 置 0 | ☐ |
+| **M0-05** | 回滚演练：开关关闭、bus 恢复、11 半开 | 运维脚本 | 5 分钟内回到基线 | — | — | ☐ |
+
+**M0 出口条件**：31/31 评审回填；基线报告可复现；6 个 shadow 开关可独立开关；回滚演练通过。未满足则不得进入 P1。
+
+### 13.5 P1 任务清单（薄上游，1-2 周）
+
+| ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
+|---|---|---|---|---|---|---|
+| **P1-01** | 42 单实例 SignalBus：按 `signal_id` 合并 + TTL + 原子写 | `42/signal_bus.py`、adapters | 6 源共存；重启不丢；过期剪枝；bus 条数 ≥6 | `SIGNAL_BUS_PERSIST=1` | 置 0 恢复旧覆盖路径 | ☐ |
+| **P1-02** | registry 增加 `horizon` 必填 + CI 校验 | `registry.yaml`、validator | 所有 publisher 有 horizon；CI 通过 | — | 保留旧 registry | ☐ |
+| **P1-03** | 路径环境变量：`DREAMBUDDY_ROOT` 统一 42/23/43/40 | 42/23/43/40 | `grep /home/luke` = 0；本地可跑 | `DREAMBUDDY_ROOT` | 恢复原路径 | ☐ |
+| **P1-04** | 11 四子池状态文件 + 42 只读适配器（DEC-08） | `polling_trader`、42 adapters | 42 可读 `11-bcrm`/`bdsm`/`11-event-arbitrage`/`11-washout`；无内存耦合；TTL 生效 | `ENABLE_11_STATE_ADAPTER=1` | 置 0 停适配器 | ☐ |
+| **P1-05** | Canonical source：`bdsm`→`11-bdsm` 双写；新增两源 | 42 registry/adapters | source 枚举一致；旧别名兼容；无 `11-strategy` | `SOURCE_ALIAS_MODE=1` | 恢复旧 source | ☐ |
+| **P1-06** | ParamGovernor 发布 + 订阅分发 stub；23/43 至少各 1 个消费者日志 | `param_governor.py`、23/43 | 参数非默认可发布；消费可观测；默认不改变裁决 | `ENABLE_PARAM_DISPATCH=1` | 置 0 | ☐ |
+| **P1-07** | 42 可观测性：源计数、丢弃、TTL、空 bus 告警 | 42 runtime/metrics | 指标文件/端点可用；空 bus 告警 | `SIGNAL_BUS_METRICS=1` | 置 0 | ☐ |
+
+**P1 出口条件**：M1 验收全部满足；42 总线稳定；11 四子池状态可读；无硬编码路径；回滚可用。
+
+### 13.6 B 轨道（23 影子核心，2-3 周，可与 P1 并行）
+
+| ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
+|---|---|---|---|---|---|---|
+| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_C_D_SHADOW=1` | 置 0 | ☐ |
+| **B-02** | `DominanceResolver` 成对支配 + 可解释矩阵，shadow vs argmax（DEC-12） | 新 `core/dominance_resolver.py`、`evolution_pipeline` | dominance 矩阵可解释；shadow 对比报告；≥2 周；生产不变 | `ENABLE_DOMINANCE_SHADOW=1` | 置 0 回 argmax | ☐ |
+| **B-03** | `AttentionAggregator` 接线，双 A_dim 对比 | `cross_validation_gate`、`evolution_pipeline` | `a_dim_attention` vs `a_dim_identifier` 一致率/分歧分布 | `ENABLE_ATTENTION_A_DIM=0` | 置 0 | ☐ |
+| **B-04** | 事件驱动主矛盾检测器注册 + shadow | `agi_config`、`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | `enable_primary_contradiction_detector=0` | 置 0 | ☐ |
+| **B-05** | W6 样本持久化 + 监控（DEC-10 前置） | `contradiction_identifier` | `contradiction_samples.json` 持续增长；≥500 触发学习；权重版本化 | `ENABLE_W6_MONITOR=1` | 置 0 | ☐ |
+| **B-06** | D2 OI/清算接 19-DAL（DEC-16） | `dimension_force_evaluator`、19-DAL | D2 非空率 ≥90%；缺失 percentile→neutral | `ENABLE_D2_DAL=0` | 置 0 | ☐ |
+| **B-07** | HJB docstring/SPEC 30%→70% | 23 docs | 文档/代码一致 | — | 恢复文档 | ☐ |
+| **B-08** | 23 自票上限 + 独立证据审计（DEC-10） | `evolution_pipeline` 仲裁 | 自票占比可观测；审计可追溯；shadow 不改变裁决 | `ENABLE_SELF_VOTE_CAP=0` | 置 0 | ☐ |
+
+**B 出口条件**：6 个 shadow 报告齐全；生产 action/tier/position_mult 分布无显著变化（噪声范围内）；≥2 周样本；评审通过后才能进入 M3 live 晋升。
+
+### 13.7 开关与回滚矩阵
+
+| 开关 | 默认 | 作用 | 回滚动作 |
+|---|---|---|---|
+| `SIGNAL_BUS_PERSIST` | 0 | 42 多源合并/TTL | 置 0，恢复旧覆盖 |
+| `ENABLE_11_STATE_ADAPTER` | 0 | 11→42 状态文件适配 | 置 0，停适配器 |
+| `SOURCE_ALIAS_MODE` | 1 | `bdsm`/`11-bdsm` 双写 | 恢复旧 source |
+| `ENABLE_PARAM_DISPATCH` | 0 | 42 参数分发 | 置 0 |
+| `ENABLE_C_D_SHADOW` | 0 | C→D shadow 对比 | 置 0 |
+| `ENABLE_DOMINANCE_SHADOW` | 0 | Dominance shadow | 置 0，回 argmax |
+| `ENABLE_ATTENTION_A_DIM` | 0 | Attention A_dim | 置 0，回 identifier |
+| `enable_primary_contradiction_detector` | 0 | 事件主矛盾检测 | 置 0 |
+| `ENABLE_W6_MONITOR` | 0 | W6 样本监控 | 置 0 |
+| `ENABLE_D2_DAL` | 0 | D2 接 19-DAL | 置 0，回旧数据 |
+| `ENABLE_CONSTRAINT_CONSUME` | 0 | 23 消费宏观约束 | 置 0 |
+| `ENABLE_16_22_SIZING_ORDER` | 0 | 16/22 接线 | 置 0，回自包含 ledger |
+| `ENABLE_LIVE_13_GATE` | 0 | live 接 13 | 置 0，回 11 自有风控 |
+| `ENABLE_23_ONLY_OUTLET` | 0 | 23 唯一出口闸门 | 置 0，恢复双轨 |
+
+### 13.8 依赖与合并顺序
+
+```text
+M0（评审/基线/开关/回滚）
+  ├─→ P1 薄上游（A）
+  └─→ B 影子核心（可并行，纯 shadow）
+        ↓
+M1（42 总线 + 11→42 状态文件）
+        ↓
+M2（23 shadow 报告 ≥2 周）
+        ↓
+M3（40/43→42→23 约束链；shadow→live 门禁）
+        ↓
+M4（BCRM2/BDSM/29 约束 + 16/22 实际接线 + 6-TRADING 收口）
+        ↓
+M5（11 子池收口 + live 13 + 23 唯一输出 + 12/14/16 迁移）
+        ↓
+M6（训练/反馈/约束校准）
+```
+
+### 13.9 评审与变更治理
+
+- **M0 门禁**：31/31 评审回填前，只允许 B 轨道 shadow 工作；P1 生产改动必须等评审。
+- **每周评审**：A/B 轨道各自周报；shadow 报告、指标、阻塞项；未达标不进入下一里程碑。
+- **变更流程**：任何 v1 契约变更需 ADR + 版本号；任何新开关需登记默认值/回滚动作。
+- **合并顺序**：P1 先于 B 的 live 晋升；M3 前不得开启 `ENABLE_CONSTRAINT_CONSUME`；M5 前不得开启 `ENABLE_23_ONLY_OUTLET`。
+- **回滚演练**：每个里程碑至少一次；执行侧回滚优先 `execution_rights=disabled` + 11 `EXECUTION_AUTHORITY` 拦截。
+
+---
+
 ## 附：v0.3 相对 v0.2 的关键变化
 
 1. **23 从“输出层”升级为“矛盾裁决与最终决策层”**：明确 23 不是信号聚合器，而是“矛盾系统 + 矛盾 Transformer + 最小阻力路径”的最优控制求解器。
@@ -1240,3 +1362,15 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 3. §12.5 待决策清零；剩余为评审回填、责任人与截止时间、§12 拆 issue。
 4. §12.1 修复建议增至 **31 项**（新增 R-GOV-01、R-DATA-02）。
 5. §12.1 评审门禁更新为 **31 项**；未回填不得进入 P1（DEC-04）。
+
+---
+
+## 附：v0.10 实施路线
+
+1. 新增 **§13 实施路线与推进节奏**：三轨并行（A 薄上游 / B 23 影子核心 / C 治理基线）、M0-M6、依赖顺序、评审治理。
+2. **M0 任务 5 项**：评审回填、契约冻结、paper 基线、shadow 开关、回滚演练。
+3. **P1 任务 7 项**：42 单实例总线、horizon、环境变量、11→42 状态文件、canonical source、params 分发 stub、可观测性。
+4. **B 轨道 8 项**：C→D、DominanceResolver、AttentionAggregator、事件检测、W6、D2 19-DAL、HJB 文档、自票上限。
+5. 明确 M0/P1/B 出口条件，以及开关默认值与回滚动作。
+6. 明确合并顺序：P1 先于 B 的 live 晋升；M3 前不得开 `ENABLE_CONSTRAINT_CONSUME`；M5 前不得开 `ENABLE_23_ONLY_OUTLET`。
+7. 仍只改 SPEC，不实现。
