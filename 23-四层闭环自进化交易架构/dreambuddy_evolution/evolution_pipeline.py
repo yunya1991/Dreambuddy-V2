@@ -1128,6 +1128,16 @@ class EvolutionPipeline:
                     # T5 实盘接入：维度力量参与主矛盾裁决（影子期数据已验证非空）
                     dimension_forces=getattr(self, "_last_dimension_forces", {}) or {},
                 )
+                # B-01: C→D 影子映射（只附加 shadow 字段，不改变 production dimension）
+                try:
+                    from dreambuddy_evolution.core.cd_mapping import attach_shadow
+
+                    attach_shadow(
+                        primary_contradiction,
+                        enabled=get_switch("enable_cd_shadow", False),
+                    )
+                except Exception as _cd_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+                    logger.debug("[FO][CDShadow] fail: %s", _cd_e)
                 # 方向3: 从 paths 提取每维度方向预测，供 ReverseDeriver 逆向推导
                 try:
                     from dreambuddy_evolution.engines.reverse_derivation_integration import (
