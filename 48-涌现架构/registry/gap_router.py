@@ -32,6 +32,7 @@ ROUTE_TABLE = {
     "backtest_evaluator_missing": "45-评测系统",
     "trading_recall_log_missing": "11-易经推理系统",
     "reflection_log_missing": "35-广义认知",
+    "domain_state_series_missing": "4-MEMORY",
 }
 
 CLAIM_ALERT_HOURS = 48

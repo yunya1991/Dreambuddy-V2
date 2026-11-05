@@ -242,8 +242,15 @@ def evaluate_counterfactual(
 
 
 def file_gap_if_insufficient(result: Dict[str, Any], gaps_path: Optional[Path] = None) -> bool:
-    """insufficient_data → 联动 E6 发数据需求单（stigmergy）。其余 verdict 不发。"""
-    if result.get("verdict") != "insufficient_data":
+    """insufficient_data 或纯静态先验耦合 → 联动 E6 发数据需求单（stigmergy）。
+
+    第二种触发（2026-11-06 补）：当前 verdict=falsified 但 coupling_source=static_json
+    （生产静态耦合系数、76% 样本为 static_fill 合成）时，结论建立在合成先验上，
+    仍需真实域状态时序复核——故与 insufficient_data 同等发单。
+    """
+    verdict = result.get("verdict")
+    static_prior = result.get("coupling_source") == "static_json"
+    if verdict != "insufficient_data" and not static_prior:
         return False
     try:
         import sys
@@ -253,13 +260,28 @@ def file_gap_if_insufficient(result: Dict[str, Any], gaps_path: Optional[Path] =
             sys.path.insert(0, _reg)
         import capability_gaps as cg
 
+        # 同类型 open/claimed 单不重复发（stigmergy 去重，与 E2/E4b 一致）
+        try:
+            existing = cg.load_gaps(path=gaps_path)
+            if any(
+                g.get("gap_type") == "domain_state_series_missing"
+                and g.get("status") in ("open", "claimed")
+                for g in existing
+            ):
+                logger.info("E3 缺口单已存在（%s），跳过重复发单", "domain_state_series_missing")
+                return False
+        except Exception as exc:  # noqa: BLE001 — 去重失败不阻塞发单
+            logger.warning("缺口单去重检查失败（继续发单）: %s", exc)
+
         gap = cg.new_gap(
-            gap_type="data",
+            gap_type="domain_state_series_missing",
             evidence={
                 "source": "e3_counterfactual",
                 "reason": result.get("reason", ""),
                 "n_pairs": result.get("n_pairs", 0),
                 "need": "带时间戳且有真实变化的域状态窗口序列（6 域 psi/drift），用于 E3 反事实 MAE 检验",
+                "observed": "现有 236 行仅有 4 个唯一时间戳（全部 2026-11-03 10:28~12:46 单批导出），"
+                "training_real.jsonl 85 行同一时刻，psi 仅 3 个唯一值（0/0.44/1.0）→ 无时序可回填",
             },
             expected_value="E3 反事实评估可从 insufficient_data 转为可判定（candidate/falsified/inconclusive）",
             target_domain_hint="4-MEMORY/9-工具与接口:collect_domain_discovery_data",

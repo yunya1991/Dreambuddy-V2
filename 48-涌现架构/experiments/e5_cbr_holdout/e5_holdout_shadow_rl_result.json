@@ -1,0 +1,131 @@
+{
+  "ts": "2026-11-05T16:27:28.242872+00:00",
+  "status": "ok",
+  "source": "shadow_rl",
+  "composition_model": "logistic_linear",
+  "limitation": "组合法为线性 logistic；若原语→结果关系非线性，线性组合天然劣势。falsified 只证伪「线性组合泛化」，不等于「组合泛化不可能」——需升级为非线性组合器（MLP/GBDT）复测才能对 E1 判据下最终结论。",
+  "sources": {
+    "shadow_rl": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/shadow_rl_samples.jsonl"
+  },
+  "label_mode": "positive",
+  "n_cases_loaded": 2857,
+  "n_cases": 2857,
+  "pos_ratio": 0.4823241162058103,
+  "n_eligible_cells": 30,
+  "n_evaluated_cells": 8,
+  "verdict": "falsified",
+  "n_eval": 498,
+  "acc_composition": 0.45180722891566266,
+  "acc_knn": 0.536144578313253,
+  "improvement": -0.08433734939759036,
+  "p_value": 0.007099290070992901,
+  "obs_diff": -0.08433734939759036,
+  "direction_positive": false,
+  "homomorphism_error": 0.015037835680061807,
+  "per_cell": [
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n": 137,
+      "acc_composition": 0.40875912408759124,
+      "acc_knn": 0.5547445255474452
+    },
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      "n": 11,
+      "acc_composition": 0.45454545454545453,
+      "acc_knn": 0.36363636363636365
+    },
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        1,
+        1,
+        1
+      ],
+      "n": 9,
+      "acc_composition": 0.3333333333333333,
+      "acc_knn": 0.2222222222222222
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        0,
+        1,
+        1
+      ],
+      "n": 18,
+      "acc_composition": 0.2777777777777778,
+      "acc_knn": 0.2777777777777778
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "n": 12,
+      "acc_composition": 0.5,
+      "acc_knn": 0.6666666666666666
+    },
+    {
+      "cell": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "n": 246,
+      "acc_composition": 0.483739837398374,
+      "acc_knn": 0.556910569105691
+    },
+    {
+      "cell": [
+        1,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "n": 47,
+      "acc_composition": 0.46808510638297873,
+      "acc_knn": 0.48936170212765956
+    },
+    {
+      "cell": [
+        1,
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "n": 18,
+      "acc_composition": 0.5,
+      "acc_knn": 0.6666666666666666
+    }
+  ]
+}

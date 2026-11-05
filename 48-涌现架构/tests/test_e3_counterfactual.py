@@ -161,7 +161,7 @@ def test_insufficient_data_files_gap(tmp_path, monkeypatch):
     assert ok is True
     gaps = cg.load_gaps(gaps_path)
     assert len(gaps) == 1
-    assert gaps[0]["gap_type"] == "data"
+    assert gaps[0]["gap_type"] == "domain_state_series_missing"
     assert gaps[0]["created_by"] == "e3_counterfactual"
     assert gaps[0]["status"] == "open"
 
@@ -169,6 +169,28 @@ def test_insufficient_data_files_gap(tmp_path, monkeypatch):
 def test_gap_not_filed_when_sufficient(tmp_path):
     res = {"verdict": "e3_candidate"}
     assert cc.file_gap_if_insufficient(res, gaps_path=tmp_path / "g.jsonl") is False
+
+
+def test_gap_not_filed_when_falsified_on_real_coupling(tmp_path):
+    res = {"verdict": "falsified", "coupling_source": "none"}
+    assert cc.file_gap_if_insufficient(res, gaps_path=tmp_path / "g.jsonl") is False
+
+
+def test_gap_filed_when_falsified_but_static_prior(tmp_path, monkeypatch):
+    """falsified 但耦合系数是生产静态 JSON（76% 合成样本）→ 仍需真实时序复核。"""
+    gaps_path = tmp_path / "capability_gaps.jsonl"
+    import capability_gaps as cg
+
+    monkeypatch.setattr(cg, "DEFAULT_GAPS_PATH", gaps_path)
+    res = {"verdict": "falsified", "coupling_source": "static_json", "n_pairs": 150}
+    assert cc.file_gap_if_insufficient(res, gaps_path=gaps_path) is True
+    gaps = cg.load_gaps(gaps_path)
+    assert len(gaps) == 1
+    assert gaps[0]["gap_type"] == "domain_state_series_missing"
+
+    # 二次调用应去重（stigmergy）
+    assert cc.file_gap_if_insufficient(res, gaps_path=gaps_path) is False
+    assert len(cg.load_gaps(gaps_path)) == 1
 
 
 # ---------- retrain shadow ----------

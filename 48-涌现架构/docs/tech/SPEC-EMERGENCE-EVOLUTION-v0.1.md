@@ -163,6 +163,8 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 - 内容：重训后 DomainCouplingHead 对"trajectories 中从未出现的域状态组合"推理，与后续真实窗口对比
 - **度量 M3**（E3 判据）：反事实预测 MAE vs 单域 baseline，置换检验 p<0.05 **且方向为正**
 - 注意：F2 口径需补方向检查（β 报告暴露的缺陷，p=0.005 但方向为负也通过）✅ 已内置（方向为负且显著 → falsified，有 β 教训回归测试）
+- **数据回填评估（2026-11-06）**：❌ 现有数据**不可回填**——全仓域状态样本仅 236 行且**只有 4 个唯一时间戳**（全部落在 2026-11-03 10:28~12:46 单批导出；`domain_discovery_training_real.jsonl` 85 行同一时刻、psi 仅 3 个唯一值 0/0.44/1.0，属批量模板快照而非时序）。E3 判据要求「下一窗口」预测，必须有时间有序的连续域状态序列，现状无窗口可 roll。`shadow_rl_samples` 的 `state` 是**市场状态**（R_up/R_down/R_smooth/R_flow/R_reflexivity）不是**域状态**（cognition/rea/search/semantic/data/eval 六域），不可替代
+- **已发 E6 缺口单（2026-11-06）**：`domain_state_series_missing`（路由 4-MEMORY，去重：同类型 open/claimed 不重复发）。触发条件扩展：当 `coupling_source="static_json"`（生产静态耦合 + 76% 合成样本）时**即使 verdict=falsified 也发单**——结论建立在合成先验上，仍需真实时序复核。补齐后 E3 可从 falsified/inconclusive 转为可判定
 - 验收：M3 显著为正 → E3 候选；为负 → 记录证伪，head 结构迭代；**样本功效不足 → inconclusive 如实记录 + E6 数据需求单**
 
 ### Phase E4 — 涌现度量面板（拆期：骨架 1 天 + 埋点 3-4 天，v0.4 补 readout 落盘）
@@ -183,6 +185,8 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 
 - **落地状态（2026-11-05）**：🟡 设施落盘 + 首次真实评估完成——`experiments/e5_cbr_holdout/cbr_holdout.py`（SCAN 式：5 市场原语中位数分箱 → cell 组合整体扣留 + 逐 eligible cell 池化评估；组合法=逐原语贡献 logistic 线性组合，基线=kNN 检索复用；配对符号翻转置换检验 10k 次 + 显式方向检查 + 同态误差辅助指标 + insufficient_data 联动 E6 需求单 gap_type=case_sparse）；11 测试全绿（含 SCAN 性质 toy 检验：训练未见 (1,1,0,0) 组合时组合法 5/5 泛化、kNN 0/5）；M6 已接入 `metrics/emergence_metrics.py`
 - **首次真实评估结果（如实记录）**：162 回测案例（washout 69 + pump_dump 93，统一 5 原语 schema，entry_price 剔除）、8 eligible cell、n_eval=150 → **inconclusive**：组合 0.66 vs 检索 0.66 池化打平（improvement=0.0, p=1.0；逐 cell 互有胜负，如 cell[0,1,1,1,0] 组合 0.625 vs 检索 0.375，cell[1,1,0,1,0] 反之），同态误差 0.067（表征弱同态）。按验收口径：当前不申报 E1 候选，也不记证伪——数据现实制约：生产 evolution_cases/ 仅 1 案例（远低于 min_cases=30），实验只能用回测导出薄特征案例（5 原语、confidence 三特征高度相关），原语多样性不足以让组合法发挥结构优势；待真实闭环案例积累后重跑
+- **shadow_rl 回填（2026-11-06，样本与原语双扩容）**：新增 `load_shadow_rl_cases` 适配器，改接 23 域 `gene_data/shadow_rl_samples.jsonl`（42.17 万行 / 16.59 万唯一 5 维市场状态向量）。口径：只取入场决策（long/light_long/short，过滤 85% 的 WAIT），原语换成 `R_up/R_down/R_smooth/R_flow/R_reflexivity` 五个**独立**市场状态维度 + `is_short` 第 6 维（`assign_cells` 参数化 `n_continuous`）。关键数据现实：reward 92.9% 为 0（未平仓占位），保留会让任何模型都预测负类、准确率虚高到 95% → **`drop_zero=True` 丢弃后用 reward>0 作标签**，有效样本 2857 条、正例 48.2%（自然平衡）；分层采样 + eligible cell 均匀抽样 8 个控制 O(n²) 成本
+- **回填后真实结果（如实记录）**：2857 案例 / 30 eligible cell / 评估 8 cell / n_eval=498 → **falsified**：组合法 45.2% vs kNN 检索 53.6%（improvement=-8.4pp，p=0.0071 显著为负），同态误差 **0.015**（表征同态成立，相似状态→相似结果，故检索天然占优）。**关键限定（已写入结果 `limitation` 字段）**：组合器是线性 logistic，市场状态→收益关系高度非线性时线性组合必然劣势——本结果只证伪「**线性**组合泛化」，不等于「组合泛化不可能」；需升级非线性组合器（MLP/GBDT）复测才能对 E1 判据下最终结论。M6 已优先读取该结果
 - 内容：把某类市场原语（如某 regime 形态）从 CBR 案例库**整体扣留**，测试系统能否用其余案例**组合**出对该新形态的正确响应
 - 辅助指标：同态误差——结构相似的行情应激活相似的案例/因子组合，作为 CBR 表征质量连续监控
 - **度量 M6**（E1 判据金标准）：holdout 形态上组合响应成功率 vs 最近邻检索复用基线

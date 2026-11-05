@@ -223,25 +223,39 @@ def _m3_counterfactual() -> Dict[str, Any]:
 _E5_RESULT = (
     _REPO_ROOT / "48-涌现架构" / "experiments" / "e5_cbr_holdout" / "e5_holdout_result.json"
 )
+# shadow_rl 回填版优先（5 维独立市场状态原语，样本量与原语多样性均优于回测双库）
+_E5_RESULT_SHADOW_RL = (
+    _REPO_ROOT
+    / "48-涌现架构"
+    / "experiments"
+    / "e5_cbr_holdout"
+    / "e5_holdout_shadow_rl_result.json"
+)
 
 
 def _m6_compositional_generalization() -> Dict[str, Any]:
     """M6 组合泛化（E1 金标准）：读 e5_cbr_holdout 评估结果。未跑过 → 如实 not_run。"""
     try:
-        if not _E5_RESULT.exists():
+        path = _E5_RESULT_SHADOW_RL if _E5_RESULT_SHADOW_RL.exists() else _E5_RESULT
+        if not path.exists():
             return {"value": None, "status": "not_run"}
-        d = json.loads(_E5_RESULT.read_text(encoding="utf-8"))
+        d = json.loads(path.read_text(encoding="utf-8"))
         return {
             "value": {
+                "source": d.get("source", "backtest"),
+                "span": path.name,
                 "verdict": d.get("verdict"),
                 "n_cases": d.get("n_cases"),
                 "n_eval": d.get("n_eval"),
+                "pos_ratio": d.get("pos_ratio"),
                 "acc_composition": d.get("acc_composition"),
                 "acc_knn": d.get("acc_knn"),
                 "improvement": d.get("improvement"),
                 "p_value": d.get("p_value"),
                 "direction_positive": d.get("direction_positive"),
                 "homomorphism_error": d.get("homomorphism_error"),
+                "composition_model": d.get("composition_model"),
+                "limitation": d.get("limitation"),
                 "evaluated_at": d.get("ts"),
             },
             "status": "ok",

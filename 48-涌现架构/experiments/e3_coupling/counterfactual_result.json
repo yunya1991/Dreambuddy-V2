@@ -1,28 +1,22 @@
 {
-  "verdict": "inconclusive",
+  "verdict": "falsified",
   "n_pairs": 150,
   "n_oos": 45,
-  "mae_coupled": 0.021866,
+  "mae_coupled": 0.028832,
   "mae_ablated": 0.024012,
-  "median_improvement": 0.001293,
-  "median_improvement_pct": 5.383,
-  "p_value": 0.05529,
-  "direction_positive": true,
+  "median_improvement": -0.003991,
+  "median_improvement_pct": -16.623,
+  "p_value": 0.0029,
+  "direction_positive": false,
   "n_perm": 10000,
   "train_frac": 0.7,
-  "ts": "2026-11-05T14:49:42.753192+00:00",
+  "ts": "2026-11-05T16:28:43.780815+00:00",
   "data_sources": [
     "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/l1_training/domain_discovery_training.jsonl",
     "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/l1_training/domain_discovery_training_real.jsonl"
   ],
   "n_series_raw": 151,
-  "coupling_source": "e3_shadow_retrain",
+  "coupling_source": "static_json",
   "spec": "SPEC-EMERGENCE-EVOLUTION v0.5 §4 E3",
-  "gap_filed": false,
-  "retrain_meta": {
-    "target_source": "phaseC_jsonl_150samples",
-    "final_loss": 0.013115565292537212,
-    "n_steps": 120,
-    "input_source": "real_btc_1h_36factors"
-  }
+  "gap_filed": true
 }

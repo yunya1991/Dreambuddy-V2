@@ -68,6 +68,19 @@ MIN_TRAIN = 60
 MIN_EVAL = 20
 KNN_K = 5
 
+# shadow_rl 回填源（2026-11-06 扩容）：23 域 gene_data/shadow_rl_samples.jsonl
+# 42.17 万行 / 16.59 万唯一 5 维市场状态向量；85% 为 WAIT → 只取入场决策
+SHADOW_RL_PATH = (
+    _REPO_ROOT
+    / "23-四层闭环自进化交易架构"
+    / "dreambuddy_evolution"
+    / "gene_data"
+    / "shadow_rl_samples.jsonl"
+)
+SHADOW_RL_STATE_KEYS = ("R_up", "R_down", "R_smooth", "R_flow", "R_reflexivity")
+ENTRY_ACTIONS = frozenset({"long", "light_long", "short"})
+DEFAULT_SHADOW_RL_MAX_CASES = 20000  # kNN/全批 GD 的 O(n²) 成本上限，按 cell 分层采样
+
 
 # ============================================================
 # 加载与统一 schema
@@ -122,24 +135,121 @@ def load_cases(sources: Dict[str, Path]) -> List[Dict[str, Any]]:
     return cases
 
 
+def load_shadow_rl_cases(
+    path: Path = SHADOW_RL_PATH,
+    actions: frozenset = ENTRY_ACTIONS,
+    label_mode: str = "positive",
+    drop_zero: bool = True,
+) -> List[Dict[str, Any]]:
+    """加载 shadow_rl 样本 → 5 维市场状态原语 + is_short（第 6 维）+ 二值标签。
+
+    与回测双库的口径差异（如实）：原语从「3 个高度相关 confidence」换成
+    R_up/R_down/R_smooth/R_flow/R_reflexivity 五个独立市场状态维度——这正是
+    SCAN 式组合泛化需要的原语多样性。
+
+    drop_zero（默认 True）：实测 reward 92.9% 为 0（未平仓占位，非有效标签），
+    保留会让任何模型都预测负类、准确率虚高到 95%。丢弃后有效样本 ~2857 条，
+    正例占比 48.2%（自然平衡）。
+
+    label_mode:
+      - "positive"：reward > 0（业务语义：是否盈利；默认）
+      - "median"：reward > 有效样本中位数（相对好坏口径）
+    """
+    path = Path(path)
+    if not path.exists():
+        logger.warning("shadow_rl 样本缺失（跳过）: %s", path)
+        return []
+
+    rows: List[Tuple[Dict[str, Any], List[float], float, str]] = []
+    n_zero = 0
+    try:
+        for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            action = str(r.get("action") or "")
+            if action not in actions:
+                continue
+            state = r.get("state") or {}
+            try:
+                vals = [float(state[k]) for k in SHADOW_RL_STATE_KEYS]
+            except (KeyError, TypeError, ValueError):
+                continue
+            reward = r.get("reward")
+            if not isinstance(reward, (int, float)):
+                continue
+            if drop_zero and float(reward) == 0.0:
+                n_zero += 1
+                continue
+            rows.append((r, vals, float(reward), action))
+    except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
+        logger.warning("加载 shadow_rl 失败（降级）: %s", exc)
+        return []
+
+    if not rows:
+        logger.warning("shadow_rl 无非零 reward 有效样本（n_zero=%d）", n_zero)
+        return []
+    threshold = float(np.median([x[2] for x in rows])) if label_mode == "median" else 0.0
+
+    cases: List[Dict[str, Any]] = []
+    for i, (_r, vals, reward, action) in enumerate(rows):
+        cases.append(
+            {
+                "case_id": f"rl-{i}",
+                "library": "shadow_rl",
+                "features": np.array(vals + [1.0 if action == "short" else 0.0], dtype=np.float64),
+                "label": 1 if reward > threshold else 0,
+            }
+        )
+    return cases
+
+
 # ============================================================
 # 分箱与 cell（原语组合键）
 # ============================================================
 
 
-def assign_cells(cases: List[Dict[str, Any]]) -> None:
+def assign_cells(cases: List[Dict[str, Any]], n_continuous: int = _N_CONTINUOUS) -> None:
     """每个连续原语按全体中位数分高低两箱，组合成 cell 键（就地写入）。
 
-    分箱只涉及特征不涉及标签，无标签泄漏。is_short 保持 0/1 原值。
+    分箱只涉及特征不涉及标签，无标签泄漏。最后一维（is_short）保持 0/1 原值。
+    n_continuous 参数化以支持 shadow_rl 的 5 个连续市场状态原语。
     """
     if not cases:
         return
     mat = np.array([c["features"] for c in cases], dtype=np.float64)
-    medians = np.median(mat[:, :_N_CONTINUOUS], axis=0)
+    medians = np.median(mat[:, :n_continuous], axis=0)
     for c in cases:
-        bins = [int(c["features"][i] >= medians[i]) for i in range(_N_CONTINUOUS)]
-        bins.append(int(round(float(c["features"][_N_CONTINUOUS]))))
+        bins = [int(c["features"][i] >= medians[i]) for i in range(n_continuous)]
+        bins.append(int(round(float(c["features"][n_continuous]))))
         c["cell"] = tuple(bins)
+
+
+def _stratified_sample(
+    cases: List[Dict[str, Any]],
+    max_cases: int,
+    rng: np.random.Generator,
+) -> List[Dict[str, Any]]:
+    """按 cell 分层随机采样，保证每个原语组合仍被覆盖（控 O(n²) 成本）。"""
+    if max_cases <= 0 or len(cases) <= max_cases:
+        return cases
+    by_cell: Dict[Any, List[Dict[str, Any]]] = {}
+    for c in cases:
+        by_cell.setdefault(c.get("cell"), []).append(c)
+    per = max(1, max_cases // len(by_cell))
+    sampled: List[Dict[str, Any]] = []
+    for cell in sorted(by_cell, key=str):
+        group = by_cell[cell]
+        if len(group) <= per:
+            sampled.extend(group)
+        else:
+            idx = np.sort(rng.choice(len(group), size=per, replace=False))
+            sampled.extend(group[int(i)] for i in idx)
+    return sampled
 
 
 def holdout_split(
@@ -350,24 +460,58 @@ def run(
     knn_k: int = KNN_K,
     n_perm: int = 10000,
     seed: int = 42,
+    source: str = "backtest",
+    shadow_rl_path: Optional[Path] = None,
+    max_cases: Optional[int] = None,
+    label_mode: str = "positive",
+    max_holdout_cells: int = 8,
 ) -> Dict[str, Any]:
-    """E5 主流程：加载 → 分箱 → 逐 eligible cell holdout 评估 → 池化显著性检验。"""
-    sources = sources or DEFAULT_SOURCES
+    """E5 主流程：加载 → 分箱 → 逐 eligible cell holdout 评估 → 池化显著性检验。
+
+    source:
+      - "backtest"（默认）：11 域双库回测案例（162 条，原语 3 confidence 高度相关）
+      - "shadow_rl"：23 域 shadow_rl_samples（5 维独立市场状态，可分层采样到 2 万条）
+    """
     rng = np.random.default_rng(seed)
     result: Dict[str, Any] = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "status": "ok",
-        "sources": {k: str(v) for k, v in sources.items()},
+        "source": source,
+        "composition_model": "logistic_linear",
+        "limitation": (
+            "组合法为线性 logistic；若原语→结果关系非线性，线性组合天然劣势。"
+            "falsified 只证伪「线性组合泛化」，不等于「组合泛化不可能」——"
+            "需升级为非线性组合器（MLP/GBDT）复测才能对 E1 判据下最终结论。"
+        ),
     }
 
     try:
-        cases = load_cases(sources)
+        if source == "shadow_rl":
+            path = Path(shadow_rl_path) if shadow_rl_path else SHADOW_RL_PATH
+            result["sources"] = {"shadow_rl": str(path)}
+            result["label_mode"] = label_mode
+            cases = load_shadow_rl_cases(path, label_mode=label_mode)
+            result["n_cases_loaded"] = len(cases)
+            if cases:
+                assign_cells(cases, n_continuous=len(SHADOW_RL_STATE_KEYS))
+                cases = _stratified_sample(
+                    cases,
+                    max_cases or DEFAULT_SHADOW_RL_MAX_CASES,
+                    rng,
+                )
+        else:
+            sources = sources or DEFAULT_SOURCES
+            result["sources"] = {k: str(v) for k, v in sources.items()}
+            result["label_mode"] = "actual_label"
+            cases = load_cases(sources)
+            result["n_cases_loaded"] = len(cases)
     except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
         result.update(status="insufficient_data", reason=f"load_failed: {exc}")
         _emit_e6_gap(result, gaps_path)
         return result
 
     result["n_cases"] = len(cases)
+    result["pos_ratio"] = float(np.mean([c["label"] for c in cases])) if cases else 0.0
     if len(cases) < min_cases_total:
         result.update(
             status="insufficient_data",
@@ -376,7 +520,8 @@ def run(
         _emit_e6_gap(result, gaps_path)
         return result
 
-    assign_cells(cases)
+    if source != "shadow_rl":
+        assign_cells(cases)
     cells = select_holdout_cells(cases, min_cell=min_cell, min_train=min_train)
     result["n_eligible_cells"] = len(cells)
     if not cells:
@@ -387,6 +532,12 @@ def run(
         )
         _emit_e6_gap(result, gaps_path)
         return result
+
+    # 大样本下控制评估成本：eligible cell 均匀抽样（不是取最大的，避免选择性偏置）
+    if max_holdout_cells and len(cells) > max_holdout_cells:
+        step = len(cells) / max_holdout_cells
+        cells = [cells[int(i * step)] for i in range(max_holdout_cells)]
+    result["n_evaluated_cells"] = len(cells)
 
     # 池化评估：每个 eligible cell 依次整体扣留，模型在其余案例上训练后预测该 cell
     comp_correct: List[float] = []
@@ -437,12 +588,34 @@ def run(
 
 
 def main() -> int:
-    result = run()
-    RESULT_PATH.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="E5 CBR holdout 组合泛化实验")
+    parser.add_argument("--source", default="backtest", choices=["backtest", "shadow_rl"])
+    parser.add_argument("--max-cases", type=int, default=None, help="分层采样上限（shadow_rl）")
+    parser.add_argument("--label-mode", default="positive", choices=["median", "positive"])
+    parser.add_argument("--n-perm", type=int, default=10000)
+    parser.add_argument("--out", default=None)
+    args = parser.parse_args()
+
+    result = run(
+        source=args.source,
+        max_cases=args.max_cases,
+        label_mode=args.label_mode,
+        n_perm=args.n_perm,
+    )
+    if args.out:
+        out = Path(args.out)
+    elif args.source == "shadow_rl":
+        out = RESULT_PATH.parent / "e5_holdout_shadow_rl_result.json"
+    else:
+        out = RESULT_PATH
+    out.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
-        f"E5 holdout: status={result['status']} verdict={result.get('verdict')} "
-        f"n_cases={result.get('n_cases')} n_eval={result.get('n_eval')} "
-        f"improvement={result.get('improvement')} p={result.get('p_value')}"
+        f"E5 holdout[{args.source}]: status={result['status']} "
+        f"verdict={result.get('verdict')} n_cases={result.get('n_cases')} "
+        f"n_eval={result.get('n_eval')} improvement={result.get('improvement')} "
+        f"p={result.get('p_value')}"
     )
     return 0
 

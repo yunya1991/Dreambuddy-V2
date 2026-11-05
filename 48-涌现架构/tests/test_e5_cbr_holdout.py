@@ -330,3 +330,174 @@ def test_run_end_to_end_on_toy(tmp_path):
         assert result["n_eval"] > 0
         assert 0.0 <= result["p_value"] <= 1.0
         assert "homomorphism_error" in result
+
+
+# ============================================================
+# shadow_rl 回填适配器（2026-11-06）
+# 数据源：23 域 gene_data/shadow_rl_samples.jsonl
+#   42.17 万行 / 16.59 万唯一 5 维市场状态向量（R_up/R_down/R_smooth/R_flow/R_reflexivity）
+#   85% 为 WAIT 动作 → 只取入场决策（long/light_long/short），is_short 作为第 6 维
+# ============================================================
+
+
+def _mk_rl_sample(
+    r_up: float,
+    r_down: float,
+    r_smooth: float,
+    r_flow: float,
+    r_reflex: float,
+    action: str,
+    reward: float,
+    symbol: str = "BTC",
+) -> dict:
+    return {
+        "symbol": symbol,
+        "state": {
+            "R_up": r_up,
+            "R_down": r_down,
+            "R_smooth": r_smooth,
+            "R_flow": r_flow,
+            "R_reflexivity": r_reflex,
+            "quality_score": 0.9,
+        },
+        "action": action,
+        "reward": reward,
+        "next_state": {},
+    }
+
+
+def test_load_shadow_rl_filters_wait_and_maps_primitives(tmp_path):
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = [
+        _mk_rl_sample(0.8, 0.2, 0.1, 0.9, 0.5, "long", 0.5),
+        _mk_rl_sample(0.3, 0.7, 0.2, 0.1, 0.4, "short", -0.5),
+        _mk_rl_sample(0.5, 0.5, 0.0, 0.5, 0.5, "WAIT", 0.0),  # 应被过滤
+        _mk_rl_sample(0.6, 0.4, 0.1, 0.7, 0.3, "light_long", 0.2),
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    cases = ch.load_shadow_rl_cases(path, label_mode="positive")
+    assert len(cases) == 3  # WAIT 被过滤
+    assert all(c["library"] == "shadow_rl" for c in cases)
+    assert all(len(c["features"]) == 6 for c in cases)
+    # 第 1-5 维为市场状态原语，第 6 维 is_short
+    assert cases[0]["features"][:5] == pytest.approx([0.8, 0.2, 0.1, 0.9, 0.5])
+    assert cases[0]["features"][5] == 0.0
+    assert cases[1]["features"][5] == 1.0  # short
+    # positive 口径：reward > 0
+    assert [c["label"] for c in cases] == [1, 0, 1]
+
+
+def test_load_shadow_rl_label_mode_median_balances(tmp_path):
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = [
+        _mk_rl_sample(0.8, 0.2, 0.1, 0.9, 0.5, "long", 3.0),
+        _mk_rl_sample(0.7, 0.3, 0.1, 0.8, 0.5, "long", 2.0),
+        _mk_rl_sample(0.2, 0.8, 0.1, 0.2, 0.5, "short", -1.0),
+        _mk_rl_sample(0.1, 0.9, 0.1, 0.1, 0.5, "short", -2.0),
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    cases = ch.load_shadow_rl_cases(path, label_mode="median")
+    assert sum(c["label"] for c in cases) == 2  # 中位数以上为正例
+
+
+def test_load_shadow_rl_missing_file_returns_empty(tmp_path):
+    assert ch.load_shadow_rl_cases(tmp_path / "nope.jsonl") == []
+
+
+def test_load_shadow_rl_drops_zero_reward(tmp_path):
+    """实测 reward 92.9% 为 0（未平仓占位），保留会让准确率虚高。"""
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = [
+        _mk_rl_sample(0.8, 0.2, 0.1, 0.9, 0.5, "long", 0.0),
+        _mk_rl_sample(0.7, 0.3, 0.1, 0.8, 0.5, "long", 0.3),
+        _mk_rl_sample(0.2, 0.8, 0.1, 0.2, 0.5, "short", 0.0),
+        _mk_rl_sample(0.1, 0.9, 0.1, 0.1, 0.5, "short", -0.2),
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    dropped = ch.load_shadow_rl_cases(path, drop_zero=True)
+    assert len(dropped) == 2  # 两条 reward=0 被丢弃
+    kept = ch.load_shadow_rl_cases(path, drop_zero=False)
+    assert len(kept) == 4
+
+
+def test_assign_cells_supports_five_continuous_primitives(tmp_path):
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = [
+        _mk_rl_sample(
+            0.1 * (i % 10),
+            0.1 * ((i + 3) % 10),
+            0.1 * ((i + 5) % 10),
+            0.1 * ((i + 7) % 10),
+            0.5,
+            "long",
+            0.1,
+        )
+        for i in range(40)
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    cases = ch.load_shadow_rl_cases(path, label_mode="positive")
+    ch.assign_cells(cases, n_continuous=5)
+    # 5 个连续原语 → cell 键长度 6（5 分箱 + is_short）
+    assert all(len(c["cell"]) == 6 for c in cases)
+    assert {c["cell"][5] for c in cases} == {0}  # 全 long
+
+
+def test_stratified_sample_caps_total_and_keeps_cells():
+    cases = []
+    for cell_i in range(4):
+        for j in range(25):
+            cases.append(
+                {
+                    "case_id": f"{cell_i}-{j}",
+                    "library": "shadow_rl",
+                    "features": np.zeros(6),
+                    "label": j % 2,
+                    "cell": (cell_i, 0, 0, 0, 0, 0),
+                }
+            )
+    rng = np.random.default_rng(0)
+    sampled = ch._stratified_sample(cases, max_cases=40, rng=rng)
+    assert len(sampled) <= 40
+    assert {c["cell"][0] for c in sampled} == {0, 1, 2, 3}  # 每 cell 都被覆盖
+
+
+def test_run_shadow_rl_source_reports_metadata(tmp_path):
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = []
+    for i in range(400):
+        a = 0.01 * (i % 100)
+        rows.append(
+            _mk_rl_sample(
+                a,
+                1.0 - a,
+                0.01 * ((i * 7) % 100),
+                0.01 * ((i * 13) % 100),
+                0.5,
+                "long" if i % 3 else "short",
+                0.01 * ((i * 17) % 200) - 1.0,
+            )
+        )
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    result = ch.run(
+        source="shadow_rl",
+        shadow_rl_path=path,
+        gaps_path=tmp_path / "gaps.jsonl",
+        max_cases=200,
+        min_cell=8,
+        min_train=60,
+        min_eval=20,
+        n_perm=200,
+        seed=0,
+    )
+    assert result["source"] == "shadow_rl"
+    assert result["label_mode"] == "positive"
+    # 部分 reward=0 被丢弃（drop_zero 默认开），故 loaded < 400
+    assert 350 <= result["n_cases_loaded"] < 400
+    assert result["n_cases"] <= 200
+    assert 0.0 <= result["pos_ratio"] <= 1.0
+    assert result["status"] in ("ok", "insufficient_data")

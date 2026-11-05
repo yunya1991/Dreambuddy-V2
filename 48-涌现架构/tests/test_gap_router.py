@@ -23,6 +23,7 @@ def test_route_known_types(tmp_path):
         "factor_insufficient_samples": "因子工程",
         "case_sparse": "evolution-case-ingest",
         "coupling_unsupported": "19-数据访问层",
+        "domain_state_series_missing": "4-MEMORY",
     }
     for gap_type, expected_domain in cases.items():
         gap = cg.new_gap(gap_type, {"probe": True}, created_by="t")
