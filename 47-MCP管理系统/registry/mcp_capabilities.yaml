@@ -27,8 +27,8 @@
 #   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
 #   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
 schema_version: "1.1-mcp"
-registry_version: "0.3"
-last_updated: "2026-11-03"
+registry_version: "0.4"
+last_updated: "2026-11-05"
 # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
 # 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
 single_source_of_truth: true
@@ -282,6 +282,79 @@ shells:
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
 
+  # 壳 ⑦ 交易执行 MCP（SPEC-L0-TRADE-EXEC-MCP v0.2 落地）
+  # 硬约束：仅承载 paper 模拟盘模式，绝不触真实交易所；
+  # 实盘 live 由 11 域 okx_client 旁路网关直连，不经过本壳。
+  # 壳内无 OKX API credentials、无签名逻辑、仅 HTTP GET 公开 ticker。
+  - shell_id: l0.trade-exec.mcp
+    capability_id: l0.trade-exec
+    transport: stdio
+    shell_path: "mcp_shells/l0_trade_exec/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.1"
+    status: available
+    capabilities:
+      shadow_capable: true
+      training_hooks: [on_order_filled, on_risk_rejected, on_signal_skipped]  # 执行样本 → ml_data/samples.jsonl，供 23/42 域进化
+      oracle_verifiable: true
+    tools:
+      - name: place_order
+        port: event
+        domain: trade-exec
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+      - name: cancel_order
+        port: event
+        domain: trade-exec
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+      - name: get_positions
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_balance
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      # ── 阶段二新增：RiskCheckPort + AccountPort + PositionPort.reconcile ──
+      - name: pre_trade_check
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_account_mode
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: reconcile
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      # ── 阶段三新增：23/42 信号接入 ──
+      - name: read_signals
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: ingest_signal
+        port: event
+        domain: trade-exec
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: true }
+
 # ── Worker 角色→能力标签（46-DSH ADR-4 / DD2 定稿，A3 落地）────────────
 # 分工：「角色→能力标签」在此登记（唯一载体）；「能力标签→工具集」由上方
 # shells 段推导，不重复定义工具 schema。Router 只感知角色/标签，不感知全量
@@ -308,12 +381,19 @@ worker_roles:
     tools: [eval_analyze, eval_report,
             store_admin_status, store_admin_query,
             recall]
+  executor:
+    description: 执行 Worker——交易执行观测（trade-exec 壳，只读）
+    shells: [l0.trade-exec.mcp]
+    tools: [get_positions, get_balance, pre_trade_check,
+            get_account_mode, reconcile, read_signals]
+    # 硬约束（ADR-9/H7）：Worker 角色只读，禁止纳入 requires_mandate=true 的写工具。
+    # place_order / cancel_order / ingest_signal 仅由编排侧（持 Mandate）调用。
 
 # ── 枚举词典（校验器参照）───────────────────────────────────────
 enums:
   transport: [stdio, ssh-stdio, http, in-process]
   port: [memory, collector, search, store, analysis, event]
-  domain: [cognition, search, semantic, data, eval, rea, store-admin]
+  domain: [cognition, search, semantic, data, eval, rea, store-admin, trade-exec]
   read_write: [read, write, read-write]
   status: [available, degraded, planned, deprecated]
   envelope_version: ["0.1", "0.2"]

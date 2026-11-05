@@ -22,12 +22,15 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约�
 | [docs/tech/ALIGNMENT-46-47-v1.0.md](./docs/tech/ALIGNMENT-46-47-v1.0.md) | 与 46-DSH 升级文档的对齐审查：6 冲突 + 3 架构缺口 + 合并开工顺序 + Go/No-Go | 开工前终审输入 |
 | [docs/tech/TECH-L0-MCP-v0.1.md](./docs/tech/TECH-L0-MCP-v0.1.md) | MCP 技术设计：壳层 envelope、工具注册表、能力集、已落地工具测试方法；§10.1 云端审计快照（v0.1.1） | ✅ M1①-④ 已落地；基线报告已生成 |
 | [docs/tech/SPEC-L0-DOMAIN-AGENTS-v0.2.md](./docs/tech/SPEC-L0-DOMAIN-AGENTS-v0.2.md) | 域内 agent SPEC：Phase A-E 路线 + Dream-RSI `V_new(π,T)` α 分量 | ✅ v0.2；Phase A 已落地 |
+| [docs/tech/SPEC-L0-DATA-AGENT-v0.1.md](./docs/tech/SPEC-L0-DATA-AGENT-v0.1.md) | 数据域 agent L0 底层能力管理协议：六子 agent 独立子协议（[data-agents/](./docs/tech/data-agents/)）+ DAL 查询面扩展 + P0-P3 路线 | ✅ v0.1；P0/P1/P2 已落地（macro/chain/flow/breadth/capital_flow/sentiment 六子协议文件已登记） |
 | [docs/tech/SPEC-L0-AGENT-TRAIN-BASE-v0.1.md](./docs/tech/SPEC-L0-AGENT-TRAIN-BASE-v0.1.md) | 训练基座 SPEC：TB1 PSI / TB2 Beta verify / TB3 AlphaPareto 七维 / TB4 Thompson / TB5 GRPO | ✅ TB1-TB5 + Phase A **48/48 TDD**，影子验证 PASS |
 | [docs/tech/SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1.md](./docs/tech/SPEC-L0-L1-DOMAIN-DISCOVERY-v0.1.md) | L0/L1 域发现 SPEC：静态 domain_transmission、observe() 消费、P4 沙箱（§4.5）、窗口化采集（§3.3 / §4.6.12） | ✅ Phase 0 + Phase E 已落地：`mcp_shells/_shared/assets/domain_transmission_static.json` + `agent_mail_shadow.py`（19 测试）+ `collect_windowed` 窗口化采集（18 测试，云端每小时定时任务；当前仅 bear 单桶） |
 | [docs/tech/SPEC-L0-AGENT-COMM-SHADOW-v0.1.md](./docs/tech/SPEC-L0-AGENT-COMM-SHADOW-v0.1.md) | COMM-SHADOW SPEC：第二观察点旁路 + §5.6 四类 payload（domain_hypothesis / transmission_evidence / validation_receipt / cross_domain_coupling） | 🟡 Phase 0 已落地（静态旁路 observe）；shadow 双跑等 bcrm2 切流窗口 |
 | [docs/tech/ROADMAP-L0-L1-CLOSED-LOOP-v0.1.md](./docs/tech/ROADMAP-L0-L1-CLOSED-LOOP-v0.1.md) | L0/L1 闭环路线图：12 里程碑 + 4 阻塞（B1/B2 已消解，B3 GPU / B4 bcrm2 仍阻塞） | ✅ 状态已按实测回填（三端 HEAD 一致） |
 | [docs/tech/PLAN-L0-MCP-P0-P3-v0.1.md](./docs/tech/PLAN-L0-MCP-P0-P3-v0.1.md) | MCP 封装 P0-P3 实施计划（任务拆解 + 依赖 + 验收） | ✅ 计划文档 |
 | [docs/tech/REVIEW-AGENT-ARCH-v0.1.md](./docs/tech/REVIEW-AGENT-ARCH-v0.1.md) | Agent 架构评审记录（争议点 + 结论 + 待办） | ✅ 评审归档 |
+| [docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md) | L0 交易执行 MCP SPEC：四 Port 契约 + paper 主出口 + 实盘旁路（遵守实盘链路永不暴露 MCP） | 🟢 v0.4 阶段一~六已落地（2026-11-05 云端端到端 + 影子驱动 + 小时级消费端验证通过） |
+| [docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md](./docs/tech/REVIEW-L0-TRADE-EXEC-MCP-v0.1.md) | trade-exec MCP SPEC 评审报告（2 P0 / 5 P1 / 4 P2） | ✅ v0.1 已出，P0/P1/P2 已封口（E0b 上游阻塞除外） |
 | [docs/tech/SHADOW-REPORT-L0-REA-M3.md](./docs/tech/SHADOW-REPORT-L0-REA-M3.md) | REA 域 M3 影子报告（观察点对比 + 门槛值） | ✅ 影子归档 |
 
 ## 外部关联文档（原位保留，本模块登记索引）

@@ -9,17 +9,15 @@ shadow-mode 全局闸门 单元测试（BLOCKED-OPEN 验证）
              market_open_long / market_open_short 全部 0 次调用
     3. 与 direction=UP / DOWN 无关（多空都必须拦截）
 """
+
 from __future__ import annotations
-
-import sys
-from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 # ── 确保可以导入目标模块（与 test_strategy_algo_stage1 同口径） ─────────────────────────
 import os as _os
 import sys as _sys
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
 _PROJECT = _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
 _ROOT = _os.path.dirname(_PROJECT)
 if str(_ROOT) not in _sys.path:
@@ -37,6 +35,9 @@ def _make_bare_trader(shadow_mode: bool):
 
     # ── 闸门用属性（测试核心目标） ──────────────────────────────────────────────────────────
     t.shadow_mode = bool(shadow_mode)
+    # 本文件只验证 shadow_mode 闸门；执行权限闸门放行全部（专属测试见 test_execution_authority_gate.py）
+    t.execution_authority = "all"
+    t._EXECUTION_AUTHORITY_ALLOWED = None
 
     # ── 日志 spy：将 self._log 调用收集到 list ───────────────────────────────────────────
     t.logs: list[tuple[str, str]] = []
@@ -50,13 +51,24 @@ def _make_bare_trader(shadow_mode: bool):
     t.okx_client = MagicMock()
     t.okx_client.cfg = {"default_leverage": 3, "td_mode": "isolated"}
     t.okx_client.get_balance.return_value = {
-        "ok": True, "total_eq": 1293.71,
+        "ok": True,
+        "total_eq": 1293.71,
         "assets": {"USDT": {"avail": 1293.71}},
     }
     t.okx_client.get_positions.return_value = {"ok": True, "positions": []}
     t.okx_client._usdt_to_sz.return_value = 123  # 随便 >0，表示最小合约单位通过
-    t.okx_client.market_open_long.return_value = {"ok": True, "ord_id": "shadow-mock-long-42", "estimated_price": 60000.0, "dry_run": False}
-    t.okx_client.market_open_short.return_value = {"ok": True, "ord_id": "shadow-mock-short-42", "estimated_price": 60000.0, "dry_run": False}
+    t.okx_client.market_open_long.return_value = {
+        "ok": True,
+        "ord_id": "shadow-mock-long-42",
+        "estimated_price": 60000.0,
+        "dry_run": False,
+    }
+    t.okx_client.market_open_short.return_value = {
+        "ok": True,
+        "ord_id": "shadow-mock-short-42",
+        "estimated_price": 60000.0,
+        "dry_run": False,
+    }
     t.okx_client.place_stop_loss_take_profit.return_value = {"ok": True}
 
     # ── 性能 / 风控 tracker（下游要用到 current_equity / calc_position_size） ─────────────────
@@ -78,14 +90,23 @@ def _make_bare_trader(shadow_mode: bool):
     t._last_volatility = 0.03  # H2
 
     # 其他可选辅助方法：保持 MagicMock，不重要（只要不被执行就 0 次调用）
-    t._compute_p2_dynamic_sizing_factors = MagicMock(return_value={
-        "kelly_factor": 1.0, "consecutive_loss_factor": 1.0,
-        "hexagram_factor": 1.0, "vol_regime_factor": 1.0,
-        "hexagram_class": "NEUTRAL", "win_rate": 0.5,
-        "avg_win": 1.0, "avg_loss": 1.0, "loss_streak": 0,
-        "vol_regime_class": "MID", "vol_adaptive_sl_mult": 2.5,
-        "vol_adaptive_tp_mult": 5.0, "p2_base_multiplier": 1.0,
-    })
+    t._compute_p2_dynamic_sizing_factors = MagicMock(
+        return_value={
+            "kelly_factor": 1.0,
+            "consecutive_loss_factor": 1.0,
+            "hexagram_factor": 1.0,
+            "vol_regime_factor": 1.0,
+            "hexagram_class": "NEUTRAL",
+            "win_rate": 0.5,
+            "avg_win": 1.0,
+            "avg_loss": 1.0,
+            "loss_streak": 0,
+            "vol_regime_class": "MID",
+            "vol_adaptive_sl_mult": 2.5,
+            "vol_adaptive_tp_mult": 5.0,
+            "p2_base_multiplier": 1.0,
+        }
+    )
     t._compute_short_position_multiplier = MagicMock(return_value=1.0)
     t._compute_long_position_multiplier = MagicMock(return_value=1.0)
     t._price_change_to_roi = MagicMock(return_value=0.075)
@@ -154,7 +175,9 @@ class TestShadowGateBlockedOpen:
         blocked_level = [lv for m, lv in t.logs if "SHADOW MODE BLOCKED-OPEN" in m]
         assert blocked_level == ["WARN"], f"BLOCKED 日志级别必须是 WARN，实际={blocked_level}"
         # 方向/币种必须被正确打印
-        assert any("BTC-USDT-SWAP" in m and "UP" in m for m in msgs), f"日志未包含币种/方向信息：{msgs}"
+        assert any(
+            "BTC-USDT-SWAP" in m and "UP" in m for m in msgs
+        ), f"日志未包含币种/方向信息：{msgs}"
 
     def test_shadow_true_UP_calls_zero_downstream_methods(self):
         t = _make_bare_trader(shadow_mode=True)
@@ -186,7 +209,9 @@ class TestShadowGateBlockedOpen:
         assert any("SHADOW MODE BLOCKED-OPEN" in m for m in msgs), f"实际日志={msgs}"
         blocked_level = [lv for m, lv in t.logs if "SHADOW MODE BLOCKED-OPEN" in m]
         assert blocked_level == ["WARN"]
-        assert any("BTC-USDT-SWAP" in m and "DOWN" in m for m in msgs), f"日志未包含DOWN信息：{msgs}"
+        assert any(
+            "BTC-USDT-SWAP" in m and "DOWN" in m for m in msgs
+        ), f"日志未包含DOWN信息：{msgs}"
 
     def test_shadow_true_DOWN_calls_zero_downstream_methods(self):
         t = _make_bare_trader(shadow_mode=True)
@@ -214,7 +239,7 @@ class TestShadowGateBlockedOpen:
         t._open_position(inf)
 
         # 关键：闸门不生效 → 风控 & get_balance 必须至少 1 次
-        assert t.risk_manager.calc_position_size.call_count >= 1, (
-            "shadow=False 闸门不生效，应走到 calc_position_size"
-        )
+        assert (
+            t.risk_manager.calc_position_size.call_count >= 1
+        ), "shadow=False 闸门不生效，应走到 calc_position_size"
         assert t.okx_client.get_balance.call_count >= 1

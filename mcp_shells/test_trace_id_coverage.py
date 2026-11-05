@@ -5,7 +5,7 @@
 V5 trace_id 贯穿率 100%）。本测试只走各壳的 invalid / not_found 只读路径：
 零写盘、零外部服务依赖，CI 可直接跑。
 
-覆盖壳：l0.data.mcp / l0.eval.mcp / l0.rea.mcp / l0.store-admin.mcp
+覆盖壳：l0.data.mcp / l0.eval.mcp / l0.rea.mcp / l0.store-admin.mcp / l0.trade-exec.mcp
 """
 
 import json
@@ -44,6 +44,12 @@ _CASES = [
         "store_admin_query",
         {},  # 缺 repo → invalid，不触 19-DAL
     ),
+    (
+        "l0_trade_exec",
+        "l0.trade-exec.mcp",
+        "place_order",
+        {},  # 缺 symbol/side/size → invalid，零写盘、零行情请求
+    ),
 ]
 
 
@@ -69,6 +75,8 @@ def _call_tool(shell: str, name: str, arguments: dict, store_path: Path) -> dict
     env = dict(os.environ)
     env["MCP_TRACE_ID"] = TRACE_ID
     env["AGENT_MAIL_SHADOW_STORE"] = str(store_path)
+    # trade-exec 壳 import 时会初始化 paper 账本，隔离到测试临时目录，避免污染生产 ledger
+    env["TRADE_EXEC_LEDGER_DIR"] = str(store_path.parent / "ledger")
     proc = subprocess.run(
         [sys.executable, str(server)],
         input=reqs,

@@ -60,6 +60,12 @@ SHELL_CALLS: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {
     "rea": [
         ("submit_rea_trace", {"target": "mcp_shells/_shared", "feature": "信封包装"}),
     ],
+    "trade_exec": [
+        ("get_balance", {}),
+        ("get_positions", {}),
+        ("read_signals", {"sources": ["23", "42"], "limit": 5}),
+        # place_order / cancel_order / ingest_signal 是写工具，不在本只读驱动计划内
+    ],
 }
 
 _SHELL_DIR = {
@@ -67,6 +73,7 @@ _SHELL_DIR = {
     "eval": "l0_eval",
     "store_admin": "l0_store_admin",
     "rea": "l0_rea",
+    "trade_exec": "l0_trade_exec",
 }
 
 

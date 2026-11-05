@@ -744,6 +744,19 @@ _CHAIN_METRICS = [
     ("exchanges_whales", "us_SP500_value", "sp500_equity_value"),
     ("exchanges_whales", "us_VIXCLS_value", "vix_value"),
     ("exchanges_whales", "us_DTWEXBGS_value", "dollar_index_value"),
+    # btc_basics: 链上基础指标 (收口 P2: OnchainPanel 需要)
+    ("btc_basics", "market_cap_usd", "market_cap_usd"),
+    ("btc_basics", "total_btc", "total_btc"),
+    ("btc_basics", "active_addresses", "active_addresses"),
+    ("btc_basics", "hashrate", "hash_rate"),
+    ("btc_basics", "tx_count_24h", "tx_count_24h"),
+    # chains_summary: DeFi TVL (收口 P2: BreadthPanel 需要)
+    ("chains_summary", "tvl_bln", "defi_tvl_bln"),
+    # utxo_age_distribution: 持有者分布 (收口 P2: OnchainPanel 需要)
+    ("utxo_age_distribution", "long_term_holder_supply_pct", "lth_supply_pct"),
+    ("utxo_age_distribution", "short_term_holder_supply_pct", "sth_supply_pct"),
+    ("utxo_age_distribution", "profit_supply_pct", "profit_supply_pct"),
+    ("utxo_age_distribution", "hodl_waves_1y_plus_pct", "hodl_waves_1y_plus_pct"),
 ]
 
 _MACRO_METRICS = [
@@ -760,6 +773,49 @@ _MACRO_METRICS = [
     ("DCOILWTICO", "value", "WTI"),  # 原油
     ("CL=F", "value", "Oil_futures"),  # 原油期货
     ("NASDAQCOM", "value", "NASDAQ"),  # 纳指
+]
+# flow 指标定义 (P1: SPEC-L0-DATA-AGENT §4)
+_FLOW_METRICS = [
+    ("etf_flow", "total_flow", "etf_total_flow"),  # ETF 总净流入
+    ("stablecoins_top_10", "usdt_pct_of_total", "stablecoin_dominance_usdt"),  # USDT 占比
+    ("stablecoins_top_10", "usdc_pct_of_total", "stablecoin_dominance_usdc"),  # USDC 占比 (收口 P2)
+    ("tether_current", "usdt_circulating_usd_bln", "usdt_circulating_bln"),  # USDT 流通量
+    ("usdc_current", "usdc_circulating_usd_bln", "usdc_circulating_bln"),  # USDC 流通量
+]
+# breadth 指标定义 (P1)
+_BREADTH_METRICS = [
+    ("stablecoins_top_10", "USDT_bln", "usdt_bln"),
+    ("stablecoins_top_10", "USDC_bln", "usdc_bln"),
+    ("social_volume", "social_volume", "social_volume"),
+    ("social_volume", "news_count_24h", "news_count_24h"),
+]
+# capital_flow 指标定义 (P1)
+_CAPITAL_FLOW_METRICS = [
+    ("long_short_ratio", "long_short_ratio", "long_short_ratio"),
+    ("long_short_ratio", "long_account_pct", "long_account_pct"),
+    ("funding_rate", "funding_rate_pct", "funding_rate_pct"),
+    ("funding_rate", "funding_rate_annualized_pct", "funding_rate_annualized_pct"),
+    ("open_interest", "open_interest_value", "open_interest_value"),
+    ("open_interest", "open_interest_amount", "open_interest_amount"),
+]
+# intermarket 指标定义 (收口 P2: IntermarketPanel)
+_INTERMARKET_METRICS = [
+    ("BTC/USDT", "last", "btc_price"),  # ccxt BTC 价格
+    ("DX-Y.NYB", "value", "dxy"),  # yfinance 真实值
+    ("SP500", "value", "spx_price"),  # FRED 真实值
+    ("^VIX", "value", "vix"),  # yfinance 真实值
+    ("^TNX", "value", "us10y_yield"),  # yfinance 真实值
+    ("NASDAQCOM", "value", "ndx"),  # FRED 真实值
+    ("GC=F", "value", "gold_price"),  # yfinance 真实值
+    ("DCOILWTICO", "value", "wti"),  # FRED 真实值
+]
+# sentiment 指标定义 (P1)
+_SENTIMENT_METRICS = [
+    ("crypto_fear_greed", "value", "crypto_fear_greed"),  # 真实恐惧贪婪指数
+    ("fear_greed_enhanced", "momentum", "fg_momentum"),
+    ("fear_greed_enhanced", "volatility", "fg_volatility"),
+    ("fear_greed_enhanced", "capital_flow", "fg_capital_flow"),
+    ("fear_greed_enhanced", "funding", "fg_funding"),
 ]
 
 
@@ -848,6 +904,31 @@ def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
 
         elif command == "macro":
             for sub_cat, name, out_key in _MACRO_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+        elif command == "flow":
+            for sub_cat, name, out_key in _FLOW_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+        elif command == "breadth":
+            for sub_cat, name, out_key in _BREADTH_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+        elif command == "capital_flow":
+            for sub_cat, name, out_key in _CAPITAL_FLOW_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+        elif command == "sentiment":
+            for sub_cat, name, out_key in _SENTIMENT_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+        elif command == "intermarket":
+            for sub_cat, name, out_key in _INTERMARKET_METRICS:
                 row = _query_metric(conn, sub_cat, name)
                 if row:
                     output[out_key] = row[0]

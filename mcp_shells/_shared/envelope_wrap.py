@@ -17,9 +17,50 @@ from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 ENVELOPE_VERSION = "0.1"
+
+# 注册表自描述能力（v1.1-mcp）：壳运行时注入 meta.{shadow_capable, oracle_verifiable, config_version}
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REGISTRY_PATH = _REPO_ROOT / "47-MCP管理系统" / "registry" / "mcp_capabilities.yaml"
+_CAPS_CACHE: Optional[Dict[str, Dict[str, Any]]] = None
+
+
+def _registry_caps(source: str) -> Dict[str, Any]:
+    """按壳 source 查注册表 capabilities。FAIL-OPEN：任何异常返回空 dict。"""
+    global _CAPS_CACHE
+    if os.environ.get("MCP_CAPS_INJECT", "1") == "0":
+        return {}
+    try:
+        if _CAPS_CACHE is None:
+            import yaml  # 惰性导入，壳进程默认不依赖
+
+            with open(_REGISTRY_PATH, "r", encoding="utf-8") as f:
+                reg = yaml.safe_load(f) or {}
+            caps: Dict[str, Dict[str, Any]] = {}
+            for shell in reg.get("shells", []) or []:
+                sid = shell.get("shell_id")
+                if not sid:
+                    continue
+                item = dict(shell.get("capabilities") or {})
+                item["config_version"] = str(reg.get("registry_version", ""))
+                caps[sid] = item
+            _CAPS_CACHE = caps
+        return _CAPS_CACHE.get(source, {})
+    except Exception:  # noqa: BLE001 — FAIL-OPEN，不阻断信封
+        return {}
+
+
+def _inject_caps(meta: Dict[str, Any], source: str) -> Dict[str, Any]:
+    """把注册表能力字段补进 meta（只补缺失键，不覆盖调用方显式值）。"""
+    caps = _registry_caps(source)
+    for key in ("shadow_capable", "oracle_verifiable", "config_version"):
+        if key in caps and key not in meta:
+            meta[key] = caps[key]
+    return meta
+
 
 # SPEC-L0 §3.1 ERROR_CODES 枚举
 ERROR_CODES = {
@@ -50,7 +91,7 @@ def wrap(
         "source": source,
         "timestamp": time.time(),
         "degraded": degraded,
-        "meta": meta or {},
+        "meta": _inject_caps(dict(meta or {}), source),
         "version": ENVELOPE_VERSION,
         "trace_id": trace_id or os.environ.get("MCP_TRACE_ID", ""),
         "idempotency_key": idempotency_key,
@@ -101,7 +142,7 @@ def wrap_merge_partial(
         "source": source,
         "timestamp": partial.get("timestamp", time.time()),
         "degraded": degraded,
-        "meta": partial.get("meta", {}),
+        "meta": _inject_caps(dict(partial.get("meta") or {}), source),
         "version": ENVELOPE_VERSION,
         "trace_id": partial.get("trace_id") or os.environ.get("MCP_TRACE_ID", ""),
         "idempotency_key": partial.get("idempotency_key", ""),
