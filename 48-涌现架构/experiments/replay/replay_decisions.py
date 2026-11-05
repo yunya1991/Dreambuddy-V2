@@ -40,15 +40,28 @@ _DECISION_PATTERNS = [
 _RECALL_PATTERN = re.compile(r"认知召回|cognitive_recall|_inject_cognitive_recall")
 
 
-def _parse_ts(ts: str) -> Optional[datetime]:
+def _resolve_log_path(day: str) -> tuple:
+    """定位日志文件。日志按服务启动日命名、跨天续写（如 trader_20261102.jsonl 含 11-05 事件），
+    当日文件不存在时回退到最新 trader_*.jsonl 并标记需按日过滤。"""
+    exact = _TRADER_DIR / f"trader_{day}.jsonl"
+    if exact.exists():
+        return exact, False
     try:
-        return datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
-    except (ValueError, TypeError):
-        return None
+        candidates = sorted(_TRADER_DIR.glob("trader_*.jsonl"), key=lambda p: p.stat().st_mtime)
+    except Exception:  # noqa: BLE001 — FAIL-OPEN
+        return exact, False
+    if candidates:
+        return candidates[-1], True
+    return exact, False
 
 
-def extract_decision_events(log_path: Path) -> List[Dict[str, Any]]:
-    """从文本交易日志提取结构化决策事件。FAIL-OPEN：损坏行跳过。"""
+def extract_decision_events(
+    log_path: Path, day_prefix: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """从文本交易日志提取结构化决策事件。FAIL-OPEN：损坏行跳过。
+
+    day_prefix（"YYYY-MM-DD"）非空时仅保留当日事件（回退到跨天日志文件时使用）。
+    """
     events: List[Dict[str, Any]] = []
     try:
         with log_path.open("r", encoding="utf-8") as fh:
@@ -61,7 +74,8 @@ def extract_decision_events(log_path: Path) -> List[Dict[str, Any]]:
                 except json.JSONDecodeError:
                     continue
                 msg = str(rec.get("msg", ""))
-                _parse_ts(rec.get("ts", ""))
+                if day_prefix and not str(rec.get("ts", "")).startswith(day_prefix):
+                    continue
                 matched = False
                 for kind, pat in _DECISION_PATTERNS:
                     m = pat.search(msg)
@@ -134,11 +148,12 @@ def replay(day: str, *, out_dir: Path = _OUT_DIR) -> Dict[str, Any]:
 
     返回统计 {decision_events, recall_events, cycles, trades}。
     """
-    log_path = _TRADER_DIR / f"trader_{day}.jsonl"
+    log_path, need_filter = _resolve_log_path(day)
     s4_path = _TRADER_DIR / "s4_eval_log.jsonl"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    events = extract_decision_events(log_path)
+    day_prefix = "-".join([day[:4], day[4:6], day[6:]]) if need_filter else None
+    events = extract_decision_events(log_path, day_prefix=day_prefix)
     recall_events = [e for e in events if e["kind"] == "cognitive_recall"]
     decision_events = [e for e in events if e["kind"] != "cognitive_recall"]
 
