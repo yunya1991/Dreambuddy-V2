@@ -1,6 +1,6 @@
-# SPEC-49 神经网络交易系统框架协议 v0.8
+# SPEC-49 神经网络交易系统框架协议 v0.9
 
-- 状态：🟡 v0.8 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 评审决议；本文只定义架构、协议契约与提案，不含实现代码）
+- 状态：🟡 v0.9 评审稿（已按代码核验 + 架构一致性审计 + 修复建议 + 全部评审决议；本文只定义架构、协议契约与提案，不含实现代码）
 - 日期：2026-11-05
 - 归属：49-交易框架协议（交易域总体框架与协议唯一事实源）
 - 上游输入：数据层（18 采集 / 19 DAL / 20 清洗 / 21 特征 / 38 数据库）、39 金融语义蒸馏、9 基本面分析
@@ -212,7 +212,7 @@
 | 未来插件 | — | 按 §3.4 插件契约接入，必须订阅 `macro_constraint` |
 
 > **DEC-01/02/06/07/08/09/10 决议（2026-11-06）**：
-> - 11 的 bcrm / bdsm / strategy / event_arbitrage / washout 五个子池**全部作为信号源**，经 42（**状态文件 + 只读适配器**）透传给 23；11 只保留 live 执行网关。
+> - 11 的 bcrm / bdsm / event_arbitrage / washout 四个子池**全部作为信号源**（`11-strategy` 废弃，战略层归 43），经 42（**状态文件 + 只读适配器**）透传给 23；11 只保留 live 执行网关。
 > - 23 的唯一决策权威覆盖**全标的**；调度为**全标的 1h、高风险标的 300s**。
 > - **A0-A9 保留为信号源，执行只认 23**。
 > - 23 不可用时，**仅 11 子池的离场/平仓模块接管，禁止新开仓**。
@@ -432,7 +432,6 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 |---|---|---|
 | `11-bcrm` | BCRM2.0 战术/战略 | 11 内部战略层与 43 是不同源，勿混用 |
 | `bdsm` | BDSM 快照 | 每日 23:50；历史命名，迁移期可双写 `11-bdsm` |
-| `11-strategy` | 11 战略子池 | DEC-01 信号源 |
 | `11-event-arbitrage` | 11 事件套利子池 | DEC-01 信号源 |
 | `11-washout` | 11 洗盘子池 | DEC-01 信号源 |
 | `29-event` | 事件驱动 | 由 23 写状态、42 转发 |
@@ -774,7 +773,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | `source` 命名口径漂移 | 代码用 `strategic_extension`；文档用 `43-strategic-extension` | 文档/代码不一致 | P1 |
 | `dimension_force_v2` 注释过时 | 实际经 T5 参与裁决；注释仍称“只记录日志” | 文档落后 | P2 |
 | 29 Phase3 未完成 | Phase1/2 已接，共享事件层未做 | 事件驱动仍影子 | P3 |
-| 11 子池直下单绕过 23 | bcrm(5)/bdsm(3)/strategy(3)/event_arbitrage(2)/washout(2) 用 11 自身方向/置信度直接 `okx_client.place_order`；仅 evolution 池走 23 | 23 唯一出口未闭环 | P4 |
+| 11 子池直下单绕过 23 | bcrm(5)/bdsm(3)/event_arbitrage(2)/washout(2) 用 11 自身方向/置信度直接 `okx_client.place_order`；仅 evolution 池走 23 | 23 唯一出口未闭环 | P4 |
 | L0 MCP 允许 42 原始信号执行 | `ingest_signal` source 枚举含 `42`；`read_signals` 默认 `["23","42"]` | 可直接绕过 23 | P2/P4 |
 | live 旁路不经 13 | 11 全文无 `RiskEngine/13-通用风控` 引用；paper 经 RiskBridge | “13 优先”在 live 落空 | P3/P4 |
 | 12 Aster 直连 DEX | `12-三屏趋势系统/live/aster_executor.py` 用自身 .env 凭证直连 | 完全脱离 23/L0/13 | P3 |
@@ -810,7 +809,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 
 > **P0/P1 门禁**：
 > - v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更须版本号 + ADR（DEC-03）。
-> - **§12.1 评审列 29 项未全部回填前，禁止任何 P1 动工**（DEC-04）；未回填期间只能做评审、文档与只读验证。
+> - **§12.1 评审列 31 项未全部回填前，禁止任何 P1 动工**（DEC-04）；未回填期间只能做评审、文档与只读验证。
 
 ---
 
@@ -901,7 +900,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 
 | ID | 类别 | 冲突 | 目标规则 / 处理 | 阶段 |
 |---|---|---|---|---|
-| A-01 | 信号权 | 11 的 bcrm(5)/bdsm(3)/strategy(3)/event_arbitrage(2)/washout(2) 子池用自身方向/置信度直接下单；仅 evolution 池走 23 | **已决议 DEC-01**：子池降为信号源，经 42 透传给 23；11 仅保留 live 执行网关；过渡期显式双轨 | P4 |
+| A-01 | 信号权 | 11 的 bcrm(5)/bdsm(3)/event_arbitrage(2)/washout(2) 子池用自身方向/置信度直接下单；仅 evolution 池走 23 | **已决议 DEC-01**：子池降为信号源，经 42 透传给 23；11 仅保留 live 执行网关；过渡期显式双轨 | P4 |
 | A-02 | 信号权 | L0 `ingest_signal` 支持 `source=42`；`read_signals` 默认 `["23","42"]`，可绕过 23 | `ingest_signal` 仅接受 `23-evolution`；`read_signals` 默认 `["23"]`；42 只读 | P2/P4 |
 | A-03 | 决策权 | 11 的 A0-A9/BCRM/BDSM 与 23 的 action/tier 双权威，冲突无优先级 | **已决议 DEC-02**：23 为全标的唯一决策权威；11 的 A0-A9/BCRM/BDSM 降为信号源，只做风控钳位与执行 | P4 |
 | A-04 | 决策权 | 11 自有 regime 表 + BCRM `_regime_multipliers` + 23 `regime_mult` 三套 regime | 宏观 regime 单一源 40/43；23 内部 regime 只用于路径；11 regime 退役/只读 | P2 |
@@ -994,7 +993,7 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **R-23-06** | AttentionAggregator 未接线；A_dim 用识别器 | 用 `last_attn_weights` 聚合出 A_dim，作为 CV gate 的第三源；与现有 A_dim 双跑 shadow 对比 | `cross_validation_gate`；`evolution_pipeline` Phase 2.5 | A_dim 来源开关化；分歧统计可比；不影响现有裁决 | P2 | ☐ |
 | **R-23-07** | 事件驱动主矛盾检测器未接线 | 注册开关 `enable_primary_contradiction_detector`；在 pipeline 调用，shadow 先行 | `agi_config`；`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | P2 | ☐ |
 | **R-23-08** | 23 仅消费 11 war_state | 实现 §3.9 UpperLayerContext v1 与 9 个注入点；按 §11.4 顺序接线 | 23 data_pipeline / R 向量 / identify / tier / position_mult | 每字段有消费者与审计；无重复乘数 | P2-P4 | ☐ |
-| **R-11-01** | 11 五子池直接下单绕过 23 | 子池降为信号源，经 **42** 透传给 23；**A0-A9 保留为信号源，执行只认 23**；11 仅保留 live 执行网关（**全标的**）；过渡期用 execution_rights 标注双轨（DEC-01/02/09） | `polling_trader` 子池；`execution_rights.json`；42 adapters | 除 11 旁路外无直连下单；23 输出覆盖全标的 | P4 | ☐ |
+| **R-11-01** | 11 四个子池直接下单绕过 23 | 子池降为信号源，经 **42** 透传给 23；**A0-A9 保留为信号源，执行只认 23**；11 仅保留 live 执行网关（**全标的**）；过渡期用 execution_rights 标注双轨（DEC-01/02/09） | `polling_trader` 子池；`execution_rights.json`；42 adapters | 除 11 旁路外无直连下单；23 输出覆盖全标的 | P4 | ☐ |
 | **R-11-02** | live 旁路不经 13 | 11 下单前调 13 `pre_trade_check`；**默认 fail-closed**；豁免限标的/时限/人工审批（DEC-13） | `polling_trader` 建仓入口 | live 订单 100% 经 13；拒单/豁免可审计 | P3/P4 | ☐ |
 | **R-11-03** | 多乘数叠加 | 23 独占 `position_mult`；11 只做风控钳位；公式见 §4.2 | `polling_trader`；`engine_router` | 同一仓位只缩放一次；审计可复算 | P2 | ☐ |
 | **R-42-01** | bus_state 整文件覆盖 | 单 SignalBus 实例；按 `signal_id` 合并 + TTL + 原子写 | `signal_bus.py`；adapters | 6 源共存；重启不丢；过期剪枝 | P1 | ☐ |
@@ -1015,8 +1014,10 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | **R-23-12** | L1 MCP 诊断暴露边界未定 | **只暴露摘要 + 置信度；原始权重/张量不下发**（DEC-15） | `l1.trading.mcp` `get_decision_diagnostics` | L2 仅见摘要；审计字段脱敏 | P3 | ☐ |
 | **R-42-05** | 11→42 无跨进程落地方式 | **11 写状态文件；42 只读适配器消费**（DEC-08） | 11 子池状态；42 adapters | 42 可读 11 状态；无内存耦合 | P1 | ☐ |
 | **R-L0-03** | 6-TRADING 两条直连路径 | `dream_trade_exec.py` 直连 OKX、`trade_exec_api.py` OKXCLI 需收口到 L0/11，或明确只读/调试用途 | `6-TRADING/scripts`、`6-TRADING/bridge/api` | 无生产直连旁路；用途标注清晰 | P3 | ☐ |
+| **R-GOV-01** | `execution_rights` 治理未定义 | 47 维护注册表；变更**双人审批**；默认 paper；审计变更记录（DEC-26） | 47 registry；`execution_rights.json` | 变更可审计；默认 paper；无双人越权 | P3 | ☐ |
+| **R-DATA-02** | 符号宇宙/数据保留未定义 | 11 当前标的池；W6 保留 2000 条；语义上下文 48h；后续按 paper 扩充（DEC-27） | 23 数据管线；W6 | 保留期可配置；无无限增长 | P3 | ☐ |
 
-> **评审门禁**：已决议 DEC-01～DEC-17 见 §12.5；§12.1 的“评审”列仍需逐项回填（29 项）。**未回填前不得进入 P1**（DEC-04）。
+> **评审门禁**：已决议 DEC-01～DEC-30 见 §12.5；§12.1 的“评审”列仍需逐项回填（31 项）。**未回填前不得进入 P1**（DEC-04）。
 
 ### 12.2 重点提案卡（评审重点）
 
@@ -1094,7 +1095,7 @@ P0 契约冻结（本 SPEC）
 
 | ID | 决议 | 影响 |
 |---|---|---|
-| **DEC-01** | 11 的五个子池（bcrm / bdsm / strategy / event_arbitrage / washout）**降为信号源**；信号作为“矛盾源”经 **42 协调层**透传给 **23**，不再直接下单 | R-11-01 / R-42-01 目标明确 |
+| **DEC-01** | 11 的四个子池（bcrm / bdsm / event_arbitrage / washout）**降为信号源**；`11-strategy` 废弃（战略层归 43 `strategic_extension`）；信号经 **42 协调层**透传给 **23**，不再直接下单 | R-11-01 / R-42-01 目标明确 |
 | **DEC-02** | 23 的“唯一决策权威”**覆盖全标的**（不仅是 evolution 池） | A-03 / R-11-01 语义成立 |
 | **DEC-03** | v0.6 为**冻结前最后一版**；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入**禁改期**；变更须版本号 + ADR | P0“字段冻结”成立 |
 | **DEC-04** | **§12.1 评审列未回填前，禁止任何 P1 动工**；merge 只代表“可评审”，不代表“可实施” | 评审门禁 |
@@ -1111,24 +1112,21 @@ P0 契约冻结（本 SPEC）
 | **DEC-15** | L1 MCP 诊断：**只暴露摘要 + 置信度；原始权重/张量不下发** | R-23-12 / 安全 |
 | **DEC-16** | D2 数据**统一接 19-DAL**（OI/清算）；覆盖率 ≥90% 才进 live | R-23-03 |
 | **DEC-17** | 13/16/22 统一为 **L0 trade-exec MCP 能力**（13 风控 / 16 定容 / 22 执行）；12/14/16 迁移需谨慎，按远端代码与文档逐项核验 | R-L0-02 / R-L0-03 |
+| **DEC-18** | 42 **input-only**；23 输出仅只读镜像供 L2，不参与裁决 | R-42-01 / §2.4 |
+| **DEC-19** | 单一 war_state/regime：**43 为宏观唯一源**；11 五域仅兜底；40/43 为 regime 唯一源 | R-DATA-01 |
+| **DEC-20** | 乘数所有权：**23 独占 `position_mult`**；11 只钳位；13 最终 | R-11-03 / §4.2 |
+| **DEC-21** | 23 输出文件 `23_signal_state.json`：**23 唯一写者**；11/42/L0 只读；P2 切换 | R-STATE-01 |
+| **DEC-22** | UpperLayerContext：**文件 + 适配器**；高频字段进程内缓存 | R-23-08 |
+| **DEC-23** | 23 降级范围：**仅平仓/减仓模块**；按标的白名单；禁止开仓 | R-23-09 |
+| **DEC-24** | 16/22 在 L0 MCP 内：**16 定容、22 执行；L0 编排；47 管注册表** | R-L0-02 |
+| **DEC-25** | 6-TRADING：`dream_trade_exec.py` **降为调试/回放并移除生产凭证**；`trade_exec_api.py` **仅 demo** | R-L0-03 |
+| **DEC-26** | `execution_rights`：**47 维护；双人审批；paper 默认** | R-GOV-01 |
+| **DEC-27** | 符号宇宙/数据保留：**11 当前标的池；W6 2000 条；语义 48h** | R-DATA-02 |
+| **DEC-28** | Canonical source：`11-bcrm` / `bdsm`→`11-bdsm` / `11-event-arbitrage` / `11-washout` / 43 `strategic_extension`；**无 `11-strategy`** | R-42-03/05 |
+| **DEC-29** | 40 P5/P6 **维持门禁**；X1 达标后再议 | R-DOC-01 / P4 |
+| **DEC-30** | 评审责任人 P1 前定；§12 拆 tracking issues 于 P1 后 | §12.4 |
 
-**待决策（按阻塞级别）**：
-
-| # | 级别 | 决策点 | 建议 |
-|---|---|---|---|
-| 1 | P1 | 42 是否允许发布 23 输出只读镜像？还是完全 input-only？ | input-only；23 输出经独立只读镜像供 L2 |
-| 2 | P1/P2 | 单一 war_state/regime 源：43 为宏观唯一源、11 五域为局部，是否确认？ | 确认；43 唯一，11 兜底 |
-| 3 | P2 | 乘数所有权：23 独占 `position_mult`、11 只钳位，是否确认？ | 确认；见 §4.2 唯一公式 |
-| 4 | P2 | 23 输出文件：`23_signal_state.json` 的写者/读者/切换时点？ | 23 唯一写者；11/42/L0 只读；P2 切换 |
-| 5 | P2 | UpperLayerContext 传输：文件 vs 进程内对象？ | 文件 + 适配器（可审计）；高频字段进程内缓存 |
-| 6 | P2 | 23 不可用降级的具体范围：哪些“离场/平仓模块”可接管？按标的白名单？ | 仅平仓/减仓；禁止开仓；按标的白名单 |
-| 7 | P2 | 13/16/22 在 L0 MCP 内的实现边界与验收：16 定容、22 执行的具体接口 | 先 13 现状，再 16 `capital_allocator`，再 22 `tee_core` |
-| 8 | P3 | 6-TRADING 两条直连路径（`dream_trade_exec.py` 直连 OKX、`trade_exec_api.py` OKXCLI）的处置 | 收口到 L0/11，或明确只读/调试用途 |
-| 9 | P3 | `execution_rights` 治理：谁有权改标的级 paper/live/disabled？ | 47 域维护，变更需双人审批 |
-| 10 | P3 | 符号宇宙与数据保留：全标的范围、W6/语义上下文保留期 | 先按 11 当前标的池；样本保留 2000 条/语义 48h |
-| 11 | P3 | 五个子池的 canonical source 最终命名与迁移期双写 | `11-bcrm` / `bdsm`(→`11-bdsm`) / `11-strategy` / `11-event-arbitrage` / `11-washout` |
-| 12 | P4 | 40 P5/P6 解锁标准与时间窗？ | 维持门禁；X1 达标后再议 |
-| 13 | 流程 | 评审责任人/截止时间；§12 何时拆成 tracking issues？ | 建议 P1 后拆 issue；本 SPEC 保留索引 |
+> **待决策：无。** DEC-01～DEC-30 已全部拍板。剩余为执行动作：§12.1 评审回填（P1 前）、责任人名单与截止时间（P1 前）、§12 拆 issue（P1 后）。
 
 ### 12.6 L0 trade-exec MCP 与 13/16/22 的调用关系（远端核验）
 
@@ -1205,7 +1203,7 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 
 ## 附：v0.6 修复建议
 
-1. 新增 §12 修复建议（v0.6 为 23 项提案；v0.8 增至 29 项：R-23×12 / R-11×3 / R-42×5 / R-43×1 / R-L0×3 / R-EXEC×2 / R-STATE×1 / R-DATA×1 / R-DOC×1）。
+1. 新增 §12 修复建议（v0.6 为 23 项提案；v0.9 增至 31 项：R-23×12 / R-11×3 / R-42×5 / R-43×1 / R-L0×3 / R-EXEC×2 / R-STATE×1 / R-DATA×2 / R-GOV×1 / R-DOC×1）。
 2. 每项含问题、根因、改动面、验收、阶段、评审列；重点提案卡 6 项（R-23-01/02/06、R-11-01/02、R-L0-01）。
 3. 新增修复依赖顺序（§12.3）与 8 条评审清单（§12.4）。
 4. 新增 6 个开放问题（§12.5），需评审拍板后回填 §12.1 的“评审”列。
@@ -1215,10 +1213,10 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 
 ## 附：v0.7 评审决议
 
-1. **DEC-01**：11 五个子池（bcrm/bdsm/strategy/event_arbitrage/washout）降为信号源，经 42 协调层透传给 23；11 只保留 live 执行网关。
+1. **DEC-01**：11 四个子池（bcrm/bdsm/event_arbitrage/washout）降为信号源；`11-strategy` 废弃（归 43 `strategic_extension`）；信号经 42 协调层透传给 23；11 只保留 live 执行网关。
 2. **DEC-02**：23 的唯一决策权威覆盖全标的。
 3. **DEC-03**：v0.6 为冻结前最后一版；merge 后 `SignalSchema v1` / `FinalDecisionSignal v1` / `MacroElasticConstraint v1` / `UpperLayerContext v1` 进入禁改期，变更需版本号 + ADR。
-4. **DEC-04**：§12.1 评审列 23 项未全部回填前，禁止任何 P1 动工（v0.8 已增至 29 项）。
+4. **DEC-04**：§12.1 评审列 23 项未全部回填前，禁止任何 P1 动工（v0.9 已增至 31 项）。
 5. **DEC-05**：R-23-01 验收加入 shadow ≥2 周硬性时间窗。
 6. §12.5 改为“评审决议与待决策清单”，新增 14 项待决策（#1-#14）及补充 8 项（#15-#22）。
 
@@ -1232,3 +1230,13 @@ live: 11 bypass gateway → 13 pre_trade_check → okx_client（不经 MCP）
 4. §6 差距增至 **46 条**；§11 冲突增至 **35 条**。
 5. §7 P1-P4 调整：11→42 状态文件、23 降级/中立性/调度、16/22 实际接线、6-TRADING 收口。
 6. 仍只改 SPEC，不实现。
+
+---
+
+## 附：v0.9 全部评审决议落地
+
+1. **`11-strategy` 废弃**：11 子池改为四个（bcrm / bdsm / event_arbitrage / washout）；战略层统一由 43 `strategic_extension` 提供。
+2. 记录 **DEC-18～DEC-30**：42 input-only、单一 war_state/regime、乘数所有权、23 输出文件、UpperLayerContext 传输、23 降级范围、16/22 L0 边界、6-TRADING 处置、execution_rights 治理、符号/数据保留、canonical source、40 P5/P6、评审流程。
+3. §12.5 待决策清零；剩余为评审回填、责任人与截止时间、§12 拆 issue。
+4. §12.1 修复建议增至 **31 项**（新增 R-GOV-01、R-DATA-02）。
+5. §12.1 评审门禁更新为 **31 项**；未回填不得进入 P1（DEC-04）。
