@@ -20,6 +20,7 @@ SPEC-各维度矛盾计算重建 v0.3 T3 实现。
 from __future__ import annotations
 
 import logging
+import os
 import sqlite3
 import time
 from pathlib import Path
@@ -117,6 +118,62 @@ class DimensionForceEvaluator:
         return {"direction": "neutral", "strength": 0.0, "raw_z": 0.0, "degraded": reason}
 
     # ------------------------------------------------------------------
+    # B-06: OI / 清算读取（19-DAL 新表）
+    # ------------------------------------------------------------------
+    def _query_open_interest(self, symbol: str) -> dict[str, Any] | None:
+        """读取最新 OI + 24h 变化率；优先预计算列，缺失时用最近两行推算."""
+        try:
+            with self._connect() as conn:
+                rows = conn.execute(
+                    "SELECT open_interest, oi_change_pct_24h, timestamp "
+                    "FROM mm_open_interest WHERE symbol=? "
+                    "ORDER BY timestamp DESC LIMIT 2",
+                    (symbol,),
+                ).fetchall()
+        except Exception:
+            return None
+        if not rows:
+            return None
+        latest = rows[0]
+        oi = float(latest[0]) if latest[0] is not None else None
+        change = latest[1]
+        if change is not None:
+            try:
+                change = float(change)
+            except (TypeError, ValueError):
+                change = None
+        if change is None and oi is not None and len(rows) > 1 and rows[1][0]:
+            try:
+                prev = float(rows[1][0])
+                change = (oi - prev) / prev if prev > 0 else None
+            except (TypeError, ValueError, ZeroDivisionError):
+                change = None
+        return {
+            "open_interest": oi,
+            "change_pct_24h": change,
+            "timestamp": int(latest[2]),
+        }
+
+    def _query_liquidation_24h(self, symbol: str) -> dict[str, float] | None:
+        """汇总最近 24h 多/空爆仓 USDT."""
+        cutoff = int(time.time()) - 86400
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT SUM(liq_long_usdt), SUM(liq_short_usdt), SUM(liq_total_usdt) "
+                    "FROM mm_liquidation WHERE symbol=? AND timestamp>=?",
+                    (symbol, cutoff),
+                ).fetchone()
+        except Exception:
+            return None
+        if not row or all(value is None for value in row):
+            return None
+        liq_long = float(row[0] or 0.0)
+        liq_short = float(row[1] or 0.0)
+        total = float(row[2]) if row[2] is not None else liq_long + liq_short
+        return {"liq_long": liq_long, "liq_short": liq_short, "liq_total": total}
+
+    # ------------------------------------------------------------------
     # D1 宏观利率维度
     # ------------------------------------------------------------------
     def evaluate_d1(self) -> dict[str, Any]:
@@ -166,37 +223,149 @@ class DimensionForceEvaluator:
     # ------------------------------------------------------------------
     # D2 资金流维度
     # ------------------------------------------------------------------
-    def evaluate_d2(self) -> dict[str, Any]:
-        """多空比（拥挤度）+ 资金费率 → 资金流力量.
+    def evaluate_d2(self, symbol: str | None = None) -> dict[str, Any]:
+        """多空比 + 资金费率 + OI + 清算 → 资金流力量.
 
         逻辑: 多空比高（多头拥挤）→ 反转空头力量; 资金费率正高 → 多头付费拥挤 → 空头力量
               多空比低（空头拥挤）→ 反转多头力量
+        OI/清算仅当 `enable_d2_oi_liq=True` 时参与合成；默认关闭，保持 shadow。
         """
+        symbol = symbol or os.environ.get("DIMENSION_FORCE_SYMBOL", "BTC")
         try:
             now = int(time.time())
+            components: dict[str, Any] = {}
+            ls_part: float | None = None
+            fr_part: float | None = None
+            oi_part: float | None = None
+            liq_part: float | None = None
+            ls_value: float | None = None
+            oi_available = False
+
             ls = self._query_latest("long_short_ratio", "long_short_ratio")
-            fr = self._query_latest("funding_rate", "funding_rate")
-            parts: list[float] = []
             if ls is not None and now - ls[1] < _STALE_SEC:
+                ls_value = float(ls[0])
                 hist = [v for v, _ in self._query_history(
                     "long_short_ratio", "long_short_ratio", self.WINDOW_D2)]
                 z_ls = self._zscore(ls[0], hist)
                 # 多头拥挤（z 高）→ 空头力量; z 低 → 多头力量
-                parts.append(max(-1.0, min(1.0, z_ls / 2.0)))
+                ls_part = max(-1.0, min(1.0, z_ls / 2.0))
+                components["long_short_ratio"] = {
+                    "value": round(ls_value, 6),
+                    "z": round(z_ls, 3),
+                    "part": round(ls_part, 3),
+                }
+
+            fr = self._query_latest("funding_rate", "funding_rate")
             if fr is not None and now - fr[1] < _STALE_SEC:
                 # 资金费率年化: 0.01%/8h ≈ 10.95%/年; 正高拥挤 → 空头
                 fr_annual = fr[0] * 3 * 365 * 100
-                parts.append(max(-1.0, min(1.0, fr_annual / 30.0)))
-            if not parts:
-                return self._neutral("flow-stale-or-missing")
-            raw = sum(parts) / len(parts)
+                fr_part = max(-1.0, min(1.0, fr_annual / 30.0))
+                components["funding_rate"] = {
+                    "annual_pct": round(fr_annual, 3),
+                    "part": round(fr_part, 3),
+                }
+
+            oi = self._query_open_interest(symbol)
+            if (
+                oi is not None
+                and now - oi["timestamp"] < _STALE_SEC
+                and oi["change_pct_24h"] is not None
+            ):
+                oi_available = True
+                crowding_sign = 0.0
+                if ls_value is not None:
+                    crowding_sign = (
+                        1.0 if ls_value > 1.05 else (-1.0 if ls_value < 0.95 else 0.0)
+                    )
+                elif fr_part is not None:
+                    crowding_sign = 1.0 if fr_part > 0 else (-1.0 if fr_part < 0 else 0.0)
+                if crowding_sign != 0.0:
+                    oi_part = crowding_sign * self._clamp01(
+                        abs(float(oi["change_pct_24h"])) / 0.20
+                    )
+                components["open_interest"] = {
+                    "open_interest": oi["open_interest"],
+                    "change_pct_24h": round(float(oi["change_pct_24h"]), 6),
+                    "part": round(oi_part, 3) if oi_part is not None else None,
+                }
+
+            liq = self._query_liquidation_24h(symbol)
+            if liq is not None and liq["liq_total"] > 0:
+                liq_part = (liq["liq_long"] - liq["liq_short"]) / liq["liq_total"]
+                components["liquidation"] = {
+                    "liq_long": liq["liq_long"],
+                    "liq_short": liq["liq_short"],
+                    "liq_total": liq["liq_total"],
+                    "part": round(liq_part, 3),
+                }
+
+            coverage = round(
+                sum(
+                    (
+                        ls_part is not None,
+                        fr_part is not None,
+                        oi_available,
+                        liq_part is not None,
+                    )
+                )
+                / 4.0,
+                3,
+            )
+
+            from dreambuddy_evolution.agi_config import get_switch
+
+            if get_switch("enable_d2_oi_liq", False):
+                weighted = []
+                for part, weight in (
+                    (ls_part, 0.35),
+                    (fr_part, 0.25),
+                    (oi_part, 0.20),
+                    (liq_part, 0.20),
+                ):
+                    if part is not None:
+                        weighted.append((part, weight))
+                raw = (
+                    sum(part * weight for part, weight in weighted)
+                    / sum(weight for _, weight in weighted)
+                    if weighted
+                    else None
+                )
+            else:
+                legacy = [part for part in (ls_part, fr_part) if part is not None]
+                raw = sum(legacy) / len(legacy) if legacy else None
+
+            if raw is None:
+                out = self._neutral("flow-stale-or-missing")
+                out.update(
+                    {"coverage": coverage, "components": components, "symbol": symbol}
+                )
+                return out
+
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
             strength = self._clamp01(abs(raw))
-            return {"direction": direction, "strength": round(strength, 3),
-                    "raw_z": round(raw, 3), "degraded": None}
+            return {
+                "direction": direction,
+                "strength": round(strength, 3),
+                "raw_z": round(raw, 3),
+                "degraded": None,
+                "coverage": coverage,
+                "components": components,
+                "symbol": symbol,
+            }
         except Exception as e:
             logger.debug("[DimensionForce] D2 fail: %s", e)
-            return self._neutral("d2-error")
+            out = self._neutral("d2-error")
+            out.update({"coverage": 0.0, "components": {}, "symbol": symbol})
+            return out
+
+    def d2_coverage(self, symbol: str | None = None) -> dict[str, Any]:
+        """D2 数据覆盖状态（只读监控）."""
+        out = self.evaluate_d2(symbol)
+        return {
+            "symbol": out.get("symbol"),
+            "coverage": out.get("coverage", 0.0),
+            "components": out.get("components", {}),
+        }
 
     # ------------------------------------------------------------------
     # D4 市场情绪维度
@@ -453,11 +622,15 @@ class DimensionForceEvaluator:
     # ------------------------------------------------------------------
     # 总入口
     # ------------------------------------------------------------------
-    def evaluate(self, d3: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    def evaluate(
+        self,
+        d3: dict[str, Any] | None = None,
+        symbol: str | None = None,
+    ) -> dict[str, dict[str, Any]]:
         """评估全部维度（8 维完整体系）. d3 由调用方传入（现有路径共振结果）."""
         result = {
             "D1": self.evaluate_d1(),   # C4 宏观
-            "D2": self.evaluate_d2(),   # C1 资金面
+            "D2": self.evaluate_d2(symbol),   # C1 资金面
             "D4": self.evaluate_d4(),   # C2 情绪面
             "C6": self.evaluate_c6(),   # C6 估值
             "C7": self.evaluate_c7(),   # C7 叙事（稳定币）

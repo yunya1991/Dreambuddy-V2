@@ -91,6 +91,7 @@ AGI_SWITCHES: Dict[str, bool] = {
     # 2026-10-07 激活: 5框架对比(F1夏普7.77)+消融实验(Q5贡献+0.22)验证通过
     "enable_cross_validation_gate": True,            # 交叉验证层总开关 (已激活)
     "enable_dimension_force_v2": True,             # 维度力量评估 v2.0 (T4 影子期: 只记录日志不参与决策)
+    "enable_d2_oi_liq": False,                      # B-06: D2 叠加 OI/清算（默认 shadow；覆盖率达标后再开）
     "enable_cd_shadow": False,                      # B-01: C→D 影子映射（只附加 shadow 字段，不改变裁决）
     "enable_dominance_shadow": False,               # B-02: 成对支配 shadow（不改变 argmax 生产选择）
     "enable_attention_a_dim": False,                # B-03: CV gate 使用 attention A_dim（默认关闭，先用 shadow）
