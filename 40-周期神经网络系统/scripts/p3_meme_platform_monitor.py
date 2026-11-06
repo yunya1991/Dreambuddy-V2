@@ -12,9 +12,15 @@ import json
 import urllib.request
 from datetime import datetime, timezone
 from statistics import median
+import os
+
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 API = "https://api.geckoterminal.com/api/v2/networks/solana/new_pools"
-OUT = "/home/luke/dreambuddy/40-周期神经网络系统/meme_platform.json"
+OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "meme_platform.json")
 PAGES = 5  # 5 页 × 20 池 = 100 个最新池
 
 

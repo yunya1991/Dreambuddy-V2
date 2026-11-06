@@ -22,15 +22,20 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-TREND = "/home/luke/dreambuddy/12-三屏趋势系统"
-DCENTER = "/home/luke/dreambuddy/18-数据获取中心"
-FHUB = "/home/luke/dreambuddy/21-特征工程中心"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+TREND = os.path.join(_DREAMBUDDY_ROOT, "12-三屏趋势系统")
+DCENTER = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心")
+FHUB = os.path.join(_DREAMBUDDY_ROOT, "21-特征工程中心")
 sys.path.insert(0, TREND)
 sys.path.insert(0, DCENTER)
 sys.path.insert(0, FHUB)
 
-OUT_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/token_sequence.parquet"
-META_OUT = "/home/luke/dreambuddy/40-周期神经网络系统/token_sequence_meta.json"
+OUT_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "token_sequence.parquet")
+META_OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "token_sequence_meta.json")
 
 # 预注册参数（禁止运行时调整）
 SYMBOLS = ["BTC", "ETH", "SOL"]          # 跨资产共享样本（SPEC 风险 7a）

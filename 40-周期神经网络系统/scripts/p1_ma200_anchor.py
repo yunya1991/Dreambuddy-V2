@@ -6,8 +6,14 @@ BTC/ETH/SOL + 赛道龙头 UNI/AAVE/NEAR/ARB/LINK 日线K线 + SPX 日线，计�
 from __future__ import annotations
 import json
 from datetime import datetime, timezone
+import os
 
-STATE_FILE = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+STATE_FILE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 MA_WINDOW = 200
 CRYPTO_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT",

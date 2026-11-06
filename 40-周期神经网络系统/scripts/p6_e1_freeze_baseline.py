@@ -24,14 +24,19 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-TREND = "/home/luke/dreambuddy/12-三屏趋势系统"
-DCENTER = "/home/luke/dreambuddy/18-数据获取中心"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+TREND = os.path.join(_DREAMBUDDY_ROOT, "12-三屏趋势系统")
+DCENTER = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心")
 sys.path.insert(0, TREND)
 sys.path.insert(0, DCENTER)
 
 MODEL_PATH = os.path.join(TREND, "ml", "models", "baseline", "model.pkl")
 META_PATH = os.path.join(TREND, "ml", "models", "baseline", "meta.json")
-OUT_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/baseline_metrics.json"
+OUT_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "baseline_metrics.json")
 
 TEST_RATIO = 0.2   # 最近 20% 样本外评估（预注册）
 LOOKAHEAD = 7       # 标签前瞻 7 日（对齐基线训练配置）

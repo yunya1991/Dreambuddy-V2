@@ -4,5 +4,5 @@
   "signal_source": "real",
   "intents_today": 8,
   "written_today": 8,
-  "trades_path": "/home/luke/dreambuddy/40-周期神经网络系统/execution_trades.jsonl"
+  "trades_path": "40-周期神经网络系统/execution_trades.jsonl（相对 DREAMBUDDY_ROOT，R-42-04/P1-03 脱敏，下次运行自动重写为绝对路径）"
 }

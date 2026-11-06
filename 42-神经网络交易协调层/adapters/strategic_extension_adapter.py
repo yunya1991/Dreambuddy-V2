@@ -15,14 +15,19 @@ import json
 import os
 import sys
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 43 层信号产出物路径
 _43_SIGNAL_PATH = os.path.join(
-    "/home/luke/dreambuddy/43-战略承接推演层",
+    os.path.join(_DREAMBUDDY_ROOT, "43-战略承接推演层"),
     "runtime", "strategic_extension_signal.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 
 def load_43_signal(path: str = _43_SIGNAL_PATH) -> dict:

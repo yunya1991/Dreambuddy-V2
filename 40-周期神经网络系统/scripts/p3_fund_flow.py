@@ -11,12 +11,18 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 from statistics import mean, stdev
+import os
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 TRANS = f"{BASE}/sector_transmission.json"
 ROT = f"{BASE}/asset_rotation.json"
 OUT = f"{BASE}/fund_flow.json"
-DB = "/home/luke/dreambuddy/18-数据获取中心/data_center.db"
+DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
 
 ASSET_LABELS = {
     "crypto_btc": "加密",

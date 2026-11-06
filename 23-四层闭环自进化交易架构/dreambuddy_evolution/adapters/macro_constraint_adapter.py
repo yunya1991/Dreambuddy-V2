@@ -14,9 +14,14 @@ import logging
 import os
 from datetime import datetime, timezone
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
 logger = logging.getLogger("dc.macro_constraint")
 
-_CYCLE_STATE_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
+_CYCLE_STATE_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 _MAX_AGE_HOURS = 72  # 超过 72h 视为过期，返回空（fail-open）
 
 

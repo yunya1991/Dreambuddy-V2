@@ -16,7 +16,12 @@ import os
 import sqlite3
 from datetime import datetime, timezone, timedelta
 
-DB = "/home/luke/dreambuddy/18-数据获取中心/data_center.db"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
 
 CONFIDENCE_LADDER = ["high", "medium", "low"]
 

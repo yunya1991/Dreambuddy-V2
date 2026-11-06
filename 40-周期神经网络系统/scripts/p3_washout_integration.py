@@ -10,13 +10,19 @@ funding/OI 取自 USDT 本位永续合约；K 线分页拉取 400 根（OKX 单�
 产出：washout_verdicts.json
 """
 import json
+import os
 import sys
 from datetime import datetime, timezone
 
 import pandas as pd
 
-BCRM2 = "/home/luke/dreambuddy/11-易经推理系统/scripts/memory_l4"
-OUT = "/home/luke/dreambuddy/40-周期神经网络系统/washout_verdicts.json"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BCRM2 = os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统", "scripts", "memory_l4")
+OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "washout_verdicts.json")
 
 sys.path.insert(0, BCRM2)
 

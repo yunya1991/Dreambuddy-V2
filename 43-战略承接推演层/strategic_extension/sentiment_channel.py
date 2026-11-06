@@ -23,8 +23,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 18-数据获取中心数据库路径（SQLite 旧库，2026-10-17 迁移后仅历史数据）
-_DATA_CENTER_DB = "/home/luke/dreambuddy/18-数据获取中心/data_center.db"
+_DATA_CENTER_DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
 
 # PostgreSQL 连接参数（与 18 层 sink_postgres 保持一致，从环境变量读取）
 _PG_HOST = os.environ.get("DATA_CENTER_PG_HOST", "127.0.0.1")
@@ -46,7 +51,7 @@ def _discover_pg_password() -> str:
         return pwd
     for env_path in (
         Path.home() / "dreambuddy" / "7-产物中台" / "系统研究索引体系" / ".env",
-        Path("/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env"),
+        Path(_DREAMBUDDY_ROOT) / "7-产物中台" / "系统研究索引体系" / ".env",
     ):
         try:
             if env_path.exists():
