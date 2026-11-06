@@ -140,12 +140,17 @@ def load_shadow_rl_cases(
     actions: frozenset = ENTRY_ACTIONS,
     label_mode: str = "positive",
     drop_zero: bool = True,
+    primitives: str = "base",
 ) -> List[Dict[str, Any]]:
-    """加载 shadow_rl 样本 → 5 维市场状态原语 + is_short（第 6 维）+ 二值标签。
+    """加载 shadow_rl 样本 → 市场状态原语 + is_short + 二值标签。
 
-    与回测双库的口径差异（如实）：原语从「3 个高度相关 confidence」换成
-    R_up/R_down/R_smooth/R_flow/R_reflexivity 五个独立市场状态维度——这正是
-    SCAN 式组合泛化需要的原语多样性。
+    primitives（路径 A，2026-11-06）:
+      - "base"：[R_up, R_down, R_smooth, R_flow, R_reflexivity, is_short]
+        注：R_down = 1 - R_up 完全共线（构造公式），保留仅为口径兼容
+      - "extended"：剔除 R_down，加 quality_score（vol_quantile 新信息维）
+        + 3 个交互原语（up×flow / reflex×flow / smooth×reflex）→ 9 维
+        [R_up, R_smooth, R_flow, R_reflexivity, quality,
+         up_x_flow, reflex_x_flow, smooth_x_reflex, is_short]
 
     drop_zero（默认 True）：实测 reward 92.9% 为 0（未平仓占位，非有效标签），
     保留会让任何模型都预测负类、准确率虚高到 95%。丢弃后有效样本 ~2857 条，
@@ -154,6 +159,8 @@ def load_shadow_rl_cases(
     label_mode:
       - "positive"：reward > 0（业务语义：是否盈利；默认）
       - "median"：reward > 有效样本中位数（相对好坏口径）
+      - "band"（路径 B，风险调整口径）：reward≥q75 记显著盈利(1)、≤q25 记
+        显著亏损(0)、中间噪声带丢弃——剔除近零噪声交易，标签天然平衡
     """
     path = Path(path)
     if not path.exists():
@@ -175,8 +182,19 @@ def load_shadow_rl_cases(
             if action not in actions:
                 continue
             state = r.get("state") or {}
+            keys = (
+                SHADOW_RL_STATE_KEYS
+                if primitives == "base"
+                else (
+                    "R_up",
+                    "R_smooth",
+                    "R_flow",
+                    "R_reflexivity",
+                    "quality_score",
+                )
+            )
             try:
-                vals = [float(state[k]) for k in SHADOW_RL_STATE_KEYS]
+                vals = [float(state[k]) for k in keys]
             except (KeyError, TypeError, ValueError):
                 continue
             reward = r.get("reward")
@@ -193,16 +211,48 @@ def load_shadow_rl_cases(
     if not rows:
         logger.warning("shadow_rl 无非零 reward 有效样本（n_zero=%d）", n_zero)
         return []
-    threshold = float(np.median([x[2] for x in rows])) if label_mode == "median" else 0.0
+
+    # 标签口径
+    kept: List[Tuple[Dict[str, Any], List[float], float, str]] = rows
+    rewards = np.array([x[2] for x in rows], dtype=np.float64)
+    if label_mode == "band":
+        q75 = float(np.percentile(rewards, 75))
+        q25 = float(np.percentile(rewards, 25))
+        kept = [x for x in rows if x[2] >= q75 or x[2] <= q25]
+        threshold = None
+    elif label_mode == "median":
+        threshold = float(np.median(rewards))
+    else:  # positive
+        threshold = 0.0
 
     cases: List[Dict[str, Any]] = []
-    for i, (_r, vals, reward, action) in enumerate(rows):
+    for i, (_r, vals, reward, action) in enumerate(kept):
+        is_short = 1.0 if action == "short" else 0.0
+        if primitives == "extended":
+            r_up, r_smooth, r_flow, r_reflex, quality = vals
+            feats = [
+                r_up,
+                r_smooth,
+                r_flow,
+                r_reflex,
+                quality,
+                r_up * r_flow,
+                r_reflex * r_flow,
+                r_smooth * r_reflex,
+                is_short,
+            ]
+        else:
+            feats = vals + [is_short]
+        if label_mode == "band":
+            label = 1 if reward >= q75 else 0
+        else:
+            label = 1 if reward > float(threshold or 0.0) else 0
         cases.append(
             {
                 "case_id": f"rl-{i}",
                 "library": "shadow_rl",
-                "features": np.array(vals + [1.0 if action == "short" else 0.0], dtype=np.float64),
-                "label": 1 if reward > threshold else 0,
+                "features": np.array(feats, dtype=np.float64),
+                "label": label,
             }
         )
     return cases
@@ -213,19 +263,27 @@ def load_shadow_rl_cases(
 # ============================================================
 
 
-def assign_cells(cases: List[Dict[str, Any]], n_continuous: int = _N_CONTINUOUS) -> None:
+def assign_cells(
+    cases: List[Dict[str, Any]],
+    n_continuous: int = _N_CONTINUOUS,
+    binary_dims: Optional[Sequence[int]] = None,
+) -> None:
     """每个连续原语按全体中位数分高低两箱，组合成 cell 键（就地写入）。
 
-    分箱只涉及特征不涉及标签，无标签泄漏。最后一维（is_short）保持 0/1 原值。
-    n_continuous 参数化以支持 shadow_rl 的 5 个连续市场状态原语。
+    分箱只涉及特征不涉及标签，无标签泄漏。binary_dims 指定以原值（0/1）
+    进 cell 键的特征下标，默认 (n_continuous,)——即紧随连续维之后的 is_short。
+    extended 口径下交互原语（下标 5-7）不进 cell 键：它们是分箱维的派生量，
+    进 cell 会碎片化组合空间。
     """
     if not cases:
         return
+    if binary_dims is None:
+        binary_dims = (n_continuous,)
     mat = np.array([c["features"] for c in cases], dtype=np.float64)
     medians = np.median(mat[:, :n_continuous], axis=0)
     for c in cases:
         bins = [int(c["features"][i] >= medians[i]) for i in range(n_continuous)]
-        bins.append(int(round(float(c["features"][n_continuous]))))
+        bins.extend(int(round(float(c["features"][i]))) for i in binary_dims)
         c["cell"] = tuple(bins)
 
 
@@ -522,6 +580,7 @@ def run(
     label_mode: str = "positive",
     max_holdout_cells: int = 8,
     compositor: str = "both",
+    primitives: str = "base",
 ) -> Dict[str, Any]:
     """E5 主流程：加载 → 分箱 → 逐 eligible cell holdout 评估 → 池化显著性检验。
 
@@ -545,6 +604,7 @@ def run(
         "source": source,
         "compositor": compositor,
         "composition_model": model_name,
+        "primitives": primitives,
         "limitation": _limitation_text(compositor),
     }
 
@@ -553,10 +613,16 @@ def run(
             path = Path(shadow_rl_path) if shadow_rl_path else SHADOW_RL_PATH
             result["sources"] = {"shadow_rl": str(path)}
             result["label_mode"] = label_mode
-            cases = load_shadow_rl_cases(path, label_mode=label_mode)
+            cases = load_shadow_rl_cases(path, label_mode=label_mode, primitives=primitives)
             result["n_cases_loaded"] = len(cases)
             if cases:
-                assign_cells(cases, n_continuous=len(SHADOW_RL_STATE_KEYS))
+                # 两种口径都分箱前 5 个连续维（extended 的交互维不进 cell）；
+                # is_short 下标：base=5，extended=8
+                assign_cells(
+                    cases,
+                    n_continuous=5,
+                    binary_dims=(5 if primitives == "base" else 8,),
+                )
                 cases = _stratified_sample(
                     cases,
                     max_cases or DEFAULT_SHADOW_RL_MAX_CASES,
@@ -668,8 +734,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="E5 CBR holdout 组合泛化实验")
     parser.add_argument("--source", default="backtest", choices=["backtest", "shadow_rl"])
     parser.add_argument("--max-cases", type=int, default=None, help="分层采样上限（shadow_rl）")
-    parser.add_argument("--label-mode", default="positive", choices=["median", "positive"])
+    parser.add_argument("--label-mode", default="positive", choices=["median", "positive", "band"])
     parser.add_argument("--compositor", default="both", choices=["both", "mlp", "logistic"])
+    parser.add_argument("--primitives", default="base", choices=["base", "extended"])
     parser.add_argument("--n-perm", type=int, default=10000)
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
@@ -680,6 +747,7 @@ def main() -> int:
         label_mode=args.label_mode,
         n_perm=args.n_perm,
         compositor=args.compositor,
+        primitives=args.primitives,
     )
     if args.out:
         out = Path(args.out)

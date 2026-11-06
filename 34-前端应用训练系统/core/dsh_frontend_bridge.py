@@ -750,6 +750,13 @@ _CHAIN_METRICS = [
     ("btc_basics", "active_addresses", "active_addresses"),
     ("btc_basics", "hashrate", "hash_rate"),
     ("btc_basics", "tx_count_24h", "tx_count_24h"),
+    # btc_metrics: bgeometrics 链上估值指标 (收口 P2: ValuationPanel 真实 MVRV)
+    ("btc_metrics", "mvrv", "mvrv"),
+    ("btc_metrics", "sopr", "sopr"),
+    ("btc_metrics", "nupl", "nupl"),
+    ("btc_metrics", "puell_multiple", "puell_multiple"),
+    ("btc_metrics", "realized_price", "realized_price"),
+    ("btc_metrics", "nvt_ratio", "nvt_ratio"),
     # chains_summary: DeFi TVL (收口 P2: BreadthPanel 需要)
     ("chains_summary", "tvl_bln", "defi_tvl_bln"),
     # utxo_age_distribution: 持有者分布 (收口 P2: OnchainPanel 需要)
@@ -773,6 +780,11 @@ _MACRO_METRICS = [
     ("DCOILWTICO", "value", "WTI"),  # 原油
     ("CL=F", "value", "Oil_futures"),  # 原油期货
     ("NASDAQCOM", "value", "NASDAQ"),  # 纳指
+    # fedwatch: CME FedWatch 利率概率 (fed_event_collector)
+    ("fedwatch", "cut_prob", "cut_probability"),
+    ("fedwatch", "hold_prob", "hold_probability"),
+    ("fedwatch", "hike_prob", "hike_probability"),
+    ("fedwatch", "effr", "fed_effective_rate"),
 ]
 # flow 指标定义 (P1: SPEC-L0-DATA-AGENT §4)
 _FLOW_METRICS = [
@@ -781,6 +793,19 @@ _FLOW_METRICS = [
     ("stablecoins_top_10", "usdc_pct_of_total", "stablecoin_dominance_usdc"),  # USDC 占比 (收口 P2)
     ("tether_current", "usdt_circulating_usd_bln", "usdt_circulating_bln"),  # USDT 流通量
     ("usdc_current", "usdc_circulating_usd_bln", "usdc_circulating_bln"),  # USDC 流通量
+    # etf_flow: 分发行商明细 (farside per-issuer, 百万美元)
+    ("etf_flow", "IBIT", "etf_ibit"),
+    ("etf_flow", "FBTC", "etf_fbtc"),
+    ("etf_flow", "ARKB", "etf_arkb"),
+    ("etf_flow", "GBTC", "etf_gbtc"),
+    ("etf_flow", "BTCO", "etf_btco"),
+    ("etf_flow", "BITB", "etf_bitb"),
+    ("etf_flow", "EZBC", "etf_ezbc"),
+    ("etf_flow", "BTCW", "etf_btcw"),
+    ("etf_flow", "BRRR", "etf_brrr"),
+    ("etf_flow", "HODL", "etf_hodl"),
+    ("etf_flow", "MSBT", "etf_msbt"),
+    ("etf_flow", "BTC", "etf_btc"),
 ]
 # breadth 指标定义 (P1)
 _BREADTH_METRICS = [
@@ -788,6 +813,7 @@ _BREADTH_METRICS = [
     ("stablecoins_top_10", "USDC_bln", "usdc_bln"),
     ("social_volume", "social_volume", "social_volume"),
     ("social_volume", "news_count_24h", "news_count_24h"),
+    ("overview_market", "btc_dominance_pct", "btc_dominance_pct"),  # BTC 市占率 (panewslab)
 ]
 # capital_flow 指标定义 (P1)
 _CAPITAL_FLOW_METRICS = [
@@ -907,6 +933,19 @@ def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
                 row = _query_metric(conn, sub_cat, name)
                 if row:
                     output[out_key] = row[0]
+            # CPI 同比: 最新 CPIAUCSL vs ~1 年前
+            try:
+                cur_row = _query_metric(conn, "CPIAUCSL", "value")
+                if cur_row and cur_row[0]:
+                    year_ago_ts = cur_row[1] - 365 * 86400
+                    row2 = conn.execute(
+                        "SELECT metric_value FROM mm_metrics WHERE sub_category='CPIAUCSL' AND metric_name='value' AND timestamp <= ? ORDER BY timestamp DESC LIMIT 1",
+                        (year_ago_ts,),
+                    ).fetchone()
+                    if row2 and row2[0]:
+                        output["CPI_yoy"] = round((cur_row[0] / row2[0] - 1) * 100, 2)
+            except Exception:
+                pass
         elif command == "flow":
             for sub_cat, name, out_key in _FLOW_METRICS:
                 row = _query_metric(conn, sub_cat, name)

@@ -190,6 +190,12 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
   - **第一轮·线性 logistic**：组合法 45.2% vs kNN 53.6%（improvement=-8.4pp，p=0.0071）→ **falsified**
   - **第二轮·非线性 MLP（单隐层 tanh，16 单元，已排除「组合器能力不足」混淆项）**：组合法 50.2% vs kNN 53.6%（improvement=-3.4pp，p=0.237）→ **inconclusive**（差距从 -8.4pp 收窄到 -3.4pp，但未超越检索且不显著）
   - **判读**：两轮均未出现「组合优于检索」，E1 判据**不成立**；但更深层事实是**该原语集对标签预测力本身弱**——kNN 也仅 53.6%（近随机），MLP 仅 50.2%。故当前结论是「在此原语/标签口径下 E1 不可判定」，不是「E1 永久不可满足」。下一步应换更强原语（多步 horizon / 相对收益分位）或换标签口径，而非继续调组合器容量
+- **路径 A/B 对照实验（2026-11-06，三组真实复测回答「哪条路更有效」）**：同一实验框架下分别测「换更强原语」与「换标签口径」两条改进路径（`--primitives extended` / `--label-mode band`）
+  - **路径 A·更强原语**（`extended`）：剔除完全共线的 R_down（构造公式恒 = 1-R_up），加 quality_score（vol_quantile 新信息维）+ 3 交互原语（up×flow / reflex×flow / smooth×reflex），9 维特征；交互维不进 cell 键（防组合空间碎片化）。结果：MLP 53.2% / kNN 57.0% / logistic 47.4%（improvement=-3.8pp，p=0.258）→ **inconclusive**。绝对预测力全体抬升（MLP 50.2→53.2、kNN 53.6→57.0）说明新原语携带真实信号，但 **kNN 受益同样多**，组合 vs 检索差距未收窄
+  - **路径 B·分位带标签**（`band`，风险调整口径）：reward≥q75 记显著盈利、≤q25 记显著亏损、中间噪声带丢弃（1431 案例，天然 50/50）。结果：MLP 54.6% / kNN 59.7% / logistic 47.7%（improvement=-5.1pp，p=0.118）→ **inconclusive**。去噪让所有模型更可预测（kNN 59.7% 为四组最高），但差距反而扩大——标签去噪同样惠及检索
+  - **A+B 组合**：MLP 53.3% / kNN 52.5% / logistic 49.6%（improvement=**+0.8pp**，p=0.832）→ **inconclusive（首次符号转正）**。kNN 在高维+半样本下退化（57.0→52.5，距离集中效应），MLP 反超但远不显著
+  - **结论**：①单独比较「绝对预测力提升」路径 B 最有效（band 去噪，kNN +6.1pp、MLP +4.4pp）；②单独比较「组合 vs 检索差距收窄」只有 A+B 组合转正；③四组配置无一达到显著，E1 在当前数据上**依旧不可申报 candidate**——组合泛化要成立，缺口不在原语强度或标签噪声，而在**评估信号本身太弱**（最优配置下 kNN 也仅 57-60%）；下一杠杆应是积累更多平仓样本（reward 占位 92.9% 的根因）与更丰富的市场原语（多步 horizon 收益需 23 域在 state 中新增字段），而非继续在本数据上调任何组合器
+  - 三组结果文件：`e5_holdout_shadow_rl_extended_primitives.json` / `e5_holdout_shadow_rl_band_labels.json` / `e5_holdout_shadow_rl_extended_band.json`；M6 主口径仍锚定 canonical `e5_holdout_shadow_rl_result.json`（base+positive，趋势连续性）
   - M6 已优先读取该结果（`e5_holdout_shadow_rl_result.json`），`limitation` 字段机器可读防误读
 - 内容：把某类市场原语（如某 regime 形态）从 CBR 案例库**整体扣留**，测试系统能否用其余案例**组合**出对该新形态的正确响应
 - 辅助指标：同态误差——结构相似的行情应激活相似的案例/因子组合，作为 CBR 表征质量连续监控

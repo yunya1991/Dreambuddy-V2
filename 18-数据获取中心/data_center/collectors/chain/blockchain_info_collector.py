@@ -8,6 +8,12 @@
   1. tx_count_24h=0 根因：_get 返回 float，str(float).isdigit() 因小数点返回 False → 改用 _to_number() 安全转换
   2. difficulty 路径错误：/q/difficulty 实际请求 /q/q/difficulty → 404 → 修正为 /difficulty，并增加 charts API 兜底
   3. 新增 active_addresses：blockchain.info /q/activeaddresses 已 404 → 改用 charts/n-unique-addresses
+
+修复记录（2026-11-05）：
+  1. charts API timespan=1days/5days/1weeks 均返回空 values → 改为 30days 才有数据点
+  2. difficulty 端点修正为 /q/getdifficulty（/q/difficulty 返回 not-found）
+  3. hashrate 改用 charts/hash-rate（/q/hashrate 已失效；单位 TH/s）
+  4. /q/24hrtransactioncount 已失效（恒返回 0），交易数仅用 charts/n-transactions
 """
 from __future__ import annotations
 
@@ -56,25 +62,24 @@ class BlockchainInfoCollector(BaseCollector):
     def fetch(self, params: dict) -> list[DataRecord]:
         # 实时单值端点
         total_bc = self._safe_get("/totalbc")
-        tx_count_q = self._safe_get("/24hrtransactioncount")
         mcap = self._safe_get("/marketcap")
-        difficulty_q = self._safe_get("/difficulty")  # 修正：原 /q/difficulty 导致 404
-        hashrate = self._safe_get("/hashrate")
+        difficulty_q = self._safe_get("/getdifficulty")  # 修正：有效端点是 /q/getdifficulty
 
-        # charts API：活跃地址（/q/activeaddresses 已 404）+ 日交易数 + 难度兜底 + 链上交易量
+        # charts API：hashrate（/q/hashrate 已失效）+ 活跃地址 + 日交易数 + 难度兜底 + 链上交易量
+        hashrate = self._safe_chart("hash-rate")  # 单位 TH/s
         active_addr = self._safe_chart("n-unique-addresses")
         tx_count_chart = self._safe_chart("n-transactions")
         difficulty_chart = self._safe_chart("difficulty")
         output_volume_btc = self._safe_chart("output-volume")  # 每日链上 BTC 转账总量
 
-        if total_bc is None and tx_count_q is None and mcap is None and active_addr is None:
+        if total_bc is None and mcap is None and active_addr is None and hashrate is None:
             return []  # fail-open
 
         total_btc = _to_number(total_bc) / 1e8  # satoshis → BTC
         diff_val = _to_number(difficulty_chart or difficulty_q)
         hr_val = _to_number(hashrate)
-        # 交易数：优先 charts n-transactions（日粒度更准），回退 /q/24hrtransactioncount
-        tx_val = int(_to_number(tx_count_chart or tx_count_q))
+        # 交易数：charts n-transactions（/q/24hrtransactioncount 已失效恒返回 0）
+        tx_val = int(_to_number(tx_count_chart))
         mcap_val = _to_number(mcap)
         active_addr_val = int(_to_number(active_addr))
         output_vol_val = _to_number(output_volume_btc)
@@ -124,7 +129,7 @@ class BlockchainInfoCollector(BaseCollector):
         try:
             resp = requests.get(
                 f"{_CHARTS}/{chart_name}",
-                params={"timespan": "1days", "format": "json"},
+                params={"timespan": "30days", "format": "json"},  # 1days/5days/1weeks 返回空 values，30days 才有数据
                 timeout=15,
             )
             resp.raise_for_status()
