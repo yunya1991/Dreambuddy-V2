@@ -315,6 +315,15 @@ class _PathSignatureDriftNet(nn.Module if _TORCH_AVAILABLE else object):
                 # Phase 5: per-head impact multiplier 耦合
                 # head_multipliers 来自 ImpactMultiplier.get_multiplier(cycle_phase, dim)
                 ctx = self.cross_attn(q, kv, kv, head_multipliers=head_multipliers)  # (B, cross_attn_dim)
+                # B-03: 缓存最新 attention weights，供 A_dim shadow 对比（FAIL-OPEN）
+                try:
+                    from dreambuddy_evolution.core.attention_shadow import (
+                        record_last_attn_weights,
+                    )
+
+                    record_last_attn_weights(self.cross_attn.last_attn_weights)
+                except Exception:  # noqa: BLE001 — 影子层 FAIL-OPEN
+                    pass
             else:
                 # FAIL-OPEN: factors=None → zero context
                 ctx = torch.zeros(B, self.cross_attn_dim, device=y.device)

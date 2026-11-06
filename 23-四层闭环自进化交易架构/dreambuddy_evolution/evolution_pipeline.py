@@ -1260,11 +1260,32 @@ class EvolutionPipeline:
             if _gs_cv("enable_cross_validation_gate", False) and primary_contradiction is not None:
                 from dreambuddy_evolution.core.cross_validation_gate import CrossValidationGate
 
-                # A_dim (现在主矛盾): 从 primary_contradiction 获取
-                _a_dim = primary_contradiction.get("dimension") or primary_contradiction.get(
+                # A_dim (现在主矛盾): identifier C 维度 + 3 维映射 + attention shadow
+                _a_dim_c = primary_contradiction.get("dimension") or primary_contradiction.get(
                     "primary_dimension"
                 )
                 _a_strength = float(primary_contradiction.get("strength", 0.0))
+                _attention_shadow = None
+                try:
+                    from dreambuddy_evolution.core.attention_shadow import (
+                        compute_a_dim_shadow,
+                    )
+                    from dreambuddy_evolution.core.dimension_mapping import c_dim_to_three
+
+                    _a_dim_identifier_3 = c_dim_to_three(_a_dim_c)
+                    _attention_shadow = compute_a_dim_shadow(primary_contradiction)
+                    if _gs_cv("enable_attention_a_dim", False) and _attention_shadow.get(
+                        "available"
+                    ):
+                        _a_dim = _attention_shadow.get("a_dim_attention")
+                    elif _gs_cv("enable_a_dim_c_to_3", False):
+                        _a_dim = _a_dim_identifier_3
+                    else:
+                        _a_dim = _a_dim_c  # legacy：保持现有生产行为
+                except Exception as _att_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+                    _attention_shadow = None
+                    _a_dim = _a_dim_c
+                    logger.debug("[FO][AttentionShadow] fail: %s", _att_e)
 
                 # G_dim (过去主矛盾): Granger 因果检验, 从价格序列派生 3 维度因子
                 _g_dim = None
@@ -1330,6 +1351,11 @@ class EvolutionPipeline:
                     A_strength=_a_strength,
                     structural_break=_sb,
                 )
+
+                # B-03: A_dim 双链路 shadow 诊断（不改变 gate 结果）
+                if _attention_shadow is not None:
+                    _attention_shadow["gate_a_dim"] = _a_dim
+                    cv_result["attention_shadow"] = _attention_shadow
 
                 # 质变事件 → 认知记录 (FAIL-OPEN)
                 # quality_change 可能是 bool 或 dict，兼容两种格式

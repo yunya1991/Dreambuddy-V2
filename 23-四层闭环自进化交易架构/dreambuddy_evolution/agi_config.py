@@ -88,6 +88,8 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_dimension_force_v2": True,             # 维度力量评估 v2.0 (T4 影子期: 只记录日志不参与决策)
     "enable_cd_shadow": False,                      # B-01: C→D 影子映射（只附加 shadow 字段，不改变裁决）
     "enable_dominance_shadow": False,               # B-02: 成对支配 shadow（不改变 argmax 生产选择）
+    "enable_attention_a_dim": False,                # B-03: CV gate 使用 attention A_dim（默认关闭，先用 shadow）
+    "enable_a_dim_c_to_3": False,                   # B-03: 将 identifier C 维度映射到 3 维后再入 gate（修复口径，默认关闭）
     "enable_granger_pipeline": True,                 # Granger 因果链 (从价格序列派生3维度因子)
     "enable_attention_aggregator": True,             # Attention 聚合 (A_dim从primary_contradiction获取)
     "enable_head_multipliers_adjustment": True,      # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)
