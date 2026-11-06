@@ -1,0 +1,38 @@
+{
+  "constraint_id": "constraint-merged-20261106T0000",
+  "source": "merged",
+  "ts": "2026-11-06T00:00:00Z",
+  "expires_at": "2026-11-07T00:00:00Z",
+  "mode": "shadow",
+  "confidence": 0.68,
+  "regime": "expansion",
+  "stance": "attack",
+  "strategic_tier": "attack",
+  "war_state": "ACTIVE",
+  "direction_bias": "long",
+  "position_band_pct": [30, 60],
+  "position_cap_pct": 0.6,
+  "risk_budget_multiplier": 0.8,
+  "strategy_overrides": {
+    "trend": { "size_multiplier": 1.0 }
+  },
+  "elastic_params": {
+    "long_threshold_multiplier": 1.0,
+    "position_size_factor": 1.0,
+    "long_short_ratio_cap": null,
+    "weight_adjust_limit": 0.05,
+    "cooldown_period_hours": 24,
+    "risk_budget_ratio": {}
+  },
+  "risk_guards": {
+    "freshness_stale_hours": 48,
+    "event_window_freeze": ["FOMC", "CPI"],
+    "clock_degradation": false,
+    "effective_confidence": 0.68
+  },
+  "component_constraints": [
+    { "source": "40-cycle", "field": "strategy_mapping" },
+    { "source": "43-strategic", "field": "strategic_extension" }
+  ],
+  "payload": {}
+}

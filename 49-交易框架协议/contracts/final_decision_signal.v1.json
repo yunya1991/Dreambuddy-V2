@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "final_decision_signal.v1.json",
+  "title": "FinalDecisionSignal v1",
+  "description": "23 唯一决策出口契约（source 固定 23-evolution）",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signal_id",
+    "source",
+    "ts",
+    "symbol",
+    "direction",
+    "confidence",
+    "horizon",
+    "risk_exposure_hint",
+    "expires_at",
+    "mode",
+    "payload"
+  ],
+  "properties": {
+    "signal_id": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "const": "23-evolution" },
+    "ts": { "type": "string" },
+    "symbol": { "type": "string", "pattern": "^([A-Z0-9]+-USDT-SWAP|MACRO)$" },
+    "direction": { "type": "string", "enum": ["long", "short", "neutral"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "horizon": { "type": "string", "enum": ["minutes", "hours", "days", "weeks"] },
+    "risk_exposure_hint": { "type": "number", "minimum": 0, "maximum": 1 },
+    "expires_at": { "type": "string" },
+    "mode": { "type": "string", "enum": ["live", "paper", "shadow"] },
+    "shadow": { "type": "boolean" },
+    "constraint_id": { "type": "string" },
+    "constraint_applied_at": { "type": "string" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "action",
+        "position_tier",
+        "position_mult",
+        "d_star",
+        "ri",
+        "l4_v",
+        "regime",
+        "primary_contradiction",
+        "contradiction_shift",
+        "elastic_result",
+        "cross_validation",
+        "path"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["long", "short", "light_long", "light_short", "WAIT"]
+        },
+        "position_tier": {
+          "type": "string",
+          "enum": ["trend", "standard", "probe", "none"]
+        },
+        "position_mult": { "type": "number" },
+        "d_star": { "type": "string" },
+        "ri": { "type": "number" },
+        "l4_v": { "type": "number" },
+        "regime": { "type": "string" },
+        "primary_contradiction": {
+          "type": "object",
+          "required": ["dimension", "direction", "strength"],
+          "properties": {
+            "dimension": { "type": "string" },
+            "direction": { "type": "string" },
+            "strength": { "type": "number" },
+            "confidence": { "type": "number" }
+          }
+        },
+        "contradiction_shift": { "type": "object" },
+        "elastic_result": { "type": "object" },
+        "cross_validation": { "type": "object" },
+        "path": { "type": "object" }
+      }
+    }
+  }
+}

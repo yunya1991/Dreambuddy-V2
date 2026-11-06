@@ -200,6 +200,11 @@ def _pipeline_sections(result: dict[str, Any]) -> tuple[dict[str, Any], dict[str
         "primary_contradiction", "cross_validation",
     )
     production = {key: result.get(key) for key in production_keys}
+    primary = production.get("primary_contradiction")
+    if isinstance(primary, dict) and "dimension_shadow" in primary:
+        production["primary_contradiction"] = {
+            key: value for key, value in primary.items() if key != "dimension_shadow"
+        }
     production["production_fields_available"] = True
     shadow = {
         "cd_mapping": (result.get("primary_contradiction") or {}).get("dimension_shadow"),
