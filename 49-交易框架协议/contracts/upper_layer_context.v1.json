@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "upper_layer_context.v1.json",
+  "title": "UpperLayerContext v1",
+  "description": "注入 23 的上层信息统一上下文契约",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "constraint_id",
+    "ts",
+    "expires_at",
+    "mode",
+    "component_sources",
+    "macro_regime",
+    "strategic_tier",
+    "war_state",
+    "position_band_pct",
+    "position_cap_pct",
+    "risk_budget_multiplier"
+  ],
+  "properties": {
+    "constraint_id": { "type": "string", "minLength": 1 },
+    "ts": { "type": "string" },
+    "expires_at": { "type": "string" },
+    "mode": { "type": "string", "enum": ["shadow", "live"] },
+    "component_sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "macro_regime": { "type": "string" },
+    "strategic_tier": {
+      "type": "string",
+      "enum": ["attack", "defend", "light_defense", "full_freeze"]
+    },
+    "war_state": {
+      "type": "string",
+      "enum": ["ACTIVE", "FREEZE", "COOLDOWN", "RESTRICT"]
+    },
+    "position_band_pct": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number", "minimum": 0, "maximum": 100 }
+    },
+    "position_cap_pct": { "type": "number", "minimum": 0, "maximum": 1 },
+    "cap_multiplier": { "type": "number" },
+    "risk_budget_multiplier": { "type": "number", "minimum": 0, "maximum": 1 },
+    "capital_allocation": { "type": "object" },
+    "risk_gate_status": { "type": "object" },
+    "semantic_context": { "type": "object" },
+    "fundamental_context": { "type": "object" },
+    "execution_feedback": { "type": "object" }
+  }
+}

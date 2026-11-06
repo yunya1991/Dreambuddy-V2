@@ -1,0 +1,20 @@
+{
+  "version": "0.1",
+  "updated": "2026-11-06",
+  "owner": "47-MCP管理系统",
+  "description": "执行权注册表样例：同一标的同一时刻单出口。",
+  "defaults": {
+    "outcome": "paper",
+    "conflict_policy": "reject_mcp"
+  },
+  "symbols": {
+    "BTC-USDT-SWAP": {
+      "outcome": "paper",
+      "note": "默认模拟盘验证"
+    },
+    "ETH-USDT-SWAP": {
+      "outcome": "paper",
+      "note": "默认模拟盘验证"
+    }
+  }
+}

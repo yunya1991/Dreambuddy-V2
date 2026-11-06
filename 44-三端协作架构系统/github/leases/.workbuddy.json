@@ -10,6 +10,17 @@
       "base_sha": null,
       "started_at": "2026-11-07T01:01:56+08:00",
       "ttl_hours": 72,
+      "status": "released",
+      "released_at": "2026-11-07T01:27:32+08:00"
+    },
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-SPEC-49-M0",
+      "session": null,
+      "base_sha": null,
+      "started_at": "2026-11-07T01:27:32+08:00",
+      "ttl_hours": 72,
       "status": "active",
       "released_at": null
     }

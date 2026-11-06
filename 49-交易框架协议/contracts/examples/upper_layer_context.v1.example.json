@@ -1,0 +1,36 @@
+{
+  "constraint_id": "ctx-demo-001",
+  "ts": "2026-11-06T00:00:00Z",
+  "expires_at": "2026-11-07T00:00:00Z",
+  "mode": "shadow",
+  "component_sources": ["40-cycle", "43-strategic", "42-signal-bus"],
+  "macro_regime": "expansion",
+  "strategic_tier": "attack",
+  "war_state": "ACTIVE",
+  "position_band_pct": [30, 60],
+  "position_cap_pct": 0.6,
+  "cap_multiplier": 1.0,
+  "risk_budget_multiplier": 0.8,
+  "capital_allocation": {
+    "equity": 100000,
+    "available": 80000,
+    "per_symbol_cap_pct": 0.1
+  },
+  "risk_gate_status": {
+    "available": true,
+    "circuit_breaker": false,
+    "blacklist": []
+  },
+  "semantic_context": {
+    "summary": "macro expansion",
+    "event_tags": []
+  },
+  "fundamental_context": {
+    "finbert_score": 0.6,
+    "five_dim_score": 60
+  },
+  "execution_feedback": {
+    "realized_pnl": 0.0,
+    "fills": 0
+  }
+}

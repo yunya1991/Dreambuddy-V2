@@ -80,12 +80,22 @@ AGI_SWITCHES: Dict[str, bool] = {
     # --- 事件驱动策略系统 (29 号子系统) ---
     # SPEC-事件驱动策略P0盲区修复-非农CPI加息预期.md 第 750/752 行明确标注"已有"
     "enable_contradiction_driven_layer": True,     # 主要矛盾驱动层总开关 (P1-2 双层门控第一层)
+    "enable_primary_contradiction_detector": False,  # B-04: 事件主矛盾检测器（生产默认关，shadow 用 force）
+    "enable_event_contradiction_shadow": False,      # B-04: 事件主矛盾 shadow 诊断
+    "enable_w6_monitor": False,                       # B-05: W6 样本链路状态监控（只读）
+    "enable_self_vote_shadow": False,                # B-08: 自票上限/独立证据 shadow 诊断
+    "enable_self_vote_cap": False,                    # B-08: 自票上限实际生效（默认关，shadow 通过后再开）
     "enable_event_dominance": True,                # 事件主导控制开关 (P1-2 双层门控第二层)
     "enable_auto_weight_adjustment": True,          # 自进化权重自动调整 (基因创新闭环)
     # --- 交叉验证层 (矛盾Transformer §5.1) ---
     # 2026-10-07 激活: 5框架对比(F1夏普7.77)+消融实验(Q5贡献+0.22)验证通过
     "enable_cross_validation_gate": True,            # 交叉验证层总开关 (已激活)
     "enable_dimension_force_v2": True,             # 维度力量评估 v2.0 (T4 影子期: 只记录日志不参与决策)
+    "enable_d2_oi_liq": False,                      # B-06: D2 叠加 OI/清算（默认 shadow；覆盖率达标后再开）
+    "enable_cd_shadow": False,                      # B-01: C→D 影子映射（只附加 shadow 字段，不改变裁决）
+    "enable_dominance_shadow": False,               # B-02: 成对支配 shadow（不改变 argmax 生产选择）
+    "enable_attention_a_dim": False,                # B-03: CV gate 使用 attention A_dim（默认关闭，先用 shadow）
+    "enable_a_dim_c_to_3": False,                   # B-03: 将 identifier C 维度映射到 3 维后再入 gate（修复口径，默认关闭）
     "enable_granger_pipeline": True,                 # Granger 因果链 (从价格序列派生3维度因子)
     "enable_attention_aggregator": True,             # Attention 聚合 (A_dim从primary_contradiction获取)
     "enable_head_multipliers_adjustment": True,      # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)

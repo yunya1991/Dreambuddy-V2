@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "macro_elastic_constraint.v1.json",
+  "title": "MacroElasticConstraint v1",
+  "description": "40/43 合并后的宏观弹性约束契约",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "constraint_id",
+    "source",
+    "ts",
+    "expires_at",
+    "mode",
+    "confidence"
+  ],
+  "properties": {
+    "constraint_id": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "string",
+      "enum": ["40-cycle", "43-strategic", "merged"]
+    },
+    "ts": { "type": "string" },
+    "expires_at": { "type": "string" },
+    "mode": { "type": "string", "enum": ["shadow", "live"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "regime": { "type": "string" },
+    "stance": { "type": "string" },
+    "strategic_tier": {
+      "type": "string",
+      "enum": ["attack", "defend", "light_defense", "full_freeze"]
+    },
+    "war_state": {
+      "type": "string",
+      "enum": ["ACTIVE", "FREEZE", "COOLDOWN", "RESTRICT"]
+    },
+    "direction_bias": { "type": "string", "enum": ["long", "short", "neutral"] },
+    "position_band_pct": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number", "minimum": 0, "maximum": 100 }
+    },
+    "position_cap_pct": { "type": "number", "minimum": 0, "maximum": 1 },
+    "risk_budget_multiplier": { "type": "number", "minimum": 0, "maximum": 1 },
+    "strategy_overrides": { "type": "object" },
+    "elastic_params": {
+      "type": "object",
+      "properties": {
+        "long_threshold_multiplier": { "type": "number" },
+        "position_size_factor": { "type": "number" },
+        "long_short_ratio_cap": { "type": ["number", "null"] },
+        "weight_adjust_limit": { "type": "number" },
+        "cooldown_period_hours": { "type": "number" },
+        "risk_budget_ratio": { "type": "object" }
+      }
+    },
+    "risk_guards": {
+      "type": "object",
+      "properties": {
+        "freshness_stale_hours": { "type": "number" },
+        "event_window_freeze": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "clock_degradation": { "type": "boolean" },
+        "effective_confidence": { "type": "number" }
+      }
+    },
+    "component_constraints": { "type": "array" },
+    "payload": { "type": "object" }
+  }
+}
