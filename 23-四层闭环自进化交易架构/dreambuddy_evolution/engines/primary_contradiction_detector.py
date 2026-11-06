@@ -91,22 +91,29 @@ class PrimaryContradictionDetector:
     CESI_AMPLIFIER_DIVISOR = 3.0  # cesi_amplifier = min(|cesi|/3.0, 0.3)
     CESI_AMPLIFIER_CAP = 0.3  # CESI 放大上限
 
-    def detect(self, kline_data: dict[str, Any] | None) -> ContradictionInfo:
+    def detect(
+        self,
+        kline_data: dict[str, Any] | None,
+        *,
+        force: bool = False,
+    ) -> ContradictionInfo:
         """
         识别当前主要矛盾。
 
         Args:
             kline_data: data_pipeline.assemble() 输出的完整 dict
+            force: True 时跳过生产开关检查（仅供 shadow 诊断使用；仍 FAIL-OPEN）
 
         Returns:
             ContradictionInfo
         """
         # HC: 开关关断时返回中性默认（字节等价"模块不存在"）
         # 需要同时启用总开关 + 层开关 + 模块开关
-        if not is_enabled("enable_contradiction_driven_layer"):
-            return ContradictionInfo()
-        if not is_enabled("enable_primary_contradiction_detector"):
-            return ContradictionInfo()
+        if not force:
+            if not is_enabled("enable_contradiction_driven_layer"):
+                return ContradictionInfo()
+            if not is_enabled("enable_primary_contradiction_detector"):
+                return ContradictionInfo()
 
         # HC: FAIL-OPEN — 数据异常时返回中性默认
         try:

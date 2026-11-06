@@ -1161,6 +1161,21 @@ class EvolutionPipeline:
         except Exception as e:  # noqa: BLE001  HC-AGI-18
             logger.debug("[FO-AGI-Pipeline][Contradiction] fail: %s", e)
 
+        # B-04: 事件主矛盾 shadow（只记录诊断，不改变裁决）
+        event_contradiction_shadow = None
+        try:
+            from dreambuddy_evolution.agi_config import get_switch as _gs_event
+            from dreambuddy_evolution.core.event_contradiction_shadow import (
+                compute_event_contradiction_shadow,
+            )
+
+            event_contradiction_shadow = compute_event_contradiction_shadow(
+                market_data or {},
+                enabled=_gs_event("enable_event_contradiction_shadow", False),
+            )
+        except Exception as _ec_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+            logger.debug("[FO][EventContradictionShadow] fail: %s", _ec_e)
+
         # === Phase 3.2: TrendContinuationScorer 接入 — 填充 continuation_score ===
         try:
             from dreambuddy_evolution.agi_config import get_switch as _gs
@@ -1662,6 +1677,8 @@ class EvolutionPipeline:
             "cross_validation": cv_result,
             # B-02: 成对支配 shadow 诊断
             "dominance_shadow": dominance_shadow,
+            # B-04: 事件主矛盾 shadow 诊断
+            "event_contradiction_shadow": event_contradiction_shadow,
         }
 
     def _load_library(self):
