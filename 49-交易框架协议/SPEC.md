@@ -1225,7 +1225,7 @@ live: 11 交易执行器 → 13 pre_trade_check → okx_client（不经 MCP）
 |---|---|---|---|---|---|---|
 | **P1-01** | 42 单实例 SignalBus：按 `signal_id` 合并 + TTL + 原子写 | `42/signal_bus.py`、adapters | 6 源共存；重启不丢；过期剪枝；bus 条数 ≥6 | `SIGNAL_BUS_PERSIST=1` | 置 0 恢复旧覆盖路径 | ☐ |
 | **P1-02** | registry 增加 `horizon` 必填 + CI 校验 | `registry.yaml`、validator | 所有 publisher 有 horizon；CI 通过 | — | 保留旧 registry | ☐ |
-| **P1-03** | 路径环境变量：`DREAMBUDDY_ROOT` 统一 42/23/43/40 | 42/23/43/40 | `grep /home/luke` = 0；本地可跑 | `DREAMBUDDY_ROOT` | 恢复原路径 | ☐ |
+| **P1-03** | 路径环境变量：`DREAMBUDDY_ROOT` 统一 42/23/43/40 | 42/23/43/40 | `grep /home/luke` = 0；本地可跑 | `DREAMBUDDY_ROOT` | 恢复原路径 | ✅ |
 | **P1-04** | 11 四子池状态文件 + 42 只读适配器（DEC-08） | `polling_trader`、42 adapters | 42 可读 `11-bcrm`/`bdsm`/`11-event-arbitrage`/`11-washout`；无内存耦合；TTL 生效 | `ENABLE_11_STATE_ADAPTER=1` | 置 0 停适配器 | ☐ |
 | **P1-05** | Canonical source：`bdsm`→`11-bdsm` 双写；新增两源 | 42 registry/adapters | source 枚举一致；旧别名兼容；无 `11-strategy` | `SOURCE_ALIAS_MODE=1` | 恢复旧 source | ☐ |
 | **P1-06** | ParamGovernor 发布 + 订阅分发 stub；23/43 至少各 1 个消费者日志 | `param_governor.py`、23/43 | 参数非默认可发布；消费可观测；默认不改变裁决 | `ENABLE_PARAM_DISPATCH=1` | 置 0 | ☐ |
