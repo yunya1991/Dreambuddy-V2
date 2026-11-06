@@ -1076,6 +1076,7 @@ class EvolutionPipeline:
 
         # === Phase 3.4: 主要矛盾识别（开关 + FAIL-OPEN）— 先于 HJB ===
         primary_contradiction = None
+        w6_status = None
         self._last_dimension_predictions = {}
         try:
             from dreambuddy_evolution.agi_config import get_switch
@@ -1138,6 +1139,12 @@ class EvolutionPipeline:
                     )
                 except Exception as _cd_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
                     logger.debug("[FO][CDShadow] fail: %s", _cd_e)
+                # B-05: W6 样本链路状态监控（只读；默认关闭）
+                if get_switch("enable_w6_monitor", False):
+                    try:
+                        w6_status = identifier.w6_status()
+                    except Exception as _w6_e:  # noqa: BLE001
+                        logger.debug("[FO][W6Monitor] fail: %s", _w6_e)
                 # 方向3: 从 paths 提取每维度方向预测，供 ReverseDeriver 逆向推导
                 try:
                     from dreambuddy_evolution.engines.reverse_derivation_integration import (
@@ -1679,6 +1686,8 @@ class EvolutionPipeline:
             "dominance_shadow": dominance_shadow,
             # B-04: 事件主矛盾 shadow 诊断
             "event_contradiction_shadow": event_contradiction_shadow,
+            # B-05: W6 样本链路状态（只读）
+            "w6_status": w6_status,
         }
 
     def _load_library(self):

@@ -99,7 +99,7 @@ class ContradictionWeightLearner:
         """从磁盘加载历史样本和已学权重."""
         try:
             if os.path.exists(self._storage_path):
-                with open(self._storage_path, "r") as f:
+                with open(self._storage_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 self._samples = data.get("samples", [])
                 w = data.get("learned_weights")
@@ -115,17 +115,63 @@ class ContradictionWeightLearner:
             logger.debug("[W6] load FAIL-OPEN: %s", e)
 
     def _save(self) -> None:
-        """持久化样本和权重到磁盘."""
+        """原子持久化样本和权重到磁盘（tmp + os.replace）."""
+        tmp_path = f"{self._storage_path}.tmp"
         try:
-            os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
-            with open(self._storage_path, "w") as f:
-                json.dump({
-                    "samples": self._samples[-2000:],  # 只保留最近 2000 条
-                    "learned_weights": self._learned_weights.tolist() if self._learned_weights is not None else None,
-                    "last_learn_ts": self._last_learn_ts,
-                }, f)
+            storage_dir = os.path.dirname(self._storage_path)
+            if storage_dir:
+                os.makedirs(storage_dir, exist_ok=True)
+            payload = {
+                "samples": self._samples[-2000:],  # 只保留最近 2000 条
+                "learned_weights": (
+                    self._learned_weights.tolist()
+                    if self._learned_weights is not None
+                    else None
+                ),
+                "last_learn_ts": self._last_learn_ts,
+            }
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, self._storage_path)
         except Exception as e:
             logger.debug("[W6] save FAIL-OPEN: %s", e)
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:  # noqa: BLE001
+                pass
+
+    def flush(self) -> None:
+        """显式落盘（测试/运维用）."""
+        self._save()
+
+    def status(self) -> dict:
+        """W6 样本链路状态（只读监控）."""
+        try:
+            path = os.path.abspath(self._storage_path)
+            exists = os.path.exists(path)
+            weights = self.get_weights()
+            labeled = self.labeled_count
+            total = len(self._samples)
+            return {
+                "available": True,
+                "path": path,
+                "exists": exists,
+                "bytes": os.path.getsize(path) if exists else 0,
+                "total_samples": total,
+                "labeled_samples": labeled,
+                "unlabeled_samples": total - labeled,
+                "min_samples": self.MIN_SAMPLES,
+                "learn_ready": labeled >= self.MIN_SAMPLES,
+                "learned": self.is_active,
+                "last_learn_ts": self._last_learn_ts,
+                "weights": [round(float(x), 6) for x in weights],
+                "retention": 2000,
+            }
+        except Exception as e:  # noqa: BLE001
+            return {"available": False, "reason": f"{type(e).__name__}: {e}"}
 
     def record_prediction(
         self,
@@ -284,6 +330,13 @@ class PrimaryContradictionIdentifier:
         self._ate_cache: dict = {}
         # Shadow 自动放量门禁（懒加载；O(1)；FAIL-OPEN）
         self._shadow_gate = None
+
+    def w6_status(self) -> dict:
+        """W6 样本链路状态（只读；FAIL-OPEN）."""
+        try:
+            return self._weight_learner.status()
+        except Exception as e:  # noqa: BLE001
+            return {"available": False, "reason": f"{type(e).__name__}: {e}"}
 
     def identify(
         self,
