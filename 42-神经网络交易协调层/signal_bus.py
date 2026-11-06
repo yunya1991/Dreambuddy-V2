@@ -46,13 +46,60 @@ def _parse_ts(value: str) -> Optional[datetime]:
         return None
 
 
+def _is_live(signal: Dict[str, Any], now: datetime) -> bool:
+    """信号未过期（expires_at 非法视为已过期，剪枝口径与 F1 一致）。"""
+    exp = _parse_ts(signal.get("expires_at", ""))
+    return exp is not None and now <= exp
+
+
 class SignalBus:
-    """信号汇聚总线（只读汇聚，链式过滤）。"""
+    """信号汇聚总线（只读汇聚，链式过滤）。
+
+    P1-01 持久化模式（SIGNAL_BUS_PERSIST=1，默认 0 保持旧整文件覆盖行为）：
+    - 实例化时加载既有 bus_state.json（重启不丢，多 adapter 串行共存）
+    - 加载与落盘时按 expires_at 剪除过期信号（TTL 剪枝）
+    - publish 按 signal_id 合并：同 ID 替换，否则追加
+    """
 
     def __init__(self, state_path: Optional[str] = None):
         self.state_path = state_path or _BUS_STATE_PATH
         self.signals: List[Dict[str, Any]] = []
         self.rejected: List[Dict[str, Any]] = []
+        self._persist = os.environ.get("SIGNAL_BUS_PERSIST") == "1"
+        if self._persist:
+            self._load_persistent_state()
+
+    # ── P1-01 持久化：加载既有状态（fail-open，损坏/缺失按空总线启动）──
+    def _load_persistent_state(self) -> None:
+        try:
+            if not os.path.exists(self.state_path):
+                return
+            with open(self.state_path, encoding="utf-8") as f:
+                state = json.load(f)
+            signals = state.get("signals")
+            if not isinstance(signals, list):
+                return
+            now = datetime.now(timezone.utc)
+            for sig in signals:
+                if isinstance(sig, dict) and _is_live(sig, now):
+                    self.signals.append(sig)
+        except Exception:  # noqa: BLE001
+            self.signals = []
+            self.rejected = []
+
+    # ── P1-01 按 signal_id 合并：同 ID 替换（保持原位置），否则追加 ──
+    def _upsert(self, signal: Dict[str, Any]) -> None:
+        sid = signal.get("signal_id")
+        for i, existing in enumerate(self.signals):
+            if existing.get("signal_id") == sid:
+                self.signals[i] = signal
+                return
+        self.signals.append(signal)
+
+    # ── P1-01 TTL 剪枝：剔除已过期信号 ──
+    def _prune_expired(self) -> None:
+        now = datetime.now(timezone.utc)
+        self.signals = [s for s in self.signals if _is_live(s, now)]
 
     # ── Schema 校验 ──
     def validate_schema(self, signal: Dict[str, Any]) -> Optional[str]:
@@ -130,7 +177,10 @@ class SignalBus:
             processed = self._f2_confidence(signal)
             processed = self._f3_conflict(processed, self.signals + [processed])
             processed = self._f5_normalize(processed)
-            self.signals.append(processed)
+            if self._persist:
+                self._upsert(processed)
+            else:
+                self.signals.append(processed)
             return {"status": "accepted", "signal": processed}
         except Exception as exc:  # noqa: BLE001  fail-open：单信号异常不阻断总线
             self.rejected.append({"signal_id": signal.get("signal_id"), "reason": "error: {}".format(exc)})
@@ -151,7 +201,9 @@ class SignalBus:
         }
 
     def flush(self) -> Dict[str, Any]:
-        """总线状态原子落盘。"""
+        """总线状态原子落盘（persist 模式先剪除已过期信号）。"""
+        if self._persist:
+            self._prune_expired()
         state = self.snapshot()
         try:
             os.makedirs(os.path.dirname(self.state_path), exist_ok=True)

@@ -16,7 +16,6 @@
 import json
 import os
 import sys
-import uuid
 from datetime import datetime, timedelta, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -71,8 +70,8 @@ def build_signal(sample: dict) -> dict:
     confidence = max(0.0, min(1.0, float(sample.get("confidence") or 0.0)))
     market_weight = max(0.0, min(1.0, float(sample.get("market_weight") or 0.0)))
     return {
-        "signal_id": "sig_{}_{}".format(
-            now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
+        # P1-01：确定性 signal_id（同 source 当日重跑幂等替换，配合总线按 signal_id 合并）
+        "signal_id": "sig_23-contradiction_MACRO_{}".format(now.strftime("%Y%m%d")),
         "source": "23-contradiction",
         "ts": now.isoformat(),
         "symbol": "MACRO",  # 矛盾仲裁为组合级信号，非单标的

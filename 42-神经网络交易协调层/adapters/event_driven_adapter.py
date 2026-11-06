@@ -19,7 +19,7 @@
 import json
 import os
 import sys
-import uuid
+import re
 from datetime import datetime, timedelta, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -86,8 +86,10 @@ def build_signal(state: dict) -> dict:
     elasticity = abs(max(-1.0, min(1.0, float(sig.get("elasticity") or 0.0))))
 
     return {
-        "signal_id": "sig_{}_{}".format(
-            now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
+        # P1-01：确定性 signal_id（同 source+标的当日重跑幂等替换）
+        "signal_id": "sig_29-event_{}_{}".format(
+            re.sub(r"[^A-Za-z0-9]+", "_", str(state.get("symbol") or "MACRO")),
+            now.strftime("%Y%m%d")),
         "source": "29-event",
         "ts": now.isoformat(),
         "symbol": str(state.get("symbol") or "MACRO"),
