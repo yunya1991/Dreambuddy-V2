@@ -101,6 +101,11 @@
         "generate_fundamental_sample_data.py",
         "test_fundamental_endpoints.py"
       ]
+    },
+    "collab": {
+      "paths": [
+        "44-三端协作架构系统/**"
+      ]
     }
   },
   "change_classes": {
@@ -114,7 +119,8 @@
         "governance",
         "intent_recognition",
         "runtime_data",
-        "fundamental_analysis"
+        "fundamental_analysis",
+        "collab"
       ]
     },
     "integration": {
@@ -127,12 +133,14 @@
         "chain_development",
         "intent_recognition",
         "runtime_data",
-        "fundamental_analysis"
+        "fundamental_analysis",
+        "collab"
       ]
     },
     "infra": {
       "allowed_modules": [
-        "ci"
+        "ci",
+        "collab"
       ]
     }
   },
