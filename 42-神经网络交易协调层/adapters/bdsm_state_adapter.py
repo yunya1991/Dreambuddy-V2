@@ -18,7 +18,7 @@ import glob
 import json
 import os
 import sys
-import uuid
+import re
 from datetime import datetime, timedelta, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -104,8 +104,10 @@ def build_signals(snapshot):
         except (TypeError, ValueError):
             cap_mult = 0.0
         signals.append({
-            "signal_id": "sig_{}_{}".format(
-                now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
+            # P1-01：确定性 signal_id（同 source+币种当日重跑幂等替换）
+            "signal_id": "sig_bdsm_{}_{}".format(
+                re.sub(r"[^A-Za-z0-9]+", "_", str(symbol)),
+                now.strftime("%Y%m%d")),
             "source": "bdsm",
             "ts": now.isoformat(),
             "symbol": str(symbol),

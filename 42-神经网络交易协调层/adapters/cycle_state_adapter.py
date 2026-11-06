@@ -15,7 +15,6 @@
 import json
 import os
 import sys
-import uuid
 from datetime import datetime, timedelta, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -74,8 +73,8 @@ def build_signal(state: dict) -> dict:
     conf = _CONF_MAP.get(str(real_cycle.get("confidence", "")).lower(), 0.4)
 
     return {
-        "signal_id": "sig_{}_{}".format(
-            now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
+        # P1-01：确定性 signal_id（同 source+symbol 当日重跑幂等替换，配合总线按 signal_id 合并）
+        "signal_id": "sig_40-cycle_MACRO_{}".format(now.strftime("%Y%m%d")),
         "source": "40-cycle",
         "ts": now.isoformat(),
         "symbol": "MACRO",  # 周期级宏观信号，非单标的
