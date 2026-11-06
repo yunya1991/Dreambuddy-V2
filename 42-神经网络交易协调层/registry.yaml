@@ -7,34 +7,40 @@ subsystems:
     publisher: adapters/strategic_extension_adapter.py
     publish: [strategic_extension]
     subscribe: [elastic_params, risk_budget]
+    horizon: days
     enabled: true
 
   - name: 40-cycle
     publisher: adapters/cycle_state_adapter.py
     publish: [cycle_state]
     subscribe: []
+    horizon: days
     enabled: true
 
   - name: 23-contradiction
     publisher: adapters/contradiction_state_adapter.py
     publish: [contradiction_arbitration]
     subscribe: []
+    horizon: hours
     enabled: true
 
   - name: 29-event
     publisher: adapters/event_driven_adapter.py
     publish: [event_driven]
     subscribe: []
+    horizon: hours
     enabled: true
 
   - name: 11-bcrm
     publisher: adapters/bcrm_state_adapter.py
     publish: [bcrm_strategy_state]
     subscribe: []
+    horizon: days
     enabled: true
 
   - name: bdsm
     publisher: adapters/bdsm_state_adapter.py
     publish: [bdsm_value_constraint]
     subscribe: []
+    horizon: days
     enabled: true
