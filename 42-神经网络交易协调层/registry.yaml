@@ -44,3 +44,18 @@ subsystems:
     subscribe: []
     horizon: days
     enabled: true
+
+  # P1-04/DEC-08：11 子池状态文件只读适配器（开关 ENABLE_11_STATE_ADAPTER=1）
+  - name: 11-washout
+    publisher: adapters/washout_state_adapter.py
+    publish: [washout_entry_signal]
+    subscribe: []
+    horizon: hours
+    enabled: true
+
+  - name: 11-event-arbitrage
+    publisher: adapters/event_arbitrage_state_adapter.py
+    publish: [event_arbitrage_signal]
+    subscribe: []
+    horizon: hours
+    enabled: true
