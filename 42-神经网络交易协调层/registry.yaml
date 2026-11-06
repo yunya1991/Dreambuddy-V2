@@ -38,7 +38,8 @@ subsystems:
     horizon: days
     enabled: true
 
-  - name: bdsm
+  # P1-05：canonical source 更名 bdsm → 11-bdsm；旧别名信号经 SOURCE_ALIAS_MODE=1 双写兼容
+  - name: 11-bdsm
     publisher: adapters/bdsm_state_adapter.py
     publish: [bdsm_value_constraint]
     subscribe: []

@@ -54,7 +54,8 @@ def test_validator_accepts_valid_registry(tmp_path):
     reg = {
         "subsystems": [
             {
-                "name": "x",
+                # P1-05：name 必须属于 canonical source 枚举
+                "name": "11-bcrm",
                 "publisher": "adapters/x_adapter.py",
                 "publish": ["x_sig"],
                 "subscribe": [],

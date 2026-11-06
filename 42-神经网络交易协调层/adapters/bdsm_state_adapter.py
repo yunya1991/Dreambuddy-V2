@@ -4,7 +4,8 @@
 
 职责（42 层 SPEC §2.3 即插即拔接入）：
 - 只读 BDSM 每日快照（11 层 .workbuddy/bdsm/bdsm_snapshot_YYYYMMDD.json），不侵入 BDSM 系统
-- 按币种各发布一条统一 SignalSchema 信号，source=bdsm
+- 按币种各发布一条统一 SignalSchema 信号；P1-05：SOURCE_ALIAS_MODE=1 时
+  canonical(11-bdsm) 与旧别名(bdsm) 双写，默认仅旧别名（回滚路径）
 - direction 映射：direction_constraint LONG_ONLY/LONG_PREFER→long；SHORT_ONLY/SHORT_PREFER→short；NEUTRAL/FREEZE→neutral
 - confidence = 币种 confidence（数据不足 0.0 的信号由总线 F2 置信度过滤自然降级为 neutral）
 - risk_exposure_hint = cap_multiplier（BDSM 仓位乘数，真实数据）
@@ -14,6 +15,7 @@
 
 用法：python3 bdsm_state_adapter.py（独立运行时打印发布结果）
 """
+
 import glob
 import json
 import os
@@ -28,7 +30,9 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 
 # BDSM 快照目录（每日一份）
 _BDSM_DIR = os.path.join(
-    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"), ".workbuddy", "bdsm",
+    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"),
+    ".workbuddy",
+    "bdsm",
 )
 
 # 42 层 SignalBus 模块路径
@@ -36,6 +40,10 @@ _42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # 快照新鲜度上限（日级快照，容忍 48h）
 _MAX_AGE_HOURS = 48
+
+# P1-05：canonical source 与旧别名（DEC-28 口径；无 11-strategy）
+CANONICAL_SOURCE = "11-bdsm"
+ALIAS_SOURCE = "bdsm"
 
 # direction_constraint → SignalSchema direction
 _DIR_MAP = {
@@ -83,10 +91,15 @@ def _check_freshness(snapshot):
     return True, age_hours
 
 
-def build_signals(snapshot):
-    """将 BDSM 快照按币种转换为统一 SignalSchema 信号列表。"""
+def build_signals(snapshot, source=ALIAS_SOURCE):
+    """将 BDSM 快照按币种转换为统一 SignalSchema 信号列表。
+
+    P1-05：source 可指定 canonical（11-bdsm）或旧别名（bdsm）；
+    signal_id 前缀随 source 变化（slug 化），双写时两条各自幂等。
+    """
     now = _now()
     coins = snapshot.get("coins") or {}
+    source_slug = re.sub(r"[^A-Za-z0-9]+", "_", source)
 
     signals = []
     for symbol, coin in coins.items():
@@ -103,32 +116,48 @@ def build_signals(snapshot):
             cap_mult = max(0.0, min(1.0, float(coin.get("cap_multiplier") or 0.0)))
         except (TypeError, ValueError):
             cap_mult = 0.0
-        signals.append({
-            # P1-01：确定性 signal_id（同 source+币种当日重跑幂等替换）
-            "signal_id": "sig_bdsm_{}_{}".format(
-                re.sub(r"[^A-Za-z0-9]+", "_", str(symbol)),
-                now.strftime("%Y%m%d")),
-            "source": "bdsm",
-            "ts": now.isoformat(),
-            "symbol": str(symbol),
-            "direction": direction,
-            "confidence": round(confidence, 4),
-            "horizon": "days",
-            "risk_exposure_hint": cap_mult,
-            "expires_at": (now + timedelta(hours=24)).isoformat(),
-            "payload": {
-                "direction_constraint": coin.get("direction_constraint"),
-                "score": coin.get("score"),
-                "rank": coin.get("rank"),
-                "phase": coin.get("phase"),
-                "phase_confidence": coin.get("phase_confidence"),
-                "valuation_percentile": coin.get("valuation_percentile"),
-                "exit_action": coin.get("exit_action"),
-                "data_quality": coin.get("data_quality"),
-                "snapshot_date": snapshot.get("snapshot_date"),
-            },
-        })
+        signals.append(
+            {
+                # P1-01：确定性 signal_id（同 source+币种当日重跑幂等替换）
+                "signal_id": "sig_{}_{}_{}".format(
+                    source_slug, re.sub(r"[^A-Za-z0-9]+", "_", str(symbol)), now.strftime("%Y%m%d")
+                ),
+                "source": source,
+                "ts": now.isoformat(),
+                "symbol": str(symbol),
+                "direction": direction,
+                "confidence": round(confidence, 4),
+                "horizon": "days",
+                "risk_exposure_hint": cap_mult,
+                "expires_at": (now + timedelta(hours=24)).isoformat(),
+                "payload": {
+                    "direction_constraint": coin.get("direction_constraint"),
+                    "score": coin.get("score"),
+                    "rank": coin.get("rank"),
+                    "phase": coin.get("phase"),
+                    "phase_confidence": coin.get("phase_confidence"),
+                    "valuation_percentile": coin.get("valuation_percentile"),
+                    "exit_action": coin.get("exit_action"),
+                    "data_quality": coin.get("data_quality"),
+                    "snapshot_date": snapshot.get("snapshot_date"),
+                },
+            }
+        )
     return signals
+
+
+def alias_mode_enabled() -> bool:
+    """P1-05 开关：SOURCE_ALIAS_MODE=1 时 canonical/旧别名双写（默认关=回滚路径）。"""
+    return os.environ.get("SOURCE_ALIAS_MODE") == "1"
+
+
+def build_publish_signals(snapshot):
+    """P1-05 发布信号集：开关开启时 canonical(11-bdsm)+别名(bdsm) 双写，否则仅别名。"""
+    if alias_mode_enabled():
+        return build_signals(snapshot, source=CANONICAL_SOURCE) + build_signals(
+            snapshot, source=ALIAS_SOURCE
+        )
+    return build_signals(snapshot, source=ALIAS_SOURCE)
 
 
 def main() -> int:
@@ -143,38 +172,56 @@ def main() -> int:
 
     fresh, age_hours = _check_freshness(snapshot)
     if not fresh:
-        print(json.dumps({
-            "status": "stale",
-            "reason": "BDSM 快照超过 48h 或日期非法，不发布",
-            "age_hours": round(age_hours, 1) if age_hours >= 0 else None,
-        }, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "status": "stale",
+                    "reason": "BDSM 快照超过 48h 或日期非法，不发布",
+                    "age_hours": round(age_hours, 1) if age_hours >= 0 else None,
+                },
+                ensure_ascii=False,
+            )
+        )
         return 1
 
-    signals = build_signals(snapshot)
+    signals = build_publish_signals(snapshot)
     if not signals:
-        print(json.dumps({"status": "unavailable", "reason": "无可发布币种信号（fail-open）"}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"status": "unavailable", "reason": "无可发布币种信号（fail-open）"},
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     bus = SignalBus()
     results = []
     for signal in signals:
         result = bus.publish(signal)
-        results.append({
-            "symbol": signal["symbol"],
-            "direction": signal["direction"],
-            "confidence": signal["confidence"],
-            "risk_exposure_hint": signal["risk_exposure_hint"],
-            "publish_result": result.get("status"),
-            "reason": result.get("reason"),
-        })
+        results.append(
+            {
+                "symbol": signal["symbol"],
+                "direction": signal["direction"],
+                "confidence": signal["confidence"],
+                "risk_exposure_hint": signal["risk_exposure_hint"],
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+            }
+        )
     bus.flush()
-    print(json.dumps({
-        "snapshot": os.path.basename(path) if path else None,
-        "published": len(results),
-        "results": results,
-        "bus_signal_count": bus.snapshot()["signal_count"],
-        "bus_sources": bus.snapshot()["sources"],
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "snapshot": os.path.basename(path) if path else None,
+                "published": len(results),
+                "results": results,
+                "bus_signal_count": bus.snapshot()["signal_count"],
+                "bus_sources": bus.snapshot()["sources"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if all(r["publish_result"] == "accepted" for r in results) else 1
 
 

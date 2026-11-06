@@ -22,6 +22,21 @@ _DEFAULT_REGISTRY = os.path.join(_42_ROOT, "registry.yaml")
 _REQUIRED_FIELDS = ("name", "publisher", "publish", "subscribe", "horizon", "enabled")
 _VALID_HORIZONS = ("hours", "days", "weeks")
 
+# P1-05：canonical source 枚举（DEC-28 口径）。registry name 必须属于该集合；
+# 旧别名（bdsm）仅作为总线信号别名兼容，不允许作为 registry 名；
+# 禁止 11-strategy（strategy 不是独立 canonical source）。
+CANONICAL_SOURCES = (
+    "43-strategic-extension",
+    "40-cycle",
+    "23-contradiction",
+    "29-event",
+    "11-bcrm",
+    "11-bdsm",
+    "11-washout",
+    "11-event-arbitrage",
+)
+_FORBIDDEN_SOURCES = ("11-strategy",)
+
 
 def validate_registry(path: str = _DEFAULT_REGISTRY) -> list:
     """校验 registry.yaml，返回错误信息列表（空列表 = 通过）。"""
@@ -60,6 +75,19 @@ def validate_registry(path: str = _DEFAULT_REGISTRY) -> list:
             if sub["name"] in names:
                 errors.append("{}: name 重复".format(name))
             names.add(sub["name"])
+            # P1-05：source 枚举一致性校验
+            if sub["name"] in _FORBIDDEN_SOURCES:
+                errors.append(
+                    "{}: 禁止的 source（DEC-28：strategy 非独立 canonical source）".format(
+                        sub["name"]
+                    )
+                )
+            elif sub["name"] not in CANONICAL_SOURCES:
+                errors.append(
+                    "{}: name 不在 canonical source 枚举内（合法值 {}）".format(
+                        sub["name"], "/".join(CANONICAL_SOURCES)
+                    )
+                )
 
         publisher = sub.get("publisher")
         if publisher and isinstance(publisher, str):
