@@ -17,10 +17,11 @@ subsystems:
     horizon: days
     enabled: true
 
+  # P1-06：23 声明订阅弹性参数（分发 stub 消费可观测）
   - name: 23-contradiction
     publisher: adapters/contradiction_state_adapter.py
     publish: [contradiction_arbitration]
-    subscribe: []
+    subscribe: [elastic_params]
     horizon: hours
     enabled: true
 
