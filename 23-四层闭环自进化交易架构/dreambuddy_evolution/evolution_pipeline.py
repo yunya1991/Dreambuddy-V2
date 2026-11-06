@@ -1034,7 +1034,7 @@ class EvolutionPipeline:
 
         评分公式（v3.0 扩展）：
           base_score = expected_return × confidence × (1 - resistance)
-          hjb_adjust = × (0.7 + 0.3 × v_adjust)          # HJB 值函数 30% 权重
+          hjb_adjust = × ((1 - w) + w × v_adjust)        # w=0.70（enable_hjb_dominant=True）或 0.30
           contradiction_adjust = × (1 + 0.2 × strength)  # 对齐主要矛盾加分
                                    × (1 - 0.3 × strength)  # 逆向减分
           continuation_adjust = × (0.8 + 0.4 × cont)      # 趋势延续性增强

@@ -558,7 +558,7 @@ L3 路径计算层
 | 集成位置 | 文件 | 行号 | 说明 |
 |:---|:---|:---|:---|
 | DeepReasoningEngine | `engines/deep_reasoning_engine.py` | L302-347 | `find_min_resistance_path` 优先 HJB，FAIL-OPEN 降级 argmin |
-| EvolutionPipeline | `evolution_pipeline.py` | L590-620 | `_select_optimal_path` 注入 HJB 值函数（30% 权重） |
+| EvolutionPipeline | `evolution_pipeline.py` | L1602-1606 | `_select_optimal_path` 注入 HJB 值函数（30%/70% 可切换；`enable_hjb_dominant=True` 时 70%） |
 | AGI 开关 | `agi_config.py` | L49-50 | `enable_hjb_solver` + `enable_variational_opt` |
 
 ### 12.7 哲学差距分析 — "主要矛盾→阻力最小"逻辑链

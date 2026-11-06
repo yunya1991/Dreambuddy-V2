@@ -493,7 +493,7 @@ Phase 4 的三个子任务模块已有基础实现，但**写入链路断裂**�
 - **新增硬约束**: HC-AGI-15（网格≥32×16）、HC-AGI-16（收敛1e-6≥3轮）、HC-AGI-17（异常强制降级）
 - **新增 AGI 开关**: `enable_hjb_solver` + `enable_variational_opt`（默认 True）
 - **DeepReasoningEngine 集成**: `find_min_resistance_path` 优先 HJB/变分法，FAIL-OPEN 降级 argmin
-- **EvolutionPipeline 集成**: `_select_optimal_path` 注入 HJB 值函数（30% 权重调整 score）
+- **EvolutionPipeline 集成**: `_select_optimal_path` 注入 HJB 值函数（30% 权重调整 score；后续 `enable_hjb_dominant=True` 增强模式已提升到 70%）
 - 23 个 TDD 测试，715 全量测试 0 失败
 
 ### 分析 — L3 哲学逻辑链差距（"主要矛盾→阻力最小"）
