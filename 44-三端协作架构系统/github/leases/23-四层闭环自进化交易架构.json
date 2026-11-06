@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "23-四层闭环自进化交易架构",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-SPEC-49-M0",
+      "session": null,
+      "base_sha": null,
+      "started_at": "2026-11-07T01:11:31+08:00",
+      "ttl_hours": 72,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}
