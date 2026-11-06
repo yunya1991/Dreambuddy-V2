@@ -28,7 +28,8 @@
     },
     "trading": {
       "paths": [
-        "6-TRADING/**"
+        "6-TRADING/**",
+        "49-交易框架协议/**"
       ]
     },
     "frontend_gateway": {
@@ -37,10 +38,14 @@
       ]
     },
     "knowledge": {
-      "paths": ["2-KNOWLEDGE/**"]
+      "paths": [
+        "2-KNOWLEDGE/**"
+      ]
     },
     "chain_development": {
-      "paths": ["3-CHAIN-DEVELOPMENT/**"]
+      "paths": [
+        "3-CHAIN-DEVELOPMENT/**"
+      ]
     },
     "ci": {
       "paths": [
@@ -132,7 +137,6 @@
     }
   },
   "required_docs": [
-    "1-ARCHITECTURE/中台设计/PRODUCT_HUB.md",
-    "docs/superpowers/plans/2026-05-17-agent-standard-dev-lifecycle-implementation-plan.md"
+    "1-ARCHITECTURE/中台设计/PRODUCT_HUB.md"
   ]
 }
