@@ -32,23 +32,26 @@ EXECUTION_RIGHTS_SAMPLE = (
     CONTRACT_ROOT / "contracts" / "examples" / "execution_rights.sample.json"
 )
 
-# 只增加诊断字段，不应改变 production。
-SHADOW_ONLY_SWITCHES = [
-    "enable_cd_shadow",
-    "enable_dominance_shadow",
-    "enable_event_contradiction_shadow",
-    "enable_w6_monitor",
-    "enable_self_vote_shadow",
-]
+# M0-04: 开关清单唯一事实源（docs/switch_registry.v1.json）
+SWITCH_REGISTRY_PATH = CONTRACT_ROOT / "docs" / "switch_registry.v1.json"
 
-# 打开后会改变行为，回滚动作是置回 False；演练只验证默认关闭与可回滚。
-PROMOTION_SWITCHES = [
-    "enable_primary_contradiction_detector",
-    "enable_d2_oi_liq",
-    "enable_attention_a_dim",
-    "enable_a_dim_c_to_3",
-    "enable_self_vote_cap",
-]
+
+def _load_switches() -> tuple[list[str], list[str]]:
+    registry = json.loads(SWITCH_REGISTRY_PATH.read_text(encoding="utf-8"))
+    shadow = [
+        entry["name"]
+        for entry in registry.get("switches", [])
+        if entry.get("kind") == "shadow"
+    ]
+    promotion = [
+        entry["name"]
+        for entry in registry.get("switches", [])
+        if entry.get("kind") == "promotion"
+    ]
+    return shadow, promotion
+
+
+SHADOW_ONLY_SWITCHES, PROMOTION_SWITCHES = _load_switches()
 
 
 def _check(check_id: str, passed: bool, **details) -> dict:
