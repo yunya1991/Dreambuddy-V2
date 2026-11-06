@@ -1565,6 +1565,20 @@ class EvolutionPipeline:
         best = scored[0]
         second = scored[1] if len(scored) > 1 else None
 
+        # B-02: 成对支配 shadow（只记录诊断，不改变 production argmax）
+        dominance_shadow = None
+        try:
+            from dreambuddy_evolution.core.dominance_resolver import resolve_shadow
+
+            dominance_shadow = resolve_shadow(
+                scored,
+                primary_contradiction=primary_contradiction,
+                production_path_id=best.get("path_id"),
+                enabled=get_switch("enable_dominance_shadow", False),
+            )
+        except Exception as _dom_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+            logger.debug("[FO][DominanceShadow] fail: %s", _dom_e)
+
         # 统计验证
         # P3 修复（主矛盾→实质交易影响链路）：验证阈值与交叉验证乘数联动。
         # 分歧期间（conf_mult < 1.0）得分已被压低 ×conf_mult，若阈值不变则
@@ -1620,6 +1634,8 @@ class EvolutionPipeline:
             "cognition_result": cognition_result,
             # §5.1 交叉验证层输出
             "cross_validation": cv_result,
+            # B-02: 成对支配 shadow 诊断
+            "dominance_shadow": dominance_shadow,
         }
 
     def _load_library(self):
