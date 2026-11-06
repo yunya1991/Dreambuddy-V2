@@ -20,6 +20,7 @@ AGI 阶段4增强点（只读，FAIL-OPEN）:
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -1077,6 +1078,7 @@ class EvolutionPipeline:
         # === Phase 3.4: 主要矛盾识别（开关 + FAIL-OPEN）— 先于 HJB ===
         primary_contradiction = None
         w6_status = None
+        self_vote_shadow = None
         self._last_dimension_predictions = {}
         try:
             from dreambuddy_evolution.agi_config import get_switch
@@ -1182,6 +1184,22 @@ class EvolutionPipeline:
             )
         except Exception as _ec_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
             logger.debug("[FO][EventContradictionShadow] fail: %s", _ec_e)
+
+        # B-08: 自票上限 / 独立矛盾证据 shadow（只读诊断）
+        try:
+            from dreambuddy_evolution.agi_config import get_switch as _gs_sv
+            from dreambuddy_evolution.core.self_vote_guard import (
+                compute_self_vote_shadow,
+            )
+
+            self_vote_shadow = compute_self_vote_shadow(
+                paths,
+                primary_contradiction=primary_contradiction,
+                enabled=_gs_sv("enable_self_vote_shadow", False),
+                audit_path=os.environ.get("SELF_VOTE_AUDIT_PATH"),
+            )
+        except Exception as _sv_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+            logger.debug("[FO][SelfVoteShadow] fail: %s", _sv_e)
 
         # === Phase 3.2: TrendContinuationScorer 接入 — 填充 continuation_score ===
         try:
@@ -1688,6 +1706,8 @@ class EvolutionPipeline:
             "event_contradiction_shadow": event_contradiction_shadow,
             # B-05: W6 样本链路状态（只读）
             "w6_status": w6_status,
+            # B-08: 自票上限 / 独立证据 shadow 诊断
+            "self_vote_shadow": self_vote_shadow,
         }
 
     def _load_library(self):

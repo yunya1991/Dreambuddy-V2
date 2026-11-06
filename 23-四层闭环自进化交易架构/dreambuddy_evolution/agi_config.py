@@ -83,6 +83,8 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_primary_contradiction_detector": False,  # B-04: 事件主矛盾检测器（生产默认关，shadow 用 force）
     "enable_event_contradiction_shadow": False,      # B-04: 事件主矛盾 shadow 诊断
     "enable_w6_monitor": False,                       # B-05: W6 样本链路状态监控（只读）
+    "enable_self_vote_shadow": False,                # B-08: 自票上限/独立证据 shadow 诊断
+    "enable_self_vote_cap": False,                    # B-08: 自票上限实际生效（默认关，shadow 通过后再开）
     "enable_event_dominance": True,                # 事件主导控制开关 (P1-2 双层门控第二层)
     "enable_auto_weight_adjustment": True,          # 自进化权重自动调整 (基因创新闭环)
     # --- 交叉验证层 (矛盾Transformer §5.1) ---
