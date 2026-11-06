@@ -46,6 +46,20 @@ def records_to_cleaned_df(records: Iterable[DataRecord]) -> CleanedDF:
         # 2) 根据 payload 决定片段
         if rec.category in ("finance", "chain") and rec.timeseries:
             frag = pd.DataFrame(rec.timeseries)
+            # FIX 2026-11-05: 保留 metrics 扁平指标（bgeometrics mvrv/sopr/nupl、
+            # panewslab bottom_* 等），否则指标名在 DF 往返中丢失，还原后只剩 {asset, value}
+            if isinstance(rec.metrics, dict) and rec.metrics:
+                for _k, _v in rec.metrics.items():
+                    if _k not in frag.columns:
+                        if isinstance(_v, bool):
+                            frag[_k] = "true" if _v else "false"
+                        elif _v is None or isinstance(_v, (str, int, float)):
+                            frag[_k] = _v
+                        else:
+                            try:
+                                frag[_k] = json.dumps(_v, ensure_ascii=False, default=str)
+                            except Exception:
+                                frag[_k] = str(_v)
         elif rec.category == "news" and rec.events:
             frag = pd.DataFrame(rec.events)
             # ★ FIX 2026-10-09: news 类需保留 metrics（od_policy_sentiment_0_1/od_event_type/

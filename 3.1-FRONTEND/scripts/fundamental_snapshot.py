@@ -86,12 +86,12 @@ def _build_macro(raw: dict, ts: str) -> dict:
     core = {
         "policy_score": policy_score,
         "cpi": raw.get("CPI"),  # CPI 指数水平 (CPIAUCSL, DAL 真实值)
-        "cpi_yoy": None,  # 同比需历史序列, DAL 单点查询暂无
+        "cpi_yoy": raw.get("CPI_yoy"),  # CPI 同比% (DAL macro: 最新 vs ~1年前)
         "fed_funds_rate": fed_funds_rate,
         "rate_cycle": rate_cycle,
-        "cut_probability": None,
-        "hold_probability": None,
-        "hike_probability": None,
+        "cut_probability": raw.get("cut_probability"),  # CME FedWatch (fedwatch/cut_prob)
+        "hold_probability": raw.get("hold_probability"),  # CME FedWatch (fedwatch/hold_prob)
+        "hike_probability": raw.get("hike_probability"),  # CME FedWatch (fedwatch/hike_prob)
         # 给 OverviewPanel 用 — 直接塞真实值
         "dollar_index": dxy,
         "us10y_yield": us10y,
@@ -243,7 +243,21 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
                 "label": "USDC 流通量(十亿)",
             },
         },
-        "metrics": {"core": core, "breakdown": {}},
+        "metrics": {
+            "core": core,
+            "breakdown": {
+                # ETF 分发行商明细 (farside per-issuer, 百万美元)
+                "etf_issuer_flows": {
+                    k[4:]: flow_raw.get(k)
+                    for k in (
+                        "etf_ibit", "etf_fbtc", "etf_arkb", "etf_gbtc", "etf_btco",
+                        "etf_bitb", "etf_ezbc", "etf_btcw", "etf_brrr", "etf_hodl",
+                        "etf_msbt", "etf_btc",
+                    )
+                    if isinstance(flow_raw.get(k), (int, float))
+                },
+            },
+        },
         "meta": {
             "last_update": ts,
             "source": ["data.dal_query"] if has_real else [],
@@ -252,14 +266,23 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
     }
 
 
-def _build_valuation(macro_raw: dict, ts: str) -> dict:
+def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
     sp500 = macro_raw.get("SP500")
     gold = macro_raw.get("Gold")
-
-    mvrv = None
+    # 收口 P2: 优先 bgeometrics 真实 MVRV (DAL chain → btc_metrics/mvrv)
+    real_mvrv = chain_raw.get("mvrv")
+    mvrv = real_mvrv if isinstance(real_mvrv, (int, float)) else None
     valuation_zone = None
-    if isinstance(sp500, (int, float)):
-        # 简化估值: SP500 历史高位 >7500 偏高, <6500 低估
+    if mvrv is not None:
+        # 真实 MVRV 区间: >2 偏高, <1 低估
+        if mvrv > 2:
+            valuation_zone = "偏高"
+        elif mvrv < 1:
+            valuation_zone = "低估"
+        else:
+            valuation_zone = "合理"
+    elif isinstance(sp500, (int, float)):
+        # 回退: SP500 历史高位 >7500 偏高, <6500 低估
         if sp500 > 7500:
             valuation_zone = "偏高"
             mvrv = 2.3
@@ -269,29 +292,40 @@ def _build_valuation(macro_raw: dict, ts: str) -> dict:
         else:
             valuation_zone = "合理"
             mvrv = 1.8
-
     core = {
         "mvrv_ratio": mvrv,
         "nvt_z_score": None,
         "valuation_zone": valuation_zone,
         "market_price": sp500,
     }
-
     return {
         "timestamp": ts,
         "data": {
             "sp500_pe_ratio": {"value": None, "label": "标普500 PE"},
             "gold_real_rate": {"value": gold, "label": "黄金价格"},
         },
-        "metrics": {"core": core, "breakdown": {}},
-        "meta": {"last_update": ts, "source": ["data.dal_query"], "data_quality": "derived"},
+        "metrics": {
+            "core": core,
+            "breakdown": {
+                "sopr": chain_raw.get("sopr"),  # bgeometrics 真实 SOPR (收口 P2)
+                "nupl": chain_raw.get("nupl"),  # bgeometrics 真实 NUPL (收口 P2)
+                "puell_multiple": chain_raw.get("puell_multiple"),  # bgeometrics 深度指标
+                "realized_price": chain_raw.get("realized_price"),  # bgeometrics 深度指标
+                "nvt_ratio": chain_raw.get("nvt_ratio"),  # bgeometrics 深度指标
+            },
+        },
+        "meta": {
+            "last_update": ts,
+            "source": ["data.dal_query"],
+            "data_quality": "good" if isinstance(real_mvrv, (int, float)) else "derived",
+        },
     }
 
 
 def _build_breadth(breadth_raw: dict, ts: str) -> dict:
     """breadth: DAL breadth 命令真实数据 (P1)。"""
     core = {
-        "btc_dominance": None,
+        "btc_dominance": breadth_raw.get("btc_dominance_pct"),  # panewslab overview_market 真实值
         "breadth_confirmation": None,
         "global_change_24h": None,
         "market_participation_index": None,
@@ -401,7 +435,7 @@ def main():
         "macro": _build_macro(macro_raw, ts),
         "onchain": _build_onchain(chain_raw, ts),
         "sentiment": _build_sentiment(sentiment_raw, macro_raw, ts),
-        "valuation": _build_valuation(macro_raw, ts),
+        "valuation": _build_valuation(macro_raw, chain_raw, ts),
         "flow": _build_flow(flow_raw, ts),
         "breadth": _build_breadth(breadth_raw, ts),
         "capital_flow": _build_capital_flow(capital_flow_raw, ts),

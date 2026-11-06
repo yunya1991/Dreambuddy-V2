@@ -91,12 +91,37 @@ class DedupAlignCleaner:
                 out[self.timestamp_col] = pd.to_datetime(out[self.timestamp_col])
             numeric_cols = out.select_dtypes(include=[np.number]).columns.tolist()
             if numeric_cols:
-                mask = out[numeric_cols].isna()
-                if mask.any().any():
-                    count_fb50 = int(mask.sum().sum())
-                    out[numeric_cols] = out[numeric_cols].fillna(self.fail_open_value)
-                    imputed += count_fb50
-                    note_parts.append(f"flat_fail-open_50={count_fb50}")
+                _cross_sub = ("sub_category" in out.columns
+                              and out["sub_category"].nunique(dropna=True) > 1)
+                if _cross_sub:
+                    # FIX 2026-11-05: 跨板块防串染 — 按 sub_category 分组填充：
+                    # 组内整列 NaN 的列（属于其他板块）保留 NaN，
+                    # 由 cleaned_df_to_records 的 _is_nan 跳过，
+                    # 避免 50.0 占位值污染其他板块的 metrics
+                    _parts = []
+                    _filled = 0
+                    for _sub, _grp in out.groupby("sub_category", dropna=False):
+                        _grp = _grp.copy()
+                        _cols = [c for c in numeric_cols
+                                 if c in _grp.columns and _grp[c].notna().any()]
+                        if _cols:
+                            _mask = _grp[_cols].isna()
+                            if _mask.any().any():
+                                _cnt = int(_mask.sum().sum())
+                                _grp[_cols] = _grp[_cols].fillna(self.fail_open_value)
+                                _filled += _cnt
+                        _parts.append(_grp)
+                    out = pd.concat(_parts).sort_index()
+                    if _filled:
+                        imputed += _filled
+                        note_parts.append(f"flat_grouped_fail-open_50={_filled}")
+                else:
+                    mask = out[numeric_cols].isna()
+                    if mask.any().any():
+                        count_fb50 = int(mask.sum().sum())
+                        out[numeric_cols] = out[numeric_cols].fillna(self.fail_open_value)
+                        imputed += count_fb50
+                        note_parts.append(f"flat_fail-open_50={count_fb50}")
             mode_note = "FLAT(news/macro heterogeneous per-subcategory no-resample)"
             return self._emit(out, trace, input_rows, clipped, imputed, note_parts, mode_note)
 

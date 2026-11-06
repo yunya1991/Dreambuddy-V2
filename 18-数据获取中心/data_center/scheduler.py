@@ -579,6 +579,16 @@ class CollectionScheduler:
                 interval_sec=14400,  # 4h (free tier rate limit 友好)
             )
         )
+        #    深度指标: Puell/realized_price/NVT (慢变量, 12h 足够)
+        tasks.append(
+            CollectionTask(
+                name="bgeometrics_deep",
+                category="chain",
+                source="bgeometrics",
+                params={"metrics": ["puell_multiple", "realized_price", "nvt_ratio"]},
+                interval_sec=43200,  # 12h (free tier rate limit 友好)
+            )
+        )
         # ── chain/coinglass（5min，衍生品聚合数据）
         #    OI/Funding/清算/多空比，覆盖 AGI L1 感知层衍生品缺口
         #    stealthy mode 爬取，5min 适配高频衍生品数据

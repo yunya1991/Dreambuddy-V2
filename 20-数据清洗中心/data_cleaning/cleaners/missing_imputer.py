@@ -1,11 +1,13 @@
-"""T4 · MissingImputer：三级兜底（时序 ffill→linear→50 / 宏观 linear→拖尾→50 / 事件 1/0/0.5）。"""
-from __future__ import annotations
+"""T4 · MissingImputer：三级兜底（时序 ffill→linear→50 / 宏观 linear→拖尾→50 / 事件 1/0/0.5）。
 
+FIX 2026-11-05: 跨板块防串染 — 多 sub_category 合并清洗时按组填充，
+组内整列 NaN 的列（属于其他板块）保留 NaN，由还原环节跳过，
+避免 50.0 占位值污染与跨组 ffill/interpolate 数值渗漏。
+"""
+from __future__ import annotations
 import numpy as np
 import pandas as pd
 from data_cleaning.contract import CleanAction, CleaningTrace
-
-
 class MissingImputer:
     def __init__(
         self,
@@ -17,24 +19,20 @@ class MissingImputer:
         self.ffill_limit = ffill_limit
         self.fail_open = fail_open_value
         self.cat_col = category_col
-
     # ------------------------------------------------------------------
     def clean(self, df: pd.DataFrame, trace: CleaningTrace, **_: object) -> tuple[pd.DataFrame, CleanAction]:
         input_rows = len(df)
         imputed = 0
         note_parts: list[str] = []
         out = df.copy()
-
         category = "timeseries"
         if self.cat_col in out.columns and len(out) > 0:
             vals = out[self.cat_col].dropna().unique().tolist()
             category = vals[0] if vals else "timeseries"
-
         numeric_cols = out.select_dtypes(include=[np.number]).columns.tolist()
         # 事件布尔列：object/bool 列也要转 1/0/0.5
         bool_cols = [c for c in out.columns if c != self.cat_col
                      and (out[c].dtype == bool or out[c].dtype == object)]
-
         # ================================================================
         # 事件分支 (events) → 先处理 bool/object 列
         # ================================================================
@@ -57,11 +55,36 @@ class MissingImputer:
                     imputed += int((before.isna() & out[c].notna()).sum())
                     note_parts.append(f"event_bool_0.5neutral({c})")
                 numeric_cols.append(c) if c not in numeric_cols else None
-
         # ================================================================
-        # 数值列：分支 = timeseries / macro
+        # 数值列：分支 = timeseries / macro（含跨板块分组防串染）
         # ================================================================
-        if numeric_cols:
+        _cross_sub = ("sub_category" in out.columns
+                      and out["sub_category"].nunique(dropna=True) > 1)
+        if numeric_cols and _cross_sub:
+            # FIX 2026-11-05: 按 sub_category 分组填充 —
+            # 组内整列 NaN 的列（属于其他板块）不填充、保留 NaN
+            _filled_total = 0
+            _parts = []
+            for _sub, _grp in out.groupby("sub_category", dropna=False):
+                _grp = _grp.copy()
+                _cols = [c for c in numeric_cols
+                         if c in _grp.columns and _grp[c].notna().any()]
+                if _cols:
+                    _before = int(_grp[_cols].isna().sum().sum())
+                    if category == "macro":
+                        _grp[_cols] = _grp[_cols].interpolate(method="linear", limit_direction="both")
+                        _grp[_cols] = _grp[_cols].ffill().bfill()
+                    else:
+                        _grp[_cols] = _grp[_cols].ffill(limit=self.ffill_limit)
+                        _grp[_cols] = _grp[_cols].interpolate(method="linear", limit_direction="both")
+                    _grp[_cols] = _grp[_cols].fillna(self.fail_open)
+                    _after = int(_grp[_cols].isna().sum().sum())
+                    _filled_total += _before - _after
+                _parts.append(_grp)
+            out = pd.concat(_parts).sort_index()
+            imputed += _filled_total
+            note_parts.append(f"{category}_grouped_filled={_filled_total}")
+        elif numeric_cols:
             before_nan = int(out[numeric_cols].isna().sum().sum())
             if before_nan == 0:
                 pass
@@ -77,7 +100,6 @@ class MissingImputer:
                 out[numeric_cols] = out[numeric_cols].fillna(self.fail_open)
             else:
                 out[numeric_cols] = out[numeric_cols].ffill(limit=self.ffill_limit).interpolate(limit_direction="both").fillna(self.fail_open)
-
             after_nan = int(out[numeric_cols].isna().sum().sum())
             filled = before_nan - after_nan
             imputed += filled
@@ -86,15 +108,14 @@ class MissingImputer:
                 out[numeric_cols] = out[numeric_cols].fillna(self.fail_open)
                 imputed += after_nan
             note_parts.append(f"{category}_filled={filled}")
-
-        # 整列全空 fail-open 双保险（T4-3）
-        for c in numeric_cols:
-            if c in out.columns and out[c].isna().any():
-                cnt = int(out[c].isna().sum())
-                out[c] = out[c].fillna(self.fail_open)
-                imputed += cnt
-                note_parts.append(f"fallback50({c}={cnt})")
-
+        # 整列全空 fail-open 双保险（T4-3）— 跨板块分组时跳过（NaN 交给还原环节丢弃）
+        if not _cross_sub:
+            for c in numeric_cols:
+                if c in out.columns and out[c].isna().any():
+                    cnt = int(out[c].isna().sum())
+                    out[c] = out[c].fillna(self.fail_open)
+                    imputed += cnt
+                    note_parts.append(f"fallback50({c}={cnt})")
         action = CleanAction(
             step="MissingImputer",
             input_rows=input_rows,
