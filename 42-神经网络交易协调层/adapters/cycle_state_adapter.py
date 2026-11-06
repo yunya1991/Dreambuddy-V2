@@ -18,13 +18,18 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 40 层产出物路径
 _40_STATE_PATH = os.path.join(
-    "/home/luke/dreambuddy/40-周期神经网络系统", "cycle_state.json",
+    os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统"), "cycle_state.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # confidence 映射（real_cycle.confidence → [0,1]）
 _CONF_MAP = {"high": 0.8, "medium": 0.6, "low": 0.4}

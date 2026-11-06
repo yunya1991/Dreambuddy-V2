@@ -21,13 +21,18 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # BDSM 快照目录（每日一份）
 _BDSM_DIR = os.path.join(
-    "/home/luke/dreambuddy/11-易经推理系统", ".workbuddy", "bdsm",
+    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"), ".workbuddy", "bdsm",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # 快照新鲜度上限（日级快照，容忍 48h）
 _MAX_AGE_HOURS = 48

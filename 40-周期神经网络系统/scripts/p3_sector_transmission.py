@@ -8,9 +8,15 @@
 import json
 from datetime import datetime, timezone
 from statistics import median
+import os
 
-STATE = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
-OUT = "/home/luke/dreambuddy/40-周期神经网络系统/sector_transmission.json"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+STATE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
+OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "sector_transmission.json")
 
 # 四层传导链（OKX 交易对）
 LAYERS = {

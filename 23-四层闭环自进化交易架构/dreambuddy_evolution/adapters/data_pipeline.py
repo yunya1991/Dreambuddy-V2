@@ -414,7 +414,11 @@ class DataPipelineAdapter:
         """
         import json as _json
         import os as _os
-        bus_path = "/home/luke/dreambuddy/42-神经网络交易协调层/runtime/bus_state.json"
+        # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导
+        _root = _os.environ.get("DREAMBUDDY_ROOT") or _os.path.dirname(
+            _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+        )
+        bus_path = _os.path.join(_root, "42-神经网络交易协调层", "runtime", "bus_state.json")
         try:
             if not _os.path.exists(bus_path):
                 return {"available": False, "note": "42 层总线状态不存在（fail-open）"}

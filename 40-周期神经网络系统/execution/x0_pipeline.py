@@ -16,7 +16,23 @@ from datetime import datetime, timezone, date
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BASE)
 CONFIG_PATH = os.path.join(BASE, "config.json")
-ALERT_MODULE_DIR = "/home/luke/dreambuddy/15-监控告警系统"  # 15 系统统一飞书告警模块
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(ROOT)
+ALERT_MODULE_DIR = os.path.join(_DREAMBUDDY_ROOT, "15-监控告警系统")  # 15 系统统一飞书告警模块
+
+
+def _resolve_cfg_paths(cfg):
+    """config.json 中的信号源路径支持相对 DREAMBUDDY_ROOT（R-42-04/P1-03）；相对路径就地展开为绝对路径。"""
+    for src in (cfg.get("signal_sources") or {}).values():
+        paths = src.get("paths")
+        if paths:
+            for k, v in paths.items():
+                if v and not os.path.isabs(v):
+                    paths[k] = os.path.join(_DREAMBUDDY_ROOT, v)
+        p = src.get("path")
+        if p and not os.path.isabs(p):
+            src["path"] = os.path.join(_DREAMBUDDY_ROOT, p)
+    return cfg
 
 
 def now_iso():
@@ -47,7 +63,7 @@ def load_config():
         for k, v in expected.items():
             if limits.get(k) != v:
                 raise ValueError(f"风控红线 {k}={limits.get(k)} 与预注册冻结值 {v} 不符，禁止运行")
-    return cfg
+    return _resolve_cfg_paths(cfg)
 
 
 def receive_real_signal(cfg):

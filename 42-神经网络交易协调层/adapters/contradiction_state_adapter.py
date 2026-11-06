@@ -19,14 +19,19 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 23 层产出物路径
 _23_SAMPLES_PATH = os.path.join(
-    "/home/luke/dreambuddy/23-四层闭环自进化交易架构",
+    os.path.join(_DREAMBUDDY_ROOT, "23-四层闭环自进化交易架构"),
     "dreambuddy_evolution", "data", "contradiction_samples.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # 样本新鲜度上限（超过视为过期，不发布）
 _MAX_AGE_SECONDS = 24 * 3600

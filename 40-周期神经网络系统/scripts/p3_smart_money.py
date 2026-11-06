@@ -10,9 +10,15 @@ import sqlite3
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+import os
 
-DB = "/home/luke/dreambuddy/18-数据获取中心/data_center.db"
-FF = "/home/luke/dreambuddy/40-周期神经网络系统/fund_flow.json"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
+FF = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "fund_flow.json")
 
 CFTC_URL = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
 LLAMA_URL = "https://stablecoins.llama.fi/stablecoins?includePrices=false"

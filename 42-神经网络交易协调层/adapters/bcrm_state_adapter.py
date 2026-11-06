@@ -22,14 +22,19 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 11 层 BCRM2.0 战略层产出物路径（polling_trader 日级缓存）
 _11_STATE_PATH = os.path.join(
-    "/home/luke/dreambuddy/11-易经推理系统", "scripts", "memory_l4",
+    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"), "scripts", "memory_l4",
     "runtime", "five_domain_state.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # 状态新鲜度上限（日级缓存，容忍 48h）
 _MAX_AGE_HOURS = 48

@@ -9,8 +9,14 @@ Stovall 映射：美林象限 → 周期阶段 → 板块偏好（预注册规�
 """
 import json
 from datetime import datetime, timezone
+import os
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 ROT = f"{BASE}/asset_rotation.json"
 STATE = f"{BASE}/cycle_state.json"
 TRANS = f"{BASE}/sector_transmission.json"

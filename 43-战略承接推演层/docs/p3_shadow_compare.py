@@ -12,17 +12,23 @@ import json
 import os
 import sys
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 43 侧：以正规包方式导入（承接开关默认关闭，相对导入不触发）
-_43_ROOT = "/home/luke/dreambuddy/43-战略承接推演层"
+_43_ROOT = os.path.join(_DREAMBUDDY_ROOT, "43-战略承接推演层")
 if _43_ROOT not in sys.path:
     sys.path.insert(0, _43_ROOT)
 from strategic_extension.five_domain_feature_computer import FiveDomainFeatureComputer as FDC43  # noqa: E402
 
 # 11 侧：原位置以正规模块方式导入（其内部依赖同目录 strategy_algo_layer 等模块）
-_11_DIR = "/home/luke/dreambuddy/11-易经推理系统/scripts/memory_l4"
+_11_DIR = os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统", "scripts", "memory_l4")
 if _11_DIR not in sys.path:
     sys.path.insert(0, _11_DIR)
 import five_domain_feature_computer as _m11  # noqa: E402
+
 FDC11 = _m11.FiveDomainFeatureComputer
 
 ASSET_CLASSES = ("crypto_usdt", "us_stock", "precious_metal")
