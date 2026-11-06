@@ -1,0 +1,143 @@
+{
+  "ts": "2026-11-06T03:56:30.449662+00:00",
+  "status": "ok",
+  "source": "shadow_rl",
+  "compositor": "both",
+  "composition_model": "mlp_tanh_h16+logistic_linear",
+  "primitives": "extended",
+  "limitation": "组合法为单隐层 tanh MLP（非线性），已排除「线性组合器能力不足」混淆项。若仍 falsified，说明在当前 5 维市场状态原语上组合泛化不优于 kNN 检索复用；但 2857 样本仍有容量/过拟合空间，须结合同态误差与逐 cell 分布解读，不据此宣布「E1 永久不可满足」。",
+  "sources": {
+    "shadow_rl": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/23-四层闭环自进化交易架构/dreambuddy_evolution/gene_data/shadow_rl_samples.jsonl"
+  },
+  "label_mode": "band",
+  "n_cases_loaded": 1431,
+  "n_cases": 1431,
+  "pos_ratio": 0.5003494060097834,
+  "n_eligible_cells": 26,
+  "n_evaluated_cells": 8,
+  "verdict": "inconclusive",
+  "n_eval": 516,
+  "acc_composition": 0.5329457364341085,
+  "acc_knn": 0.5251937984496124,
+  "improvement": 0.007751937984496027,
+  "p_value": 0.8317168283171683,
+  "obs_diff": 0.007751937984496124,
+  "direction_positive": true,
+  "homomorphism_error": -0.005772715960994561,
+  "per_cell": [
+    {
+      "cell": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n": 74,
+      "acc_composition": 0.5540540540540541,
+      "acc_knn": 0.5135135135135135,
+      "acc_composition_linear": 0.44594594594594594
+    },
+    {
+      "cell": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "n": 76,
+      "acc_composition": 0.6447368421052632,
+      "acc_knn": 0.4342105263157895,
+      "acc_composition_linear": 0.5394736842105263
+    },
+    {
+      "cell": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "n": 48,
+      "acc_composition": 0.5625,
+      "acc_knn": 0.4375,
+      "acc_composition_linear": 0.375
+    },
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "n": 68,
+      "acc_composition": 0.3235294117647059,
+      "acc_knn": 0.4264705882352941,
+      "acc_composition_linear": 0.5588235294117647
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        0
+      ],
+      "n": 31,
+      "acc_composition": 0.6451612903225806,
+      "acc_knn": 0.6129032258064516,
+      "acc_composition_linear": 0.41935483870967744
+    },
+    {
+      "cell": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      "n": 8,
+      "acc_composition": 0.375,
+      "acc_knn": 0.5,
+      "acc_composition_linear": 0.25
+    },
+    {
+      "cell": [
+        1,
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "n": 120,
+      "acc_composition": 0.525,
+      "acc_knn": 0.6333333333333333,
+      "acc_composition_linear": 0.55
+    },
+    {
+      "cell": [
+        1,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "n": 91,
+      "acc_composition": 0.5494505494505495,
+      "acc_knn": 0.5604395604395604,
+      "acc_composition_linear": 0.4945054945054945
+    }
+  ],
+  "acc_composition_linear": 0.49612403100775193,
+  "improvement_linear": -0.029069767441860517
+}
