@@ -5,8 +5,8 @@ from .config import DEFAULT_AUDIT_PATH, VenueConfig
 from .errors import (
     CliAuthError,
     CliInvalidResponse,
-    CliNotInstalled,
     CliNonZeroExit,
+    CliNotInstalled,
     CliRateLimit,
     CliTimeout,
     CommandNotAllowed,

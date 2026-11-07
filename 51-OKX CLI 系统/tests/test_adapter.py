@@ -1,5 +1,4 @@
 import pytest
-
 from okx_venue import OkxCliVenue, VenueConfig, VenueError, build_order_adapter
 
 
@@ -14,9 +13,7 @@ class FakeRunner:
 
 
 def _cfg(tmp_path):
-    return VenueConfig(
-        profile="demo", mode="demo", audit_path=tmp_path / "audit.jsonl"
-    )
+    return VenueConfig(profile="demo", mode="demo", audit_path=tmp_path / "audit.jsonl")
 
 
 def test_get_ticker_normalizes(tmp_path):
@@ -83,9 +80,7 @@ def test_place_swap_market_order_argv(tmp_path):
 def test_place_spot_limit_order_argv(tmp_path):
     runner = FakeRunner([{"ordId": "s1", "sCode": "0"}])
     venue = OkxCliVenue(_cfg(tmp_path), runner=runner)
-    result = venue.place_order(
-        "BTC-USDT", "sell", 0.5, order_type="limit", price=71000
-    )
+    result = venue.place_order("BTC-USDT", "sell", 0.5, order_type="limit", price=71000)
     assert result["ok"] is True
     argv, _ = runner.calls[0]
     assert argv[:2] == ["spot", "place"]
@@ -114,9 +109,7 @@ def test_selector_paper_returns_none(tmp_path):
 
 
 def test_selector_demo_returns_adapter(tmp_path):
-    adapter = build_order_adapter(
-        "okx-cli-demo", config=_cfg(tmp_path), runner=FakeRunner({})
-    )
+    adapter = build_order_adapter("okx-cli-demo", config=_cfg(tmp_path), runner=FakeRunner({}))
     assert isinstance(adapter, OkxCliVenue)
 
 

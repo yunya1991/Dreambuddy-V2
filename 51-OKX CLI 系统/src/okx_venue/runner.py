@@ -16,8 +16,8 @@ from .config import VenueConfig
 from .errors import (
     CliAuthError,
     CliInvalidResponse,
-    CliNotInstalled,
     CliNonZeroExit,
+    CliNotInstalled,
     CliRateLimit,
     CliTimeout,
     LiveReadForbidden,

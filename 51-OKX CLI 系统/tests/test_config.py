@@ -1,5 +1,4 @@
 import pytest
-
 from okx_venue import VenueConfig, VenueConfigError
 
 
@@ -49,9 +48,7 @@ def test_profile_mode_contradiction_is_rejected(tmp_path):
 
 
 def test_oauth_mode_flags(tmp_path):
-    demo = VenueConfig(
-        auth="oauth", mode="demo", audit_path=tmp_path / "audit.jsonl"
-    )
+    demo = VenueConfig(auth="oauth", mode="demo", audit_path=tmp_path / "audit.jsonl")
     live = VenueConfig(
         auth="oauth",
         profile="okx-live",

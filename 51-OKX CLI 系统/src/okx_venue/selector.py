@@ -22,7 +22,7 @@ _ALLOWED = {PAPER, OKX_CLI_DEMO}
 
 
 def resolve_order_adapter_name(value: Optional[str] = None) -> str:
-    name = (value if value is not None else os.getenv(ORDER_ADAPTER_ENV, PAPER))
+    name = value if value is not None else os.getenv(ORDER_ADAPTER_ENV, PAPER)
     name = (name or PAPER).strip().lower()
     if name in {"", "none"}:
         return PAPER
@@ -45,7 +45,5 @@ def build_order_adapter(
         return None
     venue_config = config or VenueConfig.from_env()
     if venue_config.mode != "demo" or not venue_config.write_allowed:
-        raise VenueConfigError(
-            "okx-cli-demo requires OKX_VENUE_MODE=demo; live is not wired to 51"
-        )
+        raise VenueConfigError("okx-cli-demo requires OKX_VENUE_MODE=demo; live is not wired to 51")
     return OkxCliVenue(config=venue_config, runner=runner)

@@ -1,5 +1,4 @@
 import pytest
-
 from okx_venue.catalog import allowed_operations, validate_argv
 from okx_venue.errors import CommandNotAllowed
 

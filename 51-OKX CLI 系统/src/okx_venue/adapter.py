@@ -62,9 +62,7 @@ class OkxCliVenue:
 
     # ── MarketPort ──────────────────────────────────────────────
     def get_ticker(self, inst_id: str) -> Dict[str, Any]:
-        payload = self.runner.run(
-            ["market", "ticker", inst_id], operation="get_ticker"
-        )
+        payload = self.runner.run(["market", "ticker", inst_id], operation="get_ticker")
         ticker = _first(payload)
         return {
             "ok": True,
@@ -82,9 +80,7 @@ class OkxCliVenue:
             "raw": ticker,
         }
 
-    def get_candles(
-        self, inst_id: str, bar: str = "1H", limit: int = 100
-    ) -> Dict[str, Any]:
+    def get_candles(self, inst_id: str, bar: str = "1H", limit: int = 100) -> Dict[str, Any]:
         if limit <= 0:
             raise VenueError("limit must be > 0", code="invalid_argument")
         payload = self.runner.run(
@@ -215,9 +211,7 @@ class OkxCliVenue:
         cl_ord_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         if not ord_id and not cl_ord_id:
-            raise VenueError(
-                "ord_id or cl_ord_id is required", code="invalid_argument"
-            )
+            raise VenueError("ord_id or cl_ord_id is required", code="invalid_argument")
         market = "swap" if _is_swap(inst_id) else "spot"
         argv: List[str] = [market, "cancel", inst_id]
         if ord_id:
@@ -235,9 +229,7 @@ class OkxCliVenue:
         cl_ord_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         if not ord_id and not cl_ord_id:
-            raise VenueError(
-                "ord_id or cl_ord_id is required", code="invalid_argument"
-            )
+            raise VenueError("ord_id or cl_ord_id is required", code="invalid_argument")
         market = "swap" if _is_swap(inst_id) else "spot"
         argv: List[str] = [market, "get", "--instId", inst_id]
         if ord_id:

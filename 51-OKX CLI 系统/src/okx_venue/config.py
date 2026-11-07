@@ -68,21 +68,15 @@ class VenueConfig:
             mode=os.getenv("OKX_VENUE_MODE", "demo").strip().lower(),
             auth=os.getenv("OKX_VENUE_AUTH", "api_key").strip().lower(),
             timeout_s=timeout_s,
-            audit_path=Path(
-                os.getenv("OKX_VENUE_AUDIT_PATH", str(DEFAULT_AUDIT_PATH))
-            ),
+            audit_path=Path(os.getenv("OKX_VENUE_AUDIT_PATH", str(DEFAULT_AUDIT_PATH))),
             allow_live_read=_env_bool("OKX_VENUE_ALLOW_LIVE_READ", False),
         )
 
     def validate(self) -> None:
         if self.mode not in {"demo", "live"}:
-            raise VenueConfigError(
-                f"OKX_VENUE_MODE must be demo|live, got {self.mode!r}"
-            )
+            raise VenueConfigError(f"OKX_VENUE_MODE must be demo|live, got {self.mode!r}")
         if self.auth not in {"api_key", "oauth"}:
-            raise VenueConfigError(
-                f"OKX_VENUE_AUTH must be api_key|oauth, got {self.auth!r}"
-            )
+            raise VenueConfigError(f"OKX_VENUE_AUTH must be api_key|oauth, got {self.auth!r}")
         if self.timeout_s <= 0:
             raise VenueConfigError("OKX_VENUE_TIMEOUT_S must be > 0")
         if not self.cli_path:
@@ -90,13 +84,9 @@ class VenueConfig:
         if self.auth == "api_key" and not self.profile:
             raise VenueConfigError("OKX_VENUE_PROFILE is required for api_key auth")
         if self.mode == "demo" and _looks_live(self.profile):
-            raise VenueConfigError(
-                f"profile {self.profile!r} looks live but OKX_VENUE_MODE=demo"
-            )
+            raise VenueConfigError(f"profile {self.profile!r} looks live but OKX_VENUE_MODE=demo")
         if self.mode == "live" and _looks_demo(self.profile):
-            raise VenueConfigError(
-                f"profile {self.profile!r} looks demo but OKX_VENUE_MODE=live"
-            )
+            raise VenueConfigError(f"profile {self.profile!r} looks demo but OKX_VENUE_MODE=live")
 
     @property
     def read_allowed(self) -> bool:

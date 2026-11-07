@@ -2,12 +2,11 @@ import json
 import subprocess
 
 import pytest
-
 from okx_venue import (
     CliAuthError,
     CliInvalidResponse,
-    CliNotInstalled,
     CliNonZeroExit,
+    CliNotInstalled,
     CliRunner,
     CliTimeout,
     LiveReadForbidden,
@@ -95,9 +94,7 @@ def test_live_write_is_rejected_without_calling_cli(tmp_path):
 
 def test_live_read_is_rejected_by_default(tmp_path):
     rec = Recorder(_completed(["okx"]))
-    runner = CliRunner(
-        _cfg(tmp_path, mode="live", profile="okx-live"), run=rec
-    )
+    runner = CliRunner(_cfg(tmp_path, mode="live", profile="okx-live"), run=rec)
     with pytest.raises(LiveReadForbidden):
         runner.run(["account", "balance"], operation="balance")
     assert rec.calls == []
@@ -140,6 +137,11 @@ def test_invalid_json(tmp_path):
 
 
 def test_redact_argv():
-    assert redact_argv(
-        ["okx", "--api-key", "secret", "--secret", "s2", "market"]
-    ) == ["okx", "--api-key", "***", "--secret", "***", "market"]
+    assert redact_argv(["okx", "--api-key", "secret", "--secret", "s2", "market"]) == [
+        "okx",
+        "--api-key",
+        "***",
+        "--secret",
+        "***",
+        "market",
+    ]

@@ -29,10 +29,10 @@ from okx_venue import (
 class VenueConfig:
     cli_path: str = "okx"
     profile: str = "demo"
-    mode: str = "demo"          # demo | live
-    auth: str = "api_key"       # api_key | oauth
+    mode: str = "demo"  # demo | live
+    auth: str = "api_key"  # api_key | oauth
     timeout_s: float = 30.0
-    audit_path: Path = .../runtime/audit/venue_calls.jsonl
+    audit_path: Path = ... / runtime / audit / venue_calls.jsonl
     allow_live_read: bool = False
 ```
 
