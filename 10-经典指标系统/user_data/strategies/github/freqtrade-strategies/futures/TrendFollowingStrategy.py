@@ -1,6 +1,5 @@
 import talib.abstract as ta
 from freqtrade.strategy import IStrategy
-from freqtrade.strategy.interface import IStrategy
 from pandas import DataFrame
 
 

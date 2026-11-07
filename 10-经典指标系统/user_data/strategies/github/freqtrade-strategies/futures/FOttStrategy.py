@@ -97,7 +97,7 @@ class FOttStrategy(IStrategy):
         df["longstop"] = 0.0
         df["shortstop"] = 999999999999999999
         # df['dir'] = 1
-        for i in df["UD"]:
+        for _i in df["UD"]:
 
             def maxlongstop():
                 df.loc[(df["newlongstop"] > df["longstop"].shift(1)), "longstop"] = df[
@@ -153,7 +153,7 @@ class FOttStrategy(IStrategy):
 
         df["trend"] = 0
         df["dir"] = 0
-        for i in df["UD"]:
+        for _i in df["UD"]:
             df["trend"] = np.where(
                 ((df["xshortstop"] == 1)),
                 1,

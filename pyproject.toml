@@ -119,6 +119,9 @@ extend-exclude = [
     "experiments/ab-trading/algo_ensemble.py",
     "experiments/ab-trading/indicator_library.py",
     "experiments/ab-trading/test_full_mode.py",
+    # 2026-11-08：`_by_*` 均为指向本机绝对路径的符号链接索引目录，CI 上必然悬空，
+    # ruff 会报 E902 io-error；仅排除这批链接，不排除真实策略源文件。
+    "10-经典指标系统/user_data/strategies/github/_by_*",
 ]
 
 [tool.ruff.lint]
