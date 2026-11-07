@@ -88,6 +88,7 @@ force-exclude = '''
   11-易经推理系统/scripts/memory_l4/(backtest_five_domain_v2|bcrm2/storage|kg_store)\.py
   | 4-MEMORY/9-工具与接口/(vector_memory_interface\.py|tests/(test_final_signoff|test_gray_release_checklist|test_skill_loader|test_f3_noise_penalty)\.py)
   | experiments/ab-trading/(algo_ensemble|indicator_library|test_full_mode)\.py
+  | 49-交易框架协议/(scripts/(freeze_contracts|validate_contracts)|tests/test_contracts)\.py
 )
 '''
 
