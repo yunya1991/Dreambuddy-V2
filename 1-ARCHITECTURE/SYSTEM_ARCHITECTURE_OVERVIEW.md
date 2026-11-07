@@ -1,7 +1,7 @@
 # DreamBuddy v2 系统总体架构
 
-> **版本**: v4.1
-> **更新日期**: 2026-11-02
+> **版本**: v4.2
+> **更新日期**: 2026-11-08
 > **文档定位**: ★ **系统架构唯一事实源（SSoT）**。所有架构设计争议、模块边界、分层口径一律以本文档为准。
 > **维护说明**: 被本文档取代的旧架构文档已在顶部标注「已归档」横幅，**禁止作为实现依据**（详见第十六章「文档权威性与弃用指引」）。
 > **核心理念**: 三层能力架构（L0/L1/L2）+ 认知驱动编排（新 SACG）+ L0 双通道供给（port/MCP）+ DSH 多 agent（规划）+ 高度模块化 + OS内核 + 适配器接入
@@ -2255,6 +2255,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 | **DZE开发链（单任务落地）** | **85%** | **DZE Bridge 实现进化→DZE自动打通，Gate1/Gate2双门禁，11阶段完整推进** |
 | **Dream-Agent协作网络** | **80%** | **DreamAgent Bridge 实现DZE→协作网络自动打通，账本+DREAM奖励+三角色完整流程** |
 | **飞书审批与自主迭代** | **80%** | **Approval Bridge 实现4类审批（design/kickoff/merge/deployment）+超时自动批准，与进化系统全链路集成** |
+| **双决策链交易架构（49框架协议 + 50-NN主矛盾评估器）** | **15%** | **R0 进行中：FinalDecisionSignal v1.1 契约冻结（contract-freeze-v2）；50 的 evidence→path 合成 / shadow 决策 / 执行权骨架已落地（48 tests GREEN，本地-only）；23 自进化链零改动作对照；50 全程 paper-only，live 需 Mandate + 50_KILL_SWITCH 双门禁** |
 
 ### 13.2 进化系统各模块进度
 
@@ -2307,6 +2308,7 @@ Validator 评分 ≥ 80   ← "难度校验通过"
 | v2.5 | 2026-06-25 | 新增：1) 系统维护 SKILL（自动化运维）完整章节，包含健康检查/问题追踪/报告生成/修复流程；2) SKILL.md 规范文档和 health-check.ts 执行脚本；3) 每周定时执行机制设计；4) 首次运行测试成功（评分94/100，A级）；5) 关键代码参考补充系统维护 SKILL；6) 维护报告自动保存到 .maintenance-reports/ | System |
 | **v4.0** | 2026-10-16 | **架构统一重大升级（跨系统一致性）**：1) 三层能力架构 **L0/L1/L2** 正式确立（唯一判据：是否依赖生成式 LLM 推理）；2) **新 SACG** 编排（S=认知驱动规划入口 / A=OKR 节点验收 / C=执行驱动 / G=压缩沉淀，C-drive 贯穿调度）取代旧 SACG（Sense/Arrange/Compute/Graph）；3) 认知系统内部四层改名 **C1-C4**（C1 基础/C2 记忆/C3 路由/C4 元认知）；4) **置信度门控**跨系统统一阈值契约；5) 新增第十六章「文档权威性与弃用指引」，旧架构文档统一加「已归档」横幅。**确保 0-系统文档管理 / 1-ARCHITECTURE / 3.1-FRONTEND / 34-前端应用训练系统 四处口径一致** | System |
 | **v4.1** | 2026-11-02 | **DSH 升级与 L0 供给口径增补**：1) 新增 §1.7「L0 统一出口层」——确立 port(in-process，默认) / MCP(跨端) 双通道及 5 条硬约束（热路径不走 MCP、信封映射、只经 DAL、写工具收权、trace 贯穿）；2) 新增 §1.8「DSH 多 agent 升级（规划）」——Router 无状态、Ticket+Mandate、能力集≤10、状态单一事实源=L0、验收外置、settle 五系统，含 4 条红线；3) 第十六章权威层级与保留清单纳入 `46-DSH架构` 域（DSH 子域细则与 SSoT 同口径） | System |
+| **v4.2** | 2026-11-08 | **收录双决策链交易架构（R0-09）**：1) §13.1 新增「49-交易框架协议 + 50-NN主矛盾评估器」进度行（R0 进行中；50 本地-only / paper-only，live 需 Mandate + 50_KILL_SWITCH）；2) §16.1 权威层级新增「交易契约域 SSoT」= `49-交易框架协议/`（FinalDecisionSignal 契约冻结 + ADR-0001/0002）；3) `0-系统文档管理/INDEX.md` 同步升 v2.12 收录 49/50 | System |
 
 ---
 
@@ -2465,10 +2467,11 @@ reporting:
 
 | 层级 | 文档 | 定位 | 优先级 |
 |------|------|------|--------|
-| **权威层（SSoT）** | `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` **v4.1** | 系统架构**唯一事实源** | **最高**，一切争议以本文档为准 |
+| **权威层（SSoT）** | `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` **v4.2** | 系统架构**唯一事实源** | **最高**，一切争议以本文档为准 |
 | **导航层** | `0-系统文档管理/2-文档地图/ARCHITECTURE_MAP.md`、`SYSTEM_MAP.md`、`INDEX.md` | 只告诉你「文档在哪」，不含架构内容 | 高于业务文档，低于 SSoT |
 | **一致性子系统文档** | `34-前端应用训练系统/SPEC-v1.3-L0L1L2-architecture.md`、`SPEC-v1.2-SACG-orchestration.md` | 支撑 SSoT 的子域细则（L0/L1/L2 与 SACG 深化） | 与 SSoT 平级口径，细节补充 |
 | **MCP 域 SSoT** | `47-MCP管理系统/`（README + docs/tech/SPEC-L0-MCP-PACKAGING + ALIGNMENT-46-47） | MCP 壳的契约映射／写工具治理／能力集注册表／对齐审查 | **MCP 域内最高**；46 的 MCP 评估文档降为评估归档 |
+| **交易契约域 SSoT** | `49-交易框架协议/`（SPEC + contracts/ + docs/adr/ADR-0001/0002） | FinalDecisionSignal 契约冻结与双决策链（23 对照 + 50 评估器）治理 | **交易契约域内最高**；契约变更必须走 freeze 脚本 + ADR，禁止手工改冻结契约 |
 | **一致性子系统文档（DSH 域）** | `46-DSH架构/docs/tech/`（DESIGN-DSH-ARCH-UPGRADE / ANALYSIS-L0-MCP-ENCAPSULATION / REPORT-L0-MCP-DSH-IMPACT / SPEC-EVENT-DRIVEN-L1-GATEWAY / ANALYSIS-SUPERAGENT-ARCH-DATAFLOW / DESIGN-SUPERAGENT-FUSION） | DSH 多 agent 升级、事件驱动入口、L0 出口面的子域细则 | 与 SSoT 同口径；**不得另立分层/状态/验收口径** |
 | **已归档层** | 见 16.3 清单 | 被 SSoT 取代的历史文档 | **禁止作为实现依据**，仅历史留档 |
 

@@ -5,6 +5,7 @@ Usage:
   python 49-交易框架协议/scripts/freeze_contracts.py --write
   python 49-交易框架协议/scripts/freeze_contracts.py --check
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,6 +21,7 @@ MANIFEST_PATH = CONTRACTS_DIR / "contract_manifest.v1.json"
 CONTRACTS = [
     ("SignalSchema", "v1", "signal_schema.v1.json"),
     ("FinalDecisionSignal", "v1", "final_decision_signal.v1.json"),
+    ("FinalDecisionSignal", "v1.1", "final_decision_signal.v1.1.json"),
     ("MacroElasticConstraint", "v1", "macro_elastic_constraint.v1.json"),
     ("UpperLayerContext", "v1", "upper_layer_context.v1.json"),
 ]
@@ -36,9 +38,11 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def write_manifest(spec_version: str = "v0.11") -> dict:
+def write_manifest(
+    spec_version: str = "v0.11", manifest_version: str = "contract-freeze-v1"
+) -> dict:
     payload = {
-        "manifest_version": "contract-freeze-v1",
+        "manifest_version": manifest_version,
         "spec_version": spec_version,
         "frozen_at": datetime.now(timezone.utc).isoformat(),
         "change_policy": CHANGE_POLICY,
@@ -53,9 +57,7 @@ def write_manifest(spec_version: str = "v0.11") -> dict:
             for name, version, filename in CONTRACTS
         ],
     }
-    MANIFEST_PATH.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    MANIFEST_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return payload
 
 
@@ -102,10 +104,11 @@ def main() -> int:
     parser.add_argument("--write", action="store_true", help="write manifest")
     parser.add_argument("--check", action="store_true", help="verify manifest")
     parser.add_argument("--spec-version", default="v0.11")
+    parser.add_argument("--manifest-version", default="contract-freeze-v1")
     args = parser.parse_args()
 
     if args.write:
-        payload = write_manifest(args.spec_version)
+        payload = write_manifest(args.spec_version, args.manifest_version)
         print(f"Manifest written: {MANIFEST_PATH}")
         print(f"contracts={len(payload['contracts'])} frozen_at={payload['frozen_at']}")
         return 0

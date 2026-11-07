@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """M0-02: validate frozen contract examples against JSON Schemas."""
+
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 CONTRACT_ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +16,11 @@ EXAMPLES = [
         "FinalDecisionSignal",
         "final_decision_signal.v1.json",
         "final_decision_signal.v1.example.json",
+    ),
+    (
+        "FinalDecisionSignal",
+        "final_decision_signal.v1.1.json",
+        "final_decision_signal.v1.1.example.json",
     ),
     (
         "MacroElasticConstraint",
