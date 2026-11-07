@@ -87,6 +87,7 @@ force-exclude = '''
 (
   11-易经推理系统/scripts/memory_l4/(backtest_five_domain_v2|bcrm2/storage|kg_store)\.py
   | 4-MEMORY/9-工具与接口/(vector_memory_interface\.py|tests/(test_final_signoff|test_gray_release_checklist|test_skill_loader|test_f3_noise_penalty)\.py)
+  | experiments/ab-trading/(algo_ensemble|indicator_library|test_full_mode)\.py
 )
 '''
 
@@ -113,6 +114,11 @@ extend-exclude = [
     "migrations",
     "10-经典指标系统/user_data/strategies/github",
     "9-基本面分析/币安Skill",
+    # 2026-11-08：以下 3 个实验脚本在 HEAD 中即为截断文件（unexpected EOF），
+    # 无完整历史版本；已登记 experiments/INDEX.md，待负责人恢复或删除。
+    "experiments/ab-trading/algo_ensemble.py",
+    "experiments/ab-trading/indicator_library.py",
+    "experiments/ab-trading/test_full_mode.py",
 ]
 
 [tool.ruff.lint]
