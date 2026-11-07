@@ -12,6 +12,7 @@
 
 用法：python3 cycle_state_adapter.py（独立运行时打印发布结果）
 """
+
 import json
 import os
 import sys
@@ -24,7 +25,8 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 
 # 40 层产出物路径
 _40_STATE_PATH = os.path.join(
-    os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统"), "cycle_state.json",
+    os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统"),
+    "cycle_state.json",
 )
 
 # 42 层 SignalBus 模块路径
@@ -38,8 +40,9 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def load_cycle_state(path: str = _40_STATE_PATH) -> dict:
+def load_cycle_state(path: str = None) -> dict:
     """只读加载 40 层周期状态（fail-open 返回 {available: False}）。"""
+    path = path or _40_STATE_PATH
     try:
         if not os.path.exists(path):
             return {"available": False, "note": "cycle_state.json 不存在（fail-open）"}
@@ -102,23 +105,45 @@ def main() -> int:
 
     state = load_cycle_state()
     if not state.get("real_cycle"):
-        print(json.dumps({"status": "unavailable", "reason": state.get("note")}, ensure_ascii=False))
+        print(
+            json.dumps({"status": "unavailable", "reason": state.get("note")}, ensure_ascii=False)
+        )
+        return 1
+
+    # 源头无信号不发：无技术锚资产数据时 direction 恒为 neutral，不发布
+    assets = (state.get("technical_anchor") or {}).get("assets") or {}
+    if not assets:
+        print(
+            json.dumps(
+                {
+                    "status": "unavailable",
+                    "reason": "无技术锚资产数据（assets 为空），不发布",
+                },
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     signal = build_signal(state)
     bus = SignalBus()
     result = bus.publish(signal)
     bus.flush()
-    print(json.dumps({
-        "publish_result": result.get("status"),
-        "reason": result.get("reason"),
-        "signal_id": signal.get("signal_id"),
-        "source": signal.get("source"),
-        "direction": signal.get("direction"),
-        "confidence": signal.get("confidence"),
-        "bus_signal_count": bus.snapshot()["signal_count"],
-        "bus_sources": bus.snapshot()["sources"],
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+                "signal_id": signal.get("signal_id"),
+                "source": signal.get("source"),
+                "direction": signal.get("direction"),
+                "confidence": signal.get("confidence"),
+                "bus_signal_count": bus.snapshot()["signal_count"],
+                "bus_sources": bus.snapshot()["sources"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if result.get("status") == "accepted" else 1
 
 

@@ -107,9 +107,9 @@ def test_persist_upsert_same_signal_id(tmp_path, persist_on):
 # ── 3. 过期剪枝（加载时）──
 def test_persist_prunes_expired_on_load(tmp_path, persist_on):
     path = tmp_path / "bus_state.json"
-    expired = _sig("sig_old", source="src-a", ttl_hours=24)
+    expired = _sig("sig_old", source="src-a", symbol="BTC/USDT", ttl_hours=24)
     expired["expires_at"] = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
-    fresh = _sig("sig_fresh", source="src-a", ttl_hours=24)
+    fresh = _sig("sig_fresh", source="src-a", symbol="ETH/USDT", ttl_hours=24)
     _write_state(path, [expired, fresh])
 
     bus = SignalBus(state_path=str(path))
@@ -122,8 +122,8 @@ def test_persist_prunes_expired_on_load(tmp_path, persist_on):
 def test_persist_prunes_expired_on_flush(tmp_path, persist_on):
     path = tmp_path / "bus_state.json"
     bus = SignalBus(state_path=str(path))
-    bus.publish(_sig("sig_live", source="src-a", ttl_hours=24))
-    bus.publish(_sig("sig_dying", source="src-a", ttl_hours=1))
+    bus.publish(_sig("sig_live", source="src-a", symbol="BTC/USDT", ttl_hours=24))
+    bus.publish(_sig("sig_dying", source="src-a", symbol="ETH/USDT", ttl_hours=1))
     # 模拟运行期间过期：直接篡改内存中信号的 expires_at
     for s in bus.signals:
         if s["signal_id"] == "sig_dying":

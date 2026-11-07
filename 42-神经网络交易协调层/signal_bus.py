@@ -97,6 +97,7 @@ class SignalBus:
             for sig in signals:
                 if isinstance(sig, dict) and _is_live(sig, now):
                     self.signals.append(sig)
+            self._dedupe_loaded()
         except Exception:  # noqa: BLE001
             self.signals = []
             self.rejected = []
@@ -114,6 +115,43 @@ class SignalBus:
     def _prune_expired(self) -> None:
         now = datetime.now(timezone.utc)
         self.signals = [s for s in self.signals if _is_live(s, now)]
+
+    # ── 同源同标取最新：每 (source, symbol) 只保留 ts 最新一条 ──
+    def _dedupe_latest(self, signal: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """入总线前去重：剔除同 source+symbol 的旧信号。
+
+        新信号 ts 不早于已有 → 替换旧信号并返回新信号；
+        新信号 ts 更旧 → 返回 None（调用方拒绝，保留已有较新信号）。
+        """
+        src, sym = signal.get("source"), signal.get("symbol")
+        new_ts = _parse_ts(signal.get("ts", ""))
+        kept: List[Dict[str, Any]] = []
+        for existing in self.signals:
+            if existing.get("source") == src and existing.get("symbol") == sym:
+                old_ts = _parse_ts(existing.get("ts", ""))
+                if old_ts is not None and new_ts is not None and old_ts > new_ts:
+                    return None
+                continue
+            kept.append(existing)
+        self.signals = kept
+        return signal
+
+    def _dedupe_loaded(self) -> None:
+        """加载历史状态时按 (source, symbol) 保留 ts 最新一条（防历史脏数据）。"""
+        best: Dict[tuple, Dict[str, Any]] = {}
+        order: List[tuple] = []
+        for sig in self.signals:
+            key = (sig.get("source"), sig.get("symbol"))
+            prev = best.get(key)
+            if prev is None:
+                best[key] = sig
+                order.append(key)
+                continue
+            if (_parse_ts(sig.get("ts", "")) or datetime.min.replace(tzinfo=timezone.utc)) > (
+                _parse_ts(prev.get("ts", "")) or datetime.min.replace(tzinfo=timezone.utc)
+            ):
+                best[key] = sig
+        self.signals = [best[k] for k in order]
 
     # ── Schema 校验 ──
     def validate_schema(self, signal: Dict[str, Any]) -> Optional[str]:
@@ -197,6 +235,11 @@ class SignalBus:
             processed = self._f2_confidence(signal)
             processed = self._f3_conflict(processed, self.signals + [processed])
             processed = self._f5_normalize(processed)
+            # 同源同标取最新：已有更新信号时拒绝本次发布
+            if self._dedupe_latest(processed) is None:
+                reason = "同源同标已有更新信号（保留最新）"
+                self.rejected.append({"signal_id": processed.get("signal_id"), "reason": reason})
+                return {"status": "rejected", "reason": reason}
             if self._persist:
                 self._upsert(processed)
             else:
