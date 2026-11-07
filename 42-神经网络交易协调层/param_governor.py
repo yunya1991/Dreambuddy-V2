@@ -193,6 +193,11 @@ def adjust_params(
             return {"status": "rejected", "reason": "参数 {} 超出范围 [{}, {}]".format(key, lo, hi)}
         old_val = float(params.get(key))
         delta = new_val - old_val
+        if abs(delta) < 1e-12:
+            return {
+                "status": "rejected",
+                "reason": "参数 {} 取值未变化（no-op，不升版本）".format(key),
+            }
         if abs(delta) > limit + 1e-12:
             return {
                 "status": "rejected",

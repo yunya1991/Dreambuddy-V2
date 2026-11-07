@@ -152,6 +152,21 @@ def test_adjust_accept_tightening(monkeypatch, gov):
     assert any(e.get("action") == "adjust" for e in entries)
 
 
+# ── 5b. no-op：取值未变化的调整拒绝（不升版本、不写历史）──
+def test_adjust_rejects_noop(monkeypatch, gov):
+    monkeypatch.setenv("ENABLE_PARAM_DISPATCH", "1")
+    _init(gov)
+    before = param_governor.load_active(gov["active"])["version"]
+    result = param_governor.adjust_params(
+        {"position_size_factor": 1.0},
+        "no change",
+        active_path=gov["active"],
+        history_path=gov["history"],
+    )
+    assert result["status"] == "rejected", result
+    assert param_governor.load_active(gov["active"])["version"] == before
+
+
 # ── 6. 冷却期：冷却窗口内第二次调整拒绝 ──
 def test_adjust_cooldown(monkeypatch, gov):
     monkeypatch.setenv("ENABLE_PARAM_DISPATCH", "1")
