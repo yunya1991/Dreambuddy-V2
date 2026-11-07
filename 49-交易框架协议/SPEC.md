@@ -1237,14 +1237,14 @@ live: 11 交易执行器 → 13 pre_trade_check → okx_client（不经 MCP）
 
 | ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
 |---|---|---|---|---|---|---|
-| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_C_D_SHADOW=1` | 置 0 | ☑ 代码就绪（映射冻结 + shadow 落盘 + `summarize_cd_shadow` 汇总），观察期进行中 |
-| **B-02** | `DominanceResolver` 成对支配 + 可解释矩阵，shadow vs argmax（DEC-12） | 新 `core/dominance_resolver.py`、`evolution_pipeline` | dominance 矩阵可解释；shadow 对比报告；≥2 周；生产不变 | `ENABLE_DOMINANCE_SHADOW=1` | 置 0 回 argmax | ☐ |
-| **B-03** | `AttentionAggregator` 接线，双 A_dim 对比 | `cross_validation_gate`、`evolution_pipeline` | `a_dim_attention` vs `a_dim_identifier` 一致率/分歧分布 | `ENABLE_ATTENTION_A_DIM=0` | 置 0 | ☐ |
-| **B-04** | 事件驱动主矛盾检测器注册 + shadow | `agi_config`、`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | `enable_primary_contradiction_detector=0` | 置 0 | ☐ |
-| **B-05** | W6 样本持久化 + 监控（DEC-10 前置） | `contradiction_identifier` | `contradiction_samples.json` 持续增长；≥500 触发学习；权重版本化 | `ENABLE_W6_MONITOR=1` | 置 0 | ☐ |
-| **B-06** | D2 OI/清算接 19-DAL（DEC-16） | `dimension_force_evaluator`、19-DAL | D2 非空率 ≥90%；缺失 percentile→neutral | `ENABLE_D2_DAL=0` | 置 0 | ☐ |
-| **B-07** | HJB docstring/SPEC 30%→70% | 23 docs | 文档/代码一致 | — | 恢复文档 | ☐ |
-| **B-08** | 23 自票上限 + 独立证据审计（DEC-10） | `evolution_pipeline` 仲裁 | 自票占比可观测；审计可追溯；shadow 不改变裁决 | `ENABLE_SELF_VOTE_CAP=0` | 置 0 | ☐ |
+| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_C_D_SHADOW=1` | 置 0 | ☑ 代码就绪（43896180d2：映射冻结 + shadow 落盘 + `summarize_cd_shadow` 汇总），观察期进行中 |
+| **B-02** | `DominanceResolver` 成对支配 + 可解释矩阵，shadow vs argmax（DEC-12） | 新 `core/dominance_resolver.py`、`evolution_pipeline` | dominance 矩阵可解释；shadow 对比报告；≥2 周；生产不变 | `ENABLE_DOMINANCE_SHADOW=1` | 置 0 回 argmax | ☑ 代码就绪（4a64c6070b：Copeland 矩阵 + `resolve_shadow`），观察期进行中 |
+| **B-03** | `AttentionAggregator` 接线，双 A_dim 对比 | `cross_validation_gate`、`evolution_pipeline` | `a_dim_attention` vs `a_dim_identifier` 一致率/分歧分布 | `ENABLE_ATTENTION_A_DIM=0` | 置 0 | ☑ 代码就绪（a6957ba0ec：`compute_a_dim_shadow` + C→3D 映射） |
+| **B-04** | 事件驱动主矛盾检测器注册 + shadow | `agi_config`、`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | `enable_primary_contradiction_detector=0` | 置 0 | ☑ 代码就绪（1245e8b4b4：shadow wrapper + 开关注册） |
+| **B-05** | W6 样本持久化 + 监控（DEC-10 前置） | `contradiction_identifier` | `contradiction_samples.json` 持续增长；≥500 触发学习；权重版本化 | `ENABLE_W6_MONITOR=1` | 置 0 | ☑ 代码就绪（3b96432e40：原子写 + `status()` 监控） |
+| **B-06** | D2 OI/清算接 19-DAL（DEC-16） | `dimension_force_evaluator`、19-DAL | D2 非空率 ≥90%；缺失 percentile→neutral | `ENABLE_D2_DAL=0` | 置 0 | ☑ 代码就绪（e13d9fd397：D2 OI/清算 shadow，缺失 neutral），覆盖率观察期 |
+| **B-07** | HJB docstring/SPEC 30%→70% | 23 docs | 文档/代码一致 | — | 恢复文档 | ☑ 2026-11-07 文档对齐（30% 默认/70% `enable_hjb_dominant=True`） |
+| **B-08** | 23 自票上限 + 独立证据审计（DEC-10） | `evolution_pipeline` 仲裁 | 自票占比可观测；审计可追溯；shadow 不改变裁决 | `ENABLE_SELF_VOTE_CAP=0` | 置 0 | ☑ 代码就绪（6ea236e9b4：自票 shadow + 审计），shadow 观察期 |
 
 **B 出口条件**：6 个 shadow 报告齐全；生产 action/tier/position_mult 分布无显著变化（噪声范围内）；≥2 周样本；评审通过后才能进入 M3 live 晋升。
 
