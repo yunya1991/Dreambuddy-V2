@@ -32,21 +32,12 @@ from typing import Any
 
 import numpy as np
 
+from dreambuddy_evolution.core.cd_mapping import C_TO_D_MAP, build_shadow, map_c_to_d
+
 logger = logging.getLogger(__name__)
 
-# B-01 / DEC-11 / R-23-02：C→D 映射（冻结，变更须走 SPEC 评审）
+# B-01 / DEC-11 / R-23-02：C→D 映射唯一事实源在 core/cd_mapping.py（冻结，变更须走 SPEC 评审）
 # C 编号是"路径来源映射"，D 编号是真实市场矛盾维度。
-C_TO_D_MAP = {
-    "C1": "D2",
-    "C2": "D4",
-    "C3": "D3",
-    "C4": "D1",
-    "C6": "C6",
-    "C7": "C7",
-    "C8": "C8",
-    "NEWS": "NEWS",
-}
-
 _CD_SHADOW_DEFAULT = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "runtime",
@@ -56,12 +47,12 @@ _CD_SHADOW_DEFAULT = os.path.join(
 
 def c_to_d(c_dim: str) -> str:
     """C 维度 → D 维度（未知值原样返回，保持 fail-open）。"""
-    return C_TO_D_MAP.get(c_dim, c_dim)
+    return map_c_to_d(c_dim) or c_dim
 
 
 def _cd_shadow_enabled() -> bool:
-    """B-01 shadow 开关：默认关闭，生产行为不变。"""
-    return os.environ.get("ENABLE_C_D_SHADOW") == "1"
+    """B-01 shadow 开关（与 get_switch 同款环境变量名）：默认关闭，生产行为不变。"""
+    return os.environ.get("ENABLE_CD_SHADOW", "").lower() in ("1", "true", "yes", "on")
 
 
 def _record_cd_shadow(c_dim: str, d_dim: str, source: str, confidence: float) -> None:
@@ -950,17 +941,17 @@ class PrimaryContradictionIdentifier:
             "effort_result": float(effort_result),
             "continuation_score": float(continuation),
         }
-        # B-01 shadow：D 标签 + C 别名并存，生产字段 dimension 不变
+        # B-01 shadow：附加 D 标签（与 cd_mapping.attach_shadow 同结构），生产字段 dimension 不变
         if _cd_shadow_enabled():
-            d_dimension = c_to_d(dimension)
-            result["dimension_d"] = d_dimension
-            result["c_alias"] = dimension
-            _record_cd_shadow(
+            source = str(_primary_path.get("source", ""))
+            result["dimension_shadow"] = build_shadow(
                 dimension,
-                d_dimension,
-                str(_primary_path.get("source", "")),
-                result["confidence"],
+                direction=result["direction"],
+                strength=result["strength"],
+                confidence=result["confidence"],
+                source=source,
             )
+            _record_cd_shadow(dimension, c_to_d(dimension), source, result["confidence"])
         return result
 
     def _identify_dimension(self, paths: list[dict]) -> str:

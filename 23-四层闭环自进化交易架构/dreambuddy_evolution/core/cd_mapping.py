@@ -10,6 +10,7 @@
   C4 宏观   → D1 宏观利率
   C6/C7/C8 保留同名；news → NEWS
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -25,6 +26,7 @@ C_TO_D_MAP = {
     "C7": "C7",
     "C8": "C8",
     "news": "NEWS",
+    "NEWS": "NEWS",
 }
 
 D_DIMENSIONS = ("D1", "D2", "D3", "D4", "C6", "C7", "C8", "NEWS")

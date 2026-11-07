@@ -4,7 +4,7 @@
 
 验收口径（49-SPEC §13.6）：
 - C_TO_D_MAP 冻结：C1→D2、C2→D4、C3→D3、C4→D1、C6→C6、C7→C7、C8→C8、news→NEWS
-- shadow 开关 ENABLE_C_D_SHADOW=1 时输出 D 标签 + C 别名，生产字段 dimension 不变
+- shadow 开关 ENABLE_CD_SHADOW=1 时输出 D 标签 + C 别名，生产字段 dimension 不变
 - shadow 观测落盘（C/D 分布可统计），默认关闭时不产生任何文件
 """
 
@@ -50,6 +50,7 @@ def test_c_to_d_map_frozen():
         "C6": "C6",
         "C7": "C7",
         "C8": "C8",
+        "news": "NEWS",
         "NEWS": "NEWS",
     }
 
@@ -63,7 +64,7 @@ def test_c_to_d_helper_unknown_passthrough():
 
 # ── 2. shadow 关闭：生产字段不变，无 D 标签、无文件 ──
 def test_shadow_off_keeps_production_behavior(monkeypatch, tmp_path):
-    monkeypatch.delenv("ENABLE_C_D_SHADOW", raising=False)
+    monkeypatch.delenv("ENABLE_CD_SHADOW", raising=False)
     shadow_path = tmp_path / "cd_shadow.jsonl"
     monkeypatch.setenv("CD_SHADOW_PATH", str(shadow_path))
 
@@ -73,13 +74,13 @@ def test_shadow_off_keeps_production_behavior(monkeypatch, tmp_path):
 
     result = PrimaryContradictionIdentifier().identify(_paths(), {}, {})
     assert result["dimension"] == "C3", "生产字段仍是 C 口径"
-    assert "dimension_d" not in result
+    assert "dimension_shadow" not in result
     assert not shadow_path.exists(), "开关关闭不得落盘 shadow"
 
 
 # ── 3. shadow 开启：D 标签 + C 别名并存，dimension 不变 ──
 def test_shadow_on_adds_d_label_and_alias(monkeypatch, tmp_path):
-    monkeypatch.setenv("ENABLE_C_D_SHADOW", "1")
+    monkeypatch.setenv("ENABLE_CD_SHADOW", "1")
     monkeypatch.setenv("CD_SHADOW_PATH", str(tmp_path / "cd_shadow.jsonl"))
 
     from dreambuddy_evolution.core.contradiction_identifier import (
@@ -88,8 +89,8 @@ def test_shadow_on_adds_d_label_and_alias(monkeypatch, tmp_path):
 
     result = PrimaryContradictionIdentifier().identify(_paths(source="bcrm"), {}, {})
     assert result["dimension"] == "C3", "C 别名必须保留（兼容旧消费方）"
-    assert result["dimension_d"] == "D3", "C3→D3"
-    assert result["c_alias"] == "C3"
+    assert result["dimension_shadow"]["d_dimension"] == "D3", "C3→D3"
+    assert result["dimension_shadow"]["c_dimension"] == "C3"
 
 
 @pytest.mark.parametrize(
@@ -105,7 +106,7 @@ def test_shadow_on_adds_d_label_and_alias(monkeypatch, tmp_path):
     ],
 )
 def test_shadow_mapping_all_sources(monkeypatch, tmp_path, source, c_dim, d_dim):
-    monkeypatch.setenv("ENABLE_C_D_SHADOW", "1")
+    monkeypatch.setenv("ENABLE_CD_SHADOW", "1")
     monkeypatch.setenv("CD_SHADOW_PATH", str(tmp_path / "cd_shadow.jsonl"))
 
     from dreambuddy_evolution.core.contradiction_identifier import (
@@ -114,12 +115,12 @@ def test_shadow_mapping_all_sources(monkeypatch, tmp_path, source, c_dim, d_dim)
 
     result = PrimaryContradictionIdentifier().identify(_paths(source=source), {}, {})
     assert result["dimension"] == c_dim
-    assert result["dimension_d"] == d_dim
+    assert result["dimension_shadow"]["d_dimension"] == d_dim
 
 
 # ── 4. shadow 观测落盘：每次识别追加一条，含 C/D 与来源 ──
 def test_shadow_writes_observation(monkeypatch, tmp_path):
-    monkeypatch.setenv("ENABLE_C_D_SHADOW", "1")
+    monkeypatch.setenv("ENABLE_CD_SHADOW", "1")
     shadow_path = tmp_path / "cd_shadow.jsonl"
     monkeypatch.setenv("CD_SHADOW_PATH", str(shadow_path))
 
