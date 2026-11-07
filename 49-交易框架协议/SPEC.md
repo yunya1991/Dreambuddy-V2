@@ -1237,7 +1237,7 @@ live: 11 交易执行器 → 13 pre_trade_check → okx_client（不经 MCP）
 
 | ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
 |---|---|---|---|---|---|---|
-| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_C_D_SHADOW=1` | 置 0 | ☐ |
+| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_C_D_SHADOW=1` | 置 0 | ☑ 代码就绪（映射冻结 + shadow 落盘 + `summarize_cd_shadow` 汇总），观察期进行中 |
 | **B-02** | `DominanceResolver` 成对支配 + 可解释矩阵，shadow vs argmax（DEC-12） | 新 `core/dominance_resolver.py`、`evolution_pipeline` | dominance 矩阵可解释；shadow 对比报告；≥2 周；生产不变 | `ENABLE_DOMINANCE_SHADOW=1` | 置 0 回 argmax | ☐ |
 | **B-03** | `AttentionAggregator` 接线，双 A_dim 对比 | `cross_validation_gate`、`evolution_pipeline` | `a_dim_attention` vs `a_dim_identifier` 一致率/分歧分布 | `ENABLE_ATTENTION_A_DIM=0` | 置 0 | ☐ |
 | **B-04** | 事件驱动主矛盾检测器注册 + shadow | `agi_config`、`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | `enable_primary_contradiction_detector=0` | 置 0 | ☐ |
