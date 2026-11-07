@@ -42,12 +42,20 @@ v1.1新增:
 """
 
 import subprocess
+import os
 import sys
 import json
 import argparse
 import re
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List, Any
+
+LEGACY_LIVE_ENV = "OKX_VENUE_LEGACY_LIVE"
+
+
+def _legacy_live_allowed() -> bool:
+    raw = os.getenv(LEGACY_LIVE_ENV, "0")
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 # ============================================================
@@ -115,6 +123,13 @@ class TradeToolkit:
         self.env_config = PROFILES.get(profile, PROFILES.get("dreamdemo"))
         self.is_live = self.env_config.get("env") == "live"
         self.is_demo = not self.is_live
+
+        if self.is_live and not dry_run and not _legacy_live_allowed():
+            raise RuntimeError(
+                "legacy live toolkit is retired (DEC-25 / R-L0-03); "
+                "live execution stays on the 11 bypass. "
+                f"Set {LEGACY_LIVE_ENV}=1 only for debug/replay, or use --dry-run."
+            )
         
         # 期权格式自动配置 (根据profile自动选择)
         self.option_um = self.env_config.get("option_um", False)

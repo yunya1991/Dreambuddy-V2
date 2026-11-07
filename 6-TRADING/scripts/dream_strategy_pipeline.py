@@ -20,6 +20,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import sys
 import time
 import uuid
@@ -28,6 +29,13 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 import requests
+
+LEGACY_LIVE_ENV = "OKX_VENUE_LEGACY_LIVE"
+
+
+def _legacy_live_allowed() -> bool:
+    raw = os.getenv(LEGACY_LIVE_ENV, "0")
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 # ========== 全局配置 ==========
 SKILL_BASE = Path.home() / ".workbuddy" / "skills"
@@ -166,6 +174,11 @@ class OKXClient:
             tpTriggerPx: 止盈触发价
             tag: 订单标签(区分系统)
         """
+        if not _legacy_live_allowed():
+            raise RuntimeError(
+                "legacy live order path is retired (DEC-25 / R-L0-03); "
+                f"set {LEGACY_LIVE_ENV}=1 only for debug/replay"
+            )
         body = {
             "instId": inst_id,
             "tdMode": td_mode,
@@ -183,9 +196,14 @@ class OKXClient:
         
         return self._request("POST", "/api/v5/trade/order", body=body)
     
-    def place_algo_order(self, inst_id: str, td_mode: str, side: str, 
+    def place_algo_order(self, inst_id: str, td_mode: str, side: str,
                          slTriggerPx: str, slOrdPx: str, tag: str = "A5") -> Dict:
         """止损委托单"""
+        if not _legacy_live_allowed():
+            raise RuntimeError(
+                "legacy live algo-order path is retired (DEC-25 / R-L0-03); "
+                f"set {LEGACY_LIVE_ENV}=1 only for debug/replay"
+            )
         body = {
             "instId": inst_id,
             "tdMode": td_mode,
