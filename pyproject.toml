@@ -158,8 +158,9 @@ ignore = [
 "11-易经推理系统/scripts/memory_l4/tests/test_shadow_mode_gate.py" = ["F841"]
 # 2026-11-08：49-交易框架协议 / mcp_shells/l0_trade_exec 为本地进行中的改动，
 # 修复动作会与未提交工作区冲突，暂以窄范围规则豁免；合并后再恢复检查。
-"49-交易框架协议/scripts/validate_contracts.py" = ["F401"]
-"49-交易框架协议/tests/test_contracts.py" = ["I001"]
+"49-交易框架协议/scripts/freeze_contracts.py" = ["W292"]
+"49-交易框架协议/scripts/validate_contracts.py" = ["F401", "W292"]
+"49-交易框架协议/tests/test_contracts.py" = ["I001", "W292"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dreamos", "dreambuddy_dal"]
