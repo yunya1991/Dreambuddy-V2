@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
-"""Dream-MultiSkill 交易执行 - Step 4 & 5"""
+"""Dream-MultiSkill 交易执行 - Step 4 & 5（调试/回放专用，已退休 live 直连）
+
+DEC-25 / R-L0-03：本脚本不再作为生产执行路径。
+- 默认退出，不加载 `.env` 凭证；
+- 仅 `OKX_VENUE_LEGACY_LIVE=1` 时可运行，用于调试/回放；
+- 生产 live 仍走 11 域 okx_client 旁路，paper/demo 走 trade-exec MCP + 51。
+"""
 import os, requests, json, time, hmac, base64, hashlib
 
+LEGACY_LIVE_ENV = "OKX_VENUE_LEGACY_LIVE"
+
+
+def _legacy_live_allowed() -> bool:
+    raw = os.getenv(LEGACY_LIVE_ENV, "0")
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _load_env():
-    """从同目录 .env 加载环境变量（不依赖 python-dotenv）"""
+    """从同目录 .env 加载环境变量（不依赖 python-dotenv；仅 legacy 调试时加载）"""
+    if not _legacy_live_allowed():
+        return
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     if not os.path.exists(env_path):
         return
@@ -49,6 +65,14 @@ def okx_post(path, body_dict):
     return resp.json()
 
 def main():
+    if not _legacy_live_allowed():
+        print(
+            "dream_trade_exec.py is retired for live execution (DEC-25 / R-L0-03).\n"
+            "Use 11 bypass for live, or trade-exec MCP + 51 for demo/paper.\n"
+            f"Set {LEGACY_LIVE_ENV}=1 only for debug/replay."
+        )
+        return 2
+
     # 1. 账户状态
     print("=== 账户状态 ===")
     bal = okx_get("/api/v5/account/balance")
@@ -166,4 +190,4 @@ def main():
         print("\n=== 可用余额不足 ===")
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

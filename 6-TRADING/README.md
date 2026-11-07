@@ -3,6 +3,11 @@
 > **版本**: v1.0  
 > **创建日期**: 2026-05-14
 
+> ⚠️ **live 直连路径已退休（2026-11-07，DEC-25 / R-L0-03）**
+> 生产 live 唯一出口 = 11 域 `okx_client` 旁路；paper/demo = trade-exec MCP + 51-OKX CLI 系统。
+> `dream_trade_exec.py` / `dream_strategy_pipeline.py` 的 live 写路径默认 fail-closed。
+> 迁移说明见 [docs/MIGRATION-51-OKX-VENUE.md](docs/MIGRATION-51-OKX-VENUE.md)。
+
 ---
 
 ## 🎯 系统概述

@@ -1,6 +1,6 @@
-# SPEC-49 神经网络交易系统框架协议 v0.13
+# SPEC-49 神经网络交易系统框架协议 v0.14
 
-- 状态：🟢 v0.13 评审完成稿（§12.1 评审 32/32 通过，R-42-05 修订后通过；M0-01 完成，**P1 门禁全部解除**；本文只定义架构、协议契约、提案与路线，不含实现代码）
+- 状态：🟡 v0.14 双决策链架构评审稿（v0.13 评审完成 + 双链隔离 / 50-NN主矛盾评估器 / 48 统一数据训练接口 / 基因治理；**待 SPEC 评审 + ADR-0002 后生效**；本文只定义架构、协议契约、提案与路线，不含实现代码）
 - 日期：2026-11-07
 - 归属：49-交易框架协议（交易域总体框架与协议唯一事实源）
 - 上游输入：数据层（18 采集 / 19 DAL / 20 清洗 / 21 特征 / 38 数据库）、39 金融语义蒸馏、9 基本面分析
@@ -71,6 +71,20 @@
 - 图中 `13→16→22` 是完整目标管道；现状只有 13 已接线，16/22 未接线（§6）。
 - 图中“所有子交易系统受宏观约束”是目标；现状只有 11 `war_state` 被 23 消费，40/43 宏观约束“注入但零消费”（§11）。
 - 任何“已落地/已接线”表述均应以 §10 代码核验结论为准；文档与代码冲突时以代码为准。
+
+### 0.6 v0.14 双决策链架构（最新口径，覆盖历史单链表述）
+
+自 v0.14 起，交易域采用**两条并行决策链**：
+
+1. **NN 闭环链（新建）**：39（已入 L0 MCP）/ 9（纳入 48 统一口径）+ 全链路交易数据 → **48 涌现架构（40 的唯一对接口）** → 40 主神经网络 → 43 战略承接（弹性约束）→ 42 协调层（8 源总线）→ **50-NN主矛盾评估器（新建）** → 执行层 13/16/22 + 11 执行器 → 成交/PnL/链路数据回 48 训练 40。
+2. **23 自进化链（保留不动）**：独立运行、独立进化，作为对照实验，验证 NN 链的优越性。
+
+**基因流（唯一方向）**：
+- 23 → NN：**仅提供可参考/可复制的主矛盾架构设计**，不是持续基因供体，也不是运行时依赖。
+- NN → 23：**优质基因注入**（经原 42→23 shadow 端口，选择性采纳，不破坏 23 主链）。
+- 48 → 40：**主供体**（统一数据口径、训练、度量、相变判定）。
+
+**边界**：50 不 import 23 运行时模块/状态；23 不 import 50；两边不共享权重、样本、运行时文件。执行层按 `execution_rights` 单标的单出口；50 初期仅 paper。
 
 ---
 
@@ -869,6 +883,10 @@ L2 ──只读 tools/call──▶ l1.trading.mcp ──读──▶ 23/42/40/4
 | `47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md` | 执行层 paper MCP SPEC（历史名；origin/main `1eb0076`，本地未同步） |
 | `47-MCP管理系统/registry/execution_rights.json` | 标的级执行权注册表（origin/main `1eb0076`，本地未同步） |
 | `mcp_shells/l1_trading/` | L1 交易层 MCP（**设计态，未创建**；评审后落地） |
+| `50-NN主矛盾评估器/SPEC.md` | 50 NN 主矛盾评估器（v0.14 新增，独立实现） |
+| `49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md` | 双决策链 / source=50-nn / 执行权分区 ADR |
+| `42-神经网络交易协调层/docs/INTEGRATION-50-v0.1.md` | 42 总线 × 50 消费集成说明 |
+| `48-涌现架构/docs/tech/SPEC-NN-FEEDBACK-GATEWAY-v0.1.md` | 48 作为 40 唯一对接口 / 训练网关 / 基因登记（草案） |
 
 ---
 
@@ -1237,7 +1255,7 @@ live: 11 交易执行器 → 13 pre_trade_check → okx_client（不经 MCP）
 
 | ID | 任务 | 改动面 | 验收指标 | 开关 | 回滚 | 状态 |
 |---|---|---|---|---|---|---|
-| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_CD_SHADOW=1` | 置 0 | ☑ 代码就绪（43896180d2：映射冻结 + shadow 落盘 + `summarize_cd_shadow` 汇总），观察期进行中 |
+| **B-01** | C→D 映射冻结 + shadow 对比旧口径（DEC-11） | `contradiction_identifier`、`dimension_force_evaluator` | 映射文档冻结；C/D 分布、主矛盾一致率；≥2 周 | `ENABLE_C_D_SHADOW=1` | 置 0 | ☑ 代码就绪（43896180d2：映射冻结 + shadow 落盘 + `summarize_cd_shadow` 汇总），观察期进行中 |
 | **B-02** | `DominanceResolver` 成对支配 + 可解释矩阵，shadow vs argmax（DEC-12） | 新 `core/dominance_resolver.py`、`evolution_pipeline` | dominance 矩阵可解释；shadow 对比报告；≥2 周；生产不变 | `ENABLE_DOMINANCE_SHADOW=1` | 置 0 回 argmax | ☑ 代码就绪（4a64c6070b：Copeland 矩阵 + `resolve_shadow`），观察期进行中 |
 | **B-03** | `AttentionAggregator` 接线，双 A_dim 对比 | `cross_validation_gate`、`evolution_pipeline` | `a_dim_attention` vs `a_dim_identifier` 一致率/分歧分布 | `ENABLE_ATTENTION_A_DIM=0` | 置 0 | ☑ 代码就绪（a6957ba0ec：`compute_a_dim_shadow` + C→3D 映射） |
 | **B-04** | 事件驱动主矛盾检测器注册 + shadow | `agi_config`、`evolution_pipeline` | 检测器输出可见；live 前零决策影响 | `enable_primary_contradiction_detector=0` | 置 0 | ☑ 代码就绪（1245e8b4b4：shadow wrapper + 开关注册） |
@@ -1256,7 +1274,7 @@ live: 11 交易执行器 → 13 pre_trade_check → okx_client（不经 MCP）
 | `ENABLE_11_STATE_ADAPTER` | 0 | 11→42 状态文件适配 | 置 0，停适配器 |
 | `SOURCE_ALIAS_MODE` | 1 | `bdsm`/`11-bdsm` 双写 | 恢复旧 source |
 | `ENABLE_PARAM_DISPATCH` | 0 | 42 参数分发 | 置 0 |
-| `ENABLE_CD_SHADOW` | 0 | C→D shadow 对比 | 置 0 |
+| `ENABLE_C_D_SHADOW` | 0 | C→D shadow 对比 | 置 0 |
 | `ENABLE_DOMINANCE_SHADOW` | 0 | Dominance shadow | 置 0，回 argmax |
 | `ENABLE_ATTENTION_A_DIM` | 0 | Attention A_dim | 置 0，回 identifier |
 | `enable_primary_contradiction_detector` | 0 | 事件主矛盾检测 | 置 0 |
@@ -1419,3 +1437,202 @@ M6（训练/反馈/约束校准）
 2. 修订依据（代码核验）：42 已有 6 个只读适配器（消费 `five_domain_state.json`/`cycle_state.json`/`event_driven_state.json`）；11 `runtime/` 无 washout/event_arbitrage 状态文件。
 3. **§12.1 评审最终状态：32/32 通过 / 0 需修改 / 0 拒绝；P1 门禁全部解除（DEC-04）**。
 4. 仍只改 SPEC，不实现。
+
+---
+
+# v0.14 双决策链架构增补（2026-11-07）
+
+> 本节为 v0.14 新增架构口径，覆盖 §0.5/§1/§2/§3/§4/§5/§6/§7/§11/§12/§13 中与“23 唯一决策出口”相关的单链表述；v0.13 及以前章节保留为历史基线。**本节为评审稿，需 SPEC 评审 + ADR-0002 通过后生效。**
+
+## §1.4 分层修订（v0.14 覆盖 §1.1/§1.2 对应行）
+
+| 层 | v0.14 组成 | 职责 | 不做什么 |
+|---|---|---|---|
+| **输入/数据层** | 18/19/20/21/38、39（已入 L0 MCP）、9（纳入 48 统一口径） | 行情、宏观、特征、语义、基本面 | 不产生交易信号 |
+| **数据/训练网关** | **48 涌现架构** | **40 的唯一对接口**：统一口径、训练、度量、量变→质变判定、基因登记 | 不直接下单、不绕过 40/50 |
+| **宏观弹性约束层** | 40 → 43 | 资产偏置（数量）、相关资产多空数量偏置、仓位约束、杠杆约束 | 不下单、不决定具体代币 |
+| **协调层** | 42 | 8 源总线、SignalSchema 归一化、约束透传、参数治理 | 不做策略判断、不下单 |
+| **NN 决策层（新建）** | **50-NN主矛盾评估器** | 证据融合 + 维度力量 + 矛盾裁决 + Dominance + 最终决策 | 不执行下单、不写 23/40/43 |
+| **执行层（EXEC/L1.5）** | 13 风控 / 16 定容 / 22 执行 / 11 交易执行器 | 风控→定容→执行→对账；paper MCP / live 旁路 | 不改写策略、不触实盘（MCP） |
+| **反馈层** | 48（样本/训练/度量） | 成交/PnL/拒单/全链路数据 → 训练 40/50（建议制 + 门禁） | 不直接改生产权重 |
+| **对照层（独立）** | **23 四层闭环自进化** | 独立运行、独立进化；对照实验 | 不承接 NN 链生产决策、不被 50 依赖 |
+
+> **模块映射补充**：`50-NN主矛盾评估器` 为新增独立域；`49` 继续拥有交易域四契约；`48` 拥有数据/训练/度量与基因登记；`47` 拥有 MCP 注册表；`23` 保持独立实现与文档，不被修改。
+
+## §2.10 双决策链总图（v0.14）
+
+```text
+【NN 闭环链（新建，生产候选）】
+39（L0 MCP）/ 9（纳入 48）/ 全链路交易数据
+        ↓
+48 涌现架构（40 唯一对接口：统一口径 / 训练 / 度量 / 相变判定 / 基因登记）
+        ↓ 训练/优化（建议制 + 40 P5/P6 门禁）
+40 主神经网络 → cycle_state / strategy_mapping
+        ↓
+43 战略承接 → 弹性约束包络：
+   资产偏置(数量) / 相关资产多空数量偏置 / 仓位约束 / 杠杆约束
+        ↓
+42 神经网络交易协调层（8 源总线，input-only）
+   11-bcrm / 11-bdsm / 11-washout / 11-event-arbitrage /
+   29-event / 40-cycle / 43-strategic / 23-contradiction(镜像)
+        ↓
+50-NN主矛盾评估器（新建，独立实现）
+   证据角色分类 → 去重/provenance → 维度力量 → 4维裁决 →
+   Dominance → intent 分轨 → 约束包络 → FinalDecisionSignal
+        ↓
+执行层：13 风控(fail-closed) → 16 定容 → 22 执行 / 11 交易执行器
+        ↓
+成交/PnL/拒单/全链路数据 → 48（训练 40/50，建议制 + 门禁）
+
+【23 自进化链（独立，对照实验）】
+23 原有链路（SubSystemBridge → _discover_paths → identify → select）保持不变；
+优质基因（NN 验证过的维度口径/置信度校准/证据融合能力）经原 42→23 shadow 端口选择性注入；
+23 的主矛盾架构设计仅作为 50 的参考/复制来源，不构成运行时依赖。
+```
+
+## §3.10 NN 决策契约与 `source=50-nn`（v0.14，加法变更）
+
+50 输出**复用 FinalDecisionSignal v1**，不新增 breaking 字段；变更仅为 **Canonical source 枚举加法**：
+
+- `source = "50-nn"`（新增，additive）；v1 必填字段与语义不变。
+- 输出字段沿用 §3.3；`payload` 增加：
+  - `evidence_summary`：各源角色/维度/方向/置信度/一致性；
+  - `gene_versions`：本次使用的基因 ID/来源/版本；
+  - `constraint_id` / `constraint_applied_at`：已应用约束；
+  - `control_group`：与 23 对照的基线信号 ID（可选）。
+- **契约变更流程**：ADR-0002 + `contract_manifest` 更新（source 枚举加法），不改 v1 必填字段；符合 DEC-03 的“可选字段加法需 manifest + ADR”。
+- **执行层路由**：`source=50-nn` 仅进入 paper（初期）；live 需 `execution_rights` 显式授权；同一标的同时刻单出口。
+- 50 **不得**写 23 的 `contradiction_samples.json` / 权重 / 运行时状态；`23-contradiction` 总线信号仅作审计镜像，不参与 50 投票。
+
+## §4.8 50 矛盾力量评估器：外部证据融合机制（v0.14）
+
+### 4.8.1 信号角色分类（不是 8 路都投票）
+
+| source | 粒度 | horizon | 角色 | 在 50 中的处理 |
+|---|---|---|---|---|
+| `11-bcrm` | 资产类（crypto_usdt 等） | days | 宏观先验 | 只作 `weight_factor`/约束上下文，**不投每币方向票** |
+| `11-bdsm` | 每币 | days | 外部证据 | 每币一票（与内部 bridge 同源时去重） |
+| `11-washout` | 每币 | hours | reversal 轨 | 不投方向；下调趋势路径 continuation、提高尾部风险 |
+| `11-event-arbitrage` | 每币/事件 | hours | event_shock 轨 | 事件窗口内参与 shock；与 29-event 冲突时以可执行为准并审计 |
+| `29-event` | symbol/MACRO | hours | event_shock 轨 | **由 23 的 kline_event_handler 写入 → 自环**；只作审计/一致性，不作独立票 |
+| `40-cycle` | 宏观 | days | 约束 | 只进约束包络，不投票 |
+| `43-strategic` | 资产类 | days | 约束 | 只进约束包络，不投票 |
+| `23-contradiction` | 23 输出镜像 | hours | 自环 | 只审计，禁止入裁决（DEC-18） |
+
+### 4.8.2 融合规则
+
+1. **同源去重**：`(source, symbol, dimension, horizon)` 只计一票；`11-bdsm` 42 版与内部 bridge 同源时，bus 新鲜取 bus，否则取 bridge，严禁双票。
+2. **维度归属**：维度排序由 `dimension_force_evaluator` 的真实力量（D1/D2/D4/C6/C7/C8 + D3 路径共振）决定；子系统票只在**同维度内**决定多/空。
+3. **去重与粒度**：`11-bcrm`（资产类战略）与每币 BCRM 战术信号不是同一事实，前者只作先验/上下文，不参与每币 D3 投票。
+4. **intent 分轨**：`trend` 常规票；`reversal` 不投反向票；`event_shock` 走显式 shock 窗口（进入/退出条件：strength、`expires_at`、event_phase）。
+5. **horizon 分层**：hours（washout/event-arb/29-event）与 days（bcrm/bdsm/43）分组；跨层只加权汇总，不做共振。
+6. **4 维裁决 + Dominance**：力量 0.40 / 时间 0.15 / 证据一致性 0.25 / 市场影响 0.20；证据一致性直接消费“内部 vs 42”的对账结果；成对支配输出可解释矩阵。
+7. **W6 与 provenance**：50 使用独立样本存储；样本带 `provenance=42-bus|internal|self-mirror`；NN→23 基因注入前不污染 23 的 W6。
+8. **自票上限**：50 自身候选（l2_gene/synthesized 等）设自票上限（B-08 设计参考），不得单独决定主导者。
+9. **约束包络**：约束只在最终决策后钳位（见 §4.9），不参与矛盾评分、不重复相乘。
+
+### 4.8.3 40/43 弹性约束包络（v0.14）
+
+| 约束 | 来源/落点 | 应用 |
+|---|---|---|
+| 资产偏置（哪类资产、数量） | 43 `per_asset_class` + 16 capital_allocator | 资产类数量上限；只钳位 |
+| 相关资产多空偏置（多/空数量） | 16 定容新增参数 | `long_count_cap` / `short_count_cap` / `net_bias` |
+| 仓位约束 | 40 `position_band_pct` ∩ 43 cap | 最终仓位带 |
+| 杠杆约束 | 43 A3 `leverage_cap`（需补发布进 strategic_extension） | 22/13 钳位 |
+
+> 过渡期 50 可直读 40/43 文件；42 合并约束稳定后切单一源；13 始终 fail-closed 最终钳位。
+
+## §5.6 48 统一数据/训练接口与基因治理（v0.14）
+
+1. **40 的唯一对接口**：39（已入 L0 MCP）、9（纳入 48）、全链路交易数据统一经 48；**39/9 不直连 40**。
+2. **统一数据 schema（建议）**：`decision_id / source / symbol / constraints / signals / evidence / decision / execution / pnl / provenance / ts / version`；OOD 隔离与版本化沿用 48 §5 纪律。
+3. **训练网关**：48 产出训练建议（不直接改权重）；40 P5/P6 门禁（DEC-29）与 50 训练门禁均需可审计的采纳/拒绝记录。
+4. **量变→质变**：48 E5 能力-规模曲线/相变判据承担 NN 链“量变引发质变”的判定；E0 基线先行。
+5. **基因登记（gene registry）**：记录 `gene_id / source / version / module|config / shadow_evidence / promotion_state / rollback`。
+   - 48 → 40：主供体（数据/训练/度量）。
+   - NN → 23：优质基因注入（经 42→23 shadow 端口，选择性采纳）。
+   - 23 → NN：**仅设计参考/复制**，不登记为持续基因流，不形成运行时依赖。
+6. **对照实验**：48 读 23 与 50 的输出做 A/B；指标：方向一致率、主矛盾维度一致率、置信度校准、paper PnL、最大回撤、换手率、W6 归因覆盖率。
+
+## §6.2 v0.14 新增差距（现状 vs 目标）
+
+| 差距 | 现状 | 阶段 |
+|---|---|---|
+| 50 未实现 | 仅 v0.14 设计；无目录/代码 | R0 |
+| 48 未具备数据/训练网关 | SPEC v0.5 为度量/实验域；无统一数据 schema/训练 API | R4 |
+| 43 约束字段不全 | 无资产数量/多空数量字段；`leverage_cap` 未发布进 strategic_extension | R1 |
+| 42 8 源未全部在线 | P1 代码完成，但 `ENABLE_11_STATE_ADAPTER` 默认关；bus 需调度 | R0/R1 |
+| 50 执行接线 | 13 已接线；16/22 未 import；OrderPort 自包含 | R3 |
+| 执行权分区 | `execution_rights` 未定义 50 paper/live 分区 | R1/R3 |
+| 40 训练通道 | 40 P5/P6 门禁锁定；48→40 训练建议接口未建 | R4 |
+| 契约 source 枚举 | FinalDecisionSignal v1 无 `50-nn` | ADR-0002 |
+| 基因登记 | 无 registry | R0 |
+
+## §7.1 v0.14 实施路线（R0-R5）
+
+| 阶段 | 内容 | 周期 | 验收 |
+|---|---|---|---|
+| **R0** | 50 骨架：目录/SPEC/基因复制与一致性测试；只读 42 bus；shadow 输出 + 审计；开关默认关 | 1 周 | 8 源可读；shadow 可复现；50 不 import 23 运行时 |
+| **R1** | 约束包络：43 补 leverage/资产数量/多空数量字段；16 定容参数化；execution_rights 分区 | 1 周 | 四项约束可查询/可钳位；13 最终否决不变 |
+| **R2** | 融合机制：去重/provenance/intent/horizon/4 维裁决/Dominance/W6（全 shadow） | 2 周 | A/B 报告；主矛盾可解释；无双计 |
+| **R3** | 执行接线：50 → 13→16→22 paper MCP；11 执行器保持 live 现状 | 2 周 | paper 全链路可对账；单标的单出口 |
+| **R4** | 48 数据/训练网关：统一 schema、OOD、40/50 训练建议接口、E5 度量 | 2-3 周 | 数据可复现；训练建议经门禁 |
+| **R5** | 双链对照 ≥4-8 周（23 vs 50）；评审；live 灰度 | 持续 | 风险调整后 50 不劣于 23；回滚可用 |
+
+## §11.6 v0.14 新冲突与裁决
+
+| ID | 冲突 | 裁决 |
+|---|---|---|
+| G-01 | DEC-02“23 唯一最终决策出口” vs 双决策链 | **DEC-31**：v0.14 过渡期双链并行；23 为对照；50 为 NN 链出口；收敛由数据裁决（ADR-0002） |
+| G-02 | 50 与 23 的代码/状态耦合 | **DEC-32**：50 不 import 23 运行时；23 仅设计参考；NN→23 基因注入单向 |
+| G-03 | 执行层双出口 | **DEC-36**：`execution_rights` 分区；50 paper-only 起步；同标的同时刻单出口 |
+| G-04 | 48 从度量域扩为数据/训练网关 | **DEC-33/DEC-42**：48 为 40 唯一对接口；扩域需 48 SPEC v0.6 评审 |
+| G-05 | 40 训练门禁 | **DEC-41**：沿用 DEC-29 P5/P6 门禁；训练建议制、可审计 |
+| G-06 | 契约冻结 | **DEC-35**：FinalDecisionSignal v1 复用；仅 source 枚举加法 + ADR |
+| G-07 | 子系统信号自环/双计 | **DEC-38**：角色分类 + 去重 + provenance；29-event/23-contradiction 不入投票 |
+
+## §12.7 v0.14 新增决议（DEC-31～DEC-43）
+
+| ID | 决议 |
+|---|---|
+| **DEC-31** | 采用双决策链：NN 链（50 出口）与 23 独立链并行；23 为对照实验；SPEC v0.14 过渡，ADR-0002 记录 |
+| **DEC-32** | 50 **独立实现**，不 import 23 运行时模块/状态；23 仅提供可参考/复制的主矛盾架构设计；不构成持续基因流或运行时依赖 |
+| **DEC-33** | **48 为 40 的唯一对接口**；39 经 L0 MCP、9 纳入 48 统一口径；39/9 不直连 40 |
+| **DEC-34** | 基因注入方向：**NN → 23**（经原 42→23 shadow 端口）；23→NN 仅设计参考；基因注入不得破坏 23 主链 |
+| **DEC-35** | FinalDecisionSignal v1 复用；新增 `source=50-nn`（additive）；需 ADR-0002 + manifest 更新 |
+| **DEC-36** | `execution_rights` 分区：50 初期 paper-only；23 保持 live 现状；同一标的同时刻单出口；live 灰度需评审 |
+| **DEC-37** | 40/43 弹性约束四项：资产偏置（数量）、多空数量偏置、仓位、杠杆；只作包络钳位，不进矛盾评分 |
+| **DEC-38** | 50 证据融合：角色分类 + 同源去重 + provenance + intent 分轨 + horizon 分层；29-event/23-contradiction 自环不入投票 |
+| **DEC-39** | 50 使用独立 W6/样本存储；provenance 隔离；NN→23 基因注入前不污染 23 的 W6 |
+| **DEC-40** | 建立 gene registry（48/49 治理）；基因必须有来源、版本、shadow 证据、回滚 |
+| **DEC-41** | 40 训练经 48，沿用 40 P5/P6 门禁（DEC-29）；训练建议制，不直接改权重 |
+| **DEC-42** | 48 扩域为数据/训练网关需 48 SPEC v0.6 评审；未评审前只做数据 schema 与只读对接 |
+| **DEC-43** | 双链对照指标与晋升：方向一致率、主矛盾维度、置信度校准、paper PnL、回撤、换手、W6 归因；≥4-8 周；风险调整后不劣于 23 才可 live 灰度 |
+
+## §13.10 v0.14 任务清单
+
+| ID | 任务 | 改动面 | 验收 | 开关 | 回滚 | 状态 |
+|---|---|---|---|---|---|---|
+| **R0-01** | 50 目录 + SPEC + 基因复制/一致性测试 | `50-NN主矛盾评估器/` | 50 不 import 23；基因 registry 初始版 | — | 删除目录 | ☐ |
+| **R0-02** | 42 bus 只读证据适配器 + shadow 决策 + 审计 | `50/adapters/bus_reader.py`、`50/core/evidence*` | 8 源可读；shadow 可复现 | `ENABLE_50_SHADOW=0` | 置 0 | ☐ |
+| **R0-03** | 8 源在线：`ENABLE_11_STATE_ADAPTER=1` + bus 调度 | 42/11 | bus ≥6 源；TTL 生效 | `ENABLE_11_STATE_ADAPTER` | 置 0 | ☐ |
+| **R1-01** | 43 补 leverage/资产数量/多空数量字段 | 43 signal payload | 四项约束可查询 | — | 恢复旧 payload | ☐ |
+| **R1-02** | 16 定容参数化（资产/多空数量/杠杆） | 16 capital_allocator | 约束可钳位；13 最终否决 | `ENABLE_16_CONSTRAINTS=0` | 置 0 | ☐ |
+| **R1-03** | execution_rights 分区（50 paper / 23 live） | 47 registry | 单标的单出口 | — | 恢复旧 registry | ☐ |
+| **R2-01** | 50 融合：去重/provenance/intent/horizon/4 维/Dominance/W6 | `50/core/*` | A/B 报告；无双计 | `ENABLE_50_FUSION=0` | 置 0 | ☐ |
+| **R3-01** | 50 → 13→16→22 paper MCP 接线 | `50/adapters/execution_writer.py`、执行层 | paper 全链路对账 | `ENABLE_50_EXECUTION=0` | 置 0 | ☐ |
+| **R4-01** | 48 统一数据 schema + OOD + 训练建议接口 | 48 data/training | 数据可复现；建议经门禁 | `ENABLE_48_TRAINING=0` | 置 0 | ☐ |
+| **R5-01** | 双链对照 ≥4-8 周 + 评审 + live 灰度 | 48 metrics/评审 | 50 不劣于 23；回滚可用 | `ENABLE_50_LIVE=0` | 置 0 | ☐ |
+
+---
+
+## 附：v0.14 双决策链架构（变更摘要）
+
+1. **新增 50-NN主矛盾评估器**：独立实现、独立进化；仅参考/复制 23 的主矛盾架构设计，不 import 23 运行时；输出 `source=50-nn` 的 FinalDecisionSignal v1（additive）。
+2. **23 保持独立**：不承接 NN 链生产决策；作为对照实验；NN 验证过的优质基因经原 42→23 shadow 端口注入 23（单向）。
+3. **48 升级为 40 的唯一对接口**：39（L0 MCP）/9（纳入 48）/全链路交易数据 → 48 → 40；训练建议制 + 40 P5/P6 门禁。
+4. **40/43 弹性约束四项**：资产偏置（数量）、相关资产多空数量偏置、仓位、杠杆；只作包络，不进矛盾评分。
+5. **42 8 源总线**（P1-01～07 已完成）：11-bcrm / 11-bdsm / 11-washout / 11-event-arbitrage / 29-event / 40-cycle / 43-strategic / 23-contradiction（镜像）。
+6. **50 融合规则**：角色分类、同源去重、provenance、维度由真实力量决定、intent 分轨、horizon 分层、4 维裁决 + Dominance、W6 provenance、自票上限。
+7. **新增 DEC-31～DEC-43** 与 **R0-R5** 路线；与 DEC-02 的冲突以 ADR-0002 的“双链对照期”过渡裁决。
+8. 仍只改 SPEC（v0.14 评审稿），不实现；R0 前需完成 SPEC 评审与 ADR-0002。
